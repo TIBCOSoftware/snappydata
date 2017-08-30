@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -1941,7 +1941,7 @@ public class SnappyTest implements Serializable {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
-    if (appName == null) appName = SnappyPrms.getUserAppName();
+    if (appName == null) appName = SnappyPrms.getUserAppName() + "_" + System.currentTimeMillis();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
     //String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
@@ -1976,7 +1976,7 @@ public class SnappyTest implements Serializable {
       boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
       if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
         jobSubmissionCount++;
-        Thread.sleep(60000);
+        Thread.sleep(180000);
         Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
             " the job to new primary lead node.....");
         retrievePrimaryLeadHost();
@@ -2777,6 +2777,13 @@ public class SnappyTest implements Serializable {
     } else if (!isDmlOp && !restart && !rebalance && (stopMode.equalsIgnoreCase("NiceKill") ||
         stopMode.equalsIgnoreCase("NICE_KILL"))) {
       killVM(vmDir, clientName, vmName);
+      try {
+        Thread.sleep(180000);
+      } catch (InterruptedException e) {
+        String s = "Exception occurred while waiting for the kill " + clientName + "process " +
+            "execution..";
+        throw new TestException(s, e);
+      }
       startVM(vmDir, clientName, vmName);
     }
   }
@@ -2793,7 +2800,7 @@ public class SnappyTest implements Serializable {
       HydraTask_stopSnappyLocator();
     }
     try {
-      Thread.sleep(60000);
+      Thread.sleep(180000);
       boolean serverStopFailed = snappyTest.waitForMemberStop(vmDir, clientName, vmName);
       if (serverStopFailed) {
         snappyTest.threadDumpForAllServers();

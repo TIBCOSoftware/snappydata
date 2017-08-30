@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,7 +15,7 @@
  * LICENSE file.
  */
 
-package io.snappydata.benchmark.snappy.tpch
+package io.snappydata.benchmark
 
 import scala.util.Random
 
@@ -25,10 +25,13 @@ import scala.util.Random
 
 object TPCH_Queries {
 
-  def getQuery(query: String, isDynamic: Boolean): String = {
+  def getQuery(query: String, isDynamic: Boolean, isSnappy:Boolean): String = {
     query match {
       case "1" => {
-        createQuery(TPCH_Queries.getQuery1, TPCH_Queries.getQ1Parameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery1, TPCH_Queries.getQ1Parameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery1_Memsql, TPCH_Queries.getQ1Parameter(isDynamic))
       }
       case "2" => {
         createQuery(TPCH_Queries.getQuery2, TPCH_Queries.getQ2Parameter(isDynamic))
@@ -37,13 +40,22 @@ object TPCH_Queries {
         createQuery(TPCH_Queries.getQuery3, TPCH_Queries.getQ3Parameter(isDynamic))
       }
       case "4" => {
-        createQuery(TPCH_Queries.getQuery4, TPCH_Queries.getQ4Parameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery4, TPCH_Queries.getQ4Parameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery4_Memsql, TPCH_Queries.getQ4Parameter(isDynamic))
       }
       case "5" => {
-        createQuery(TPCH_Queries.getQuery5, TPCH_Queries.getQ5Parameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery5, TPCH_Queries.getQ5Parameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery5_Memsql, TPCH_Queries.getQ5Parameter(isDynamic))
       }
       case "6" => {
-        createQuery(TPCH_Queries.getQuery6, TPCH_Queries.getQ6Parameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery6, TPCH_Queries.getQ6Parameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery6_Memsql, TPCH_Queries.getQ6Parameter(isDynamic))
       }
       case "7" => {
         createQuery(TPCH_Queries.getQuery7, TPCH_Queries.getQ7Parameter(isDynamic))
@@ -55,22 +67,34 @@ object TPCH_Queries {
         createQuery(TPCH_Queries.getQuery9, TPCH_Queries.getQ9Parameter(isDynamic))
       }
       case "10" => {
-        createQuery(TPCH_Queries.getQuery10, TPCH_Queries.getQ10Parameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery10, TPCH_Queries.getQ10Parameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery10_Memsql, TPCH_Queries.getQ10Parameter(isDynamic))
       }
       case "11" => {
         createQuery(TPCH_Queries.getQuery11, TPCH_Queries.getQ11Parameter(isDynamic))
       }
       case "12" => {
-        createQuery(TPCH_Queries.getQuery12, TPCH_Queries.getQ12Parameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery12, TPCH_Queries.getQ12Parameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery12_Memsql, TPCH_Queries.getQ12Parameter(isDynamic))
       }
       case "13" => {
         createQuery(TPCH_Queries.getQuery13, TPCH_Queries.getQ13Parameter(isDynamic))
       }
       case "14" => {
-        createQuery(TPCH_Queries.getQuery14, TPCH_Queries.getQ14Parameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery14, TPCH_Queries.getQ14Parameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery14_Memsql, TPCH_Queries.getQ14Parameter(isDynamic))
       }
       case "15" => {
-        createQuery(TPCH_Queries.getQuery15_Temp, TPCH_Queries.getQ15TempParameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery15_Temp, TPCH_Queries.getQ15TempParameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery15_Temp_Memsql(), TPCH_Queries.getQ15TempParameter(isDynamic))
       }
       case "16" => {
         createQuery(TPCH_Queries.getQuery16, TPCH_Queries.getQ16Parameter(isDynamic))
@@ -85,7 +109,10 @@ object TPCH_Queries {
         createQuery(TPCH_Queries.getQuery19, TPCH_Queries.getQ19Parameter(isDynamic))
       }
       case "20" => {
-        createQuery(TPCH_Queries.getQuery20, TPCH_Queries.getQ20Parameter(isDynamic))
+        if(isSnappy)
+          createQuery(TPCH_Queries.getQuery20, TPCH_Queries.getQ20Parameter(isDynamic))
+        else
+          createQuery(TPCH_Queries.getQuery20_Memsql, TPCH_Queries.getQ20Parameter(isDynamic))
       }
       case "21" => {
         createQuery(TPCH_Queries.getQuery21, TPCH_Queries.getQ21Parameter(isDynamic))
@@ -133,6 +160,32 @@ object TPCH_Queries {
         "     l_linestatus"
 
   }
+
+  def getQuery1_Memsql: String = {
+    //DELTA = 90
+    " select" +
+        "     l_returnflag," +
+        "     l_linestatus," +
+        "     sum(l_quantity) as sum_qty," +
+        "     sum(l_extendedprice) as sum_base_price," +
+        "     sum(l_extendedprice*(1-l_discount)) as sum_disc_price," +
+        "     sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge," +
+        "     avg(l_quantity) as avg_qty," +
+        "     avg(l_extendedprice) as avg_price," +
+        "     avg(l_discount) as avg_disc," +
+        "     count(*) as count_order" +
+        " from" +
+        "     LINEITEM" +
+        " where" +
+        "     l_shipdate <= '1997-12-31' - interval '?' day" +
+        " group by" +
+        "     l_returnflag," +
+        "     l_linestatus" +
+        " order by" +
+        "     l_returnflag," +
+        "     l_linestatus"
+  }
+
 
   def getQ1Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
@@ -295,6 +348,30 @@ object TPCH_Queries {
         "     o_orderpriority"
   }
 
+  def getQuery4_Memsql(): String = {
+    //1.DATE = 1993-07-01.
+    " select" +
+        "     o_orderpriority," +
+        "     count(*) as order_count" +
+        " from" +
+        "     ORDERS" +
+        " where" +
+        "     o_orderdate >= '?'" +
+        "     and o_orderdate < '?' + interval '3' month" +
+        "     and exists (" +
+        "         select" +
+        "             l_orderkey" +
+        "         from" +
+        "             LINEITEM" +
+        "         where" +
+        "             l_orderkey = o_orderkey" +
+        "             and l_commitdate < l_receiptdate" +
+        "         )" +
+        " group by" +
+        "     o_orderpriority" +
+        " order by" +
+        "     o_orderpriority"
+  }
   def getQ4Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* DATE is the first day of a randomly selected month between the first
@@ -351,6 +428,35 @@ object TPCH_Queries {
         "        revenue desc"
   }
 
+  def getQuery5_Memsql(): String = {
+    //1. REGION = ASIA;
+    //2. DATE = 1994-01-01.
+    " select" +
+        "        N_NAME," +
+        "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
+        " from" +
+        "        SUPPLIER," +
+        "        NATION," +
+        "        REGION," +
+        "        ORDERS," +
+        "        LINEITEM," +
+        "        CUSTOMER" +
+        " where" +
+        "        s_nationkey = n_nationkey" +
+        "        and n_regionkey = r_regionkey" +
+        "        and r_name = '?'" +
+        "        and C_CUSTKEY = o_custkey" +
+        "        and l_orderkey = o_orderkey" +
+        "        and l_suppkey = s_suppkey" +
+        "        and C_NATIONKEY = s_nationkey" +
+        "        and o_orderdate >= '?'" +
+        "        and o_orderdate < '?' + interval '1' year" +
+        " group by" +
+        "        N_NAME" +
+        " order by" +
+        "        revenue desc"
+  }
+
   def getQ5Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1. REGION is randomly selected within the list of values defined for R_NAME
@@ -390,7 +496,22 @@ object TPCH_Queries {
         " where" +
         "        l_shipdate >= '?'" +
         "        and l_shipdate < add_months('?', 12)" +
-        "        and l_discount between ?- 0.01 and ? + 0.01" +
+        "        and l_discount between ? - 0.01 and ? + 0.01" +
+        "        and l_quantity < ?"
+  }
+
+  def getQuery6_Memsql: String = {
+    //1. DATE = 1994-01-01;
+    //2. DISCOUNT = 0.06;
+    //3. QUANTITY = 24.
+    " select" +
+        "        sum(l_extendedprice*l_discount) as revenue" +
+        " from" +
+        "        LINEITEM" +
+        " where" +
+        "        l_shipdate >= '?'" +
+        "        and l_shipdate < '?' + interval '1' year" +
+        "        and l_discount between ? - 0.01 and ? + 0.01" +
         "        and l_quantity < ?"
   }
 
@@ -693,6 +814,43 @@ object TPCH_Queries {
         " limit 20"
   }
 
+  def getQuery10_Memsql: String = {
+    //1.    DATE = 1993-10-01.
+    "select" +
+        "         C_CUSTKEY," +
+        "         C_NAME," +
+        "         sum(l_extendedprice * (1 - l_discount)) as revenue," +
+        "         C_ACCTBAL," +
+        "         n_name," +
+        "         C_ADDRESS," +
+        "         C_PHONE," +
+        "         C_COMMENT" +
+        " from" +
+        "         ORDERS," +
+        "         LINEITEM," +
+        "         CUSTOMER," +
+        "         NATION" +
+        " where" +
+        "         C_CUSTKEY = o_custkey" +
+        "         and l_orderkey = o_orderkey" +
+        "         and o_orderdate >= '?'" +
+        "         and o_orderdate < '?' + interval '3' month" +
+        "         and l_returnflag = 'R'" +
+        "         and C_NATIONKEY = N_NATIONKEY" +
+        " group by" +
+        "         C_CUSTKEY," +
+        "         C_NAME," +
+        "         C_ACCTBAL," +
+        "         C_PHONE," +
+        "         N_NAME," +
+        "         C_ADDRESS," +
+        "         C_COMMENT" +
+        " order by" +
+        "         revenue desc" +
+        " limit 20"
+
+  }
+
   def getQ10Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* DATE is the first day of a randomly selected month from the second
@@ -809,6 +967,43 @@ object TPCH_Queries {
         "         l_shipmode"
   }
 
+  def getQuery12_Memsql: String = {
+    //    1.SHIPMODE1 = MAIL;
+    //    2. SHIPMODE2 = SHIP;
+    //    3. DATE = 1994-01-01.
+    "select" +
+        "         l_shipmode," +
+        "         sum(case" +
+        "                 when o_orderpriority ='1-URGENT'" +
+        "                 or o_orderpriority ='2-HIGH'" +
+        "                 then 1" +
+        "                 else 0" +
+        "                 end" +
+        "         ) as high_line_count," +
+        "         sum(case" +
+        "                 when o_orderpriority <> '1-URGENT'" +
+        "                 and o_orderpriority <> '2-HIGH'" +
+        "                 then 1" +
+        "                 else 0" +
+        "                 end" +
+        "         ) as low_line_count" +
+        " from" +
+        "         ORDERS," +
+        "         LINEITEM" +
+        " where" +
+        "         o_orderkey = l_orderkey" +
+        "         and l_shipmode in ('?', '?')" +
+        "         and l_commitdate < l_receiptdate" +
+        "         and l_shipdate < l_commitdate" +
+        "         and l_receiptdate >= '?'" +
+        "         and l_receiptdate < '?' + interval '1' year" +
+        " group by" +
+        "         l_shipmode" +
+        " order by" +
+        "         l_shipmode"
+
+  }
+
   def getQ12Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1.SHIPMODE1 is randomly selected within the list of values defined for Modes in
@@ -912,6 +1107,25 @@ object TPCH_Queries {
         "         and l_shipdate < add_months ('?', 1)"
   }
 
+  def getQuery14_Memsql: String = {
+    //1.DATE = 1995-09-01.
+    "select" +
+        "         100.00 * sum(case" +
+        "                 when P_TYPE like 'PROMO%'" +
+        "                 then l_extendedprice*(1-l_discount)" +
+        "                 else 0" +
+        "                 end" +
+        "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
+        " from" +
+        "         LINEITEM," +
+        "         PART" +
+        " where" +
+        "         l_partkey = P_PARTKEY" +
+        "         and l_shipdate >= '1995-09-01'" +
+        "         and l_shipdate < '1995-09-01'+ interval '1' month"
+
+  }
+
   def getQ14Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1.DATE is the first day of a month randomly selected from a random year within
@@ -985,6 +1199,21 @@ object TPCH_Queries {
         "         l_suppkey"
   }
 
+  def getQuery15_Temp_Memsql(): String = {
+    "create view " +
+        "        revenue as" +
+        " select" +
+        "      l_suppkey as supplier_no ," +
+        "      sum(l_extendedprice * (1 - l_discount)) as total_revenue" +
+        " from" +
+        "      LINEITEM" +
+        " where" +
+        "      l_shipdate >= '?'" +
+        "      and l_shipdate < '?' + interval '3' month" +
+        " group by" +
+        "      l_suppkey"
+  }
+
   def getQ15TempParameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* DATE is the first day of a randomly selected month between the first month of 1993
@@ -1027,6 +1256,9 @@ object TPCH_Queries {
         " order by" +
         "        s_suppkey"
   }
+
+
+
 
   def getResultString15: String = {
     "S_SUPPKEY|S_NAME|S_ADDRESS|S_PHONE|TOTAL_REVENUE"
@@ -1178,7 +1410,7 @@ object TPCH_Queries {
     "AVG_YEARLY"
   }
 
-  def getQuery18: String = {
+  /*def getQuery18: String = {
     // 1.QUANTITY = 300
     "    select" +
         "    C_NAME," +
@@ -1212,6 +1444,43 @@ object TPCH_Queries {
         "    order by" +
         "        o_totalprice desc," +
         "    o_orderdate limit 100"
+  }*/
+
+  def getQuery18(): String = {
+    //1.QUANTITY = 300
+    "select" +
+        "         C_NAME," +
+        "         C_CUSTKEY," +
+        "         o_orderkey," +
+        "         o_orderdate," +
+        "         o_totalprice," +
+        "         sum(l_quantity)" +
+        " from" +
+        "         CUSTOMER," +
+        "         ORDERS," +
+        "         LINEITEM" +
+        " where" +
+        "         o_orderkey in (" +
+        "                 select" +
+        "                         l_orderkey" +
+        "                 from" +
+        "                         LINEITEM" +
+        "                 group by" +
+        "                         l_orderkey having" +
+        "                         sum(l_quantity) > ?" +
+        "         )" +
+        "         and C_CUSTKEY = o_custkey" +
+        "         and o_orderkey = l_orderkey" +
+        " group by" +
+        "         C_NAME," +
+        "         C_CUSTKEY," +
+        "         o_orderkey," +
+        "         o_orderdate," +
+        "         o_totalprice" +
+        " order by" +
+        "         o_totalprice desc," +
+        "         o_orderdate" +
+        " limit 100"
   }
 
   def getQ18Parameter(isDynamic: Boolean): Array[String] = {
@@ -1367,6 +1636,48 @@ object TPCH_Queries {
         "         S_NAME"
   }
 
+  def getQuery20_Memsql: String = {
+    //    1. COLOR = forest.
+    //    2. DATE = 1994-01-01.
+    //    3. NATION = CANADA.
+    "select" +
+        "         S_NAME," +
+        "         S_ADDRESS" +
+        " from" +
+        "         SUPPLIER, NATION" +
+        " where" +
+        "         S_SUPPKEY in (" +
+        "                 select" +
+        "                         PS_SUPPKEY" +
+        "                 from" +
+        "                         PARTSUPP" +
+        "                 where" +
+        "                         PS_PARTKEY in (" +
+        "                                 select" +
+        "                                         P_PARTKEY" +
+        "                                 from" +
+        "                                         PART" +
+        "                                 where" +
+        "                                         P_NAME like '?%'" +
+        "                         )" +
+        "                         and PS_AVAILQTY > (" +
+        "                                 select" +
+        "                                         0.5 * sum(l_quantity)" +
+        "                                 from" +
+        "                                         LINEITEM" +
+        "                                 where" +
+        "                                         l_partkey = PS_PARTKEY" +
+        "                                         and l_suppkey = PS_SUPPKEY" +
+        "                                         and l_shipdate >= '?'" +
+        "                                         and l_shipdate < '?' + interval 1 year" +
+        "                         )" +
+        "         )" +
+        "         and S_NATIONKEY = N_NATIONKEY" +
+        "         and N_NAME = '?'" +
+        " order by" +
+        "         S_NAME"
+
+  }
   def getQ20Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1. COLOR is randomly selected within the list of values defined for the generation
