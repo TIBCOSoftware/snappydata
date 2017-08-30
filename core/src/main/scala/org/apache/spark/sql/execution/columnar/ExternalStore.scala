@@ -62,7 +62,7 @@ trait ExternalStore extends Serializable {
       onExecutor: Boolean = false)(f: Connection => T)
       (implicit c: Option[Connection] = None): T = {
     var success = false
-    var conn = c.getOrElse(getConnection(tableName, onExecutor))
+    val conn = c.getOrElse(getConnection(tableName, onExecutor))
     try {
       val ret = f(conn)
       success = true
@@ -104,7 +104,6 @@ trait ConnectedExternalStore extends ExternalStore {
       } finally {
         conn.close()
       }
-      conn.close()
     }
   }
 
