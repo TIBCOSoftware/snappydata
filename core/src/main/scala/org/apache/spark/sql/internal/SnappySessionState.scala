@@ -70,6 +70,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   private[sql] var disableStoreOptimizations : Boolean = false
 
+  // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
+  // Rest all rules, even if redundant, are same as analyzer for maintainability reason
   lazy val analyzerPrepare: Analyzer = new Analyzer(catalog, conf) {
 
     def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
