@@ -70,7 +70,7 @@ class CatalogConsistencyTest
     Class.forName(driver).newInstance //scalastyle:ignore
     val url = {
       if (!routeQuery) {
-        "jdbc:snappydata:;route-query=false"
+        "jdbc:snappydata:;route-query=false;internal-connection=true"
       } else {
         "jdbc:snappydata:"
       }
