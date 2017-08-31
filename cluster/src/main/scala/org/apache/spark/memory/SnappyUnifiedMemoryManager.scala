@@ -96,9 +96,6 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
-
-
-
   @volatile private[memory] var _memoryForObjectMap:
     Object2LongOpenHashMap[(String, MemoryMode)] = _
 
