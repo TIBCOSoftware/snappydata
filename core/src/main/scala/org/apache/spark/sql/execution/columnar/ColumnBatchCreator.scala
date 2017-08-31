@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,8 +15,6 @@
  * LICENSE file.
  */
 package org.apache.spark.sql.execution.columnar
-
-import java.util.UUID
 
 import scala.collection.AbstractIterator
 
@@ -45,7 +43,7 @@ final class ColumnBatchCreator(
     val compressionCodec: String) extends Logging {
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
-      batchID: UUID, bucketID: Int,
+      batchID: Long, bucketID: Int,
       dependents: Seq[ExternalTableMetaData]): java.util.HashSet[AnyRef] = {
     var connectedExternalStore: ConnectedExternalStore = null
     var success: Boolean = false
@@ -87,7 +85,7 @@ final class ColumnBatchCreator(
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
           val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
-            -1, None, (-bufferRegion.getColumnBatchSize, -1,
+            numBuckets = -1, isPartitioned = false, None, (-bufferRegion.getColumnBatchSize, -1,
                 Property.CompressionCodec.defaultValue.get), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
@@ -106,7 +104,7 @@ final class ColumnBatchCreator(
         // the index of the batchId (and bucketId after that) has already
         // been pushed in during compilation above
         val batchIdRef = references(references.length - 1).asInstanceOf[Int]
-        references(batchIdRef) = Some(batchID.toString)
+        references(batchIdRef) = batchID
         references(batchIdRef + 1) = bucketID
         references(batchIdRef + 2) = tableName
         // no harm in passing a references array with an extra element at end
@@ -139,7 +137,7 @@ final class ColumnBatchCreator(
       // no puts into row buffer for now since it causes split of rows held
       // together and thus failures in ClosedFormAccuracySuite etc
       val insertPlan = ColumnInsertExec(bufferPlan, Seq.empty, Seq.empty,
-        -1, None, (columnBatchSize, -1, compressionCodec),
+        numBuckets = -1, isPartitioned = false, None, (columnBatchSize, -1, compressionCodec),
         tableName, onExecutor = true, schema, externalStore,
         useMemberVariables = true)
       // now generate the code with the help of WholeStageCodegenExec

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,6 +47,7 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-sketch_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion
@@ -81,6 +82,7 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/core" as File
   project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/hive" as File
   project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/hive-thriftserver" as File
+  project(':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion).projectDir = "$rootDir/spark/mesos" as File
   project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion).projectDir =
       "$rootDir/spark/common/unsafe" as File
   project(':snappy-spark:snappy-spark-sketch_' + scalaBinaryVersion).projectDir =

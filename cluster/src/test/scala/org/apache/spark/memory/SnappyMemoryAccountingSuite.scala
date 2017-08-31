@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,7 +30,7 @@ import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 
-import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{SpecificInternalRow, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
 import org.apache.spark.unsafe.types.UTF8String
@@ -255,6 +255,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         assert(totalEvictedBytes > 0)
     }
     // scalastyle:on
+    SparkEnv.get.memoryManager.
+        asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     val count = snSession.sql("select * from t1").count()
     assert(count >= rows)
     snSession.dropTable("t1")
@@ -458,7 +460,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     ClusterManagerTestBase.waitForCriterion(
       (SparkEnv.get.memoryManager.storageMemoryUsed == afterCreateTable),
       s"The memory after delete is not same even after waiting for oldEntryRemoval",
-      2 * Misc.getGemFireCache.getOldEntryRemovalPerid, 500, true)
+      4 * Misc.getGemFireCache.getOldEntryRemovalPeriod, 500, true)
     snSession.dropTable("t1")
   }
 
@@ -493,7 +495,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     ClusterManagerTestBase.waitForCriterion(
       (SparkEnv.get.memoryManager.storageMemoryUsed == afterCreateTable),
       s"The memory after delete is not same even after waiting for oldEntryRemoval",
-      2 * Misc.getGemFireCache.getOldEntryRemovalPerid, 500, true)
+      4 * Misc.getGemFireCache.getOldEntryRemovalPeriod, 500, true)
     // assert(afterDelete == afterCreateTable)
     snSession.dropTable("t1")
   }
@@ -597,31 +599,33 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     awaitAll(20000000L, tasks: _*)
 
     // Rough estimation of 120 bytes per row
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed >= 120 * 100 *5 )
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed >= 120 * 100 * 5 )
     val count = snSession.sql("select * from t1").count()
     assert(count == 500)
     snSession.dropTable("t1")
   }
 
   test("CachedDataFrame accounting") {
-    val sparkSession = createSparkSession(1, 0, 1000)
+    val sparkSession = createSparkSession(1, 1, 1000)
     // create SnappySession to boot GemFireCache which is required for SnappyUMM
     new SnappySession(sparkSession.sparkContext)
     val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
     val converter = UnsafeProjection.create(fieldTypes)
 
-    val row = new SpecificMutableRow(fieldTypes)
+    val row = new SpecificInternalRow(fieldTypes)
     row.setLong(0, 0)
     row.update(1, UTF8String.fromString("Hello"))
     row.update(2, "World".getBytes(StandardCharsets.UTF_8))
 
     val unsafeRow: UnsafeRow = converter.apply(row)
 
-    assert(SparkEnv.get.memoryManager
-      .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 200, memoryMode))
+    SparkEnv.get.memoryManager
+          .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 300, memoryMode)
 
+    val taskMemoryManager =
+      new TaskMemoryManager(sparkSession.sparkContext.env.memoryManager, 0L)
     val taskContext =
-      new TaskContextImpl(0, 0, taskAttemptId = 1, 0, null, new Properties, null)
+      new TaskContextImpl(0, 0, taskAttemptId = 1, 0, taskMemoryManager, new Properties, null)
     try {
       CachedDataFrame(taskContext, Seq(unsafeRow).iterator)
       assert(false , "Should not have obtained memory")

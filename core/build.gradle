@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -42,7 +42,9 @@ dependencies {
   compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
   compile group: 'org.codehaus.janino', name: 'janino', version: '3.0.6'
-  compile "org.apache.thrift:libthrift:${thriftVersion}"
+  compile("org.apache.thrift:libthrift:${thriftVersion}") {
+    exclude(group: 'org.slf4j', module: 'slf4j-api')
+  }
 
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-core code.
@@ -91,7 +93,7 @@ dependencies {
   compile 'org.objenesis:objenesis:2.4'
   compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
   provided 'com.rabbitmq:amqp-client:3.5.7'
-  
+
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
@@ -165,7 +167,8 @@ task getApacheSparkDist {
 
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
-check.dependsOn test, scalaTest, dunitTest
+dunitSecurityTest.dependsOn getApacheSparkDist
+check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 
 archivesBaseName = 'snappydata-core_' + scalaBinaryVersion
 shadowJar {

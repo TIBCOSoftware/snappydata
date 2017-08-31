@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,8 +20,9 @@ package io.snappydata.cluster
 import java.io.File
 import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
-import scala.collection.mutable
+import com.gemstone.gemfire.distributed.DistributedMember
 
+import scala.collection.mutable
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant._
@@ -29,12 +30,12 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import junit.framework.TestCase
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, TPCHUtils}
 import org.apache.spark.util.Benchmark
@@ -165,26 +166,23 @@ class QueryRoutingDUnitTest(val s: String)
     assert(expectedResult.sorted.sameElements(actualResult))
     setDMLMaxChunkSize(default_chunk_size)
 
-    // Check that update and delete on column table returns exception
-    try {
-      s.executeUpdate("update TEST.ColumnTableQR set col1 = 10")
-      TestCase.fail("update on column table should have failed")
-    } catch {
-      case sqe: SQLException =>
-        if ("42Y62" != sqe.getSQLState) {
-          throw sqe
-        }
+    // Check that update and delete on column table works
+    val updated = s.executeUpdate("update TEST.ColumnTableQR set col1 = 10")
+    assert(updated == 5)
+    s.execute("select col1 from TEST.ColumnTableQR order by col1")
+    val rs2 = s.getResultSet
+    cnt = 0
+    while (rs2.next()) {
+      val row = rs2.getInt(1)
+      assert(row == 10)
+      cnt += 1
     }
+    assert(cnt == 5)
 
-    try {
-      s.executeUpdate("delete from TEST.ColumnTableQR")
-      TestCase.fail("delete on column table should have failed")
-    } catch {
-      case sqe: SQLException =>
-        if ("42Y62" != sqe.getSQLState) {
-          throw sqe
-        }
-    }
+    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR")
+    assert(deleted == 5)
+    s.execute("select col1 from TEST.ColumnTableQR order by col1")
+    assert(!s.getResultSet.next())
 
     conn.close()
   }
@@ -250,6 +248,27 @@ class QueryRoutingDUnitTest(val s: String)
     assert(rs.next())
     assert(rs.getInt(1) == 1)
 
+    // Unit test for DSID function
+    val membersList = mutable.MutableList[String]()
+    val members: java.util.Set[DistributedMember] = GemFireXDUtils.
+      getGfxdAdvisor.adviseDataStores(null);
+    import scala.collection.JavaConverters._
+    members.asScala.foreach(m => {
+      membersList += m.getId
+    })
+
+    rs = conn1.createStatement().executeQuery(s"select DSID() from TEST2.$rowTable")
+    assert(rs.next())
+    do {
+      assert(membersList.contains(rs.getString(1)))
+    } while (rs.next())
+
+    rs = conn1.createStatement().executeQuery(s"select DSID() from TEST2.$columnTable")
+    assert(rs.next())
+    do {
+      assert(membersList.contains(rs.getString(1)))
+    } while (rs.next())
+
     // truncate tables
     conn1.createStatement().executeUpdate(s" truncate table $columnTable")
     conn1.createStatement().executeUpdate(s" truncate table $rowTable")
@@ -263,14 +282,13 @@ class QueryRoutingDUnitTest(val s: String)
     // verify that all tables are empty
     rs = conn1.createStatement().executeQuery(s"select count(*) from APP.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
     rs = conn1.createStatement().executeQuery(s"select count(*) from TEST1.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
     rs = conn1.createStatement().executeQuery(s"select count(*) from TEST2.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
-
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
 
     // drop all tables
     conn1.createStatement().executeUpdate(s" drop table $columnTable")
@@ -336,6 +354,28 @@ class QueryRoutingDUnitTest(val s: String)
     }
     assert(cnt2 == 1)
     ps2.close()
+  }
+
+  def testSnap1945_putdmlvariation(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    stmt.execute("create table dest(col1 int, col2 int not null primary key) using row options()")
+    stmt.execute("create table source(col1 int, col2 int) using row options()")
+    stmt.executeUpdate("insert into source values (1, 2), (2, 3)")
+    stmt.executeUpdate("put into dest select * from source")
+    stmt.execute("select count(*) from dest")
+    val rs = stmt.getResultSet
+    assert(rs.next())
+    assert(2 == rs.getInt(1))
+    assert(!rs.next())
+    rs.close()
+    stmt.execute("drop table source")
+    stmt.execute("drop table dest")
+    stmt.close()
+    conn.close()
   }
 
   def testSNAP193_607_8_9(): Unit = {
@@ -476,8 +516,8 @@ class QueryRoutingDUnitTest(val s: String)
       while (tableMd.next()) {
         results += tableMd.getString(2) + '.' + tableMd.getString(3)
       }
-      // 2 for column table and 1 for parquet external table
-      assert(results.size == 3, s"Got size = ${results.size} but expected 3")
+      // 1 for column table and 1 for parquet external table
+      assert(results.size == 2, s"Got size = ${results.size} [$results] but expected 2.")
       assert(results.contains(s"APP.$colTable"))
       assert(results.contains(s"APP_PARQUET.$parquetTable"))
       results.clear()
@@ -564,19 +604,20 @@ class QueryRoutingDUnitTest(val s: String)
     }
     assert(foundTable)
 
-    val rSet2 = dbmd.getTables(null, SHADOW_SCHEMA_NAME, null,
+    val rSet2 = dbmd.getTables(null, "APP", null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
         "EXTERNAL TABLE", "STREAM TABLE"))
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"APP____${t + SHADOW_TABLE_SUFFIX}".
+      if (ColumnFormatRelation.columnBatchTableName(t).
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
       }
     }
-    assert(foundTable)
+    // internal column tables are no longer visible in getTables
+    assert(!foundTable)
 
     // Simulates 'SHOW MEMBERS' of ij
     rSet = s.executeQuery("SELECT * FROM SYS.MEMBERS ORDER BY ID ASC")
@@ -656,6 +697,7 @@ class QueryRoutingDUnitTest(val s: String)
           throw sqe
         }
     }
+    s.execute("DROP TABLE T1")
 
   }
 

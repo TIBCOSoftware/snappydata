@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,7 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.{Utils => Utility}
 
 
-object SnappyTestUtils {
+object SnappyTestUtils extends Logging {
 
   private val SOURCE = JavaFileObject.Kind.SOURCE
 
@@ -39,7 +39,10 @@ object SnappyTestUtils {
       }).count
 
     assert(countInstances == count)
-    pw.println("Class is available on all executors : numExecutors (" + countInstances + ") having the class " + className + " loaded, is same as numServers (" + count + ") in test" + " and the class version is: " + version);
+    // scalastyle:off println
+    pw.println("Class is available on all executors : numExecutors (" + countInstances + ") " +
+        "having  the class " + className + " loaded, is same as numServers (" + count + ") in " +
+        "test" + " and the class version is: " + version);
   }
 
   def getJavaSourceFromString(name: String, code: String): JavaSourceFromString = {
@@ -56,7 +59,7 @@ object SnappyTestUtils {
 
   def createJarFile(files: Seq[File],
                     tempDir: String
-                     ) = {
+                   ) = {
     val jarFile = new File(tempDir, "testJar-%s.jar".format(System.currentTimeMillis()))
     TestUtils.createJar(files, jarFile)
     jarFile.getName
@@ -67,16 +70,26 @@ object SnappyTestUtils {
                 version: String = ""): Boolean = {
     val catchExpectedException: Boolean = version.isEmpty
     val loader = Thread.currentThread().getContextClassLoader
+    log.info("loader : " + loader)
     assert(loader != null)
     try {
       val fakeClass = loader.loadClass(className).newInstance()
+      log.info("fakeClass : " + fakeClass)
       assert(fakeClass != null)
+      log.info("fakeClass loading successful.. : " + fakeClass)
       assert(fakeClass.toString.equals(version))
+      log.info("fakeClass version is as expected.. : " + version)
       true
     } catch {
       case cnfe: ClassNotFoundException =>
-        if (!catchExpectedException) throw cnfe
-        else false
+        if (!catchExpectedException) {
+          log.info("fakeClass loading unsuccessful..  " + className + version)
+          throw cnfe
+        }
+        else {
+          log.info("In else loop..  " + className + version)
+          false
+        }
     }
   }
 

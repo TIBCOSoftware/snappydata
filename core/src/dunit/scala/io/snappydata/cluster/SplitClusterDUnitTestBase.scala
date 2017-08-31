@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,7 +24,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 import scala.util.Random
 
-import io.snappydata.test.dunit.VM
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.{ColumnUpdateDeleteTests, Constant}
+import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
 import org.junit.Assert
@@ -32,7 +35,7 @@ import org.junit.Assert
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{SnappyContext, SplitClusterMode, ThinClientConnectorMode}
+import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -141,23 +144,37 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def skewNetworkServers: Boolean = false
 
-  final def testColumnTableCreation(): Unit = {
+  def testColumnTableCreation(): Unit = {
     doTestColumnTableCreation()
   }
 
-  final def testRowTableCreation(): Unit = {
+  def testRowTableCreation(): Unit = {
     doTestRowTableCreation()
   }
 
-  final def testComplexTypesForColumnTables_SNAP643(): Unit = {
+  def testComplexTypesForColumnTables_SNAP643(): Unit = {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
-  // SNAP-1680 is filed to enable this
-  final def DISABLEDtestTableFormChanges(): Unit = {
+  def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
 
+  def testUpdateDeleteOnColumnTables(): Unit = {
+    val testObject = this.testObject
+    val netPort = this.locatorClientPort
+    // check update/delete in the connector mode
+    vm3.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        val snc = testObject.getSnappyContextForConnector(netPort)
+        val session = snc.snappySession
+        ColumnUpdateDeleteTests.testBasicUpdate(session)
+        ColumnUpdateDeleteTests.testBasicDelete(session)
+        ColumnUpdateDeleteTests.testSNAP1925(session)
+        ColumnUpdateDeleteTests.testSNAP1926(session)
+      }
+    })
+  }
 }
 
 trait SplitClusterDUnitTestObject extends Logging {
@@ -192,8 +209,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       props: Map[String, String],
       locatorClientPort: Int): Unit = {
 
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
 
     // try to create the table already created in embedded mode.
     // it should throw the table exist exception.
@@ -241,8 +257,8 @@ trait SplitClusterDUnitTestObject extends Logging {
    * Returns the SnappyContext for external(connector) Spark cluster connected to
    * SnappyData cluster
    */
-  def getSnappyContextForConnector(locatorPort: Int,
-      locatorClientPort: Int): SnappyContext = {
+  def getSnappyContextForConnector(locatorClientPort: Int, props: Properties = null):
+  SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
@@ -254,6 +270,16 @@ trait SplitClusterDUnitTestObject extends Logging {
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
           .set("snappydata.connection", connectionURL)
 
+    if (props != null) {
+      val user = props.getProperty(Attribute.USERNAME_ATTR, "")
+      val pass = props.getProperty(Attribute.PASSWORD_ATTR, "")
+      if (!user.isEmpty && !pass.isEmpty) {
+        conf.set(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, user)
+        conf.set(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, pass)
+        logInfo(s"Getting context with $user credentials")
+      }
+    }
+
       val sc = SparkContext.getOrCreate(conf)
 //      sc.setLogLevel("DEBUG")
 //      Logger.getLogger("org").setLevel(Level.DEBUG)
@@ -263,7 +289,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       val mode = SnappyContext.getClusterMode(snc.sparkContext)
       mode match {
         case ThinClientConnectorMode(_, _) => // expected
-        case _ => assert(false, "cluster mode is " + mode)
+        case _ => assert(assertion = false, "cluster mode is " + mode)
       }
       snc
   }
@@ -287,7 +313,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index create op
-        snc.createIndex("tableName" + "_index", tableName, Map(("COL1" -> None)),
+        snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
           Map.empty[String, String])
       case _ =>
     }
@@ -297,7 +323,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index drop op
-        snc.dropIndex("tableName" + "_index", false)
+        snc.dropIndex("tableName" + "_index", ifExists = false)
       case _ =>
     }
   }
@@ -369,7 +395,7 @@ trait SplitClusterDUnitTestObject extends Logging {
             drnd2)), dec(1), ts(math.abs(rnd1) % 5))
     }
     val rdd = context.parallelize(data, 8)
-    val dataDF = snc.createDataFrame(rdd)
+    val dataDF = snc.createDataFrameUsingRDD(rdd)
 
     snc.createTable(tableName, tableType, dataDF.schema, props)
     dataDF.write.insertInto(tableName)
@@ -383,6 +409,18 @@ trait SplitClusterDUnitTestObject extends Logging {
       throw new TestException(s"Environment variable $env is not defined")
     }
     value
+  }
+  def validateNoActiveSnapshotTX(): Unit = {
+    val cache = Misc.getGemFireCacheNoThrow
+    if (cache eq null) return
+    val txMgr = cache.getCacheTransactionManager
+    if (txMgr != null) {
+      val itr = txMgr.getHostedTransactionsInProgress.iterator()
+      while (itr.hasNext) {
+        val tx = itr.next()
+        if (tx.isSnapshot) assert(tx.isClosed, s"$tx is not closed. ")
+      }
+    }
   }
 }
 

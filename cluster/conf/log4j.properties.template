@@ -82,7 +82,8 @@ log4j.logger.org.apache.spark.MapOutputTrackerMasterEndpoint=WARN
 log4j.logger.org.apache.spark.MapOutputTrackerMaster=WARN
 log4j.logger.org.apache.spark.storage.memory.MemoryStore=WARN
 log4j.logger.org.apache.spark.MapOutputTrackerWorker=WARN
-log4j.logger.org.apache.parquet=WARN
+log4j.logger.org.apache.parquet=ERROR
+log4j.logger.parquet=ERROR
 log4j.logger.org.apache.hadoop.io.compress=WARN
 log4j.logger.spark.jobserver.LocalContextSupervisorActor=WARN
 log4j.logger.spark.jobserver.JarManager=WARN
@@ -91,7 +92,7 @@ log4j.logger.org.datanucleus=ERROR
 
 # for generated code of plans
 # log4j.logger.org.apache.spark.sql.execution.WholeStageCodegenExec=DEBUG
-# for all Spark generated code (including ad-hoc UnsafeProjection calls etc)
-# log4j.logger.org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator=DEBUG
 # for SnappyData generated code used on store (ComplexTypeSerializer, JDBC inserts ...)
 # log4j.logger.org.apache.spark.sql.store.CodeGeneration=DEBUG
+# for all Spark generated code (including ad-hoc UnsafeProjection calls etc)
+# log4j.logger.org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator=DEBUG

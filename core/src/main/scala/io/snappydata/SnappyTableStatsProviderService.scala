@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -73,14 +73,18 @@ object SnappyTableStatsProviderService {
   }
 
   def stop(): Unit = {
-    statsProviderService.stop()
+    val service = statsProviderService
+    if (service ne null) {
+      service.stop()
+    }
   }
 
   def getService: TableStatsProviderService = {
-    if (statsProviderService == null) {
+    val service = statsProviderService
+    if (service eq null) {
       throw new IllegalStateException("SnappyTableStatsProviderService not started")
     }
-    statsProviderService
+    service
   }
 
   var suspendCacheInvalidation = false
@@ -89,34 +93,40 @@ object SnappyTableStatsProviderService {
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
 
   def start(sc: SparkContext): Unit = {
-    val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
-        "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
-    doRun = true
-    Misc.getGemFireCache.getCCPTimer.schedule(
-      new SystemTimer.SystemTimerTask {
-        private val logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
+    if (!doRun) {
+      this.synchronized {
+        if (!doRun) {
+          val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
+              "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
+          doRun = true
+          Misc.getGemFireCache.getCCPTimer.schedule(
+            new SystemTimer.SystemTimerTask {
+              private val logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
 
-        override def run2(): Unit = {
-          try {
-            if (doRun) {
-              aggregateStats()
-            }
-          } catch {
-            case _: CancelException => // ignore
-            case e: Exception => if (!e.getMessage.contains(
-              "com.gemstone.gemfire.cache.CacheClosedException")) {
-              logger.warning(e)
-            } else {
-              logger.error(e)
-            }
-          }
-        }
+              override def run2(): Unit = {
+                try {
+                  if (doRun) {
+                    aggregateStats()
+                  }
+                } catch {
+                  case _: CancelException => // ignore
+                  case e: Exception => if (!e.getMessage.contains(
+                    "com.gemstone.gemfire.cache.CacheClosedException")) {
+                    logger.warning(e)
+                  } else {
+                    logger.error(e)
+                  }
+                }
+              }
 
-        override def getLoggerI18n: LogWriterI18n = {
-          logger
+              override def getLoggerI18n: LogWriterI18n = {
+                logger
+              }
+            },
+            delay, delay)
         }
-      },
-      delay, delay)
+      }
+    }
   }
 
   override def start(sc: SparkContext, url: String): Unit = {
@@ -126,43 +136,48 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
   override def fillAggregatedMemberStatsOnDemand(): Unit = {
 
-    val existingMembers = membersInfo.keys.toArray
-    val collector = new GfxdListResultCollector(null, true)
-    val msg = new MemberStatisticsMessage(collector)
+    try {
+      val existingMembers = membersInfo.keys.toArray
+      val collector = new GfxdListResultCollector(null, true)
+      val msg = new MemberStatisticsMessage(collector)
 
-    msg.executeFunction()
+      msg.executeFunction()
 
-    val memStats = collector.getResult
+      val memStats = collector.getResult
 
-    val itr = memStats.iterator()
+      val itr = memStats.iterator()
 
-    val members = mutable.Map.empty[String, mutable.Map[String, Any]]
-    while (itr.hasNext) {
-      val o = itr.next().asInstanceOf[ListResultCollectorValue]
-      val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
-      val map = mutable.HashMap.empty[String, Any]
-      val keyItr = memMap.keySet().iterator()
+      val members = mutable.Map.empty[String, mutable.Map[String, Any]]
+      while (itr.hasNext) {
+        val o = itr.next().asInstanceOf[ListResultCollectorValue]
+        val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
+        val map = mutable.HashMap.empty[String, Any]
+        val keyItr = memMap.keySet().iterator()
 
-      while (keyItr.hasNext) {
-        val key = keyItr.next()
-        map.put(key, memMap.get(key))
+        while (keyItr.hasNext) {
+          val key = keyItr.next()
+          map.put(key, memMap.get(key))
+        }
+        map.put("status", "Running")
+
+        val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
+        if (dssUUID != null) {
+          members.put(dssUUID.toString, map)
+        } else {
+          members.put(memMap.get("id").asInstanceOf[String], map)
+        }
       }
-      map.put("status", "Running")
-
-      val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
-      if (dssUUID != null) {
-        members.put(dssUUID.toString, map)
-      } else {
-        members.put(memMap.get("id").asInstanceOf[String], map)
-      }
+      membersInfo ++= members
+      // mark members no longer running as stopped
+      existingMembers.filterNot(members.contains).foreach(m =>
+        membersInfo(m).put("status", "Stopped"))
+    } catch {
+      case e: Exception => logWarning(e.getMessage, e)
     }
-    membersInfo ++= members
-    // mark members no longer running as stopped
-    existingMembers.filterNot(members.contains).foreach(m =>
-      membersInfo(m).put("status", "Stopped"))
   }
 
-  override def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
+  override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
+      Seq[SnappyIndexStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
     try {

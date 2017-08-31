@@ -35,6 +35,9 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
     try {
+      val pool = plan.sqlContext.sparkSession.asInstanceOf[SnappySession].
+        sessionState.conf.activeSchedulerPool
+      sparkContext.setLocalProperty("spark.scheduler.pool", pool)
       f(plan)
     } catch {
       case t: Throwable =>
@@ -109,15 +112,15 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
       builder: StringBuilder, verbose: Boolean, prefix: String): StringBuilder =
     child.generateTreeString(depth, lastChildren, builder, verbose, prefix)
 
-  override def children: Seq[SparkPlan] = child.children
+  // override def children: Seq[SparkPlan] = child.children
 
-  override private[sql] def metrics = child.metrics
+  // override private[sql] def metrics = child.metrics
 
-  override private[sql] def metadata = child.metadata
+  // override private[sql] def metadata = child.metadata
 
-  override def subqueries: Seq[SparkPlan] = child.subqueries
+  // override def subqueries: Seq[SparkPlan] = child.subqueries
 
-  override def nodeName: String = child.nodeName
+  override def nodeName: String = "CollectResults"
 
-  override def simpleString: String = child.simpleString
+  override def simpleString: String = "CollectResults"
 }

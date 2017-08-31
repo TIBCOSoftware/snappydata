@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,12 +21,12 @@ import java.util.Properties
 
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
-
 import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
-import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode, SnappySession, SparkSession}
@@ -165,9 +165,7 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
-  def tableExistsInMetaData(table: String, conn: Connection,
-      dialect: JdbcDialect): Boolean = {
-    // using the JDBC meta-data API
+  def getTableWithSchema(table: String, conn: Connection): (String, String) = {
     val dotIndex = table.indexOf('.')
     val schemaName = if (dotIndex > 0) {
       table.substring(0, dotIndex)
@@ -176,7 +174,14 @@ object JdbcExtendedUtils extends Logging {
       conn.getSchema
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
+    (schemaName, tableName)
+  }
+
+  def tableExistsInMetaData(table: String, conn: Connection,
+      dialect: JdbcDialect): Boolean = {
+    val (schemaName, tableName) = getTableWithSchema(table, conn)
     try {
+      // using the JDBC meta-data API
       val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
       rs.next()
     } catch {
@@ -309,38 +314,32 @@ object JdbcExtendedUtils extends Logging {
   }
 
   /**
-   * Returns the SQL for prepare to insert or put rows into a table.
+   * Returns the SQL for creating the WHERE clause for a set of columns.
    */
-  def getDeleteString(table: String, rddSchema: StructType,
-      escapeQuotes: Boolean = false): String = {
-    val sql = new StringBuilder()
-    sql.append(s"DELETE FROM $table WHERE ")
-    var fieldsLeft = rddSchema.fields.length
-    rddSchema.fields.foreach { field =>
-      if(escapeQuotes) {
-        sql.append("""\"""").append(field.name).append("""\"""")
+  def fillColumnsClause(sql: StringBuilder, fields: Seq[String],
+      escapeQuotes: Boolean = false, separator: String = " AND "): Unit = {
+    var fieldsLeft = fields.length
+    fields.foreach { field =>
+      if (escapeQuotes) {
+        sql.append("""\"""").append(field).append("""\"""")
       } else {
-        sql.append('"').append(field.name).append('"')
+        sql.append('"').append(field).append('"')
       }
-      sql.append('=').append('?')
-      if (fieldsLeft > 1) sql.append(" AND ")
+      sql.append("=?")
+      if (fieldsLeft > 1) sql.append(separator)
       fieldsLeft -= 1
     }
-
-    sql.toString()
   }
 
-
-
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
-      schema: StructType, resolvedName: String, upsert: Boolean): Int = {
+      schema: StructType, resolvedName: String, putInto: Boolean): Int = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val sessionState = session.sessionState
     val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
     val encoder = RowEncoder(schema)
     val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
       rows.map(encoder.toRow)), schema)
-    val plan = if (upsert) {
+    val plan = if (putInto) {
       PutIntoTable(
         table = UnresolvedRelation(tableIdent),
         child = ds.logicalPlan)
@@ -349,7 +348,7 @@ object JdbcExtendedUtils extends Logging {
         table = UnresolvedRelation(tableIdent),
         partition = Map.empty[String, Option[String]],
         child = ds.logicalPlan,
-        overwrite = false,
+        overwrite = OverwriteOptions(enabled = false),
         ifNotExists = false)
     }
     session.sessionState.executePlan(plan).executedPlan.executeCollect()

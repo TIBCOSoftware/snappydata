@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,6 +19,8 @@
 
 package org.apache.spark.ui
 
+import javax.servlet.http.HttpServletRequest
+
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.gemxd.SnappyDataVersion
@@ -29,8 +31,15 @@ import org.apache.spark.ui.JettyUtils._
 
 class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboard") with Logging {
   val parent = sparkUI
-  // Attaching dashboard ui page and tab
-  attachPage(new SnappyDashboardPage(this))
+  val appUIBaseAddress = parent.appUIAddress
+
+  // Attaching dashboard ui page
+  val snappyDashboardPage = new SnappyDashboardPage(this)
+  attachPage(snappyDashboardPage)
+  // Attaching members details page
+  val snappyMemberDetailsPage = new SnappyMemberDetailsPage(this)
+  attachPage(snappyMemberDetailsPage)
+  // Attach Tab
   parent.attachTab(this)
 
   // Move Dashboard tab to first place
@@ -67,6 +76,12 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
         }
       })
     }
+
+    // create and add member logs request handler
+    parent.attachHandler(createServletHandler("/dashboard/memberDetails/log",
+      (request: HttpServletRequest) => snappyMemberDetailsPage.renderLog(request),
+      parent.securityManager,
+      parent.conf))
   }
 
 }

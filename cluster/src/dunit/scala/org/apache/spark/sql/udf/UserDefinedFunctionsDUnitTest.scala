@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -33,16 +33,10 @@ case class OrderData(ref: Int, description: String, amount: Long)
 
 class UserDefinedFunctionsDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
-
-  override def tearDown2(): Unit = {
-    val snSession = new SnappySession(sc)
-    snSession.sessionCatalog.reset()
-    super.tearDown2()
-  }
-
+  
   def testDriverHA(): Unit = {
     // Stop the lead node
-    ClusterManagerTestBase.stopSpark()
+    ClusterManagerTestBase.stopAny()
 
     // Start the lead node in another JVM. The executors should
     // connect with this new lead.
@@ -52,23 +46,23 @@ class UserDefinedFunctionsDUnitTest(val s: String)
       vm3.invoke(getClass, "startSnappyLead", startArgs)
       vm3.invoke(getClass, "createTables")
       vm3.invoke(getClass, "simpleUDFTest", true)
-      vm3.invoke(getClass, "stopSpark")
+      vm3.invoke(getClass, "stopAny")
       //Again start the lead node
       vm3.invoke(getClass, "startSnappyLead", startArgs)
       vm3.invoke(getClass, "createTables") // as stop Spark deletes tables.
 
       vm3.invoke(getClass, "simpleUDFTest", false)
-      vm3.invoke(getClass, "stopSpark")
     } catch {
       case  e: Throwable => throw new Exception(e)
     } finally {
+      vm3.invoke(getClass, "stopAny")
       ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
       val snSession = new SnappySession(sc)
       snSession.sql("drop function if exists APP.intudf")
     }
   }
 
-  def testExecutorHA(): Unit = {
+  def IGNORE_SNAP_1681_testExecutorHA(): Unit = {
     var snSession = new SnappySession(sc)
     createTables
 

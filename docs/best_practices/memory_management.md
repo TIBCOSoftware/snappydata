@@ -22,7 +22,7 @@ SnappyData uses JVM heap memory for most of its allocations. Only column tables 
 
 SnappyData heap memory regions are divided into two parts called `Heap Storage Pool` and `Heap Execution Pool`. Sizes of each pool are determined by the configuration parameters provided at boot time to each server. These two regions are only tentative demarcation and can grow into each other based on some conditions.
 
-### Heap Storage Pool:
+### Heap Storage Pool
 The heap objects which belong to SnappyData storage of Spark storage are accounted here. For example, when a row is inserted into a table or deleted, this pool accounts the memory size of that row. Objects that are temporary and die young are not considered here. As it is difficult and costly to do a precise estimation, this pool is an approximation of heap memory for objects that are going to be long-lived. Since precise estimation of heap memory is difficult, there is a heap monitor thread running in the background. </br>
 If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds `critical-heap-percentage` the database engine starts canceling jobs and queries and a LowMemoryException is reported. This is also an indication of heap pressure on the system.
 
@@ -107,4 +107,3 @@ Max_Off_Heap_Storage_pool_Size => 16g * 0.9 = 14.4 ( 0.9 System default)
 	* When most of your data reside in column tables: Use off-heap memory, as they are faster and puts less pressure on garbage collection threads.
 
 	* When configuring eviction: The tables are evicted to disk by default. This impacts performance to some degree and hence it is recommended to size your VM before you begin.
-

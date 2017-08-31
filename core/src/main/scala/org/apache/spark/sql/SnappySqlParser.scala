@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,12 +32,12 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
   /** Creates/Resolves DataType for a given SQL string. */
   override def parseDataType(sqlText: String): DataType = {
-    sqlParser.parse(sqlText, sqlParser.dataType.run())
+    sqlParser.parse(sqlText, sqlParser.parsedDataType.run())
   }
 
   /** Creates Expression for a given SQL string. */
   override def parseExpression(sqlText: String): Expression = {
-    sqlParser.parse(sqlText, sqlParser.namedExpression.run())
+    sqlParser.parse(sqlText, sqlParser.parsedExpression.run())
   }
 
   /** Creates TableIdentifier for a given SQL string. */

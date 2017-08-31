@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -103,8 +103,16 @@ dependencies {
     testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
     testCompile project(':snappy-cluster_' + scalaBinaryVersion)
     testRuntime project(':snappy-cluster_' + scalaBinaryVersion)
+    if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+        testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
+    }
     testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 
+}
+
+task buildDtests {
+  delete buildDir
+  dependsOn ':cleanScalaTest', ':snappy-store:storeProduct', ':product', packageTests
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
@@ -124,7 +132,7 @@ if (rootProject.hasProperty('enablePublish')) {
 archivesBaseName = 'snappydata-store-scala-tests'
 
 scalaTest {
-    dependsOn ':cleanScalaTest'
+    dependsOn buildDtests
     doFirst {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)
@@ -146,7 +154,7 @@ testClasses.doLast {
           include '**/*.inc'
           include '**/*.sql'
       }
-          into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+      into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
     }
   }
 }

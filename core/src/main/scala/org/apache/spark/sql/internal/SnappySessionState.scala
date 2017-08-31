@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -29,10 +29,11 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.CatalystConf
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, ResolveInlineTables, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -40,9 +41,9 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -60,31 +61,60 @@ class SnappySessionState(snappySession: SnappySession)
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
-  protected lazy val sharedState: SnappySharedState =
-    snappySession.sharedState.asInstanceOf[SnappySharedState]
+  protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
 
-  private[internal] lazy val metadataHive = sharedState.metadataHive.newSession()
+  private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
   private[sql] var disableStoreOptimizations : Boolean = false
 
+  // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
+  // Rest all rules, even if redundant, are same as analyzer for maintainability reason
+  lazy val analyzerPrepare: Analyzer = new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Resolution") =>
+        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
+          case PromoteStrings => false
+          case _ => true
+        }): _*)
+      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+    }
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules = getExtendedCheckRules
+  }
+
+  def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
+    new PreprocessTableInsertOrPut(conf) ::
+        new FindDataSourceTable(snappySession) ::
+        DataSourceAnalysis(conf) ::
+        ResolveRelationsExtended ::
+        AnalyzeMutableOperations(snappySession, analyzer) ::
+        ResolveQueryHints(snappySession) ::
+        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
+            Nil else Nil)
+
+  def getExtendedCheckRules: Seq[LogicalPlan => Unit] =
+    Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      new PreprocessTableInsertOrPut(conf) ::
-          new FindDataSourceTable(snappySession) ::
-          DataSourceAnalysis(conf) ::
-          ResolveRelationsExtended ::
-          AnalyzeChildQuery(snappySession) ::
-          ResolveQueryHints(snappySession) ::
-          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
+      getExtendedResolutionRules(this)
 
-    override val extendedCheckRules = Seq(
-      datasources.PreWriteCheck(conf, catalog),
-      PrePutCheck)
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
+
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
       implicit val ss = snappySession
@@ -169,11 +199,10 @@ class SnappySessionState(snappySession: SnappySession)
         case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
-        case _: InsertIntoTable | _: PutIntoTable =>
+        case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges
           snappySession.linkPartitionsToBuckets(flag = true)
-        case PhysicalOperation(_, _, LogicalRelation(
-        _: IndexColumnFormatRelation, _, _)) =>
+        case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }
@@ -211,10 +240,113 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeChildQuery(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+  case class AnalyzeMutableOperations(sparkSession: SparkSession,
+      analyzer: Analyzer) extends Rule[LogicalPlan] {
+
+    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
+        plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
+      var tableName = ""
+      val keyColumns = table.collectFirst {
+        case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+          val ks = mutable.getKeyColumns
+          if (ks.isEmpty) {
+            val currentKey = snappySession.currentKey
+            // if this is a row table, then fallback to direct execution
+            mutable match {
+              case _: UpdatableRelation if currentKey ne null =>
+                return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
+                  mutable.table), lr, currentKey.sqlText), lr)
+              case _ =>
+                throw new AnalysisException(
+                  s"Empty key columns for update/delete on $mutable")
+            }
+          }
+          tableName = mutable.table
+          ks
+      }.getOrElse(throw new AnalysisException(
+        s"Update/Delete requires a MutableRelation but got $table"))
+      // resolve key columns right away
+      var mutablePlan: Option[LogicalRelation] = None
+      val newChild = child.transformDown {
+        case lr@LogicalRelation(mutable: MutableRelation, _, _)
+          if mutable.table.equalsIgnoreCase(tableName) =>
+          mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
+          mutablePlan.get
+      }
+      mutablePlan match {
+        case Some(sourcePlan) =>
+          val keyAttrs = keyColumns.map { name =>
+            analysis.withPosition(sourcePlan) {
+              newChild.resolveChildren(
+                name.split('.'), analyzer.resolver).getOrElse(
+                throw new AnalysisException(s"Could not resolve key column $name"))
+            }
+          }
+          (keyAttrs, newChild, sourcePlan)
+        case _ => throw new AnalysisException(
+          s"Could not find any scan from the table '$tableName' to be updated in $plan")
+      }
+    }
+
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
+
+      case u@Update(table, child, keyColumns, updateCols, updateExprs)
+        if keyColumns.isEmpty && u.resolved && child.resolved =>
+        // add the key columns to the plan
+        val (keyAttrs, newChild, relation) = getKeyAttributes(table, child, u)
+        // if this is a row table with no PK, then fallback to direct execution
+        if (keyAttrs.isEmpty) newChild
+        else {
+          // check that partitioning or key columns should not be updated
+          val nonUpdatableColumns = (relation.relation.asInstanceOf[MutableRelation]
+              .partitionColumns.map(Utils.toUpperCase) ++
+              keyAttrs.map(k => Utils.toUpperCase(k.name))).toSet
+          // resolve the columns being updated and cast the expressions if required
+          val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
+            val attr = analysis.withPosition(relation) {
+              newChild.resolveChildren(
+                c.name.split('.'), analyzer.resolver).getOrElse(
+                throw new AnalysisException(s"Could not resolve update column ${c.name}"))
+            }
+            val colName = Utils.toUpperCase(c.name)
+            if (nonUpdatableColumns.contains(colName)) {
+              throw new AnalysisException("Cannot update partitioning/key column " +
+                  s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
+            }
+            // cast the update expressions if required
+            val newExpr = if (attr.dataType.sameType(expr.dataType)) {
+              expr
+            } else {
+              // avoid unnecessary copy+cast when inserting DECIMAL types
+              // into column table
+              expr.dataType match {
+                case _: DecimalType
+                  if attr.dataType.isInstanceOf[DecimalType] => expr
+                case _ => Alias(Cast(expr, attr.dataType), attr.name)()
+              }
+            }
+            (attr, newExpr)
+          }.unzip
+          // collect all references and project on them to explicitly eliminate
+          // any extra columns
+          val allReferences = newChild.references ++
+              AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
+          u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
+            keyColumns = keyAttrs.map(_.toAttribute),
+            updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
+        }
+
+      case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
+        // add and project only the key columns
+        val (keyAttrs, newChild, _) = getKeyAttributes(table, child, d)
+        // if this is a row table with no PK, then fallback to direct execution
+        if (keyAttrs.isEmpty) newChild
+        else {
+          d.copy(child = Project(keyAttrs, newChild),
+            keyColumns = keyAttrs.map(_.toAttribute))
+        }
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -231,18 +363,20 @@ class SnappySessionState(snappySession: SnappySession)
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         new SnappyConnectorCatalog(
-          sharedState.externalCatalog,
+          snappySharedState.snappyCatalog(),
           snappySession,
           metadataHive,
+          snappySession.sharedState.globalTempViewManager,
           functionResourceLoader,
           functionRegistry,
           conf,
           newHadoopConf())
       case _ =>
         new SnappyStoreHiveCatalog(
-          sharedState.externalCatalog,
+          snappySharedState.snappyCatalog(),
           snappySession,
           metadataHive,
+          snappySession.sharedState.globalTempViewManager,
           functionResourceLoader,
           functionRegistry,
           conf,
@@ -321,7 +455,10 @@ class SnappySessionState(snappySession: SnappySession)
 }
 
 class SnappyConf(@transient val session: SnappySession)
-    extends SQLConf with Serializable with CatalystConf {
+    extends SQLConf with Serializable {
+
+  /** Pool to be used for the execution of queries from this session */
+  @volatile private[this] var schedulerPool: String = Property.SchedulerPool.defaultValue.get
 
   /** If shuffle partitions is set by [[setExecutionShufflePartitions]]. */
   @volatile private[this] var executionShufflePartitions: Int = _
@@ -343,7 +480,7 @@ class SnappyConf(@transient val session: SnappySession)
       dynamicShufflePartitions = -1
   }
 
-  private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
+  private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
@@ -355,6 +492,13 @@ class SnappyConf(@transient val session: SnappySession)
         dynamicShufflePartitions = -1
       } else {
         dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      }
+    case Property.SchedulerPool.name =>
+      schedulerPool = value match {
+        case None => Property.SchedulerPool.defaultValue.get
+        case Some(pool) if session.sparkContext.getAllPools.exists(_.name == pool) =>
+          pool.toString
+        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool ${pool}")
       }
     case _ => // ignore others
   }
@@ -385,13 +529,17 @@ class SnappyConf(@transient val session: SnappySession)
     }
   }
 
+  def activeSchedulerPool: String = {
+    schedulerPool
+  }
+
   override def setConfString(key: String, value: String): Unit = {
-    keyUpdateActions(key, doSet = true)
+    keyUpdateActions(key, Some(value), doSet = true)
     super.setConfString(key, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
-    keyUpdateActions(entry.key, doSet = true)
+    keyUpdateActions(entry.key, Some(value), doSet = true)
     require(entry != null, "entry cannot be null")
     require(value != null, s"value cannot be null for key: ${entry.key}")
     entry.defaultValue match {
@@ -401,12 +549,12 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   override def unsetConf(key: String): Unit = {
-    keyUpdateActions(key, doSet = false)
+    keyUpdateActions(key, None, doSet = false)
     super.unsetConf(key)
   }
 
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
-    keyUpdateActions(entry.key, doSet = false)
+    keyUpdateActions(entry.key, None, doSet = false)
     super.unsetConf(entry)
   }
 }
@@ -616,8 +764,8 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         case Some(ir) =>
           val br = ir.asInstanceOf[BaseRelation]
           val relation = LogicalRelation(br,
-            l.expectedOutputAttributes, l.metastoreTableIdentifier)
-          castAndRenameChildOutput(i.copy(table = relation),
+            l.expectedOutputAttributes, l.catalogTable)
+          castAndRenameChildOutputForPut(i.copy(table = relation),
             relation.output, br, null, child)
         case None =>
           throw new AnalysisException(s"$l requires that the query in the " +
@@ -640,7 +788,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
                 "SELECT clause of the PUT INTO statement " +
                 "generates the same number of columns as its schema.")
           }
-          castAndRenameChildOutput(p, expectedOutput, ir, l, child)
+          castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
 
         case _ => p
       }
@@ -673,7 +821,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
               }
             case _ =>
           }
-          castAndRenameChildOutput(d, expectedOutput, dr, l, child)
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 
         case _ => d
       }
@@ -686,10 +834,10 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         preProcess(i, relation = null, metadata.identifier.quotedString,
           metadata.partitionColumnNames)
       case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
-        val tblName = identifier.map(_.quotedString).getOrElse("unknown")
+        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
         preProcess(i, h, tblName, h.partitionSchema.map(_.name))
       case LogicalRelation(ir: InsertableRelation, _, identifier) =>
-        val tblName = identifier.map(_.quotedString).getOrElse("unknown")
+        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
         preProcess(i, ir, tblName, Nil)
       case _ => i
     }
@@ -701,15 +849,22 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       tblName: String,
       partColNames: Seq[String]): InsertIntoTable = {
 
-    val expectedColumns = insert.expectedColumns
-    val child = insert.child
-    if (expectedColumns.isDefined && expectedColumns.get.length != child.schema.length) {
-      throw new AnalysisException(
-        s"Cannot insert into table $tblName because the number of columns are different: " +
-            s"need ${expectedColumns.get.length} columns, " +
-            s"but query has ${child.schema.length} columns.")
+    // val expectedColumns = insert
+
+    val normalizedPartSpec = PartitioningUtils.normalizePartitionSpec(
+      insert.partition, partColNames, tblName, conf.resolver)
+
+    val expectedColumns = {
+      val staticPartCols = normalizedPartSpec.filter(_._2.isDefined).keySet
+      insert.table.output.filterNot(a => staticPartCols.contains(a.name))
     }
 
+    if (expectedColumns.length != insert.child.schema.length) {
+      throw new AnalysisException(
+        s"Cannot insert into table $tblName because the number of columns are different: " +
+            s"need ${expectedColumns.length} columns, " +
+            s"but query has ${insert.child.schema.length} columns.")
+    }
     if (insert.partition.nonEmpty) {
       // the query's partitioning must match the table's partitioning
       // this is set for queries like: insert into ... partition (one = "a", two = <expr>)
@@ -727,14 +882,18 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
              |Table partitions: ${partColNames.mkString(",")}
            """.stripMargin)
       }
-      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-        child)).getOrElse(insert)
+      castAndRenameChildOutput(insert.copy(partition = normalizedPartSpec), expectedColumns)
+
+//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+//        child)).getOrElse(insert)
     } else {
       // All partition columns are dynamic because because the InsertIntoTable
       // command does not explicitly specify partitioning columns.
-      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-        child)).getOrElse(insert).copy(partition = partColNames
-          .map(_ -> None).toMap)
+      castAndRenameChildOutput(insert, expectedColumns)
+          .copy(partition = partColNames.map(_ -> None).toMap)
+//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+//        child)).getOrElse(insert).copy(partition = partColNames
+//          .map(_ -> None).toMap)
     }
   }
 
@@ -743,7 +902,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
    * types and names.
    */
   // TODO: do we really need to rename?
-  def castAndRenameChildOutput[T <: LogicalPlan](
+  def castAndRenameChildOutputForPut[T <: LogicalPlan](
       plan: T,
       expectedOutput: Seq[Attribute],
       relation: BaseRelation,
@@ -779,6 +938,30 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
         child)).asInstanceOf[T]
+    }
+  }
+
+  private def castAndRenameChildOutput(
+      insert: InsertIntoTable,
+      expectedOutput: Seq[Attribute]): InsertIntoTable = {
+    val newChildOutput = expectedOutput.zip(insert.child.output).map {
+      case (expected, actual) =>
+        if (expected.dataType.sameType(actual.dataType) &&
+            expected.name == actual.name &&
+            expected.metadata == actual.metadata) {
+          actual
+        } else {
+          // Renaming is needed for handling the following cases like
+          // 1) Column names/types do not match, e.g., INSERT INTO TABLE tab1 SELECT 1, 2
+          // 2) Target tables have column metadata
+          Alias(Cast(actual, expected.dataType), expected.name)(
+            explicitMetadata = Option(expected.metadata))
+        }
+    }
+
+    if (newChildOutput == insert.child.output) insert
+    else {
+      insert.copy(child = Project(newChildOutput, insert.child))
     }
   }
 }

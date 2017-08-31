@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -151,7 +151,8 @@ object ExecutorInitiator extends Logging {
                     Utils.setDefaultSerializerAndCodec(executorConf)
 
                     val port = executorConf.getInt("spark.executor.port", 0)
-                    val props = SparkCallbacks.fetchDriverProperty(executorHost,
+                    val (ioEncryptionKey, props) =
+                      SparkCallbacks.fetchDriverProperty(memberId, executorHost,
                       executorConf, port, url)
 
                     val driverConf = new SparkConf
@@ -176,7 +177,7 @@ object ExecutorInitiator extends Logging {
                       Runtime.getRuntime.availableProcessors() * 2)
 
                     env = SparkCallbacks.createExecutorEnv(driverConf,
-                      memberId, executorHost, port, cores, isLocal = false)
+                      memberId, executorHost, port, cores, ioEncryptionKey, isLocal = false)
 
                     // This is not required with snappy
                     val userClassPath = new mutable.ListBuffer[URL]()

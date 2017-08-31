@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -189,6 +189,7 @@ object CTQueries {
       .option("header", "true")
       .option("inferSchema", "false")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/ORDERS_DETAILS.dat")
 
   def exec_details_df(sqlContext: SQLContext): DataFrame =
@@ -196,6 +197,7 @@ object CTQueries {
       .option("header", "true")
       .option("inferSchema","false")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/EXEC_DETAILS.dat")
 
   val create_diskStore_ddl = "CREATE DISKSTORE OverflowDiskStore"

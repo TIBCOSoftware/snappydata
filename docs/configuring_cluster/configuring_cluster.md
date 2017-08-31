@@ -9,6 +9,7 @@ These files contain the hostnames of the nodes (one per line) where you intend t
 ## Configuring Locators
 
 Locators provide discovery service for the cluster. Clients (e.g. JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](../architecture.md) section for more information on the core components.
+
 It is recommended to configure two locators (for HA) in production using the **conf/locators** file. You can refer to the **conf/locators.template** file for some examples. 
 
 In this file, you can specify:
@@ -41,7 +42,7 @@ Create the configuration file (**locators**) for locators in the **<_SnappyData_
 <a id="locator-example"></a>
 **Example**: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:
 
-```bash
+```scala
 $ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
@@ -131,9 +132,6 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 |--------|--------|
 | snappydata.connection        |SnappyData cluster's locator host and JDBC client port on which locator listens for connections. Has to be specified while starting a Spark application.|
 
-
-
-
 **Example**:
 
 ```bash
@@ -153,20 +151,14 @@ $ cat conf/log4j.properties
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 ```
-
 !!! Note:
 	For a set of applicable class names and default values see the file **conf/log4j.properties.template**, which can be used as a starting point. Consult the [log4j 1.2.x documentation](http://logging.apache.org/log4j/) for more details on the configuration file.
-
 
 ## SnappyData Command Line Utility
 
 Instead of starting SnappyData cluster using SSH scripts, individual components can be configured, started and stopped on a system using these commands.
 
 ```
-$ bin/snappy locator start  -dir=/node-a/locator1 
-$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
-$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
-
 $ bin/snappy locator stop -dir=/node-a/locator1
 $ bin/snappy server stop -dir=/node-b/server1
 $ bin/snappy leader stop -dir=/node-c/lead1

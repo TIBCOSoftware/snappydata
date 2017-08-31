@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,6 +20,7 @@ package io.snappydata.cluster
 import java.sql.{Date, DriverManager, ResultSet}
 import java.time.LocalDate
 
+import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.test.dunit.AvailablePortHelper
 
@@ -671,5 +672,25 @@ class PreparedQueryRoutingDUnitTest(val s: String)
 
     insertRows_test3(1000, tableName)
     query_test3(tableName)
+  }
+
+  def test4_update_delete_on_column_table(): Unit = {
+    serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"test4_update_delete_on_column_table: network server started at $serverHostPort")
+    // scalastyle:on println
+    val snc = SnappyContext(sc)
+    PreparedQueryRoutingSingleNodeSuite.updateDeleteOnColumnTable(snc, s"localhost:$serverHostPort")
+  }
+
+  def test5_equalityOnStringColumn(): Unit = {
+    serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"test5_equalityOnStringColumn: network server started at $serverHostPort")
+    // scalastyle:on println
+    val snc = SnappyContext(sc)
+    PreparedQueryRoutingSingleNodeSuite.equalityOnStringColumn(snc, s"localhost:$serverHostPort")
   }
 }

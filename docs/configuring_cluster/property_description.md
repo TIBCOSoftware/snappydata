@@ -16,9 +16,9 @@
 |-log-file|Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)|Server</br>Lead</br>Locator|
 |-J-Dgemfirexd.hostname-for-clients|Hostname or IP address that is sent to clients so they can connect to the locator. The default is the `bind-address` of the locator.|Server|
 |-peer-discovery-address|Use this as value for port in the "host:port" value of "-locators" property |Locator|
-|-peer-discovery-port|The port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.|Locator|
-|-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/setup_cluster.md#member-timeout) server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|Server</br>Locator</br>Lead|
-|snappydata.column.batchSize|The default size of blocks to use for storage in the SnappyData column store. The default value is 24M.|Lead|
+|-peer-discovery-port|Port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.|Locator|
+|-member-timeout|Uses the member-timeout server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|Server</br>Locator</br>Lead|
+|snappydata.column.batchSize|The default size of blocks to use for storage in the SnappyData column store (in bytes or k/m/g suffixes for unit). The default value is 24M.|Lead|
 |<a id="thrift-properties"></a>thrift-ssl|Specifies if you want to enable or disable SSL. Values: true or false|Server|
 |thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: path to key store file </br>`keystore-type`: the type of key-store (default "JKS") </br>`keystore-password`: password for the key store file</br>`keymanager-type`: the type of key manager factory </br>`truststore`: path to trust store file</br>`truststore-type`: the type of trust-store (default "JKS")</br>`truststore-password`: password for the trust store file </br>`trustmanager-type`: the type of trust manager factory </br> |Server|
 |spark.driver.maxResultSize|Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M, or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead.|Lead|
@@ -29,14 +29,15 @@
 <a id="sql-properties"></a>
 ## SQL Properties
 
-These properties can be set in the snappy SQL shell or using the configuration properties in the *conf/leads* file.
+These properites can be set in the snappy SQL shell or using the configuration properties in the *conf/leads* file.
 
 For example: Set in the snappy SQL shell
+
 ```
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.column.batchSize=100k;
 ```
-This will set the property for the snappy SQL shell's session.
+This sets the property for the snappy SQL shell's session.
 
 Set in the *conf/leads* file
 ```
@@ -47,10 +48,10 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 | Property | Description|
 |--------|--------|
-|snappydata.column.batchSize |The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the `create table` DDL.|
-|snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on the  number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`|
-|snappydata.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`. The default value is 100 MB.|
-|snappydata.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (with b/k/m/g/t/p suffixes for the unit) and not the output size. Set this only if there are queries that can return a large number of rows in aggregation results. The default value is set to 0b which means, no limit is set on the size, so the optimized hash aggregation is always used.|
+|snappydata.column.batchSize |The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that will be used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the `create table` DDL.|
+|snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`|
+|snappydata.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`. Default value is 100 MB.|
+|snappydata.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (with b/k/m/g/t/p suffixes for unit) and not the output size. Set this only if there are queries that can return very large number of rows in aggregation results. Default value is set to 0b which means, no limit is set on the size, so the optimized hash aggregation is always used.|
 
 <a id="sde-properties"></a>
 
@@ -73,9 +74,9 @@ This sets the property for the snappy SQL shell's session.
 
 | Properties | Description |
 |--------|--------|
-|snappydata.flushReservoirThreshold|Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. The default value is 10,000.</br> This property must be set in the *conf/servers* and *conf/leads* file. |
-|spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. The default value is 100. </br>This property must be set in the *conf/leads* file.|
-|spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. The default value is 0.2. </br>This property can be set as connection property in the Snappy SQL shell.|
-|spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is 0.95. </br>This property can be set as connection property in the Snappy SQL shell|
-|sparksql.aqp.behavior|The action to be taken if the error computed goes outside the error tolerance limit. The default value is `DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell|
+|snappydata.flushReservoirThreshold|Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. Default value is 10,000.</br> This property must be set in the *conf/servers* and *conf/leads* file. |
+|spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. Default value is 100. </br>This property must be set in the *conf/leads* file.|
+|spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. Default value is 0.2. </br>This property can be set as connection property in the Snappy SQL shell.|
+|spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> Default value is 0.95. </br>This property can be set as connection property in the Snappy SQL shell|
+|sparksql.aqp.behavior|The action to be taken if the error computed goes oustide the error tolerance limit. Default value is `DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell|
 

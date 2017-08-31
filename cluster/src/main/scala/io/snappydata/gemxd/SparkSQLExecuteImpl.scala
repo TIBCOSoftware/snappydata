@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,8 @@
 package io.snappydata.gemxd
 
 import java.io.{CharArrayWriter, DataOutput}
+
+import com.pivotal.gemfirexd.Attribute
 
 import scala.collection.JavaConverters._
 
@@ -65,6 +67,11 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val session = SnappySessionPerConnection
       .getSnappySessionForConnection(ctx.getConnId)
+
+  if (ctx.getUserName != null && !ctx.getUserName.isEmpty) {
+    session.conf.set(Attribute.USERNAME_ATTR, ctx.getUserName)
+    session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
+  }
 
   session.setSchema(schema)
 
@@ -137,7 +144,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // prepare SnappyResultHolder with all data and create new one
             SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
             msg.sendResult(srh)
-            srh = new SnappyResultHolder(this)
+            srh = new SnappyResultHolder(this, msg.isUpdateOrDelete)
           } else {
             // throttle sending if target node is CRITICAL_UP
             val targetMember = msg.getSender

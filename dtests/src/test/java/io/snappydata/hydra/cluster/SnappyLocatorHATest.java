@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -33,20 +33,26 @@ public class SnappyLocatorHATest extends SnappyTest {
    * Concurrently stops a List of snappy locator VMs, execute the ddl op and then restarts
    * them.  Waits for the restart to complete before returning.
    */
-  public static void HydraTask_ddlOpDuringLocatorHA() {
+  public static synchronized void HydraTask_ddlOpDuringLocatorHA() {
     if (cycleVms) {
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
       Long lastCycledTimeForLocatorFromBB = (Long) SnappyBB.getBB().getSharedMap().get
           (LASTCYCLEDTIMEFORLOCATOR);
       snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForLocatorFromBB,
-          lastCycledTime, "locator", true, false);
+          lastCycledTime, "locator", true, false, false);
     }
   }
 
   protected static void ddlOpDuringLocatorHA(String vmDir, String clientName, String vmName) {
     snappyTest.killVM(vmDir, clientName, vmName);
     Log.getLogWriter().info("snappy locator stopped successfully...." + vmDir);
+    executeOps();
+    snappyTest.startVM(vmDir, clientName, vmName);
+    Log.getLogWriter().info("snappy locator restarted successfully...." + vmDir);
+  }
+
+  protected static void executeOps() {
     Connection conn = null;
     ResultSet rs = null;
     String query = "create table tab1 (id int, name String, address String) USING  column " +
@@ -55,16 +61,35 @@ public class SnappyLocatorHATest extends SnappyTest {
       conn = getServerConnection();
       conn.createStatement().executeUpdate(query);
       Log.getLogWriter().info("query executed successfully: " + query);
-      /*rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
-      StructTypeImpl sti = ResultSetHelper.getStructType(rs);
-      List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);*/
+      query = "insert into tab1 values(111, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(222, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(333, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(444, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(555, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(666, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "select count(*) from tab1";
+      rs = conn.createStatement().executeQuery(query);
+      long numRows = 0;
+      while (rs.next()) {
+        numRows = rs.getLong(1);
+        Log.getLogWriter().info("Qyery : " + query + " executed successfully and query " +
+            "result is ::" + numRows);
+      }
+      if (numRows != 6)
+        throw new TestException("Result count mismatch observed in test for table " +
+            "tab1 created after stopping all locators. \n Expected Row Count : 6 " + "\n Actual Row" +
+            " Count : " + numRows);
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
       throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
     }
-    snappyTest.startVM(vmDir, clientName, vmName);
-    Log.getLogWriter().info("snappy locator restarted successfully...." + vmDir);
   }
 
   /**
@@ -78,7 +103,7 @@ public class SnappyLocatorHATest extends SnappyTest {
       Long lastCycledTimeForLocatorFromBB = (Long) SnappyBB.getBB().getSharedMap().get
           (LASTCYCLEDTIMEFORLOCATOR);
       snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForLocatorFromBB,
-          lastCycledTime, "locator", true, true);
+          lastCycledTime, "locator", true, true, false);
     }
   }
 
@@ -86,26 +111,42 @@ public class SnappyLocatorHATest extends SnappyTest {
                                                              String vmName) {
     snappyTest.killVM(vmDir, clientName, vmName);
     Log.getLogWriter().info("snappy locator stopped successfully...." + vmDir);
-    Connection conn = null;
-    ResultSet rs = null;
-    String query = "create table tab1 (id int, name String, address String) USING  column " +
-        "OPTIONS(partition_by 'id')";
+    executeOps();
+    HydraTask_stopSnappyCluster();
+    Log.getLogWriter().info("snappy cluster stopped successfully...." + vmDir);
+    HydraTask_startSnappyCluster();
+    Log.getLogWriter().info("snappy cluster restarted successfully...." + vmDir);
+  }
+
+  public static void HydraTask_ddlOpAfterAllLocatorStop_ClusterRestart() {
+    HydraTask_stopSnappyLocator();
+    Log.getLogWriter().info("snappy locators stopped successfully....");
+    executeOps();
+    HydraTask_stopSnappyCluster();
+    Log.getLogWriter().info("snappy cluster stopped successfully....");
+    HydraTask_startSnappyCluster();
+    Log.getLogWriter().info("snappy cluster restarted successfully....");
+  }
+
+  public static void HydraTask_validateTableDataOnClusterRestart() {
     try {
-      conn = getServerConnection();
-      conn.createStatement().executeUpdate(query);
-      Log.getLogWriter().info("query executed successfully: " + query);
-      /*rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
-      StructTypeImpl sti = ResultSetHelper.getStructType(rs);
-      List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
-      Log.getLogWriter().info("Result for query : " + query + "\n" + queryResult.toString());*/
+      Connection conn = getLocatorConnection();
+      String query = "select count(*) from tab1";
+      ResultSet rs = conn.createStatement().executeQuery(query);
+      long numRows = 0;
+      while (rs.next()) {
+        numRows = rs.getLong(1);
+        Log.getLogWriter().info("Qyery : " + query + " executed successfully and query " +
+            "result is ::" + numRows);
+      }
+      if (numRows != 6)
+        throw new TestException("Result count mismatch observed in test for table " +
+            "tab1 created after stopping all locators. \n Expected Row Count : 6 " + "\n Actual Row" +
+            " Count : " + numRows);
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
       throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
     }
-    HydraTask_stopSnappyCluster();
-    Log.getLogWriter().info("snappy cluster stopped successfully...." + vmDir);
-    HydraTask_startSnappyCluster();
-    Log.getLogWriter().info("snappy cluster restarted successfully...." + vmDir);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,6 +20,7 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
+import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.util.Utils
@@ -59,6 +60,8 @@ trait StoreUnifiedManager {
   def logStats(): Unit
 
   def shouldStopRecovery(): Boolean
+
+  def initMemoryStats(stats: MemoryManagerStats): Unit
 
   /**
     * Change the off-heap owner to mark it being used for storage.
@@ -100,7 +103,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       objectName: String,
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {
-    logDebug(s"Releasing DefaultManager meemory for $objectName $numBytes")
+    logDebug(s"Releasing DefaultManager memory for $objectName $numBytes")
     if (SparkEnv.get ne null) {
       SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
     }
@@ -124,6 +127,8 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       allowNonAllocator: Boolean): Unit = {}
 
   override def shouldStopRecovery(): Boolean = false
+
+  override def initMemoryStats(stats: MemoryManagerStats): Unit = {}
 }
 
 object MemoryManagerCallback extends Logging {

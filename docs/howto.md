@@ -109,6 +109,7 @@ To start the cluster on multiple hosts:
 ## How to Check the Status of a SnappyData Cluster
 You can check the status of a running cluster using the following command:
 
+
 ```bash
 $ sbin/snappy-status-all.sh
 SnappyData Locator pid: 9368 status: running
@@ -1334,6 +1335,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 		Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
+
  Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
 
 Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver and Tableau Desktop](setting_up_odbc_driver-tableau_desktop.md).  

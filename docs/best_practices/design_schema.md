@@ -1,9 +1,11 @@
 # Designing your Database and Schema
+
 The following topics are covered in this section:
 
 * [Design Principles of Scalable, Partition-Aware Databases](#design-schema)
 
 * [Identify Entity Groups and Partitioning Keys](#entity_groups)
+
 * [Adapting a Database Schema](#adapting_existing_schema)
 
 <a id="design-schema"></a>
@@ -24,7 +26,6 @@ The general strategy for designing a SnappyData database is to identify the tabl
 4. Identify the “partitioning key” for each partitioned table. The partitioning key is the column or set of columns that are common across a set of related tables. Look for parent-child relationships in the joined tables.
 
 5. Identify all of the tables that are candidates for replication. You can replicate table data for high availability, or to colocate table data that is necessary to execute joins.
-
 
 <a id="entity_groups"></a>
 ## Identify Entity Groups and Partitioning Keys
@@ -79,7 +80,7 @@ In order to adapt this schema for use in SnappyData, follow the basic steps outl
     |Customer|Customers </br>Orders</br>Shippers</br>Order Details|
     |Product|Product</br>Suppliers</br>Category|
 
-3. Define the partitioning key for each group.
+3. Define the partitioning key for each group.</br>
 	In this example, the partitioning keys are:
 
     | Entity Group |Partitioning key |
@@ -101,7 +102,6 @@ In order to adapt this schema for use in SnappyData, follow the basic steps outl
 
 	    select * from customer c, orders o where c.customerID = o.customerID  and c.customerID = 'customer100';
 
-
     The optimization provided when queries are highly selective comes from engaging the query processor and indexing on a single member rather than on all partitions. With all customer data managed in memory, query response times are very fast. </br>
     Finally, consider a case where an application needs to access customer order data for several customers:
 
@@ -111,7 +111,7 @@ In order to adapt this schema for use in SnappyData, follow the basic steps outl
     Here, SnappyData prunes the query execution to only those partitions that host ‘cust1’, 'cust2’, and 'cust3’. The union of the results is then returned to the caller.
     Note that the selection of customerID as the partitioning key means that the OrderDetails and Shippers tables cannot be partitioned and colocated with Customers and Orders (because OrderDetails and Shippers do not contain the customerID value for partitioning). 
 
-4. Identify replicated tables.
+4. Identify replicated tables.</br>
 	If we assume that the number of categories and suppliers rarely changes, those tables can be replicated in the SnappyData cluster (replicated to all of the SnappyData members that host the entity group). If we assume that the Products table does change often and can be relatively large in size, then partitioning is a better strategy for that table.
 	So for the product entity group, table Products is partitioned by ProductID, and the Suppliers and Categories tables are replicated to all of the members where Products is partitioned.
 	Applications can now join Products, Suppliers and categories. For example:

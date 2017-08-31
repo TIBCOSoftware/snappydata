@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.io.{File, FileOutputStream, PrintWriter}
-import java.net.InetAddress
 import java.sql.{ResultSet, Statement}
 
 import scala.io.Source
@@ -25,7 +24,7 @@ import scala.io.Source
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
@@ -722,8 +721,16 @@ object NorthWindDUnitTest {
     NWQueries.employee_territories(snc).write.insertInto("employee_territories")
   }
 
-  protected def getTempDir(dirName: String): String = {
-    val log: File = new File(".")
+  protected def getTempDir(dirName: String, onlyOnce: Boolean): String = {
+    var log: File = new File(".")
+    if (onlyOnce) {
+      val logParent = log.getAbsoluteFile.getParentFile.getParentFile
+      if (logParent.list().contains("output.txt")) {
+        log = logParent
+      } else if (logParent.getParentFile.list().contains("output.txt")) {
+        log = logParent.getParentFile
+      }
+    }
     var dest: String = null
     dest = log.getCanonicalPath + File.separator + dirName
     val tempDir: File = new File(dest)
@@ -731,36 +738,38 @@ object NorthWindDUnitTest {
     tempDir.getAbsolutePath
   }
 
+  private def getSortedFiles(file: File): Array[File] = {
+    file.getParentFile.listFiles.filter(_.getName.startsWith(file.getName)).sortBy { f =>
+      val n = f.getName
+      val i = n.lastIndexOf('.')
+      n.substring(i + 1).toInt
+    }
+  }
+
   def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int,
       queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     var snappyDF = snc.sql(sqlString)
     val snappyQueryFileName = s"Snappy_$queryNum.out"
     val sparkQueryFileName = s"Spark_$queryNum.out"
-    val snappyDest: String = getTempDir("snappyQueryFiles_" + tableType) +
-        File.separator + snappyQueryFileName
-    val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
-    val sparkFile: File = new java.io.File(sparkDest)
-    val snappyFile = new java.io.File(snappyDest)
+    val snappyDest = getTempDir("snappyQueryFiles_" + tableType, onlyOnce = false)
+    val sparkDest = getTempDir("sparkQueryFiles", onlyOnce = true)
+    val sparkFile = new File(sparkDest, sparkQueryFileName)
+    val snappyFile = new File(snappyDest, snappyQueryFileName)
     val col1 = snappyDF.schema.fieldNames(0)
     val col = snappyDF.schema.fieldNames.tail
-    snappyDF = snappyDF.repartition(1).sortWithinPartitions(col1, col: _*)
+    snappyDF = snappyDF.sort(col1, col: _*)
     writeToFile(snappyDF, snappyFile, snc)
     // scalastyle:off println
-    pw.println(s"$queryNum Result Collected in file $snappyDest")
-    if (!sparkFile.exists()) {
-      val sparkDF = sqlContext.sql(sqlString).repartition(1)
-          .sortWithinPartitions(col1, col: _*)
+    pw.println(s"$queryNum Result Collected in files with prefix $snappyFile")
+    if (!new File(s"$sparkFile.0").exists()) {
+      val sparkDF = sqlContext.sql(sqlString).sort(col1, col: _*)
       writeToFile(sparkDF, sparkFile, snc)
-      pw.println(s"$queryNum Result Collected in file $sparkDest")
+      pw.println(s"$queryNum Result Collected in files with prefix $sparkFile")
     }
-    /*
-    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
-    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
-    */
-    val expectedLineSet = Source.fromFile(sparkFile).getLines()
-    val actualLineSet = Source.fromFile(snappyFile).getLines
+    val expectedFiles = getSortedFiles(sparkFile).toIterator
+    val actualFiles = getSortedFiles(snappyFile).toIterator
+    val expectedLineSet = expectedFiles.flatMap(Source.fromFile(_).getLines())
+    val actualLineSet = actualFiles.flatMap(Source.fromFile(_).getLines())
     var numLines = 0
     while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
@@ -799,10 +808,12 @@ object NorthWindDUnitTest {
     if (!parent.exists()) {
       parent.mkdirs()
     }
+    val destFile = dest.getAbsolutePath
     implicit val encoder = RowEncoder(df.schema)
     df.mapPartitions { iter =>
       val sb = new StringBuilder
-      val pw = new PrintWriter(dest)
+      val partitionId = TaskContext.getPartitionId()
+      val pw = new PrintWriter(s"$destFile.$partitionId")
       try {
         iter.foreach { row =>
           row.toSeq.foreach {

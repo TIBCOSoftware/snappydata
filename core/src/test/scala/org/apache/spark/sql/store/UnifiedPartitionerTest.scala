@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -117,7 +117,7 @@ class UnifiedPartitionerTest extends SnappyFunSuite
     assert(rpr != null)
     assert(rpr2 != null)
 
-    val numPartitions = ExternalStoreUtils.DEFAULT_TABLE_BUCKETS_LOCAL_MODE.toInt
+    val numPartitions = ExternalStoreUtils.defaultTableBuckets.toInt
 
     // Check All Datatypes
     var row = createRow(200, IntegerType)

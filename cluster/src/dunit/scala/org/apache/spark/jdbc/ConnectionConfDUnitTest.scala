@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -33,7 +33,7 @@ class ConnectionConfDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
 
-    val conf = new ConnectionConfBuilder(snc.snappySession).build()
+    val conf = new ConnectionConfBuilder(snc.snappySession).build
 
     rdd.foreachPartition(d => {
       val conn = ConnectionUtil.getConnection(conf)

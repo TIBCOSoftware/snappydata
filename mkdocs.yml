@@ -13,10 +13,17 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install: install.md
+<<<<<<< HEAD
 # - System Requirements: additional_files/system_requirements.md
 - 'Migration Guide': 'migration/migration.md'
 - 'Migration Guide':
     - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
+||||||| merged common ancestors
+=======
+- 'Migration Guide': 'migration/migration.md'
+- 'Migration Guide':
+    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
+>>>>>>> origin/master
 - How Tos: howto.md
 - Architecture: architecture.md
 - 'Configuring the Cluster': 'configuration.md'
@@ -54,10 +61,16 @@ pages:
 #        - 'Dealing with Many-to-Many Relationships': 'best_practices/design_schema/many_to_many.md'
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
+<<<<<<< HEAD
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
+||||||| merged common ancestors
+- 'Managing and Monitoring': 'monitoring/monitoring.md'
+=======
+- 'Monitoring - SnappyData Pulse': 'monitoring/monitoring.md'
+>>>>>>> origin/master
 # -- Topic - Reference Guide
 - 'Security': 'security/security.md'
 - 'Reference Guides': 'reference.md'
@@ -92,8 +105,16 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
+<<<<<<< HEAD
     - 'Built-in System Procedures and Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Functions': 
+||||||| merged common ancestors
+    - 'Inbuilt System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
+    - 'Inbuilt System Procedures': 
+=======
+    - 'Built-in System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
+    - 'Built-in System Procedures': 
+>>>>>>> origin/master
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'

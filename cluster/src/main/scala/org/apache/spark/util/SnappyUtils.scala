@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,15 +18,16 @@
 package org.apache.spark.util
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL, URLClassLoader}
 import java.security.SecureClassLoader
 
 import _root_.io.snappydata.Constant
 import com.pivotal.gemfirexd.internal.engine.Misc
+import org.joda.time.DateTime
 import spark.jobserver.util.ContextURLClassLoader
 
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.{SparkEnv, SparkContext}
+import org.apache.spark.{SparkContext, SparkEnv}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 
 object SnappyUtils {
@@ -67,6 +68,22 @@ object SnappyUtils {
     }
   }
 
+  def setSessionDependencies(sparkContext: SparkContext,
+      appName: String,
+      classLoader: ClassLoader): Unit = {
+    assert(classOf[URLClassLoader].isAssignableFrom(classLoader.getClass))
+    val dependentJars = classLoader.asInstanceOf[URLClassLoader].getURLs
+    val sparkJars = dependentJars.map( url => {
+      sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))
+    })
+    val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.toSeq).mkString(",")
+    sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
+  }
+
+  def clearSessionDependencies(sparkContext: SparkContext): Unit = {
+    sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, null)
+  }
+
   def getSnappyContextURLClassLoader(
       parent: ContextURLClassLoader): ContextURLClassLoader = parent match {
     case _: SnappyContextURLLoader => parent // no double wrap
@@ -81,7 +98,8 @@ object SnappyUtils {
     val env = SparkEnv.get
     val conf = env.conf
     val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
-    org.apache.spark.util.Utils.doFetchFile(url, targetDir, filename, conf, env.securityManager, hadoopConf)
+    org.apache.spark.util.Utils.doFetchFile(url, targetDir,
+      filename, conf, env.securityManager, hadoopConf)
     new File(targetDir, filename)
   }
 }

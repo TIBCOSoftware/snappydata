@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -44,15 +44,17 @@ case class CollectAggregateExec(
 
   @transient private[sql] lazy val childRDD = child.execute()
 
-  @transient private[sql] lazy val (generatedSource, generatedReferences,
-  generatedClass) = {
+  @transient private[sql] lazy val (generatedSource, generatedReferences) = {
     // temporarily switch producer to an InputAdapter for rows as normal
     // Iterator[UnsafeRow] which will be set explicitly in executeCollect()
     basePlan.childProducer = InputAdapter(child)
     val (ctx, cleanedSource) = WholeStageCodegenExec(basePlan).doCodeGen()
     basePlan.childProducer = child
-    val clazz = CodeGenerator.compile(cleanedSource)
-    (cleanedSource, ctx.references.toArray, clazz)
+    (cleanedSource, ctx.references.toArray)
+  }
+
+  @transient private[sql] lazy val generatedClass = {
+    CodeGenerator.compile(generatedSource)
   }
 
   /**

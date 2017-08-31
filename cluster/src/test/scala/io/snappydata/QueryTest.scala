@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,9 +19,10 @@ package io.snappydata
 
 import scala.collection.JavaConverters._
 
+import org.apache.spark.sql.QueryTest.checkAnswer
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SparkSession}
+import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession, SparkSession}
 
 class QueryTest extends SnappyFunSuite {
 
@@ -118,7 +119,7 @@ class QueryTest extends SnappyFunSuite {
   }
 
   test("SNAP-1714") {
-    val snc = this.snc
+    val snc = new SnappySession(this.sc)
     snc.sql("CREATE TABLE ColumnTable(\"a/b\" INT ,Col2 INT, Col3 INT) " +
         "USING column " +
         "options " +
@@ -139,7 +140,7 @@ class QueryTest extends SnappyFunSuite {
     snc.table("columnTable").select("COL3", "Col2", "`A/B`").show()
     snc.table("columnTable").select("COL3", "Col2", "`a/b`").show()
 
-    snc.setConf("spark.sql.caseSensitive", "true")
+    snc.conf.set("spark.sql.caseSensitive", "true")
     try {
       snc.table("columnTable").select("col3", "col2", "a/b").show()
       fail("expected to fail for case-sensitive=true")
@@ -169,5 +170,74 @@ class QueryTest extends SnappyFunSuite {
     snc.sql("select COL2, COL3, `a/b` from ColumnTable").show()
     snc.table("columnTable").select("COL3", "COL2", "a/b").show()
     snc.table("COLUMNTABLE").select("COL3", "COL2", "a/b").show()
+  }
+
+  private def setupTestData(session: SnappySession): Unit = {
+    import session.implicits._
+
+    val row = identity[(java.lang.Integer, java.lang.Double)] _
+
+    val l = Seq(
+      row(1, 2.0),
+      row(1, 2.0),
+      row(2, 1.0),
+      row(2, 1.0),
+      row(3, 3.0),
+      row(null, null),
+      row(null, 5.0),
+      row(6, null)).toDF("a", "b")
+
+    val r = Seq(
+      row(2, 3.0),
+      row(2, 3.0),
+      row(3, 2.0),
+      row(4, 1.0),
+      row(null, null),
+      row(null, 5.0),
+      row(6, null)).toDF("c", "d")
+
+    val t = r.filter($"c".isNotNull && $"d".isNotNull)
+
+    l.createOrReplaceTempView("l")
+    r.createOrReplaceTempView("r")
+    t.createOrReplaceTempView("t")
+  }
+
+  test("SNAP-1886_1888") {
+    val session = this.snc.snappySession
+    import session.implicits._
+
+    setupTestData(session)
+
+    session.dropTable("t1", ifExists = true)
+    session.dropTable("t2", ifExists = true)
+    session.dropTable("onerow", ifExists = true)
+
+    Seq(1, 2).toDF("c1").write.format("column").saveAsTable("t1")
+    Seq(1).toDF("c2").write.format("column").saveAsTable("t2")
+    Seq(1).toDF("c1").write.format("column").saveAsTable("onerow")
+
+    // SNAP-1886
+    checkAnswer(
+      session.sql(
+        """
+          | select c1 from onerow t1
+          | where exists (select 1
+          |               from   (select 1 from onerow t2 LIMIT 1)
+          |               where  t1.c1=t2.c1)""".stripMargin),
+      Row(1) :: Nil)
+
+    // SNAP-1888
+    checkAnswer(
+      session.sql(
+        """select l.a from l
+          |where (
+          |    select cntPlusOne + 1 as cntPlusTwo from (
+          |        select cnt + 1 as cntPlusOne from (
+          |            select sum(r.c) s, count(*) cnt from r where l.a = r.c having cnt = 0
+          |        )
+          |    )
+          |) = 2""".stripMargin),
+      Row(1) :: Row(1) :: Row(null) :: Row(null) :: Nil)
   }
 }

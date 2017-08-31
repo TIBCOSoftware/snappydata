@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,6 +47,9 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+    if (rootProject.hasProperty('mesos')) {
+      compile project(':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion)
+    }
 
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
         configuration: 'testOutput')
@@ -62,6 +65,9 @@ dependencies {
     compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
+    if (rootProject.hasProperty('mesos')) {
+      compile 'io.snappydata:snappy-spark-mesos_' + scalaBinaryVersion + ':' + snappySparkVersion
+    }
 
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
                 version: snappySparkVersion, classifier: 'tests'
@@ -103,6 +109,9 @@ dependencies {
   }
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
+  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+    testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
+  }
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
@@ -133,7 +142,6 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
 
 compileJava.dependsOn createVersionPropertiesFile
 
-
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
   classifier = 'javadoc'
   from scaladoc
@@ -147,7 +155,6 @@ if (rootProject.hasProperty('enablePublish')) {
 testClasses.doLast {
   copyTestsCommonResources(buildDir)
 }
-
 
 def copyDirs(def srcDir, def destDir) {
   mkdir(destDir)
@@ -169,6 +176,5 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn test, scalaTest, dunitTest
+check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion
-

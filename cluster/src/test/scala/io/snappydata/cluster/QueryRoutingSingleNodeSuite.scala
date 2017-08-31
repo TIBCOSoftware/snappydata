@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -412,7 +412,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
   test("1655: test Boolean in Row Table") {
 
-    snc.sql("create table order_line_row_bool (ol_w_id  Boolean, ol_d_id Integer) using row " +
+    snc.sql("create table order_line_row_bool (ol_w_id  Boolean, ol_d_id Long) using row " +
         "options( partition_by 'ol_w_id, ol_d_id', buckets '5')")
 
     serverHostPort = TestUtil.startNetServer()
@@ -493,6 +493,211 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     } finally {
       stmt.close()
       conn.close()
+    }
+  }
+
+  def insertRows(tableName: String, numRows: Int): Unit = {
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    val rows = (1 to numRows).toSeq
+    val stmt = conn.createStatement()
+    try {
+      var i = 1
+      rows.foreach(d => {
+        stmt.addBatch(s"insert into $tableName values($d, $d, '$d')")
+        i += 1
+        if (i % 1000 == 0) {
+          stmt.executeBatch()
+          i = 0
+        }
+      })
+      stmt.executeBatch()
+      // scalastyle:off println
+      println(s"committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  def update_delete_query1(tableName1: String, cacheMapSize: Int): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    val s = conn.createStatement()
+    try {
+      val delete1 = s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id < 400 ")
+      assert(delete1 == 399, delete1)
+      val delete2 = s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id < 500 ")
+      assert(delete2 == 100, delete2)
+
+      val delete3 = s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id > 502 ")
+      assert(delete3 == 498, delete3)
+
+      val update1 =
+        s.executeUpdate(s"update $tableName1 set ol_1_int_id = 1000 where ol_1_int2_id = 500 ")
+      assert(update1 == 1, update1)
+
+      val update2 =
+        s.executeUpdate(s"update $tableName1 set ol_1_int_id = 2000 where ol_1_int2_id > 500 ")
+      assert(update2 == 2, update2)
+
+      val selectQry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id from $tableName1 limit 20"
+      verifyResults("update_delete_query1-select1", s.executeQuery(selectQry),
+        Array(1000, 2000, 2000), cacheMapSize)
+
+      val update3 =
+        s.executeUpdate(s"update $tableName1 set ol_1_int_id = 4000 where ol_1_int2_id = 500 ")
+      assert(update3 == 1, update3)
+
+      val update4 =
+        s.executeUpdate(s"update $tableName1 set ol_1_int_id = 5000 where ol_1_int2_id > 500 ")
+      assert(update4 == 2, update4)
+
+      verifyResults("update_delete_query1-select2", s.executeQuery(selectQry),
+        Array(4000, 5000, 5000), cacheMapSize)
+
+      // Thread.sleep(1000000)
+    } finally {
+      s.close()
+      conn.close()
+    }
+  }
+
+  test("update delete on column table") {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    try {
+      val tableName1 = "order_line_1_col_ud"
+      val tableName2 = "order_line_2_row_ud"
+      snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+          "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+      snc.sql(s"create table $tableName2 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
+          "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+      serverHostPort = TestUtil.startNetServer()
+      // println("network server started")
+      insertRows(tableName1, 1000)
+      insertRows(tableName2, 1000)
+      update_delete_query1(tableName1, 1)
+      update_delete_query1(tableName2, 2)
+    } finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
+  def insertRows2(tableName: String, numRows: Int): Unit = {
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    val rows = (1 to numRows).toSeq
+    val stmt = conn.createStatement()
+    try {
+      var i = 1
+      rows.foreach(d => {
+        val d1 = d + 1
+        stmt.addBatch(s"insert into $tableName values($d, $d1, '$d1')")
+        i += 1
+        if (i % 1000 == 0) {
+          stmt.executeBatch()
+          i = 0
+        }
+      })
+      stmt.executeBatch()
+      // scalastyle:off println
+      println(s"insertRows2: committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  def insertInto(tableName1: String, tableName2: String, rowsExpected: Int): Unit = {
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    try {
+      val numRows = stmt.executeUpdate(s"insert into $tableName1 select * from $tableName2")
+      // scalastyle:off println
+      println(s"insertInto $numRows rows")
+      // scalastyle:on println
+      assert(numRows == rowsExpected)
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  def putInto(tableName1: String, tableName2: String, rowsExpected: Int): Unit = {
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    try {
+      val numRows = stmt.executeUpdate(s"put into $tableName1 select * from $tableName2")
+      // scalastyle:off println
+      println(s"putInto $numRows rows")
+      // scalastyle:on println
+      assert(numRows == rowsExpected)
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  test("put into on row table") {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+
+    def createTable(tableName: String): Unit =
+      snc.sql(s"create table $tableName (ol_1_int_id  integer primary key," +
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
+          "options( partition_by 'ol_1_int_id', buckets '2')" +
+          // TODO SNAP-1945: This leads to  duplicate key value error
+          // "options( partition_by 'ol_1_int2_id', buckets '2')" +
+          "")
+
+    try {
+      val tableName1 = "order_line_1_row_pi"
+      val tableName2 = "order_line_2_row_pi"
+      val tableName3 = "order_line_3_row_pi"
+      createTable(tableName1)
+      createTable(tableName2)
+      createTable(tableName3)
+
+      serverHostPort = TestUtil.startNetServer()
+      // println("network server started")
+      insertRows(tableName1, 10)
+      // TODO: SNAP-1944
+      insertInto(tableName3, tableName1, 0)
+
+      insertRows2(tableName2, 5)
+      putInto(tableName3, tableName2, 5)
+
+      val df = snc.sql(s"select * from $tableName3")
+      assert(df.count() == 10)
+      var assertionNotFailed = true
+      df.foreach(r => {
+        val col1 = r.getInt(0)
+        val col2 = r.getInt(1)
+
+        // scalastyle:off println
+        println(s"select row $r")
+        // scalastyle:on println
+
+        if (col1 < 6) {
+          assertionNotFailed = assertionNotFailed && (col1 + 1 == col2)
+        } else {
+          assertionNotFailed = assertionNotFailed && (col1 == col2)
+        }
+      })
+      assert(assertionNotFailed)
+    } finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
   }
 }

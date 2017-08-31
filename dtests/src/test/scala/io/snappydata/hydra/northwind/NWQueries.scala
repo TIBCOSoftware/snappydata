@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -498,6 +498,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/regions.csv")
 
   val regions_table = "create table regions (" +
@@ -509,6 +510,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/categories.csv")
 
   val categories_table = "create table categories (" +
@@ -522,6 +524,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/shippers.csv")
 
   val shippers_table = "create table shippers (" +
@@ -534,6 +537,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/employees.csv")
 
   val employees_table = "create table employees(" +
@@ -564,6 +568,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/customers.csv")
 
   val customers_table = "create table customers(" +
@@ -585,6 +590,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/orders.csv")
 
   val orders_table = "create table orders (" +
@@ -604,12 +610,32 @@ object NWQueries {
       "ShipPostalCode string, " +
       "ShipCountry string)"
 
+  val large_orders_table = "create table orders (" +
+      // "OrderID int not null, " +
+      "OrderID int, " +
+      "CustomerID string, " +
+      "EmployeeID int, " +
+      "OrderDate timestamp, " +
+      "RequiredDate timestamp, " +
+      "ShippedDate timestamp, " +
+      "ShipVia int, " +
+      "Freight double, " +
+      "ShipName string, " +
+      "ShipAddress string, " +
+      "ShipCity string, " +
+      "ShipRegion string, " +
+      "ShipPostalCode string, " +
+      "ShipCountry string," +
+      "bigComment string)"
+
   def order_details(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks" +
       ".spark.csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/order-details.csv")
+
 
   val order_details_table = "create table order_details (" +
       //    "OrderID int not null, " +
@@ -623,11 +649,25 @@ object NWQueries {
       "Quantity smallint, " +
       "Discount double)"
 
+  val large_order_details_table = "create table order_details (" +
+      //    "OrderID int not null, " +
+      //    "ProductID int not null, " +
+      //    "UnitPrice double not null, " +
+      //    "Quantity smallint not null, " +
+      //    "Discount double not null)"
+      "OrderID int, " +
+      "ProductID int, " +
+      "UnitPrice double, " +
+      "Quantity smallint, " +
+      "Discount double," +
+      "bigComment string)"
+
   def products(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark" +
       ".csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/products.csv")
 
   val products_table = "create table products(" +
@@ -650,6 +690,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/suppliers.csv")
 
   val suppliers_table = "create table suppliers(" +
@@ -673,6 +714,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/territories.csv")
 
   val territories_table = "create table territories(" +
@@ -688,6 +730,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/employee-territories.csv")
 
   val employee_territories_table = "create table employee_territories(" +

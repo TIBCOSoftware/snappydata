@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import io.snappydata.collection.ObjectHashSet
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types.StringType
 
 /**
@@ -77,10 +78,7 @@ object DictionaryOptimizedMapAccessor {
       keyVars: => Seq[ExprCode], ctx: CodegenContext,
       session: SnappySession): Option[DictionaryCode] = {
     if (canHaveSingleKeyCase(keyExpressions)) {
-      session.getDictionaryCode(ctx, keyVars.head.value) match {
-        case e@Some(DictionaryCode(_, _, dict, _, _)) if dict.nonEmpty => e
-        case _ => None
-      }
+      session.getDictionaryCode(ctx, keyVars.head.value)
     } else None
   }
 
@@ -88,8 +86,8 @@ object DictionaryOptimizedMapAccessor {
       keyVar: ExprCode, keyDictVar: DictionaryCode, arrayVar: String,
       resultVar: String, valueInit: String, continueOnNull: Boolean,
       accessor: ObjectHashMapAccessor): String = {
-    val key = keyVar.value
-    val keyIndex = keyDictVar.dictionaryIndex
+    val key = ctx.freshName("dictionaryKey")
+    val keyIndex = keyDictVar.dictionaryIndex.value
     val keyNull = keyVar.isNull != "false"
     val keyEv = ExprCode("", if (keyNull) s"($key == null)" else "false", key)
     val className = accessor.getClassName
@@ -124,23 +122,16 @@ object DictionaryOptimizedMapAccessor {
       case None => s"final int $hash = $hashExprCode;"
     }
 
-    // if keyVar code has been consumed, then dictionary index
-    // has already been assigned and likewise the key itself
-    val keyAssign = if (keyVar.code.isEmpty) ""
+    // if keyVar code has not been consumed, then use dictionary
+    val keyAssign = if (keyVar.code.isEmpty) s"final UTF8String $key = ${keyVar.value};"
     else {
-      // in this case replace the keyVar code to skip dictionary index get
-      if (keyVar.isNull.isEmpty || keyVar.isNull == "false") {
-        keyVar.code = s"$key = ${keyDictVar.valueAssignCode};"
-        s"$key = ${keyDictVar.dictionary}[$keyIndex];"
-      } else {
-        keyVar.code =
-            s"""if ($key == null) {
-               |  $key = ${keyVar.isNull} ? null : ${keyDictVar.valueAssignCode};
-               |}""".stripMargin
-        s"$key = ${keyDictVar.dictionary}[$keyIndex];"
-      }
+      val dictionaryVar = keyDictVar.dictionary.value
+      val stringAssignCode = ColumnEncoding.stringFromDictionaryCode(
+        dictionaryVar, keyDictVar.bufferVar, keyIndex)
+      s"final UTF8String $key = $stringAssignCode;"
     }
-    s"""if ($arrayVar != null) {
+    s"""${keyDictVar.evaluateIndexCode()}
+       |if ($arrayVar != null) {
        |  $resultVar = $arrayVar[$keyIndex];
        |  ${nullCheck}if ($resultVar == null) {
        |    $keyAssign

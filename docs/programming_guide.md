@@ -746,6 +746,7 @@ COLUMN_MAX_DELTA_ROWS '10000',
 
 DROP TABLE [IF EXISTS] table_name
 ```
+
 Refer to the [How-Tos](howto.md) section for more information on partitioning and colocating data and [CREATE TABLE](reference/sql_reference/create-table.md) for information on creating a row/column table.
 
 You can also define complex types (Map, Array and StructType) as columns for column tables.
@@ -981,11 +982,6 @@ In SnappyData, the column table consists of two components, delta row buffer and
 
 Once the size of buffer reaches the COLUMN_BATCH_SIZE set by the user, the delta row buffer is compressed column wise and stored in the column store.
 Any query on column table also takes into account the row cached buffer. By doing this, it ensures that the query does not miss any data.
-
-<!-- #### Catalog in SnappyStore
-Persistent Hive catalog for all meta data storage is used. All table, schema definition are stored here in a reliable manner. The product intends to quickly recover from driver failover, using GemFireXD itself to store meta information. This gives the ability to query underlying GemFireXD to reconstruct the meta store in case of a driver failover.
-
-<mark>There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. </mark>-->
 
 #### SQL Reference to the Syntax
 

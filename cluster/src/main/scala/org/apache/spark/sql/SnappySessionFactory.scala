@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,7 +16,10 @@
  */
 package org.apache.spark.sql
 
-import com.typesafe.config.Config
+
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.typesafe.config.{Config, ConfigException}
+import io.snappydata.Constant
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
@@ -39,6 +42,33 @@ object SnappySessionFactory {
 
   private[this] val snappySession =
     new SnappySession(LeadImpl.getInitializingSparkContext)
+
+  def updateCredentials(snc: SnappySession, jobConfig: Config): Config = {
+    if (Misc.isSecurityEnabled) {
+      try {
+        // Pass job credentials to snappy session
+        val username = jobConfig.getString("snappydata.user")
+        val password = jobConfig.getString("snappydata.password")
+        snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, username)
+        snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, password)
+        // Clear admin user/password from jobConfig before passing it to user job.
+        cleanJobConfig(jobConfig)
+      } catch {
+        case m: ConfigException.Missing => jobConfig // Config not found
+      }
+    } else {
+      jobConfig
+    }
+  }
+
+  def cleanJobConfig(c: Config): Config = {
+    // TODO Remove snappydata properties path when available
+    var sJobConfig = c.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
+        .Attribute.USERNAME_ATTR)
+    sJobConfig = sJobConfig.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal
+        .gemfirexd.Attribute.PASSWORD_ATTR)
+    sJobConfig
+  }
 
   protected def newSession(): SnappySession with ContextLike =
     new SnappySession(snappySession.sparkContext) with ContextLike {
@@ -63,26 +93,26 @@ trait SnappySQLJob extends SparkJobBase {
   type C = Any
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
-    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
-    Thread.currentThread().setContextClassLoader(currentLoader)
-    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], config))
+    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession],
+      SnappySessionFactory.cleanJobConfig(config)))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
-    val snc = sc.asInstanceOf[SnappySession]
+    val snSession = sc.asInstanceOf[SnappySession]
+    val sparkContext = snSession.sparkContext
     try {
-      runSnappyJob(snc, jobConfig)
-    }
-    finally {
-      SnappyUtils.removeJobJar(snc.sparkContext)
+      SnappyUtils.setSessionDependencies(sparkContext,
+        appName = this.getClass.getCanonicalName,
+        classLoader = Thread.currentThread().getContextClassLoader)
+      runSnappyJob(snSession, SnappySessionFactory.updateCredentials(snSession, jobConfig))
+    } finally {
+      SnappyUtils.clearSessionDependencies(sparkContext)
     }
   }
 
   def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
 
   def runSnappyJob(sc: SnappySession, jobConfig: Config): Any
-
 }
 
 abstract class JavaSnappySQLJob extends SnappySQLJob

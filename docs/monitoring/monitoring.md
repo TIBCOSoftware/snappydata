@@ -19,6 +19,7 @@ The following topics are covered in this section:
 
 <a id="dashboard"></a>
 ## The Dashboard
+
 The Dashboard offers the following capabilities and benefits:
 
 * [Cluster Statistics](#cluster)
@@ -28,6 +29,8 @@ The Dashboard offers the following capabilities and benefits:
 * [Table Statistics](#table)
 
 ![Dashboard](../Images/monitoring_topnav.png)
+
+The Dashboard offers the following capabilities and benefits:
 
 <a id="cluster"></a>
 ### Cluster Statistics

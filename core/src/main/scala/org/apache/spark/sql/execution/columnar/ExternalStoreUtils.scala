@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,24 +18,29 @@ package org.apache.spark.sql.execution.columnar
 
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
-import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
 
+import org.apache.spark.SparkContext
+import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
+import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -43,29 +48,39 @@ import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.util.{Utils => SparkUtils}
 
 /**
  * Utility methods used by external storage layers.
  */
-object ExternalStoreUtils extends Logging {
+object ExternalStoreUtils {
 
-  final val DEFAULT_TABLE_BUCKETS = "113"
-  final val DEFAULT_SAMPLE_TABLE_BUCKETS = "79"
-  final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "19"
-  final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "11"
+  private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) =
+    Option(SnappyContext.globalSparkContext).map(_.schedulerBackend) match {
+      case Some(local: LocalSchedulerBackend) =>
+        // apply a max limit of 64 in local mode since there is not much
+        // scaling to be had beyond that on most processors
+        val result = math.min(64, local.totalCores << 1).toString
+        // use same number of partitions for sample table in local mode
+        (result, result)
+      case _ => ("128", "64")
+    }
+
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
   final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
+  final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
+  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
   final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
-    COLUMN_MAX_DELTA_ROWS, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
+    COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
+    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
 
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
@@ -80,7 +95,7 @@ object ExternalStoreUtils extends Logging {
   }
 
   private def defaultMaxExternalPoolSize: String =
-    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 4))
+    String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
 
   private def defaultMaxEmbeddedPoolSize: String =
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 16))
@@ -98,7 +113,8 @@ object ExternalStoreUtils extends Logging {
     if (hikariCP) {
       props = props + ("jdbcUrl" -> url)
       props = addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
-      props = addProperty(props, "minimumIdle", "4")
+      props = addProperty(props, "minimumIdle", "10")
+      props = addProperty(props, "idleTimeout", "120000")
     } else {
       props = props + ("url" -> url)
       props = addProperty(props, "maxActive", defaultMaxPoolSize)
@@ -169,22 +185,21 @@ object ExternalStoreUtils extends Logging {
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
     sparkContext match {
-      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
-          "skip-constraint-checks=true"
+      case None => Constant.DEFAULT_EMBEDDED_URL +
+          ";host-data=false;mcast-port=0;internal-connection=true"
+
       case Some(sc) =>
         SnappyContext.getClusterMode(sc) match {
           case SnappyEmbeddedMode(_, _) =>
             // Already connected to SnappyData in embedded mode.
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
-                "skip-constraint-checks=true"
+            Constant.DEFAULT_EMBEDDED_URL +
+                ";host-data=false;mcast-port=0;internal-connection=true"
           case ThinClientConnectorMode(_, url) =>
-            url + ";route-query=false;skip-constraint-checks=true"
-          case SplitClusterMode(_, _) =>
-            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
+            url + ";route-query=false;internal-connection=true"
           case ExternalEmbeddedMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;skip-constraint-checks=true;" + url
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
           case LocalMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";skip-constraint-checks=true;" + url
+            Constant.DEFAULT_EMBEDDED_URL + ";" + url + ";internal-connection=true"
           case ExternalClusterMode(_, url) =>
             throw new AnalysisException("Option 'url' not specified for cluster " +
                 url)
@@ -192,9 +207,10 @@ object ExternalStoreUtils extends Logging {
     }
   }
 
-  def isSplitOrLocalMode(sparkContext: SparkContext): Boolean = {
+  def isLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
-      case SplitClusterMode(_, _) | LocalMode(_, _) => true
+
+      case LocalMode(_, _) => true
       case _ => false
     }
   }
@@ -257,13 +273,12 @@ object ExternalStoreUtils extends Logging {
       case GemFireXDClientDialect =>
         GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
-        connProps.setProperty(ClientAttribute.SKIP_CONSTRAINT_CHECKS, "true")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
         val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
           case Some(s) => Integer.parseInt(s)
           case None => session.map(defaultColumnBatchSize).getOrElse(
-            Property.ColumnBatchSize.defaultValue.get)
+            sizeAsBytes(Property.ColumnBatchSize.defaultValue.get, Property.ColumnBatchSize.name))
         }
         val columnBatchSize = math.max((batchSize << 2) / 3,
           snappydataConstants.DEFAULT_LOB_CHUNKSIZE)
@@ -277,8 +292,54 @@ object ExternalStoreUtils extends Logging {
     }
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP, isEmbedded)
-    ConnectionProperties(url, driver, dialect, allPoolProps,
+    getConnectionProperties(session, url, driver, dialect, allPoolProps,
       connProps, executorConnProps, hikariCP)
+  }
+
+  def getConnectionProperties(session: Option[SparkSession], url: String, driver: String,
+      dialect: JdbcDialect, poolProps: Map[String, String], connProps: Properties,
+      executorConnProps: Properties, hikariCP: Boolean): ConnectionProperties = {
+    session match {
+      case Some(_) => getConnProps(session.get, url, driver, dialect, poolProps, connProps,
+        executorConnProps, hikariCP)
+      case None => ConnectionProperties(url, driver, dialect, poolProps, connProps,
+        executorConnProps, hikariCP)
+    }
+  }
+
+  def getConnProps(session: SparkSession, url: String, driver: String, dialect: JdbcDialect,
+      poolProps: Map[String, String], connProps: Properties, executorConnProps: Properties,
+      hikariCP: Boolean): ConnectionProperties = {
+    val (user, password) = getCredentials(session)
+
+    if (!user.isEmpty && !password.isEmpty) {
+      def secureProps(props: Properties): Properties = {
+        props.setProperty(Attribute.USERNAME_ATTR, user)
+        props.setProperty(Attribute.PASSWORD_ATTR, password)
+        props
+      }
+
+      // Hikari only take 'username'. So does Tomcat
+      def securePoolProps(props: Map[String, String]): Map[String, String] = {
+        props + (Attribute.USERNAME_ALT_ATTR.toLowerCase -> user) + (Attribute.PASSWORD_ATTR ->
+            password)
+      }
+
+      ConnectionProperties(url, driver, dialect, securePoolProps(poolProps),
+        secureProps(connProps), secureProps(executorConnProps), hikariCP)
+    } else {
+      ConnectionProperties(url, driver, dialect, poolProps, connProps, executorConnProps,
+        hikariCP)
+    }
+  }
+
+  def getCredentials(session: SparkSession, prefix: String = ""): (String, String) = {
+    val prefix = SnappyContext.getClusterMode(session.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => Constant.SPARK_STORE_PREFIX
+      case _ => ""
+    }
+    (session.conf.get(prefix + Attribute.USERNAME_ATTR, ""),
+        session.conf.get(prefix + Attribute.PASSWORD_ATTR, ""))
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,
@@ -436,18 +497,7 @@ object ExternalStoreUtils extends Logging {
       forSampleTable: Boolean = false): Int = {
 
     parameters.getOrElse(BUCKETS, {
-      val partitions = sparkContext match {
-        case Some(sc) =>
-          SnappyContext.getClusterMode(sc) match {
-            case LocalMode(_, _) =>
-              if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
-              else DEFAULT_TABLE_BUCKETS_LOCAL_MODE
-            case _ =>
-              if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS
-              else DEFAULT_TABLE_BUCKETS
-          }
-        case None => DEFAULT_TABLE_BUCKETS
-      }
+      val partitions = if (forSampleTable) defaultSampleTableBuckets else defaultTableBuckets
       if (forManagedTable) {
         if (forColumnTable) {
           // column tables are always partitioned
@@ -502,6 +552,7 @@ object ExternalStoreUtils extends Logging {
       final class GeneratedIterator extends ${classOf[BufferedRowIterator].getName} {
 
         private Object[] references;
+        private scala.collection.Iterator[] inputs;
         ${ctx.declareMutableStates()}
 
         public GeneratedIterator(Object[] references) {
@@ -510,6 +561,7 @@ object ExternalStoreUtils extends Logging {
 
         public void init(int index, scala.collection.Iterator inputs[]) {
           partitionIndex = index;
+          this.inputs = inputs;
           ${ctx.initMutableStates()}
         }
 
@@ -526,7 +578,7 @@ object ExternalStoreUtils extends Logging {
       new CodeAndComment(CodeFormatter.stripExtraNewLines(source),
         ctx.getPlaceHolderToComments()))
 
-    logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
+    CodeGeneration.logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
     (ctx, cleanedSource)
   }
 
@@ -591,18 +643,26 @@ object ExternalStoreUtils extends Logging {
   }
 
   def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {
-    val container = Misc.getMemStore.getAllContainers.asScala.find(c => {
-      c.getTableName.equalsIgnoreCase(table) &&
-          c.getSchemaName.equalsIgnoreCase(schema)
-    })
-    container match {
-      case None => throw new IllegalStateException(s"Table $schema.$table not found in containers")
-      case Some(c) => c.fetchHiveMetaData(false)
+    val region = Misc.getRegion(Misc.getRegionPath(schema, table, null), true, false)
+    region.getUserAttribute.asInstanceOf[GemFireContainer] match {
+      case null =>
+        throw new IllegalStateException(s"Table $schema.$table not found in containers")
+      case c => c.fetchHiveMetaData(false)
+    }
+  }
+
+  def sizeAsBytes(str: String, propertyName: String): Int = {
+    val size = SparkUtils.byteStringAsBytes(str)
+    if (size > 0 && size <= Int.MaxValue) size.toInt
+    else {
+      throw new IllegalArgumentException(
+        s"$propertyName should be > 0 and < 2GB (provided = $str)")
     }
   }
 
   def defaultColumnBatchSize(session: SparkSession): Int = {
-    Property.ColumnBatchSize.get(session.sessionState.conf)
+    sizeAsBytes(Property.ColumnBatchSize.get(session.sessionState.conf),
+      Property.ColumnBatchSize.name)
   }
 
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
@@ -611,6 +671,10 @@ object ExternalStoreUtils extends Logging {
 
   def defaultCompressionCodec(session: SparkSession): String = {
     Property.CompressionCodec.get(session.sessionState.conf)
+  }
+
+  def getSQLListener: AtomicReference[SQLListener] = {
+    SparkSession.sqlListener
   }
 }
 
