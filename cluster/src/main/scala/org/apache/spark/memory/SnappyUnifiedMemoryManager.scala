@@ -687,12 +687,10 @@ class SnappyUnifiedMemoryManager private[memory](
   override def initMemoryStats(stats: MemoryManagerStats): Unit = {
     stats.incMaxStorageSize(true, maxOffHeapStorageSize)
     stats.incMaxStorageSize(false, maxHeapStorageSize)
-
     stats.incStoragePoolSize(true, offHeapStorageMemoryPool.poolSize)
     stats.incStoragePoolSize(false, onHeapStorageRegionSize)
     stats.incStorageMemoryUsed(true, offHeapStorageMemoryPool.memoryUsed)
     stats.incStorageMemoryUsed(false, onHeapStorageMemoryPool.memoryUsed)
-
     stats.incExecutionPoolSize(true, offHeapExecutionMemoryPool.poolSize)
     stats.incExecutionPoolSize(false, onHeapExecutionMemoryPool.poolSize)
     stats.incExecutionMemoryUsed(true, offHeapExecutionMemoryPool.memoryUsed)
