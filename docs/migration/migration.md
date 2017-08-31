@@ -7,7 +7,7 @@ Before you begin migrating, ensure that you understand the new features and any 
 
 1. Backup the existing environment: Make sure you create a backup of the locator, lead, and server configuration files that exist in the **conf** folder located in the SnappyData home directory. 
 
-2. Stop the cluster and verify that all members are stopped: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command. To ensure that all the members have been shut down correctly, use the `sbin/snappy-status-all.sh` command.
+2. Stop the cluster and verify that all members are stopped: You can shut down the cluster using the `sbin/snappy-stop-all.sh` command. To ensure that all the members have been shut down correctly, use the `sbin/snappy-status-all.sh` command.
 	
 3. Re-install SnappyData: After you have stopped the cluster, [install SnappyData 0.9](../install.md).
 

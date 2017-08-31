@@ -14,6 +14,7 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
+    DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.

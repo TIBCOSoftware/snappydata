@@ -11,14 +11,16 @@ The DSID function returns the string form of the distributed member process iden
 ## Example
 
 ```	
-select dsid(),ECONOMY_SEATS from AIRLINES;
+select count(*), dsid() from AIRLINE group by dsid();
 
-|DSID()                              |ECONOMY_SEATS  |
-+----------------------------------+-+
-|192.168.1.186(9832:loner):0:acecdb5a|1  |
-|192.168.1.189(9832:loner):0:acecdb5a|31 |
-|192.168.1.191(9832:loner):0:acecdb5a|87 |
-|192.168.1.199(9832:loner):0:acecdb5a|12 |
+count(1)            |DSID()                      
+-------------------------------------------------
+347749              |192.168.1.98(3625)<v3>:8739 
+348440              |192.168.1.98(3849)<v4>:50958
+303811              |192.168.1.98(3255)<v1>:2428 
+
+3 rows selected
+snappy> 
 ```
 
 

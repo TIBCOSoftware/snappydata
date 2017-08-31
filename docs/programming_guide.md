@@ -18,13 +18,13 @@ In environments that this has been created up front (e.g. REPL, notebooks), use 
 
 To create a SparkSession:
 
-```
+```scala
 SparkSession.builder().getOrCreate()
 ```
  
 The builder can also be used to create a new session:
 
-```
+```scala
 SparkSession.builder()
      .master("local")
      .appName("Word Count")
@@ -197,7 +197,7 @@ The following command submits [CreateAndLoadAirlineDataJob](https://github.com/S
     
 The program is compiled into a jar file (**quickstart.jar**) and submitted to jobs server as shown below.
 
-```bash
+```scala
 $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
@@ -216,7 +216,7 @@ The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id
 
 The status returned by the utility is displayed below:
 
-```json
+```scala
 {
   "status": "STARTED",
   "result": {
@@ -226,7 +226,8 @@ The status returned by the utility is displayed below:
 }
 ```
 This Job ID can be used to query the status of the running job. 
-```bash
+
+```scala
 $ bin/snappy-job.sh status  \
     --lead hostNameOfLead:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
@@ -242,7 +243,8 @@ $ bin/snappy-job.sh status  \
 }
 ```
 Once the tables are created, they can be queried by running another job. Please refer to [AirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) for implementing the job. 
-```bash
+
+```scala
 $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
@@ -254,24 +256,25 @@ The status of this job can be queried in the same manner as shown above. The res
 ### Running Python Applications
 Python users can submit a Python application using `spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
 
-```bash
+```scala
 bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \
     --conf spark.ui.port=4042 /quickstart/python/CreateTable.py
 ```
+
 `snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.
 
 
 ### Streaming Jobs
 
-An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying ```--stream``` as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
+An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying `--stream` as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
 Alternatively, you can specify the name of an existing/pre-created streaming context as `--context <context-name>` with the `submit` command.
 
 For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) can be submitted as follows. 
 This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, and top 10 popular tweets.
 
-```bash
+```scala
 $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
@@ -289,7 +292,7 @@ $ bin/snappy-job.sh submit  \
 ```
 To start another streaming job with a new streaming context, you need to first stop the currently running streaming job, followed by its streaming context.
 
-```bash
+```scala
 $ bin/snappy-job.sh stop  \
     --lead hostNameOfLead:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
@@ -312,9 +315,10 @@ Related jobs may require some common libraries. These libraries can be made avai
 
 **Syntax:**
 
-```bash
+```scala
 SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
 ```
+
 * JAR_FILE_PATH  is the full path to the JAR file. This path must be accessible to the server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using a locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
 
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
@@ -323,7 +327,7 @@ SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(
 
 **Example:**
 
-```bash
+```scala
 snappy> call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
 ```
 
@@ -332,7 +336,8 @@ snappy> call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
 Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file
 
 **Syntax:**
-```bash
+
+```scala
 SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
 ```
 * JAR_FILE_PATH  is the full path to the JAR file. This path must be accessible to the server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using the locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers.
@@ -341,7 +346,7 @@ SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(
 
 **Example:**
 
-```bash
+```scala
 CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
 ```
 
@@ -350,7 +355,7 @@ CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
 Use SQLJ.REMOVE_JAR  procedure to remove a JAR file
 
 **Syntax:**
-```bash
+```scala
 SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
 ```
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
@@ -359,7 +364,7 @@ SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
 
 **Example:**
 
-```bash
+```scala
 CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
 ```
 
@@ -404,7 +409,7 @@ To support such cases it is also possible to run native Spark jobs that access a
 
 To run all SnappyData functionalities you need to create a [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession).
 
-```bash
+```scala
 // from the SnappyData base directory  
 # Start the Spark shell in local mode. Pass SnappyData's locators host:clientPort as a conf parameter.
 $ bin/spark-shell  --master local[*] --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041
@@ -422,7 +427,7 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 
 Any Spark application can also use the SnappyData as store and Spark as a computational engine by providing an extra `spark.snappydata.connection` property in the conf.
 
-```bash
+```scala
 # Start the Spark standalone cluster from SnappyData base directory 
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
@@ -597,7 +602,6 @@ results4.foreach(println)
 ### SnappyStreamingContext Usage
 SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
 
-Below example shows how to use the `SnappyStreamingContext` to apply a schema to existing DStream and then query the `SchemaDStream` with simple SQL. It also shows the ability of the SnappyStreamingContext to deal with SQL queries.
 
 #### Scala
 ```scala
@@ -719,7 +723,7 @@ Row tables, unlike column tables, are laid out one row at a time in contiguous m
 Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.
 
 #### DDL and DML Syntax for Tables
-```sql
+```scala
 CREATE TABLE [IF NOT EXISTS] table_name
    (
   COLUMN_DEFINITION
@@ -727,14 +731,14 @@ CREATE TABLE [IF NOT EXISTS] table_name
 USING row | column
 OPTIONS (
 COLOCATE_WITH 'table_name',  // Default none
-PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table.
+PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table
 BUCKETS  'NumPartitions', // Default 113
-REDUNDANCY        '1' ,
+REDUNDANCY '1' ,
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
 OVERFLOW 'true',
 PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
 DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
-EXPIRE ‘TIMETOLIVE in seconds',
+EXPIRE ‘TIMETOLIVE_in_seconds',
 COLUMN_BATCH_SIZE '32000000',
 COLUMN_MAX_DELTA_ROWS '10000',
 )
@@ -745,6 +749,7 @@ DROP TABLE [IF EXISTS] table_name
 Refer to the [How-Tos](howto.md) section for more information on partitioning and colocating data and [CREATE TABLE](reference/sql_reference/create-table.md) for information on creating a row/column table.
 
 You can also define complex types (Map, Array and StructType) as columns for column tables.
+
 ```scala
 snappy.sql("CREATE TABLE tableName (
 col1 INT , 
@@ -839,52 +844,63 @@ The below mentioned DDL extensions are required to configure a table based on us
 
 
 #### DML Operations on Tables
-```   
-    INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
-    INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
-    INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
-    UPDATE tablename SET column = value [, column = value ...] [WHERE expression]
-    PUT INTO tableName (column, ...) VALUES (value, ...)
-    DELETE FROM tablename1 [WHERE expression]
-    TRUNCATE TABLE tablename1;
+
+```scala
+INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
+INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
+INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
+UPDATE tablename SET column = value [, column = value ...] [WHERE expression]
+PUT INTO tableName (column, ...) VALUES (value, ...)
+DELETE FROM tablename1 [WHERE expression]
+TRUNCATE TABLE tablename1;
 ```
 
 #### API Extensions Provided in SnappyContext
 Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
-```
-    //  Applicable for both row and column tables
-    def insert(tableName: String, rows: Row*): Int .
 
-    // Only for row tables
-    def put(tableName: String, rows: Row*): Int
-    def update(tableName: String, filterExpr: String, newColumnValues: Row, 
-               updateColumns: String*): Int
-    def delete(tableName: String, filterExpr: String): Int
+```scala
+//  Applicable for both row and column tables
+def insert(tableName: String, rows: Row*): Int .
+
+// Only for row tables
+def put(tableName: String, rows: Row*): Int
+def update(tableName: String, filterExpr: String, newColumnValues: Row, 
+           updateColumns: String*): Int
+def delete(tableName: String, filterExpr: String): Int
 ```
+
 **Usage SnappySession.insert()**: Insert one or more [[org.apache.spark.sql.Row]] into an existing table
+
+```scala
+val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+               Seq(5, 6, 7), Seq(1,100,200))
+data.map { r =>
+  snappy.insert("tableName", Row.fromSeq(r))
+}
 ```
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
-                   Seq(5, 6, 7), Seq(1,100,200))
-    data.map { r =>
-      snappy.insert("tableName", Row.fromSeq(r))
-    }
-```
+
 **Usage SnappySession.put()**: Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-```
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
-                   Seq(5, 6, 7), Seq(1,100,200))
-    data.map { r =>
-      snappy.put(tableName, Row.fromSeq(r))
-    }
-```
+
+```scala
+val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+               Seq(5, 6, 7), Seq(1,100,200))
+data.map { r =>
+  snappy.put(tableName, Row.fromSeq(r))
+}
+```scala
+
 **Usage SnappySession.update()**: Update all rows in table that match passed filter expression
+
+```scala
+snappy.update(tableName, "ITEMREF = 3" , Row(99) , "ITEMREF" )
 ```
-    snappy.update(tableName, "ITEMREF = 3" , Row(99) , "ITEMREF" )
-```
+
 **Usage SnappySession.delete()**: Delete all rows in table that match passed filter expression
+
+```scala
+snappy.delete(tableName, "ITEMREF = 3")
 ```
-    snappy.delete(tableName, "ITEMREF = 3")
-```
+
 <!--
 #### String/CHAR/VARCHAR Data Types
 SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either CHAR or VARCHAR type, if your column data fits in maximum CHAR size (254) or VARCHAR size (32768), respectively. For larger column data size, String type should be used as product stores its data in CLOB format internally.
@@ -932,7 +948,7 @@ Defining the column(s) itself as CLOB, either using SQL or API. In the example b
 ```
 CREATE TABLE tableName (Col1 INT, Col2 CLOB, Col3 STRING, Col4 STRING);
 ```
-```Scala
+```scala
     import org.apache.spark.sql.collection.Utils
     import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
@@ -983,7 +999,7 @@ The following isolation levels are supported for row tables:
 | Isolation level | Description |
 |--------|--------|
 |NONE|Default isolation level. The Database Engine uses shared locks to prevent other transactions from modifying rows while the current transaction is running a read operation. |
-|READ_COMMITTED|SnappyData ensures that ongoing transactional as well as non-transactional (isolation-level NONE) operations never read uncommitted (dirty) data. SnappyData accomplishes this by maintaining transactional changes in a separate transaction state that is applied to the actual data-store for the table only at commit time. SnappyData detects only Write-Write conflicts while in READ_COMMITTED isolation level. </br>In READ COMMITTED, a read view is created at the start of each statement and lasts only as long as each statement execution.|
+|READ_COMMITTED|SnappyData ensures that ongoing transactional as well as non-transactional (isolation-level NONE) operations never read uncommitted (dirty) data. SnappyData accomplishes this by maintaining transactional changes in a separate transaction state that are applied to the actual data-store for the table only at commit time. SnappyData detects only Write-Write conflicts while in READ_COMMITTED isolation level. </br>In READ COMMITTED, a read view is created at the start of each statement and lasts only as long as each statement execution.|
 |REPEATABLE_READ|In this isolation level, a lock-based concurrency control DBMS implementation keeps read and write locks (acquired on selected data) until the end of the transaction. In REPEATABLE READ every lock acquired during a transaction is held for the duration of the transaction.|
 
 For more information, see, [SET ISOLATION](./reference/sql_reference/set-isolation.md)
@@ -1037,7 +1053,7 @@ The following enhancements over Spark Streaming are provided:
 ### Working with Stream Tables
 SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
 
-```SQL
+```scala
 // DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
 (COLUMN_DEFINITION)
@@ -1098,7 +1114,7 @@ The streamTable created in the above example can be accessed from snappy-sql and
 ### Stream SQL through snappy-sql
 Start a SnappyData cluster and connect through snappy-sql :
 
-```bash
+```scala
 //create a connection
 snappy> connect client 'localhost:1527';
 
@@ -1159,7 +1175,7 @@ The number of the interfaces (UDF1 to UDF22) signifies the number of parameters 
 !!! Note: 
 	Currently, any UDF which can take more than 22 parameters is not supported.
 
-```
+```scala
 package some.package
 import org.apache.spark.sql.api.java.UDF1
 
@@ -1167,6 +1183,7 @@ class StringLengthUDF extends UDF1[String, Int] {
  override def call(t1: String): Int = t1.length
 }
 ```
+
 <a id= create_udf> </a>
 #### Create UDF Function
 
@@ -1175,15 +1192,17 @@ class StringLengthUDF extends UDF1[String, Int] {
     
 After defining a UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
 
-```
+```scala
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'
 ```
+
 For example:
-```
+
+```scala
 CREATE FUNCTION APP.strnglen AS some.package.StringLengthUDF RETURNS Integer USING JAR '/path/to/file/udf.jar'
 ```
 
-You can write a JAVA or SCALA class to write an UDF implementation. 
+You can write a JAVA or SCALA class to write a UDF implementation. 
 
 !!! Note: 
 	For input/output types: </br>
@@ -1207,21 +1226,22 @@ You can write a JAVA or SCALA class to write an UDF implementation.
 
 #### **Use the UDF**
 
-```
+```scala
 select strnglen(string_column) from <table>
 ```
-If you try to use an UDF on a different type of column, for example, an **Int** column an exception is reported.
+
+If you try to use a UDF on a different type of column, for example, an **Int** column an exception is reported.
 
 
 #### **Drop the Function**
 
-```
+```scala
 DROP FUNCTION IF EXISTS udf_name
 ```
 
 For example:
 
-```
+```scala
 DROP FUNCTION IF EXISTS app.strnglen
 ```
 
@@ -1234,7 +1254,7 @@ DROP FUNCTION IF EXISTS app.strnglen
 
 ### Create User Defined Aggregate Functions
 
-SnappyData uses same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
+SnappyData uses the same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
 
 ## Known Limitation
 In the current version of the product, setting schema over a JDBC connection (using the `set schema` command) or SnappySession (using `SnappySession.setSchema` API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default `APP` schema. 

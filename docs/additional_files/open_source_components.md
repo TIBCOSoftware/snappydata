@@ -1,4 +1,4 @@
-# Open Source Components
+# Open Source/ Enterprise Components
 
 SnappyData offers a fully functional core OSS distribution that is Apache V2 licensed and includes the following capabilities:
 

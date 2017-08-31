@@ -13,7 +13,7 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install: install.md
-- System Requirements: additional_files/system_requirements.md
+# - System Requirements: additional_files/system_requirements.md
 - 'Migration Guide': 'migration/migration.md'
 - 'Migration Guide':
     - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
@@ -105,6 +105,7 @@ pages:
         - 'MEMBERS': 'reference/system_tables/members.md'
         - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
         - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'    
+        - 'SYSTABLES': 'reference/system_tables/systables.md'    
     - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
     - 'Command Line Utilities':
         - 'backup': 'reference/command_line_utilities/store-backup.md'
@@ -179,13 +180,13 @@ pages:
 #    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
-- 'Troubleshooting': 'troubleshooting/troubleshooting.md'
-- 'Troubleshooting':
+- 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
+- 'Troubleshooting Common Problems':
     - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
     - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
     - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
     - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
-    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
+#    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
 - Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
@@ -207,10 +208,9 @@ extra_css:
     - 'css/images.css'
     - 'css/style.css'
     - 'extra.css'
-
+    
 markdown_extensions:
     - admonition:
-    - footnotes
+   
     
-
 copyright: Copyright &copy; 2017 SnappyData Inc.
