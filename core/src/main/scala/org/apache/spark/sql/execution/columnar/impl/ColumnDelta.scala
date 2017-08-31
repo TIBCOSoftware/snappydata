@@ -29,7 +29,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSeq, BindReferences}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
-import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
 /**
  * Encapsulates a delta for update to be applied to column table and also
@@ -142,7 +142,7 @@ object ColumnDelta {
   )
   val mutableKeyFields: Seq[StructField] = Seq(
     StructField(mutableKeyNames.head, LongType, nullable = false),
-    StructField(mutableKeyNames(1), StringType, nullable = true),
+    StructField(mutableKeyNames(1), LongType, nullable = false),
     StructField(mutableKeyNames(2), IntegerType, nullable = false)
   )
   def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
@@ -162,10 +162,17 @@ object ColumnDelta {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) % MAX_DEPTH
   } else -1
 
+  /**
+   * Returns 0 based table column index (while that stored in region is 1 based).
+   */
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH
   } else deltaColumnIndex
 
+  /**
+   * Returns the delta column index as store in region key given the 0 based
+   * table column index (table column index stored in region key is 1 based).
+   */
   def deltaColumnIndex(tableColumnIndex: Int, hierarchyDepth: Int): Int =
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1 - hierarchyDepth
 }

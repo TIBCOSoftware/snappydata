@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,7 +30,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.thrift.common.BufferedBlob
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, MutatedColumnDecoder, MutatedColumnDecoderBase}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, DeletedColumnDecoder, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.types.StructField
@@ -112,13 +112,6 @@ abstract class ResultSetIterator[A](conn: Connection,
     } catch {
       case NonFatal(e) => logWarning("Exception closing statement", e)
     }
-    try {
-      conn.commit()
-      conn.close()
-      logDebug("closed connection for task " + context.partitionId())
-    } catch {
-      case NonFatal(e) => logWarning("Exception closing connection", e)
-    }
     hasNextValue = false
   }
 }
@@ -153,18 +146,17 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   protected var currentVal: ByteBuffer = _
   private var currentDeltaStats: ByteBuffer = _
   private var currentKeyPartitionId: Int = _
-  private var currentKeyUUID: String = _
+  private var currentKeyUUID: Long = _
   private var currentBucketRegion: BucketRegion = _
   private var batchProcessed = false
   private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
 
-  def getCurrentBatchId: String = currentKeyUUID
+  def getCurrentBatchId: Long = currentKeyUUID
 
   def getCurrentBucketId: Int = currentKeyPartitionId
 
   private def getColumnBuffer(columnPosition: Int, throwIfMissing: Boolean): ByteBuffer = {
-    val key = new ColumnFormatKey(currentKeyPartitionId, columnPosition,
-      currentKeyUUID)
+    val key = new ColumnFormatKey(currentKeyUUID, currentKeyPartitionId, columnPosition)
     val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
     else region.get(key)
     if (value ne null) {
@@ -190,8 +182,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
   }
 
-  def getMutatedColumnDecoderIfRequired(decoder: ColumnDecoder, field: StructField,
-      columnIndex: Int, skipDelete: Boolean): MutatedColumnDecoderBase = {
+  def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
+      columnIndex: Int): UpdatedColumnDecoderBase = {
     if (currentDeltaStats eq null) null
     else {
       // TODO: SW: check for actual delta stats to see if there are updates
@@ -199,11 +191,18 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
       val delta1 = getColumnBuffer(deltaPosition, throwIfMissing = false)
       val delta2 = getColumnBuffer(deltaPosition - 1, throwIfMissing = false)
       val delta3 = getColumnBuffer(deltaPosition - 2, throwIfMissing = false)
-      val delete = if (skipDelete) null
-      else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX, throwIfMissing = false)
-      if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
-        MutatedColumnDecoder(decoder, field, delta1, delta2, delta3, delete)
+      if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null)) {
+        UpdatedColumnDecoder(decoder, field, delta1, delta2, delta3)
       } else null
+    }
+  }
+
+  def getDeletedColumnDecoder: DeletedColumnDecoder = {
+    if (currentDeltaStats eq null) null
+    else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
+      throwIfMissing = false) match {
+      case null => null
+      case deleteBuffer => new DeletedColumnDecoder(deleteBuffer)
     }
   }
 
@@ -287,24 +286,23 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     partitionId: Int,
     fetchColQuery: String)
     extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
-  private var currentUUID: String = _
+  private var currentUUID: Long = _
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
   private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
     new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
-  def getCurrentBatchId: String = currentUUID
+  def getCurrentBatchId: Long = currentUUID
 
   def getCurrentBucketId: Int = partitionId
 
-  def getColumnLob(columnIndex: Int): ByteBuffer = {
-    val columnPosition = columnIndex + 1
+  private def fillBuffers(): Unit = {
     colBuffers match {
-      case buffers if buffers.size() > 1 => buffers.get(columnPosition)
+      case buffers if buffers.size() > 1 => // already filled in
       case buffers =>
         for (i <- 1 to totalColumns) {
-          ps.setString(i, currentUUID)
+          ps.setLong(i, currentUUID)
         }
         val colIter = ps.executeQuery()
         while (colIter.next()) {
@@ -318,24 +316,34 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           colBlob.free()
           buffers.put(position, colBuffer)
         }
-        buffers.get(columnPosition)
     }
   }
 
-  def getMutatedColumnDecoderIfRequired(decoder: ColumnDecoder, field: StructField,
-      columnIndex: Int, skipDelete: Boolean): MutatedColumnDecoderBase = {
+  def getColumnLob(columnIndex: Int): ByteBuffer = {
+    colBuffers.get(columnIndex + 1)
+  }
+
+  def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
+      columnIndex: Int): UpdatedColumnDecoderBase = {
     val buffers = colBuffers
     val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
     val delta1 = buffers.get(deltaPosition)
     val delta2 = buffers.get(deltaPosition - 1)
     val delta3 = buffers.get(deltaPosition - 2)
-    val delete = if (skipDelete) null else buffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
-    if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
-      MutatedColumnDecoder(decoder, field, delta1, delta2, delta3, delete)
+    if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null)) {
+      UpdatedColumnDecoder(decoder, field, delta1, delta2, delta3)
     } else null
   }
 
+  def getDeletedColumnDecoder: DeletedColumnDecoder = {
+    colBuffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX) match {
+      case null => null
+      case deleteBuffer => new DeletedColumnDecoder(deleteBuffer)
+    }
+  }
+
   def getDeletedRowCount: Int = {
+    fillBuffers()
     val delete = colBuffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
     if (delete eq null) 0
     else {
@@ -358,7 +366,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   }
 
   override protected def getCurrentValue: ByteBuffer = {
-    currentUUID = rs.getString(2)
+    currentUUID = rs.getLong(2)
     releaseColumns()
     // create a new map instead of clearing old one to help young gen GC
     colBuffers = new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)

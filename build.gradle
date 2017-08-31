@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -922,8 +922,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task buildDtests {
-  delete "${snappyProductDir}/dtests/build-artifacts/scala-${scalaBinaryVersion}/"
-  dependsOn "snappy-dtests_${scalaBinaryVersion}:packageTests"
+  dependsOn "snappy-dtests_${scalaBinaryVersion}:buildDtests"
 }
 task checkAll {
   dependsOn ':snappy-spark:scalaStyle'
@@ -941,8 +940,7 @@ task checkAll {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
-    dependsOn ":buildDtests"
-    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+    dependsOn ':buildDtests', ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
   mustRunAfter buildAll
 }
@@ -1103,3 +1101,32 @@ if (rootProject.hasProperty('trackBuildTime') ) {
     }
   }
 }
+
+// log build output to buildOutput.log
+
+def buildOutput = new File("${rootDir}/buildOutput.log")
+
+// delete build output file if it has become large
+if (buildOutput.length() > 1000000) {
+  delete buildOutput
+}
+
+import org.gradle.logging.internal.*
+
+gradle.services.get(LoggingOutputInternal).addStandardOutputListener (new StandardOutputListener () {
+  void onOutput(CharSequence output) {
+    buildOutput << output
+  }
+})
+
+gradle.services.get(LoggingOutputInternal).addStandardErrorListener (new StandardOutputListener () {
+  void onOutput(CharSequence output) {
+    buildOutput << output
+  }
+})
+
+println()
+println('-------------------------------------------------')
+println("Starting new build on ${buildDate}")
+println('-------------------------------------------------')
+println()

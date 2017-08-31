@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,8 +26,8 @@ import scala.util.Random
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.Constant
-import io.snappydata.test.dunit.VM
+import io.snappydata.{ColumnUpdateDeleteTests, Constant}
+import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
 import org.junit.Assert
@@ -159,6 +159,22 @@ trait SplitClusterDUnitTestBase extends Logging {
   def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
+
+  def testUpdateDeleteOnColumnTables(): Unit = {
+    val testObject = this.testObject
+    val netPort = this.locatorClientPort
+    // check update/delete in the connector mode
+    vm3.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        val snc = testObject.getSnappyContextForConnector(netPort)
+        val session = snc.snappySession
+        ColumnUpdateDeleteTests.testBasicUpdate(session)
+        ColumnUpdateDeleteTests.testBasicDelete(session)
+        ColumnUpdateDeleteTests.testSNAP1925(session)
+        ColumnUpdateDeleteTests.testSNAP1926(session)
+      }
+    })
+  }
 }
 
 trait SplitClusterDUnitTestObject extends Logging {
@@ -273,7 +289,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       val mode = SnappyContext.getClusterMode(snc.sparkContext)
       mode match {
         case ThinClientConnectorMode(_, _) => // expected
-        case _ => assert(false, "cluster mode is " + mode)
+        case _ => assert(assertion = false, "cluster mode is " + mode)
       }
       snc
   }
@@ -297,7 +313,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index create op
-        snc.createIndex("tableName" + "_index", tableName, Map(("COL1" -> None)),
+        snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
           Map.empty[String, String])
       case _ =>
     }
@@ -307,7 +323,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index drop op
-        snc.dropIndex("tableName" + "_index", false)
+        snc.dropIndex("tableName" + "_index", ifExists = false)
       case _ =>
     }
   }
@@ -402,7 +418,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       val itr = txMgr.getHostedTransactionsInProgress.iterator()
       while (itr.hasNext) {
         val tx = itr.next()
-        if (tx.isSnapshot) assert(tx.isClosed, s"${tx} is not closed. ")
+        if (tx.isSnapshot) assert(tx.isClosed, s"$tx is not closed. ")
       }
     }
   }

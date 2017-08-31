@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -143,8 +143,13 @@ case class JDBCMutableRelation(
       // Create the table if the table didn't exist.
       if (!tableExists) {
         val sql = s"CREATE TABLE $table $userSpecifiedString"
-        logInfo(s"Applying DDL (url=$connProperties.url; " +
+        val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
+        logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
+        if (pass != null) {
+          connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
+            pass.asInstanceOf[String])
+        }
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table,

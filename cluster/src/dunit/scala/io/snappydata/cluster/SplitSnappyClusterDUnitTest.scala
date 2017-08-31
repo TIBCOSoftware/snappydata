@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,12 +27,11 @@ import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
-import io.snappydata.{Property, SnappyTableStatsProviderService}
+import io.snappydata.{ColumnUpdateDeleteTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.store.ColumnUpdateDeleteTest
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -44,13 +43,13 @@ class SplitSnappyClusterDUnitTest(s: String)
     with SplitClusterDUnitTestBase
     with Serializable {
 
-  override val locatorNetPort = testObject.locatorNetPort
+  override val locatorNetPort: Int = testObject.locatorNetPort
 
   override val stopNetServersInTearDown = false
 
-  val currenyLocatorPort = ClusterManagerTestBase.locPort
+  val currentLocatorPort: Int = ClusterManagerTestBase.locPort
 
-  override protected val productDir =
+  override protected val productDir: String =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
@@ -183,21 +182,21 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "1" :+ Int.box(locatorClientPort))
     val props = bootProps
-    val port = currenyLocatorPort
+    val port = currentLocatorPort
 
     val restartServer = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
 
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
-    var stats = SnappyTableStatsProviderService.getService.
+    val stats = SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
 
     Assert.assertEquals(10000100, stats.getRowCount)
     vm0.invoke(restartServer)
 
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
-    var stats1 = SnappyTableStatsProviderService.getService.
+    val stats1 = SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     Assert.assertEquals(10000100, stats1.getRowCount)
     vm1.invoke(restartServer)
@@ -206,12 +205,12 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "5" :+ Int.box(locatorClientPort))
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
-    var stats2 = SnappyTableStatsProviderService.getService.
+    val stats2 = SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     Assert.assertEquals(10000100, stats2.getRowCount)
     val snc = SnappyContext(sc)
     snc.sql("insert into snappyTable values(1,'Test')")
-    var stats3 = SnappyTableStatsProviderService.getService.
+    SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     vm0.invoke(restartServer)
   }
@@ -252,9 +251,13 @@ class SplitSnappyClusterDUnitTest(s: String)
       startArgs :+ Int.box(locatorClientPort))
   }
 
-  def testUpdateDeleteOnColumnTables(): Unit = {
-    val snc = SnappyContext(sc)
-    ColumnUpdateDeleteTest.testBasicUpdate(snc.snappySession)
+  override def testUpdateDeleteOnColumnTables(): Unit = {
+    // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
+    val session = new SnappySession(sc)
+    ColumnUpdateDeleteTests.testBasicUpdate(session)
+    ColumnUpdateDeleteTests.testBasicDelete(session)
+    ColumnUpdateDeleteTests.testSNAP1925(session)
+    ColumnUpdateDeleteTests.testSNAP1926(session)
   }
 }
 
@@ -278,7 +281,7 @@ object SplitSnappyClusterDUnitTest
           s"cached Hive catalog")
     } catch {
       // expected exception
-      case e: org.apache.spark.sql.TableNotFoundException =>
+      case _: org.apache.spark.sql.TableNotFoundException =>
     }
   }
 
@@ -388,12 +391,11 @@ object SplitSnappyClusterDUnitTest
 
     // function that was dropped in embedded mode
     try {
-      val row2 = snc.sql("select intudf_splitmode(description) from col_table").collect()
+      snc.sql("select intudf_splitmode(description) from col_table").collect()
     } catch {
       case e: AnalysisException if e.getMessage.contains("Undefined function") => // do nothing
     }
     assert(snc.snappySession.sql(s"SHOW FUNCTIONS APP.intudf_splitmode").collect().length == 0)
-
   }
 
   override def verifySplitModeOperations(tableType: String, isComplex: Boolean,
@@ -553,7 +555,7 @@ object SplitSnappyClusterDUnitTest
     val mode = SnappyContext.getClusterMode(snc.sparkContext)
     mode match {
       case ThinClientConnectorMode(_, _) => // expected
-      case _ => assert(false, "cluster mode is " + mode)
+      case _ => assert(assertion = false, "cluster mode is " + mode)
     }
 
     snc
@@ -680,7 +682,7 @@ object SplitSnappyClusterDUnitTest
     assert(rs.length == 5)
   }
 
-  var connectorSnc: SnappyContext = null
+  var connectorSnc: SnappyContext = _
   override def createTablesInSplitMode(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int,
@@ -716,7 +718,7 @@ object SplitSnappyClusterDUnitTest
     try {
       resultDF = connectorSnc.sql("select * from t1 order by col1")
     } catch {
-      case a: org.apache.spark.sql.AnalysisException =>
+      case _: org.apache.spark.sql.AnalysisException =>
         resultDF = connectorSnc.sql("select * from t1 order by col1")
     }
 
@@ -737,9 +739,9 @@ object SplitSnappyClusterDUnitTest
     val rowTable = "rowTable"
     val colTable = "colTable"
 
-    Property.ColumnBatchSize.set(snc.sessionState.conf, "30")
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "30k")
     val rdd = sc.parallelize(
-      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+      (1 to 113999).map(i => TestRecord(i, i + 1, i + 2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(rowTable, "row", dataDF.schema, props)
@@ -767,9 +769,9 @@ object SplitSnappyClusterDUnitTest
 
     snc.sql("DROP TABLE IF EXISTS " + rowTable)
     snc.sql("DROP TABLE IF EXISTS " + colTable)
-    Property.ColumnBatchSize.set(snc.sessionState.conf, "30")
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "30k")
     val rdd = sc.parallelize(
-      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+      (1 to 113999).map(i => TestRecord(i, i + 1, i + 2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(rowTable, "row", dataDF.schema, rowTableOptios)
@@ -786,7 +788,7 @@ object SplitSnappyClusterDUnitTest
     snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
     snc.sql(s"CREATE TABLE " + tempRowTableName + s" using row options($tempRowTableOptions)  AS" +
         s" (SELECT col1 ,col2  FROM " + rowTable + ")")
-    val testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect
+    val testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect()
     assert(testResults1.length == 113999, s"Expected row count is 113999 while actual count is " +
         s"${testResults1.length}")
 
@@ -802,7 +804,7 @@ object SplitSnappyClusterDUnitTest
     snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
         s"AS (SELECT col1 ,col2 FROM " + rowTable + ")")
 
-    val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect()
     assert(testResults3.length == 113999, s"Expected row count is 113999 while actual count is " +
         s"${testResults3.length}")
 
@@ -810,7 +812,7 @@ object SplitSnappyClusterDUnitTest
     snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
         s"AS (SELECT col1 ,col2 FROM " + colTable + ")")
 
-    val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect()
     assert(testResults4.length == 113999, s"Expected row count is 113999 while actual count is" +
         s"${testResults4.length}")
 
@@ -820,7 +822,7 @@ object SplitSnappyClusterDUnitTest
         s"AS (SELECT t1.col1 ,t1.col2 FROM " + colTable + " t1," + rowTable +
         " t2 where t1.col1=t2.col2)")
     // Expected count will be 113998 as first row will not match
-    val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect()
 
     assert(testResults5.length == 113998, s"Expected row count is 113998 while actual count is" +
         s"${testResults5.length}")

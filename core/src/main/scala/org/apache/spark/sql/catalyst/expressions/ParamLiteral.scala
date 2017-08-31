@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,11 +21,12 @@ import java.util.Objects
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import org.json4s.JsonAST.JValue
 
+import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 
 // A marker interface to extend usage of Literal case matching.
@@ -97,108 +98,51 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     // change the isNull and primitive to consts, to inline them
     val value = this.value
-    dataType match {
-      case BooleanType =>
-        val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Boolean], s"unexpected type $dataType instead of BooleanType")
-        val valueRef = lv(ctx)
-        val valueTerm = ctx.freshName("value")
-        ev.copy(
-          s"""
-             |final boolean $isNull = $valueRef.value() == null;
-             |final boolean $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
-             |    : ((Boolean)$valueRef.value()).booleanValue();
-           """.stripMargin, isNull, valueTerm)
-      case FloatType =>
-        val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Float], s"unexpected type $dataType instead of FloatType")
-        val valueRef = lv(ctx)
-        val valueTerm = ctx.freshName("value")
-        ev.copy(
-          s"""
-             |final boolean $isNull = $valueRef.value() == null;
-             |final float $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
-             |    : ((Float)$valueRef.value()).floatValue();
-           """.stripMargin, isNull, valueTerm)
-      case DoubleType =>
-        val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Double], s"unexpected type $dataType instead of DoubleType")
-        val valueRef = lv(ctx)
-        val valueTerm = ctx.freshName("value")
-        ev.copy(
-          s"""
-             |final boolean $isNull = $valueRef.value() == null;
-             |final double $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
-             |    : ((Double)$valueRef.value()).doubleValue();
-           """.stripMargin, isNull, valueTerm)
-      case ByteType =>
-        val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Byte], s"unexpected type $dataType instead of ByteType")
-        val valueRef = lv(ctx)
-        val valueTerm = ctx.freshName("value")
-        ev.copy(
-          s"""
-             |final boolean $isNull = $valueRef.value() == null;
-             |final byte $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
-             |    : ((Byte)$valueRef.value()).byteValue();
-           """.stripMargin, isNull, valueTerm)
-      case ShortType =>
-        val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Short], s"unexpected type $dataType instead of ShortType")
-        val valueRef = lv(ctx)
-        val valueTerm = ctx.freshName("value")
-        ev.copy(
-          s"""
-             |final boolean $isNull = $valueRef.value() == null;
-             |final short $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
-             |    : ((Short)$valueRef.value()).shortValue();
-           """.stripMargin, isNull, valueTerm)
-      case t@(IntegerType | DateType) =>
-        val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Int], s"unexpected type $dataType instead of $t")
-        val valueRef = lv(ctx)
-        val valueTerm = ctx.freshName("value")
-        ev.copy(
-          s"""
-             |final boolean $isNull = $valueRef.value() == null;
-             |final int $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
-             |    : ((Integer)$valueRef.value()).intValue();
-           """.stripMargin, isNull, valueTerm)
-      case t@(TimestampType | LongType) =>
-        val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Long], s"unexpected type $dataType instead of $t")
-        val valueRef = lv(ctx)
-        val valueTerm = ctx.freshName("value")
-        ev.copy(
-          s"""
-             |final boolean $isNull = $valueRef.value() == null;
-             |final long $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
-             |    : ((Long)$valueRef.value()).longValue();
-           """.stripMargin, isNull, valueTerm)
-      case NullType =>
-        val isNull = ctx.freshName("isNull")
-        val valueTerm = ctx.freshName("value")
-        val valueRef = lv(ctx)
-        ev.copy(
-          s"""
-             |final boolean $isNull = $valueRef.value() == null;
-             |final Object $valueTerm = null;
-             |""".stripMargin, isNull, valueTerm)
-      case _ =>
-        val valueRef = lv(ctx)
-        val isNull = ctx.freshName("isNull")
-        val valueTerm = ctx.freshName("value")
-        val objectTerm = ctx.freshName("obj")
-        ev.copy(code =
-            s"""
-          Object $objectTerm = $valueRef.value();
-          final boolean $isNull = $objectTerm == null;
-          ${ctx.javaType(this.dataType)} $valueTerm = $objectTerm != null
-             ? (${ctx.boxedType(this.dataType)})$objectTerm : null;
-          """, isNull, valueTerm)
-    }
-  }
+    val isNull = ctx.freshName("isNull")
+    val valueTerm = ctx.freshName("value")
+    val isNullLocal = s"${isNull}Local"
+    val valueLocal = s"${valueTerm}Local"
+    val valueRef = lv(ctx)
+    val dataType = Utils.getSQLDataType(this.dataType)
+    val javaType = ctx.javaType(dataType)
+    val box = ctx.boxedType(javaType)
 
+    val unbox = dataType match {
+      case BooleanType =>
+        assert(value.isInstanceOf[Boolean], s"unexpected type $dataType instead of BooleanType")
+        ".booleanValue()"
+      case FloatType =>
+        assert(value.isInstanceOf[Float], s"unexpected type $dataType instead of FloatType")
+        ".floatValue()"
+      case DoubleType =>
+        assert(value.isInstanceOf[Double], s"unexpected type $dataType instead of DoubleType")
+        ".doubleValue()"
+      case ByteType =>
+        assert(value.isInstanceOf[Byte], s"unexpected type $dataType instead of ByteType")
+        ".byteValue()"
+      case ShortType =>
+        assert(value.isInstanceOf[Short], s"unexpected type $dataType instead of ShortType")
+        ".shortValue()"
+      case t@(IntegerType | DateType) =>
+        assert(value.isInstanceOf[Int], s"unexpected type $dataType instead of $t")
+        ".intValue()"
+      case t@(TimestampType | LongType) =>
+        assert(value.isInstanceOf[Long], s"unexpected type $dataType instead of $t")
+        ".longValue()"
+      case _ => ""
+    }
+    ctx.addMutableState("boolean", isNull, "")
+    ctx.addMutableState(javaType, valueTerm,
+      s"""
+         |$isNull = $valueRef.value() == null;
+         |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
+      """.stripMargin)
+    ev.copy(
+      s"""
+         |final boolean $isNullLocal = $isNull;
+         |final $javaType $valueLocal = $valueTerm;
+      """.stripMargin, isNullLocal, valueLocal)
+  }
 }
 
 object ParamLiteral {
@@ -217,13 +161,13 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
 
   override def write(kryo: Kryo, output: Output): Unit = {
     kryo.writeClassAndObject(output, value)
-    kryo.writeClassAndObject(output, dataType.jsonValue)
+    StructTypeSerializer.writeType(kryo, output, dataType)
     output.writeVarInt(position, true)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
     value = kryo.readClassAndObject(input)
-    dataType = DataType.parseDataType(kryo.readClassAndObject(input).asInstanceOf[JValue])
+    dataType = StructTypeSerializer.readType(kryo, input)
     position = input.readVarInt(true)
     converter = createToScalaConverter(dataType)
   }

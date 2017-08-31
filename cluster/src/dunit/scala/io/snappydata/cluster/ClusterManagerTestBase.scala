@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -48,9 +48,16 @@ abstract class ClusterManagerTestBase(s: String)
 
   val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
-  bootProps.setProperty("log-level", "config")
+  val logLevel: String = System.getProperty("logLevel", "config")
+  bootProps.setProperty("log-level", logLevel)
+  // set DistributionManager.VERBOSE for log-level fine or higher
+  if (logLevel.startsWith("fine") || logLevel == "all") {
+    System.setProperty("DistributionManager.VERBOSE", "true")
+  }
+  bootProps.setProperty("security-log-level",
+    System.getProperty("securityLogLevel", "config"))
   // Easier to switch ON traces. thats why added this.
-  //bootProps.setProperty("gemfirexd.debug.true",
+  // bootProps.setProperty("gemfirexd.debug.true",
   //   "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores",
@@ -121,7 +128,8 @@ abstract class ClusterManagerTestBase(s: String)
       }
     }
 
-    Array(vm0, vm1, vm2).foreach(_.invoke(startNode))
+    vm0.invoke(startNode)
+    Array(vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
@@ -328,8 +336,7 @@ object ClusterManagerTestBase extends Logging {
       val itr = txMgr.getHostedTransactionsInProgress.iterator()
       while (itr.hasNext) {
         val tx = itr.next()
-        if (tx.isSnapshot)
-          assert(tx.isClosed, s"${tx} is not closed. ")
+        if (tx.isSnapshot) assert(tx.isClosed, s"$tx is not closed. ")
       }
     }
   }

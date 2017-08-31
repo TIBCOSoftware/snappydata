@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,10 +19,10 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import com.pivotal.gemfirexd.Attribute
+
 import scala.collection.JavaConverters._
-
 import io.snappydata.SnappyTableStatsProviderService
-
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -148,13 +148,15 @@ abstract case class JDBCAppendableRelation(
     val session = sqlContext.sparkSession
     val columnBatchSize = origOptions.get(
       ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
-      case Some(cb) => Integer.parseInt(cb)
-      case None => ExternalStoreUtils.defaultColumnBatchSize(session)
+      case Some(cb) if !origOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE_TRANSIENT) =>
+        Integer.parseInt(cb)
+      case _ => ExternalStoreUtils.defaultColumnBatchSize(session)
     }
     val columnMaxDeltaRows = origOptions.get(
       ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
-      case Some(cd) => Integer.parseInt(cd)
-      case None => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
+      case Some(cd) if !origOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS_TRANSIENT) =>
+        Integer.parseInt(cd)
+      case _ => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
     }
     val compressionCodec = origOptions.get(
       ExternalStoreUtils.COMPRESSION_CODEC) match {
@@ -228,8 +230,12 @@ abstract case class JDBCAppendableRelation(
         val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
           dialect, sqlContext)
         if (!tableExists) {
+          val pass = connProperties.connProps.remove(Attribute.PASSWORD_ATTR)
           logInfo(s"Applying DDL (url=${connProperties.url}; " +
               s"props=${connProperties.connProps}): $tableStr")
+          if (pass != null) {
+            connProperties.connProps.setProperty(Attribute.PASSWORD_ATTR, pass.asInstanceOf[String])
+          }
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName,

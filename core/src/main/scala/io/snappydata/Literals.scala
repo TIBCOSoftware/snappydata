@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -88,6 +88,8 @@ object Constant {
   final val SHADOW_SCHEMA_NAME_WITH_PREFIX: String = "." + SHADOW_SCHEMA_NAME
 
   final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_NAME_WITH_SEPARATOR
+
+  final val COLUMN_TABLE_INDEX_PREFIX = "SNAPPYSYS_INDEX____"
 
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode

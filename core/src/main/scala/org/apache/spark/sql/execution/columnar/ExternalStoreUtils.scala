@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,6 +26,7 @@ import scala.collection.mutable
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
@@ -69,14 +70,17 @@ object ExternalStoreUtils {
   final val INDEX_NAME = "INDEX_NAME"
   final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
+  final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
+  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
   final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
-    COLUMN_MAX_DELTA_ROWS, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
+    COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
+    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
 
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
@@ -181,13 +185,15 @@ object ExternalStoreUtils {
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
     sparkContext match {
-      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+      case None => Constant.DEFAULT_EMBEDDED_URL +
+          ";host-data=false;mcast-port=0;internal-connection=true"
 
       case Some(sc) =>
         SnappyContext.getClusterMode(sc) match {
           case SnappyEmbeddedMode(_, _) =>
             // Already connected to SnappyData in embedded mode.
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+            Constant.DEFAULT_EMBEDDED_URL +
+                ";host-data=false;mcast-port=0;internal-connection=true"
           case ThinClientConnectorMode(_, url) =>
             url + ";route-query=false"
           case ExternalEmbeddedMode(_, url) =>
@@ -637,13 +643,11 @@ object ExternalStoreUtils {
   }
 
   def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {
-    val container = Misc.getMemStore.getAllContainers.asScala.find(c => {
-      c.getTableName.equalsIgnoreCase(table) &&
-          c.getSchemaName.equalsIgnoreCase(schema)
-    })
-    container match {
-      case None => throw new IllegalStateException(s"Table $schema.$table not found in containers")
-      case Some(c) => c.fetchHiveMetaData(false)
+    val region = Misc.getRegion(Misc.getRegionPath(schema, table, null), true, false)
+    region.getUserAttribute.asInstanceOf[GemFireContainer] match {
+      case null =>
+        throw new IllegalStateException(s"Table $schema.$table not found in containers")
+      case c => c.fetchHiveMetaData(false)
     }
   }
 
@@ -669,7 +673,7 @@ object ExternalStoreUtils {
     Property.CompressionCodec.get(session.sessionState.conf)
   }
 
-  def getSQLListener(): AtomicReference[SQLListener] = {
+  def getSQLListener: AtomicReference[SQLListener] = {
     SparkSession.sqlListener
   }
 }

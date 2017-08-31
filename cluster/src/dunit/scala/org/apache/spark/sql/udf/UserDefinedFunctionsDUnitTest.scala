@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -52,10 +52,10 @@ class UserDefinedFunctionsDUnitTest(val s: String)
       vm3.invoke(getClass, "createTables") // as stop Spark deletes tables.
 
       vm3.invoke(getClass, "simpleUDFTest", false)
-      vm3.invoke(getClass, "stopAny")
     } catch {
       case  e: Throwable => throw new Exception(e)
     } finally {
+      vm3.invoke(getClass, "stopAny")
       ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
       val snSession = new SnappySession(sc)
       snSession.sql("drop function if exists APP.intudf")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -44,9 +44,11 @@ import org.apache.spark.{Logging, SparkConf}
   * If the critical and eviction events are not set, it asks the UnifiedMemoryManager
   * to allocate the space.
   *
-  * @param conf
-  * @param maxHeapMemory
-  * @param numCores
+  * @param conf          the SparkConf from the SparkEnv to use for initialization
+  * @param maxHeapMemory the maximum heap memory that is available for use by MemoryManager;
+  *                      callers should leave out some amount of "reserved memory" for
+  *                      unaccounted object allocations
+  * @param numCores      number of cores available in the cluster
   */
 class SnappyUnifiedMemoryManager private[memory](
     conf: SparkConf,
@@ -87,8 +89,6 @@ class SnappyUnifiedMemoryManager private[memory](
   private val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionFraction(conf)
 
   private val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
-
-  private val maxHeapExecutionSize = (maxHeapMemory * evictionFraction).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
@@ -571,15 +571,17 @@ class SnappyUnifiedMemoryManager private[memory](
     logDebug(s"Acquiring $managerId $memoryMode memory " +
       s"for $objectName = $numBytes (evict=$shouldEvict)")
     if (buffer ne null) {
-      if (buffer.freeMemory() > numBytes) {
+      if (buffer.freeMemory() >= numBytes) {
         buffer.incMemoryUsed(numBytes)
         true
       } else {
         val predictedMemory = numBytes * buffer.getTotalOperationsExpected
-        buffer.incAllocatedMemory(predictedMemory)
         val success = askStoragePool(objectName, blockId, predictedMemory, memoryMode, shouldEvict)
-        buffer.setFirstAllocationObject(objectName)
-        buffer.incMemoryUsed(numBytes)
+        if (success){
+          buffer.incAllocatedMemory(predictedMemory)
+          buffer.setFirstAllocationObject(objectName)
+          buffer.incMemoryUsed(numBytes)
+        }
         success
       }
     } else {
@@ -759,7 +761,7 @@ object SnappyUnifiedMemoryManager extends Logging {
 
     val usableMemory = systemMemory - reservedMemory
     // add a cushion for GC before CRITICAL_UP is reached
-    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.92)
+    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.97)
     (usableMemory * memoryFraction).toLong
   }
 

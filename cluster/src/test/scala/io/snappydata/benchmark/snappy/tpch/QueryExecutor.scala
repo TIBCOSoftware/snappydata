@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,6 +19,8 @@ package io.snappydata.benchmark.snappy.tpch
 
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{PreparedStatement, ResultSet}
+
+import io.snappydata.benchmark.TPCH_Queries
 
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 
@@ -133,7 +135,7 @@ object QueryExecutor {
       println(s"Started executing $queryNumber")
 
       if (isResultCollection) {
-        var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic)
+        var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, true)
         // queryPrintStream.println(queryToBeExecuted)
         val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, true)
         println(s"$queryNumber : ${resultSet.length}")
@@ -149,7 +151,7 @@ object QueryExecutor {
         var totalTime: Long = 0
         queryPrintStream.println(queryNumber)
         for (i <- 1 to (warmup + runsForAverage)) {
-          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic)
+          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, true)
           // queryPrintStream.println(queryToBeExecuted)
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null

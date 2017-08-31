@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -44,11 +44,15 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // connect with this new lead.
     // In this case servers are already running and a lead comes
     // and join
-    vm3.invoke(getClass, "startSnappyLead", startArgs)
-    vm3.invoke(getClass, "startSparkJob")
-    vm3.invoke(getClass, "startGemJob")
-    vm3.invoke(getClass, "stopSpark")
-    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    try {
+      vm3.invoke(getClass, "stopAny")
+      vm3.invoke(getClass, "startSnappyLead", startArgs)
+      vm3.invoke(getClass, "startSparkJob")
+      vm3.invoke(getClass, "startGemJob")
+    } finally {
+      vm3.invoke(getClass, "stopSpark")
+      ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    }
   }
 
   def testUncaughtExceptionInExecutor(): Unit = {

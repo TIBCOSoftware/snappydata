@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -356,6 +356,28 @@ class QueryRoutingDUnitTest(val s: String)
     ps2.close()
   }
 
+  def testSnap1945_putdmlvariation(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    stmt.execute("create table dest(col1 int, col2 int not null primary key) using row options()")
+    stmt.execute("create table source(col1 int, col2 int) using row options()")
+    stmt.executeUpdate("insert into source values (1, 2), (2, 3)")
+    stmt.executeUpdate("put into dest select * from source")
+    stmt.execute("select count(*) from dest")
+    val rs = stmt.getResultSet
+    assert(rs.next())
+    assert(2 == rs.getInt(1))
+    assert(!rs.next())
+    rs.close()
+    stmt.execute("drop table source")
+    stmt.execute("drop table dest")
+    stmt.close()
+    conn.close()
+  }
+
   def testSNAP193_607_8_9(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
@@ -494,8 +516,8 @@ class QueryRoutingDUnitTest(val s: String)
       while (tableMd.next()) {
         results += tableMd.getString(2) + '.' + tableMd.getString(3)
       }
-      // 2 for column table and 1 for parquet external table
-      assert(results.size == 3, s"Got size = ${results.size} [$results] but expected 3.")
+      // 1 for column table and 1 for parquet external table
+      assert(results.size == 2, s"Got size = ${results.size} [$results] but expected 2.")
       assert(results.contains(s"APP.$colTable"))
       assert(results.contains(s"APP_PARQUET.$parquetTable"))
       results.clear()
@@ -594,7 +616,8 @@ class QueryRoutingDUnitTest(val s: String)
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
       }
     }
-    assert(foundTable)
+    // internal column tables are no longer visible in getTables
+    assert(!foundTable)
 
     // Simulates 'SHOW MEMBERS' of ij
     rSet = s.executeQuery("SELECT * FROM SYS.MEMBERS ORDER BY ID ASC")
