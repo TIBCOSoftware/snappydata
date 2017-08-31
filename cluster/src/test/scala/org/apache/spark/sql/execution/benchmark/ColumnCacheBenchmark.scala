@@ -154,11 +154,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   }
 
   test("cache with randomized keys - query") {
-    if (GemFireCacheImpl.hasNewOffHeap) {
-      logInfo("ColumnCacheBenchmark: using off-heap for performance comparison")
-    } else {
-      logInfo("ColumnCacheBenchmark: using heap for performance comparison")
-    }
     benchmarkRandomizedKeys(size = 50000000, queryPath = true)
   }
 
@@ -175,6 +170,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private def benchmarkRandomizedKeys(size: Int, queryPath: Boolean,
       numIters: Int = 10, runSparkCaching: Boolean = true): Unit = {
     val benchmark = new Benchmark("Cache random keys", size)
+    val sparkSession = this.sparkSession
+    val snappySession = this.snappySession
+    if (GemFireCacheImpl.hasNewOffHeap) {
+      logInfo("ColumnCacheBenchmark: using off-heap for performance comparison")
+    } else {
+      logInfo("ColumnCacheBenchmark: using heap for performance comparison")
+    }
     sparkSession.sql("drop table if exists test")
     snappySession.sql("drop table if exists test")
     val testDF = sparkSession.range(size)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -40,9 +40,8 @@ object SecurityTestUtil {
         "redundancy '1')")
     NWQueries.employees(snc).write.insertInto("employees")
 
-    snc.sql(NWQueries.customers_table +
-        " using row options( partition_by 'PostalCode,Region', buckets '19', colocate_with " +
-        "'employees', redundancy '1')")
+    snc.sql(NWQueries.customers_table + " using column options(partition_by 'City,Country', " +
+        "COLOCATE_WITH 'employees', redundancy '1')")
     NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets " +
@@ -65,26 +64,50 @@ object SecurityTestUtil {
   }
 
   def runQueries(snc: SnappyContext, queryArray: Array[String], expectExcpCnt: Integer,
-      unExpectExcpCnt: Integer, isGrant: Boolean, userSchema: Array[String], pw: PrintWriter)
+      unExpectExcpCnt: Integer, isGrant: Boolean, userSchema: Array[String],
+       isSelect: Boolean, pw: PrintWriter)
   : Unit = {
     println("Inside run/queries inside SecurityUtil")
     var isAuth = isGrant
+    var opAuth: Boolean = false
+    var schemaAuth: Boolean = false
     for (j <- 0 to queryArray.length - 1) {
       try {
-        for (s <- 0 to userSchema.length - 1) {
-          val str = userSchema(s)
-          println("Find " + str + " in query " + queryArray(j));
-          if (!queryArray(j).contains(str)) {
-            isAuth = false
-            println("Execute query   " + queryArray(j) + " with new authorization = " + isAuth)
-            snc.sql(queryArray(j)).show
-          }
-          else {
-            println("Query executed is " + queryArray(j))
-            snc.sql(queryArray(j)).show
-            pw.println(s"Query executed successfully is " + queryArray(j))
-          }
-        }
+
+         for (s <- 0 to userSchema.length - 1) {
+           val str = userSchema(s)
+           println("Find " + str + " in query " + queryArray(j));
+           if (isGrant) {
+             if (!queryArray(j).contains(str)) {
+               isAuth = false
+               println("Execute query   " + queryArray(j) + " with  authorization = " + isAuth)
+               snc.sql(queryArray(j)).show
+             }
+             else {
+               if (!isSelect) {
+                 if (queryArray(j).contains("INSERT")) {
+                   isAuth = true
+                 }
+                 else {
+                   isAuth = false
+                 }
+               }
+               else {
+                 isAuth = true
+               }
+               println("Execute query   " + queryArray(j) + " with  authorization = " + isAuth)
+               snc.sql(queryArray(j)).show
+               pw.println(s"Query executed successfully is " + queryArray(j))
+             }
+           }
+           else
+             {
+               isAuth = false
+               println("Execute query   " + queryArray(j) + " with  authorization = " + isAuth)
+               snc.sql(queryArray(j)).show
+               pw.println(s"Query executed successfully is " + queryArray(j))
+             }
+         }
       }
       catch {
         case ex: Exception => {
