@@ -146,18 +146,17 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   protected var currentVal: ByteBuffer = _
   private var currentDeltaStats: ByteBuffer = _
   private var currentKeyPartitionId: Int = _
-  private var currentKeyUUID: String = _
+  private var currentKeyUUID: Long = _
   private var currentBucketRegion: BucketRegion = _
   private var batchProcessed = false
   private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
 
-  def getCurrentBatchId: String = currentKeyUUID
+  def getCurrentBatchId: Long = currentKeyUUID
 
   def getCurrentBucketId: Int = currentKeyPartitionId
 
   private def getColumnBuffer(columnPosition: Int, throwIfMissing: Boolean): ByteBuffer = {
-    val key = new ColumnFormatKey(currentKeyPartitionId, columnPosition,
-      currentKeyUUID)
+    val key = new ColumnFormatKey(currentKeyUUID, currentKeyPartitionId, columnPosition)
     val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
     else region.get(key)
     if (value ne null) {
@@ -200,7 +199,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
 
   def getDeletedColumnDecoder: DeletedColumnDecoder = {
     if (currentDeltaStats eq null) null
-    else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX, throwIfMissing = false) match {
+    else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
+      throwIfMissing = false) match {
       case null => null
       case deleteBuffer => new DeletedColumnDecoder(deleteBuffer)
     }
@@ -286,14 +286,14 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     partitionId: Int,
     fetchColQuery: String)
     extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
-  private var currentUUID: String = _
+  private var currentUUID: Long = _
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
   private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
     new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
-  def getCurrentBatchId: String = currentUUID
+  def getCurrentBatchId: Long = currentUUID
 
   def getCurrentBucketId: Int = partitionId
 
@@ -302,7 +302,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
       case buffers if buffers.size() > 1 => // already filled in
       case buffers =>
         for (i <- 1 to totalColumns) {
-          ps.setString(i, currentUUID)
+          ps.setLong(i, currentUUID)
         }
         val colIter = ps.executeQuery()
         while (colIter.next()) {
@@ -366,7 +366,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   }
 
   override protected def getCurrentValue: ByteBuffer = {
-    currentUUID = rs.getString(2)
+    currentUUID = rs.getLong(2)
     releaseColumns()
     // create a new map instead of clearing old one to help young gen GC
     colBuffers = new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)

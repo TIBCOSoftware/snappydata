@@ -409,7 +409,7 @@ abstract class BaseColumnFormatRelation(
 
     // if the numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
-    createTable(externalStore, s"create table $tableName (uuid varchar(46) " +
+    createTable(externalStore, s"create table $tableName (uuid bigint " +
         "not null, partitionId integer, columnIndex integer, data blob, " +
         s"$primaryKey) $partitionStrategy $colocationClause " +
         s"$encoderClause $concurrency $ddlExtensionForShadowTable",

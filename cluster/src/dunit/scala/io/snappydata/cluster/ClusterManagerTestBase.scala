@@ -48,7 +48,14 @@ abstract class ClusterManagerTestBase(s: String)
 
   val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
-  bootProps.setProperty("log-level", "config")
+  val logLevel: String = System.getProperty("logLevel", "config")
+  bootProps.setProperty("log-level", logLevel)
+  // set DistributionManager.VERBOSE for log-level fine or higher
+  if (logLevel.startsWith("fine") || logLevel == "all") {
+    System.setProperty("DistributionManager.VERBOSE", "true")
+  }
+  bootProps.setProperty("security-log-level",
+    System.getProperty("securityLogLevel", "config"))
   // Easier to switch ON traces. thats why added this.
   // bootProps.setProperty("gemfirexd.debug.true",
   //   "QueryDistribution,TraceExecution,TraceActivation,TraceTran")

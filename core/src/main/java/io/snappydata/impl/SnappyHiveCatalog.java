@@ -140,10 +140,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       System.setProperty(name, props.getProperty(name));
     }
     Hive.closeCurrent();
-    // clear the system properties else it causes trouble with integer values
-    for (String name : propertyNames) {
-      System.clearProperty(name);
-    }
 
     // set integer properties after the system properties have been used by
     // Hive static initialization so that these never go into system properties

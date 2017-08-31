@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.util.UUID
-
 import scala.collection.AbstractIterator
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
@@ -45,7 +43,7 @@ final class ColumnBatchCreator(
     val compressionCodec: String) extends Logging {
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
-      batchID: UUID, bucketID: Int,
+      batchID: Long, bucketID: Int,
       dependents: Seq[ExternalTableMetaData]): java.util.HashSet[AnyRef] = {
     var connectedExternalStore: ConnectedExternalStore = null
     var success: Boolean = false
@@ -106,7 +104,7 @@ final class ColumnBatchCreator(
         // the index of the batchId (and bucketId after that) has already
         // been pushed in during compilation above
         val batchIdRef = references(references.length - 1).asInstanceOf[Int]
-        references(batchIdRef) = Some(batchID.toString)
+        references(batchIdRef) = batchID
         references(batchIdRef + 1) = bucketID
         references(batchIdRef + 2) = tableName
         // no harm in passing a references array with an extra element at end
