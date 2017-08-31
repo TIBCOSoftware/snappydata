@@ -683,4 +683,14 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     val snc = SnappyContext(sc)
     PreparedQueryRoutingSingleNodeSuite.updateDeleteOnColumnTable(snc, s"localhost:$serverHostPort")
   }
+
+  def test5_equalityOnStringColumn(): Unit = {
+    serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"test5_equalityOnStringColumn: network server started at $serverHostPort")
+    // scalastyle:on println
+    val snc = SnappyContext(sc)
+    PreparedQueryRoutingSingleNodeSuite.equalityOnStringColumn(snc, s"localhost:$serverHostPort")
+  }
 }
