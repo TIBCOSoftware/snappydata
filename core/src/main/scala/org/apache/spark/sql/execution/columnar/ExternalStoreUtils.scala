@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,6 +26,7 @@ import scala.collection.mutable
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
@@ -642,13 +643,11 @@ object ExternalStoreUtils {
   }
 
   def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {
-    val container = Misc.getMemStore.getAllContainers.asScala.find(c => {
-      c.getTableName.equalsIgnoreCase(table) &&
-          c.getSchemaName.equalsIgnoreCase(schema)
-    })
-    container match {
-      case None => throw new IllegalStateException(s"Table $schema.$table not found in containers")
-      case Some(c) => c.fetchHiveMetaData(false)
+    val region = Misc.getRegion(Misc.getRegionPath(schema, table, null), true, false)
+    region.getUserAttribute.asInstanceOf[GemFireContainer] match {
+      case null =>
+        throw new IllegalStateException(s"Table $schema.$table not found in containers")
+      case c => c.fetchHiveMetaData(false)
     }
   }
 

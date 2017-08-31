@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -409,7 +409,7 @@ abstract class BaseColumnFormatRelation(
 
     // if the numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
-    createTable(externalStore, s"create table $tableName (uuid varchar(46) " +
+    createTable(externalStore, s"create table $tableName (uuid bigint " +
         "not null, partitionId integer, columnIndex integer, data blob, " +
         s"$primaryKey) $partitionStrategy $colocationClause " +
         s"$encoderClause $concurrency $ddlExtensionForShadowTable",

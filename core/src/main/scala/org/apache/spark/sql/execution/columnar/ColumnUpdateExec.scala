@@ -95,7 +95,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
-         |  $finishUpdate(null, -1); // force a finish
+         |  $finishUpdate($invalidUUID, -1); // force a finish
          |}
          |$taskListener.setSuccess();
       """.stripMargin)
@@ -133,7 +133,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |$initializeEncoders();
       """.stripMargin)
     ctx.addMutableState("int", batchOrdinal, "")
-    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
+    ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
     ctx.addMutableState("int", lastBucketId, "")
 
     // last three columns in keyColumns should be internal ones
@@ -197,9 +197,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
-         |private void $finishUpdate(UTF8String batchId, int bucketId) {
-         |  if (batchId == null || !batchId.equals($lastColumnBatchId)) {
-         |    if ($lastColumnBatchId == null) {
+         |private void $finishUpdate(long batchId, int bucketId) {
+         |  if (batchId == $invalidUUID || batchId != $lastColumnBatchId) {
+         |    if ($lastColumnBatchId == $invalidUUID) {
          |      // first call
          |      $lastColumnBatchId = batchId;
          |      $lastBucketId = bucketId;
@@ -229,7 +229,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
     s"""
        |$updateVarsCode
-       |if ($batchIdVar != null) {
+       |if ($batchIdVar != $invalidUUID) {
        |  // finish and apply update if the next column batch ID is seen
        |  if ($batchIdVar != $lastColumnBatchId) {
        |    $finishUpdate($batchIdVar, $bucketVar);
