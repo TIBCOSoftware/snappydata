@@ -118,10 +118,12 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
           snSession.insert("t1", row)
           rows += 1
         }
+        fail("Should not have reached here due to LowMemory")
       }
     } catch {
       case e: Exception => {
         assert(memoryIncreaseDuetoEviction > 0)
+        assert(snappyMemoryManager.wrapperStats.getNumFailedEvictionRequest(false) > 1)
       }
     }
     snappyMemoryManager.dropAllObjects(memoryMode)

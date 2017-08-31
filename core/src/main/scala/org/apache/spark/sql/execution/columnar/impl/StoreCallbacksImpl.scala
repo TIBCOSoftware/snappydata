@@ -21,6 +21,7 @@ import java.util.Collections
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -326,6 +327,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def shouldStopRecovery(): Boolean =
     MemoryManagerCallback.memoryManager.shouldStopRecovery()
+
+  override def initMemoryStats(stats: MemoryManagerStats): Unit =
+    MemoryManagerCallback.memoryManager.initMemoryStats(stats)
 }
 
 trait StoreCallback extends Serializable {
