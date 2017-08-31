@@ -468,6 +468,27 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long hasDynamicAppProps;
 
+  /**
+   * (Boolean) parameter to enable security for snappyJob,by default it is false.
+   */
+  public static Long isSecurity;
+
+  /**
+   * (String) User credentials that will be used when submittimg a snappyJob to a secure cluster
+   */
+  public static Long credentialFile;
+
+  public static String getCredentialFile() {
+    Long key = credentialFile;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+
+  public static boolean isSecurityOn() {
+    Long key = isSecurity;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   public static int getRetryCountForJob() {
     Long key = numTimesToRetry;
     return tasktab().intAt(key, tab().intAt(key, 5));
