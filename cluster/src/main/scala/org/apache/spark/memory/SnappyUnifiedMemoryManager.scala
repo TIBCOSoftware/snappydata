@@ -17,7 +17,7 @@
 package org.apache.spark.memory
 
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
@@ -96,7 +96,7 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
-  @volatile private[memory] var _memoryForObjectMap:
+  @volatile private var _memoryForObjectMap:
     Object2LongOpenHashMap[(String, MemoryMode)] = _
 
   private[memory] def memoryForObject: Object2LongOpenHashMap[(String, MemoryMode)] = {
@@ -110,7 +110,7 @@ class SnappyUnifiedMemoryManager private[memory](
         if (!tempManager) {
           logInfo(s"Allocating boot time memory to $managerId ")
 
-          val bootTimeManager = MemoryManagerCallback.tempMemoryManager
+          val bootTimeManager = MemoryManagerCallback.bootMemoryManager
               .asInstanceOf[SnappyUnifiedMemoryManager]
           val bootTimeMap = bootTimeManager._memoryForObjectMap
           if (bootTimeMap ne null) {
@@ -136,6 +136,36 @@ class SnappyUnifiedMemoryManager private[memory](
     } else memoryMap
   }
 
+
+  /**
+    * This method will be called if executor is going to be restarted.
+    * When executor is coming up all accounting from store will be done in
+    * bootMemoryManager.
+    * When executor stops we will copy the existing entry in this manager to
+    * boot manager.
+    * Once executor comes back again we will again copy the boot manager entries
+    * to run time manager.
+    */
+  override def close(): Unit = {
+    assert(!tempManager)
+    // First reset the memory manager in callback. Hence all request will
+    // go to Boot Manager
+    MemoryManagerCallback.resetMemoryManager()
+    synchronized {
+      logInfo(s" Closing Memory Manager ${this}")
+      val bootManager = MemoryManagerCallback.bootMemoryManager
+          .asInstanceOf[SnappyUnifiedMemoryManager]
+
+      memoryForObject.object2LongEntrySet().iterator().asScala foreach { entry =>
+        val (objectName, memoryMode) = entry.getKey
+        if (!objectName.equals(SPARK_CACHE) &&
+            !objectName.equals(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
+          bootManager.memoryForObject.addTo(objectName -> memoryMode, entry.getLongValue)
+        }
+      }
+    }
+  }
+
   val threadsWaitingForStorage = new AtomicInteger()
 
   val SPARK_CACHE = "_SPARK_CACHE_"
@@ -159,7 +189,8 @@ class SnappyUnifiedMemoryManager private[memory](
   private def logMemoryConfiguration(): Unit = {
     val memoryLog = new StringBuilder
     val separator = "\n\t\t"
-    memoryLog.append(s"$managerId configuration:")
+    memoryLog.append(s"$managerId ${this} configuration:")
+
     memoryLog.append(separator).append("Total Usable Heap = ")
         .append(Utils.bytesToString(maxHeapMemory))
         .append(" (").append(maxHeapMemory).append(')')
@@ -225,7 +256,7 @@ class SnappyUnifiedMemoryManager private[memory](
   override def logStats(): Unit = synchronized {
     val memoryLog = new StringBuilder
     val separator = "\n\t\t"
-    memoryLog.append(s"$managerId stats:")
+    memoryLog.append(s"$managerId ${this} stats:")
     memoryLog.append(separator).append("Storage Used = ")
         .append(onHeapStorageMemoryPool.memoryUsed)
         .append(" (size=").append(onHeapStorageMemoryPool.poolSize).append(')')
@@ -701,6 +732,22 @@ class SnappyUnifiedMemoryManager private[memory](
 }
 
 object SnappyUnifiedMemoryManager extends Logging {
+
+  private val LOCK = new Object()
+
+  private val activeManager = new AtomicReference[SnappyUnifiedMemoryManager](null)
+
+  def getInstance(): Option[SnappyUnifiedMemoryManager] = {
+    LOCK.synchronized {
+      Option(activeManager.get())
+    }
+  }
+
+  private def setActiveContext(snsc: SnappyUnifiedMemoryManager): Unit = {
+    LOCK.synchronized {
+      activeManager.set(snsc)
+    }
+  }
 
   // Reserving minimum 500MB data for unaccounted data, GC headroom etc
   private val RESERVED_SYSTEM_MEMORY_BYTES = {

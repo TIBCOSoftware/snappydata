@@ -70,6 +70,8 @@ trait StoreUnifiedManager {
     */
   def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit
+
+  def close
 }
 
 /**
@@ -129,6 +131,8 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
   override def shouldStopRecovery(): Boolean = false
 
   override def initMemoryStats(stats: MemoryManagerStats): Unit = {}
+
+  override def close: Unit = {}
 }
 
 object MemoryManagerCallback extends Logging {
@@ -139,7 +143,7 @@ object MemoryManagerCallback extends Logging {
   val ummClass = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
 
   // This memory manager will be used while GemXD is booting up and SparkEnv is not ready.
-  private[memory] lazy val tempMemoryManager = {
+  private[memory] lazy val bootMemoryManager = {
     try {
       val conf = new SparkConf()
       Utils.classForName(ummClass)
@@ -158,8 +162,9 @@ object MemoryManagerCallback extends Logging {
 
   private lazy val defaultManager: StoreUnifiedManager = new DefaultMemoryManager
 
+  // Is called from UMM.close()
   def resetMemoryManager(): Unit = synchronized {
-    snappyUnifiedManager = null // For local mode testing
+    snappyUnifiedManager = null
   }
 
 
@@ -167,7 +172,6 @@ object MemoryManagerCallback extends Logging {
     try {
       org.apache.spark.util.Utils.classForName(ummClass)
       // Class is loaded means we are running in SnappyCluster mode.
-
       true
     } catch {
       case _: ClassNotFoundException =>
@@ -203,7 +207,7 @@ object MemoryManagerCallback extends Logging {
           defaultManager
       }
     } else { // Spark.env will be null only with gemxd boot time
-      tempMemoryManager
+      bootMemoryManager
     }
   }
 }
