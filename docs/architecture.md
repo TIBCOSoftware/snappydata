@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This section presents a high-level overview of SnappyData’s core components. It also explains how our data pipeline (as streams) are ingested into our in-memory store and subsequently interacted with, and analyzed.
+This section presents a high-level overview of SnappyData’s core components. It also explains how our data pipeline (as streams) are ingested into our in-memory store and subsequently interacted with and analyzed.
 
 ## Core Components
 The following depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, standard components, such as security and monitoring have been omitted.
@@ -70,7 +70,7 @@ SnappyData also has multiple deployment options. For more information refer to, 
 ### Interacting with SnappyData
 
 !!! Note: 
-	For the section on the Spark API, it is assumed that users have some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/).
+	For the section on the Spark API, it is assumed that users have some familiarity with [core Spark, Spark SQL, and Spark Streaming concepts](http://spark.apache.org/docs/latest/).
 	And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs listed in the Spark guides work in SnappyData as well.
 	For the section on SQL, no Spark knowledge is necessary.
 

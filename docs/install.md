@@ -1,4 +1,4 @@
-# Overview
+# Download and Install
 The following installation options are available:
 
 * [Install On Premise](#install-on-premise)
@@ -8,7 +8,8 @@ The following installation options are available:
 * [Building from Source](#building-from-source)
 
 !!! Note:  
-	Configuring the limit for Open Files and Threads/Processes </br> On a Linux system you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:
+	Configuring the limit for Open Files and Threads/Processes </br> 
+    On a Linux system, you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:
 
 ```
 snappydata          hard    nofile      81920
@@ -210,7 +211,7 @@ Enter the command in the following format.
 
 Here, `<your-key-name>` refers to the EC2 Key Pair, `<your-keyfile-path>` refers to the path to the key file and `<action>` refers to the action to be performed (for example, launch, start, stop).
 
-By default, the script starts one instance of a locator, lead and server each.
+By default, the script starts one instance of a locator, lead, and server each.
 The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups.
 
 The  names and details of the members are automatically derived from the provided cluster name.
@@ -230,7 +231,7 @@ To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedd
 
 ##### Specifying Properties
 
-If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](configuring_cluster/configuring_cluster.md#configuration-files) for example on how to write these conf files.
+If you want to configure each of the locator, lead, or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](configuring_cluster/configuring_cluster.md#configuration-files) for example on how to write these conf files.
 
 This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.
 
@@ -270,7 +271,7 @@ When you start a cluster, it uses the existing EC2 instances associated with the
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
 ````
 !!!Note: 
-	The start command (or launch command with --resume option) ignores --locators, --leads or --stores options and launches SnappyData cluster on existing instances. But the conf files are read in any case if they are present in the location mentioned above. So you need to ensure that every time you use start command, the number of entries in conf files are equal to the number of instances in their respective security group.
+	The start command (or launch command with --resume option) ignores --locators, --leads or --stores options and launches SnappyData cluster on existing instances. But the conf files are read in any case if they are present in the location mentioned above. So you need to ensure that every time you use the start command, the number of entries in conf files is equal to the number of instances in their respective security group.
 
 ##### Adding Servers to  a Cluster
 
@@ -282,7 +283,7 @@ This is not yet fully supported via the script. You may have to manually launch 
 ````
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem get-locator cluster-name
 ````
-**To get the first lead's hostname, use the get-lead command:**
+**Use the get-lead command to get the first lead's hostname**
 
 ##### Connecting to a Cluster
 
@@ -309,7 +310,7 @@ Optionally, you can start an instance of Apache Zeppelin server with the cluster
 
 #### More options
 
-For a complete list of options this script has, run `./snappy-ec2`. The options are also provided below for quick reference.
+For a complete list of options, this script has, run `./snappy-ec2`. The options are also provided below for quick reference.
 ````
 Usage: `snappy-ec2 [options] <action> <cluster_name>`
 
@@ -339,7 +340,7 @@ Options:
                         Locator instance type (leave empty for same as
                         instance-type)
   -r REGION, --region=REGION
-                        EC2 region used to launch instances in, or to find
+                        EC2 region used to launch instances in or to find
                         them in (default: us-east-1)
   -z ZONE, --zone=ZONE  Availability zone to launch instances in, or 'all' to
                         spread stores across multiple (an additional $0.01/Gb
@@ -378,7 +379,7 @@ Options:
                         Which placement group to try and launch instances
                         into. Assumes placement group is already created.
   --spot-price=PRICE    If specified, launch stores as spot instances with the
-                        given maximum price (in dollars)
+                        given a maximum price (in dollars)
   -u USER, --user=USER  The SSH user you want to connect as (default:
                         ec2-user)
   --delete-groups       When destroying a cluster, delete the security groups
@@ -463,7 +464,7 @@ If you want to build only the top-level SnappyData project but pull in jars for 
 
 - **cluster** - Provides the SnappyData implementation of cluster manager embedding GemFireXD, query routing, job server initialization etc.
 
-  This component depends on _core_ and _store_.  The code in the _cluster_ depends on _core_ but not the other way round.
+  This component depends on _core_ and _store_.  The code in the _cluster_ depends on the _core_ but not the other way round.
 
 - **spark** - _Apache Spark_ code with SnappyData enhancements.
 
@@ -471,7 +472,7 @@ If you want to build only the top-level SnappyData project but pull in jars for 
 
 - **spark-jobserver** - Fork of _spark-jobserver_ project with some additions to integrate with SnappyData.
 
-  The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git sub-modules. When working with sub-modules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push like:
+  The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push like:
 
 ```
 [alias]
@@ -486,7 +487,7 @@ The above aliases can serve as useful shortcuts to pull and push all projects fr
 
 Gradle is the build tool used for all the SnappyData projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include the addition of Gradle build scripts to allow building them independently as well as a subproject of SnappyData. The only requirement for the build is a JDK 8 installation. The Gradle wrapper script downloads all the other build dependencies as required.
 
-If a user does not want to deal with submodules and only work on SnappyData project, then can clone only the SnappyData repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from maven central.
+If a user does not want to deal with submodules and only work on SnappyData project, then can clone only the SnappyData repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from Maven central.
 
 If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The _spark_ and _store_ submodules can also be built and published independently.
 
@@ -541,7 +542,7 @@ To import into IntelliJ IDEA:
 
         * Ensure that the JDK 8 installation has been selected.
 
-        * Ignore and dismiss the **"Unindexed remote maven repositories found"** warning message if seen.
+        * Ignore and dismiss the **"Unindexed remote Maven repositories found"** warning message if seen.
 
 * When import is completed, go to **File> Settings> Editor> Code Style> Scala**. Set the scheme as **Project**. Check that the same has been set in Java Code Style too. Click OK to apply and close it. Next, copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by IDEA. Check that the settings are now applied in **File> Settings> Editor> Code Style> Java** which should display Indent as 2 and continuation indent as 4 (same as Scala).
 
@@ -549,14 +550,15 @@ To import into IntelliJ IDEA:
 
 * Generate Apache Avro and SnappyData required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The Run option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may some time to complete,  as it downloads jar files and other required files. This step has to be done the first time, or if **./gradlew clean** has been run, or if you have made changes to **javacc/avro/messages.xml** source files.
 
-* If you get unexpected **"Database not found"** or **NullPointerException** errors in SnappyData-store/GemFireXD layer, then first thing to try is to run the **generateSources** target again.
+* If you get unexpected **"Database not found"** or **NullPointerException** errors in SnappyData-store/GemFireXD layer, run the **generateSources** target (Gradle tab) again.
+
+* If you get **NullPointerException** error when reading the spark-version-info.properties file, right-click and run the **copyResourcesAll** target from **snappydata_2.11> Tasks> other** (Gradle tab) to copy the required resources.
 
 * Increase the compiler heap sizes or else the build can take quite long especially with integrated **spark** and **store**. In **File> Settings> Build, Execution, Deployment> Compiler increase**, **Build process heap size** to say 1536 or 2048. Similarly, increase JVM maximum heap size in **Languages & Frameworks> Scala Compiler Server** to 1536 or 2048.
 
 * Test the full build.
 
-* For JUnit tests configuration also append **/build-artifacts** to the working directory. That is, open **Run> Edit Configurations**, expand **Defaults** and select **JUnit**, the working directory should be **\$MODULE_DIR\$/build-artifacts**. Likewise append **build-artifacts** to working directory for ScalaTest. Without this all intermediate log and other files pollute the source tree and then need to be cleaned manually.
-
+* For JUnit tests configuration also append **/build-artifacts** to the working directory. That is, open **Run> Edit Configurations**, expand **Defaults** and select **JUnit**, the working directory should be **\$MODULE_DIR\$/build-artifacts**. Likewise, append **build-artifacts** to working directory for ScalaTest. Without this all intermediate log and other files pollute the source tree and then need to be cleaned manually.
 
 ### Running a ScalaTest/JUnit
 
@@ -564,6 +566,6 @@ Running Scala/JUnit tests from IntelliJ IDEA is straightforward.
 
 * When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise an external Gradle process is launched that can start building the project again and won't be cleanly integrated with IDEA. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).
 
-* For JUnit tests, ensure that working directory is the top-level **\$MODULE_DIR\$/build-artifacts** as mentioned before. Otherwise, many SnappyData-store tests will fail to find the resource files required in tests. They also pollute the files etc, so when launched this will allow those to go into **build-artifacts** that is easier to clean. For that reason, it is preferable to do the same for ScalaTests.
+* For JUnit tests, ensure that working directory is the top-level **\$MODULE_DIR\$/build-artifacts** as mentioned before. Otherwise, many SnappyData-store tests will fail to find the resource files required in tests. They also pollute the files etc, so when launched this allows those to go into **build-artifacts** that are easier to clean. For that reason, it is preferable to do the same for ScalaTests.
 
 * Some of the tests use data files from the **tests-common** directory. For such tests, run the Gradle task **snappydata_2.11> Tasks> other> copyResourcesAll** to copy the resources in build area where IDEA runs can find it.

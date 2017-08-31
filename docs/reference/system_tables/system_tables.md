@@ -9,3 +9,5 @@ The following system tables are available:
 * [MEMORYANALYTICS](memoryanalytics.md)
 
 * [SYSDISKSTORES](sysdiskstores.md)
+
+* [SYSTABLES](systables.md)

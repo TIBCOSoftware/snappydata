@@ -2,9 +2,6 @@
 
 Update the value of one or more columns.
 
-!!! Note: 
-	Currently not supported on column tables.
-
 ``` pre
 { UPDATE table-name [ [ AS ] correlation-name]
         SET column-name = value

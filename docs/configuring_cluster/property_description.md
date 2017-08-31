@@ -5,10 +5,10 @@
 |-dir|Working directory of the server that contains the SnappyData Server status file and the default location for log file, persistent files, data dictionary, and so forth (defaults to the current directory).| Server</br>Lead</br>Locator</br>|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|Server</br>Lead</br>Locator|
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |Server</br>Lead</br>Locator|
-|-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)|Server</br>Lead|
-|-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use, and must be configured consistently for every member of the distributed system.|Server</br>Lead</br>Locator|
+|-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is 0 (OFF_HEAP is not used by default)|Server</br>Lead|
+|-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|Server</br>Lead</br>Locator|
 |<a id="rebalance"></a>-rebalance|Causes the new member to trigger a rebalancing operation for all partitioned tables in the system. </br>The system always tries to satisfy the redundancy of all partitioned tables on new member startup regardless of this option.|Server|
-|-bind-address|IP address on which the locator is bound. The default behavour is to bind to all local addresses.|Server</br>Lead</br>Locator|
+|-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|Server</br>Lead</br>Locator|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|Server</br>Lead|
 |-eviction-heap-percentage|Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 81% of whatever is set for `-critical-heap-percentage`.</br>Use this switch to override the default.|Server</br>Lead</br>|
 |-critical-off-heap-percentage|Sets the critical threshold for off-heap memory usage in percentage, 0-100. </br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of off-heap memory.|Server|
@@ -21,9 +21,9 @@
 |snappydata.column.batchSize|The default size of blocks to use for storage in the SnappyData column store (in bytes or k/m/g suffixes for unit). The default value is 24M.|Lead|
 |<a id="thrift-properties"></a>thrift-ssl|Specifies if you want to enable or disable SSL. Values: true or false|Server|
 |thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: path to key store file </br>`keystore-type`: the type of key-store (default "JKS") </br>`keystore-password`: password for the key store file</br>`keymanager-type`: the type of key manager factory </br>`truststore`: path to trust store file</br>`truststore-type`: the type of trust-store (default "JKS")</br>`truststore-password`: password for the trust store file </br>`trustmanager-type`: the type of trust manager factory </br> |Server|
-|spark.driver.maxResultSize|Limit of total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M, or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in lead.|Lead|
+|spark.driver.maxResultSize|Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M, or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead.|Lead|
 |spark.executor.cores|The number of cores to use on each server. |Lead|
-|spark.network.timeout|Default timeout for all network interactions while running queries. |Lead|
+|spark.network.timeout|The default timeout for all network interactions while running queries. |Lead|
 |spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|Lead|
 
 <a id="sql-properties"></a>
@@ -32,11 +32,12 @@
 These properites can be set in the snappy SQL shell or using the configuration properties in the *conf/leads* file.
 
 For example: Set in the snappy SQL shell
+
 ```
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.column.batchSize=100k;
 ```
-This will set the property for the snappy SQL shell's session.
+This sets the property for the snappy SQL shell's session.
 
 Set in the *conf/leads* file
 ```

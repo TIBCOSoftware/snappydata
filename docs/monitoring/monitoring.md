@@ -5,14 +5,34 @@ SnappyData Pulse is a monitoring system that gives you a high-level overview of 
 To access the SnappyData Pulse, start your cluster and open http:`<leadhost>`:5050/dashboard/ in your web browser. </br>
 `<leadhost>` is the hostname or IP of the lead node in your cluster.
 
-The Dashboard also displays the **Last Updated Date** and **Time of statistics** on the top-left side of the page.
+The top-right side of the page displays the date and time when the Dashboard was last updated.
 
+The following topics are covered in this section:
 
+* [Dashboard](#dashboard)
+
+* [SQL Page](#sql)
+
+* [Jobs Page](#jobs)
+
+* [Stages Page](#stages)
+
+<a id="dashboard"></a>
 ## The Dashboard
+
 The Dashboard offers the following capabilities and benefits:
+
+* [Cluster Statistics](#cluster)
+
+* [Member Statistics](#member)
+
+* [Table Statistics](#table)
 
 ![Dashboard](../Images/monitoring_topnav.png)
 
+The Dashboard offers the following capabilities and benefits:
+
+<a id="cluster"></a>
 ### Cluster Statistics
 
 ![Cluster](../Images/monitoring_cluster.png)
@@ -34,6 +54,7 @@ The Dashboard offers the following capabilities and benefits:
 * **JVM Heap Usage**</br>
    Displays the collective JVM Heap usage by all nodes in the cluster.
 
+<a id="member"></a>
 ### Member Statistics
 
 ![Dashboard](../Images/monitoring_member.png)
@@ -58,12 +79,13 @@ The Dashboard offers the following capabilities and benefits:
    Members collective Heap and Off-Heap Memory utilization along with Total Memory.
 
 * **Heap Memory**</br>
-   Displays the total available heap memory and the used heap memory.</br> 
+   Displays the total available heap memory and used heap memory.</br> 
    You can view the detailed description of the member's heap storage, heap execution memory, utilizations along with JVM Heap utilization by clicking on the arrow next to the member name.
 
 * **Off-Heap Memory Usage**</br>
    Displays the members total off-heap memory and used off-heap memory.</br> You can also view the member's off-heap storage and off-heap execution memory and utilizations by clicking on the arrow next to the member name.
 
+<a id="table"></a>
 ### Table Statistics
 
 ![Dashboard](../Images/monitoring_table.png)
@@ -88,3 +110,45 @@ The Dashboard offers the following capabilities and benefits:
 
 * **Total Size**</br>
    Displays the collective physical memory and disk overflow space used by the data table to store its data/records.
+
+<a id="sql"></a>
+## SQL Page
+![](../Images/query_analysis_sql.png)
+
+* **Colocated**: When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions. 
+
+* **Whole-Stage Code Generation**: A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.
+
+* **Per node execution timing**: Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged, 
+
+* **Pool Name**: Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command ‘set snappydata.scheduler.pool=lowlatency’. 
+
+* **Query Node Details**: Move the mouse over a component to view its details.
+
+* **Filter**: Displays the number of rows that are filtered for each node. 
+
+* **Joins**: If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.
+
+<a id="jobs"></a>
+## Jobs Page
+![](../Images/query_analysis_job.png)
+
+* **Status**: Displays the status of the job. 
+
+* **Stages**: Click on the Stage to view its details. The table displays the time taken for completion of each stage. 
+
+<a id="stages"></a>
+## Stages Page
+![](../Images/query_analysis_stage.png)
+
+* On this page, you can view the total time required for all the tasks in a job to complete.
+
+* You can view if any tasks have taken a long time to complete. This may occur in case of uneven data distribution. 
+
+* Scheduler Delay indicates the waiting period for the task. Delays can  be caused if there are too many concurrent jobs.
+
+* Shuffle reads and writes: Shuffles are written to disk and take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle times.  
+
+* Number of parallel tasks: Due to concurrency, multiple queries may take cores and a particular query may take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
+
+* GC time: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables).

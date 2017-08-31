@@ -34,7 +34,7 @@ The complete list of commands available through _snappy_shell_ can be found [her
 
 ## Using the Spark Shell and spark-submit
 
-SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store for efficient data intensive computations. 
+SnappyData, out-of-the-box, colocates Spark executors and the SnappyData store for efficient data intensive computations. 
 But it may be desirable to isolate the computational cluster for other reasons, for instance, a  computationally 
 intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly. 
 To support such scenarios it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer 
@@ -81,7 +81,7 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 ## Accessing SnappyData Tables from Spark code
 Spark applications access the SnappyStore using the new [Spark Data Source API](http://spark.apache.org/docs/latest/sql-programming-guide.html#jdbc-to-other-databases). 
 
-By default, SnappyData servers runs the Spark Executors collocated with the data store. And, the default store provider is SnappyData. 
+By default, SnappyData servers runs the Spark Executors colocated with the data store. And, the default store provider is SnappyData. 
 When the spark program connects to the cluster using a [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) (extends SQLContext), there is no need to configure the database URL and other options.  
 
 ```scala

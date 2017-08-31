@@ -10,7 +10,7 @@ Refer to the [Getting Started](quickstart.md) to either run SnappyData on premis
 
 You can run the examples in any of the following ways:
 
-* **In the Local Mode**: By using `bin/run-example` script (to run Scala examples) or by using `bin/spark-submit` script (to run Python examples). The examples run collocated with Spark+SnappyData Store in the same JVM. 
+* **In the Local Mode**: By using `bin/run-example` script (to run Scala examples) or by using `bin/spark-submit` script (to run Python examples). The examples run colocated with Spark+SnappyData Store in the same JVM. 
 
 * **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
 
@@ -19,7 +19,11 @@ You can run the examples in any of the following ways:
 
 The following topics are covered in this section:
 
-* [How to Start a SnappyData Cluster](#howto-startCluster)
+* [How to Start a SnappyData Cluster](#howto-startcluster)
+
+* [How to Check the Status of a SnappyData Cluster](#howto-statuscluster)
+
+* [How to Stop a SnappyData Cluster](#howto-stopcluster)
 
 * [How to Run Spark Job inside the Cluster](#howto-job)
 
@@ -29,9 +33,11 @@ The following topics are covered in this section:
 
 * [How to Create Column Tables and Run Queries](#howto-column)
 
-* [How to Load Data in SnappyData Tables](#howto-load)
+* [How to Load Data into SnappyData Tables](#howto-load)
 
-* [How to Perform a Collocated Join](#howto-collacatedJoin)
+* [How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)](#howto-external-source)
+
+* [How to Perform a Colocated Join](#howto-collacatedJoin)
 
 * [How to Connect using JDBC Driver](#howto-jdbc)
 
@@ -52,7 +58,7 @@ The following topics are covered in this section:
 * [How to Use Apache Zeppelin with SnappyData](#howto-zeppelin)
 
 
-<a id="howto-startCluster"></a>
+<a id="howto-startcluster"></a>
 ## How to Start a SnappyData Cluster
 ### Start SnappyData Cluster on a Single Machine
 
@@ -85,8 +91,24 @@ SnappyData Leader pid: 9699 status: running
   Distributed system now has 3 members.
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
+### Start SnappyData Cluster on Multiple Hosts
 
-**Check Status**: You can check the status of a running cluster using the following command:
+To start the cluster on multiple hosts:
+
+1. The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
+
+2. Create the configuration files using the templates provided in the **conf** folder. Copy the existing template files (**servers.template**, **locators.template** and **leads.template**) and rename them to **servers**, **locators**, **leads**.
+</br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the [configuration](configuring_cluster/configuring_cluster.md) section for more information on properties.
+
+3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
+
+!!! Note: 
+	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](install.md#install-on-premise) and [cluster configuration](configuring_cluster/configuring_cluster.md).
+
+<a id="howto-statuscluster"></a>
+## How to Check the Status of a SnappyData Cluster
+You can check the status of a running cluster using the following command:
+
 
 ```bash
 $ sbin/snappy-status-all.sh
@@ -99,9 +121,11 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-You can check SnappyData UI by opening `http://<leadHostname>:5050` in browser, where `<leadHostname>` is the host name of your lead node. Use [Snappy SQL shell](howto.md#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+You can check the SnappyData UI by opening `http://<leadHostname>:5050` in your browser, where `<leadHostname>` is the host name of your lead node. Use [Snappy SQL shell](howto.md#howto-snappyShell) to connect to the cluster and perform various SQL operations.
 
-**Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
+<a id="howto-stopcluster"></a>
+## How to Shut Down a SnappyData Cluster
+You can shut down the cluster using the `sbin/snappy-stop-all.sh` command:
 
 ```
 $ sbin/snappy-stop-all.sh
@@ -109,27 +133,16 @@ The SnappyData Leader has stopped.
 The SnappyData Server has stopped.
 The SnappyData Locator has stopped.
 ```
-
-### Start SnappyData Cluster on Multiple Hosts
-
-To start the cluster on multiple hosts:
-
-1. The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
-
-2. Create the configuration files using the templates provided in the **conf** folder. Copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
-</br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the [configuration](configuring_cluster/configuring_cluster.md) section for more information on properties.
-
-3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
-
-!!! Note: 
-	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](install.md#install-on-premise) and [cluster configuration](configuring_cluster/configuring_cluster.md).
-
+!!! Note:
+	Ensure that all write operations on column table have finished execution when you shut down a cluster, else, it can lead to the possible occurrence of a partial write.
+    
+    
 <a id="howto-job"></a>
 ## How to Run Spark Code inside the Cluster
 A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.
 
 **Implementing a Job**: 
-A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create table, load data, execute queries using the SnappySession. <br/>
+A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>
 Any of the Spark APIs can be invoked by a SnappyJob.
 
 ```
@@ -421,7 +434,7 @@ For example:
 <a id="howto-column"></a>
 ## How to Create Column Tables and Run Queries
 
-Column tables organize and manage data in columnar form such that modern day CPUs can traverse and run computations like a sum or an average fast (as the values are available in contiguous memory).
+Column tables organize and manage data in a columnar form such that modern day CPUs can traverse and run computations like a sum or an average fast (as the values are available in contiguous memory).
 
 Refer to the [Row and column tables](programming_guide.md#tables-in-snappydata) documentation for the complete list of attributes for column tables.
 
@@ -490,14 +503,29 @@ The same table can be created using SQL as shown below:
 You can execute selected queries on a column table, join the column table with other tables, and append data to it.
 
 <a id="howto-load"></a>
-## How to Load Data in SnappyData Tables
-You can use Spark's DataFrameReader API in order to load data into SnappyData tables using different formats (Parquet, CSV, JSON etc.).
+## How to Load Data into SnappyData Tables
 
-**Code Example**
+SnappyData relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. By integrating the loading mechanism with the Query engine (Catalyst optimizer) it is often possible to push down filters and projections all the way to the data source minimizing data transfer. Here is the list of important features:
 
-**Get a SnappySession**
+**Support for many Sources** There is built-in support for many data sources as well as data formats. Data can be accessed from S3, file system, HDFS, Hive, RDB, etc. And the loaders have built-in support to handle CSV, Parquet, ORC, Avro, JSON, Java/Scala Objects, etc as the data formats. 
+
+**Access virtually any modern data store** Virtually all major data providers have a native Spark connector that complies with the Data Sources API. For e.g. you can load data from any RDB like Amazon Redshift, Cassandra, Redis, Elastic Search, Neo4J, etc. While these connectors are not built-in, you can easily deploy these connectors as dependencies into a SnappyData cluster. All the connectors are typically registered in spark-packages.org
+
+**Avoid Schema wrangling** Spark supports schema inference. Which means, all you need to do is point to the external source in your 'create table' DDL (or Spark SQL API) and schema definition is learned by reading in the data. There is no need to explicitly define each column and type. This is extremely useful when dealing with disparate, complex and wide data sets. 
+
+**Read nested, sparse data sets** When data is accessed from a source, the schema inference occurs by not just reading a header but often by reading the entire data set. For instance, when reading JSON files the structure could change from document to document. The inference engine builds up the schema as it reads each record and keeps unioning them to create a unified schema. This approach allows developers to become very productive with disparate data sets.
+
+**Load using Spark API or SQL** You can use SQL to point to any data source or use the native Spark Scala/Java API to load. 
+For instance, you can use 'create external table <tablename> using <any Data Source supported> options <options>' and then use it in any SQL query or DDL (e.g. create table snappyTable using column as (select * from externalTable) )
+
+
+**Example - Load from CSV**
+
+You can either explicitly define the schema or infer the schema and the column data types. To infer the column names, we need the CSV header to specify the names. In this example we don't have the names, so we explicitly define the schema. 
+
 
 ```
+    // Get a SnappySession in a local cluster
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateColumnTable")
@@ -507,7 +535,7 @@ You can use Spark's DataFrameReader API in order to load data into SnappyData ta
     val snSession = new SnappySession(spark.sparkContext)
 ```
 
-**A column table is created as follows**
+We explicitly define the table definition first ....
 
 ```
     snSession.sql("CREATE TABLE CUSTOMER ( " +
@@ -522,7 +550,7 @@ You can use Spark's DataFrameReader API in order to load data into SnappyData ta
         "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 ```
 
-**Load data in the CUSTOMER table from a CSV file by using DataFrameReader API**
+**Load data in the CUSTOMER table from a CSV file by using Data Sources API**
 
 ```
     val tableSchema = snSession.table("CUSTOMER").schema
@@ -530,7 +558,9 @@ You can use Spark's DataFrameReader API in order to load data into SnappyData ta
     customerDF.write.insertInto("CUSTOMER")
 ```
 
-**For Parquet file, use code as given below**
+The Spark SQL programming guide provides a full description of the Data Sources API - https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#data-sources
+
+**Example - Load from Parquet files**
 
 ```
 val customerDF = snSession.read.parquet(s"$dataDir/customer_parquet")
@@ -539,7 +569,7 @@ customerDF.write.insertInto("CUSTOMER")
 
 **Inferring schema from data file**
 
-A schema for the table can be inferred from the data file. In this case, you do not need to create a table before loading the data. In the code snippet below, first DataFrame for a Parquet file is created and then saveAsTable API is used to create a table with data loaded from it.
+A schema for the table can be inferred from the data file. Data is first introspected to learn the schema (column names and types) without requring this input from the user. The example below illustrates reading a parquet data source and creates a new columnar table in SnappyData. The schema is automatically defined when the Parquet data files are read. 
 ```
     val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
     // props1 map specifies the properties for the table to be created
@@ -561,26 +591,168 @@ In the code snippet below a schema is inferred from a CSV file. Column names are
     customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
 ```
 
-The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). Source for the code to load data from a JSON file can be found in [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
+The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). 
 
+** Example - reading JSON documents**
+As mentioned before when dealing with JSON you have two challenges - (1) the data can be highly nested (2) the structure of the documents can keep changing. 
+
+Here is a simple example that loads multiple JSON records that show dealing with schema changes across documents -   [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
+
+!!! Note
+When loading data from sources like CSV or Parquet the files would need to be accessible from all the cluster members in SnappyData. Make sure it is NFS mounted or made accessible through the Cloud solution (shared storage like S3). 
+
+
+<a id="howto-external-source"></a>
+## How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) 
+
+SnappyData comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API.
+
+### Example - Loading data from CSV file using SQL
+
+```scala
+-- Create an external table based on CSV file
+CREATE EXTERNAL TABLE CUSTOMER_STAGING_1 USING csv OPTIONS (path '../../quickstart/src/main/resources/customer_with_headers.csv', header 'true', inferSchema 'true');
+
+-- create a snappydata table and load data into CUSTOMER table
+CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_1);
+
+```
+
+!!!Tip:
+	Similarly, you can create an external table for all data sources and use SQL "insert into" query to load data. For more information on creating external tables refer to, [CREATE EXTERNAL TABLE](reference/sql_reference/create-external-table/)
+
+
+### Example - Loading CSV Files from HDFS using API
+
+The example below demonstrates how you can read CSV files from HDFS using an API:
+```
+val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv'")
+
+// drop table if exist
+snc.sql("drop table if exists CUSTOMER")
+
+// Load data into table
+dataDF.write.saveAsTable("CUSTOMER")
+```
+
+### Example - Loading and Enriching CSV Data from HDFS 
+
+The example below demonstrates how you can load and enrich CSV Data from HDFS:
+```
+val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv'")
+
+// drop table if exist and create it with only required fields 
+snc.sql("drop table if exists CUSTOMER")
+snc.sql("create table CUSTOMER(C_CUSTKEY INTEGER NOT NULL, C_NAME VARCHAR(25) NOT NULL, C_ADDRESS VARCHAR(40) NOT NULL, C_NATIONKEY INTEGER NOT NULL, C_PHONE VARCHAR(15) NOT NULL, C_ACCTBAL DECIMAL(15,2) NOT NULL, C_MKTSEGMENT VARCHAR(10) NOT NULL, C_COMMENT VARCHAR(117) NOT NULL) using column options()")
+
+import snc.implicits._
+// Project and transform data from df and load it in table.
+dataDF.select($"INCIDNTNUM",$"DAYOFWEEK".substr(1,3).alias("DAYOFWEEK"),$"X",$"Y").write.mode(SaveMode.Overwrite).saveAsTable("CUSTOMER")
+
+//Here X and Y are latitude and longitude columns in raw data frame
+```
+
+### Example - Loading from Hive
+As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with **enableHiveSupport** set to **true**). 
+Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a SnappySession to store it in a SnappyData Table. 
+
+```
+val ds = spark.table("hiveTable")
+val rdd = ds.rdd
+val session = new SnappySession(sparkContext)
+val df = session.createDataFrame(rdd, ds.schema)
+df.write.format("column").saveAsTable("columnTable")
+```
+
+### Importing Data using JDBC from a relational DB
+
+!!! Note:
+	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
+
+<!--**TODO: This is a problem- restart the cluster ? Must confirm package installation or at least get install_jar tested for this case. -- Jags**
+-->
+
+The example below demonstrates how to connect to any SQL database using JDBC:
+
+
+1. Verify and load the SQL Driver:
+
+	    Class.forName("com.mysql.jdbc.Driver")
+    
+2. Specify all the properties to access the database
+
+        import java.util.Properties
+        val jdbcUsername = "USER_NAME"
+        val jdbcPassword = "PASSWORD"
+        val jdbcHostname = "HOSTNAME"
+        val jdbcPort = 3306
+        val jdbcDatabase ="DATABASE"
+        val jdbcUrl = s"jdbc:mysql://${jdbcHostname}:${jdbcPort}/${jdbcDatabase}?user=${jdbcUsername}&password=${jdbcPassword}&relaxAutoCommit=true"
+
+        val connectionProperties = new Properties()
+        connectionProperties.put("user", "USERNAME")
+        connectionProperties.put("password", "PASSWORD")
+
+3. Fetch the table meta data from the RDB and creates equivalent column tables 
+
+        val connection = DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword)
+        connection.isClosed()
+        val md:DatabaseMetaData = connection.getMetaData();
+        val rs:ResultSet = md.getTables(null, null, "%", null);
+        while (rs.next()) {
+
+        val tableName=rs.getString(3)
+        val df=snc.read.jdbc(jdbcUrl, tableName, connectionProperties)
+        df.printSchema
+        df.show()
+        // Create and load a column table with same schema as that of source table 
+           df.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
+        }
+
+** Using SQL to access external RDB tables **
+You can also use plain SQL to access any external RDB using external tables. Create external table on RDBMS table and query it directly from SnappyData as described below:
+
+        snc.sql("drop table if exists external_table")
+        snc.sql(s"CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')")
+        snc.sql("select * from external_table").show
+
+Refer to the [Spark SQL JDBC source access for how to parallelize access when dealing with large data sets](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases).
+
+
+### Loading Data from NoSQL store (Cassandra)
+
+The example below demonstrates how you can load data from a NoSQL store:
+
+!!!Note:
+	Before you begin, you must install the corresponding Spark-Cassandra connector jar. To do so, copy the Spark-Cassandra connector jar file to the **/jars** directory located in the home directory and then restart the cluster.
+
+<!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
+-->
+
+```
+
+val df = snc.read.format("org.apache.spark.sql.cassandra").options(Map( "table" -> "CUSTOMER", "keyspace" -> "test")) .load
+df.write.format("column").mode(SaveMode.Append).saveAsTable("CUSTOMER")
+snc.sql("select * from CUSTOMER").show
+```
 
 <a id="howto-collacatedJoin"></a>
-## How to Perform a Collocated Join
+## How to Perform a Colocated Join
 
-When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Collocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
-When collocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.
+When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Colocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
+When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.
 
-**Code Example: ORDERS table is collocated with CUSTOMER table**
+**Code Example: ORDERS table is colocated with CUSTOMER table**
 
-A partitioned table can be collocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
-For example, in the code snippet below, the ORDERS table is collocated with the CUSTOMER table. The complete source for this example can be found in the file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
+A partitioned table can be colocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
+For example, in the code snippet below, the ORDERS table is colocated with the CUSTOMER table. The complete source for this example can be found in the file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
 
 **Get a SnappySession**:
 
 ```
     val spark: SparkSession = SparkSession
         .builder
-        .appName("CollocatedJoinExample")
+        .appName("ColocatedJoinExample")
         .master("local[*]")
         .getOrCreate
 
@@ -618,7 +790,7 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
         "COLOCATE_WITH 'CUSTOMER' )")
 ```
 
-**Perform a Collocate join:** 
+**Perform a Colocate join:** 
 
 ```
     // Selecting orders for all customers
@@ -758,7 +930,7 @@ You can use domain object to load data into SnappyData tables and select the dat
 
 **Code Example: Insert Person object into the column table**
 
-The code snippet below inserts Person objects into a column table. The source code for this example is located at [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala). After creating SnappySession, the Person objects is inserted using Spark API and loads into a SnappyData table.
+The code snippet below inserts Person objects into a column table. The source code for this example is located at [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala). After creating SnappySession, the Person objects are inserted using Spark API and loads into a SnappyData table.
 
 **Get a SnappySession**:
 
@@ -825,7 +997,7 @@ The code snippet below inserts Person objects into a column table. The source co
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to the [documentation](programming_guide.md#stream-processing-using-sql).
 
 **Code Example**: 
-Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets below shows how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.
+Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets below show how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.
 
 **First get a SnappySession and a SnappyStreamingContext**: 
 Here SnappyStreamingContext is initialized in a batch duration of one second.
@@ -1131,7 +1303,7 @@ To download and install the Visual C++ Redistributable for Visual Studio 2015:
 
 2. Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.
 
-3. Select **Run** to start the installation, and follow the steps to complete the installation.
+3. Select **Run** to start the installation and follow the steps to complete the installation.
 
 <a id="howto-odbc-step2"></a>
 ### Step 2: Install SnappyData ODBC Driver
@@ -1163,31 +1335,27 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 		Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
+
  Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
 
 Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver and Tableau Desktop](setting_up_odbc_driver-tableau_desktop.md).  
 
 <a id="howto-external-client"></a>
-## How to Connect to the Cluster from External Clients
+## How to Connect to the Cluster from an External Network
 
-You can also connect to the SnappyData cluster from a different network as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
+You can also connect to the SnappyData cluster from a different network as a client (DbVisualizer, SQuirreL SQL etc.). </br>For example, to connect to a cluster on AWS from your local machine set the following properties in the *conf/locators* and *conf/servers* files:
 
-When [starting the locator and server](configuring_cluster/configuring_cluster.md) set the following properties in the *conf/locators* and *conf/servers* files:
+* `client-bind-address`: Set the hostname or IP address to which the locator or server binds. 
 
-* `-hostname-for-clients`: The public IP address of the locator or server. 
-
-* `-client-bind-address`: IP address of the locator or server. </br>For example, add `-hostname-for-clients=192.168.20.208` </br> 
+* `hostname-for-clients`: Set the IP address or host name that this server/locator listens on, for client connections. Setting a specific `hostname-for-clients` will cause locators to use this value when telling clients how to connect to this server. The default value causes the `bind-address` to be given to clients.
 
 	!!! Note: 
-    	By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.
+    	By default, the locator or server binds to localhost. You may need to set either or both these properties to enable connection from external clients. If not set, external client connections may fail.
 
-* **Port Settings**: The client, by default, connects to the locator or server at the default port 1527. Ensure that this port is open in your firewall settings. <br> You can also change the default port by setting the `-client-port` property.
+* Port Settings: Locator or server listens on the default port 1527 for client connections. Ensure that this port is open in your firewall settings. <br> You can also change the default port by setting the `client-port` property in the *conf/locators* and *conf/servers*.
 
 !!! Note: 
-
-	* If the above properties are not set, when a client tries to connect to the cluster from a different network, the connection may fail and an error may be reported. 
-
-	* For ODBC clients, you must use the host and port details of the server and not the locator.
+	For ODBC clients, you must use the host and port details of the server and not the locator.
 
 <a id="howto-zeppelin"></a>
 ## How to Use Apache Zeppelin with SnappyData
@@ -1198,7 +1366,7 @@ When [starting the locator and server](configuring_cluster/configuring_cluster.m
 	
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-	|[Version 0.6.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) </br> [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) and [future realeases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
+	|[Version 0.6.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) </br> [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) and [future releases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
     |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) [and future releases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
 
 2. [Configure the SnappyData Cluster](configuring_cluster/configuring_cluster.md).
@@ -1278,7 +1446,7 @@ When [starting the locator and server](configuring_cluster/configuring_cluster.m
 
 ### Known Issue
 
-If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
 
 ### More Information
 Refer to these sections for information:
@@ -1286,3 +1454,4 @@ Refer to these sections for information:
 * [About the Interpreter](aqp_aws.md#using-the-interpreter) 
 
 * [Example Notebooks](aqp_aws.md#creating-notebooks-try-it-yourself)
+

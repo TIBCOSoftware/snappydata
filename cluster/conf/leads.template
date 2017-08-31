@@ -14,7 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+# Here are examples using common configuration properties
+# I) 
 # Specify the host name on which a Snappy lead will be started. Also
 # specify the startup directory where the logs and configuration files
 # for that lead instance are kept. Apart from these two things, snappy
@@ -23,14 +24,19 @@
 # 
 # localhost   -dir=/tmp/data/lead (config args)
 #
+# II) 
 # Below is an example of how you can specify multiple locators for a lead and also
 # set its heap size to 64 GB.
 # 
 #     localhost   -dir=/tmp/data/server -locators=locator1:9988,locator2:8899 -heap-size=64g
 # 
-# Another example which shows how to specify a JVM parameter and Spark properties.
+# III)
+# Another example which shows how to specify Spark properties.
 # 
 #     localhost   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16
+#
+# IV) Start the SnappyData Zeppelin interpreter on the Lead node
+#     localhost   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16 -zeppelin.interpreter.enable=true
 #
 # For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

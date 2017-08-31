@@ -4,19 +4,19 @@ Welcome to the Getting Started section! <br>
 Multiple options are provided for getting started with SnappyData. 
 Depending on your preference you can try any of the following options:
 
-* [Option 1: Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
+* [Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
 
-* [Option 2: Getting Started Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
+* [Getting Started Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
 
-* [Option 3: 20X Faster than Spark 2.0.2 Caching](#start_benchmark)
+* [20X Faster than Spark 2.0.2 Caching](#start_benchmark)
 
-* [Option 4: Getting Started using SQL](#getting-started-using-sql)
+* [Getting Started using SQL](#getting-started-using-sql)
 
-* [Option 5: Getting Started by Installing SnappyData On-Premise](#getting-started-by-installing-snappydata-on-premise)
+* [Getting Started by Installing SnappyData On-Premise](#getting-started-by-installing-snappydata-on-premise)
 
-* [Option 6: Getting Started on AWS](#getting-started-on-aws)
+* [Getting Started on AWS](#getting-started-on-aws)
 
-* [Option 7: Getting Started with Docker Image](#getting-started-with-docker-image)
+* [Getting Started with Docker Image](#getting-started-with-docker-image)
 
 !!! Note: 
 	Support for Microsoft Azure will be provided in future releases.
@@ -38,7 +38,7 @@ $ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir
 ```
 
 This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
-All SnappyData metadata as well as persistent data is stored in the directory **quickstartdatadir**.
+All SnappyData metadata, as well as persistent data, is stored in the directory **quickstartdatadir**.
 
 <a id="Start_quickStart"></a>
 In this document, it is assumed that you are either familiar with Spark or SQL (not necessarily both). Basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables is showcased.
@@ -318,7 +318,7 @@ $ cd snappydata-0.9-bin/
 $ mkdir quickstartdatadir
 $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
 ```
-It opens a Spark Shell. All SnappyData metadata as well as persistent data is stored in the directory **quickstartdatadir**. Follow the steps mentioned [here](#Start_quickStart)
+It opens a Spark Shell. All SnappyData metadata, as well as persistent data, is stored in the directory **quickstartdatadir**. Follow the steps mentioned [here](#Start_quickStart)
 
 <a id="getting-started-on-aws"></a>
 ## Option 6: Getting Started on AWS
@@ -350,7 +350,7 @@ To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloud
 3. On the **Specify Details** page, you can:<br>
     * Provide the stack name: Enter a name for the stack. The stack name must contain only letters, numbers, dashes and should start with an alpha character. This is a mandatory field.
 
-	* Select Instance Type: By default, the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quickstart.
+	* Select Instance Type: By default, the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quick start.
 
     * Select KeyPairName: Select a key pair from the list of key pairs available to you. This is a mandatory field.
 
