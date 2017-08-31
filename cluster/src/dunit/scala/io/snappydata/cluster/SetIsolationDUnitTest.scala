@@ -20,8 +20,6 @@ package io.snappydata.cluster
 import java.sql.{Connection, SQLException, Statement}
 import java.util
 
-import com.gemstone.gemfire.cache.ConflictException
-import com.gemstone.gemfire.internal.cache.TXManagerImpl
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.test.dunit.AvailablePortHelper
 
@@ -119,6 +117,8 @@ class SetIsolationDUnitTest (val s: String)
     checkUnsupportedQueries(stmt1, "select count(*) from coltable")
     checkUnsupportedQueries(stmt1, "insert into coltable values(101, 101, 101)")
     checkUnsupportedQueries(stmt1, "insert into rowtable select col1, col2, col3 from coltable")
+    checkUnsupportedQueries(stmt1, "put into coltable values(101, 101, 101)")
+    checkUnsupportedQueries(stmt1, "put into rowtable select col1, col2, col3 from coltable")
     checkUnsupportedQueries(stmt1, "delete from coltable where col1 = 101")
     checkUnsupportedQueries(stmt1, "delete from rowtable where col1 in " +
         "(select col1 from coltable)")
@@ -126,8 +126,8 @@ class SetIsolationDUnitTest (val s: String)
     checkUnsupportedQueries(stmt1, "update coltable set col2 = 101 where col2 in " +
         "(select col1 from coltable)")
 
-    // queries involving row tables that should not get routed
-    // (for example is there is a syntax error)
+    // queries involving row tables that should not get routed when
+    // autocommit is false (for example even if there is a syntax error)
     logInfo("checking unsupported queries on row tables")
     checkUnsupportedQueries(stmt1, "select * from rowtable limit 1", SQLState.LANG_SYNTAX_ERROR)
     checkUnsupportedQueries(stmt1, "select rowtable.col1 as rc1, coltable.col1 as cc1" +
