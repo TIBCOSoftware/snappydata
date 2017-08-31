@@ -61,9 +61,12 @@ trait ExternalStore extends Serializable {
       ret
     } finally {
       if (closeOnSuccessOrFailure && !conn.isInstanceOf[EmbedConnection] && !conn.isClosed) {
-        if (success) conn.commit()
-        else conn.rollback()
-        conn.close()
+        try {
+          if (success) conn.commit()
+          else conn.rollback()
+        } finally {
+          conn.close()
+        }
       }
     }
   }
@@ -84,12 +87,15 @@ trait ConnectedExternalStore extends ExternalStore {
     // ideally shouldn't check for isClosed.it means some bug!
     val conn = connectedInstance
     if (!conn.isInstanceOf[EmbedConnection] && !conn.isClosed) {
-      if (isSuccess) {
-        conn.commit()
-      } else {
-        conn.rollback()
+      try {
+        if (isSuccess) {
+          conn.commit()
+        } else {
+          conn.rollback()
+        }
+      } finally {
+        conn.close()
       }
-      conn.close()
     }
   }
 
