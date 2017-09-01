@@ -82,17 +82,12 @@ object ExecutorInitiator extends Logging {
     def setRetryFlag(retry: Boolean = true): Unit = lock.synchronized {
       retryTask = retry
       lock.notify()
-      if (retry){
-        // Not am ideal place to do clean up. Better place ?
-        SparkEnv.get.memoryManager.asInstanceOf[StoreUnifiedManager].close
-      }
     }
 
     // Test hook. Not to be used in other situations
-    def waitForExecutor(retry: Boolean = true): Unit =
-      testLock.synchronized(testLock.wait(30000))
-
-
+    def waitForExecutor(retry: Boolean = true): Unit = testLock.synchronized {
+      testLock.wait (30000)
+    }
 
     def getRetryFlag: Boolean = lock.synchronized {
       retryTask
@@ -138,7 +133,6 @@ object ExecutorInitiator extends Logging {
                 // does not lead to continous retries and the thread hogs the CPU.
                 numTries += 1
                 Thread.sleep(3000)
-                setRetryFlag(false)
               }
               // kill if an executor is already running.
               SparkCallbacks.stopExecutor(env)
@@ -207,6 +201,7 @@ object ExecutorInitiator extends Logging {
                   // If driver url is none, already running executor is stopped.
                   prevDriverURL = ""
               }
+              setRetryFlag(false)
             }
           } catch {
             case e@(NonFatal(_) | _: InterruptedException) =>
@@ -258,8 +253,7 @@ object ExecutorInitiator extends Logging {
     executorRunnable.setRetryFlag()
   }
 
-  def restartExecutorAndWait(): Unit = {
-    executorRunnable.setRetryFlag()
+  def waitForExecutor(): Unit = {
     executorRunnable.waitForExecutor()
   }
 

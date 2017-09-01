@@ -100,7 +100,7 @@ object ClusterMgrDUnitTest {
 
   def failTheExecutors: Unit = {
     sc.parallelize(1 until 100, 5).map { i =>
-      throw new InternalError()
+      throw new OutOfMemoryError("Some message")
     }.collect()
   }
 

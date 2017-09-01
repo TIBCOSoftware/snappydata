@@ -17,7 +17,7 @@
 package org.apache.spark.memory
 
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.atomic.{AtomicInteger}
 import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
@@ -163,6 +163,7 @@ class SnappyUnifiedMemoryManager private[memory](
           bootManager.memoryForObject.addTo(objectName -> memoryMode, entry.getLongValue)
         }
       }
+      memoryForObject.clear()
     }
   }
 
@@ -732,22 +733,6 @@ class SnappyUnifiedMemoryManager private[memory](
 }
 
 object SnappyUnifiedMemoryManager extends Logging {
-
-  private val LOCK = new Object()
-
-  private val activeManager = new AtomicReference[SnappyUnifiedMemoryManager](null)
-
-  def getInstance(): Option[SnappyUnifiedMemoryManager] = {
-    LOCK.synchronized {
-      Option(activeManager.get())
-    }
-  }
-
-  private def setActiveContext(snsc: SnappyUnifiedMemoryManager): Unit = {
-    LOCK.synchronized {
-      activeManager.set(snsc)
-    }
-  }
 
   // Reserving minimum 500MB data for unaccounted data, GC headroom etc
   private val RESERVED_SYSTEM_MEMORY_BYTES = {
