@@ -138,8 +138,8 @@
       </a>
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">algo</dt><dd class="cmt"><p>Learning goal.  Supported:
-             <a href="Algo$.html#Classification:org.apache.spark.mllib.tree.configuration.Algo.Value" class="extmbr" name="org.apache.spark.mllib.tree.configuration.Algo#Classification">org.apache.spark.mllib.tree.configuration.Algo.Classification</a>,
-             <a href="Algo$.html#Regression:org.apache.spark.mllib.tree.configuration.Algo.Value" class="extmbr" name="org.apache.spark.mllib.tree.configuration.Algo#Regression">org.apache.spark.mllib.tree.configuration.Algo.Regression</a></p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.
+             <code>org.apache.spark.mllib.tree.configuration.Algo.Classification</code>,
+             <code>org.apache.spark.mllib.tree.configuration.Algo.Regression</code></p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.
                 Supported for Classification: <a href="../impurity/Gini$.html" class="extype" name="org.apache.spark.mllib.tree.impurity.Gini">org.apache.spark.mllib.tree.impurity.Gini</a>,
                  <a href="../impurity/Entropy$.html" class="extype" name="org.apache.spark.mllib.tree.impurity.Entropy">org.apache.spark.mllib.tree.impurity.Entropy</a>.
                 Supported for Regression: <a href="../impurity/Variance$.html" class="extype" name="org.apache.spark.mllib.tree.impurity.Variance">org.apache.spark.mllib.tree.impurity.Variance</a>.</p></dd><dt class="param">maxDepth</dt><dd class="cmt"><p>Maximum depth of the tree (e.g. depth 0 means 1 leaf node, depth 1 means
@@ -148,8 +148,8 @@
                                    Default value is 2 (binary classification).</p></dd><dt class="param">maxBins</dt><dd class="cmt"><p>Maximum number of bins used for discretizing continuous features and
                for choosing how to split on features at each node.
                More bins give higher granularity.</p></dd><dt class="param">quantileCalculationStrategy</dt><dd class="cmt"><p>Algorithm for calculating quantiles.  Supported:
-                            <a href="QuantileStrategy$.html#Sort:org.apache.spark.mllib.tree.configuration.QuantileStrategy.Value" class="extmbr" name="org.apache.spark.mllib.tree.configuration.QuantileStrategy#Sort">org.apache.spark.mllib.tree.configuration.QuantileStrategy.Sort</a></p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>A map storing information about the categorical variables and the
-                               number of discrete values they take. An entry (n -&gt; k)
+                            <code>org.apache.spark.mllib.tree.configuration.QuantileStrategy.Sort</code></p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>A map storing information about the categorical variables and the
+                               number of discrete values they take. An entry (n to k)
                                indicates that feature n is categorical with k categories
                                indexed from 0: {0, 1, ..., k-1}.</p></dd><dt class="param">minInstancesPerNode</dt><dd class="cmt"><p>Minimum number of instances each child must have after split.
                            Default value is 1. If a split cause left or right child
@@ -246,8 +246,8 @@
       </a>
     </span>
       <p class="shortcomment cmt">Learning goal.</p><div class="fullcomment"><div class="comment cmt"><p>Learning goal.  Supported:
-             <a href="Algo$.html#Classification:org.apache.spark.mllib.tree.configuration.Algo.Value" class="extmbr" name="org.apache.spark.mllib.tree.configuration.Algo#Classification">org.apache.spark.mllib.tree.configuration.Algo.Classification</a>,
-             <a href="Algo$.html#Regression:org.apache.spark.mllib.tree.configuration.Algo.Value" class="extmbr" name="org.apache.spark.mllib.tree.configuration.Algo#Regression">org.apache.spark.mllib.tree.configuration.Algo.Regression</a></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+             <code>org.apache.spark.mllib.tree.configuration.Algo.Classification</code>,
+             <code>org.apache.spark.mllib.tree.configuration.Algo.Regression</code></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.0.0&quot;</span>
@@ -289,7 +289,7 @@
     </span>
       <p class="shortcomment cmt">A map storing information about the categorical variables and the
                                number of discrete values they take.</p><div class="fullcomment"><div class="comment cmt"><p>A map storing information about the categorical variables and the
-                               number of discrete values they take. An entry (n -&gt; k)
+                               number of discrete values they take. An entry (n to k)
                                indicates that feature n is categorical with k categories
                                indexed from 0: {0, 1, ..., k-1}.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -1069,7 +1069,7 @@
       </a>
     </span>
       <p class="shortcomment cmt">Algorithm for calculating quantiles.</p><div class="fullcomment"><div class="comment cmt"><p>Algorithm for calculating quantiles.  Supported:
-                            <a href="QuantileStrategy$.html#Sort:org.apache.spark.mllib.tree.configuration.QuantileStrategy.Value" class="extmbr" name="org.apache.spark.mllib.tree.configuration.QuantileStrategy#Sort">org.apache.spark.mllib.tree.configuration.QuantileStrategy.Sort</a></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                            <code>org.apache.spark.mllib.tree.configuration.QuantileStrategy.Sort</code></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.0.0&quot;</span>

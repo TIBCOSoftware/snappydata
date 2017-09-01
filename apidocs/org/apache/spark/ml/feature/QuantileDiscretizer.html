@@ -52,9 +52,17 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p><code>QuantileDiscretizer</code> takes a column with continuous features and outputs a column with binned
-categorical features. The number of bins can be set using the <code>numBuckets</code> parameter.
-The bin ranges are chosen using an approximate algorithm (see the documentation for
-<a href="../../sql/DataFrameStatFunctions.html#approxQuantile(col:String,probabilities:Array[Double],relativeError:Double):Array[Double]" class="extmbr" name="org.apache.spark.sql.DataFrameStatFunctions#approxQuantile">approxQuantile</a>
+categorical features. The number of bins can be set using the <code>numBuckets</code> parameter. It is
+possible that the number of buckets used will be smaller than this value, for example, if there
+are too few distinct values of the input to create enough distinct quantiles.</p><p>NaN handling:
+NaN values will be removed from the column during <code>QuantileDiscretizer</code> fitting. This will
+produce a <code>Bucketizer</code> model for making predictions. During the transformation,
+<code>Bucketizer</code> will raise an error when it finds NaN values in the dataset, but the user can
+also choose to either keep or remove NaN values within the dataset by setting <code>handleInvalid</code>.
+If the user chooses to keep NaN values, they will be handled specially and placed into their own
+bucket, for example, if 4 buckets are used, then non-NaN data will be put into buckets[0-3],
+but NaNs will be counted in a special bucket[4].</p><p>Algorithm: The bin ranges are chosen using an approximate algorithm (see the documentation for
+<code>org.apache.spark.sql.DataFrameStatFunctions.approxQuantile</code>
 for a detailed description). The precision of the approximation can be controlled with the
 <code>relativeError</code> parameter. The lower and upper bin bounds will be <code>-Infinity</code> and <code>+Infinity</code>,
 covering all real values.
@@ -644,6 +652,29 @@ Subclasses could override this to optimize multi-model training.
     </span>
       <p class="shortcomment cmt">Gets the default value of a parameter.</p><div class="fullcomment"><div class="comment cmt"><p>Gets the default value of a parameter.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.QuantileDiscretizerBase#getHandleInvalid" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
+      <a id="getHandleInvalid:String"></a>
+      <a id="getHandleInvalid:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getHandleInvalid</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.QuantileDiscretizer@getHandleInvalid:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>QuantileDiscretizerBase</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasInputCol#getInputCol" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
       <a id="getInputCol:String"></a>
       <a id="getInputCol:String"></a>
@@ -748,6 +779,32 @@ if neither is set.
       </a>
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>QuantileDiscretizerBase</dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.QuantileDiscretizerBase#handleInvalid" visbl="pub" data-isabs="false" fullComment="yes" group="param">
+      <a id="handleInvalid:org.apache.spark.ml.param.Param[String]"></a>
+      <a id="handleInvalid:Param[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">handleInvalid</span><span class="result">: <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.QuantileDiscretizer@handleInvalid:org.apache.spark.ml.param.Param[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Param for how to handle invalid entries.</p><div class="fullcomment"><div class="comment cmt"><p>Param for how to handle invalid entries. Options are 'skip' (filter out rows with
+invalid values), 'error' (throw an error), or 'keep' (keep invalid values in a special
+additional bucket).
+Default: &quot;error&quot;</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>QuantileDiscretizerBase</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.Params#hasDefault" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hasDefault[T](param:org.apache.spark.ml.param.Param[T]):Boolean"></a>
       <a id="hasDefault[T](Param[T]):Boolean"></a>
@@ -1208,8 +1265,7 @@ if neither is set.
       </a>
     </span>
       <p class="shortcomment cmt">Number of buckets (quantiles, or categories) into which data points are grouped.</p><div class="fullcomment"><div class="comment cmt"><p>Number of buckets (quantiles, or categories) into which data points are grouped. Must
-be &gt;= 2.
-default: 2</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>QuantileDiscretizerBase</dd></dl></div>
+be greater than or equal to 2.</p><p>See also <a href="#handleInvalid:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.feature.QuantileDiscretizer#handleInvalid">handleInvalid</a>, which can optionally create an additional bucket for NaN values.</p><p>default: 2</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>QuantileDiscretizerBase</dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasOutputCol#outputCol" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="outputCol:org.apache.spark.ml.param.Param[String]"></a>
       <a id="outputCol:Param[String]"></a>
@@ -1244,9 +1300,9 @@ default: 2</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.feature.QuantileDiscretizerBase#relativeError" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="relativeError:org.apache.spark.ml.param.DoubleParam"></a>
       <a id="relativeError:DoubleParam"></a>
@@ -1264,9 +1320,9 @@ this variable gets initialized before other params.
       </a>
     </span>
       <p class="shortcomment cmt">Relative error (see documentation for
-<a href="../../sql/DataFrameStatFunctions.html#approxQuantile(col:String,probabilities:Array[Double],relativeError:Double):Array[Double]" class="extmbr" name="org.apache.spark.sql.DataFrameStatFunctions#approxQuantile">approxQuantile</a> for description)
+<code>org.apache.spark.sql.DataFrameStatFunctions.approxQuantile</code> for description)
 Must be in the range [0, 1].</p><div class="fullcomment"><div class="comment cmt"><p>Relative error (see documentation for
-<a href="../../sql/DataFrameStatFunctions.html#approxQuantile(col:String,probabilities:Array[Double],relativeError:Double):Array[Double]" class="extmbr" name="org.apache.spark.sql.DataFrameStatFunctions#approxQuantile">approxQuantile</a> for description)
+<code>org.apache.spark.sql.DataFrameStatFunctions.approxQuantile</code> for description)
 Must be in the range [0, 1].
 default: 0.001</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>QuantileDiscretizerBase</dd></dl></div>
     </li><li name="org.apache.spark.ml.util.MLWritable#save" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -1392,6 +1448,29 @@ default: 0.001</p></div><dl class="attributes block"> <dt>Definition Classes</dt
     </span>
       <p class="shortcomment cmt">Sets a default value for a param.</p><div class="fullcomment"><div class="comment cmt"><p>Sets a default value for a param.</p></div><dl class="paramcmts block"><dt class="param">param</dt><dd class="cmt"><p>param to set the default value. Make sure that this param is initialized before
               this method gets called.</p></dd><dt class="param">value</dt><dd class="cmt"><p>the default value</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.QuantileDiscretizer#setHandleInvalid" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
+      <a id="setHandleInvalid(value:String):QuantileDiscretizer.this.type"></a>
+      <a id="setHandleInvalid(String):QuantileDiscretizer.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setHandleInvalid</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.ml.feature.QuantileDiscretizer">QuantileDiscretizer</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.QuantileDiscretizer@setHandleInvalid(value:String):QuantileDiscretizer.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.feature.QuantileDiscretizer#setInputCol" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
       <a id="setInputCol(value:String):QuantileDiscretizer.this.type"></a>
       <a id="setInputCol(String):QuantileDiscretizer.this.type"></a>
@@ -1534,7 +1613,9 @@ default: 0.001</p></div><dl class="attributes block"> <dt>Definition Classes</dt
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.feature.QuantileDiscretizer">QuantileDiscretizer</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -1681,34 +1762,7 @@ be assumed valid until proven otherwise.
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.param.Params#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.0) Will be removed in 2.1.0. Checks should be merged into transformSchema.">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.feature.QuantileDiscretizer@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Will be removed in 2.1.0. Checks should be merged into transformSchema.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">

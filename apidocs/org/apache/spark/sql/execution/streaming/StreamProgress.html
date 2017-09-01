@@ -2485,23 +2485,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[this] </dd><dt>Definition Classes</dt><dd>IterableLike → TraversableLike</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.StreamProgress#toCompositeOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="toCompositeOffset(source:Seq[org.apache.spark.sql.execution.streaming.Source]):org.apache.spark.sql.execution.streaming.CompositeOffset"></a>
-      <a id="toCompositeOffset(Seq[Source]):CompositeOffset"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toCompositeOffset</span><span class="params">(<span name="source">source: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a>]</span>)</span><span class="result">: <a href="CompositeOffset.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompositeOffset">CompositeOffset</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamProgress@toCompositeOffset(source:Seq[org.apache.spark.sql.execution.streaming.Source]):org.apache.spark.sql.execution.streaming.CompositeOffset" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.collection.TraversableOnce#toIndexedSeq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toIndexedSeq:scala.collection.immutable.IndexedSeq[A]"></a>
       <a id="toIndexedSeq:IndexedSeq[(Source,Offset)]"></a>
@@ -2605,6 +2588,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamProgress#toOffsetSeq" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toOffsetSeq(source:Seq[org.apache.spark.sql.execution.streaming.Source],metadata:org.apache.spark.sql.execution.streaming.OffsetSeqMetadata):org.apache.spark.sql.execution.streaming.OffsetSeq"></a>
+      <a id="toOffsetSeq(Seq[Source],OffsetSeqMetadata):OffsetSeq"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toOffsetSeq</span><span class="params">(<span name="source">source: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a>]</span>, <span name="metadata">metadata: <a href="OffsetSeqMetadata.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeqMetadata">OffsetSeqMetadata</a></span>)</span><span class="result">: <a href="OffsetSeq.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeq">OffsetSeq</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamProgress@toOffsetSeq(source:Seq[org.apache.spark.sql.execution.streaming.Source],metadata:org.apache.spark.sql.execution.streaming.OffsetSeqMetadata):org.apache.spark.sql.execution.streaming.OffsetSeq" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.collection.MapLike#toSeq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toSeq:Seq[(A,B)]"></a>
       <a id="toSeq:Seq[(Source,Offset)]"></a>
@@ -2717,7 +2717,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TraversableOnce → GenTraversableOnce</dd></dl></div>
     </li><li name="scala.collection.immutable.MapLike#transform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transform[C,That](f:(A,B)=&gt;C)(implicitbf:scala.collection.generic.CanBuildFrom[This,(A,C),That]):That"></a>
+      <a id="transform[C&lt;:&lt;?&gt;,That&lt;:&lt;?&gt;](f:&lt;?&gt;)(implicitbf:&lt;?&gt;):That"></a>
       <a id="transform[C,That]((Source,Offset)⇒C)(CanBuildFrom[Map[Source,Offset],(Source,C),That]):That"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2962,7 +2962,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Map</dd></dl></div>
     </li><li name="scala.collection.immutable.Map#withDefaultValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="withDefaultValue[B1&gt;:B](d:B1):scala.collection.immutable.Map[A,B1]"></a>
+      <a id="withDefaultValue[B1&lt;:&lt;?&gt;](d:&lt;?&gt;):scala.collection.immutable.Map[A,B1]"></a>
       <a id="withDefaultValue[B1&gt;:Offset](B1):Map[Source,B1]"></a>
       <h4 class="signature">
       <span class="modifier_kind">

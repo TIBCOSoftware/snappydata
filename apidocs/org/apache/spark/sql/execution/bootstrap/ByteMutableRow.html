@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">ByteMutableRow</span><span class="result"> extends <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a> with <a href="../../catalyst/expressions/BaseGenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">BaseGenericInternalRow</a> with <span class="extype" name="java.io.Externalizable">Externalizable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+        <span class="name">ByteMutableRow</span><span class="result"> extends <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> with <a href="../../catalyst/expressions/BaseGenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">BaseGenericInternalRow</a> with <span class="extype" name="java.io.Externalizable">Externalizable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <span class="extype" name="java.io.Externalizable">Externalizable</span>, <a href="../../catalyst/expressions/BaseGenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">BaseGenericInternalRow</a>, <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../catalyst/expressions/SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <span class="extype" name="java.io.Externalizable">Externalizable</span>, <a href="../../catalyst/expressions/BaseGenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">BaseGenericInternalRow</a>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../catalyst/expressions/SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -69,7 +69,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow"><span>ByteMutableRow</span></li><li class="in" name="com.esotericsoftware.kryo.KryoSerializable"><span>KryoSerializable</span></li><li class="in" name="java.io.Externalizable"><span>Externalizable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow"><span>BaseGenericInternalRow</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.MutableRow"><span>MutableRow</span></li><li class="in" name="org.apache.spark.sql.catalyst.InternalRow"><span>InternalRow</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters"><span>SpecializedGetters</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow"><span>ByteMutableRow</span></li><li class="in" name="com.esotericsoftware.kryo.KryoSerializable"><span>KryoSerializable</span></li><li class="in" name="java.io.Externalizable"><span>Externalizable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow"><span>BaseGenericInternalRow</span></li><li class="in" name="org.apache.spark.sql.catalyst.InternalRow"><span>InternalRow</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters"><span>SpecializedGetters</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -823,7 +823,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow#setByte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setByte(ordinal:Int,value:Byte):Unit"></a>
       <a id="setByte(Int,Byte):Unit"></a>
@@ -840,8 +840,8 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.MutableRow#setDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setDecimal(i:Int,value:org.apache.spark.sql.types.Decimal,precision:Int):Unit"></a>
       <a id="setDecimal(Int,Decimal,Int):Unit"></a>
       <h4 class="signature">
@@ -859,7 +859,7 @@
     </span>
       <p class="shortcomment cmt">Update the decimal column at <code>i</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Update the decimal column at <code>i</code>.</p><p>Note: In order to support update decimal with precision &gt; 18 in UnsafeRow,
 CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, null, precision).
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow#setDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setDouble(ordinal:Int,value:Double):Unit"></a>
       <a id="setDouble(Int,Double):Unit"></a>
@@ -876,7 +876,7 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow#setFirstAggregateMutableRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="setFirstAggregateMutableRow(doubleMutableRow:org.apache.spark.sql.execution.bootstrap.DoubleMutableRow):Unit"></a>
       <a id="setFirstAggregateMutableRow(DoubleMutableRow):Unit"></a>
@@ -910,7 +910,7 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow#setInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setInt(ordinal:Int,value:Int):Unit"></a>
       <a id="setInt(Int,Int):Unit"></a>
@@ -927,7 +927,7 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow#setLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setLong(ordinal:Int,value:Long):Unit"></a>
       <a id="setLong(Int,Long):Unit"></a>
@@ -944,7 +944,7 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow#setNullAt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setNullAt(i:Int):Unit"></a>
       <a id="setNullAt(Int):Unit"></a>
@@ -961,7 +961,7 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow#setShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setShort(ordinal:Int,value:Short):Unit"></a>
       <a id="setShort(Int,Short):Unit"></a>
@@ -978,7 +978,7 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -1064,7 +1064,7 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow#values" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="values:Array[Byte]"></a>
       <a id="values:Array[Byte]"></a>
@@ -1200,8 +1200,6 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
               <h3>Inherited from <span class="extype" name="java.io.Externalizable">Externalizable</span></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">
               <h3>Inherited from <a href="../../catalyst/expressions/BaseGenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">BaseGenericInternalRow</a></h3>
-            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.MutableRow">
-              <h3>Inherited from <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.InternalRow">
               <h3>Inherited from <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></h3>
             </div><div class="parent" name="scala.Serializable">

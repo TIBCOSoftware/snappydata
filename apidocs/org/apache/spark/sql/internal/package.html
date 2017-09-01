@@ -157,7 +157,7 @@ are subject to change between minor releases.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Internal implementation of the user-facing <span class="extype" name="Catalog">Catalog</span>.</p>
+      <p class="shortcomment cmt">Internal implementation of the user-facing <code>Catalog</code>.</p>
     </li><li name="org.apache.spark.sql.internal.CodeGenerationException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CodeGenerationExceptionextendsException"></a>
       <a id="CodeGenerationException:CodeGenerationException"></a>
@@ -226,6 +226,26 @@ are subject to change between minor releases.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.internal.SQLConf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SQLConfextendsSerializablewithLogging"></a>
+      <a id="SQLConf:SQLConf"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SQLConf.html"><span class="name">SQLConf</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SQLConfextendsSerializablewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A class that enables the setting and getting of mutable config parameters/hints.</p><div class="fullcomment"><div class="comment cmt"><p>A class that enables the setting and getting of mutable config parameters/hints.</p><p>In the presence of a SQLContext, these can be set and queried by passing SET commands
+into Spark SQL's query functions (i.e. sql()). Otherwise, users of this class can
+modify the hints by programmatically calling the setters and getters of this class.</p><p>SQLConf is thread-safe (internally synchronized, so safe to be used in multiple threads).
+</p></div></div>
     </li><li name="org.apache.spark.sql.internal.SQLConfigEntry" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SQLConfigEntryextendsAnyRef"></a>
       <a id="SQLConfigEntry:SQLConfigEntry"></a>
@@ -239,23 +259,6 @@ are subject to change between minor releases.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SQLConfigEntryextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.internal.SessionJarUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SessionJarUtilsextendsAnyRef"></a>
-      <a id="SessionJarUtils:SessionJarUtils"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SessionJarUtils.html"><span class="name">SessionJarUtils</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SessionJarUtilsextendsAnyRef" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -278,7 +281,7 @@ are subject to change between minor releases.
     </span>
       
     </li><li name="org.apache.spark.sql.internal.SnappyConf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyConfextendsSQLConfwithSerializablewithCatalystConf"></a>
+      <a id="SnappyConfextendsSQLConfwithSerializable"></a>
       <a id="SnappyConf:SnappyConf"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -286,10 +289,10 @@ are subject to change between minor releases.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyConf.html"><span class="name">SnappyConf</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</span> with <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../catalyst/CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>
+        <a href="SnappyConf.html"><span class="name">SnappyConf</span></a><span class="result"> extends <a href="SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SnappyConfextendsSQLConfwithSerializablewithCatalystConf" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SnappyConfextendsSQLConfwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -346,7 +349,7 @@ are subject to change between minor releases.
     </span>
       <p class="shortcomment cmt">A helper class that enables substitution using syntax like
 <code>${var}</code>, <code>${system:var}</code> and <code>${env:var}</code>.</p><div class="fullcomment"><div class="comment cmt"><p>A helper class that enables substitution using syntax like
-<code>${var}</code>, <code>${system:var}</code> and <code>${env:var}</code>.</p><p>Variable substitution is controlled by <span class="extype" name="SQLConf.variableSubstituteEnabled">SQLConf.variableSubstituteEnabled</span>.
+<code>${var}</code>, <code>${system:var}</code> and <code>${env:var}</code>.</p><p>Variable substitution is controlled by <code>SQLConf.variableSubstituteEnabled</code>.
 </p></div></div>
     </li></ol>
             </div>
@@ -371,11 +374,13 @@ are subject to change between minor releases.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">An utility class to store jar file reference with their individual classloaders.</p><div class="fullcomment"><div class="comment cmt"><p>An utility class to store jar file reference with their individual classloaders.
+      <p class="shortcomment cmt">An utility class to store jar file reference with their individual class loaders.</p><div class="fullcomment"><div class="comment cmt"><p>An utility class to store jar file reference with their individual class loaders.
 This is to reflect class changes at driver side.
 e.g. If an UDF definition changes the driver should pick up the correct UDF class.
-This class can not initialize itself after a driver failure. So the callers will have  to make sure that the classloader gets
-initialized after a driver startup. Usually it can be achieved by adding classloader at query time.</p></div></div>
+This class can not initialize itself after a driver failure.
+So the callers will have  to make sure that the classloader gets
+initialized after a driver startup. Usually it can be achieved by
+adding classloader at query time.</p></div></div>
     </li><li name="org.apache.spark.sql.internal.HiveSerDe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="HiveSerDe"></a>
       <a id="HiveSerDe:HiveSerDe"></a>
@@ -427,6 +432,42 @@ initialized after a driver startup. Usually it can be achieved by adding classlo
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.internal.SharedState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SharedState"></a>
+      <a id="SharedState:SharedState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SharedState$.html"><span class="name">SharedState</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SharedState" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.StaticSQLConf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StaticSQLConf"></a>
+      <a id="StaticSQLConf:StaticSQLConf"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StaticSQLConf$.html"><span class="name">StaticSQLConf</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@StaticSQLConf" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Static SQL configuration is a cross-session, immutable Spark configuration.</p><div class="fullcomment"><div class="comment cmt"><p>Static SQL configuration is a cross-session, immutable Spark configuration. External users can
+see the static sql configs via <code>SparkSession.conf</code>, but can NOT set/unset them.
+</p></div></div>
     </li><li name="org.apache.spark.sql.internal.UDFFunction" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="UDFFunction"></a>
       <a id="UDFFunction:UDFFunction"></a>

@@ -49,7 +49,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Interface for the system catalog (of columns, partitions, tables, and databases).</p><p>This is only used for non-temporary items, and implementations must be thread-safe as they
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Interface for the system catalog (of functions, partitions, tables, and databases).</p><p>This is only used for non-temporary items, and implementations must be thread-safe as they
 can be accessed in multiple threads. This is an external catalog because it is expected to
 interact with external systems.</p><p>Implementations should throw <span class="extype" name="NoSuchDatabaseException">NoSuchDatabaseException</span> when databases don't exist.
 </p></div><div class="toggleContainer block">
@@ -161,26 +161,49 @@ assuming the partitions exist.</p><p>Note: If the underlying implementation does
 this becomes a no-op.
 </p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#alterTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="alterTable(db:String,tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable):Unit"></a>
-      <a id="alterTable(String,CatalogTable):Unit"></a>
+      <a id="alterTable(tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable):Unit"></a>
+      <a id="alterTable(CatalogTable):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">alterTable</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableDefinition">tableDefinition: <a href="CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">alterTable</span><span class="params">(<span name="tableDefinition">tableDefinition: <a href="CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@alterTable(db:String,tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@alterTable(tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Alter a table whose name that matches the one specified in <code>tableDefinition</code>,
-assuming the table exists.</p><div class="fullcomment"><div class="comment cmt"><p>Alter a table whose name that matches the one specified in <code>tableDefinition</code>,
-assuming the table exists.</p><p>Note: If the underlying implementation does not support altering a certain field,
+      <p class="shortcomment cmt">Alter a table whose database and name match the ones specified in <code>tableDefinition</code>, assuming
+the table exists.</p><div class="fullcomment"><div class="comment cmt"><p>Alter a table whose database and name match the ones specified in <code>tableDefinition</code>, assuming
+the table exists. Note that, even though we can specify database in <code>tableDefinition</code>, it's
+used to identify the table, not to alter the table's database, which is not allowed.</p><p>Note: If the underlying implementation does not support altering a certain field,
 this becomes a no-op.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#alterTableSchema" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="alterTableSchema(db:String,table:String,schema:org.apache.spark.sql.types.StructType):Unit"></a>
+      <a id="alterTableSchema(String,String,StructType):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">alterTableSchema</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@alterTableSchema(db:String,table:String,schema:org.apache.spark.sql.types.StructType):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Alter the schema of a table identified by the provided database and table name.</p><div class="fullcomment"><div class="comment cmt"><p>Alter the schema of a table identified by the provided database and table name. The new schema
+should still contain the existing bucket columns and partition columns used by the table. This
+method will also update any Spark SQL-related parameters stored as Hive table properties (such
+as the schema itself).
+</p></div><dl class="paramcmts block"><dt class="param">db</dt><dd class="cmt"><p>Database that table to alter schema for exists in</p></dd><dt class="param">table</dt><dd class="cmt"><p>Name of table to alter schema for</p></dd><dt class="param">schema</dt><dd class="cmt"><p>Updated schema to be used for the table (must contain existing partition and
+              bucket columns)</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#createDatabase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="createDatabase(dbDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase,ignoreIfExists:Boolean):Unit"></a>
       <a id="createDatabase(CatalogDatabase,Boolean):Unit"></a>
@@ -233,18 +256,18 @@ this becomes a no-op.
     </span>
       
     </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#createTable" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="createTable(db:String,tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable,ignoreIfExists:Boolean):Unit"></a>
-      <a id="createTable(String,CatalogTable,Boolean):Unit"></a>
+      <a id="createTable(tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable,ignoreIfExists:Boolean):Unit"></a>
+      <a id="createTable(CatalogTable,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createTable</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableDefinition">tableDefinition: <a href="CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a></span>, <span name="ignoreIfExists">ignoreIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">createTable</span><span class="params">(<span name="tableDefinition">tableDefinition: <a href="CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a></span>, <span name="ignoreIfExists">ignoreIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@createTable(db:String,tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable,ignoreIfExists:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@createTable(tableDefinition:org.apache.spark.sql.catalyst.catalog.CatalogTable,ignoreIfExists:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -301,35 +324,35 @@ this becomes a no-op.
     </span>
       
     </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#dropPartitions" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="dropPartitions(db:String,table:String,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec],ignoreIfNotExists:Boolean):Unit"></a>
-      <a id="dropPartitions(String,String,Seq[TablePartitionSpec],Boolean):Unit"></a>
+      <a id="dropPartitions(db:String,table:String,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec],ignoreIfNotExists:Boolean,purge:Boolean,retainData:Boolean):Unit"></a>
+      <a id="dropPartitions(String,String,Seq[TablePartitionSpec],Boolean,Boolean,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dropPartitions</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="parts">parts: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a>]</span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">dropPartitions</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="parts">parts: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a>]</span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="purge">purge: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="retainData">retainData: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@dropPartitions(db:String,table:String,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec],ignoreIfNotExists:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@dropPartitions(db:String,table:String,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec],ignoreIfNotExists:Boolean,purge:Boolean,retainData:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#dropTable" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="dropTable(db:String,table:String,ignoreIfNotExists:Boolean):Unit"></a>
-      <a id="dropTable(String,String,Boolean):Unit"></a>
+      <a id="dropTable(db:String,table:String,ignoreIfNotExists:Boolean,purge:Boolean):Unit"></a>
+      <a id="dropTable(String,String,Boolean,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dropTable</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">dropTable</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="purge">purge: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@dropTable(db:String,table:String,ignoreIfNotExists:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@dropTable(db:String,table:String,ignoreIfNotExists:Boolean,purge:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -402,6 +425,23 @@ this becomes a no-op.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#getPartitionOption" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="getPartitionOption(db:String,table:String,spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec):Option[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]"></a>
+      <a id="getPartitionOption(String,String,TablePartitionSpec):Option[CatalogTablePartition]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPartitionOption</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="spec">spec: <a href="CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="CatalogTablePartition.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@getPartitionOption(db:String,table:String,spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec):Option[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the specified partition or None if it does not exist.</p>
     </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#getTable" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="getTable(db:String,table:String):org.apache.spark.sql.catalyst.catalog.CatalogTable"></a>
       <a id="getTable(String,String):CatalogTable"></a>
@@ -487,6 +527,27 @@ this becomes a no-op.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#listPartitionNames" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="listPartitionNames(db:String,table:String,partialSpec:Option[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec]):Seq[String]"></a>
+      <a id="listPartitionNames(String,String,Option[TablePartitionSpec]):Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listPartitionNames</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partialSpec">partialSpec: <span class="extype" name="scala.Option">Option</span>[<a href="CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@listPartitionNames(db:String,table:String,partialSpec:Option[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec]):Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">List the names of all partitions that belong to the specified table, assuming it exists.</p><div class="fullcomment"><div class="comment cmt"><p>List the names of all partitions that belong to the specified table, assuming it exists.</p><p>For a table with partition columns p1, p2, p3, each partition name is formatted as
+<code>p1=v1/p2=v2/p3=v3</code>. Each partition column name and value is an escaped path name, and can be
+decoded with the <code>ExternalCatalogUtils.unescapePathName</code> method.</p><p>The returned sequence is sorted as strings.</p><p>A partial partition spec may optionally be provided to filter the partitions returned, as
+described in the <code>listPartitions</code> method.
+</p></div><dl class="paramcmts block"><dt class="param">db</dt><dd class="cmt"><p>database name</p></dd><dt class="param">table</dt><dd class="cmt"><p>table name</p></dd><dt class="param">partialSpec</dt><dd class="cmt"><p>partition spec</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#listPartitions" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="listPartitions(db:String,table:String,partialSpec:Option[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]"></a>
       <a id="listPartitions(String,String,Option[TablePartitionSpec]):Seq[CatalogTablePartition]"></a>
@@ -505,7 +566,28 @@ this becomes a no-op.
     </span>
       <p class="shortcomment cmt">List the metadata of all partitions that belong to the specified table, assuming it exists.</p><div class="fullcomment"><div class="comment cmt"><p>List the metadata of all partitions that belong to the specified table, assuming it exists.</p><p>A partial partition spec may optionally be provided to filter the partitions returned.
 For instance, if there exist partitions (a='1', b='2'), (a='1', b='3') and (a='2', b='4'),
-then a partial spec of (a='1') will return the first two only.</p></div><dl class="paramcmts block"><dt class="param">db</dt><dd class="cmt"><p>database name</p></dd><dt class="param">table</dt><dd class="cmt"><p>table name</p></dd><dt class="param">partialSpec</dt><dd class="cmt"><p>partition spec</p></dd></dl></div>
+then a partial spec of (a='1') will return the first two only.
+</p></div><dl class="paramcmts block"><dt class="param">db</dt><dd class="cmt"><p>database name</p></dd><dt class="param">table</dt><dd class="cmt"><p>table name</p></dd><dt class="param">partialSpec</dt><dd class="cmt"><p>partition spec</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#listPartitionsByFilter" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="listPartitionsByFilter(db:String,table:String,predicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]"></a>
+      <a id="listPartitionsByFilter(String,String,Seq[Expression]):Seq[CatalogTablePartition]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listPartitionsByFilter</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="predicates">predicates: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CatalogTablePartition.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@listPartitionsByFilter(db:String,table:String,predicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">List the metadata of partitions that belong to the specified table, assuming it exists, that
+satisfy the given partition-pruning predicate expressions.</p><div class="fullcomment"><div class="comment cmt"><p>List the metadata of partitions that belong to the specified table, assuming it exists, that
+satisfy the given partition-pruning predicate expressions.
+</p></div><dl class="paramcmts block"><dt class="param">db</dt><dd class="cmt"><p>database name</p></dd><dt class="param">table</dt><dd class="cmt"><p>table name</p></dd><dt class="param">predicates</dt><dd class="cmt"><p>partition-pruning predicates</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#listTables" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="listTables(db:String,pattern:String):Seq[String]"></a>
       <a id="listTables(String,String):Seq[String]"></a>
@@ -540,19 +622,36 @@ then a partial spec of (a='1') will return the first two only.</p></div><dl clas
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#loadPartition" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="loadPartition(db:String,table:String,loadPath:String,partition:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,isOverwrite:Boolean,holdDDLTime:Boolean,inheritTableSpecs:Boolean,isSkewedStoreAsSubdir:Boolean):Unit"></a>
-      <a id="loadPartition(String,String,String,TablePartitionSpec,Boolean,Boolean,Boolean,Boolean):Unit"></a>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#loadDynamicPartitions" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="loadDynamicPartitions(db:String,table:String,loadPath:String,partition:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,replace:Boolean,numDP:Int,holdDDLTime:Boolean):Unit"></a>
+      <a id="loadDynamicPartitions(String,String,String,TablePartitionSpec,Boolean,Int,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">loadPartition</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="loadPath">loadPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partition">partition: <a href="CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>, <span name="isOverwrite">isOverwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="holdDDLTime">holdDDLTime: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="inheritTableSpecs">inheritTableSpecs: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isSkewedStoreAsSubdir">isSkewedStoreAsSubdir: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">loadDynamicPartitions</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="loadPath">loadPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partition">partition: <a href="CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>, <span name="replace">replace: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="numDP">numDP: <span class="extype" name="scala.Int">Int</span></span>, <span name="holdDDLTime">holdDDLTime: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@loadPartition(db:String,table:String,loadPath:String,partition:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,isOverwrite:Boolean,holdDDLTime:Boolean,inheritTableSpecs:Boolean,isSkewedStoreAsSubdir:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@loadDynamicPartitions(db:String,table:String,loadPath:String,partition:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,replace:Boolean,numDP:Int,holdDDLTime:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#loadPartition" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="loadPartition(db:String,table:String,loadPath:String,partition:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,isOverwrite:Boolean,holdDDLTime:Boolean,inheritTableSpecs:Boolean):Unit"></a>
+      <a id="loadPartition(String,String,String,TablePartitionSpec,Boolean,Boolean,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">loadPartition</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="loadPath">loadPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partition">partition: <a href="CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>, <span name="isOverwrite">isOverwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="holdDDLTime">holdDDLTime: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="inheritTableSpecs">inheritTableSpecs: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@loadPartition(db:String,table:String,loadPath:String,partition:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,isOverwrite:Boolean,holdDDLTime:Boolean,inheritTableSpecs:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -963,6 +1062,23 @@ This assumes index i of <code>specs</code> corresponds to index i of <code>newSp
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@requireFunctionNotExists(db:String,funcName:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#requireTableExists" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="requireTableExists(db:String,table:String):Unit"></a>
+      <a id="requireTableExists(String,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">requireTableExists</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.ExternalCatalog@requireTableExists(db:String,table:String):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

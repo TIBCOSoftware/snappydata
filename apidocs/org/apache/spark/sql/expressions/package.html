@@ -83,9 +83,9 @@
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-A base class for user-defined aggregations, which can be used in <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> operations to take
+A base class for user-defined aggregations, which can be used in <code>Dataset</code> operations to take
 all of the elements of a group and reduce them to a single value.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-A base class for user-defined aggregations, which can be used in <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> operations to take
+A base class for user-defined aggregations, which can be used in <code>Dataset</code> operations to take
 all of the elements of a group and reduce them to a single value.</p><p>For example, the following aggregator extracts an <code>int</code> from a specific class and adds them up:</p><pre><span class="kw">case</span> <span class="kw">class</span> Data(i: <span class="std">Int</span>)
 
 <span class="kw">val</span> customSummer =  <span class="kw">new</span> Aggregator[Data, <span class="std">Int</span>, <span class="std">Int</span>] {
@@ -99,6 +99,8 @@ all of the elements of a group and reduce them to a single value.</p><p>For exam
 <span class="kw">val</span> aggregated = ds.select(customSummer)</pre><p>Based loosely on Aggregator from Algebird: https://github.com/twitter/algebird
 </p></div><dl class="paramcmts block"><dt class="tparam">IN</dt><dd class="cmt"><p>The input type for the aggregation.</p></dd><dt class="tparam">BUF</dt><dd class="cmt"><p>The type of the intermediate value of the reduction.</p></dd><dt class="tparam">OUT</dt><dd class="cmt"><p>The type of the final output result.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.MutableAggregationBuffer" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
@@ -117,13 +119,11 @@ all of the elements of a group and reduce them to a single value.</p><p>For exam
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-A <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> representing a mutable aggregation buffer.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-A <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> representing a mutable aggregation buffer.</p><p>This is not meant to be extended outside of Spark.
+      <p class="shortcomment cmt">A <code>Row</code> representing a mutable aggregation buffer.</p><div class="fullcomment"><div class="comment cmt"><p>A <code>Row</code> representing a mutable aggregation buffer.</p><p>This is not meant to be extended outside of Spark.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="UserDefinedAggregateFunctionextendsSerializable"></a>
       <a id="UserDefinedAggregateFunction:UserDefinedAggregateFunction"></a>
@@ -140,13 +140,11 @@ A <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> r
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-The base class for implementing user-defined aggregate functions (UDAF).</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-The base class for implementing user-defined aggregate functions (UDAF).
+      <p class="shortcomment cmt">The base class for implementing user-defined aggregate functions (UDAF).</p><div class="fullcomment"><div class="comment cmt"><p>The base class for implementing user-defined aggregate functions (UDAF).
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.UserDefinedFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="UserDefinedFunctionextendsProductwithSerializable"></a>
       <a id="UserDefinedFunction:UserDefinedFunction"></a>
@@ -163,18 +161,16 @@ The base class for implementing user-defined aggregate functions (UDAF).
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A user-defined function.</p><div class="fullcomment"><div class="comment cmt"><p>A user-defined function. To create one, use the <code>udf</code> functions in <a href="../functions$.html" class="extype" name="org.apache.spark.sql.functions">functions</a>.
-Note that the user-defined functions must be deterministic. Due to optimization,
-duplicate invocations may be eliminated or the function may even be invoked more times than
-it is present in the query.
-As an example:</p><pre><span class="cmt">// Defined a UDF that returns true or false based on some numeric score.</span>
+      <p class="shortcomment cmt">A user-defined function.</p><div class="fullcomment"><div class="comment cmt"><p>A user-defined function. To create one, use the <code>udf</code> functions in <code>functions</code>.</p><p>As an example:</p><pre><span class="cmt">// Defined a UDF that returns true or false based on some numeric score.</span>
 <span class="kw">val</span> predict = udf((score: <span class="std">Double</span>) <span class="kw">=&gt;</span> <span class="kw">if</span> (score &gt; <span class="num">0.5</span>) <span class="kw">true</span> <span class="kw">else</span> <span class="kw">false</span>)
 
 <span class="cmt">// Projects a column that adds a prediction column based on the score column.</span>
 df.select( predict(df(<span class="lit">"score"</span>)) )</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The user-defined functions must be deterministic. Due to optimization,
+duplicate invocations may be eliminated or the function may even be invoked more times than
+it is present in the query.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.Window" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="WindowextendsAnyRef"></a>
       <a id="Window:Window"></a>
@@ -191,14 +187,12 @@ df.select( predict(df(<span class="lit">"score"</span>)) )</pre></div><dl class=
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Utility functions for defining window in DataFrames.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Utility functions for defining window in DataFrames.</p><pre><span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
+      <p class="shortcomment cmt">Utility functions for defining window in DataFrames.</p><div class="fullcomment"><div class="comment cmt"><p>Utility functions for defining window in DataFrames.</p><pre><span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
 Window.partitionBy(<span class="lit">"country"</span>).orderBy(<span class="lit">"date"</span>).rowsBetween(<span class="std">Long</span>.MinValue, <span class="num">0</span>)
 
 <span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING</span>
 Window.partitionBy(<span class="lit">"country"</span>).orderBy(<span class="lit">"date"</span>).rowsBetween(-<span class="num">3</span>, <span class="num">3</span>)</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.WindowSpec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -217,11 +211,9 @@ Window.partitionBy(<span class="lit">"country"</span>).orderBy(<span class="lit"
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-A window specification that defines the partitioning, ordering, and frame boundaries.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-A window specification that defines the partitioning, ordering, and frame boundaries.</p><p>Use the static methods in <a href="Window.html" class="extype" name="org.apache.spark.sql.expressions.Window">Window</a> to create a <a href="WindowSpec.html" class="extype" name="org.apache.spark.sql.expressions.WindowSpec">WindowSpec</a>.
+      <p class="shortcomment cmt">A window specification that defines the partitioning, ordering, and frame boundaries.</p><div class="fullcomment"><div class="comment cmt"><p>A window specification that defines the partitioning, ordering, and frame boundaries.</p><p>Use the static methods in <a href="Window.html" class="extype" name="org.apache.spark.sql.expressions.Window">Window</a> to create a <a href="WindowSpec.html" class="extype" name="org.apache.spark.sql.expressions.WindowSpec">WindowSpec</a>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li></ol>
@@ -247,14 +239,13 @@ A window specification that defines the partitioning, ordering, and frame bounda
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Utility functions for defining window in DataFrames.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Utility functions for defining window in DataFrames.</p><pre><span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
-Window.partitionBy(<span class="lit">"country"</span>).orderBy(<span class="lit">"date"</span>).rowsBetween(<span class="std">Long</span>.MinValue, <span class="num">0</span>)
+      <p class="shortcomment cmt">Utility functions for defining window in DataFrames.</p><div class="fullcomment"><div class="comment cmt"><p>Utility functions for defining window in DataFrames.</p><pre><span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
+Window.partitionBy(<span class="lit">"country"</span>).orderBy(<span class="lit">"date"</span>)
+  .rowsBetween(Window.unboundedPreceding, Window.currentRow)
 
 <span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING</span>
 Window.partitionBy(<span class="lit">"country"</span>).orderBy(<span class="lit">"date"</span>).rowsBetween(-<span class="num">3</span>, <span class="num">3</span>)</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.javalang" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">

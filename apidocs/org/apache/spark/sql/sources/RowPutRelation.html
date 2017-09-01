@@ -45,13 +45,13 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">RowPutRelation</span><span class="result"> extends <a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a> with <a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></span>
+        <span class="name">RowPutRelation</span><span class="result"> extends <a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>, <a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
             <div class="subClasses hiddenContent"><a href="../execution/row/RowFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatRelation">RowFormatRelation</a></div>
@@ -72,7 +72,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.sources.RowPutRelation"><span>RowPutRelation</span></li><li class="in" name="org.apache.spark.sql.sources.DestroyRelation"><span>DestroyRelation</span></li><li class="in" name="org.apache.spark.sql.sources.SingleRowInsertableRelation"><span>SingleRowInsertableRelation</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.sources.RowPutRelation"><span>RowPutRelation</span></li><li class="in" name="org.apache.spark.sql.sources.DestroyRelation"><span>DestroyRelation</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -114,24 +114,6 @@
       <p class="shortcomment cmt">Destroy and cleanup this relation.</p><div class="fullcomment"><div class="comment cmt"><p>Destroy and cleanup this relation. It may include, but not limited to,
 dropping the external table that this relation represents.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.SingleRowInsertableRelation#executeUpdate" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="executeUpdate(sql:String):Int"></a>
-      <a id="executeUpdate(String):Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executeUpdate</span><span class="params">(<span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.RowPutRelation@executeUpdate(sql:String):Int" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Execute a DML SQL and return the number of rows affected.</p><div class="fullcomment"><div class="comment cmt"><p>Execute a DML SQL and return the number of rows affected.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.RowPutRelation#getPutPlan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="getPutPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="getPutPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
@@ -578,8 +560,6 @@ inserted into the table represented by this relation
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.sql.sources.DestroyRelation">
               <h3>Inherited from <a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></h3>
-            </div><div class="parent" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">
-              <h3>Inherited from <a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

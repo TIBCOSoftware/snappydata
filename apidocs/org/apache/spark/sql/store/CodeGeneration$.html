@@ -291,23 +291,6 @@ generation of code string itself only if not found in cache
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.store.CodeGeneration#executeUpdate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executeUpdate(name:String,stmt:java.sql.PreparedStatement,rows:Iterator[org.apache.spark.sql.catalyst.InternalRow],multipleRows:Boolean,batchSize:Int,schema:Array[org.apache.spark.sql.types.StructField],dialect:org.apache.spark.sql.jdbc.JdbcDialect):Int"></a>
-      <a id="executeUpdate(String,PreparedStatement,Iterator[InternalRow],Boolean,Int,Array[StructField],JdbcDialect):Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executeUpdate</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="stmt">stmt: <span class="extype" name="java.sql.PreparedStatement">PreparedStatement</span></span>, <span name="rows">rows: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="multipleRows">multipleRows: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="batchSize">batchSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="schema">schema: <span class="extype" name="scala.Array">Array</span>[<a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]</span>, <span name="dialect">dialect: <a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@executeUpdate(name:String,stmt:java.sql.PreparedStatement,rows:Iterator[org.apache.spark.sql.catalyst.InternalRow],multipleRows:Boolean,batchSize:Int,schema:Array[org.apache.spark.sql.types.StructField],dialect:org.apache.spark.sql.jdbc.JdbcDialect):Int" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -365,6 +348,23 @@ generation of code string itself only if not found in cache
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.store.CodeGeneration#getColumnSetterFragment" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getColumnSetterFragment(col:Int,dataType:org.apache.spark.sql.types.DataType,dialect:org.apache.spark.sql.jdbc.JdbcDialect,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,stmt:String,schema:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String"></a>
+      <a id="getColumnSetterFragment(Int,DataType,JdbcDialect,ExprCode,String,String,CodegenContext):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getColumnSetterFragment</span><span class="params">(<span name="col">col: <span class="extype" name="scala.Int">Int</span></span>, <span name="dataType">dataType: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="dialect">dialect: <a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>, <span name="ev">ev: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="stmt">stmt: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@getColumnSetterFragment(col:Int,dataType:org.apache.spark.sql.types.DataType,dialect:org.apache.spark.sql.jdbc.JdbcDialect,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,stmt:String,schema:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.store.CodeGeneration#getComplexTypeSerializer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getComplexTypeSerializer(dataType:org.apache.spark.sql.types.DataType):org.apache.spark.sql.store.SerializeComplexType"></a>
       <a id="getComplexTypeSerializer(DataType):SerializeComplexType"></a>
@@ -535,6 +535,23 @@ generation of code string itself only if not found in cache
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.store.CodeGeneration#logDebug" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String):Unit"></a>
+      <a id="logDebug(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.store.CodeGeneration">CodeGeneration</a> → <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logDebug(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logDebug(⇒String,Throwable):Unit"></a>
@@ -548,23 +565,6 @@ generation of code string itself only if not found in cache
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logDebug(msg:=&gt;String):Unit"></a>
-      <a id="logDebug(⇒String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -603,6 +603,23 @@ generation of code string itself only if not found in cache
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.store.CodeGeneration#logInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String):Unit"></a>
+      <a id="logInfo(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.store.CodeGeneration">CodeGeneration</a> → <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logInfo(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logInfo(⇒String,Throwable):Unit"></a>
@@ -616,23 +633,6 @@ generation of code string itself only if not found in cache
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logInfo(msg:=&gt;String):Unit"></a>
-      <a id="logInfo(⇒String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

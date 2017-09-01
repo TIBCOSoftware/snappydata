@@ -51,14 +51,15 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Class for indexing categorical feature columns in a dataset of <span class="extype" name="Vector">Vector</span>.</p><p>This has 2 usage modes:</p><ul><li>Automatically identify categorical features (default behavior)<ul><li>This helps process a dataset of unknown vectors into a dataset with some continuous
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Class for indexing categorical feature columns in a dataset of <code>Vector</code>.</p><p>This has 2 usage modes:</p><ul><li>Automatically identify categorical features (default behavior)<ul><li>This helps process a dataset of unknown vectors into a dataset with some continuous
       features and some categorical features. The choice between continuous and categorical
       is based upon a maxCategories parameter.</li><li>Set maxCategories to the maximum number of categorical any categorical feature should have.</li><li>E.g.: Feature 0 has unique values {-1.0, 0.0}, and feature 1 values {1.0, 3.0, 5.0}.
       If maxCategories = 2, then feature 0 will be declared categorical and use indices {0, 1},
       and feature 1 will be declared continuous.</li></ul></li><li>Index all features, if all features are categorical<ul><li>If maxCategories is set to be very large, then this will build an index of unique
       values for all features.</li><li>Warning: This can cause problems if features are continuous since this will collect ALL
       unique values to the driver.</li><li>E.g.: Feature 0 has unique values {-1.0, 0.0}, and feature 1 values {1.0, 3.0, 5.0}.
-      If maxCategories &gt;= 3, then both features will be declared categorical.</li></ul></li></ul><p>This returns a model which can transform categorical features to use 0-based indices.</p><p>Index stability:</p><ul><li>This is not guaranteed to choose the same category index across multiple runs.</li><li>If a categorical feature includes value 0, then this is guaranteed to map value 0 to index 0.
+      If maxCategories is greater than or equal to 3, then both features will be declared
+      categorical.</li></ul></li></ul><p>This returns a model which can transform categorical features to use 0-based indices.</p><p>Index stability:</p><ul><li>This is not guaranteed to choose the same category index across multiple runs.</li><li>If a categorical feature includes value 0, then this is guaranteed to map value 0 to index 0.
    This maintains vector sparsity.</li><li>More stability may be added in the future.</li></ul><p>TODO: Future extensions: The following functionality is planned for the future:</p><ul><li>Preserve metadata in transform; if a feature's metadata is already present, do not recompute.</li><li>Specify certain features to not index, either via a parameter or via existing metadata.</li><li>Add warning if a categorical feature has only 1 category.</li><li>Add option for allowing unknown categories.
 </li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -1142,8 +1143,8 @@ if neither is set.
       </a>
     </span>
       <p class="shortcomment cmt">Threshold for the number of values a categorical feature can take.</p><div class="fullcomment"><div class="comment cmt"><p>Threshold for the number of values a categorical feature can take.
-If a feature is found to have &gt; maxCategories values, then it is declared continuous.
-Must be &gt;= 2.</p><p>(default = 20)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>VectorIndexerParams</dd></dl></div>
+If a feature is found to have <code>&gt;</code> maxCategories values, then it is declared
+continuous. Must be greater than or equal to 2.</p><p>(default = 20)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>VectorIndexerParams</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -1229,9 +1230,9 @@ Must be &gt;= 2.</p><p>(default = 20)</p></div><dl class="attributes block"> <dt
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.util.MLWritable#save" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="save(path:String):Unit"></a>
       <a id="save(String):Unit"></a>
@@ -1474,7 +1475,9 @@ this variable gets initialized before other params.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.feature.VectorIndexer">VectorIndexer</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -1621,34 +1624,7 @@ be assumed valid until proven otherwise.
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.param.Params#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.0) Will be removed in 2.1.0. Checks should be merged into transformSchema.">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.feature.VectorIndexer@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Will be removed in 2.1.0. Checks should be merged into transformSchema.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">

@@ -230,10 +230,10 @@
     </span>
       <p class="shortcomment cmt">Adds the given block matrix <code>other</code> to <code>this</code> block matrix: <code>this + other</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Adds the given block matrix <code>other</code> to <code>this</code> block matrix: <code>this + other</code>.
 The matrices must have the same size and matching <code>rowsPerBlock</code> and <code>colsPerBlock</code>
-values. If one of the blocks that are being added are instances of <a href="../SparseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.SparseMatrix">SparseMatrix</a>,
-the resulting sub matrix will also be a <a href="../SparseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.SparseMatrix">SparseMatrix</a>, even if it is being added
-to a <a href="../DenseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.DenseMatrix">DenseMatrix</a>. If two dense matrices are added, the output will also be a
-<a href="../DenseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.DenseMatrix">DenseMatrix</a>.
+values. If one of the blocks that are being added are instances of <code>SparseMatrix</code>,
+the resulting sub matrix will also be a <code>SparseMatrix</code>, even if it is being added
+to a <code>DenseMatrix</code>. If two dense matrices are added, the output will also be a
+<code>DenseMatrix</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -752,18 +752,18 @@ to a <a href="../DenseMatrix.html" class="extype" name="org.apache.spark.mllib.l
     </span>
       <p class="shortcomment cmt">Left multiplies this <a href="" class="extype" name="org.apache.spark.mllib.linalg.distributed.BlockMatrix">BlockMatrix</a> to <code>other</code>, another <a href="" class="extype" name="org.apache.spark.mllib.linalg.distributed.BlockMatrix">BlockMatrix</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Left multiplies this <a href="" class="extype" name="org.apache.spark.mllib.linalg.distributed.BlockMatrix">BlockMatrix</a> to <code>other</code>, another <a href="" class="extype" name="org.apache.spark.mllib.linalg.distributed.BlockMatrix">BlockMatrix</a>. The <code>colsPerBlock</code>
 of this matrix must equal the <code>rowsPerBlock</code> of <code>other</code>. If <code>other</code> contains
-<a href="../SparseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.SparseMatrix">SparseMatrix</a>, they will have to be converted to a <a href="../DenseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.DenseMatrix">DenseMatrix</a>. The output
-<a href="" class="extype" name="org.apache.spark.mllib.linalg.distributed.BlockMatrix">BlockMatrix</a> will only consist of blocks of <a href="../DenseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.DenseMatrix">DenseMatrix</a>. This may cause
-some performance issues until support for multiplying two sparse matrices is added.</p><p>Note: The behavior of multiply has changed in 1.6.0. <code>multiply</code> used to throw an error when
-there were blocks with duplicate indices. Now, the blocks with duplicate indices will be added
-with each other.
+<code>SparseMatrix</code>, they will have to be converted to a <code>DenseMatrix</code>. The output
+<a href="" class="extype" name="org.apache.spark.mllib.linalg.distributed.BlockMatrix">BlockMatrix</a> will only consist of blocks of <code>DenseMatrix</code>. This may cause
+some performance issues until support for multiplying two sparse matrices is added.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.3.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The behavior of multiply has changed in 1.6.0. <code>multiply</code> used to throw an error when
+there were blocks with duplicate indices. Now, the blocks with duplicate indices will be added
+with each other.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -972,10 +972,10 @@ with each other.
     </span>
       <p class="shortcomment cmt">Subtracts the given block matrix <code>other</code> from <code>this</code> block matrix: <code>this - other</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Subtracts the given block matrix <code>other</code> from <code>this</code> block matrix: <code>this - other</code>.
 The matrices must have the same size and matching <code>rowsPerBlock</code> and <code>colsPerBlock</code>
-values. If one of the blocks that are being subtracted are instances of <a href="../SparseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.SparseMatrix">SparseMatrix</a>,
-the resulting sub matrix will also be a <a href="../SparseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.SparseMatrix">SparseMatrix</a>, even if it is being subtracted
-from a <a href="../DenseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.DenseMatrix">DenseMatrix</a>. If two dense matrices are subtracted, the output will also be a
-<a href="../DenseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.DenseMatrix">DenseMatrix</a>.
+values. If one of the blocks that are being subtracted are instances of <code>SparseMatrix</code>,
+the resulting sub matrix will also be a <code>SparseMatrix</code>, even if it is being subtracted
+from a <code>DenseMatrix</code>. If two dense matrices are subtracted, the output will also be a
+<code>DenseMatrix</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1062,7 +1062,8 @@ from a <a href="../DenseMatrix.html" class="extype" name="org.apache.spark.mllib
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Collect the distributed matrix on the driver as a <code>DenseMatrix</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Collect the distributed matrix on the driver as a <code>DenseMatrix</code>.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Collect the distributed matrix on the driver as a <code>DenseMatrix</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Collect the distributed matrix on the driver as a <code>DenseMatrix</code>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.3.0&quot;</span>

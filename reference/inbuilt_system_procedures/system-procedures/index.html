@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Built-in System Procedures - SnappyData Documentation</title>
+  <title>Built-in System Procedures and Built-in Functions - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../../favicon.ico">
@@ -29,7 +29,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Built-in System Procedures";
+    var mkdocs_page_name = "Built-in System Procedures and Built-in Functions";
     var mkdocs_page_input_path = "reference/inbuilt_system_procedures/system-procedures.md";
     var mkdocs_page_url = "/reference/inbuilt_system_procedures/system-procedures/";
   </script>
@@ -139,6 +139,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../configuring_cluster/property_description/">SnappyData Properties</a>
         
     </li>
@@ -163,19 +170,40 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/">Best practices</a>
+        <a class="" href="../../../best_practices/">Best Practices</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Best practices</span></li>
+    <li><span>Best Practices</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/capacity_planning/">Setting up your Cluster </a>
+        <a class="" href="../../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/ha_considerations/">HA Considerations</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -183,6 +211,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/important_settings/">Important Settings</a>
         
     </li>
 
@@ -206,7 +241,36 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
+        <a class="" href="../../../monitoring/managing_and_monitoring/">Managing and Monitoring</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Managing and Monitoring</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/monitoring/">SnappyData Pulse</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../security/security/">Security</a>
         
     </li>
 <li>
@@ -233,6 +297,13 @@
             
     <ul class="subnav">
     <li><span>SQL Reference Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/alter-table/">ALTER TABLE</a>
+        
+    </li>
 
         
             
@@ -365,6 +436,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../sql_reference/insert/">INSERT</a>
         
     </li>
@@ -379,7 +457,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../sql_reference/select/">SELECT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/set-isolation/">SET ISOLATION</a>
         
     </li>
 
@@ -410,11 +502,11 @@
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">Built-in System Procedures</a>
+        <a class="current" href="./">Built-in System Procedures and Built-in Functions</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#procedures">Procedures</a></li>
+                <li class="toctree-l3"><a href="#built-in-system-procedures-and-built-in-functions">Built-in System Procedures and Built-in Functions</a></li>
                 
             
             </ul>
@@ -424,7 +516,7 @@
         
             
     <ul class="subnav">
-    <li><span>Built-in System Procedures</span></li>
+    <li><span>Built-in System Procedures and Built-in Functions</span></li>
 
         
             
@@ -451,6 +543,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../set-trace-flag/">SET_TRACE_FLAG</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../dsid/">DSID</a>
         
     </li>
 
@@ -487,6 +586,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../system_tables/sysdiskstores/">SYSDISKSTORES</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/systables/">SYSTABLES</a>
         
     </li>
 
@@ -558,6 +664,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/autocommit/">autocommit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/commit/">commit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../interactive_commands/connect_client/">connect client</a>
         
     </li>
@@ -601,6 +721,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../interactive_commands/maximumdisplaywidth/">MaximumDisplayWidth</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/rollback/">rollback</a>
         
     </li>
 
@@ -800,6 +927,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../misc/passwordless_ssh/">Configuring SSH Login without Password</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
         
     </li>
@@ -810,7 +944,71 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../additional_docs/">Additional Information</a>
+        <a class="" href="../../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Troubleshooting Common Problems</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/member_startup_problems/">Member Startup Problems</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/recovering_from_a_conflictingpersistentdataexception/">Recovering from a ConflictingPersistentDataException</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/preventing_disk_full_errors/">Preventing Disk Full Errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/recovering_from_disk_full_errors/">Recovering from Disk Full Errors</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../additional_files/additional_docs/">Additional Information</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../additional_files/license_model/">License Model</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../release_notes/release_notes_1.0-rc/">Release Notes</a>
         
     </li>
 <li>
@@ -855,7 +1053,7 @@
         
       
     
-    <li>Built-in System Procedures</li>
+    <li>Built-in System Procedures and Built-in Functions</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -871,12 +1069,13 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="procedures">Procedures</h1>
+                <h1 id="built-in-system-procedures-and-built-in-functions">Built-in System Procedures and Built-in Functions</h1>
 <p>SnappyData provides built-in system procedures to help you manage the distributed system. For example, you can use system procedures to install required JAR files.</p>
-<!--
-!!!Note
-    If you enable SQL authorization, you must use the <mark> TO BE CONFIRMED [GRANT] </mark> command to grant normal users permission to use these procedures. -->
-
+<p>SnappyData also supports built-in function, which lets you perform various kinds of data transformations directly in SELECT statements.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you enable SQL authorization, you must use the <a href="../../sql_reference/grant/">GRANT</a> command to grant normal users permission to use these procedures. </p>
+</div>
 <p>The following built-in procedures are available:</p>
 <ul>
 <li>
@@ -891,6 +1090,10 @@
 <li>
 <p><a href="../set-trace-flag/">SYS.SET_TRACE_FLAG</a></p>
 </li>
+</ul>
+<p>The following built-in function is available:</p>
+<ul>
+<li><a href="../dsid/">DSID</a></li>
 </ul>
               
             </div>

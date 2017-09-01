@@ -96,7 +96,8 @@ vectors it receives from each user block it will depend on). This allows us to s
 array of feature vectors between each user block and product block, and have the product block
 find the users' ratings and update the products based on these messages.</p><p>For implicit preference data, the algorithm used is based on
 &quot;Collaborative Filtering for Implicit Feedback Datasets&quot;, available at
-<a href="http://dx.doi.org/10.1109/ICDM.2008.22" target="_blank">http://dx.doi.org/10.1109/ICDM.2008.22</a>, adapted for the blocked approach used here.</p><p>Essentially instead of finding the low-rank approximations to the rating matrix <code>R</code>,
+<a href="http://dx.doi.org/10.1109/ICDM.2008.22">here</a>, adapted for the blocked approach
+used here.</p><p>Essentially instead of finding the low-rank approximations to the rating matrix <code>R</code>,
 this finds the approximations for a preference matrix <code>P</code> where the elements of <code>P</code> are 1 if
 r &gt; 0 and 0 if r &lt;= 0. The ratings then act as 'confidence' values related to strength of
 indicated user
@@ -124,15 +125,15 @@ preferences rather than explicit ratings given to items.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Model representing the result of matrix factorization.</p><div class="fullcomment"><div class="comment cmt"><p>Model representing the result of matrix factorization.</p><p>Note: If you create the model directly using constructor, please be aware that fast prediction
-requires cached user/product features and their associated partitioners.
+      <p class="shortcomment cmt">Model representing the result of matrix factorization.</p><div class="fullcomment"><div class="comment cmt"><p>Model representing the result of matrix factorization.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;0.8.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>If you create the model directly using constructor, please be aware that fast prediction
+requires cached user/product features and their associated partitioners.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.recommendation.Rating" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="RatingextendsProductwithSerializable"></a>
       <a id="Rating:Rating"></a>

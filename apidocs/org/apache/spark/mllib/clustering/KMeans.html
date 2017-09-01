@@ -115,9 +115,9 @@ to it should be cached by the user.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Constructs a KMeans instance with default parameters: {k: 2, maxIterations: 20, runs: 1,
-initializationMode: &quot;k-means||&quot;, initializationSteps: 5, epsilon: 1e-4, seed: random}.</p><div class="fullcomment"><div class="comment cmt"><p>Constructs a KMeans instance with default parameters: {k: 2, maxIterations: 20, runs: 1,
-initializationMode: &quot;k-means||&quot;, initializationSteps: 5, epsilon: 1e-4, seed: random}.
+      <p class="shortcomment cmt">Constructs a KMeans instance with default parameters: {k: 2, maxIterations: 20,
+initializationMode: &quot;k-means||&quot;, initializationSteps: 2, epsilon: 1e-4, seed: random}.</p><div class="fullcomment"><div class="comment cmt"><p>Constructs a KMeans instance with default parameters: {k: 2, maxIterations: 20,
+initializationMode: &quot;k-means||&quot;, initializationSteps: 2, epsilon: 1e-4, seed: random}.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -395,7 +395,8 @@ initializationMode: &quot;k-means||&quot;, initializationSteps: 5, epsilon: 1e-4
       <span class="symbol">&quot;1.4.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>It is possible for fewer than k clusters to
+be returned, for example, if there are fewer than k distinct points to cluster.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.clustering.KMeans#getMaxIterations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getMaxIterations:Int"></a>
       <a id="getMaxIterations:Int"></a>
@@ -413,30 +414,6 @@ initializationMode: &quot;k-means||&quot;, initializationSteps: 5, epsilon: 1e-4
       </a>
     </span>
       <p class="shortcomment cmt">Maximum number of iterations allowed.</p><div class="fullcomment"><div class="comment cmt"><p>Maximum number of iterations allowed.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@Since</span><span class="args">(<span>
-      
-      <span class="symbol">&quot;1.4.0&quot;</span>
-    </span>)</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.mllib.clustering.KMeans#getRuns" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getRuns:Int"></a>
-      <a id="getRuns:Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getRuns</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.KMeans@getRuns:Int" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">This function has no effect since Spark 2.0.0.</p><div class="fullcomment"><div class="comment cmt"><p>This function has no effect since Spark 2.0.0.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -947,7 +924,7 @@ initial cluster centers, or &quot;k-means||&quot; to use a parallel variant of k
       </a>
     </span>
       <p class="shortcomment cmt">Set the number of steps for the k-means|| initialization mode.</p><div class="fullcomment"><div class="comment cmt"><p>Set the number of steps for the k-means|| initialization mode. This is an advanced
-setting -- the default of 5 is almost always enough. Default: 5.
+setting -- the default of 2 is almost always enough. Default: 2.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -971,14 +948,15 @@ setting -- the default of 5 is almost always enough. Default: 5.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Set the number of clusters to create (k).</p><div class="fullcomment"><div class="comment cmt"><p>Set the number of clusters to create (k). Default: 2.
+      <p class="shortcomment cmt">Set the number of clusters to create (k).</p><div class="fullcomment"><div class="comment cmt"><p>Set the number of clusters to create (k).
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;0.8.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>It is possible for fewer than k clusters to
+be returned, for example, if there are fewer than k distinct points to cluster. Default: 2.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.clustering.KMeans#setMaxIterations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setMaxIterations(maxIterations:Int):KMeans.this.type"></a>
       <a id="setMaxIterations(Int):KMeans.this.type"></a>
@@ -996,30 +974,6 @@ setting -- the default of 5 is almost always enough. Default: 5.
       </a>
     </span>
       <p class="shortcomment cmt">Set maximum number of iterations allowed.</p><div class="fullcomment"><div class="comment cmt"><p>Set maximum number of iterations allowed. Default: 20.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@Since</span><span class="args">(<span>
-      
-      <span class="symbol">&quot;0.8.0&quot;</span>
-    </span>)</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.mllib.clustering.KMeans#setRuns" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setRuns(runs:Int):KMeans.this.type"></a>
-      <a id="setRuns(Int):KMeans.this.type"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">setRuns</span><span class="params">(<span name="runs">runs: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.mllib.clustering.KMeans">KMeans</a>.this.type</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.KMeans@setRuns(runs:Int):KMeans.this.type" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">This function has no effect since Spark 2.0.0.</p><div class="fullcomment"><div class="comment cmt"><p>This function has no effect since Spark 2.0.0.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1159,7 +1113,62 @@ setting -- the default of 5 is almost always enough. Default: 5.
 
         
 
-        
+        <div id="values" class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="org.apache.spark.mllib.clustering.KMeans#getRuns" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getRuns:Int"></a>
+      <a id="getRuns:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) This has no effect and always returns 1">getRuns</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.KMeans@getRuns:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This function has no effect since Spark 2.0.0.</p><div class="fullcomment"><div class="comment cmt"><p>This function has no effect since Spark 2.0.0.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.4.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> This has no effect and always returns 1</p></dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.KMeans#setRuns" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setRuns(runs:Int):KMeans.this.type"></a>
+      <a id="setRuns(Int):KMeans.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) This has no effect">setRuns</span><span class="params">(<span name="runs">runs: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.mllib.clustering.KMeans">KMeans</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.KMeans@setRuns(runs:Int):KMeans.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This function has no effect since Spark 2.0.0.</p><div class="fullcomment"><div class="comment cmt"><p>This function has no effect since Spark 2.0.0.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;0.8.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> This has no effect</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">

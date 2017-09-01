@@ -49,7 +49,12 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Combines adjacent <span class="extype" name="Repartition">Repartition</span> operators by keeping only the last one.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Combines adjacent <span class="extype" name="Repartition">Repartition</span> and <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span> operator combinations
+by keeping only the one.
+1. For adjacent <span class="extype" name="Repartition">Repartition</span>s, collapse into the last <span class="extype" name="Repartition">Repartition</span>.
+2. For adjacent <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span>s, collapse into the last <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span>.
+3. For a combination of <span class="extype" name="Repartition">Repartition</span> and <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span>, collapse as a single
+   <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span> with the expression and last number of partition.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>

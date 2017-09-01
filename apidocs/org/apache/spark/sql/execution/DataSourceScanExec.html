@@ -28,12 +28,10 @@
         </head>
         <body class="type">
       <div id="definition">
-        <a href="DataSourceScanExec$.html" title="See companion object"><img alt="Trait/Object" src="../../../../../lib/trait_to_object_big.png" /></a>
+        <img alt="Trait" src="../../../../../lib/trait_big.png" />
         <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution">execution</a></p>
-        <h1><a href="DataSourceScanExec$.html" title="See companion object">DataSourceScanExec</a></h1><h3><span class="morelinks"><div>
-            Related Docs:
-            <a href="DataSourceScanExec$.html" title="See companion object">object DataSourceScanExec</a>
-            | <a href="package.html" class="extype" name="org.apache.spark.sql.execution">package execution</a>
+        <h1>DataSourceScanExec</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql.execution">package execution</a>
           </div></span></h3><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
@@ -47,16 +45,16 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">DataSourceScanExec</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a></span>
+        <span class="name">DataSourceScanExec</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a>, <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="BatchedDataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.BatchedDataSourceScanExec">BatchedDataSourceScanExec</a>, <a href="RowDataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.RowDataSourceScanExec">RowDataSourceScanExec</a></div>
+            <div class="subClasses hiddenContent"><a href="FileSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.FileSourceScanExec">FileSourceScanExec</a>, <a href="RowDataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.RowDataSourceScanExec">RowDataSourceScanExec</a></div>
           </div></div>
         
 
@@ -74,7 +72,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.DataSourceScanExec"><span>DataSourceScanExec</span></li><li class="in" name="org.apache.spark.sql.execution.LeafExecNode"><span>LeafExecNode</span></li><li class="in" name="org.apache.spark.sql.execution.SparkPlan"><span>SparkPlan</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.DataSourceScanExec"><span>DataSourceScanExec</span></li><li class="in" name="org.apache.spark.sql.execution.CodegenSupport"><span>CodegenSupport</span></li><li class="in" name="org.apache.spark.sql.execution.LeafExecNode"><span>LeafExecNode</span></li><li class="in" name="org.apache.spark.sql.execution.SparkPlan"><span>SparkPlan</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -133,6 +131,53 @@
       <p class="shortcomment cmt">Overridden by concrete implementations of SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden by concrete implementations of SparkPlan.
 Produces the result of the query as an RDD[InternalRow]
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#doProduce" visbl="prt" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="doProduce(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String"></a>
+      <a id="doProduce(CodegenContext):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">doProduce</span><span class="params">(<span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@doProduce(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generate the Java source code to process, should be overridden by subclass to support codegen.</p><div class="fullcomment"><div class="comment cmt"><p>Generate the Java source code to process, should be overridden by subclass to support codegen.</p><p>doProduce() usually generate the framework, for example, aggregation could generate this:</p><p>  if (!initialized) {
+    # create a hash map, then build the aggregation hash map
+    # call child.produce()
+    initialized = true;
+  }
+  while (hashmap.hasNext()) {
+    row = hashmap.next();
+    # build the aggregation results
+    # create variables for results
+    # call consume(), which will call parent.doConsume()
+     if (shouldStop()) return;
+  }
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#inputRDDs" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="inputRDDs():Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]]"></a>
+      <a id="inputRDDs():Seq[RDD[InternalRow]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">inputRDDs</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@inputRDDs():Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns all the RDDs of InternalRow which generates the input rows.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all the RDDs of InternalRow which generates the input rows.</p><p>Note: right now we support up to two RDDs.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.DataSourceScanExec#metastoreTableIdentifier" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="metastoreTableIdentifier:Option[org.apache.spark.sql.catalyst.TableIdentifier]"></a>
       <a id="metastoreTableIdentifier:Option[TableIdentifier]"></a>
@@ -201,23 +246,6 @@ Produces the result of the query as an RDD[InternalRow]
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.DataSourceScanExec#rdd" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="rdd:org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
-      <a id="rdd:RDD[InternalRow]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">rdd</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@rdd:org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.DataSourceScanExec#relation" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="relation:org.apache.spark.sql.sources.BaseRelation"></a>
       <a id="relation:BaseRelation"></a>
@@ -310,23 +338,25 @@ Produces the result of the query as an RDD[InternalRow]
       <p class="shortcomment cmt">All the attributes that are used for this plan.</p><div class="fullcomment"><div class="comment cmt"><p>All the attributes that are used for this plan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="apply(number:Int):BaseType"></a>
-      <a id="apply(Int):SparkPlan"></a>
+      <a id="apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]"></a>
+      <a id="apply(Int):TreeNode[_]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@apply(number:Int):BaseType" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the tree node at the specified number.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number.
-Numbers for each node can be found in the <a href="../catalyst/trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.
+      <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
+Numbers for each node can be found in the <a href="../catalyst/trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>Note that this cannot return BaseType because logical plan's plan node might return
+physical plan for innerChildren, e.g. in-memory relation logical plan node has a reference
+to the physical plan node it is referencing.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#argString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="argString:String"></a>
@@ -406,7 +436,7 @@ pasted in the REPL to build an equivalent Tree.
       <a id="children:Seq[SparkPlan]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -437,6 +467,23 @@ Children should not change. Immutability required for containsChild optimization
       </a>
     </span>
       <p class="shortcomment cmt">Args that have cleaned such that differences in expression id should not affect equality</p><div class="fullcomment"><div class="comment cmt"><p>Args that have cleaned such that differences in expression id should not affect equality</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#cleanExpression" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cleanExpression(e:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Expression"></a>
+      <a id="cleanExpression(Expression):Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cleanExpression</span><span class="params">(<span name="e">e: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@cleanExpression(e:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -538,6 +585,24 @@ is defined (pre-order), and applies the partial function to it.
 example, if this set contains the expression <code>a = 2</code> then that expression is guaranteed to
 evaluate to <code>true</code> for all rows produced.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#consume" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="consume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,outputVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],row:String):String"></a>
+      <a id="consume(CodegenContext,Seq[ExprCode],String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">consume</span><span class="params">(<span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="outputVars">outputVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="row">row: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">null</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@consume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,outputVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],row:String):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Consume the generated columns or row from current SparkPlan, call its parent's <code>doConsume()</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Consume the generated columns or row from current SparkPlan, call its parent's <code>doConsume()</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#containsChild" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="containsChild:Set[org.apache.spark.sql.catalyst.trees.TreeNode[_]]"></a>
       <a id="containsChild:Set[TreeNode[_]]"></a>
@@ -555,6 +620,26 @@ evaluate to <code>true</code> for all rows produced.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#doConsume" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="doConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],row:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):String"></a>
+      <a id="doConsume(CodegenContext,Seq[ExprCode],ExprCode):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">doConsume</span><span class="params">(<span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="row">row: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@doConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],row:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generate the Java source code to process the rows from child SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Generate the Java source code to process the rows from child SparkPlan.</p><p>This should be override by subclass to support codegen.</p><p>For example, Filter will generate the code like this:</p><p>  # code to evaluate the predicate expression, result is isNull1 and value2
+  if (isNull1 || !value2) continue;
+  # call consume(), which will call parent.doConsume()</p><p>Note: A plan can either consume the rows as UnsafeRow (row), or a list of variables (input).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#doExecuteBroadcast" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecuteBroadcast[T]():org.apache.spark.broadcast.Broadcast[T]"></a>
       <a id="doExecuteBroadcast[T]():Broadcast[T]"></a>
@@ -629,6 +714,46 @@ to call children's prepare methods.</p><p>This will only be called once, protect
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#evaluateRequiredVariables" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="evaluateRequiredVariables(attributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],variables:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],required:org.apache.spark.sql.catalyst.expressions.AttributeSet):String"></a>
+      <a id="evaluateRequiredVariables(Seq[Attribute],Seq[ExprCode],AttributeSet):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evaluateRequiredVariables</span><span class="params">(<span name="attributes">attributes: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="variables">variables: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="required">required: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@evaluateRequiredVariables(attributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],variables:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],required:org.apache.spark.sql.catalyst.expressions.AttributeSet):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns source code to evaluate the variables for required attributes, and clear the code
+of evaluated variables, to prevent them to be evaluated twice.</p><div class="fullcomment"><div class="comment cmt"><p>Returns source code to evaluate the variables for required attributes, and clear the code
+of evaluated variables, to prevent them to be evaluated twice.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#evaluateVariables" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="evaluateVariables(variables:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String"></a>
+      <a id="evaluateVariables(Seq[ExprCode]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evaluateVariables</span><span class="params">(<span name="variables">variables: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@evaluateVariables(variables:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns source code to evaluate all the variables, and clear the code of them, to prevent
+them to be evaluated twice.</p><div class="fullcomment"><div class="comment cmt"><p>Returns source code to evaluate all the variables, and clear the code of them, to prevent
+them to be evaluated twice.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#execute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="execute():org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="execute():RDD[InternalRow]"></a>
@@ -912,7 +1037,7 @@ resulting collections.
     </span>
       <p class="shortcomment cmt">Appends the string represent of this node and its children to the given StringBuilder.</p><div class="fullcomment"><div class="comment cmt"><p>Appends the string represent of this node and its children to the given StringBuilder.</p><p>The <code>i</code>-th element in <code>lastChildren</code> indicates whether the ancestor of the current node at
 depth <code>i + 1</code> is the last child of its own parent node.  The depth of the root node is 0, and
-<code>lastChildren</code> for the root node should be empty.
+<code>lastChildren</code> for the root node should be empty.</p><p>Note that this traversal (numbering) order must be the same as <span class="extype" name="getNodeNumbered">getNodeNumbered</span>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
@@ -931,23 +1056,6 @@ depth <code>i + 1</code> is the last child of its own parent node.  The depth of
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#getNodeNumbered" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType"></a>
-      <a id="getNodeNumbered(MutableInt):SparkPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getNodeNumbered</span><span class="params">(<span name="number">number: <span class="extype" name="org.apache.spark.sql.catalyst.trees.MutableInt">MutableInt</span></span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#getRelevantConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getRelevantConstraints(constraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="getRelevantConstraints(Set[Expression]):Set[Expression]"></a>
@@ -1400,6 +1508,26 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Returns a copy of this node where <code>f</code> has been applied to all the nodes children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>f</code> has been applied to all the nodes children.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#mapExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapExpressions(f:org.apache.spark.sql.catalyst.expressions.Expression=&gt;org.apache.spark.sql.catalyst.expressions.Expression):QueryPlan.this.type"></a>
+      <a id="mapExpressions((Expression)⇒Expression):DataSourceScanExec.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapExpressions</span><span class="params">(<span name="f">f: (<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>) ⇒ <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.DataSourceScanExec">DataSourceScanExec</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@mapExpressions(f:org.apache.spark.sql.catalyst.expressions.Expression=&gt;org.apache.spark.sql.catalyst.expressions.Expression):QueryPlan.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Apply a map function to each expression present in this query operator, and return a new
+query operator based on the mapped expressions.</p><div class="fullcomment"><div class="comment cmt"><p>Apply a map function to each expression present in this query operator, and return a new
+query operator based on the mapped expressions.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#mapProductIterator" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mapProductIterator[B](f:Any=&gt;B)(implicitevidence$1:scala.reflect.ClassTag[B]):Array[B]"></a>
       <a id="mapProductIterator[B]((Any)⇒B)(ClassTag[B]):Array[B]"></a>
@@ -1436,6 +1564,24 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Return all metadata that describes more details of this SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Return all metadata that describes more details of this SparkPlan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#metricTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="metricTerm(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,name:String):String"></a>
+      <a id="metricTerm(CodegenContext,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">metricTerm</span><span class="params">(<span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@metricTerm(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,name:String):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Creates a metric using the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a metric using the specified name.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>name of the variable representing the metric</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#metrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="metrics:Map[String,org.apache.spark.sql.execution.metric.SQLMetric]"></a>
       <a id="metrics:Map[String,SQLMetric]"></a>
@@ -1544,18 +1690,18 @@ assertions designed to prevent the construction of invalid plans.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#newPredicate" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="newPredicate(expression:org.apache.spark.sql.catalyst.expressions.Expression,inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.catalyst.InternalRow=&gt;Boolean"></a>
-      <a id="newPredicate(Expression,Seq[Attribute]):(InternalRow)⇒Boolean"></a>
+      <a id="newPredicate(expression:org.apache.spark.sql.catalyst.expressions.Expression,inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.catalyst.expressions.codegen.Predicate"></a>
+      <a id="newPredicate(Expression,Seq[Attribute]):Predicate"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newPredicate</span><span class="params">(<span name="expression">expression: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="inputSchema">inputSchema: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: (<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">newPredicate</span><span class="params">(<span name="expression">expression: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="inputSchema">inputSchema: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: <a href="../catalyst/expressions/codegen/Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@newPredicate(expression:org.apache.spark.sql.catalyst.expressions.Expression,inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.catalyst.InternalRow=&gt;Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@newPredicate(expression:org.apache.spark.sql.catalyst.expressions.Expression,inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.catalyst.expressions.codegen.Predicate" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1630,7 +1776,8 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree, where each operator is numbered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree, where each operator is numbered.
-The numbers can be used with <a href="../catalyst/trees/TreeNode.html#apply(number:Int):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> to easily access specific subtrees.
+The numbers can be used with <a href="../catalyst/trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">TreeNode.apply</a> to easily access specific subtrees.</p><p>The numbers are based on depth-first traversal of the tree (with innerChildren traversed first
+before children).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#origin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="origin:org.apache.spark.sql.catalyst.trees.Origin"></a>
@@ -1719,6 +1866,43 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
     </span>
       <p class="shortcomment cmt">Returns the set of attributes that are output by this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the set of attributes that are output by this node.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#p" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="p(number:Int):BaseType"></a>
+      <a id="p(Int):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">p</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@p(number:Int):BaseType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
+Numbers for each node can be found in the <a href="../catalyst/trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>This is a variant of <a href="../catalyst/trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> that returns the node as BaseType (if the type matches).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#parent" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parent:org.apache.spark.sql.execution.CodegenSupport"></a>
+      <a id="parent:CodegenSupport"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parent</span><span class="result">: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@parent:org.apache.spark.sql.execution.CodegenSupport" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Which SparkPlan is calling produce() of this one.</p><div class="fullcomment"><div class="comment cmt"><p>Which SparkPlan is calling produce() of this one. It's itself for the first SparkPlan.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#prepare" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prepare():Unit"></a>
       <a id="prepare():Unit"></a>
@@ -1754,7 +1938,6 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
       </a>
     </span>
       <p class="shortcomment cmt">Finds scalar subquery expressions in this plan node and starts evaluating them.</p><div class="fullcomment"><div class="comment cmt"><p>Finds scalar subquery expressions in this plan node and starts evaluating them.
-The list of subqueries are added to <span class="extype" name="subqueryResults">subqueryResults</span>.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#prettyJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyJson:String"></a>
@@ -1790,6 +1973,24 @@ The list of subqueries are added to <span class="extype" name="subqueryResults">
       </a>
     </span>
       <p class="shortcomment cmt">Prints out the schema in the tree format</p><div class="fullcomment"><div class="comment cmt"><p>Prints out the schema in the tree format</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#produce" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="produce(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,parent:org.apache.spark.sql.execution.CodegenSupport):String"></a>
+      <a id="produce(CodegenContext,CodegenSupport):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">produce</span><span class="params">(<span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="parent">parent: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@produce(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,parent:org.apache.spark.sql.execution.CodegenSupport):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns Java source code to process the rows from input RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Returns Java source code to process the rows from input RDD.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.LeafExecNode#producedAttributes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="producedAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="producedAttributes:AttributeSet"></a>
@@ -1913,8 +2114,8 @@ include attributes that are implicitly referenced by being passed through to the
     </span>
       <p class="shortcomment cmt">Reset all the metrics.</p><div class="fullcomment"><div class="comment cmt"><p>Reset all the metrics.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.DataSourceScanExec#sameResult" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="sameResult(plan:org.apache.spark.sql.execution.SparkPlan):Boolean"></a>
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#sameResult" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sameResult(plan:PlanType):Boolean"></a>
       <a id="sameResult(SparkPlan):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1925,7 +2126,7 @@ include attributes that are implicitly referenced by being passed through to the
         <span class="name">sameResult</span><span class="params">(<span name="plan">plan: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@sameResult(plan:org.apache.spark.sql.execution.SparkPlan):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@sameResult(plan:PlanType):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1936,7 +2137,7 @@ enhancements like caching.  However, it is not acceptable to return true if the 
 possibly be different.</p><p>By default this function performs a modified version of equality that is tolerant of cosmetic
 differences like attribute naming and or expression id differences. Operators that
 can do better should override this function.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.DataSourceScanExec">DataSourceScanExec</a> → <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#schema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="schema:org.apache.spark.sql.types.StructType"></a>
       <a id="schema:StructType"></a>
@@ -2096,6 +2297,24 @@ populated by the query planning infrastructure.
     </span>
       <p class="shortcomment cmt">All the subqueries of current plan.</p><div class="fullcomment"><div class="comment cmt"><p>All the subqueries of current plan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#supportCodegen" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="supportCodegen:Boolean"></a>
+      <a id="supportCodegen:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">supportCodegen</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@supportCodegen:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Whether this SparkPlan support whole stage codegen or not.</p><div class="fullcomment"><div class="comment cmt"><p>Whether this SparkPlan support whole stage codegen or not.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -2188,25 +2407,6 @@ transformDown or transformUp should be used.
 and all its children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of running <a href="../catalyst/plans/QueryPlan.html#transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressions">transformExpressions</a> on this node
 and all its children.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType"></a>
-      <a id="transformChildren(PartialFunction[SparkPlan,SparkPlan],(SparkPlan,PartialFunction[SparkPlan,SparkPlan])⇒SparkPlan):SparkPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transformChildren</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>, <span name="nextOperation">nextOperation: (<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]) ⇒ <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
-this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
-this node.  When <code>rule</code> does not apply to a given node it is left unchanged.</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function used to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformDown" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType"></a>
       <a id="transformDown(PartialFunction[SparkPlan,SparkPlan]):SparkPlan"></a>
@@ -2338,6 +2538,25 @@ unchanged.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupport#usedInputs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="usedInputs:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
+      <a id="usedInputs:AttributeSet"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">usedInputs</span><span class="result">: <a href="../catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DataSourceScanExec@usedInputs:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The subset of inputSet those should be evaluated before this plan.</p><div class="fullcomment"><div class="comment cmt"><p>The subset of inputSet those should be evaluated before this plan.</p><p>We will use this to insert some code to access those columns that are actually used by current
+plan before calling doConsume().
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#validConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="validConstraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="validConstraints:Set[Expression]"></a>
@@ -2492,7 +2711,9 @@ TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.execution.LeafExecNode">
+        <div class="parent" name="org.apache.spark.sql.execution.CodegenSupport">
+              <h3>Inherited from <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.execution.LeafExecNode">
               <h3>Inherited from <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.SparkPlan">
               <h3>Inherited from <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></h3>

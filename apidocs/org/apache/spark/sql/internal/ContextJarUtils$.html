@@ -49,11 +49,13 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>An utility class to store jar file reference with their individual classloaders.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>An utility class to store jar file reference with their individual class loaders.
 This is to reflect class changes at driver side.
 e.g. If an UDF definition changes the driver should pick up the correct UDF class.
-This class can not initialize itself after a driver failure. So the callers will have  to make sure that the classloader gets
-initialized after a driver startup. Usually it can be achieved by adding classloader at query time.</p></div><div class="toggleContainer block">
+This class can not initialize itself after a driver failure.
+So the callers will have  to make sure that the classloader gets
+initialized after a driver startup. Usually it can be achieved by
+adding classloader at query time.</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -200,24 +202,6 @@ initialized after a driver startup. Usually it can be achieved by adding classlo
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#addToSparkJars" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addToSparkJars(prefix:String,path:String):Unit"></a>
-      <a id="addToSparkJars(String,String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">addToSparkJars</span><span class="params">(<span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@addToSparkJars(prefix:String,path:String):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">This method will copy the given jar to Spark root directory and then it will add the same jar to Spark.</p><div class="fullcomment"><div class="comment cmt"><p>This method will copy the given jar to Spark root directory and then it will add the same jar to Spark.
-This ensures class &amp; jar isolation although it might be repetitive.</p></div><dl class="paramcmts block"><dt class="param">prefix</dt><dd class="cmt"><p>prefix to be given to the jar name</p></dd><dt class="param">path</dt><dd class="cmt"><p>original path of the jar</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -258,6 +242,23 @@ This ensures class &amp; jar isolation although it might be repetitive.</p></div
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#deleteFile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="deleteFile(prefix:String,path:String):Unit"></a>
+      <a id="deleteFile(String,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deleteFile</span><span class="params">(<span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@deleteFile(prefix:String,path:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -292,6 +293,27 @@ This ensures class &amp; jar isolation although it might be repetitive.</p></div
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#fetchFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fetchFile(prefix:String,path:String):java.net.URL"></a>
+      <a id="fetchFile(String,String):URL"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fetchFile</span><span class="params">(<span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="java.net.URL">URL</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@fetchFile(prefix:String,path:String):java.net.URL" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This method will copy the given jar to Spark root directory
+and then it will add the same jar to Spark.</p><div class="fullcomment"><div class="comment cmt"><p>This method will copy the given jar to Spark root directory
+and then it will add the same jar to Spark.
+This ensures class &amp; jar isolation although it might be repetitive.
+</p></div><dl class="paramcmts block"><dt class="param">prefix</dt><dd class="cmt"><p>prefix to be given to the jar name</p></dd><dt class="param">path</dt><dd class="cmt"><p>original path of the jar</p></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -451,23 +473,6 @@ This ensures class &amp; jar isolation although it might be repetitive.</p></div
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#jarDir" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="jarDir:java.io.File"></a>
-      <a id="jarDir:File"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">jarDir</span><span class="result">: <span class="extype" name="java.io.File">File</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@jarDir:java.io.File" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
@@ -724,52 +729,18 @@ This ensures class &amp; jar isolation although it might be repetitive.</p></div
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.ContextJarUtils#removeDriverJar" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="removeDriverJar(key:String):Option[java.net.URLClassLoader]"></a>
-      <a id="removeDriverJar(String):Option[URLClassLoader]"></a>
+      <a id="removeDriverJar(key:String):Unit"></a>
+      <a id="removeDriverJar(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">removeDriverJar</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.net.URLClassLoader">URLClassLoader</span>]</span>
+        <span class="name">removeDriverJar</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@removeDriverJar(key:String):Option[java.net.URLClassLoader]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#removeFromSparkJars" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="removeFromSparkJars(prefix:String,path:String):Unit"></a>
-      <a id="removeFromSparkJars(String,String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">removeFromSparkJars</span><span class="params">(<span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@removeFromSparkJars(prefix:String,path:String):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#sparkContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="sparkContext:org.apache.spark.SparkContext"></a>
-      <a id="sparkContext:SparkContext"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">sparkContext</span><span class="result">: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@sparkContext:org.apache.spark.SparkContext" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@removeDriverJar(key:String):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

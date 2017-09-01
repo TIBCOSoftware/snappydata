@@ -50,7 +50,7 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: DeveloperApi ::
-Factory methods for common validation functions for <a href="Param.html#isValid:T=&gt;Boolean" class="extmbr" name="org.apache.spark.ml.param.Param#isValid">Param.isValid</a>.
+Factory methods for common validation functions for <code>Param.isValid</code>.
 The numerical methods only support Int, Long, Float, and Double.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
@@ -298,7 +298,8 @@ The numerical methods only support Int, Long, Float, and Double.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Check if value &gt; lowerBound</p>
+      <p class="shortcomment cmt">Check if value is greater than lowerBound
+</p>
     </li><li name="org.apache.spark.ml.param.ParamValidators#gtEq" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="gtEq[T](lowerBound:Double):T=&gt;Boolean"></a>
       <a id="gtEq[T](Double):(T)⇒Boolean"></a>
@@ -315,7 +316,8 @@ The numerical methods only support Int, Long, Float, and Double.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Check if value &gt;= lowerBound</p>
+      <p class="shortcomment cmt">Check if value is greater than or equal to lowerBound
+</p>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -383,7 +385,7 @@ The numerical methods only support Int, Long, Float, and Double.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Version of <span class="extype" name="inRange()">inRange()</span> which uses inclusive be default: [lowerBound, upperBound]</p>
+      <p class="shortcomment cmt">Version of <code>inRange()</code> which uses inclusive be default: [lowerBound, upperBound]</p>
     </li><li name="org.apache.spark.ml.param.ParamValidators#inRange" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="inRange[T](lowerBound:Double,upperBound:Double,lowerInclusive:Boolean,upperInclusive:Boolean):T=&gt;Boolean"></a>
       <a id="inRange[T](Double,Double,Boolean,Boolean):(T)⇒Boolean"></a>
@@ -400,9 +402,8 @@ The numerical methods only support Int, Long, Float, and Double.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Check for value in range lowerBound to upperBound.</p><div class="fullcomment"><div class="comment cmt"><p>Check for value in range lowerBound to upperBound.</p></div><dl class="paramcmts block"><dt class="param">lowerInclusive</dt><dd class="cmt"><p>If true, check for value &gt;= lowerBound.
-                       If false, check for value &gt; lowerBound.</p></dd><dt class="param">upperInclusive</dt><dd class="cmt"><p>If true, check for value &lt;= upperBound.
-                       If false, check for value &lt; upperBound.</p></dd></dl></div>
+      <p class="shortcomment cmt">Check for value in range lowerBound to upperBound.</p><div class="fullcomment"><div class="comment cmt"><p>Check for value in range lowerBound to upperBound.
+</p></div><dl class="paramcmts block"><dt class="param">lowerInclusive</dt><dd class="cmt"><p>if true, range includes value = lowerBound</p></dd><dt class="param">upperInclusive</dt><dd class="cmt"><p>if true, range includes value = upperBound</p></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -436,7 +437,8 @@ The numerical methods only support Int, Long, Float, and Double.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Check if value &lt; upperBound</p>
+      <p class="shortcomment cmt">Check if value is less than upperBound
+</p>
     </li><li name="org.apache.spark.ml.param.ParamValidators#ltEq" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ltEq[T](upperBound:Double):T=&gt;Boolean"></a>
       <a id="ltEq[T](Double):(T)⇒Boolean"></a>
@@ -453,7 +455,8 @@ The numerical methods only support Int, Long, Float, and Double.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Check if value &lt;= upperBound</p>
+      <p class="shortcomment cmt">Check if value is less than or equal to upperBound
+</p>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>

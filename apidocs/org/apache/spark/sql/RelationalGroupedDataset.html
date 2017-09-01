@@ -49,9 +49,12 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A set of methods for aggregations on a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, created by <a href="Dataset.html#groupBy(col1:String,cols:String*):org.apache.spark.sql.RelationalGroupedDataset" class="extmbr" name="org.apache.spark.sql.Dataset#groupBy">Dataset.groupBy</a>.</p><p>The main method is the agg function, which has multiple variants. This class also contains
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A set of methods for aggregations on a <code>DataFrame</code>, created by <code>Dataset.groupBy</code>.</p><p>The main method is the agg function, which has multiple variants. This class also contains
 convenience some first order statistics such as mean, sum for convenience.</p><p>This class was named <code>GroupedData</code> in Spark 1.x.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -220,7 +223,7 @@ df.groupBy(<span class="lit">"department"</span>).agg(col(<span class="lit">"dep
     </span>
       <p class="shortcomment cmt">(Java-specific) Compute aggregates by specifying a map from column name to
 aggregate methods.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific) Compute aggregates by specifying a map from column name to
-aggregate methods. The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.</p><p>The available aggregate methods are <code>avg</code>, <code>max</code>, <code>min</code>, <code>sum</code>, <code>count</code>.</p><pre><span class="cmt">// Selects the age of the oldest employee and the aggregate expense for each department</span>
+aggregate methods. The resulting <code>DataFrame</code> will also contain the grouping columns.</p><p>The available aggregate methods are <code>avg</code>, <code>max</code>, <code>min</code>, <code>sum</code>, <code>count</code>.</p><pre><span class="cmt">// Selects the age of the oldest employee and the aggregate expense for each department</span>
 <span class="kw">import</span> com.google.common.collect.ImmutableMap;
 df.groupBy(<span class="lit">"department"</span>).agg(ImmutableMap.of(<span class="lit">"age"</span>, <span class="lit">"max"</span>, <span class="lit">"expense"</span>, <span class="lit">"sum"</span>));</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.RelationalGroupedDataset#agg" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -241,7 +244,7 @@ df.groupBy(<span class="lit">"department"</span>).agg(ImmutableMap.of(<span clas
     </span>
       <p class="shortcomment cmt">(Scala-specific) Compute aggregates by specifying a map from column name to
 aggregate methods.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Compute aggregates by specifying a map from column name to
-aggregate methods. The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.</p><p>The available aggregate methods are <code>avg</code>, <code>max</code>, <code>min</code>, <code>sum</code>, <code>count</code>.</p><pre><span class="cmt">// Selects the age of the oldest employee and the aggregate expense for each department</span>
+aggregate methods. The resulting <code>DataFrame</code> will also contain the grouping columns.</p><p>The available aggregate methods are <code>avg</code>, <code>max</code>, <code>min</code>, <code>sum</code>, <code>count</code>.</p><pre><span class="cmt">// Selects the age of the oldest employee and the aggregate expense for each department</span>
 df.groupBy(<span class="lit">"department"</span>).agg(<span class="std">Map</span>(
   <span class="lit">"age"</span> -&gt; <span class="lit">"max"</span>,
   <span class="lit">"expense"</span> -&gt; <span class="lit">"sum"</span>
@@ -264,7 +267,7 @@ df.groupBy(<span class="lit">"department"</span>).agg(<span class="std">Map</spa
     </span>
       <p class="shortcomment cmt">(Scala-specific) Compute aggregates by specifying the column names and
 aggregate methods.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Compute aggregates by specifying the column names and
-aggregate methods. The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.</p><p>The available aggregate methods are <code>avg</code>, <code>max</code>, <code>min</code>, <code>sum</code>, <code>count</code>.</p><pre><span class="cmt">// Selects the age of the oldest employee and the aggregate expense for each department</span>
+aggregate methods. The resulting <code>DataFrame</code> will also contain the grouping columns.</p><p>The available aggregate methods are <code>avg</code>, <code>max</code>, <code>min</code>, <code>sum</code>, <code>count</code>.</p><pre><span class="cmt">// Selects the age of the oldest employee and the aggregate expense for each department</span>
 df.groupBy(<span class="lit">"department"</span>).agg(
   <span class="lit">"age"</span> -&gt; <span class="lit">"max"</span>,
   <span class="lit">"expense"</span> -&gt; <span class="lit">"sum"</span>
@@ -303,7 +306,7 @@ df.groupBy(<span class="lit">"department"</span>).agg(
       </a>
     </span>
       <p class="shortcomment cmt">Compute the mean value for each numeric columns for each group.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the mean value for each numeric columns for each group.
-The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.
+The resulting <code>DataFrame</code> will also contain the grouping columns.
 When specified columns are given, only compute the mean values for them.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
@@ -349,7 +352,7 @@ When specified columns are given, only compute the mean values for them.
       </a>
     </span>
       <p class="shortcomment cmt">Count the number of rows for each group.</p><div class="fullcomment"><div class="comment cmt"><p>Count the number of rows for each group.
-The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.
+The resulting <code>DataFrame</code> will also contain the grouping columns.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
@@ -476,7 +479,7 @@ The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.a
       </a>
     </span>
       <p class="shortcomment cmt">Compute the max value for each numeric columns for each group.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the max value for each numeric columns for each group.
-The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.
+The resulting <code>DataFrame</code> will also contain the grouping columns.
 When specified columns are given, only compute the max values for them.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
@@ -499,7 +502,7 @@ When specified columns are given, only compute the max values for them.
       </a>
     </span>
       <p class="shortcomment cmt">Compute the average value for each numeric columns for each group.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the average value for each numeric columns for each group. This is an alias for <code>avg</code>.
-The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.
+The resulting <code>DataFrame</code> will also contain the grouping columns.
 When specified columns are given, only compute the average values for them.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
@@ -522,7 +525,7 @@ When specified columns are given, only compute the average values for them.
       </a>
     </span>
       <p class="shortcomment cmt">Compute the min value for each numeric column for each group.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the min value for each numeric column for each group.
-The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.
+The resulting <code>DataFrame</code> will also contain the grouping columns.
 When specified columns are given, only compute the min values for them.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
@@ -595,7 +598,7 @@ When specified columns are given, only compute the min values for them.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Pivots a column of the current <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> and perform the specified aggregation.</p><div class="fullcomment"><div class="comment cmt"><p>Pivots a column of the current <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> and perform the specified aggregation.
+      <p class="shortcomment cmt">Pivots a column of the current <code>DataFrame</code> and perform the specified aggregation.</p><div class="fullcomment"><div class="comment cmt"><p>Pivots a column of the current <code>DataFrame</code> and perform the specified aggregation.
 There are two versions of pivot function: one that requires the caller to specify the list
 of distinct values to pivot on, and one that does not. The latter is more concise but less
 efficient, because Spark needs to first compute the list of distinct values internally.</p><pre><span class="cmt">// Compute the sum of earnings for each year by course with each course as a separate column</span>
@@ -619,7 +622,7 @@ df.groupBy(<span class="lit">"year"</span>).pivot(<span class="lit">"course"</sp
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Pivots a column of the current <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> and perform the specified aggregation.</p><div class="fullcomment"><div class="comment cmt"><p>Pivots a column of the current <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> and perform the specified aggregation.
+      <p class="shortcomment cmt">Pivots a column of the current <code>DataFrame</code> and perform the specified aggregation.</p><div class="fullcomment"><div class="comment cmt"><p>Pivots a column of the current <code>DataFrame</code> and perform the specified aggregation.
 There are two versions of pivot function: one that requires the caller to specify the list
 of distinct values to pivot on, and one that does not. The latter is more concise but less
 efficient, because Spark needs to first compute the list of distinct values internally.</p><pre><span class="cmt">// Compute the sum of earnings for each year by course with each course as a separate column</span>
@@ -643,7 +646,7 @@ df.groupBy(<span class="lit">"year"</span>).pivot(<span class="lit">"course"</sp
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Pivots a column of the current <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> and perform the specified aggregation.</p><div class="fullcomment"><div class="comment cmt"><p>Pivots a column of the current <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> and perform the specified aggregation.
+      <p class="shortcomment cmt">Pivots a column of the current <code>DataFrame</code> and perform the specified aggregation.</p><div class="fullcomment"><div class="comment cmt"><p>Pivots a column of the current <code>DataFrame</code> and perform the specified aggregation.
 There are two versions of pivot function: one that requires the caller to specify the list
 of distinct values to pivot on, and one that does not. The latter is more concise but less
 efficient, because Spark needs to first compute the list of distinct values internally.</p><pre><span class="cmt">// Compute the sum of earnings for each year by course with each course as a separate column</span>
@@ -668,7 +671,7 @@ df.groupBy(<span class="lit">"year"</span>).pivot(<span class="lit">"course"</sp
       </a>
     </span>
       <p class="shortcomment cmt">Compute the sum for each numeric columns for each group.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the sum for each numeric columns for each group.
-The resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will also contain the grouping columns.
+The resulting <code>DataFrame</code> will also contain the grouping columns.
 When specified columns are given, only compute the sum for them.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>

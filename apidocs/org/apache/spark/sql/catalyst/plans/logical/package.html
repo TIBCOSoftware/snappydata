@@ -92,7 +92,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="AppendColumns.html"><span class="name">AppendColumns</span></a><span class="params">(<span name="func">func: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span></span>, <span name="deserializer">deserializer: <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="serializer">serializer: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="AppendColumns.html"><span class="name">AppendColumns</span></a><span class="params">(<span name="func">func: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span></span>, <span name="argumentClass">argumentClass: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>, <span name="argumentSchema">argumentSchema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="deserializer">deserializer: <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="serializer">serializer: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@AppendColumnsextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
@@ -172,6 +172,30 @@ resulting columns at the end of the input row.
     </span>
       <p class="shortcomment cmt">A relation produced by applying <code>func</code> to each grouping key and associated values from left and
 right children.</p>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.ColumnStat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ColumnStatextendsProductwithSerializable"></a>
+      <a id="ColumnStat:ColumnStat"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnStat.html"><span class="name">ColumnStat</span></a><span class="params">(<span name="distinctCount">distinctCount: <a href="../../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>, <span name="min">min: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Any">Any</span>]</span>, <span name="max">max: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Any">Any</span>]</span>, <span name="nullCount">nullCount: <a href="../../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>, <span name="avgLen">avgLen: <span class="extype" name="scala.Long">Long</span></span>, <span name="maxLen">maxLen: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@ColumnStatextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Statistics collected for a column.</p><div class="fullcomment"><div class="comment cmt"><p>Statistics collected for a column.</p><p>1. Supported data types are defined in <code>ColumnStat.supportsType</code>.
+2. The JVM data type stored in min/max is the external data type (used in Row) for the
+corresponding Catalyst data type. For example, for DateType we store java.sql.Date, and for
+TimestampType we store java.sql.Timestamp.
+3. For integral types, they are all upcasted to longs, i.e. shorts are stored as longs.
+4. There is no guarantee that the statistics collected are accurate. Approximation algorithms
+   (sketches) might have been used, and the data collected can also be stale.
+</p></div><dl class="paramcmts block"><dt class="param">distinctCount</dt><dd class="cmt"><p>number of distinct values</p></dd><dt class="param">min</dt><dd class="cmt"><p>minimum value</p></dd><dt class="param">max</dt><dd class="cmt"><p>maximum value</p></dd><dt class="param">nullCount</dt><dd class="cmt"><p>number of nulls</p></dd><dt class="param">avgLen</dt><dd class="cmt"><p>average length of the values. For fixed-length types, this should be a constant.</p></dd><dt class="param">maxLen</dt><dd class="cmt"><p>maximum length of the values. For fixed-length types, this should be a constant.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.Command" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="CommandextendsLeafNode"></a>
       <a id="Command:Command"></a>
@@ -226,6 +250,23 @@ eagerly executed.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a new logical plan that dedups input rows.</p>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.EventTimeWatermark" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EventTimeWatermarkextendsLogicalPlanwithProductwithSerializable"></a>
+      <a id="EventTimeWatermark:EventTimeWatermark"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="EventTimeWatermark.html"><span class="name">EventTimeWatermark</span></a><span class="params">(<span name="eventTime">eventTime: <a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>, <span name="delay">delay: <a href="../../../../unsafe/types/CalendarInterval.html" class="extype" name="org.apache.spark.unsafe.types.CalendarInterval">CalendarInterval</a></span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@EventTimeWatermarkextendsLogicalPlanwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to mark a user specified column as holding the event time for a row.</p>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.Except" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ExceptextendsSetOperationwithProductwithSerializable"></a>
       <a id="Except:Except"></a>
@@ -361,7 +402,7 @@ to generated by a UNION ALL of multiple simple GROUP BY clauses.</p><p>We will t
                     GroupBy expressions</p></dd><dt class="param">groupByExprs</dt><dd class="cmt"><p>The Group By expressions candidates, take effective only if the
                     associated bit in the bitmask set to 1.</p></dd><dt class="param">child</dt><dd class="cmt"><p>Child operator</p></dd><dt class="param">aggregations</dt><dd class="cmt"><p>The Aggregation expressions, those non selected group by expressions
                     will be considered as constant null if it appears in the expressions</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="InsertIntoTableextendsLogicalPlanwithProductwithSerializable"></a>
       <a id="InsertIntoTable:InsertIntoTable"></a>
       <h4 class="signature">
@@ -370,14 +411,22 @@ to generated by a UNION ALL of multiple simple GROUP BY clauses.</p><p>We will t
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="InsertIntoTable.html"><span class="name">InsertIntoTable</span></a><span class="params">(<span name="table">table: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="partition">partition: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]]</span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="overwrite">overwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="ifNotExists">ifNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InsertIntoTable.html"><span class="name">InsertIntoTable</span></a><span class="params">(<span name="table">table: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="partition">partition: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]]</span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="overwrite">overwrite: <a href="OverwriteOptions.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions">OverwriteOptions</a></span>, <span name="ifNotExists">ifNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@InsertIntoTableextendsLogicalPlanwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Insert some data into a table.</p><div class="fullcomment"><div class="comment cmt"><p>Insert some data into a table.
+</p></div><dl class="paramcmts block"><dt class="param">table</dt><dd class="cmt"><p>the logical plan representing the table. In the future this should be a
+             <a href="../../catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">org.apache.spark.sql.catalyst.catalog.CatalogTable</a> once we converge Hive tables
+             and data source tables.</p></dd><dt class="param">partition</dt><dd class="cmt"><p>a map from the partition key to the partition value (optional). If the partition
+                 value is optional, dynamic partition insert will be performed.
+                 As an example, <code>INSERT INTO tbl PARTITION (a=1, b=2) AS ...</code> would have
+                 Map('a' -&gt; Some('1'), 'b' -&gt; Some('2')),
+                 and <code>INSERT INTO tbl PARTITION (a=1, b) AS ...</code>
+                 would have Map('a' -&gt; Some('1'), 'b' -&gt; None).</p></dd><dt class="param">child</dt><dd class="cmt"><p>the logical plan representing data to write to.</p></dd><dt class="param">overwrite</dt><dd class="cmt"><p>overwrite existing table or partitions.</p></dd><dt class="param">ifNotExists</dt><dd class="cmt"><p>If true, only write if the table or partition does not exist.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.Intersect" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="IntersectextendsSetOperationwithProductwithSerializable"></a>
       <a id="Intersect:Intersect"></a>
@@ -489,7 +538,7 @@ to generated by a UNION ALL of multiple simple GROUP BY clauses.</p><p>We will t
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="MapElements.html"><span class="name">MapElements</span></a><span class="params">(<span name="func">func: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="outputObjAttr">outputObjAttr: <a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <a href="ObjectConsumer.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.ObjectConsumer">ObjectConsumer</a> with <a href="ObjectProducer.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.ObjectProducer">ObjectProducer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="MapElements.html"><span class="name">MapElements</span></a><span class="params">(<span name="func">func: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="argumentClass">argumentClass: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>, <span name="argumentSchema">argumentSchema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="outputObjAttr">outputObjAttr: <a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <a href="ObjectConsumer.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.ObjectConsumer">ObjectConsumer</a> with <a href="ObjectProducer.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.ObjectProducer">ObjectProducer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@MapElementsextendsUnaryNodewithObjectConsumerwithObjectProducerwithProductwithSerializable" title="Permalink" target="_top">
@@ -589,6 +638,26 @@ The output of its child must be a single-field row containing the input object.
       <p class="shortcomment cmt">A trait for logical operators that produces domain objects as output.</p><div class="fullcomment"><div class="comment cmt"><p>A trait for logical operators that produces domain objects as output.
 The output of this operator is a single-field safe row containing the produced object.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OverwriteOptionsextendsProductwithSerializable"></a>
+      <a id="OverwriteOptions:OverwriteOptions"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OverwriteOptions.html"><span class="name">OverwriteOptions</span></a><span class="params">(<span name="enabled">enabled: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="staticPartitionKeys">staticPartitionKeys: <a href="../../catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a> = <span class="symbol">Map.empty</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@OverwriteOptionsextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Options for writing new data into a table.</p><div class="fullcomment"><div class="comment cmt"><p>Options for writing new data into a table.
+</p></div><dl class="paramcmts block"><dt class="param">enabled</dt><dd class="cmt"><p>whether to overwrite existing data in the table.</p></dd><dt class="param">staticPartitionKeys</dt><dd class="cmt"><p>if non-empty, specifies that we only want to overwrite partitions
+                           that match this partial partition spec. If empty, all partitions
+                           will be overwritten.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.Pivot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PivotextendsUnaryNodewithProductwithSerializable"></a>
       <a id="Pivot:Pivot"></a>
@@ -640,25 +709,6 @@ The output of this operator is a single-field safe row containing the produced o
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.catalyst.plans.logical.RedistributeData" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="RedistributeDataextendsUnaryNode"></a>
-      <a id="RedistributeData:RedistributeData"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="RedistributeData.html"><span class="name">RedistributeData</span></a><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@RedistributeDataextendsUnaryNode" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Performs a physical redistribution of the data.</p><div class="fullcomment"><div class="comment cmt"><p>Performs a physical redistribution of the data.  Used when the consumer of the query
-result have expectations about the distribution and ordering of partitioned input data.
-</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.Repartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="RepartitionextendsUnaryNodewithProductwithSerializable"></a>
       <a id="Repartition:Repartition"></a>
@@ -681,7 +731,7 @@ asked for <code>coalesce</code> or <code>repartition</code>. <a href="Repartitio
 of the output requires some specific ordering or distribution of the data.
 </p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.RepartitionByExpression" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="RepartitionByExpressionextendsRedistributeDatawithProductwithSerializable"></a>
+      <a id="RepartitionByExpressionextendsUnaryNodewithProductwithSerializable"></a>
       <a id="RepartitionByExpression:RepartitionByExpression"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -689,10 +739,10 @@ of the output requires some specific ordering or distribution of the data.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="RepartitionByExpression.html"><span class="name">RepartitionByExpression</span></a><span class="params">(<span name="partitionExpressions">partitionExpressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Int">Int</span>] = <span class="symbol"><span class="name"><a href="../../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <a href="RedistributeData.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.RedistributeData">RedistributeData</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="RepartitionByExpression.html"><span class="name">RepartitionByExpression</span></a><span class="params">(<span name="partitionExpressions">partitionExpressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Int">Int</span>] = <span class="symbol"><span class="name"><a href="../../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@RepartitionByExpressionextendsRedistributeDatawithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@RepartitionByExpressionextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -834,23 +884,49 @@ expression.</p>
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">order</dt><dd class="cmt"><p>The ordering expressions</p></dd><dt class="param">global</dt><dd class="cmt"><p>True means global sorting apply for entire data set,
               False means sorting only apply within the partition.</p></dd><dt class="param">child</dt><dd class="cmt"><p>Child logical plan</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.logical.SortPartitions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SortPartitionsextendsRedistributeDatawithProductwithSerializable"></a>
-      <a id="SortPartitions:SortPartitions"></a>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.Statistics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StatisticsextendsProductwithSerializable"></a>
+      <a id="Statistics:Statistics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SortPartitions.html"><span class="name">SortPartitions</span></a><span class="params">(<span name="sortExpressions">sortExpressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/SortOrder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</a>]</span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="RedistributeData.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.RedistributeData">RedistributeData</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="Statistics.html"><span class="name">Statistics</span></a><span class="params">(<span name="sizeInBytes">sizeInBytes: <a href="../../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>, <span name="rowCount">rowCount: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../../../scala/package.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a>] = <span class="symbol"><span class="name"><a href="../../../../../../../scala/package.html">None</a></span></span></span>, <span name="colStats">colStats: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="ColumnStat.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.ColumnStat">ColumnStat</a>] = <span class="symbol">Map.empty</span></span>, <span name="isBroadcastable">isBroadcastable: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@SortPartitionsextendsRedistributeDatawithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@StatisticsextendsProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Estimates of various statistics.</p><div class="fullcomment"><div class="comment cmt"><p>Estimates of various statistics.  The default estimation logic simply lazily multiplies the
+corresponding statistic produced by the children.  To override this behavior, override
+<code>statistics</code> and assign it an overridden version of <code>Statistics</code>.</p><p><b>NOTE</b>: concrete and/or overridden versions of statistics fields should pay attention to the
+performance of the implementations.  The reason is that estimations might get triggered in
+performance-critical processes, such as query plan planning.</p><p>Note that we are using a BigInt here since it is easy to overflow a 64-bit integer in
+cardinality estimation (e.g. cartesian joins).
+</p></div><dl class="paramcmts block"><dt class="param">sizeInBytes</dt><dd class="cmt"><p>Physical size in bytes. For leaf operators this defaults to 1, otherwise it
+                   defaults to the product of children's <code>sizeInBytes</code>.</p></dd><dt class="param">rowCount</dt><dd class="cmt"><p>Estimated number of rows.</p></dd><dt class="param">colStats</dt><dd class="cmt"><p>Column-level statistics.</p></dd><dt class="param">isBroadcastable</dt><dd class="cmt"><p>If true, output is small enough to be used in a broadcast join.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.Subquery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SubqueryextendsUnaryNodewithProductwithSerializable"></a>
+      <a id="Subquery:Subquery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Subquery.html"><span class="name">Subquery</span></a><span class="params">(<span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@SubqueryextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This node is inserted at the top of a subquery when it is optimized.</p><div class="fullcomment"><div class="comment cmt"><p>This node is inserted at the top of a subquery when it is optimized. This makes sure we can
+recognize a subquery as such, and it allows us to write subquery aware transformations.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SubqueryAliasextendsUnaryNodewithProductwithSerializable"></a>
       <a id="SubqueryAlias:SubqueryAlias"></a>
@@ -860,7 +936,7 @@ expression.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SubqueryAlias.html"><span class="name">SubqueryAlias</span></a><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SubqueryAlias.html"><span class="name">SubqueryAlias</span></a><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="view">view: <span class="extype" name="scala.Option">Option</span>[<a href="../../TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@SubqueryAliasextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
@@ -868,6 +944,29 @@ expression.</p>
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.TypedFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TypedFilterextendsUnaryNodewithProductwithSerializable"></a>
+      <a id="TypedFilter:TypedFilter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TypedFilter.html"><span class="name">TypedFilter</span></a><span class="params">(<span name="func">func: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="argumentClass">argumentClass: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>, <span name="argumentSchema">argumentSchema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="deserializer">deserializer: <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@TypedFilterextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A relation produced by applying <code>func</code> to each element of the <code>child</code> and filter them by the
+resulting boolean value.</p><div class="fullcomment"><div class="comment cmt"><p>A relation produced by applying <code>func</code> to each element of the <code>child</code> and filter them by the
+resulting boolean value.</p><p>This is logically equal to a normal <a href="Filter.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Filter">Filter</a> operator whose condition expression is decoding
+the input row to object and apply the given function with decoded object. However we need the
+encapsulation of <a href="TypedFilter.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.TypedFilter">TypedFilter</a> to make the concept more clear and make it easier to write
+optimizer rules.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="UnaryNodeextendsLogicalPlan"></a>
       <a id="UnaryNode:UnaryNode"></a>
@@ -928,7 +1027,7 @@ expression.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="With.html"><span class="name">With</span></a><span class="params">(<span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="cteRelations">cteRelations: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="SubqueryAlias.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias">SubqueryAlias</a>]</span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="With.html"><span class="name">With</span></a><span class="params">(<span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="cteRelations">cteRelations: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="SubqueryAlias.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias">SubqueryAlias</a>)]</span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@WithextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
@@ -937,9 +1036,8 @@ expression.</p>
     </span>
       <p class="shortcomment cmt">A container for holding named common table expressions (CTEs) and a query plan.</p><div class="fullcomment"><div class="comment cmt"><p>A container for holding named common table expressions (CTEs) and a query plan.
 This operator will be removed during analysis and the relations will be substituted into child.
-</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The final query of this CTE.</p></dd><dt class="param">cteRelations</dt><dd class="cmt"><p>Queries that this CTE defined,
-                    key is the alias of the CTE definition,
-                    value is the CTE definition.</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The final query of this CTE.</p></dd><dt class="param">cteRelations</dt><dd class="cmt"><p>A sequence of pair (alias, the CTE definition) that this CTE defined
+                    Each CTE can see the base tables and the previously defined CTEs only.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.WithWindowDefinition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="WithWindowDefinitionextendsUnaryNodewithProductwithSerializable"></a>
       <a id="WithWindowDefinition:WithWindowDefinition"></a>
@@ -1015,6 +1113,40 @@ This operator will be removed during analysis and the relations will be substitu
       </a>
     </span>
       <p class="shortcomment cmt">Factory for constructing new <code>CoGroup</code> nodes.</p>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.ColumnStat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColumnStat"></a>
+      <a id="ColumnStat:ColumnStat"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnStat$.html"><span class="name">ColumnStat</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@ColumnStat" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.EventTimeWatermark" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EventTimeWatermark"></a>
+      <a id="EventTimeWatermark:EventTimeWatermark"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="EventTimeWatermark$.html"><span class="name">EventTimeWatermark</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@EventTimeWatermark" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.Expand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Expand"></a>
       <a id="Expand:Expand"></a>
@@ -1199,6 +1331,23 @@ This operator will be removed during analysis and the relations will be substitu
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@SetOperation" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.TypedFilter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TypedFilter"></a>
+      <a id="TypedFilter:TypedFilter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TypedFilter$.html"><span class="name">TypedFilter</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.package@TypedFilter" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

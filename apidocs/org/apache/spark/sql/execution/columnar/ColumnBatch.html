@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnBatch</span><span class="params">(<span name="numRows">numRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="buffers">buffers: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>]</span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">ColumnBatch</span><span class="params">(<span name="numRows">numRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="buffers">buffers: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>]</span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="deltaIndexes">deltaIndexes: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.ColumnBatch#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(numRows:Int,buffers:Array[java.nio.ByteBuffer],statsData:Array[Byte]):org.apache.spark.sql.execution.columnar.ColumnBatch"></a>
+      <a id="&lt;init&gt;(numRows:Int,buffers:Array[java.nio.ByteBuffer],statsData:Array[Byte],deltaIndexes:Array[Int]):org.apache.spark.sql.execution.columnar.ColumnBatch"></a>
       <a id="&lt;init&gt;:ColumnBatch"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnBatch</span><span class="params">(<span name="numRows">numRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="buffers">buffers: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>]</span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>)</span>
+        <span class="name">ColumnBatch</span><span class="params">(<span name="numRows">numRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="buffers">buffers: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>]</span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="deltaIndexes">deltaIndexes: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatch@&lt;init&gt;(numRows:Int,buffers:Array[java.nio.ByteBuffer],statsData:Array[Byte]):org.apache.spark.sql.execution.columnar.ColumnBatch" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatch@&lt;init&gt;(numRows:Int,buffers:Array[java.nio.ByteBuffer],statsData:Array[Byte],deltaIndexes:Array[Int]):org.apache.spark.sql.execution.columnar.ColumnBatch" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -222,6 +222,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatch#deltaIndexes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="deltaIndexes:Array[Int]"></a>
+      <a id="deltaIndexes:Array[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deltaIndexes</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatch@deltaIndexes:Array[Int]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

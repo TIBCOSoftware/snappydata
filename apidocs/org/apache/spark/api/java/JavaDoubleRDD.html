@@ -1054,15 +1054,15 @@ to the left except for the last which is closed
  e.g. for the array
  [1,10,20,50] the buckets are [1,10) [10,20) [20,50]
  e.g 1&lt;=x&lt;10 , 10&lt;=x&lt;20, 20&lt;=x&lt;50
- And on the input of 1 and 50 we would have a histogram of 1,0,0</p><p>Note: if your histogram is evenly spaced (e.g. [0, 10, 20, 30]) this can be switched
+ And on the input of 1 and 50 we would have a histogram of 1,0,0
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>If your histogram is evenly spaced (e.g. [0, 10, 20, 30]) this can be switched
 from an O(log n) insertion to O(1) per element. (where n = # buckets) if you set evenBuckets
 to true.
 buckets must be sorted and not contain any duplicates.
 buckets array must be at least two elements
 All NaN entries are treated the same. If you have a NaN bucket it must be
 the maximum value of the last position and all NaN entries will be counted
-in that bucket.
-</p></div></div>
+in that bucket.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaDoubleRDD#histogram" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="histogram(bucketCount:Int):(Array[Double],Array[Long])"></a>
       <a id="histogram(Int):(Array[Double],Array[Long])"></a>
@@ -1121,8 +1121,8 @@ If the elements in RDD do not vary (max == min) always returns a single bucket.
       </a>
     </span>
       <p class="shortcomment cmt">Return the intersection of this RDD and another one.</p><div class="fullcomment"><div class="comment cmt"><p>Return the intersection of this RDD and another one. The output will not contain any duplicate
-elements, even if the input RDDs did.</p><p>Note that this method performs a shuffle internally.
-</p></div></div>
+elements, even if the input RDDs did.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This method performs a shuffle internally.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaRDDLike#isCheckpointed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isCheckpointed:Boolean"></a>
       <a id="isCheckpointed:Boolean"></a>
@@ -1738,6 +1738,54 @@ it is computed. Can only be called once on each RDD.
     </span>
       <p class="shortcomment cmt">Return an RDD created by piping elements to a forked external process.</p><div class="fullcomment"><div class="comment cmt"><p>Return an RDD created by piping elements to a forked external process.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaRDDLike.html" class="extype" name="org.apache.spark.api.java.JavaRDDLike">JavaRDDLike</a></dd></dl></div>
+    </li><li name="org.apache.spark.api.java.JavaDoubleRDD#popStdev" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="popStdev():Double"></a>
+      <a id="popStdev():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">popStdev</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.api.java.JavaDoubleRDD@popStdev():Double" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Compute the population standard deviation of this RDD's elements.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the population standard deviation of this RDD's elements.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.api.java.JavaDoubleRDD#popVariance" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="popVariance():Double"></a>
+      <a id="popVariance():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">popVariance</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.api.java.JavaDoubleRDD@popVariance():Double" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Compute the population variance of this RDD's elements.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the population variance of this RDD's elements.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaDoubleRDD#rdd" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="rdd:org.apache.spark.rdd.RDD[Double]"></a>
       <a id="rdd:RDD[Double]"></a>
@@ -1987,7 +2035,7 @@ count of the RDD's elements in one operation.</p>
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Compute the standard deviation of this RDD's elements.</p>
+      <p class="shortcomment cmt">Compute the population standard deviation of this RDD's elements.</p>
     </li><li name="org.apache.spark.api.java.JavaDoubleRDD#subtract" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="subtract(other:org.apache.spark.api.java.JavaDoubleRDD,p:org.apache.spark.Partitioner):org.apache.spark.api.java.JavaDoubleRDD"></a>
       <a id="subtract(JavaDoubleRDD,Partitioner):JavaDoubleRDD"></a>
@@ -2465,7 +2513,7 @@ This method blocks until all blocks are deleted.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Compute the variance of this RDD's elements.</p>
+      <p class="shortcomment cmt">Compute the population variance of this RDD's elements.</p>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

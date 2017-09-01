@@ -49,8 +49,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>::DeveloperApi::
-A BaseRelation that can be used to insert data into it through the insert method.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A BaseRelation that can be used to insert data into it through the insert method.
 If overwrite in insert method is true, the old data in the relation should be overwritten with
 the new data. If overwrite in insert method is false, the new data should be appended.</p><p>InsertableRelation has the following three assumptions.
 1. It assumes that the data (Rows in the DataFrame) provided to the insert method
@@ -62,7 +61,7 @@ schema update after an insert operation), the new schema will not be used.
 If a data source needs to check the actual nullability of a field, it needs to do it in the
 insert method.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>

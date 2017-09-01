@@ -297,7 +297,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#initialize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="initialize(holder:org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder,numElements:Int,fixedElementSize:Int):Unit"></a>
+      <a id="initialize(holder:org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder,numElements:Int,elementSize:Int):Unit"></a>
       <a id="initialize(BufferHolder,Int,Int):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -305,10 +305,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initialize</span><span class="params">(<span name="holder">holder: <a href="BufferHolder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder">BufferHolder</a></span>, <span name="numElements">numElements: <span class="extype" name="scala.Int">Int</span></span>, <span name="fixedElementSize">fixedElementSize: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">initialize</span><span class="params">(<span name="holder">holder: <a href="BufferHolder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder">BufferHolder</a></span>, <span name="numElements">numElements: <span class="extype" name="scala.Int">Int</span></span>, <span name="elementSize">elementSize: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@initialize(holder:org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder,numElements:Int,fixedElementSize:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@initialize(holder:org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder,numElements:Int,elementSize:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -381,36 +381,155 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNullAt" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="setNullAt(ordinal:Int):Unit"></a>
-      <a id="setNullAt(Int):Unit"></a>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNull" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setNull(ordinal:Int):Unit"></a>
+      <a id="setNull(Int):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setNullAt</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setNull</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNullAt(ordinal:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNull(ordinal:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="setOffset(ordinal:Int):Unit"></a>
-      <a id="setOffset(Int):Unit"></a>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNullBoolean" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setNullBoolean(ordinal:Int):Unit"></a>
+      <a id="setNullBoolean(Int):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setOffset</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setNullBoolean</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setOffset(ordinal:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNullBoolean(ordinal:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNullByte" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setNullByte(ordinal:Int):Unit"></a>
+      <a id="setNullByte(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setNullByte</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNullByte(ordinal:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNullDouble" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setNullDouble(ordinal:Int):Unit"></a>
+      <a id="setNullDouble(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setNullDouble</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNullDouble(ordinal:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNullFloat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setNullFloat(ordinal:Int):Unit"></a>
+      <a id="setNullFloat(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setNullFloat</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNullFloat(ordinal:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNullInt" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setNullInt(ordinal:Int):Unit"></a>
+      <a id="setNullInt(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setNullInt</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNullInt(ordinal:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNullLong" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setNullLong(ordinal:Int):Unit"></a>
+      <a id="setNullLong(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setNullLong</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNullLong(ordinal:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setNullShort" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setNullShort(ordinal:Int):Unit"></a>
+      <a id="setNullShort(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setNullShort</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setNullShort(ordinal:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter#setOffsetAndSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setOffsetAndSize(ordinal:Int,currentCursor:Long,size:Int):Unit"></a>
+      <a id="setOffsetAndSize(Int,Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setOffsetAndSize</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="currentCursor">currentCursor: <span class="extype" name="scala.Long">Long</span></span>, <span name="size">size: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter@setOffsetAndSize(ordinal:Int,currentCursor:Long,size:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

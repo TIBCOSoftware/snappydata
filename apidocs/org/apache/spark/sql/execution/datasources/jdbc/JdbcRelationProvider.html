@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">JdbcRelationProvider</span><span class="result"> extends <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a> with <a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+        <span class="name">JdbcRelationProvider</span><span class="result"> extends <a href="../../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a> with <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a> with <a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a>, <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a>, <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a>, <a href="../../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -69,7 +69,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider"><span>JdbcRelationProvider</span></li><li class="in" name="org.apache.spark.sql.sources.DataSourceRegister"><span>DataSourceRegister</span></li><li class="in" name="org.apache.spark.sql.sources.RelationProvider"><span>RelationProvider</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider"><span>JdbcRelationProvider</span></li><li class="in" name="org.apache.spark.sql.sources.DataSourceRegister"><span>DataSourceRegister</span></li><li class="in" name="org.apache.spark.sql.sources.RelationProvider"><span>RelationProvider</span></li><li class="in" name="org.apache.spark.sql.sources.CreatableRelationProvider"><span>CreatableRelationProvider</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -206,6 +206,34 @@
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider#createRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createRelation(sqlContext:org.apache.spark.sql.SQLContext,mode:org.apache.spark.sql.SaveMode,parameters:Map[String,String],df:org.apache.spark.sql.DataFrame):org.apache.spark.sql.sources.BaseRelation"></a>
+      <a id="createRelation(SQLContext,SaveMode,Map[String,String],DataFrame):BaseRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createRelation</span><span class="params">(<span name="sqlContext">sqlContext: <a href="../../../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>, <span name="mode">mode: <a href="../../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="parameters">parameters: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="df">df: <a href="../../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>)</span><span class="result">: <a href="../../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider@createRelation(sqlContext:org.apache.spark.sql.SQLContext,mode:org.apache.spark.sql.SaveMode,parameters:Map[String,String],df:org.apache.spark.sql.DataFrame):org.apache.spark.sql.sources.BaseRelation" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Save the DataFrame to the destination and return a relation with the given parameters based on
+the contents of the given DataFrame.</p><div class="fullcomment"><div class="comment cmt"><p>Save the DataFrame to the destination and return a relation with the given parameters based on
+the contents of the given DataFrame. The mode specifies the expected behavior of createRelation
+when data already exists.
+Right now, there are three modes, Append, Overwrite, and ErrorIfExists.
+Append mode means that when saving a DataFrame to a data source, if data already exists,
+contents of the DataFrame are expected to be appended to existing data.
+Overwrite mode means that when saving a DataFrame to a data source, if data already exists,
+existing data is expected to be overwritten by the contents of the DataFrame.
+ErrorIfExists mode means that when saving a DataFrame to a data source,
+if data already exists, an exception is expected to be thrown.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider">JdbcRelationProvider</a> → <a href="../../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider#createRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createRelation(sqlContext:org.apache.spark.sql.SQLContext,parameters:Map[String,String]):org.apache.spark.sql.sources.BaseRelation"></a>
       <a id="createRelation(SQLContext,Map[String,String]):BaseRelation"></a>
       <h4 class="signature">
@@ -221,7 +249,9 @@
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new base relation with the given parameters.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new base relation with the given parameters.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider">JdbcRelationProvider</a> → <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns a new base relation with the given parameters.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new base relation with the given parameters.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider">JdbcRelationProvider</a> → <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a></dd><dt>Note</dt><dd><span class="cmt"><p>The parameters' keywords are case insensitive and this insensitivity is enforced
+by the Map that is passed to the function.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -515,6 +545,8 @@ overridden by children to provide a nice alias for the data source. For example:
               <h3>Inherited from <a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.RelationProvider">
               <h3>Inherited from <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.sources.CreatableRelationProvider">
+              <h3>Inherited from <a href="../../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

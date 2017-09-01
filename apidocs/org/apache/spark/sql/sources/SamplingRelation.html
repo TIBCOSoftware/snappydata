@@ -544,12 +544,12 @@ or None if <code>sourceSchema</code> cannot be inserted.
       </a>
     </span>
       <p class="shortcomment cmt">Whether does it need to convert the objects in Row to internal representation, for example:
- java.lang.String -&gt; UTF8String
- java.lang.Decimal -&gt; Decimal</p><div class="fullcomment"><div class="comment cmt"><p>Whether does it need to convert the objects in Row to internal representation, for example:
- java.lang.String -&gt; UTF8String
- java.lang.Decimal -&gt; Decimal</p><p>If <code>needConversion</code> is <code>false</code>, buildScan() should return an <span class="extype" name="RDD">RDD</span> of <span class="extype" name="InternalRow">InternalRow</span></p><p>Note: The internal representation is not stable across releases and thus data sources outside
-of Spark SQL should leave this as true.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+ java.lang.String to UTF8String
+ java.lang.Decimal to Decimal</p><div class="fullcomment"><div class="comment cmt"><p>Whether does it need to convert the objects in Row to internal representation, for example:
+ java.lang.String to UTF8String
+ java.lang.Decimal to Decimal</p><p>If <code>needConversion</code> is <code>false</code>, buildScan() should return an <code>RDD</code> of <code>InternalRow</code>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.4.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The internal representation is not stable across releases and thus data sources outside
+of Spark SQL should leave this as true.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -604,9 +604,9 @@ of Spark SQL should leave this as true.
 to decide when it is safe to broadcast a relation and can be overridden by sources that
 know the size ahead of time. By default, the system will assume that tables are too
 large to broadcast. This method will be called multiple times during query planning
-and thus should not perform expensive operations for each invocation.</p><p>Note that it is always better to overestimate size than underestimate, because underestimation
-could lead to execution plans that are suboptimal (i.e. broadcasting a very large table).
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+and thus should not perform expensive operations for each invocation.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>It is always better to overestimate size than underestimate, because underestimation
+could lead to execution plans that are suboptimal (i.e. broadcasting a very large table).</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

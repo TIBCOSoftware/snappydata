@@ -51,15 +51,14 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type for collections of multiple values.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The data type for collections of multiple values.
 Internally these are represented as columns that contain a <code><code>scala.collection.Seq</code></code>.</p><p>Please use <span class="extype" name="DataTypes.createArrayType()">DataTypes.createArrayType()</span> to create a specific instance.</p><p>An <a href="" class="extype" name="org.apache.spark.sql.types.ArrayType">ArrayType</a> object comprises two fields, <code>elementType: <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></code> and
 <code>containsNull: Boolean</code>. The field of <code>elementType</code> is used to specify the type of
 array elements. The field of <code>containsNull</code> is used to specify if the array has <code>null</code> values.
 </p></div><dl class="paramcmts block"><dt class="param">elementType</dt><dd class="cmt"><p>The data type of values.</p></dd><dt class="param">containsNull</dt><dd class="cmt"><p>Indicates if values have <code>null</code> values</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl><div class="toggleContainer block">
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="org.apache.spark.sql.types.AbstractDataType">AbstractDataType</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -282,8 +281,8 @@ array elements. The field of <code>containsNull</code> is used to specify if the
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The default size of a value of the ArrayType is 100 * the default size of the element type.</p><div class="fullcomment"><div class="comment cmt"><p>The default size of a value of the ArrayType is 100 * the default size of the element type.
-(We assume that there are 100 elements).
+      <p class="shortcomment cmt">The default size of a value of the ArrayType is the default size of the element type.</p><div class="fullcomment"><div class="comment cmt"><p>The default size of a value of the ArrayType is the default size of the element type.
+We assume that there is only 1 element on average in an array. See SPARK-18853.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.types.ArrayType">ArrayType</a> → <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.ArrayType#elementType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="elementType:org.apache.spark.sql.types.DataType"></a>

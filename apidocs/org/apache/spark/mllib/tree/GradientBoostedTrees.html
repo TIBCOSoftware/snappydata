@@ -52,7 +52,7 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A class that implements
-<a href="http://en.wikipedia.org/wiki/Gradient_boosting" target="_blank">Stochastic Gradient Boosting</a>
+<a href="http://en.wikipedia.org/wiki/Gradient_boosting">Stochastic Gradient Boosting</a>
 for regression and binary classification.</p><p>The implementation is based upon:
   J.H. Friedman.  &quot;Stochastic Gradient Boosting.&quot;  1999.</p><p>Notes on Gradient Boosting vs. TreeBoost:</p><ul><li>This implementation is for Stochastic Gradient Boosting, not for TreeBoost.</li><li>Both algorithms learn tree ensembles by minimizing loss functions.</li><li>TreeBoost (Friedman, 1999) additionally modifies the outputs at tree leaf nodes
    based on the loss function, whereas the original gradient boosting method does not.<ul><li>When the loss is SquaredError, these methods give the same result, but they could differ
@@ -672,7 +672,7 @@ for regression and binary classification.</p><p>The implementation is based upon
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Java-friendly API for <a href="#run(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint]):org.apache.spark.mllib.tree.model.GradientBoostedTreesModel" class="extmbr" name="org.apache.spark.mllib.tree.GradientBoostedTrees#run">org.apache.spark.mllib.tree.GradientBoostedTrees!#run</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly API for <a href="#run(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint]):org.apache.spark.mllib.tree.model.GradientBoostedTreesModel" class="extmbr" name="org.apache.spark.mllib.tree.GradientBoostedTrees#run">org.apache.spark.mllib.tree.GradientBoostedTrees!#run</a>.
+      <p class="shortcomment cmt">Java-friendly API for <code>org.apache.spark.mllib.tree.GradientBoostedTrees.run</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly API for <code>org.apache.spark.mllib.tree.GradientBoostedTrees.run</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -721,7 +721,7 @@ for regression and binary classification.</p><p>The implementation is based upon
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Java-friendly API for <a href="#runWithValidation(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],validationInput:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint]):org.apache.spark.mllib.tree.model.GradientBoostedTreesModel" class="extmbr" name="org.apache.spark.mllib.tree.GradientBoostedTrees#runWithValidation">org.apache.spark.mllib.tree.GradientBoostedTrees!#runWithValidation</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly API for <a href="#runWithValidation(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],validationInput:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint]):org.apache.spark.mllib.tree.model.GradientBoostedTreesModel" class="extmbr" name="org.apache.spark.mllib.tree.GradientBoostedTrees#runWithValidation">org.apache.spark.mllib.tree.GradientBoostedTrees!#runWithValidation</a>.
+      <p class="shortcomment cmt">Java-friendly API for <code>org.apache.spark.mllib.tree.GradientBoostedTrees.runWithValidation</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly API for <code>org.apache.spark.mllib.tree.GradientBoostedTrees.runWithValidation</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -751,7 +751,7 @@ for regression and binary classification.</p><p>The implementation is based upon
                        This dataset should be different from the training dataset,
                        but it should follow the same distribution.
                        E.g., these two datasets could be created from an original dataset
-                       by using <span class="extype" name="org.apache.spark.rdd.RDD.randomSplit()">org.apache.spark.rdd.RDD.randomSplit()</span></p></dd><dt>returns</dt><dd class="cmt"><p>GradientBoostedTreesModel that can be used for prediction.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                       by using <code>org.apache.spark.rdd.RDD.randomSplit()</code></p></dd><dt>returns</dt><dd class="cmt"><p>GradientBoostedTreesModel that can be used for prediction.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.4.0&quot;</span>

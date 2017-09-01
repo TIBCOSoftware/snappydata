@@ -28,10 +28,12 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img alt="Class" src="../../../../../../lib/class_big.png" />
+        <a href="Randn$.html" title="See companion object"><img alt="Class/Object" src="../../../../../../lib/class_to_object_big.png" /></a>
         <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">expressions</a></p>
-        <h1>Randn</h1><h3><span class="morelinks"><div>Related Doc:
-            <a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">package expressions</a>
+        <h1><a href="Randn$.html" title="See companion object">Randn</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="Randn$.html" title="See companion object">object Randn</a>
+            | <a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">package expressions</a>
           </div></span></h3><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
@@ -45,16 +47,16 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">Randn</span><span class="params">(<span name="seed">seed: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">Randn</span><span class="params">(<span name="child">child: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Generate a random column with i.i.d. gaussian random distribution.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Generate a random column with i.i.d. values drawn from the standard normal distribution.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a>, <a href="Nondeterministic.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">Nondeterministic</a>, <a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a>, <a href="Nondeterministic.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">Nondeterministic</a>, <a href="ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a>, <a href="UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -72,7 +74,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.Randn"><span>Randn</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.RDG"><span>RDG</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic"><span>Nondeterministic</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.LeafExpression"><span>LeafExpression</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.Randn"><span>Randn</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.RDG"><span>RDG</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic"><span>Nondeterministic</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes"><span>ExpectsInputTypes</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression"><span>UnaryExpression</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -92,23 +94,6 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.catalyst.expressions.Randn#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(seed:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Randn"></a>
-      <a id="&lt;init&gt;:Randn"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
-      </span>
-      <span class="symbol">
-        <span class="name">Randn</span><span class="params">(<span name="seed">seed: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@&lt;init&gt;(seed:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Randn" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Randn#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="&lt;init&gt;():org.apache.spark.sql.catalyst.expressions.Randn"></a>
       <a id="&lt;init&gt;:Randn"></a>
       <h4 class="signature">
@@ -126,7 +111,7 @@
     </span>
       
     </li><li name="org.apache.spark.sql.catalyst.expressions.Randn#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(seed:Long):org.apache.spark.sql.catalyst.expressions.Randn"></a>
+      <a id="&lt;init&gt;(child:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Randn"></a>
       <a id="&lt;init&gt;:Randn"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -134,10 +119,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Randn</span><span class="params">(<span name="seed">seed: <span class="extype" name="scala.Long">Long</span></span>)</span>
+        <span class="name">Randn</span><span class="params">(<span name="child">child: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@&lt;init&gt;(seed:Long):org.apache.spark.sql.catalyst.expressions.Randn" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@&lt;init&gt;(child:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Randn" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -203,23 +188,25 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="apply(number:Int):BaseType"></a>
-      <a id="apply(Int):Expression"></a>
+      <a id="apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]"></a>
+      <a id="apply(Int):TreeNode[_]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@apply(number:Int):BaseType" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the tree node at the specified number.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number.
-Numbers for each node can be found in the <a href="../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.
+      <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
+Numbers for each node can be found in the <a href="../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>Note that this cannot return BaseType because logical plan's plan node might return
+physical plan for innerChildren, e.g. in-memory relation logical plan node has a reference
+to the physical plan node it is referencing.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#argString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="argString:String"></a>
@@ -299,7 +286,7 @@ that preserves the result but removes cosmetic variations (case sensitivity, ord
 commutative operations, etc.)  See <a href="Canonicalize$.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Canonicalize">Canonicalize</a> for more details.</p><p><code>deterministic</code> expressions where <code>this.canonicalized == other.canonicalized</code> will always
 evaluate to the same result.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#checkInputDataTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes#checkInputDataTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="checkInputDataTypes():org.apache.spark.sql.catalyst.analysis.TypeCheckResult"></a>
       <a id="checkInputDataTypes():TypeCheckResult"></a>
       <h4 class="signature">
@@ -319,13 +306,30 @@ evaluate to the same result.
 or returns a <code>TypeCheckResult</code> with an error message if invalid.</p><div class="fullcomment"><div class="comment cmt"><p>Checks the input data types, returns <code>TypeCheckResult.success</code> if it's valid,
 or returns a <code>TypeCheckResult</code> with an error message if invalid.
 Note: it's not valid to call this method until <code>childrenResolved == true</code>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.LeafExpression#children" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.Randn#child" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="child:org.apache.spark.sql.catalyst.expressions.Expression"></a>
+      <a id="child:Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">child</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@child:org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.Randn">Randn</a> → <a href="UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.UnaryExpression#children" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="children:Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="children:Seq[Expression]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -338,7 +342,7 @@ Note: it's not valid to call this method until <code>childrenResolved == true</c
     </span>
       <p class="shortcomment cmt">Returns a Seq of the children of this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq of the children of this node.
 Children should not change. Immutability required for containsChild optimization
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#childrenResolved" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="childrenResolved:Boolean"></a>
       <a id="childrenResolved:Boolean"></a>
@@ -476,6 +480,25 @@ is defined (pre-order), and applies the partial function to it.
       <p class="shortcomment cmt">Returns the <span class="extype" name="DataType">DataType</span> of the result of evaluating this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the <span class="extype" name="DataType">DataType</span> of the result of evaluating this expression.  It is
 invalid to query the dataType of an unresolved expression (i.e., when <code>resolved</code> == false).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.UnaryExpression#defineCodeGen" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="defineCodeGen(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,f:String=&gt;String):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a>
+      <a id="defineCodeGen(CodegenContext,ExprCode,(String)⇒String):ExprCode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defineCodeGen</span><span class="params">(<span name="ctx">ctx: <a href="codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="ev">ev: <a href="codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="f">f: (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@defineCodeGen(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,f:String=&gt;String):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Called by unary expressions to generate a code block that returns null if its parent returns
+null, and if not null, use <code>f</code> to generate the expression.</p><div class="fullcomment"><div class="comment cmt"><p>Called by unary expressions to generate a code block that returns null if its parent returns
+null, and if not null, use <code>f</code> to generate the expression.</p><p>As an example, the following does a boolean inversion (i.e. NOT).</p><pre>defineCodeGen(ctx, ev, c <span class="kw">=&gt;</span> s<span class="lit">"!($c)"</span>)</pre></div><dl class="paramcmts block"><dt class="param">f</dt><dd class="cmt"><p>function that accepts a variable name and returns Java code to compute the output.</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Nondeterministic#deterministic" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="deterministic:Boolean"></a>
       <a id="deterministic:Boolean"></a>
@@ -495,9 +518,9 @@ invalid to query the dataType of an unresolved expression (i.e., when <code>reso
       <p class="shortcomment cmt">Returns true when the current expression always return the same result for fixed inputs from
 children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true when the current expression always return the same result for fixed inputs from
 children.</p><p>Note that this means that an expression should be considered as non-deterministic if:
-- if it relies on some mutable internal state, or
-- if it relies on some implicit input that is not part of the children expression list.
-- if it has non-deterministic child or children.</p><p>An example would be <code>SparkPartitionID</code> that relies on the partition id returned by TaskContext.
+- it relies on some mutable internal state, or
+- it relies on some implicit input that is not part of the children expression list.
+- it has non-deterministic child or children.</p><p>An example would be <code>SparkPartitionID</code> that relies on the partition id returned by TaskContext.
 By default leaf expressions are deterministic as Nil.forall(_.deterministic) returns true.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Nondeterministic.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">Nondeterministic</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Randn#doGenCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -553,7 +576,11 @@ implementations should override this to do actual code generation.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the result of evaluating this expression on a given input Row</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of evaluating this expression on a given input Row</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Nondeterministic.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">Nondeterministic</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+      <p class="shortcomment cmt"> Returns the result of evaluating this expression on a given input Row
+Throws an exception if <span class="extype" name="initialize()">initialize()</span> is not called yet.</p><div class="fullcomment"><div class="comment cmt"><p> Returns the result of evaluating this expression on a given input Row
+Throws an exception if <span class="extype" name="initialize()">initialize()</span> is not called yet.
+Subclasses should override <span class="extype" name="evalInternal()">evalInternal()</span>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Nondeterministic.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">Nondeterministic</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Randn#evalInternal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="evalInternal(input:org.apache.spark.sql.catalyst.InternalRow):Double"></a>
       <a id="evalInternal(InternalRow):Double"></a>
@@ -642,7 +669,7 @@ The condition is recursively applied to this node and all of its children (pre-o
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatArguments</span><span class="result">: <span class="extype" name="scala.collection.Iterator">Iterator</span>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">flatArguments</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@flatArguments:Iterator[Any]" title="Permalink" target="_top">
@@ -762,7 +789,7 @@ evaluating the expression on an input row.
     </span>
       <p class="shortcomment cmt">Appends the string represent of this node and its children to the given StringBuilder.</p><div class="fullcomment"><div class="comment cmt"><p>Appends the string represent of this node and its children to the given StringBuilder.</p><p>The <code>i</code>-th element in <code>lastChildren</code> indicates whether the ancestor of the current node at
 depth <code>i + 1</code> is the last child of its own parent node.  The depth of the root node is 0, and
-<code>lastChildren</code> for the root node should be empty.
+<code>lastChildren</code> for the root node should be empty.</p><p>Note that this traversal (numbering) order must be the same as <span class="extype" name="getNodeNumbered">getNodeNumbered</span>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
@@ -781,23 +808,6 @@ depth <code>i + 1</code> is the last child of its own parent node.  The depth of
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#getNodeNumbered" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType"></a>
-      <a id="getNodeNumbered(trees.MutableInt):Expression"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getNodeNumbered</span><span class="params">(<span name="number">number: <span class="extype" name="org.apache.spark.sql.catalyst.trees.MutableInt">trees.MutableInt</span></span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -815,19 +825,38 @@ depth <code>i + 1</code> is the last child of its own parent node.  The depth of
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.RDG#initInternal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initInternal():Unit"></a>
-      <a id="initInternal():Unit"></a>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.Nondeterministic#initialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initialize(partitionIndex:Int):Unit"></a>
+      <a id="initialize(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initialize</span><span class="params">(<span name="partitionIndex">partitionIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@initialize(partitionIndex:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Initializes internal states given the current partition index and mark this as initialized.</p><div class="fullcomment"><div class="comment cmt"><p>Initializes internal states given the current partition index and mark this as initialized.
+Subclasses should override <span class="extype" name="initializeInternal()">initializeInternal()</span>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Nondeterministic.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">Nondeterministic</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.RDG#initializeInternal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initializeInternal(partitionIndex:Int):Unit"></a>
+      <a id="initializeInternal(Int):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initInternal</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">initializeInternal</span><span class="params">(<span name="partitionIndex">partitionIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@initInternal():Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@initializeInternal(partitionIndex:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -851,6 +880,27 @@ depth <code>i + 1</code> is the last child of its own parent node.  The depth of
       <p class="shortcomment cmt">All the nodes that should be shown as a inner nested tree of this node.</p><div class="fullcomment"><div class="comment cmt"><p>All the nodes that should be shown as a inner nested tree of this node.
 For example, this can be used to show sub-queries.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.RDG#inputTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="inputTypes:Seq[org.apache.spark.sql.types.AbstractDataType]"></a>
+      <a id="inputTypes:Seq[AbstractDataType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">inputTypes</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.types.AbstractDataType">AbstractDataType</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@inputTypes:Seq[org.apache.spark.sql.types.AbstractDataType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Expected input types from child expressions.</p><div class="fullcomment"><div class="comment cmt"><p>Expected input types from child expressions. The i-th position in the returned seq indicates
+the type requirement for the i-th child.</p><p>The possible values at each position are:
+1. a specific data type, e.g. LongType, StringType.
+2. a non-leaf abstract data type, e.g. NumericType, IntegralType, FractionalType.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a> → <a href="ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1029,6 +1079,47 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.UnaryExpression#nullSafeCodeGen" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="nullSafeCodeGen(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,f:String=&gt;String):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a>
+      <a id="nullSafeCodeGen(CodegenContext,ExprCode,(String)⇒String):ExprCode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nullSafeCodeGen</span><span class="params">(<span name="ctx">ctx: <a href="codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="ev">ev: <a href="codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="f">f: (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@nullSafeCodeGen(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,f:String=&gt;String):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Called by unary expressions to generate a code block that returns null if its parent returns
+null, and if not null, use <code>f</code> to generate the expression.</p><div class="fullcomment"><div class="comment cmt"><p>Called by unary expressions to generate a code block that returns null if its parent returns
+null, and if not null, use <code>f</code> to generate the expression.
+</p></div><dl class="paramcmts block"><dt class="param">f</dt><dd class="cmt"><p>function that accepts the non-null evaluation result name of child and returns Java
+         code to compute the output.</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.UnaryExpression#nullSafeEval" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="nullSafeEval(input:Any):Any"></a>
+      <a id="nullSafeEval(Any):Any"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nullSafeEval</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@nullSafeEval(input:Any):Any" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Called by default <a href="UnaryExpression.html#eval(input:org.apache.spark.sql.catalyst.InternalRow):Any" class="extmbr" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression#eval">eval</a> implementation.</p><div class="fullcomment"><div class="comment cmt"><p>Called by default <a href="UnaryExpression.html#eval(input:org.apache.spark.sql.catalyst.InternalRow):Any" class="extmbr" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression#eval">eval</a> implementation.  If subclass of UnaryExpression keep the default
+nullability, they can override this method to save null-check code.  If we need full control
+of evaluation process, we should override <a href="UnaryExpression.html#eval(input:org.apache.spark.sql.catalyst.InternalRow):Any" class="extmbr" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression#eval">eval</a>.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.RDG#nullable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nullable:Boolean"></a>
       <a id="nullable:Boolean"></a>
@@ -1045,7 +1136,7 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a> → <a href="UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="numberedTreeString:String"></a>
       <a id="numberedTreeString:String"></a>
@@ -1063,7 +1154,8 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree, where each operator is numbered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree, where each operator is numbered.
-The numbers can be used with <a href="../trees/TreeNode.html#apply(number:Int):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> to easily access specific subtrees.
+The numbers can be used with <a href="../trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">TreeNode.apply</a> to easily access specific subtrees.</p><p>The numbers are based on depth-first traversal of the tree (with innerChildren traversed first
+before children).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#origin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="origin:org.apache.spark.sql.catalyst.trees.Origin"></a>
@@ -1100,6 +1192,25 @@ The numbers can be used with <a href="../trees/TreeNode.html#apply(number:Int):B
     </span>
       <p class="shortcomment cmt">Args to the constructor that should be copied, but not transformed.</p><div class="fullcomment"><div class="comment cmt"><p>Args to the constructor that should be copied, but not transformed.
 These are appended to the transformed args automatically by makeCopy</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#p" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="p(number:Int):BaseType"></a>
+      <a id="p(Int):Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">p</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@p(number:Int):BaseType" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
+Numbers for each node can be found in the <a href="../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>This is a variant of <a href="../trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> that returns the node as BaseType (if the type matches).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#prettyJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyJson:String"></a>
       <a id="prettyJson:String"></a>
@@ -1196,13 +1307,13 @@ expression involves more than just the resolution of its children and type check
       <p class="shortcomment cmt">Record ID within each partition.</p><div class="fullcomment"><div class="comment cmt"><p>Record ID within each partition. By being transient, the Random Number Generator is
 reset every time we serialize and deserialize and initialize it.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Randn#seed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.RDG#seed" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="seed:Long"></a>
       <a id="seed:Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
         <span class="name">seed</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
@@ -1212,7 +1323,7 @@ reset every time we serialize and deserialize and initialize it.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.Randn">Randn</a> → <a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#semanticEquals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="semanticEquals(other:org.apache.spark.sql.catalyst.expressions.Expression):Boolean"></a>
       <a id="semanticEquals(Expression):Boolean"></a>
@@ -1252,23 +1363,6 @@ cosmetically (i.e. capitalization of names in attributes may be different).</p><
       <p class="shortcomment cmt">Returns a <code>hashCode</code> for the calculation performed by this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a <code>hashCode</code> for the calculation performed by this expression. Unlike the standard
 <code>hashCode</code>, an attempt has been made to eliminate cosmetic differences.</p><p>See <a href="Canonicalize$.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Canonicalize">Canonicalize</a> for more details.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Nondeterministic#setInitialValues" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setInitialValues():Unit"></a>
-      <a id="setInitialValues():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">setInitialValues</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@setInitialValues():Unit" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Nondeterministic.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">Nondeterministic</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#simpleString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="simpleString:String"></a>
       <a id="simpleString:String"></a>
@@ -1286,7 +1380,7 @@ cosmetically (i.e. capitalization of names in attributes may be different).</p><
       </a>
     </span>
       <p class="shortcomment cmt">ONE line description of this node.</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.RDG#sql" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#sql" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sql:String"></a>
       <a id="sql:String"></a>
       <h4 class="signature">
@@ -1304,7 +1398,7 @@ cosmetically (i.e. capitalization of names in attributes may be different).</p><
     </span>
       <p class="shortcomment cmt">Returns SQL representation of this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns SQL representation of this expression.  For expressions extending <a href="NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a>,
 this method may return an arbitrary user facing string.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#stringArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="stringArgs:Iterator[Any]"></a>
       <a id="stringArgs:Iterator[Any]"></a>
@@ -1395,25 +1489,6 @@ When <code>rule</code> does not apply to a given node it is left unchanged.
 Users should not expect a specific directionality. If a specific directionality is needed,
 transformDown or transformUp should be used.
 </p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function use to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType"></a>
-      <a id="transformChildren(PartialFunction[Expression,Expression],(Expression,PartialFunction[Expression,Expression])⇒Expression):Expression"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transformChildren</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="nextOperation">nextOperation: (<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]) ⇒ <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.Randn@transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
-this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
-this node.  When <code>rule</code> does not apply to a given node it is left unchanged.</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function used to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformDown" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType"></a>
       <a id="transformDown(PartialFunction[Expression,Expression]):Expression"></a>
@@ -1611,8 +1686,10 @@ TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
               <h3>Inherited from <a href="RDG.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.RDG">RDG</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">
               <h3>Inherited from <a href="Nondeterministic.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Nondeterministic">Nondeterministic</a></h3>
-            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">
-              <h3>Inherited from <a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">
+              <h3>Inherited from <a href="ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">
+              <h3>Inherited from <a href="UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.Expression">
               <h3>Inherited from <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.trees.TreeNode">

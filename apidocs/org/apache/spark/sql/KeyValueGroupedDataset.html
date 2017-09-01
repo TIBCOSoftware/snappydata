@@ -56,6 +56,8 @@ an existing <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dat
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -308,13 +310,15 @@ that cast appropriately for the user facing interface.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Applies the given function to each cogrouped data.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given function to each cogrouped data.  For each unique group, the function will
+      <p class="shortcomment cmt">(Java-specific)
+Applies the given function to each cogrouped data.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific)
+Applies the given function to each cogrouped data.  For each unique group, the function will
 be passed the grouping key and 2 iterators containing all elements in the group from
 <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> <code>this</code> and <code>other</code>.  The function can return an iterator containing elements of an
 arbitrary type which will be returned as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#cogroup" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="cogroup[U,R](other:org.apache.spark.sql.KeyValueGroupedDataset[K,U])(f:(K,Iterator[V],Iterator[U])=&gt;TraversableOnce[R])(implicitevidence$4:org.apache.spark.sql.Encoder[R]):org.apache.spark.sql.Dataset[R]"></a>
+      <a id="cogroup[U,R](other:org.apache.spark.sql.KeyValueGroupedDataset[K,U])(f:(K,Iterator[V],Iterator[U])=&gt;TraversableOnce[R])(implicitevidence$5:org.apache.spark.sql.Encoder[R]):org.apache.spark.sql.Dataset[R]"></a>
       <a id="cogroup[U,R](KeyValueGroupedDataset[K,U])((K,Iterator[V],Iterator[U])⇒TraversableOnce[R])(Encoder[R]):Dataset[R]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -325,11 +329,13 @@ arbitrary type which will be returned as a new <a href="Dataset.html" class="ext
         <span class="name">cogroup</span><span class="tparams">[<span name="U">U</span>, <span name="R">R</span>]</span><span class="params">(<span name="other">other: <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.U">U</span>]</span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.U">U</span>]) ⇒ <a href="../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@cogroup[U,R](other:org.apache.spark.sql.KeyValueGroupedDataset[K,U])(f:(K,Iterator[V],Iterator[U])=&gt;TraversableOnce[R])(implicitevidence$4:org.apache.spark.sql.Encoder[R]):org.apache.spark.sql.Dataset[R]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@cogroup[U,R](other:org.apache.spark.sql.KeyValueGroupedDataset[K,U])(f:(K,Iterator[V],Iterator[U])=&gt;TraversableOnce[R])(implicitevidence$5:org.apache.spark.sql.Encoder[R]):org.apache.spark.sql.Dataset[R]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Applies the given function to each cogrouped data.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given function to each cogrouped data.  For each unique group, the function will
+      <p class="shortcomment cmt">(Scala-specific)
+Applies the given function to each cogrouped data.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific)
+Applies the given function to each cogrouped data.  For each unique group, the function will
 be passed the grouping key and 2 iterators containing all elements in the group from
 <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> <code>this</code> and <code>other</code>.  The function can return an iterator containing elements of an
 arbitrary type which will be returned as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
@@ -427,19 +433,21 @@ for that key.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given function to each group of data.  For each unique group, the function will
+      <p class="shortcomment cmt">(Java-specific)
+Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific)
+Applies the given function to each group of data.  For each unique group, the function will
 be passed the group key and an iterator that contains all of the elements in the group. The
 function can return an iterator containing elements of an arbitrary type which will be returned
 as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><p>This function does not support partial aggregation, and as a result requires shuffling all
 the data in the <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. If an application intends to perform an aggregation over each
 key, it is best to use the reduce function or an
-<a href="expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
+<code>org.apache.spark.sql.expressions#Aggregator</code>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
 memory.  However, users must take care to avoid materializing the whole iterator for a group
 (for example, by calling <code>toList</code>) unless they are sure that this is possible given the memory
 constraints of their cluster.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#flatMapGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="flatMapGroups[U](f:(K,Iterator[V])=&gt;TraversableOnce[U])(implicitevidence$2:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="flatMapGroups[U](f:(K,Iterator[V])=&gt;TraversableOnce[U])(implicitevidence$3:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
       <a id="flatMapGroups[U]((K,Iterator[V])⇒TraversableOnce[U])(Encoder[U]):Dataset[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -450,17 +458,19 @@ constraints of their cluster.
         <span class="name">flatMapGroups</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>]) ⇒ <a href="../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@flatMapGroups[U](f:(K,Iterator[V])=&gt;TraversableOnce[U])(implicitevidence$2:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@flatMapGroups[U](f:(K,Iterator[V])=&gt;TraversableOnce[U])(implicitevidence$3:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given function to each group of data.  For each unique group, the function will
+      <p class="shortcomment cmt">(Scala-specific)
+Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific)
+Applies the given function to each group of data.  For each unique group, the function will
 be passed the group key and an iterator that contains all of the elements in the group. The
 function can return an iterator containing elements of an arbitrary type which will be returned
 as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><p>This function does not support partial aggregation, and as a result requires shuffling all
 the data in the <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. If an application intends to perform an aggregation over each
 key, it is best to use the reduce function or an
-<a href="expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
+<code>org.apache.spark.sql.expressions#Aggregator</code>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
 memory.  However, users must take care to avoid materializing the whole iterator for a group
 (for example, by calling <code>toList</code>) unless they are sure that this is possible given the memory
 constraints of their cluster.
@@ -572,18 +582,20 @@ over the Dataset to extract the keys and then running a distinct operation on th
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given function to each group of data.  For each unique group, the function will
+      <p class="shortcomment cmt">(Java-specific)
+Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific)
+Applies the given function to each group of data.  For each unique group, the function will
 be passed the group key and an iterator that contains all of the elements in the group. The
 function can return an element of arbitrary type which will be returned as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><p>This function does not support partial aggregation, and as a result requires shuffling all
 the data in the <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. If an application intends to perform an aggregation over each
 key, it is best to use the reduce function or an
-<a href="expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
+<code>org.apache.spark.sql.expressions#Aggregator</code>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
 memory.  However, users must take care to avoid materializing the whole iterator for a group
 (for example, by calling <code>toList</code>) unless they are sure that this is possible given the memory
 constraints of their cluster.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#mapGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="mapGroups[U](f:(K,Iterator[V])=&gt;U)(implicitevidence$3:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="mapGroups[U](f:(K,Iterator[V])=&gt;U)(implicitevidence$4:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
       <a id="mapGroups[U]((K,Iterator[V])⇒U)(Encoder[U]):Dataset[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -594,20 +606,64 @@ constraints of their cluster.
         <span class="name">mapGroups</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>]) ⇒ <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@mapGroups[U](f:(K,Iterator[V])=&gt;U)(implicitevidence$3:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@mapGroups[U](f:(K,Iterator[V])=&gt;U)(implicitevidence$4:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given function to each group of data.  For each unique group, the function will
+      <p class="shortcomment cmt">(Scala-specific)
+Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific)
+Applies the given function to each group of data.  For each unique group, the function will
 be passed the group key and an iterator that contains all of the elements in the group. The
 function can return an element of arbitrary type which will be returned as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><p>This function does not support partial aggregation, and as a result requires shuffling all
 the data in the <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. If an application intends to perform an aggregation over each
 key, it is best to use the reduce function or an
-<a href="expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
+<code>org.apache.spark.sql.expressions#Aggregator</code>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
 memory.  However, users must take care to avoid materializing the whole iterator for a group
 (for example, by calling <code>toList</code>) unless they are sure that this is possible given the memory
 constraints of their cluster.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#mapValues" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapValues[W](func:org.apache.spark.api.java.function.MapFunction[V,W],encoder:org.apache.spark.sql.Encoder[W]):org.apache.spark.sql.KeyValueGroupedDataset[K,W]"></a>
+      <a id="mapValues[W](MapFunction[V,W],Encoder[W]):KeyValueGroupedDataset[K,W]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapValues</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="func">func: <a href="../api/java/function/MapFunction.html" class="extype" name="org.apache.spark.api.java.function.MapFunction">MapFunction</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>, <span name="encoder">encoder: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@mapValues[W](func:org.apache.spark.api.java.function.MapFunction[V,W],encoder:org.apache.spark.sql.Encoder[W]):org.apache.spark.sql.KeyValueGroupedDataset[K,W]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the given function <code>func</code> has been applied
+to the data.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the given function <code>func</code> has been applied
+to the data. The grouping key is unchanged by this.</p><pre><span class="cmt">// Create Integer values grouped by String key from a Dataset<Tuple2<String, Integer>></span>
+Dataset&lt;Tuple2&lt;<span class="std">String</span>, Integer&gt;&gt; ds = ...;
+KeyValueGroupedDataset&lt;<span class="std">String</span>, Integer&gt; grouped =
+  ds.groupByKey(t -&gt; t._1, Encoders.STRING()).mapValues(t -&gt; t._2, Encoders.INT()); <span class="cmt">// Java 8</span></pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#mapValues" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapValues[W](func:V=&gt;W)(implicitevidence$2:org.apache.spark.sql.Encoder[W]):org.apache.spark.sql.KeyValueGroupedDataset[K,W]"></a>
+      <a id="mapValues[W]((V)⇒W)(Encoder[W]):KeyValueGroupedDataset[K,W]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapValues</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="func">func: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>) ⇒ <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@mapValues[W](func:V=&gt;W)(implicitevidence$2:org.apache.spark.sql.Encoder[W]):org.apache.spark.sql.KeyValueGroupedDataset[K,W]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the given function <code>func</code> has been applied
+to the data.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the given function <code>func</code> has been applied
+to the data. The grouping key is unchanged by this.</p><pre><span class="cmt">// Create values grouped by key from a Dataset[(K, V)]</span>
+ds.groupByKey(_._1).mapValues(_._2) <span class="cmt">// Scala</span></pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -692,7 +748,9 @@ constraints of their cluster.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Reduces the elements of each group of data using the specified binary function.</p><div class="fullcomment"><div class="comment cmt"><p>Reduces the elements of each group of data using the specified binary function.
+      <p class="shortcomment cmt">(Java-specific)
+Reduces the elements of each group of data using the specified binary function.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific)
+Reduces the elements of each group of data using the specified binary function.
 The given function must be commutative and associative or the result may be non-deterministic.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#reduceGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -711,7 +769,9 @@ The given function must be commutative and associative or the result may be non-
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Reduces the elements of each group of data using the specified binary function.</p><div class="fullcomment"><div class="comment cmt"><p>Reduces the elements of each group of data using the specified binary function.
+      <p class="shortcomment cmt">(Scala-specific)
+Reduces the elements of each group of data using the specified binary function.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific)
+Reduces the elements of each group of data using the specified binary function.
 The given function must be commutative and associative or the result may be non-deterministic.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">

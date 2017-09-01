@@ -49,15 +49,11 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>::Experimental::
-<a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> is used together with <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> for persisting rows to the
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p><a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> is used together with <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> for persisting rows to the
 underlying file system.  Subclasses of <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> must provide a zero-argument constructor.
 An <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> instance is created and initialized when a new output file is opened on
 executor side.  This instance is used to persist rows to this single output file.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -141,7 +137,7 @@ executor side.  This instance is used to persist rows to this single output file
     </span>
       <p class="shortcomment cmt">Closes the <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Closes the <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>. Invoked on the executor side after all rows are persisted, before
 the task output is committed.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.datasources.OutputWriter#write" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="write(row:org.apache.spark.sql.Row):Unit"></a>
       <a id="write(Row):Unit"></a>
@@ -160,7 +156,7 @@ the task output is committed.
     </span>
       <p class="shortcomment cmt">Persists a single row.</p><div class="fullcomment"><div class="comment cmt"><p>Persists a single row.  Invoked on the executor side.  When writing to dynamically partitioned
 tables, dynamic partition columns are not included in rows to be written.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+</p></div></div>
     </li></ol>
             </div>
 

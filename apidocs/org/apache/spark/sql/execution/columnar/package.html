@@ -94,7 +94,7 @@ code to closure callbacks model as required by StratifiedSampler.append
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnBatch.html"><span class="name">ColumnBatch</span></a><span class="params">(<span name="numRows">numRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="buffers">buffers: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>]</span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="ColumnBatch.html"><span class="name">ColumnBatch</span></a><span class="params">(<span name="numRows">numRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="buffers">buffers: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>]</span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="deltaIndexes">deltaIndexes: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnBatchextendsProductwithSerializable" title="Permalink" target="_top">
@@ -170,8 +170,44 @@ code to closure callbacks model as required by StratifiedSampler.append
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnDeleteExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ColumnDeleteExecextendsSparkPlanwithColumnExecwithProductwithSerializable"></a>
+      <a id="ColumnDeleteExec:ColumnDeleteExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnDeleteExec.html"><span class="name">ColumnDeleteExec</span></a><span class="params">(<span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="columnTable">columnTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionExpressions">partitionExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="tableSchema">tableSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="externalStore">externalStore: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>]</span>, <span name="keyColumns">keyColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="connProps">connProps: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="ColumnExec.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnExec">ColumnExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnDeleteExecextendsSparkPlanwithColumnExecwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generated code plan for deletes into a column table.</p><div class="fullcomment"><div class="comment cmt"><p>Generated code plan for deletes into a column table.
+This extends <span class="extype" name="RowExec">RowExec</span> to generate the combined code for row buffer deletes.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ColumnExecextendsSparkPlanwithRowExec"></a>
+      <a id="ColumnExec:ColumnExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnExec.html"><span class="name">ColumnExec</span></a><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../row/RowExec.html" class="extype" name="org.apache.spark.sql.execution.row.RowExec">RowExec</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnExecextendsSparkPlanwithRowExec" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Base class for bulk column table insert, update, put, delete operations.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnInsertExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnInsertExecextendsTableExecwithProductwithSerializable"></a>
+      <a id="ColumnInsertExecextendsSparkPlanwithTableExecwithProductwithSerializable"></a>
       <a id="ColumnInsertExec:ColumnInsertExec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -179,14 +215,33 @@ code to closure callbacks model as required by StratifiedSampler.append
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnInsertExec.html"><span class="name">ColumnInsertExec</span></a><span class="params">(<span name="_child">_child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="_partitionExpressions">_partitionExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="_numBuckets">_numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>]</span>, <span name="batchParams">batchParams: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>, <span name="columnTable">columnTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="relationSchema">relationSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="externalStore">externalStore: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="useMemberVariables">useMemberVariables: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="ColumnInsertExec.html"><span class="name">ColumnInsertExec</span></a><span class="params">(<span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionExpressions">partitionExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>]</span>, <span name="batchParams">batchParams: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>, <span name="columnTable">columnTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="tableSchema">tableSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="externalStore">externalStore: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="useMemberVariables">useMemberVariables: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnInsertExecextendsTableExecwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnInsertExecextendsSparkPlanwithTableExecwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Generated code plan for bulk insertion into a column table.</p>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnUpdateExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ColumnUpdateExecextendsSparkPlanwithColumnExecwithProductwithSerializable"></a>
+      <a id="ColumnUpdateExec:ColumnUpdateExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnUpdateExec.html"><span class="name">ColumnUpdateExec</span></a><span class="params">(<span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="columnTable">columnTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionExpressions">partitionExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="tableSchema">tableSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="externalStore">externalStore: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>]</span>, <span name="updateColumns">updateColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="updateExpressions">updateExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="keyColumns">keyColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="connProps">connProps: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="ColumnExec.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnExec">ColumnExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnUpdateExecextendsSparkPlanwithColumnExecwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generated code plan for updates into a column table.</p><div class="fullcomment"><div class="comment cmt"><p>Generated code plan for updates into a column table.
+This extends <span class="extype" name="RowExec">RowExec</span> to generate the combined code for row buffer updates.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnarIterator" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ColumnarIteratorextendsIterator[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="ColumnarIterator:ColumnarIterator"></a>
@@ -292,7 +347,7 @@ code to closure callbacks model as required by StratifiedSampler.append
       <p class="shortcomment cmt">A LogicalPlan implementation for an external column table whose contents
 are retrieved using a JDBC URL or DataSource.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.MutableUnsafeRow" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="MutableUnsafeRowextendsGenericMutableRow"></a>
+      <a id="MutableUnsafeRowextendsInternalRowwithBaseGenericInternalRow"></a>
       <a id="MutableUnsafeRow:MutableUnsafeRow"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -300,10 +355,10 @@ are retrieved using a JDBC URL or DataSource.</p>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="MutableUnsafeRow.html"><span class="name">MutableUnsafeRow</span></a><span class="result"> extends <a href="../../catalyst/expressions/GenericMutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.GenericMutableRow">GenericMutableRow</a></span>
+        <a href="MutableUnsafeRow.html"><span class="name">MutableUnsafeRow</span></a><span class="result"> extends <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> with <a href="../../catalyst/expressions/BaseGenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">BaseGenericInternalRow</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@MutableUnsafeRowextendsGenericMutableRow" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@MutableUnsafeRowextendsInternalRowwithBaseGenericInternalRow" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -410,7 +465,7 @@ are retrieved using a JDBC URL or DataSource.</p>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="ExternalStoreUtils$.html"><span class="name">ExternalStoreUtils</span></a><span class="result"> extends <a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <a href="ExternalStoreUtils$.html"><span class="name">ExternalStoreUtils</span></a>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ExternalStoreUtils" title="Permalink" target="_top">

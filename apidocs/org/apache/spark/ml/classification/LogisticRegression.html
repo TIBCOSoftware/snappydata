@@ -51,9 +51,8 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Logistic regression.
-Currently, this class only supports binary classification.  It will support multiclass
-in the future.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Logistic regression. Supports multinomial logistic (softmax) regression and binomial logistic
+regression.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -62,7 +61,7 @@ in the future.
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../util/DefaultParamsWritable.html" class="extype" name="org.apache.spark.ml.util.DefaultParamsWritable">DefaultParamsWritable</a>, <a href="../util/MLWritable.html" class="extype" name="org.apache.spark.ml.util.MLWritable">MLWritable</a>, <span class="extype" name="org.apache.spark.ml.classification.LogisticRegressionParams">LogisticRegressionParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasThreshold">HasThreshold</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasWeightCol">HasWeightCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasStandardization">HasStandardization</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasTol">HasTol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasFitIntercept">HasFitIntercept</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasMaxIter">HasMaxIter</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasElasticNetParam">HasElasticNetParam</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasRegParam">HasRegParam</span>, <a href="ProbabilisticClassifier.html" class="extype" name="org.apache.spark.ml.classification.ProbabilisticClassifier">ProbabilisticClassifier</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a>, <a href="LogisticRegressionModel.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionModel">LogisticRegressionModel</a>], <span class="extype" name="org.apache.spark.ml.classification.ProbabilisticClassifierParams">ProbabilisticClassifierParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasThresholds">HasThresholds</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasProbabilityCol">HasProbabilityCol</span>, <a href="Classifier.html" class="extype" name="org.apache.spark.ml.classification.Classifier">Classifier</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a>, <a href="LogisticRegressionModel.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionModel">LogisticRegressionModel</a>], <span class="extype" name="org.apache.spark.ml.classification.ClassifierParams">ClassifierParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasRawPredictionCol">HasRawPredictionCol</span>, <a href="../Predictor.html" class="extype" name="org.apache.spark.ml.Predictor">Predictor</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a>, <a href="LogisticRegressionModel.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionModel">LogisticRegressionModel</a>], <span class="extype" name="org.apache.spark.ml.PredictorParams">PredictorParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasPredictionCol">HasPredictionCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasFeaturesCol">HasFeaturesCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasLabelCol">HasLabelCol</span>, <a href="../Estimator.html" class="extype" name="org.apache.spark.ml.Estimator">Estimator</a>[<a href="LogisticRegressionModel.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionModel">LogisticRegressionModel</a>], <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../util/Identifiable.html" class="extype" name="org.apache.spark.ml.util.Identifiable">Identifiable</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../util/DefaultParamsWritable.html" class="extype" name="org.apache.spark.ml.util.DefaultParamsWritable">DefaultParamsWritable</a>, <a href="../util/MLWritable.html" class="extype" name="org.apache.spark.ml.util.MLWritable">MLWritable</a>, <span class="extype" name="org.apache.spark.ml.classification.LogisticRegressionParams">LogisticRegressionParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasAggregationDepth">HasAggregationDepth</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasThreshold">HasThreshold</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasWeightCol">HasWeightCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasStandardization">HasStandardization</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasTol">HasTol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasFitIntercept">HasFitIntercept</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasMaxIter">HasMaxIter</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasElasticNetParam">HasElasticNetParam</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasRegParam">HasRegParam</span>, <a href="ProbabilisticClassifier.html" class="extype" name="org.apache.spark.ml.classification.ProbabilisticClassifier">ProbabilisticClassifier</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a>, <a href="LogisticRegressionModel.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionModel">LogisticRegressionModel</a>], <span class="extype" name="org.apache.spark.ml.classification.ProbabilisticClassifierParams">ProbabilisticClassifierParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasThresholds">HasThresholds</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasProbabilityCol">HasProbabilityCol</span>, <a href="Classifier.html" class="extype" name="org.apache.spark.ml.classification.Classifier">Classifier</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a>, <a href="LogisticRegressionModel.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionModel">LogisticRegressionModel</a>], <span class="extype" name="org.apache.spark.ml.classification.ClassifierParams">ClassifierParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasRawPredictionCol">HasRawPredictionCol</span>, <a href="../Predictor.html" class="extype" name="org.apache.spark.ml.Predictor">Predictor</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a>, <a href="LogisticRegressionModel.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionModel">LogisticRegressionModel</a>], <span class="extype" name="org.apache.spark.ml.PredictorParams">PredictorParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasPredictionCol">HasPredictionCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasFeaturesCol">HasFeaturesCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasLabelCol">HasLabelCol</span>, <a href="../Estimator.html" class="extype" name="org.apache.spark.ml.Estimator">Estimator</a>[<a href="LogisticRegressionModel.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionModel">LogisticRegressionModel</a>], <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../util/Identifiable.html" class="extype" name="org.apache.spark.ml.util.Identifiable">Identifiable</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -80,7 +79,7 @@ in the future.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.ml.classification.LogisticRegression"><span>LogisticRegression</span></li><li class="in" name="org.apache.spark.ml.util.DefaultParamsWritable"><span>DefaultParamsWritable</span></li><li class="in" name="org.apache.spark.ml.util.MLWritable"><span>MLWritable</span></li><li class="in" name="org.apache.spark.ml.classification.LogisticRegressionParams"><span>LogisticRegressionParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasThreshold"><span>HasThreshold</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasWeightCol"><span>HasWeightCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasStandardization"><span>HasStandardization</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasTol"><span>HasTol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasFitIntercept"><span>HasFitIntercept</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasMaxIter"><span>HasMaxIter</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasElasticNetParam"><span>HasElasticNetParam</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasRegParam"><span>HasRegParam</span></li><li class="in" name="org.apache.spark.ml.classification.ProbabilisticClassifier"><span>ProbabilisticClassifier</span></li><li class="in" name="org.apache.spark.ml.classification.ProbabilisticClassifierParams"><span>ProbabilisticClassifierParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasThresholds"><span>HasThresholds</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasProbabilityCol"><span>HasProbabilityCol</span></li><li class="in" name="org.apache.spark.ml.classification.Classifier"><span>Classifier</span></li><li class="in" name="org.apache.spark.ml.classification.ClassifierParams"><span>ClassifierParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasRawPredictionCol"><span>HasRawPredictionCol</span></li><li class="in" name="org.apache.spark.ml.Predictor"><span>Predictor</span></li><li class="in" name="org.apache.spark.ml.PredictorParams"><span>PredictorParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasPredictionCol"><span>HasPredictionCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasFeaturesCol"><span>HasFeaturesCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasLabelCol"><span>HasLabelCol</span></li><li class="in" name="org.apache.spark.ml.Estimator"><span>Estimator</span></li><li class="in" name="org.apache.spark.ml.PipelineStage"><span>PipelineStage</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.ml.param.Params"><span>Params</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.ml.util.Identifiable"><span>Identifiable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.ml.classification.LogisticRegression"><span>LogisticRegression</span></li><li class="in" name="org.apache.spark.ml.util.DefaultParamsWritable"><span>DefaultParamsWritable</span></li><li class="in" name="org.apache.spark.ml.util.MLWritable"><span>MLWritable</span></li><li class="in" name="org.apache.spark.ml.classification.LogisticRegressionParams"><span>LogisticRegressionParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasAggregationDepth"><span>HasAggregationDepth</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasThreshold"><span>HasThreshold</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasWeightCol"><span>HasWeightCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasStandardization"><span>HasStandardization</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasTol"><span>HasTol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasFitIntercept"><span>HasFitIntercept</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasMaxIter"><span>HasMaxIter</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasElasticNetParam"><span>HasElasticNetParam</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasRegParam"><span>HasRegParam</span></li><li class="in" name="org.apache.spark.ml.classification.ProbabilisticClassifier"><span>ProbabilisticClassifier</span></li><li class="in" name="org.apache.spark.ml.classification.ProbabilisticClassifierParams"><span>ProbabilisticClassifierParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasThresholds"><span>HasThresholds</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasProbabilityCol"><span>HasProbabilityCol</span></li><li class="in" name="org.apache.spark.ml.classification.Classifier"><span>Classifier</span></li><li class="in" name="org.apache.spark.ml.classification.ClassifierParams"><span>ClassifierParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasRawPredictionCol"><span>HasRawPredictionCol</span></li><li class="in" name="org.apache.spark.ml.Predictor"><span>Predictor</span></li><li class="in" name="org.apache.spark.ml.PredictorParams"><span>PredictorParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasPredictionCol"><span>HasPredictionCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasFeaturesCol"><span>HasFeaturesCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasLabelCol"><span>HasLabelCol</span></li><li class="in" name="org.apache.spark.ml.Estimator"><span>Estimator</span></li><li class="in" name="org.apache.spark.ml.PipelineStage"><span>PipelineStage</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.ml.param.Params"><span>Params</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.ml.util.Identifiable"><span>Identifiable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -222,6 +221,23 @@ in the future.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.ml.param.shared.HasAggregationDepth#aggregationDepth" visbl="pub" data-isabs="false" fullComment="yes" group="expertParam">
+      <a id="aggregationDepth:org.apache.spark.ml.param.IntParam"></a>
+      <a id="aggregationDepth:IntParam"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aggregationDepth</span><span class="result">: <a href="../param/IntParam.html" class="extype" name="org.apache.spark.ml.param.IntParam">IntParam</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.classification.LogisticRegression@aggregationDepth:org.apache.spark.ml.param.IntParam" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Param for suggested depth for treeAggregate (&gt;= 2).</p><div class="fullcomment"><div class="comment cmt"><p>Param for suggested depth for treeAggregate (&gt;= 2).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasAggregationDepth</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -255,7 +271,8 @@ in the future.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">If <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> and <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> are both set, ensures they are consistent.</p><div class="fullcomment"><div class="comment cmt"><p>If <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> and <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> are both set, ensures they are consistent.</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LogisticRegressionParams</dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> if <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> and <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> are not equivalent</p></span></dd></dl></div>
+      <p class="shortcomment cmt">If <code>threshold</code> and <code>thresholds</code> are both set, ensures they are consistent.</p><div class="fullcomment"><div class="comment cmt"><p>If <code>threshold</code> and <code>thresholds</code> are both set, ensures they are consistent.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LogisticRegressionParams</dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> if <code>threshold</code> and <code>thresholds</code> are not equivalent</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.param.Params#clear" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clear(param:org.apache.spark.ml.param.Param[_]):Params.this.type"></a>
       <a id="clear(Param[_]):LogisticRegression.this.type"></a>
@@ -473,7 +490,7 @@ Then it copies the embedded and extra parameters over and returns the new instan
 and put it in an RDD with strong types.</p><div class="fullcomment"><div class="comment cmt"><p>Extract <a href="Classifier.html#labelCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.classification.Classifier#labelCol">labelCol</a> and <a href="Classifier.html#featuresCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.classification.Classifier#featuresCol">featuresCol</a> from the given dataset,
 and put it in an RDD with strong types.
 </p></div><dl class="paramcmts block"><dt class="param">dataset</dt><dd class="cmt"><p>DataFrame with columns for labels (<a href="../../sql/types/NumericType.html" class="extype" name="org.apache.spark.sql.types.NumericType">org.apache.spark.sql.types.NumericType</a>)
-                and features (<span class="extype" name="Vector">Vector</span>). Labels are cast to <span class="extype" name="DoubleType">DoubleType</span>.</p></dd><dt class="param">numClasses</dt><dd class="cmt"><p>Number of classes label can take.  Labels must be integers in the range
+                and features (<span class="extype" name="Vector">Vector</span>).</p></dd><dt class="param">numClasses</dt><dd class="cmt"><p>Number of classes label can take.  Labels must be integers in the range
                    [0, numClasses).</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="Classifier.html" class="extype" name="org.apache.spark.ml.classification.Classifier">Classifier</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><a href="../../SparkException.html" class="extype" name="org.apache.spark.SparkException"><code>SparkException</code></a> if any label is not an integer &gt;= 0</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.Predictor#extractLabeledPoints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="extractLabeledPoints(dataset:org.apache.spark.sql.Dataset[_]):org.apache.spark.rdd.RDD[org.apache.spark.ml.feature.LabeledPoint]"></a>
@@ -537,6 +554,36 @@ extra values from input into a flat param map, where the latter value is used if
 conflicts, i.e., with ordering:
 default param values less than user-supplied values less than extra.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.classification.LogisticRegressionParams#family" visbl="pub" data-isabs="false" fullComment="yes" group="param">
+      <a id="family:org.apache.spark.ml.param.Param[String]"></a>
+      <a id="family:Param[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">family</span><span class="result">: <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.classification.LogisticRegression@family:org.apache.spark.ml.param.Param[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Param for the name of family which is a description of the label distribution
+to be used in the model.</p><div class="fullcomment"><div class="comment cmt"><p>Param for the name of family which is a description of the label distribution
+to be used in the model.
+Supported options:</p><ul><li>&quot;auto&quot;: Automatically select the family based on the number of classes:
+           If numClasses == 1 || numClasses == 2, set to &quot;binomial&quot;.
+           Else, set to &quot;multinomial&quot;</li><li>&quot;binomial&quot;: Binary logistic regression with pivoting.</li><li>&quot;multinomial&quot;: Multinomial logistic (softmax) regression without pivoting.
+Default is &quot;auto&quot;.
+</li></ul></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>LogisticRegressionParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasFeaturesCol#featuresCol" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="featuresCol:org.apache.spark.ml.param.Param[String]"></a>
       <a id="featuresCol:Param[String]"></a>
@@ -709,6 +756,23 @@ Subclasses could override this to optimize multi-model training.
     </span>
       <p class="shortcomment cmt">Optionally returns the user-supplied value of a param.</p><div class="fullcomment"><div class="comment cmt"><p>Optionally returns the user-supplied value of a param.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.param.shared.HasAggregationDepth#getAggregationDepth" visbl="pub" data-isabs="false" fullComment="yes" group="expertGetParam">
+      <a id="getAggregationDepth:Int"></a>
+      <a id="getAggregationDepth:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAggregationDepth</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.classification.LogisticRegression@getAggregationDepth:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasAggregationDepth</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -761,6 +825,29 @@ Subclasses could override this to optimize multi-model training.
       </a>
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasElasticNetParam</dd></dl></div>
+    </li><li name="org.apache.spark.ml.classification.LogisticRegressionParams#getFamily" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
+      <a id="getFamily:String"></a>
+      <a id="getFamily:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFamily</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.classification.LogisticRegression@getFamily:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>LogisticRegressionParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasFeaturesCol#getFeaturesCol" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
       <a id="getFeaturesCol:String"></a>
       <a id="getFeaturesCol:String"></a>
@@ -989,18 +1076,18 @@ if neither is set.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get threshold for binary classification.</p><div class="fullcomment"><div class="comment cmt"><p>Get threshold for binary classification.</p><p>If <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> is set with length 2 (i.e., binary classification),
+      <p class="shortcomment cmt">Get threshold for binary classification.</p><div class="fullcomment"><div class="comment cmt"><p>Get threshold for binary classification.</p><p>If <code>thresholds</code> is set with length 2 (i.e., binary classification),
 this returns the equivalent threshold: </p><pre><span class="num">1</span> / (<span class="num">1</span> + thresholds(<span class="num">0</span>) / thresholds(<span class="num">1</span>))</pre><p>.
-Otherwise, returns <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> if set, or its default value if unset.</p><p>1 / (1 + thresholds(0) / thresholds(1))
+Otherwise, returns <code>threshold</code> if set, or its default value if unset.</p><p>1 / (1 + thresholds(0) / thresholds(1))
 }}}
-Otherwise, returns <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> if set, or its default value if unset.
+Otherwise, returns <code>threshold</code> if set, or its default value if unset.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a> → LogisticRegressionParams → HasThreshold</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> if <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> is set to an array of length other than 2.</p></span></dd></dl></div>
+        </dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> if <code>thresholds</code> is set to an array of length other than 2.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.classification.LogisticRegression#getThresholds" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
       <a id="getThresholds:Array[Double]"></a>
       <a id="getThresholds:Array[Double]"></a>
@@ -1017,8 +1104,8 @@ Otherwise, returns <a href="#threshold:org.apache.spark.ml.param.DoubleParam" cl
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get thresholds for binary or multiclass classification.</p><div class="fullcomment"><div class="comment cmt"><p>Get thresholds for binary or multiclass classification.</p><p>If <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> is set, return its value.
-Otherwise, if <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> is set, return the equivalent thresholds for binary
+      <p class="shortcomment cmt">Get thresholds for binary or multiclass classification.</p><div class="fullcomment"><div class="comment cmt"><p>Get thresholds for binary or multiclass classification.</p><p>If <code>thresholds</code> is set, return its value.
+Otherwise, if <code>threshold</code> is set, return the equivalent thresholds for binary
 classification: (1-threshold, threshold).
 If neither are set, throw an exception.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a> → LogisticRegressionParams → HasThresholds</dd><dt>Annotations</dt><dd>
@@ -1539,9 +1626,9 @@ If neither are set, throw an exception.
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasPredictionCol#predictionCol" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="predictionCol:org.apache.spark.ml.param.Param[String]"></a>
       <a id="predictionCol:Param[String]"></a>
@@ -1693,6 +1780,33 @@ this variable gets initialized before other params.
     </span>
       <p class="shortcomment cmt">Sets a parameter in the embedded param map.</p><div class="fullcomment"><div class="comment cmt"><p>Sets a parameter in the embedded param map.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.classification.LogisticRegression#setAggregationDepth" visbl="pub" data-isabs="false" fullComment="yes" group="expertSetParam">
+      <a id="setAggregationDepth(value:Int):LogisticRegression.this.type"></a>
+      <a id="setAggregationDepth(Int):LogisticRegression.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setAggregationDepth</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.classification.LogisticRegression@setAggregationDepth(value:Int):LogisticRegression.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Suggested depth for treeAggregate (greater than or equal to 2).</p><div class="fullcomment"><div class="comment cmt"><p>Suggested depth for treeAggregate (greater than or equal to 2).
+If the dimensions of features or the number of partitions are large,
+this param could be adjusted to a larger size.
+Default is 2.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.Params#setDefault" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setDefault(paramPairs:org.apache.spark.ml.param.ParamPair[_]*):Params.this.type"></a>
       <a id="setDefault(ParamPair[_]*):LogisticRegression.this.type"></a>
@@ -1750,12 +1864,39 @@ this variable gets initialized before other params.
       </a>
     </span>
       <p class="shortcomment cmt">Set the ElasticNet mixing parameter.</p><div class="fullcomment"><div class="comment cmt"><p>Set the ElasticNet mixing parameter.
-For alpha = 0, the penalty is an L2 penalty. For alpha = 1, it is an L1 penalty.
-For 0 &lt; alpha &lt; 1, the penalty is a combination of L1 and L2.
-Default is 0.0 which is an L2 penalty.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+For alpha = 0, the penalty is an L2 penalty.
+For alpha = 1, it is an L1 penalty.
+For alpha in (0,1), the penalty is a combination of L1 and L2.
+Default is 0.0 which is an L2 penalty.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.4.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.ml.classification.LogisticRegression#setFamily" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
+      <a id="setFamily(value:String):LogisticRegression.this.type"></a>
+      <a id="setFamily(String):LogisticRegression.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setFamily</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.classification.LogisticRegression@setFamily(value:String):LogisticRegression.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Sets the value of param <a href="#family:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#family">family</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Sets the value of param <a href="#family:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#family">family</a>.
+Default is &quot;auto&quot;.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
     </span>)</span>
               
         </dd></dl></div>
@@ -1793,7 +1934,8 @@ Default is 0.0 which is an L2 penalty.</p></div><dl class="attributes block"> <d
       </a>
     </span>
       <p class="shortcomment cmt">Whether to fit an intercept term.</p><div class="fullcomment"><div class="comment cmt"><p>Whether to fit an intercept term.
-Default is true.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+Default is true.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.4.0&quot;</span>
@@ -1834,7 +1976,8 @@ Default is true.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
       </a>
     </span>
       <p class="shortcomment cmt">Set the maximum number of iterations.</p><div class="fullcomment"><div class="comment cmt"><p>Set the maximum number of iterations.
-Default is 100.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+Default is 100.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.2.0&quot;</span>
@@ -1909,7 +2052,8 @@ Default is 100.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
       </a>
     </span>
       <p class="shortcomment cmt">Set the regularization parameter.</p><div class="fullcomment"><div class="comment cmt"><p>Set the regularization parameter.
-Default is 0.0.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+Default is 0.0.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.2.0&quot;</span>
@@ -1937,7 +2081,8 @@ The coefficients of models will be always returned on the original scale,
 so it will be transparent for users. Note that with/without standardization,
 the models should be always converged to the same solution when no regularization
 is applied. In R's GLMNET package, the default behavior is true as well.
-Default is true.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+Default is true.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
@@ -1960,12 +2105,13 @@ Default is true.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Set threshold in binary classification, in range [0, 1].</p><div class="fullcomment"><div class="comment cmt"><p>Set threshold in binary classification, in range [0, 1].</p><p>If the estimated probability of class label 1 is &gt; threshold, then predict 1, else 0.
-A high threshold encourages the model to predict 0 more often;
+      <p class="shortcomment cmt">Set threshold in binary classification, in range [0, 1].</p><div class="fullcomment"><div class="comment cmt"><p>Set threshold in binary classification, in range [0, 1].</p><p>If the estimated probability of class label 1 is greater than threshold, then predict 1,
+else 0. A high threshold encourages the model to predict 0 more often;
 a low threshold encourages the model to predict 1 more often.</p><p>Note: Calling this with threshold p is equivalent to calling <code>setThresholds(Array(1-p, p))</code>.
-      When <span class="extype" name="setThreshold()">setThreshold()</span> is called, any user-set value for <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> will be cleared.
-      If both <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> and <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> are set in a ParamMap, then they must be
-      equivalent.</p><p>Default is 0.5.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a> → LogisticRegressionParams</dd><dt>Annotations</dt><dd>
+      When <code>setThreshold()</code> is called, any user-set value for <code>thresholds</code> will be cleared.
+      If both <code>threshold</code> and <code>thresholds</code> are set in a ParamMap, then they must be
+      equivalent.</p><p>Default is 0.5.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a> → LogisticRegressionParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
@@ -1990,10 +2136,11 @@ a low threshold encourages the model to predict 1 more often.</p><p>Note: Callin
     </span>
       <p class="shortcomment cmt">Set thresholds in multiclass (or binary) classification to adjust the probability of
 predicting each class.</p><div class="fullcomment"><div class="comment cmt"><p>Set thresholds in multiclass (or binary) classification to adjust the probability of
-predicting each class. Array must have length equal to the number of classes, with values &gt;= 0.
+predicting each class. Array must have length equal to the number of classes,
+with values greater than 0, excepting that at most one value may be 0.
 The class with largest value p/t is predicted, where p is the original probability of that
-class and t is the class' threshold.</p><p>Note: When <span class="extype" name="setThresholds()">setThresholds()</span> is called, any user-set value for <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> will be cleared.
-      If both <a href="#threshold:org.apache.spark.ml.param.DoubleParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#threshold">threshold</a> and <a href="#thresholds:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#thresholds">thresholds</a> are set in a ParamMap, then they must be
+class and t is the class's threshold.</p><p>Note: When <code>setThresholds()</code> is called, any user-set value for <code>threshold</code> will be cleared.
+      If both <code>threshold</code> and <code>thresholds</code> are set in a ParamMap, then they must be
       equivalent.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.classification.LogisticRegression">LogisticRegression</a> → LogisticRegressionParams → <a href="ProbabilisticClassifier.html" class="extype" name="org.apache.spark.ml.classification.ProbabilisticClassifier">ProbabilisticClassifier</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -2020,7 +2167,8 @@ class and t is the class' threshold.</p><p>Note: When <span class="extype" name=
     </span>
       <p class="shortcomment cmt">Set the convergence tolerance of iterations.</p><div class="fullcomment"><div class="comment cmt"><p>Set the convergence tolerance of iterations.
 Smaller value will lead to higher accuracy with the cost of more iterations.
-Default is 1E-6.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+Default is 1E-6.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.4.0&quot;</span>
@@ -2043,9 +2191,10 @@ Default is 1E-6.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Whether to over-/under-sample training instances according to the given weights in weightCol.</p><div class="fullcomment"><div class="comment cmt"><p>Whether to over-/under-sample training instances according to the given weights in weightCol.
-If not set or empty String, all instances are treated equally (weight 1.0).
-Default is not set, so all instances have weight one.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Sets the value of param <a href="#weightCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#weightCol">weightCol</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Sets the value of param <a href="#weightCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.classification.LogisticRegression#weightCol">weightCol</a>.
+If this is not set or empty, we treat all instance weights as 1.0.
+Default is not set, so all instances have weight one.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.6.0&quot;</span>
@@ -2119,7 +2268,7 @@ Default is not set, so all instances have weight one.</p></div><dl class="attrib
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Param for Thresholds in multi-class classification to adjust the probability of predicting each class.</p><div class="fullcomment"><div class="comment cmt"><p>Param for Thresholds in multi-class classification to adjust the probability of predicting each class. Array must have length equal to the number of classes, with values &gt;= 0. The class with largest value p/t is predicted, where p is the original probability of that class and t is the class' threshold.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasThresholds</dd></dl></div>
+      <p class="shortcomment cmt">Param for Thresholds in multi-class classification to adjust the probability of predicting each class.</p><div class="fullcomment"><div class="comment cmt"><p>Param for Thresholds in multi-class classification to adjust the probability of predicting each class. Array must have length equal to the number of classes, with values &gt; 0 excepting that at most one value may be 0. The class with largest value p/t is predicted, where p is the original probability of that class and t is the class's threshold.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasThresholds</dd></dl></div>
     </li><li name="org.apache.spark.ml.util.Identifiable#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -2153,7 +2302,7 @@ Default is not set, so all instances have weight one.</p></div><dl class="attrib
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Param for the convergence tolerance for iterative algorithms.</p><div class="fullcomment"><div class="comment cmt"><p>Param for the convergence tolerance for iterative algorithms.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasTol</dd></dl></div>
+      <p class="shortcomment cmt">Param for the convergence tolerance for iterative algorithms (&gt;= 0).</p><div class="fullcomment"><div class="comment cmt"><p>Param for the convergence tolerance for iterative algorithms (&gt;= 0).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasTol</dd></dl></div>
     </li><li name="org.apache.spark.ml.classification.LogisticRegression#train" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="train(dataset:org.apache.spark.sql.Dataset[_],handlePersistence:Boolean):org.apache.spark.ml.classification.LogisticRegressionModel"></a>
       <a id="train(Dataset[_],Boolean):LogisticRegressionModel"></a>
@@ -2207,7 +2356,9 @@ and copying parameters into the model.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Predictor.html" class="extype" name="org.apache.spark.ml.Predictor">Predictor</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd></dl></div>
     </li><li name="org.apache.spark.ml.PipelineStage#transformSchema" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -2256,7 +2407,7 @@ be assumed valid until proven otherwise.
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.ml.classification.ProbabilisticClassifierParams#validateAndTransformSchema" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.ml.classification.LogisticRegressionParams#validateAndTransformSchema" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="validateAndTransformSchema(schema:org.apache.spark.sql.types.StructType,fitting:Boolean,featuresDataType:org.apache.spark.sql.types.DataType):org.apache.spark.sql.types.StructType"></a>
       <a id="validateAndTransformSchema(StructType,Boolean,DataType):StructType"></a>
       <h4 class="signature">
@@ -2274,7 +2425,7 @@ be assumed valid until proven otherwise.
     </span>
       <p class="shortcomment cmt">Validates and transforms the input schema with the provided param map.</p><div class="fullcomment"><div class="comment cmt"><p>Validates and transforms the input schema with the provided param map.
 </p></div><dl class="paramcmts block"><dt class="param">schema</dt><dd class="cmt"><p>input schema</p></dd><dt class="param">fitting</dt><dd class="cmt"><p>whether this is in fitting</p></dd><dt class="param">featuresDataType</dt><dd class="cmt"><p>SQL DataType for FeaturesType.
-                         E.g., <a href="../../mllib/linalg/VectorUDT.html" class="extype" name="org.apache.spark.mllib.linalg.VectorUDT">org.apache.spark.mllib.linalg.VectorUDT</a> for vector features.</p></dd><dt>returns</dt><dd class="cmt"><p>output schema</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>ProbabilisticClassifierParams → ClassifierParams → PredictorParams</dd></dl></div>
+                         E.g., <a href="../../mllib/linalg/VectorUDT.html" class="extype" name="org.apache.spark.mllib.linalg.VectorUDT">org.apache.spark.mllib.linalg.VectorUDT</a> for vector features.</p></dd><dt>returns</dt><dd class="cmt"><p>output schema</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LogisticRegressionParams → ProbabilisticClassifierParams → ClassifierParams → PredictorParams</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -2384,31 +2535,7 @@ be assumed valid until proven otherwise.
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.classification.LogisticRegressionParams#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: Will be removed in 2.1.0. All the checks should be merged into transformSchema">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.classification.LogisticRegression@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>LogisticRegressionParams → <a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Deprecated</dt><dd class="cmt"><p>Will be removed in 2.1.0. All the checks should be merged into transformSchema</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">
@@ -2418,6 +2545,8 @@ those are checked during schema validation.</p></div><dl class="attributes block
               <h3>Inherited from <a href="../util/MLWritable.html" class="extype" name="org.apache.spark.ml.util.MLWritable">MLWritable</a></h3>
             </div><div class="parent" name="org.apache.spark.ml.classification.LogisticRegressionParams">
               <h3>Inherited from <span class="extype" name="org.apache.spark.ml.classification.LogisticRegressionParams">LogisticRegressionParams</span></h3>
+            </div><div class="parent" name="org.apache.spark.ml.param.shared.HasAggregationDepth">
+              <h3>Inherited from <span class="extype" name="org.apache.spark.ml.param.shared.HasAggregationDepth">HasAggregationDepth</span></h3>
             </div><div class="parent" name="org.apache.spark.ml.param.shared.HasThreshold">
               <h3>Inherited from <span class="extype" name="org.apache.spark.ml.param.shared.HasThreshold">HasThreshold</span></h3>
             </div><div class="parent" name="org.apache.spark.ml.param.shared.HasWeightCol">
@@ -2493,6 +2622,17 @@ those are checked during schema validation.</p></div><dl class="attributes block
               
             </div><div class="group" name="getParam">
               <h3>Parameter getters</h3>
+              
+            </div><div class="group" name="expertParam">
+              <h3>(expert-only) Parameters</h3>
+              <div class="comment cmt"><p>A list of advanced, expert-only (hyper-)parameter keys this algorithm can
+           take. Users can set and get the parameter values through setters and getters,
+           respectively.</p></div>
+            </div><div class="group" name="expertSetParam">
+              <h3>(expert-only) Parameter setters</h3>
+              
+            </div><div class="group" name="expertGetParam">
+              <h3>(expert-only) Parameter getters</h3>
               
             </div>
         </div>

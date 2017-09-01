@@ -193,6 +193,24 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
 - <code>canEvaluate(EqualTo(a,c), R)</code> returns <code>false</code>
 - <code>canEvaluate(Literal(1), R)</code> returns <code>true</code> as literals CAN be evaluated on any plan
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.PredicateHelper#canEvaluateWithinJoin" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean"></a>
+      <a id="canEvaluateWithinJoin(Expression):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEvaluateWithinJoin</span><span class="params">(<span name="expr">expr: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins$@canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns true iff <code>expr</code> could be evaluated as a condition within join.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true iff <code>expr</code> could be evaluated as a condition within join.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -273,23 +291,27 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins#flattenJoin" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="flattenJoin(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):(Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan],Seq[org.apache.spark.sql.catalyst.expressions.Expression])"></a>
-      <a id="flattenJoin(LogicalPlan):(Seq[LogicalPlan],Seq[Expression])"></a>
+    </li><li name="org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins#flattenJoin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="flattenJoin(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,parentJoinType:org.apache.spark.sql.catalyst.plans.InnerLike):(Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.catalyst.plans.InnerLike)],Seq[org.apache.spark.sql.catalyst.expressions.Expression])"></a>
+      <a id="flattenJoin(LogicalPlan,InnerLike):(Seq[(LogicalPlan,InnerLike)],Seq[Expression])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flattenJoin</span><span class="params">(<span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: (<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>])</span>
+        <span class="name">flattenJoin</span><span class="params">(<span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="parentJoinType">parentJoinType: <a href="../plans/InnerLike.html" class="extype" name="org.apache.spark.sql.catalyst.plans.InnerLike">InnerLike</a> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Inner</a></span></span></span>)</span><span class="result">: (<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="../plans/InnerLike.html" class="extype" name="org.apache.spark.sql.catalyst.plans.InnerLike">InnerLike</a>)], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins$@flattenJoin(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):(Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan],Seq[org.apache.spark.sql.catalyst.expressions.Expression])" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins$@flattenJoin(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,parentJoinType:org.apache.spark.sql.catalyst.plans.InnerLike):(Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.catalyst.plans.InnerLike)],Seq[org.apache.spark.sql.catalyst.expressions.Expression])" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Flatten all inner joins, which are next to each other.</p><div class="fullcomment"><div class="comment cmt"><p>Flatten all inner joins, which are next to each other.
+Return a list of logical plans to be joined with a boolean for each plan indicating if it
+was involved in an explicit cross join. Also returns the entire list of join conditions for
+the left-deep tree.
+</p></div></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -478,18 +500,18 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins#unapply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="unapply(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Option[(Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan],Seq[org.apache.spark.sql.catalyst.expressions.Expression])]"></a>
-      <a id="unapply(LogicalPlan):Option[(Seq[LogicalPlan],Seq[Expression])]"></a>
+      <a id="unapply(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Option[(Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.catalyst.plans.InnerLike)],Seq[org.apache.spark.sql.catalyst.expressions.Expression])]"></a>
+      <a id="unapply(LogicalPlan):Option[(Seq[(LogicalPlan,InnerLike)],Seq[Expression])]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unapply</span><span class="params">(<span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>])]</span>
+        <span class="name">unapply</span><span class="params">(<span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="../plans/InnerLike.html" class="extype" name="org.apache.spark.sql.catalyst.plans.InnerLike">InnerLike</a>)], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>])]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins$@unapply(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Option[(Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan],Seq[org.apache.spark.sql.catalyst.expressions.Expression])]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins$@unapply(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Option[(Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.catalyst.plans.InnerLike)],Seq[org.apache.spark.sql.catalyst.expressions.Expression])]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

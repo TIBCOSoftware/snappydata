@@ -50,7 +50,10 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Catalog interface for Spark. To access this, use <code>SparkSession.catalog</code>.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -178,6 +181,8 @@ a set of options. Then, returns the corresponding DataFrame.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#createExternalTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="createExternalTable(tableName:String,source:String,schema:org.apache.spark.sql.types.StructType,options:java.util.Map[String,String]):org.apache.spark.sql.DataFrame"></a>
@@ -202,6 +207,8 @@ Create an external table from the given path based on a data source, a schema an
 a set of options. Then, returns the corresponding DataFrame.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#createExternalTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
@@ -229,6 +236,8 @@ Then, returns the corresponding DataFrame.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#createExternalTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="createExternalTable(tableName:String,source:String,options:java.util.Map[String,String]):org.apache.spark.sql.DataFrame"></a>
@@ -252,6 +261,8 @@ Creates an external table from the given path based on a data source and a set o
 Then, returns the corresponding DataFrame.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#createExternalTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
@@ -278,6 +289,8 @@ and returns the corresponding DataFrame.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#createExternalTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="createExternalTable(tableName:String,path:String):org.apache.spark.sql.DataFrame"></a>
@@ -302,6 +315,8 @@ It will use the default data source configured by spark.sql.sources.default.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#currentDatabase" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="currentDatabase:String"></a>
@@ -321,25 +336,232 @@ It will use the default data source configured by spark.sql.sources.default.
     </span>
       <p class="shortcomment cmt">Returns the current default database in this session.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the current default database in this session.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalog.Catalog#dropTempView" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="dropTempView(viewName:String):Unit"></a>
-      <a id="dropTempView(String):Unit"></a>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#databaseExists" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="databaseExists(dbName:String):Boolean"></a>
+      <a id="databaseExists(String):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dropTempView</span><span class="params">(<span name="viewName">viewName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">databaseExists</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@dropTempView(viewName:String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@databaseExists(dbName:String):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Drops the temporary view with the given view name in the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Drops the temporary view with the given view name in the catalog.
-If the view has been cached before, then it will also be uncached.
-</p></div><dl class="paramcmts block"><dt class="param">viewName</dt><dd class="cmt"><p>the name of the view to be dropped.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Check if the database with the specified name exists.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the database with the specified name exists.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#dropGlobalTempView" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="dropGlobalTempView(viewName:String):Boolean"></a>
+      <a id="dropGlobalTempView(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropGlobalTempView</span><span class="params">(<span name="viewName">viewName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@dropGlobalTempView(viewName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Drops the global temporary view with the given view name in the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Drops the global temporary view with the given view name in the catalog.
+If the view has been cached before, then it will also be uncached.</p><p>Global temporary view is cross-session. Its lifetime is the lifetime of the Spark application,
+i.e. it will be automatically dropped when the application terminates. It's tied to a system
+preserved database <code>_global_temp</code>, and we must use the qualified name to refer a global temp
+view, e.g. <code>SELECT * FROM _global_temp.view1</code>.
+</p></div><dl class="paramcmts block"><dt class="param">viewName</dt><dd class="cmt"><p>the name of the view to be dropped.</p></dd><dt>returns</dt><dd class="cmt"><p>true if the view is dropped successfully, false otherwise.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#dropTempView" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="dropTempView(viewName:String):Boolean"></a>
+      <a id="dropTempView(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropTempView</span><span class="params">(<span name="viewName">viewName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@dropTempView(viewName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Drops the local temporary view with the given view name in the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Drops the local temporary view with the given view name in the catalog.
+If the view has been cached before, then it will also be uncached.</p><p>Local temporary view is session-scoped. Its lifetime is the lifetime of the session that
+created it, i.e. it will be automatically dropped when the session terminates. It's not
+tied to any databases, i.e. we can't use <code>db1.view1</code> to reference a local temporary view.</p><p>Note that, the return type of this method was Unit in Spark 2.0, but changed to Boolean
+in Spark 2.1.
+</p></div><dl class="paramcmts block"><dt class="param">viewName</dt><dd class="cmt"><p>the name of the view to be dropped.</p></dd><dt>returns</dt><dd class="cmt"><p>true if the view is dropped successfully, false otherwise.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#functionExists" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="functionExists(dbName:String,functionName:String):Boolean"></a>
+      <a id="functionExists(String,String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">functionExists</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@functionExists(dbName:String,functionName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if the function with the specified name exists in the specified database.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the function with the specified name exists in the specified database.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#functionExists" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="functionExists(functionName:String):Boolean"></a>
+      <a id="functionExists(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">functionExists</span><span class="params">(<span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@functionExists(functionName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if the function with the specified name exists.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the function with the specified name exists. This can either be a temporary function
+or a function in the current database.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#getDatabase" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getDatabase(dbName:String):org.apache.spark.sql.catalog.Database"></a>
+      <a id="getDatabase(String):Database"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDatabase</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Database.html" class="extype" name="org.apache.spark.sql.catalog.Database">Database</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@getDatabase(dbName:String):org.apache.spark.sql.catalog.Database" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the database with the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Get the database with the specified name. This throws an AnalysisException when the database
+cannot be found.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;database does not exist&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#getFunction" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getFunction(dbName:String,functionName:String):org.apache.spark.sql.catalog.Function"></a>
+      <a id="getFunction(String,String):Function"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFunction</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Function.html" class="extype" name="org.apache.spark.sql.catalog.Function">Function</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@getFunction(dbName:String,functionName:String):org.apache.spark.sql.catalog.Function" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the function with the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Get the function with the specified name. This throws an AnalysisException when the function
+cannot be found.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="&quot;database or function does not exist&quot;">...</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#getFunction" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getFunction(functionName:String):org.apache.spark.sql.catalog.Function"></a>
+      <a id="getFunction(String):Function"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFunction</span><span class="params">(<span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Function.html" class="extype" name="org.apache.spark.sql.catalog.Function">Function</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@getFunction(functionName:String):org.apache.spark.sql.catalog.Function" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the function with the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Get the function with the specified name. This function can be a temporary function or a
+function in the current database. This throws an AnalysisException when the function cannot
+be found.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;function does not exist&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#getTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getTable(dbName:String,tableName:String):org.apache.spark.sql.catalog.Table"></a>
+      <a id="getTable(String,String):Table"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTable</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Table.html" class="extype" name="org.apache.spark.sql.catalog.Table">Table</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@getTable(dbName:String,tableName:String):org.apache.spark.sql.catalog.Table" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the table or view with the specified name in the specified database.</p><div class="fullcomment"><div class="comment cmt"><p>Get the table or view with the specified name in the specified database. This throws an
+AnalysisException when no Table can be found.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;database or table does not exist&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#getTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getTable(tableName:String):org.apache.spark.sql.catalog.Table"></a>
+      <a id="getTable(String):Table"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Table.html" class="extype" name="org.apache.spark.sql.catalog.Table">Table</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@getTable(tableName:String):org.apache.spark.sql.catalog.Table" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the table or view with the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Get the table or view with the specified name. This table can be a temporary view or a
+table/view in the current database. This throws an AnalysisException when no Table
+can be found.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;table does not exist&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#isCached" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="isCached(tableName:String):Boolean"></a>
       <a id="isCached(String):Boolean"></a>
@@ -514,6 +736,24 @@ This includes all temporary tables.
       <p class="shortcomment cmt">Returns a list of tables in the current database.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a list of tables in the current database.
 This includes all temporary tables.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#recoverPartitions" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="recoverPartitions(tableName:String):Unit"></a>
+      <a id="recoverPartitions(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">recoverPartitions</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@recoverPartitions(tableName:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Recover all the partitions in the directory of a table and update the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Recover all the partitions in the directory of a table and update the catalog.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#refreshByPath" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="refreshByPath(path:String):Unit"></a>
       <a id="refreshByPath(String):Unit"></a>
@@ -532,7 +772,8 @@ This includes all temporary tables.
     </span>
       <p class="shortcomment cmt">Invalidate and refresh all the cached data (and the associated metadata) for any dataframe that
 contains the given data source path.</p><div class="fullcomment"><div class="comment cmt"><p>Invalidate and refresh all the cached data (and the associated metadata) for any dataframe that
-contains the given data source path.
+contains the given data source path. Path matching is by prefix, i.e. &quot;/&quot; would invalidate
+everything that is cached.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#refreshTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="refreshTable(tableName:String):Unit"></a>
@@ -574,6 +815,43 @@ new version cached lazily.
     </span>
       <p class="shortcomment cmt">Sets the current default database in this session.</p><div class="fullcomment"><div class="comment cmt"><p>Sets the current default database in this session.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#tableExists" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="tableExists(dbName:String,tableName:String):Boolean"></a>
+      <a id="tableExists(String,String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableExists</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@tableExists(dbName:String,tableName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if the table or view with the specified name exists in the specified database.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the table or view with the specified name exists in the specified database.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Catalog#tableExists" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="tableExists(tableName:String):Boolean"></a>
+      <a id="tableExists(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableExists</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.Catalog@tableExists(tableName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if the table or view with the specified name exists.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the table or view with the specified name exists. This can either be a temporary
+view or a table/view in the current database.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalog.Catalog#uncacheTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="uncacheTable(tableName:String):Unit"></a>
       <a id="uncacheTable(String):Unit"></a>

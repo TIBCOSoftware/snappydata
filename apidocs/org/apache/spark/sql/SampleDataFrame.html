@@ -297,8 +297,7 @@ ds.groupBy().agg(<span class="lit">"age"</span> -&gt; <span class="lit">"max"</s
       </a>
     </span>
       <p class="shortcomment cmt">Selects column based on the column name and return it as a <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Selects column based on the column name and return it as a <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>.
-Note that the column name can also reference to a nested column like <code>a.b</code>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The column name can also reference to a nested column like <code>a.b</code>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#as" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
       <a id="as(alias:Symbol):org.apache.spark.sql.Dataset[T]"></a>
       <a id="as(Symbol):Dataset[Row]"></a>
@@ -357,10 +356,12 @@ Returns a new Dataset where each record has been mapped on to the specified type
 method used to map columns depend on the type of <code>U</code>:</p><ul><li>When <code>U</code> is a class, fields for the class will be mapped to columns of the same name
    (case sensitivity is determined by <code>spark.sql.caseSensitive</code>).</li><li>When <code>U</code> is a tuple, the columns will be be mapped by ordinal (i.e. the first column will
    be assigned to <code>_1</code>).</li><li>When <code>U</code> is a primitive type (i.e. String, Int, etc), then the first column of the
-   <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> will be used.</li></ul><p>If the schema of the Dataset does not match the desired <code>U</code> type, you can use <code>select</code>
+   <code>DataFrame</code> will be used.</li></ul><p>If the schema of the Dataset does not match the desired <code>U</code> type, you can use <code>select</code>
 along with <code>alias</code> or <code>as</code> to rearrange or rename as required.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -398,6 +399,58 @@ along with <code>alias</code> or <code>as</code> to rearrange or rename as requi
     </span>
       <p class="shortcomment cmt">Persist this Dataset with the default storage level (<code>MEMORY_AND_DISK</code>).</p><div class="fullcomment"><div class="comment cmt"><p>Persist this Dataset with the default storage level (<code>MEMORY_AND_DISK</code>).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Dataset#checkpoint" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
+      <a id="checkpoint(eager:Boolean):org.apache.spark.sql.Dataset[T]"></a>
+      <a id="checkpoint(Boolean):Dataset[Row]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">checkpoint</span><span class="params">(<span name="eager">eager: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@checkpoint(eager:Boolean):org.apache.spark.sql.Dataset[T]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a checkpointed version of this Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a checkpointed version of this Dataset. Checkpointing can be used to truncate the
+logical plan of this Dataset, which is especially useful in iterative algorithms where the
+plan may grow exponentially. It will be saved to files inside the checkpoint
+directory set with <code>SparkContext#setCheckpointDir</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Dataset#checkpoint" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
+      <a id="checkpoint():org.apache.spark.sql.Dataset[T]"></a>
+      <a id="checkpoint():Dataset[Row]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">checkpoint</span><span class="params">()</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@checkpoint():org.apache.spark.sql.Dataset[T]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Eagerly checkpoint a Dataset and return the new Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Eagerly checkpoint a Dataset and return the new Dataset. Checkpointing can be used to truncate
+the logical plan of this Dataset, which is especially useful in iterative algorithms where the
+plan may grow exponentially. It will be saved to files inside the checkpoint
+directory set with <code>SparkContext#setCheckpointDir</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -438,9 +491,15 @@ along with <code>alias</code> or <code>as</code> to rearrange or rename as requi
       </a>
     </span>
       <p class="shortcomment cmt">Returns a new Dataset that has exactly <code>numPartitions</code> partitions.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new Dataset that has exactly <code>numPartitions</code> partitions.
-Similar to coalesce defined on an <span class="extype" name="RDD">RDD</span>, this operation results in a narrow dependency, e.g.
+Similar to coalesce defined on an <code>RDD</code>, this operation results in a narrow dependency, e.g.
 if you go from 1000 partitions to 100 partitions, there will not be a shuffle, instead each of
-the 100 new partitions will claim 10 of the current partitions.
+the 100 new partitions will claim 10 of the current partitions.  If a larger number of
+partitions is requested, it will stay at the current number of partitions.</p><p>However, if you're doing a drastic coalesce, e.g. to numPartitions = 1,
+this may result in your computation taking place on fewer nodes than
+you like (e.g. one node in the case of numPartitions = 1). To avoid this,
+you can call repartition. This will add a shuffle step, but means the
+current upstream partitions will be executed in parallel (per whatever
+the current partitioning is).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#col" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="col(colName:String):org.apache.spark.sql.Column"></a>
@@ -459,8 +518,7 @@ the 100 new partitions will claim 10 of the current partitions.
       </a>
     </span>
       <p class="shortcomment cmt">Selects column based on the column name and return it as a <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Selects column based on the column name and return it as a <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>.
-Note that the column name can also reference to a nested column like <code>a.b</code>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The column name can also reference to a nested column like <code>a.b</code>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#collect" visbl="pub" data-isabs="false" fullComment="yes" group="action">
       <a id="collect():Array[T]"></a>
       <a id="collect():Array[Row]"></a>
@@ -534,6 +592,34 @@ doing so on a very large dataset can crash the driver process with OutOfMemoryEr
       </a>
     </span>
       <p class="shortcomment cmt">Returns the number of rows in the Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the number of rows in the Dataset.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Dataset#createGlobalTempView" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
+      <a id="createGlobalTempView(viewName:String):Unit"></a>
+      <a id="createGlobalTempView(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createGlobalTempView</span><span class="params">(<span name="viewName">viewName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@createGlobalTempView(viewName:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Creates a global temporary view using the given name.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a global temporary view using the given name. The lifetime of this
+temporary view is tied to this Spark application.</p><p>Global temporary view is cross-session. Its lifetime is the lifetime of the Spark application,
+i.e. it will be automatically dropped when the application terminates. It's tied to a system
+preserved database <code>_global_temp</code>, and we must use the qualified name to refer a global temp
+view, e.g. <code>SELECT * FROM _global_temp.view1</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[org.apache.spark.sql.AnalysisException]">...</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><a href="AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException"><code>AnalysisException</code></a> if the view name already exists</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#createOrReplaceTempView" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
       <a id="createOrReplaceTempView(viewName:String):Unit"></a>
       <a id="createOrReplaceTempView(String):Unit"></a>
@@ -550,7 +636,7 @@ doing so on a very large dataset can crash the driver process with OutOfMemoryEr
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a temporary view using the given name.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a temporary view using the given name. The lifetime of this
+      <p class="shortcomment cmt">Creates a local temporary view using the given name.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a local temporary view using the given name. The lifetime of this
 temporary view is tied to the <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> that was used to create this Dataset.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#createTempView" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
@@ -569,8 +655,10 @@ temporary view is tied to the <a href="SparkSession.html" class="extype" name="o
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a temporary view using the given name.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a temporary view using the given name. The lifetime of this
-temporary view is tied to the <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> that was used to create this Dataset.
+      <p class="shortcomment cmt">Creates a local temporary view using the given name.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a local temporary view using the given name. The lifetime of this
+temporary view is tied to the <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> that was used to create this Dataset.</p><p>Local temporary view is session-scoped. Its lifetime is the lifetime of the session that
+created it, i.e. it will be automatically dropped when the session terminates. It's not
+tied to any databases, i.e. we can't use <code>db1.view1</code> to reference a local temporary view.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
@@ -578,6 +666,24 @@ temporary view is tied to the <a href="SparkSession.html" class="extype" name="o
     </span>)</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><a href="AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException"><code>AnalysisException</code></a> if the view name already exists</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Dataset#crossJoin" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
+      <a id="crossJoin(right:org.apache.spark.sql.Dataset[_]):org.apache.spark.sql.DataFrame"></a>
+      <a id="crossJoin(Dataset[_]):DataFrame"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">crossJoin</span><span class="params">(<span name="right">right: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[_]</span>)</span><span class="result">: <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@crossJoin(right:org.apache.spark.sql.Dataset[_]):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Explicit cartesian join with another <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Explicit cartesian join with another <code>DataFrame</code>.
+</p></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join operation.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Cartesian joins are very expensive without an extra filter that can be pushed down.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#cube" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="cube(col1:String,cols:String*):org.apache.spark.sql.RelationalGroupedDataset"></a>
       <a id="cube(String,String*):RelationalGroupedDataset"></a>
@@ -655,8 +761,10 @@ ds.cube($<span class="lit">"department"</span>, $<span class="lit">"gender"</spa
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Computes statistics for numeric columns, including count, mean, stddev, min, and max.</p><div class="fullcomment"><div class="comment cmt"><p>Computes statistics for numeric columns, including count, mean, stddev, min, and max.
-If no columns are given, this function computes statistics for all numerical columns.</p><p>This function is meant for exploratory data analysis, as we make no guarantee about the
+      <p class="shortcomment cmt">Computes statistics for numeric and string columns, including count, mean, stddev, min, and
+max.</p><div class="fullcomment"><div class="comment cmt"><p>Computes statistics for numeric and string columns, including count, mean, stddev, min, and
+max. If no columns are given, this function computes statistics for all numerical or string
+columns.</p><p>This function is meant for exploratory data analysis, as we make no guarantee about the
 backward compatibility of the schema of the resulting Dataset. If you want to
 programmatically compute summary statistics, use the <code>agg</code> function instead.</p><pre>ds.describe(<span class="lit">"age"</span>, <span class="lit">"height"</span>).show()
 
@@ -687,9 +795,9 @@ programmatically compute summary statistics, use the <code>agg</code> function i
       </a>
     </span>
       <p class="shortcomment cmt">Returns a new Dataset that contains only the unique rows from this Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new Dataset that contains only the unique rows from this Dataset.
-This is an alias for <code>dropDuplicates</code>.</p><p>Note that, equality checking is performed directly on the encoded representation of the data
-and thus is not affected by a custom <code>equals</code> function defined on <code>T</code>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+This is an alias for <code>dropDuplicates</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Equality checking is performed directly on the encoded representation of the data
+and thus is not affected by a custom <code>equals</code> function defined on <code>T</code>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#drop" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="drop(col:org.apache.spark.sql.Column):org.apache.spark.sql.DataFrame"></a>
       <a id="drop(Column):DataFrame"></a>
@@ -939,9 +1047,9 @@ This is an alias for <code>distinct</code>.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a new Dataset containing rows in this Dataset but not in another Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new Dataset containing rows in this Dataset but not in another Dataset.
-This is equivalent to <code>EXCEPT</code> in SQL.</p><p>Note that, equality checking is performed directly on the encoded representation of the data
-and thus is not affected by a custom <code>equals</code> function defined on <code>T</code>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+This is equivalent to <code>EXCEPT</code> in SQL.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Equality checking is performed directly on the encoded representation of the data
+and thus is not affected by a custom <code>equals</code> function defined on <code>T</code>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#explain" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
       <a id="explain():Unit"></a>
       <a id="explain():Unit"></a>
@@ -1002,6 +1110,8 @@ Returns a new Dataset that only contains elements where <code>func</code> return
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#filter" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
       <a id="filter(func:T=&gt;Boolean):org.apache.spark.sql.Dataset[T]"></a>
@@ -1026,6 +1136,8 @@ Returns a new Dataset that only contains elements where <code>func</code> return
 Returns a new Dataset that only contains elements where <code>func</code> returns <code>true</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#filter" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
@@ -1130,9 +1242,11 @@ and then flattening the results.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#flatMap" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
-      <a id="flatMap[U](func:T=&gt;TraversableOnce[U])(implicitevidence$9:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="flatMap[U](func:T=&gt;TraversableOnce[U])(implicitevidence$8:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
       <a id="flatMap[U]((Row)⇒TraversableOnce[U])(Encoder[U]):Dataset[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1143,7 +1257,7 @@ and then flattening the results.
         <span class="name">flatMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="func">func: (<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>) ⇒ <a href="../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.Dataset.flatMap.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.Dataset.flatMap.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.Dataset.flatMap.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@flatMap[U](func:T=&gt;TraversableOnce[U])(implicitevidence$9:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@flatMap[U](func:T=&gt;TraversableOnce[U])(implicitevidence$8:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1156,6 +1270,8 @@ Returns a new Dataset by first applying a function to all elements of this Datas
 and then flattening the results.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#foreach" visbl="pub" data-isabs="false" fullComment="yes" group="action">
@@ -1332,9 +1448,11 @@ Returns a <a href="KeyValueGroupedDataset.html" class="extype" name="org.apache.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#groupByKey" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
-      <a id="groupByKey[K](func:T=&gt;K)(implicitevidence$4:org.apache.spark.sql.Encoder[K]):org.apache.spark.sql.KeyValueGroupedDataset[K,T]"></a>
+      <a id="groupByKey[K](func:T=&gt;K)(implicitevidence$3:org.apache.spark.sql.Encoder[K]):org.apache.spark.sql.KeyValueGroupedDataset[K,T]"></a>
       <a id="groupByKey[K]((Row)⇒K)(Encoder[K]):KeyValueGroupedDataset[K,Row]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1345,7 +1463,7 @@ Returns a <a href="KeyValueGroupedDataset.html" class="extype" name="org.apache.
         <span class="name">groupByKey</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="func">func: (<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>) ⇒ <span class="extype" name="org.apache.spark.sql.Dataset.groupByKey.K">K</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.Dataset.groupByKey.K">K</span>]</span>)</span><span class="result">: <a href="KeyValueGroupedDataset.html" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.Dataset.groupByKey.K">K</span>, <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@groupByKey[K](func:T=&gt;K)(implicitevidence$4:org.apache.spark.sql.Encoder[K]):org.apache.spark.sql.KeyValueGroupedDataset[K,T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@groupByKey[K](func:T=&gt;K)(implicitevidence$3:org.apache.spark.sql.Encoder[K]):org.apache.spark.sql.KeyValueGroupedDataset[K,T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1356,6 +1474,8 @@ Returns a <a href="KeyValueGroupedDataset.html" class="extype" name="org.apache.
 Returns a <a href="KeyValueGroupedDataset.html" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the data is grouped by the given key <code>func</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -1465,9 +1585,9 @@ Depending on the source relations, this may not find all input files. Duplicates
       </a>
     </span>
       <p class="shortcomment cmt">Returns a new Dataset containing rows only in both this Dataset and another Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new Dataset containing rows only in both this Dataset and another Dataset.
-This is equivalent to <code>INTERSECT</code> in SQL.</p><p>Note that, equality checking is performed directly on the encoded representation of the data
-and thus is not affected by a custom <code>equals</code> function defined on <code>T</code>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+This is equivalent to <code>INTERSECT</code> in SQL.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Equality checking is performed directly on the encoded representation of the data
+and thus is not affected by a custom <code>equals</code> function defined on <code>T</code>.</p></span></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1505,7 +1625,7 @@ and thus is not affected by a custom <code>equals</code> function defined on <co
 (without any Spark executors).</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if the <code>collect</code> and <code>take</code> methods can be run locally
 (without any Spark executors).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.Dataset#isStreaming" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
+    </li><li name="org.apache.spark.sql.Dataset#isStreaming" visbl="pub" data-isabs="false" fullComment="yes" group="streaming">
       <a id="isStreaming:Boolean"></a>
       <a id="isStreaming:Boolean"></a>
       <h4 class="signature">
@@ -1524,12 +1644,14 @@ and thus is not affected by a custom <code>equals</code> function defined on <co
       <p class="shortcomment cmt">Returns true if this Dataset contains one or more sources that continuously
 return data as it arrives.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if this Dataset contains one or more sources that continuously
 return data as it arrives. A Dataset that reads data from a streaming source
-must be executed as a <span class="extype" name="StreamingQuery">StreamingQuery</span> using the <code>start()</code> method in
-<span class="extype" name="DataStreamWriter">DataStreamWriter</span>. Methods that return a single answer, e.g. <code>count()</code> or
+must be executed as a <code>StreamingQuery</code> using the <code>start()</code> method in
+<code>DataStreamWriter</code>. Methods that return a single answer, e.g. <code>count()</code> or
 <code>collect()</code>, will throw an <a href="AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a> when there is a streaming
 source present.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#javaRDD" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
@@ -1548,7 +1670,7 @@ source present.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the content of the Dataset as a <span class="extype" name="JavaRDD">JavaRDD</span> of <span class="extype" name="T">T</span>s.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the content of the Dataset as a <span class="extype" name="JavaRDD">JavaRDD</span> of <span class="extype" name="T">T</span>s.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns the content of the Dataset as a <code>JavaRDD</code> of <span class="extype" name="T">T</span>s.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the content of the Dataset as a <code>JavaRDD</code> of <span class="extype" name="T">T</span>s.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#join" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="join(right:org.apache.spark.sql.Dataset[_],joinExprs:org.apache.spark.sql.Column,joinType:String):org.apache.spark.sql.DataFrame"></a>
       <a id="join(Dataset[_],Column,String):DataFrame"></a>
@@ -1565,14 +1687,16 @@ source present.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, using the given join expression.</p><div class="fullcomment"><div class="comment cmt"><p>Join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, using the given join expression. The following performs
+      <p class="shortcomment cmt">Join with another <code>DataFrame</code>, using the given join expression.</p><div class="fullcomment"><div class="comment cmt"><p>Join with another <code>DataFrame</code>, using the given join expression. The following performs
 a full outer join between <code>df1</code> and <code>df2</code>.</p><pre><span class="cmt">// Scala:</span>
 <span class="kw">import</span> org.apache.spark.sql.functions._
 df1.join(df2, $<span class="lit">"df1Key"</span> === $<span class="lit">"df2Key"</span>, <span class="lit">"outer"</span>)
 
 <span class="cmt">// Java:</span>
 <span class="kw">import</span> static org.apache.spark.sql.functions.*;
-df1.join(df2, col(<span class="lit">"df1Key"</span>).equalTo(col(<span class="lit">"df2Key"</span>)), <span class="lit">"outer"</span>);</pre></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join.</p></dd><dt class="param">joinExprs</dt><dd class="cmt"><p>Join expression.</p></dd><dt class="param">joinType</dt><dd class="cmt"><p>One of: <code>inner</code>, <code>outer</code>, <code>left_outer</code>, <code>right_outer</code>, <code>leftsemi</code>.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+df1.join(df2, col(<span class="lit">"df1Key"</span>).equalTo(col(<span class="lit">"df2Key"</span>)), <span class="lit">"outer"</span>);</pre></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join.</p></dd><dt class="param">joinExprs</dt><dd class="cmt"><p>Join expression.</p></dd><dt class="param">joinType</dt><dd class="cmt"><p>Type of join to perform. Default <code>inner</code>. Must be one of:
+                <code>inner</code>, <code>cross</code>, <code>outer</code>, <code>full</code>, <code>full_outer</code>, <code>left</code>, <code>left_outer</code>,
+                <code>right</code>, <code>right_outer</code>, <code>left_semi</code>, <code>left_anti</code>.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#join" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="join(right:org.apache.spark.sql.Dataset[_],joinExprs:org.apache.spark.sql.Column):org.apache.spark.sql.DataFrame"></a>
       <a id="join(Dataset[_],Column):DataFrame"></a>
@@ -1589,7 +1713,7 @@ df1.join(df2, col(<span class="lit">"df1Key"</span>).equalTo(col(<span class="li
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Inner join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, using the given join expression.</p><div class="fullcomment"><div class="comment cmt"><p>Inner join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, using the given join expression.</p><pre><span class="cmt">// The following two are equivalent:</span>
+      <p class="shortcomment cmt">Inner join with another <code>DataFrame</code>, using the given join expression.</p><div class="fullcomment"><div class="comment cmt"><p>Inner join with another <code>DataFrame</code>, using the given join expression.</p><pre><span class="cmt">// The following two are equivalent:</span>
 df1.join(df2, $<span class="lit">"df1Key"</span> === $<span class="lit">"df2Key"</span>)
 df1.join(df2).where($<span class="lit">"df1Key"</span> === $<span class="lit">"df2Key"</span>)</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#join" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
@@ -1608,11 +1732,15 @@ df1.join(df2).where($<span class="lit">"df1Key"</span> === $<span class="lit">"d
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Equi-join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> using the given columns.</p><div class="fullcomment"><div class="comment cmt"><p>Equi-join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> using the given columns.</p><p>Different from other join functions, the join columns will only appear once in the output,
-i.e. similar to SQL's <code>JOIN USING</code> syntax.</p><p>Note that if you perform a self-join using this function without aliasing the input
-<a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s, you will NOT be able to reference any columns after the join, since
-there is no way to disambiguate which side of the join you would like to reference.
-</p></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join operation.</p></dd><dt class="param">usingColumns</dt><dd class="cmt"><p>Names of the columns to join on. This columns must exist on both sides.</p></dd><dt class="param">joinType</dt><dd class="cmt"><p>One of: <code>inner</code>, <code>outer</code>, <code>left_outer</code>, <code>right_outer</code>, <code>leftsemi</code>.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Equi-join with another <code>DataFrame</code> using the given columns.</p><div class="fullcomment"><div class="comment cmt"><p>Equi-join with another <code>DataFrame</code> using the given columns. A cross join with a predicate
+is specified as an inner join. If you would explicitly like to perform a cross join use the
+<code>crossJoin</code> method.</p><p>Different from other join functions, the join columns will only appear once in the output,
+i.e. similar to SQL's <code>JOIN USING</code> syntax.
+</p></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join operation.</p></dd><dt class="param">usingColumns</dt><dd class="cmt"><p>Names of the columns to join on. This columns must exist on both sides.</p></dd><dt class="param">joinType</dt><dd class="cmt"><p>Type of join to perform. Default <code>inner</code>. Must be one of:
+                <code>inner</code>, <code>cross</code>, <code>outer</code>, <code>full</code>, <code>full_outer</code>, <code>left</code>, <code>left_outer</code>,
+                <code>right</code>, <code>right_outer</code>, <code>left_semi</code>, <code>left_anti</code>.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>If you perform a self-join using this function without aliasing the input
+<code>DataFrame</code>s, you will NOT be able to reference any columns after the join, since
+there is no way to disambiguate which side of the join you would like to reference.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#join" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="join(right:org.apache.spark.sql.Dataset[_],usingColumns:Seq[String]):org.apache.spark.sql.DataFrame"></a>
       <a id="join(Dataset[_],Seq[String]):DataFrame"></a>
@@ -1629,12 +1757,11 @@ there is no way to disambiguate which side of the join you would like to referen
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Inner equi-join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> using the given columns.</p><div class="fullcomment"><div class="comment cmt"><p>Inner equi-join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> using the given columns.</p><p>Different from other join functions, the join columns will only appear once in the output,
+      <p class="shortcomment cmt">Inner equi-join with another <code>DataFrame</code> using the given columns.</p><div class="fullcomment"><div class="comment cmt"><p>Inner equi-join with another <code>DataFrame</code> using the given columns.</p><p>Different from other join functions, the join columns will only appear once in the output,
 i.e. similar to SQL's <code>JOIN USING</code> syntax.</p><pre><span class="cmt">// Joining df1 and df2 using the columns "user_id" and "user_name"</span>
-df1.join(df2, <span class="std">Seq</span>(<span class="lit">"user_id"</span>, <span class="lit">"user_name"</span>))</pre><p>Note that if you perform a self-join using this function without aliasing the input
-<a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s, you will NOT be able to reference any columns after the join, since
-there is no way to disambiguate which side of the join you would like to reference.
-</p></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join operation.</p></dd><dt class="param">usingColumns</dt><dd class="cmt"><p>Names of the columns to join on. This columns must exist on both sides.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+df1.join(df2, <span class="std">Seq</span>(<span class="lit">"user_id"</span>, <span class="lit">"user_name"</span>))</pre></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join operation.</p></dd><dt class="param">usingColumns</dt><dd class="cmt"><p>Names of the columns to join on. This columns must exist on both sides.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>If you perform a self-join using this function without aliasing the input
+<code>DataFrame</code>s, you will NOT be able to reference any columns after the join, since
+there is no way to disambiguate which side of the join you would like to reference.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#join" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="join(right:org.apache.spark.sql.Dataset[_],usingColumn:String):org.apache.spark.sql.DataFrame"></a>
       <a id="join(Dataset[_],String):DataFrame"></a>
@@ -1651,12 +1778,11 @@ there is no way to disambiguate which side of the join you would like to referen
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Inner equi-join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> using the given column.</p><div class="fullcomment"><div class="comment cmt"><p>Inner equi-join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> using the given column.</p><p>Different from other join functions, the join column will only appear once in the output,
+      <p class="shortcomment cmt">Inner equi-join with another <code>DataFrame</code> using the given column.</p><div class="fullcomment"><div class="comment cmt"><p>Inner equi-join with another <code>DataFrame</code> using the given column.</p><p>Different from other join functions, the join column will only appear once in the output,
 i.e. similar to SQL's <code>JOIN USING</code> syntax.</p><pre><span class="cmt">// Joining df1 and df2 using the column "user_id"</span>
-df1.join(df2, <span class="lit">"user_id"</span>)</pre><p>Note that if you perform a self-join using this function without aliasing the input
-<a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s, you will NOT be able to reference any columns after the join, since
-there is no way to disambiguate which side of the join you would like to reference.
-</p></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join operation.</p></dd><dt class="param">usingColumn</dt><dd class="cmt"><p>Name of the column to join on. This column must exist on both sides.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+df1.join(df2, <span class="lit">"user_id"</span>)</pre></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join operation.</p></dd><dt class="param">usingColumn</dt><dd class="cmt"><p>Name of the column to join on. This column must exist on both sides.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>If you perform a self-join using this function without aliasing the input
+<code>DataFrame</code>s, you will NOT be able to reference any columns after the join, since
+there is no way to disambiguate which side of the join you would like to reference.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#join" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="join(right:org.apache.spark.sql.Dataset[_]):org.apache.spark.sql.DataFrame"></a>
       <a id="join(Dataset[_]):DataFrame"></a>
@@ -1673,7 +1799,7 @@ there is no way to disambiguate which side of the join you would like to referen
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Cartesian join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Cartesian join with another <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>Note that cartesian joins are very expensive without an extra filter that can be pushed down.
+      <p class="shortcomment cmt">Join with another <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Join with another <code>DataFrame</code>.</p><p>Behaves as an INNER JOIN and requires a subsequent join predicate.
 </p></div><dl class="paramcmts block"><dt class="param">right</dt><dd class="cmt"><p>Right side of the join operation.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#joinWith" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
       <a id="joinWith[U](other:org.apache.spark.sql.Dataset[U],condition:org.apache.spark.sql.Column):org.apache.spark.sql.Dataset[(T,U)]"></a>
@@ -1692,12 +1818,14 @@ there is no way to disambiguate which side of the join you would like to referen
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-Using inner equi-join to join this Dataset returning a <span class="extype" name="Tuple2">Tuple2</span> for each pair
+Using inner equi-join to join this Dataset returning a <code>Tuple2</code> for each pair
 where <code>condition</code> evaluates to true.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Using inner equi-join to join this Dataset returning a <span class="extype" name="Tuple2">Tuple2</span> for each pair
+Using inner equi-join to join this Dataset returning a <code>Tuple2</code> for each pair
 where <code>condition</code> evaluates to true.
 </p></div><dl class="paramcmts block"><dt class="param">other</dt><dd class="cmt"><p>Right side of the join.</p></dd><dt class="param">condition</dt><dd class="cmt"><p>Join expression.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#joinWith" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
@@ -1717,16 +1845,20 @@ where <code>condition</code> evaluates to true.
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-Joins this Dataset returning a <span class="extype" name="Tuple2">Tuple2</span> for each pair where <code>condition</code> evaluates to
+Joins this Dataset returning a <code>Tuple2</code> for each pair where <code>condition</code> evaluates to
 true.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Joins this Dataset returning a <span class="extype" name="Tuple2">Tuple2</span> for each pair where <code>condition</code> evaluates to
+Joins this Dataset returning a <code>Tuple2</code> for each pair where <code>condition</code> evaluates to
 true.</p><p>This is similar to the relation <code>join</code> function with one important difference in the
 result schema. Since <code>joinWith</code> preserves objects present on either side of the join, the
 result schema is similarly nested into a tuple under the column names <code>_1</code> and <code>_2</code>.</p><p>This type of join can be useful both for preserving type-safety with the original object
 types as well as working with relational data where either side of the join has column
 names in common.
-</p></div><dl class="paramcmts block"><dt class="param">other</dt><dd class="cmt"><p>Right side of the join.</p></dd><dt class="param">condition</dt><dd class="cmt"><p>Join expression.</p></dd><dt class="param">joinType</dt><dd class="cmt"><p>One of: <code>inner</code>, <code>outer</code>, <code>left_outer</code>, <code>right_outer</code>, <code>leftsemi</code>.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
+</p></div><dl class="paramcmts block"><dt class="param">other</dt><dd class="cmt"><p>Right side of the join.</p></dd><dt class="param">condition</dt><dd class="cmt"><p>Join expression.</p></dd><dt class="param">joinType</dt><dd class="cmt"><p>Type of join to perform. Default <code>inner</code>. Must be one of:
+                <code>inner</code>, <code>cross</code>, <code>outer</code>, <code>full</code>, <code>full_outer</code>, <code>left</code>, <code>left_outer</code>,
+                <code>right</code>, <code>right_outer</code>, <code>left_semi</code>, <code>left_anti</code>.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#limit" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
@@ -1790,9 +1922,11 @@ Returns a new Dataset that contains the result of applying <code>func</code> to 
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#map" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
-      <a id="map[U](func:T=&gt;U)(implicitevidence$7:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="map[U](func:T=&gt;U)(implicitevidence$6:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
       <a id="map[U]((Row)⇒U)(Encoder[U]):Dataset[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1803,7 +1937,7 @@ Returns a new Dataset that contains the result of applying <code>func</code> to 
         <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="func">func: (<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>) ⇒ <span class="extype" name="org.apache.spark.sql.Dataset.map.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.Dataset.map.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.Dataset.map.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@map[U](func:T=&gt;U)(implicitevidence$7:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@map[U](func:T=&gt;U)(implicitevidence$6:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1814,6 +1948,8 @@ Returns a new Dataset that contains the result of applying <code>func</code> to 
 Returns a new Dataset that contains the result of applying <code>func</code> to each element.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#mapPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
@@ -1840,9 +1976,11 @@ Returns a new Dataset that contains the result of applying <code>f</code> to eac
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#mapPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
-      <a id="mapPartitions[U](func:Iterator[T]=&gt;Iterator[U])(implicitevidence$8:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="mapPartitions[U](func:Iterator[T]=&gt;Iterator[U])(implicitevidence$7:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
       <a id="mapPartitions[U]((Iterator[Row])⇒Iterator[U])(Encoder[U]):Dataset[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1853,7 +1991,7 @@ Returns a new Dataset that contains the result of applying <code>f</code> to eac
         <span class="name">mapPartitions</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="func">func: (<a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]) ⇒ <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.Dataset.mapPartitions.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.Dataset.mapPartitions.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.Dataset.mapPartitions.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@mapPartitions[U](func:Iterator[T]=&gt;Iterator[U])(implicitevidence$8:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@mapPartitions[U](func:Iterator[T]=&gt;Iterator[U])(implicitevidence$7:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1864,6 +2002,8 @@ Returns a new Dataset that contains the result of applying <code>func</code> to 
 Returns a new Dataset that contains the result of applying <code>func</code> to each partition.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#na" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
@@ -2122,7 +2262,7 @@ For Java API, use <a href="Dataset.html#randomSplitAsList(weights:Array[Double],
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Represents the content of the Dataset as an <span class="extype" name="RDD">RDD</span> of <span class="extype" name="T">T</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Represents the content of the Dataset as an <span class="extype" name="RDD">RDD</span> of <span class="extype" name="T">T</span>.
+      <p class="shortcomment cmt">Represents the content of the Dataset as an <code>RDD</code> of <span class="extype" name="T">T</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Represents the content of the Dataset as an <code>RDD</code> of <span class="extype" name="T">T</span>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#reduce" visbl="pub" data-isabs="false" fullComment="yes" group="action">
       <a id="reduce(func:org.apache.spark.api.java.function.ReduceFunction[T]):T"></a>
@@ -2149,6 +2289,8 @@ must be commutative and associative or the result may be non-deterministic.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#reduce" visbl="pub" data-isabs="false" fullComment="yes" group="action">
       <a id="reduce(func:(T,T)=&gt;T):T"></a>
@@ -2174,6 +2316,8 @@ Reduces the elements of this Dataset using the specified binary function. The gi
 must be commutative and associative or the result may be non-deterministic.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SampleDataFrame#registerSampleTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -2335,8 +2479,9 @@ ds.rollup($<span class="lit">"department"</span>, $<span class="lit">"gender"</s
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new Dataset by sampling a fraction of rows, using a random seed.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new Dataset by sampling a fraction of rows, using a random seed.
-</p></div><dl class="paramcmts block"><dt class="param">withReplacement</dt><dd class="cmt"><p>Sample with replacement or not.</p></dd><dt class="param">fraction</dt><dd class="cmt"><p>Fraction of rows to generate.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> by sampling a fraction of rows, using a random seed.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> by sampling a fraction of rows, using a random seed.
+</p></div><dl class="paramcmts block"><dt class="param">withReplacement</dt><dd class="cmt"><p>Sample with replacement or not.</p></dd><dt class="param">fraction</dt><dd class="cmt"><p>Fraction of rows to generate.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This is NOT guaranteed to provide exactly the fraction of the total count
+of the given <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#sample" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
       <a id="sample(withReplacement:Boolean,fraction:Double,seed:Long):org.apache.spark.sql.Dataset[T]"></a>
       <a id="sample(Boolean,Double,Long):Dataset[Row]"></a>
@@ -2353,8 +2498,9 @@ ds.rollup($<span class="lit">"department"</span>, $<span class="lit">"gender"</s
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new Dataset by sampling a fraction of rows.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new Dataset by sampling a fraction of rows.
-</p></div><dl class="paramcmts block"><dt class="param">withReplacement</dt><dd class="cmt"><p>Sample with replacement or not.</p></dd><dt class="param">fraction</dt><dd class="cmt"><p>Fraction of rows to generate.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>Seed for sampling.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> by sampling a fraction of rows, using a user-supplied seed.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> by sampling a fraction of rows, using a user-supplied seed.
+</p></div><dl class="paramcmts block"><dt class="param">withReplacement</dt><dd class="cmt"><p>Sample with replacement or not.</p></dd><dt class="param">fraction</dt><dd class="cmt"><p>Fraction of rows to generate.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>Seed for sampling.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This is NOT guaranteed to provide exactly the fraction of the count
+of the given <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#schema" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
       <a id="schema:org.apache.spark.sql.types.StructType"></a>
       <a id="schema:StructType"></a>
@@ -2395,6 +2541,8 @@ Returns a new Dataset by computing the given <a href="Column.html" class="extype
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#select" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
       <a id="select[U1,U2,U3,U4](c1:org.apache.spark.sql.TypedColumn[T,U1],c2:org.apache.spark.sql.TypedColumn[T,U2],c3:org.apache.spark.sql.TypedColumn[T,U3],c4:org.apache.spark.sql.TypedColumn[T,U4]):org.apache.spark.sql.Dataset[(U1,U2,U3,U4)]"></a>
@@ -2417,6 +2565,8 @@ Returns a new Dataset by computing the given <a href="Column.html" class="extype
 Returns a new Dataset by computing the given <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> expressions for each element.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#select" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
@@ -2441,6 +2591,8 @@ Returns a new Dataset by computing the given <a href="Column.html" class="extype
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#select" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
       <a id="select[U1,U2](c1:org.apache.spark.sql.TypedColumn[T,U1],c2:org.apache.spark.sql.TypedColumn[T,U2]):org.apache.spark.sql.Dataset[(U1,U2)]"></a>
@@ -2464,20 +2616,22 @@ Returns a new Dataset by computing the given <a href="Column.html" class="extype
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#select" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
-      <a id="select[U1](c1:org.apache.spark.sql.TypedColumn[T,U1])(implicitevidence$3:org.apache.spark.sql.Encoder[U1]):org.apache.spark.sql.Dataset[U1]"></a>
-      <a id="select[U1](TypedColumn[Row,U1])(Encoder[U1]):Dataset[U1]"></a>
+      <a id="select[U1](c1:org.apache.spark.sql.TypedColumn[T,U1]):org.apache.spark.sql.Dataset[U1]"></a>
+      <a id="select[U1](TypedColumn[Row,U1]):Dataset[U1]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">select</span><span class="tparams">[<span name="U1">U1</span>]</span><span class="params">(<span name="c1">c1: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.Dataset.select.U1">U1</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.Dataset.select.U1">U1</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.Dataset.select.U1">U1</span>]</span>
+        <span class="name">select</span><span class="tparams">[<span name="U1">U1</span>]</span><span class="params">(<span name="c1">c1: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.Dataset.select.U1">U1</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.Dataset.select.U1">U1</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@select[U1](c1:org.apache.spark.sql.TypedColumn[T,U1])(implicitevidence$3:org.apache.spark.sql.Encoder[U1]):org.apache.spark.sql.Dataset[U1]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@select[U1](c1:org.apache.spark.sql.TypedColumn[T,U1]):org.apache.spark.sql.Dataset[U1]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2486,6 +2640,8 @@ Returns a new Dataset by computing the given <a href="Column.html" class="extype
 Returns a new Dataset by computing the given <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> expression for each element.</p><pre><span class="kw">val</span> ds = <span class="std">Seq</span>(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>).toDS()
 <span class="kw">val</span> newDS = ds.select(expr(<span class="lit">"value + 1"</span>).as[<span class="std">Int</span>])</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#select" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
@@ -2574,6 +2730,29 @@ ds.select(expr(<span class="lit">"colA"</span>), expr(<span class="lit">"colB as
 code reuse, we do this without the help of the type system and then use helper functions
 that cast appropriately for the user facing interface.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Dataset#show" visbl="pub" data-isabs="false" fullComment="yes" group="action">
+      <a id="show(numRows:Int,truncate:Int):Unit"></a>
+      <a id="show(Int,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">show</span><span class="params">(<span name="numRows">numRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="truncate">truncate: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@show(numRows:Int,truncate:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Displays the Dataset in a tabular form.</p><div class="fullcomment"><div class="comment cmt"><p>Displays the Dataset in a tabular form. For example:</p><pre>year  month AVG('Adj Close) MAX('Adj Close)
+<span class="num">1980</span>  <span class="num">12</span>    <span class="num">0.503218</span>        <span class="num">0.595103</span>
+<span class="num">1981</span>  <span class="num">01</span>    <span class="num">0.523289</span>        <span class="num">0.570307</span>
+<span class="num">1982</span>  <span class="num">02</span>    <span class="num">0.436504</span>        <span class="num">0.475256</span>
+<span class="num">1983</span>  <span class="num">03</span>    <span class="num">0.410516</span>        <span class="num">0.442194</span>
+<span class="num">1984</span>  <span class="num">04</span>    <span class="num">0.450090</span>        <span class="num">0.483521</span></pre></div><dl class="paramcmts block"><dt class="param">numRows</dt><dd class="cmt"><p>Number of rows to show</p></dd><dt class="param">truncate</dt><dd class="cmt"><p>If set to more than 0, truncates strings to <code>truncate</code> characters and
+                   all cells will be aligned right.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#show" visbl="pub" data-isabs="false" fullComment="yes" group="action">
       <a id="show(numRows:Int,truncate:Boolean):Unit"></a>
       <a id="show(Int,Boolean):Unit"></a>
@@ -2812,6 +2991,24 @@ ds.sort($<span class="lit">"sortcol"</span>.asc)</pre></div><dl class="attribute
     </span>
       <p class="shortcomment cmt">Returns a <a href="DataFrameStatFunctions.html" class="extype" name="org.apache.spark.sql.DataFrameStatFunctions">DataFrameStatFunctions</a> for working statistic functions support.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a <a href="DataFrameStatFunctions.html" class="extype" name="org.apache.spark.sql.DataFrameStatFunctions">DataFrameStatFunctions</a> for working statistic functions support.</p><pre><span class="cmt">// Finding frequent items in column with name 'a'.</span>
 ds.stat.freqItems(<span class="std">Seq</span>(<span class="lit">"a"</span>))</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Dataset#storageLevel" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
+      <a id="storageLevel:org.apache.spark.storage.StorageLevel"></a>
+      <a id="storageLevel:StorageLevel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">storageLevel</span><span class="result">: <a href="../storage/StorageLevel.html" class="extype" name="org.apache.spark.storage.StorageLevel">StorageLevel</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@storageLevel:org.apache.spark.storage.StorageLevel" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the Dataset's current storage level, or StorageLevel.NONE if not persisted.</p><div class="fullcomment"><div class="comment cmt"><p>Get the Dataset's current storage level, or StorageLevel.NONE if not persisted.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -2884,7 +3081,7 @@ a very large <code>n</code> can crash the driver process with OutOfMemoryError.
       </a>
     </span>
       <p class="shortcomment cmt">Converts this strongly typed collection of data to generic <code>DataFrame</code> with columns renamed.</p><div class="fullcomment"><div class="comment cmt"><p>Converts this strongly typed collection of data to generic <code>DataFrame</code> with columns renamed.
-This can be quite convenient in conversion from a RDD of tuples into a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> with
+This can be quite convenient in conversion from an RDD of tuples into a <code>DataFrame</code> with
 meaningful names. For example:</p><pre><span class="kw">val</span> rdd: RDD[(<span class="std">Int</span>, <span class="std">String</span>)] = ...
 rdd.toDF()  <span class="cmt">// this implicit conversion creates a DataFrame with column name `_1` and `_2`</span>
 rdd.toDF(<span class="lit">"id"</span>, <span class="lit">"name"</span>)  <span class="cmt">// this creates a DataFrame with column name "id" and "name"</span></pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
@@ -2944,7 +3141,7 @@ objects that allow fields to be accessed by ordinal or name.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the content of the Dataset as a <span class="extype" name="JavaRDD">JavaRDD</span> of <span class="extype" name="T">T</span>s.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the content of the Dataset as a <span class="extype" name="JavaRDD">JavaRDD</span> of <span class="extype" name="T">T</span>s.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns the content of the Dataset as a <code>JavaRDD</code> of <span class="extype" name="T">T</span>s.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the content of the Dataset as a <code>JavaRDD</code> of <span class="extype" name="T">T</span>s.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#toLocalIterator" visbl="pub" data-isabs="false" fullComment="yes" group="action">
       <a id="toLocalIterator():java.util.Iterator[T]"></a>
       <a id="toLocalIterator():Iterator[Row]"></a>
@@ -2961,10 +3158,10 @@ objects that allow fields to be accessed by ordinal or name.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return an iterator that contains all of <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>s in this Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Return an iterator that contains all of <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>s in this Dataset.</p><p>The iterator will consume as much memory as the largest partition in this Dataset.</p><p>Note: this results in multiple Spark jobs, and if the input Dataset is the result
+      <p class="shortcomment cmt">Return an iterator that contains all of <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>s in this Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Return an iterator that contains all of <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>s in this Dataset.</p><p>The iterator will consume as much memory as the largest partition in this Dataset.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>this results in multiple Spark jobs, and if the input Dataset is the result
 of a wide transformation (e.g. join with different partitioners), to avoid
-recomputing the input Dataset should be cached first.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+recomputing the input Dataset should be cached first.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -3203,6 +3400,39 @@ the same name.
       <p class="shortcomment cmt">Returns a new Dataset with a column renamed.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new Dataset with a column renamed.
 This is a no-op if schema doesn't contain existingName.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Dataset#withWatermark" visbl="pub" data-isabs="false" fullComment="yes" group="streaming">
+      <a id="withWatermark(eventTime:String,delayThreshold:String):org.apache.spark.sql.Dataset[T]"></a>
+      <a id="withWatermark(String,String):Dataset[Row]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withWatermark</span><span class="params">(<span name="eventTime">eventTime: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="delayThreshold">delayThreshold: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@withWatermark(eventTime:String,delayThreshold:String):org.apache.spark.sql.Dataset[T]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Defines an event time watermark for this <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Defines an event time watermark for this <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. A watermark tracks a point in time
+before which we assume no more late data is going to arrive.</p><p>Spark will use this watermark for several purposes:</p><ul><li>To know when a given time window aggregation can be finalized and thus can be emitted when
+   using output modes that do not allow updates.</li><li>To minimize the amount of state that we need to keep for on-going aggregations.</li></ul><p> The current watermark is computed by looking at the <code>MAX(eventTime)</code> seen across
+ all of the partitions in the query minus a user specified <code>delayThreshold</code>.  Due to the cost
+ of coordinating this value across partitions, the actual watermark used is only guaranteed
+ to be at least <code>delayThreshold</code> behind the actual event time.  In some cases we may still
+ process records that arrive more than <code>delayThreshold</code> late.
+</p></div><dl class="paramcmts block"><dt class="param">eventTime</dt><dd class="cmt"><p>the name of the column that contains the event time of the row.</p></dd><dt class="param">delayThreshold</dt><dd class="cmt"><p>the minimum delay to wait to data to arrive late, relative to the latest
+                      record that has been processed in the form of an interval
+                      (e.g. &quot;1 minute&quot; or &quot;5 hours&quot;). NOTE: This should not be negative.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#write" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
       <a id="write:org.apache.spark.sql.DataFrameWriter[T]"></a>
       <a id="write:DataFrameWriter[Row]"></a>
@@ -3219,13 +3449,8 @@ This is a no-op if schema doesn't contain existingName.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Interface for saving the content of the non-streaming Dataset out into external storage.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Interface for saving the content of the non-streaming Dataset out into external storage.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Interface for saving the content of the non-streaming Dataset out into external storage.</p><div class="fullcomment"><div class="comment cmt"><p>Interface for saving the content of the non-streaming Dataset out into external storage.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#writeStream" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
       <a id="writeStream:org.apache.spark.sql.streaming.DataStreamWriter[T]"></a>
       <a id="writeStream:DataStreamWriter[Row]"></a>
@@ -3248,6 +3473,8 @@ Interface for saving the content of the streaming Dataset out into external stor
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li></ol>
             </div>
@@ -3257,7 +3484,7 @@ Interface for saving the content of the streaming Dataset out into external stor
         <div id="values" class="values members">
               <h3>Deprecated Value Members</h3>
               <ol><li name="org.apache.spark.sql.Dataset#explode" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
-      <a id="explode[A,B](inputColumn:String,outputColumn:String)(f:A=&gt;TraversableOnce[B])(implicitevidence$6:reflect.runtime.universe.TypeTag[B]):org.apache.spark.sql.DataFrame"></a>
+      <a id="explode[A,B](inputColumn:String,outputColumn:String)(f:A=&gt;TraversableOnce[B])(implicitevidence$5:reflect.runtime.universe.TypeTag[B]):org.apache.spark.sql.DataFrame"></a>
       <a id="explode[A,B](String,String)((A)⇒TraversableOnce[B])(scala.reflect.api.JavaUniverse.TypeTag[B]):DataFrame"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -3268,7 +3495,7 @@ Interface for saving the content of the streaming Dataset out into external stor
         <span class="name deprecated" title="Deprecated: (Since version 2.0.0) use flatMap() or select() with functions.explode() instead">explode</span><span class="tparams">[<span name="A">A</span>, <span name="B">B</span>]</span><span class="params">(<span name="inputColumn">inputColumn: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="outputColumn">outputColumn: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.Dataset.explode.A">A</span>) ⇒ <a href="../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.Dataset.explode.B">B</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.api.TypeTags.TypeTag">scala.reflect.api.JavaUniverse.TypeTag</span>[<span class="extype" name="org.apache.spark.sql.Dataset.explode.B">B</span>]</span>)</span><span class="result">: <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@explode[A,B](inputColumn:String,outputColumn:String)(f:A=&gt;TraversableOnce[B])(implicitevidence$6:reflect.runtime.universe.TypeTag[B]):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@explode[A,B](inputColumn:String,outputColumn:String)(f:A=&gt;TraversableOnce[B])(implicitevidence$5:reflect.runtime.universe.TypeTag[B]):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -3281,7 +3508,7 @@ columns of the input row are implicitly joined with each value that is output by
               
         </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> use flatMap() or select() with functions.explode() instead</p></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#explode" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
-      <a id="explode[A&lt;:Product](input:org.apache.spark.sql.Column*)(f:org.apache.spark.sql.Row=&gt;TraversableOnce[A])(implicitevidence$5:reflect.runtime.universe.TypeTag[A]):org.apache.spark.sql.DataFrame"></a>
+      <a id="explode[A&lt;:Product](input:org.apache.spark.sql.Column*)(f:org.apache.spark.sql.Row=&gt;TraversableOnce[A])(implicitevidence$4:reflect.runtime.universe.TypeTag[A]):org.apache.spark.sql.DataFrame"></a>
       <a id="explode[A&lt;:Product](Column*)((Row)⇒TraversableOnce[A])(scala.reflect.api.JavaUniverse.TypeTag[A]):DataFrame"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -3292,7 +3519,7 @@ columns of the input row are implicitly joined with each value that is output by
         <span class="name deprecated" title="Deprecated: (Since version 2.0.0) use flatMap() or select() with functions.explode() instead">explode</span><span class="tparams">[<span name="A">A &lt;: <span class="extype" name="scala.Product">Product</span></span>]</span><span class="params">(<span name="input">input: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>*</span>)</span><span class="params">(<span name="f">f: (<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>) ⇒ <a href="../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.Dataset.explode.A">A</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.api.TypeTags.TypeTag">scala.reflect.api.JavaUniverse.TypeTag</span>[<span class="extype" name="org.apache.spark.sql.Dataset.explode.A">A</span>]</span>)</span><span class="result">: <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@explode[A&lt;:Product](input:org.apache.spark.sql.Column*)(f:org.apache.spark.sql.Row=&gt;TraversableOnce[A])(implicitevidence$5:reflect.runtime.universe.TypeTag[A]):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SampleDataFrame@explode[A&lt;:Product](input:org.apache.spark.sql.Column*)(f:org.apache.spark.sql.Row=&gt;TraversableOnce[A])(implicitevidence$4:reflect.runtime.universe.TypeTag[A]):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -3380,6 +3607,9 @@ by a <a href="Dataset.html#distinct():org.apache.spark.sql.Dataset[T]" class="ex
               
             </div><div class="group" name="basic">
               <h3>Basic Dataset functions</h3>
+              
+            </div><div class="group" name="streaming">
+              <h3>streaming</h3>
               
             </div><div class="group" name="typedrel">
               <h3>Typed transformations</h3>

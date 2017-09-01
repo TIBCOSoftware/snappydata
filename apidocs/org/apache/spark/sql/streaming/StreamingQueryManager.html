@@ -50,9 +50,11 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>.
+A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <code>SparkSession</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -234,7 +236,13 @@ if any query has terminated with exception, then <code>awaitAnyTermination()</co
 throw any of the exception. For correctly documenting exceptions across multiple queries,
 users need to stop all of them after any of them terminates with exception, and then check the
 <code>query.exception()</code> for each query.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="StreamingQueryException,"><code>StreamingQueryException,</code></span> if any query has terminated with an exception</p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[org.apache.spark.sql.streaming.StreamingQueryException]">...</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><a href="StreamingQueryException.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryException"><code>StreamingQueryException</code></a> if any query has terminated with an exception</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryManager#awaitAnyTermination" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="awaitAnyTermination():Unit"></a>
       <a id="awaitAnyTermination():Unit"></a>
@@ -262,7 +270,13 @@ if any query has terminated with exception, then <code>awaitAnyTermination()</co
 throw any of the exception. For correctly documenting exceptions across multiple queries,
 users need to stop all of them after any of them terminates with exception, and then check the
 <code>query.exception()</code> for each query.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="StreamingQueryException,"><code>StreamingQueryException,</code></span> if any query has terminated with an exception</p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[org.apache.spark.sql.streaming.StreamingQueryException]">...</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><a href="StreamingQueryException.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryException"><code>StreamingQueryException</code></a> if any query has terminated with an exception</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -344,23 +358,41 @@ users need to stop all of them after any of them terminates with exception, and 
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryManager#get" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="get(id:Long):org.apache.spark.sql.streaming.StreamingQuery"></a>
-      <a id="get(Long):StreamingQuery"></a>
+      <a id="get(id:String):org.apache.spark.sql.streaming.StreamingQuery"></a>
+      <a id="get(String):StreamingQuery"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">get</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a></span>
+        <span class="name">get</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryManager@get(id:Long):org.apache.spark.sql.streaming.StreamingQuery" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryManager@get(id:String):org.apache.spark.sql.streaming.StreamingQuery" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Returns the query if there is an active query with the given id, or null.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the query if there is an active query with the given id, or null.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryManager#get" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="get(id:java.util.UUID):org.apache.spark.sql.streaming.StreamingQuery"></a>
+      <a id="get(UUID):StreamingQuery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">get</span><span class="params">(<span name="id">id: <span class="extype" name="java.util.UUID">UUID</span></span>)</span><span class="result">: <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryManager@get(id:java.util.UUID):org.apache.spark.sql.streaming.StreamingQuery" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the query if there is an active query with the given id, or null.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the query if there is an active query with the given id, or null.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>

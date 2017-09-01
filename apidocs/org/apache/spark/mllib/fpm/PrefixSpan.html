@@ -53,15 +53,16 @@
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A parallel PrefixSpan algorithm to mine frequent sequential patterns.
 The PrefixSpan algorithm is described in J. Pei, et al., PrefixSpan: Mining Sequential Patterns
-Efficiently by Prefix-Projected Pattern Growth (<a href="http://doi.org/10.1109/ICDE.2001.914830" target="_blank">http://doi.org/10.1109/ICDE.2001.914830</a>).
+Efficiently by Prefix-Projected Pattern Growth
+(see <a href="http://doi.org/10.1109/ICDE.2001.914830">here</a>).
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="https://en.wikipedia.org/wiki/Sequential_Pattern_Mining" target="_blank">Sequential Pattern Mining
-      (Wikipedia)</a></p></span></dd></dl><div class="toggleContainer block">
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="https://en.wikipedia.org/wiki/Sequential_Pattern_Mining">Sequential Pattern Mining
+(Wikipedia)</a></p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -746,8 +747,8 @@ frequent).
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A Java-friendly version of <span class="extype" name="run()">run()</span> that reads sequences from a <span class="extype" name="JavaRDD">JavaRDD</span> and returns
-frequent sequences in a <a href="PrefixSpanModel.html" class="extype" name="org.apache.spark.mllib.fpm.PrefixSpanModel">PrefixSpanModel</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A Java-friendly version of <span class="extype" name="run()">run()</span> that reads sequences from a <span class="extype" name="JavaRDD">JavaRDD</span> and returns
+      <p class="shortcomment cmt">A Java-friendly version of <code>run()</code> that reads sequences from a <code>JavaRDD</code> and returns
+frequent sequences in a <a href="PrefixSpanModel.html" class="extype" name="org.apache.spark.mllib.fpm.PrefixSpanModel">PrefixSpanModel</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A Java-friendly version of <code>run()</code> that reads sequences from a <code>JavaRDD</code> and returns
 frequent sequences in a <a href="PrefixSpanModel.html" class="extype" name="org.apache.spark.mllib.fpm.PrefixSpanModel">PrefixSpanModel</a>.</p></div><dl class="paramcmts block"><dt class="tparam">Item</dt><dd class="cmt"><p>item type</p></dd><dt class="tparam">Itemset</dt><dd class="cmt"><p>itemset type, which is an Iterable of Items</p></dd><dt class="tparam">Sequence</dt><dd class="cmt"><p>sequence type, which is an Iterable of Itemsets</p></dd><dt class="param">data</dt><dd class="cmt"><p>ordered sequences of itemsets stored as Java Iterable of Iterables</p></dd><dt>returns</dt><dd class="cmt"><p>a <a href="PrefixSpanModel.html" class="extype" name="org.apache.spark.mllib.fpm.PrefixSpanModel">PrefixSpanModel</a> that contains the frequent sequential patterns</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       

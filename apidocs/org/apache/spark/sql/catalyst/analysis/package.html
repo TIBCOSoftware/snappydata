@@ -488,6 +488,23 @@ For example, by using case insensitive equality.
 &quot;SELECT * FROM ...&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Represents all of the input attributes to a given relational operator, for example in
 &quot;SELECT * FROM ...&quot;. A <a href="Star.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Star">Star</a> gets automatically expanded during analysis.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.SubstituteUnresolvedOrdinals" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SubstituteUnresolvedOrdinalsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="SubstituteUnresolvedOrdinals:SubstituteUnresolvedOrdinals"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SubstituteUnresolvedOrdinals.html"><span class="name">SubstituteUnresolvedOrdinals</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@SubstituteUnresolvedOrdinalsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Replaces ordinal in 'order by' or 'group by' with UnresolvedOrdinal expression.</p>
     </li><li name="org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TableAlreadyExistsExceptionextendsAnalysisException"></a>
       <a id="TableAlreadyExistsException:TableAlreadyExistsException"></a>
@@ -713,6 +730,24 @@ The analyzer will resolve this generator.
       <p class="shortcomment cmt">An inline table that has not been resolved yet.</p><div class="fullcomment"><div class="comment cmt"><p>An inline table that has not been resolved yet. Once resolved, it is turned by the analyzer into
 a <a href="../plans/logical/LocalRelation.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LocalRelation">org.apache.spark.sql.catalyst.plans.logical.LocalRelation</a>.
 </p></div><dl class="paramcmts block"><dt class="param">names</dt><dd class="cmt"><p>list of column names</p></dd><dt class="param">rows</dt><dd class="cmt"><p>expressions for the data</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedOrdinal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedOrdinalextendsLeafExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="UnresolvedOrdinal:UnresolvedOrdinal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedOrdinal.html"><span class="name">UnresolvedOrdinal</span></a><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="../expressions/LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <a href="../expressions/NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedOrdinalextendsLeafExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Represents unresolved ordinal used in order by or group by.</p><div class="fullcomment"><div class="comment cmt"><p>Represents unresolved ordinal used in order by or group by.</p><p>For example:</p><pre>select a from table order by <span class="num">1</span>
+select a   from table group by <span class="num">1</span></pre></div><dl class="paramcmts block"><dt class="param">ordinal</dt><dd class="cmt"><p>ordinal starts from 1, instead of 0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="UnresolvedRelationextendsLeafNodewithProductwithSerializable"></a>
       <a id="UnresolvedRelation:UnresolvedRelation"></a>
@@ -908,6 +943,23 @@ functions are already filled in and the analyzer needs only to resolve attribute
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.analysis.ResolveCreateNamedStruct" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResolveCreateNamedStruct"></a>
+      <a id="ResolveCreateNamedStruct:ResolveCreateNamedStruct"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ResolveCreateNamedStruct$.html"><span class="name">ResolveCreateNamedStruct</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@ResolveCreateNamedStruct" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Resolve a <span class="extype" name="CreateNamedStruct">CreateNamedStruct</span> if it contains <span class="extype" name="NamePlaceholder">NamePlaceholder</span>s.</p>
     </li><li name="org.apache.spark.sql.catalyst.analysis.ResolveInlineTables" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ResolveInlineTables"></a>
       <a id="ResolveInlineTables:ResolveInlineTables"></a>

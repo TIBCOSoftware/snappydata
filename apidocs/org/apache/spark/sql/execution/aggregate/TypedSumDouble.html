@@ -215,7 +215,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Specifies the <a href="../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> for the intermediate value type.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the <a href="../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> for the intermediate value type.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumDouble">TypedSumDouble</a> → <a href="../../expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Specifies the <code>Encoder</code> for the intermediate value type.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the <code>Encoder</code> for the intermediate value type.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumDouble">TypedSumDouble</a> → <a href="../../expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -273,6 +273,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.TypedSumDouble#f" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f:IN=&gt;Double"></a>
+      <a id="f:(IN)⇒Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f</span><span class="result">: (<span class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumDouble.IN">IN</span>) ⇒ <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.TypedSumDouble@f:IN=&gt;Double" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -448,7 +465,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Specifies the <a href="../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> for the final ouput value type.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the <a href="../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> for the final ouput value type.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumDouble">TypedSumDouble</a> → <a href="../../expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Specifies the <code>Encoder</code> for the final ouput value type.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the <code>Encoder</code> for the final ouput value type.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumDouble">TypedSumDouble</a> → <a href="../../expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.TypedSumDouble#reduce" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="reduce(b:Double,a:IN):Double"></a>
       <a id="reduce(Double,IN):Double"></a>
@@ -500,7 +517,7 @@ return it instead of constructing new object for b.</p></div><dl class="attribut
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns this <code>Aggregator</code> as a <a href="../../TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a> that can be used in <a href="../../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns this <code>Aggregator</code> as a <a href="../../TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a> that can be used in <a href="../../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
+      <p class="shortcomment cmt">Returns this <code>Aggregator</code> as a <code>TypedColumn</code> that can be used in <code>Dataset</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns this <code>Aggregator</code> as a <code>TypedColumn</code> that can be used in <code>Dataset</code>.
 operations.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">Aggregator</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.TypedSumDouble#toColumnJava" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="toColumnJava:org.apache.spark.sql.TypedColumn[IN,Double]"></a>

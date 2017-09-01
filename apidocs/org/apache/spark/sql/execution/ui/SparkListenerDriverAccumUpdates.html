@@ -49,7 +49,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Annotations</dt><dd>
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A message used to update SQL metric value for driver-side updates (which doesn't get reflected
+automatically).
+</p></div><dl class="paramcmts block"><dt class="param">executionId</dt><dd class="cmt"><p>The execution id for a query, so we can find the query plan.</p></dd><dt class="param">accumUpdates</dt><dd class="cmt"><p>Map from accumulator id to the metric value (metrics are always 64-bit ints).</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl><div class="toggleContainer block">
@@ -91,7 +93,7 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="org.apache.spark.sql.execution.ui.SparkListenerDriverAccumUpdates#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.ui.SparkListenerDriverAccumUpdates#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="&lt;init&gt;(executionId:Long,accumUpdates:Seq[(Long,Long)]):org.apache.spark.sql.execution.ui.SparkListenerDriverAccumUpdates"></a>
       <a id="&lt;init&gt;:SparkListenerDriverAccumUpdates"></a>
       <h4 class="signature">
@@ -107,7 +109,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">executionId</dt><dd class="cmt"><p>The execution id for a query, so we can find the query plan.</p></dd><dt class="param">accumUpdates</dt><dd class="cmt"><p>Map from accumulator id to the metric value (metrics are always 64-bit ints).</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -184,7 +186,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Map from accumulator id to the metric value (metrics are always 64-bit ints).</p>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -258,7 +260,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">The execution id for a query, so we can find the query plan.</p>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>

@@ -686,18 +686,18 @@ Executors tab for the driver.</p></div><dl class="paramcmts block"><dt>returns</
     </span>
       <p class="shortcomment cmt">Request that the cluster manager kill the specified executor.</p><div class="fullcomment"><div class="comment cmt"><p>Request that the cluster manager kill the specified executor.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>whether the request is acknowledged by the cluster manager.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>ExecutorAllocationClient</dd></dl></div>
     </li><li name="org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend#killExecutors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="killExecutors(executorIds:Seq[String],replace:Boolean,force:Boolean):Boolean"></a>
-      <a id="killExecutors(Seq[String],Boolean,Boolean):Boolean"></a>
+      <a id="killExecutors(executorIds:Seq[String],replace:Boolean,force:Boolean):Seq[String]"></a>
+      <a id="killExecutors(Seq[String],Boolean,Boolean):Seq[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">killExecutors</span><span class="params">(<span name="executorIds">executorIds: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="replace">replace: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="force">force: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">killExecutors</span><span class="params">(<span name="executorIds">executorIds: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="replace">replace: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="force">force: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend@killExecutors(executorIds:Seq[String],replace:Boolean,force:Boolean):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend@killExecutors(executorIds:Seq[String],replace:Boolean,force:Boolean):Seq[String]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -707,18 +707,18 @@ replacement is being requested, then the tasks will not count towards the limit.
 </p></div><dl class="paramcmts block"><dt class="param">executorIds</dt><dd class="cmt"><p>identifiers of executors to kill</p></dd><dt class="param">replace</dt><dd class="cmt"><p>whether to replace the killed executors with new ones</p></dd><dt class="param">force</dt><dd class="cmt"><p>whether to force kill busy executors</p></dd><dt>returns</dt><dd class="cmt"><p>whether the kill request is acknowledged. If list to kill is empty, it will return
         false.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>CoarseGrainedSchedulerBackend</dd></dl></div>
     </li><li name="org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend#killExecutors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="killExecutors(executorIds:Seq[String]):Boolean"></a>
-      <a id="killExecutors(Seq[String]):Boolean"></a>
+      <a id="killExecutors(executorIds:Seq[String]):Seq[String]"></a>
+      <a id="killExecutors(Seq[String]):Seq[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">killExecutors</span><span class="params">(<span name="executorIds">executorIds: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">killExecutors</span><span class="params">(<span name="executorIds">executorIds: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend@killExecutors(executorIds:Seq[String]):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend@killExecutors(executorIds:Seq[String]):Seq[String]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

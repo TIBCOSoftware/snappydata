@@ -1050,8 +1050,8 @@ mapping to that key.
       </a>
     </span>
       <p class="shortcomment cmt">Return the intersection of this RDD and another one.</p><div class="fullcomment"><div class="comment cmt"><p>Return the intersection of this RDD and another one. The output will not contain any duplicate
-elements, even if the input RDDs did.</p><p>Note that this method performs a shuffle internally.
-</p></div></div>
+elements, even if the input RDDs did.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This method performs a shuffle internally.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaRDDLike#isCheckpointed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isCheckpointed:Boolean"></a>
       <a id="isCheckpointed:Boolean"></a>
@@ -1688,10 +1688,12 @@ which can avoid performing a shuffle.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return a sampled subset of this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return a sampled subset of this RDD.
+      <p class="shortcomment cmt">Return a sampled subset of this RDD, with a user-supplied seed.</p><div class="fullcomment"><div class="comment cmt"><p>Return a sampled subset of this RDD, with a user-supplied seed.
 </p></div><dl class="paramcmts block"><dt class="param">withReplacement</dt><dd class="cmt"><p>can elements be sampled multiple times (replaced when sampled out)</p></dd><dt class="param">fraction</dt><dd class="cmt"><p>expected size of the sample as a fraction of this RDD's size
  without replacement: probability that each element is chosen; fraction must be [0, 1]
- with replacement: expected number of times each element is chosen; fraction must be &gt;= 0</p></dd><dt class="param">seed</dt><dd class="cmt"><p>seed for the random number generator</p></dd></dl></div>
+ with replacement: expected number of times each element is chosen; fraction must be greater
+ than or equal to 0</p></dd><dt class="param">seed</dt><dd class="cmt"><p>seed for the random number generator</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is NOT guaranteed to provide exactly the fraction of the count
+of the given <code>RDD</code>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaRDD#sample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sample(withReplacement:Boolean,fraction:Double):org.apache.spark.api.java.JavaRDD[T]"></a>
       <a id="sample(Boolean,Double):JavaRDD[T]"></a>
@@ -1708,10 +1710,12 @@ which can avoid performing a shuffle.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return a sampled subset of this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return a sampled subset of this RDD.
+      <p class="shortcomment cmt">Return a sampled subset of this RDD with a random seed.</p><div class="fullcomment"><div class="comment cmt"><p>Return a sampled subset of this RDD with a random seed.
 </p></div><dl class="paramcmts block"><dt class="param">withReplacement</dt><dd class="cmt"><p>can elements be sampled multiple times (replaced when sampled out)</p></dd><dt class="param">fraction</dt><dd class="cmt"><p>expected size of the sample as a fraction of this RDD's size
  without replacement: probability that each element is chosen; fraction must be [0, 1]
- with replacement: expected number of times each element is chosen; fraction must be &gt;= 0</p></dd></dl></div>
+ with replacement: expected number of times each element is chosen; fraction must be greater
+ than or equal to 0</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is NOT guaranteed to provide exactly the fraction of the count
+of the given <code>RDD</code>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaRDDLike#saveAsObjectFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="saveAsObjectFile(path:String):Unit"></a>
       <a id="saveAsObjectFile(String):Unit"></a>
@@ -1851,7 +1855,7 @@ which can avoid performing a shuffle.
       </a>
     </span>
       <p class="shortcomment cmt">Return an RDD with the elements from <code>this</code> that are not in <code>other</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Return an RDD with the elements from <code>this</code> that are not in <code>other</code>.</p><p>Uses <code>this</code> partitioner/partition size, because even if <code>other</code> is huge, the resulting
-RDD will be &lt;= us.
+RDD will be less than or equal to us.
 </p></div></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>

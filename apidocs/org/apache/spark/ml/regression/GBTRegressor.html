@@ -51,7 +51,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p><a href="http://en.wikipedia.org/wiki/Gradient_boosting" target="_blank">Gradient-Boosted Trees (GBTs)</a>
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p><a href="http://en.wikipedia.org/wiki/Gradient_boosting">Gradient-Boosted Trees (GBTs)</a>
 learning algorithm for regression.
 It supports both continuous and categorical features.</p><p>The implementation is based upon: J.H. Friedman. &quot;Stochastic Gradient Boosting.&quot; 1999.</p><p>Notes on Gradient Boosting vs. TreeBoost:</p><ul><li>This implementation is for Stochastic Gradient Boosting, not for TreeBoost.</li><li>Both algorithms learn tree ensembles by minimizing loss functions.</li><li>TreeBoost (Friedman, 1999) additionally modifies the outputs at tree leaf nodes
    based on the loss function, whereas the original gradient boosting method does not.<ul><li>When the loss is SquaredError, these methods give the same result, but they could differ
@@ -65,7 +65,7 @@ It supports both continuous and categorical features.</p><p>The implementation i
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../util/DefaultParamsWritable.html" class="extype" name="org.apache.spark.ml.util.DefaultParamsWritable">DefaultParamsWritable</a>, <a href="../util/MLWritable.html" class="extype" name="org.apache.spark.ml.util.MLWritable">MLWritable</a>, <span class="extype" name="org.apache.spark.ml.tree.GBTRegressorParams">GBTRegressorParams</span>, <span class="extype" name="org.apache.spark.ml.tree.TreeRegressorParams">TreeRegressorParams</span>, <span class="extype" name="org.apache.spark.ml.tree.GBTParams">GBTParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasStepSize">HasStepSize</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasMaxIter">HasMaxIter</span>, <span class="extype" name="org.apache.spark.ml.tree.TreeEnsembleParams">TreeEnsembleParams</span>, <span class="extype" name="org.apache.spark.ml.tree.DecisionTreeParams">DecisionTreeParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasSeed">HasSeed</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasCheckpointInterval">HasCheckpointInterval</span>, <a href="../Predictor.html" class="extype" name="org.apache.spark.ml.Predictor">Predictor</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="" class="extype" name="org.apache.spark.ml.regression.GBTRegressor">GBTRegressor</a>, <a href="GBTRegressionModel.html" class="extype" name="org.apache.spark.ml.regression.GBTRegressionModel">GBTRegressionModel</a>], <span class="extype" name="org.apache.spark.ml.PredictorParams">PredictorParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasPredictionCol">HasPredictionCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasFeaturesCol">HasFeaturesCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasLabelCol">HasLabelCol</span>, <a href="../Estimator.html" class="extype" name="org.apache.spark.ml.Estimator">Estimator</a>[<a href="GBTRegressionModel.html" class="extype" name="org.apache.spark.ml.regression.GBTRegressionModel">GBTRegressionModel</a>], <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../util/Identifiable.html" class="extype" name="org.apache.spark.ml.util.Identifiable">Identifiable</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../util/DefaultParamsWritable.html" class="extype" name="org.apache.spark.ml.util.DefaultParamsWritable">DefaultParamsWritable</a>, <a href="../util/MLWritable.html" class="extype" name="org.apache.spark.ml.util.MLWritable">MLWritable</a>, <span class="extype" name="org.apache.spark.ml.tree.GBTRegressorParams">GBTRegressorParams</span>, <span class="extype" name="org.apache.spark.ml.tree.TreeRegressorParams">TreeRegressorParams</span>, <span class="extype" name="org.apache.spark.ml.tree.GBTParams">GBTParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasMaxIter">HasMaxIter</span>, <span class="extype" name="org.apache.spark.ml.tree.TreeEnsembleParams">TreeEnsembleParams</span>, <span class="extype" name="org.apache.spark.ml.tree.DecisionTreeParams">DecisionTreeParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasSeed">HasSeed</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasCheckpointInterval">HasCheckpointInterval</span>, <a href="../Predictor.html" class="extype" name="org.apache.spark.ml.Predictor">Predictor</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="" class="extype" name="org.apache.spark.ml.regression.GBTRegressor">GBTRegressor</a>, <a href="GBTRegressionModel.html" class="extype" name="org.apache.spark.ml.regression.GBTRegressionModel">GBTRegressionModel</a>], <span class="extype" name="org.apache.spark.ml.PredictorParams">PredictorParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasPredictionCol">HasPredictionCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasFeaturesCol">HasFeaturesCol</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasLabelCol">HasLabelCol</span>, <a href="../Estimator.html" class="extype" name="org.apache.spark.ml.Estimator">Estimator</a>[<a href="GBTRegressionModel.html" class="extype" name="org.apache.spark.ml.regression.GBTRegressionModel">GBTRegressionModel</a>], <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../util/Identifiable.html" class="extype" name="org.apache.spark.ml.util.Identifiable">Identifiable</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -83,7 +83,7 @@ It supports both continuous and categorical features.</p><p>The implementation i
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.ml.regression.GBTRegressor"><span>GBTRegressor</span></li><li class="in" name="org.apache.spark.ml.util.DefaultParamsWritable"><span>DefaultParamsWritable</span></li><li class="in" name="org.apache.spark.ml.util.MLWritable"><span>MLWritable</span></li><li class="in" name="org.apache.spark.ml.tree.GBTRegressorParams"><span>GBTRegressorParams</span></li><li class="in" name="org.apache.spark.ml.tree.TreeRegressorParams"><span>TreeRegressorParams</span></li><li class="in" name="org.apache.spark.ml.tree.GBTParams"><span>GBTParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasStepSize"><span>HasStepSize</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasMaxIter"><span>HasMaxIter</span></li><li class="in" name="org.apache.spark.ml.tree.TreeEnsembleParams"><span>TreeEnsembleParams</span></li><li class="in" name="org.apache.spark.ml.tree.DecisionTreeParams"><span>DecisionTreeParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasSeed"><span>HasSeed</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasCheckpointInterval"><span>HasCheckpointInterval</span></li><li class="in" name="org.apache.spark.ml.Predictor"><span>Predictor</span></li><li class="in" name="org.apache.spark.ml.PredictorParams"><span>PredictorParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasPredictionCol"><span>HasPredictionCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasFeaturesCol"><span>HasFeaturesCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasLabelCol"><span>HasLabelCol</span></li><li class="in" name="org.apache.spark.ml.Estimator"><span>Estimator</span></li><li class="in" name="org.apache.spark.ml.PipelineStage"><span>PipelineStage</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.ml.param.Params"><span>Params</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.ml.util.Identifiable"><span>Identifiable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.ml.regression.GBTRegressor"><span>GBTRegressor</span></li><li class="in" name="org.apache.spark.ml.util.DefaultParamsWritable"><span>DefaultParamsWritable</span></li><li class="in" name="org.apache.spark.ml.util.MLWritable"><span>MLWritable</span></li><li class="in" name="org.apache.spark.ml.tree.GBTRegressorParams"><span>GBTRegressorParams</span></li><li class="in" name="org.apache.spark.ml.tree.TreeRegressorParams"><span>TreeRegressorParams</span></li><li class="in" name="org.apache.spark.ml.tree.GBTParams"><span>GBTParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasMaxIter"><span>HasMaxIter</span></li><li class="in" name="org.apache.spark.ml.tree.TreeEnsembleParams"><span>TreeEnsembleParams</span></li><li class="in" name="org.apache.spark.ml.tree.DecisionTreeParams"><span>DecisionTreeParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasSeed"><span>HasSeed</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasCheckpointInterval"><span>HasCheckpointInterval</span></li><li class="in" name="org.apache.spark.ml.Predictor"><span>Predictor</span></li><li class="in" name="org.apache.spark.ml.PredictorParams"><span>PredictorParams</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasPredictionCol"><span>HasPredictionCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasFeaturesCol"><span>HasFeaturesCol</span></li><li class="in" name="org.apache.spark.ml.param.shared.HasLabelCol"><span>HasLabelCol</span></li><li class="in" name="org.apache.spark.ml.Estimator"><span>Estimator</span></li><li class="in" name="org.apache.spark.ml.PipelineStage"><span>PipelineStage</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.ml.param.Params"><span>Params</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.ml.util.Identifiable"><span>Identifiable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -986,7 +986,7 @@ if neither is set.
       </a>
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasSeed</dd></dl></div>
-    </li><li name="org.apache.spark.ml.param.shared.HasStepSize#getStepSize" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
+    </li><li name="org.apache.spark.ml.tree.GBTParams#getStepSize" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
       <a id="getStepSize:Double"></a>
       <a id="getStepSize:Double"></a>
       <h4 class="signature">
@@ -1002,7 +1002,7 @@ if neither is set.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasStepSize</dd></dl></div>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>GBTParams</dd></dl></div>
     </li><li name="org.apache.spark.ml.tree.TreeEnsembleParams#getSubsamplingRate" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
       <a id="getSubsamplingRate:Double"></a>
       <a id="getSubsamplingRate:Double"></a>
@@ -1543,6 +1543,7 @@ split per iteration, and its aggregates may exceed this size.
       </a>
     </span>
       <p class="shortcomment cmt">Minimum information gain for a split to be considered at a tree node.</p><div class="fullcomment"><div class="comment cmt"><p>Minimum information gain for a split to be considered at a tree node.
+Should be &gt;= 0.0.
 (default = 0.0)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>DecisionTreeParams</dd></dl></div>
     </li><li name="org.apache.spark.ml.tree.DecisionTreeParams#minInstancesPerNode" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="minInstancesPerNode:org.apache.spark.ml.param.IntParam"></a>
@@ -1633,9 +1634,9 @@ Should be &gt;= 1.
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasPredictionCol#predictionCol" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="predictionCol:org.apache.spark.ml.param.Param[String]"></a>
       <a id="predictionCol:Param[String]"></a>
@@ -1796,7 +1797,7 @@ this variable gets initialized before other params.
 E.g. 10 means that the cache will get checkpointed every 10 iterations.
 This is only used if cacheNodeIds is true and if the checkpoint directory is set in
 <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">org.apache.spark.SparkContext</a>.
-Must be &gt;= 1.
+Must be at least 1.
 (default = 10)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.regression.GBTRegressor">GBTRegressor</a> → DecisionTreeParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1878,7 +1879,8 @@ Must be &gt;= 1.
       </a>
     </span>
       <p class="shortcomment cmt">The impurity setting is ignored for GBT models.</p><div class="fullcomment"><div class="comment cmt"><p>The impurity setting is ignored for GBT models.
-Individual trees are built using impurity &quot;Variance.&quot;</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.regression.GBTRegressor">GBTRegressor</a> → TreeRegressorParams</dd><dt>Annotations</dt><dd>
+Individual trees are built using impurity &quot;Variance.&quot;
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.regression.GBTRegressor">GBTRegressor</a> → TreeRegressorParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.4.0&quot;</span>
@@ -2119,9 +2121,7 @@ Individual trees are built using impurity &quot;Variance.&quot;</p></div><dl cla
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Step size (a.k.a.</p><div class="fullcomment"><div class="comment cmt"><p>Step size (a.k.a. learning rate) in interval (0, 1] for shrinking the contribution of each
-estimator.
-(default = 0.1)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.regression.GBTRegressor">GBTRegressor</a> → GBTParams</dd><dt>Annotations</dt><dd>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.regression.GBTRegressor">GBTRegressor</a> → GBTParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.4.0&quot;</span>
@@ -2151,7 +2151,7 @@ estimator.
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.ml.param.shared.HasStepSize#stepSize" visbl="pub" data-isabs="false" fullComment="yes" group="param">
+    </li><li name="org.apache.spark.ml.tree.GBTParams#stepSize" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="stepSize:org.apache.spark.ml.param.DoubleParam"></a>
       <a id="stepSize:DoubleParam"></a>
       <h4 class="signature">
@@ -2167,7 +2167,9 @@ estimator.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Param for Step size to be used for each iteration of optimization.</p><div class="fullcomment"><div class="comment cmt"><p>Param for Step size to be used for each iteration of optimization.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasStepSize</dd></dl></div>
+      <p class="shortcomment cmt">Param for Step size (a.k.a.</p><div class="fullcomment"><div class="comment cmt"><p>Param for Step size (a.k.a. learning rate) in interval (0, 1] for shrinking
+the contribution of each estimator.
+(default = 0.1)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>GBTParams</dd></dl></div>
     </li><li name="org.apache.spark.ml.tree.TreeEnsembleParams#subsamplingRate" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="subsamplingRate:org.apache.spark.ml.param.DoubleParam"></a>
       <a id="subsamplingRate:DoubleParam"></a>
@@ -2256,7 +2258,9 @@ and copying parameters into the model.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Predictor.html" class="extype" name="org.apache.spark.ml.Predictor">Predictor</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd></dl></div>
     </li><li name="org.apache.spark.ml.PipelineStage#transformSchema" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -2416,31 +2420,7 @@ be assumed valid until proven otherwise.
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.tree.GBTParams#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: Will be removed in 2.1.0. All the checks should be merged into transformSchema">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.regression.GBTRegressor@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>GBTParams → <a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Deprecated</dt><dd class="cmt"><p>Will be removed in 2.1.0. All the checks should be merged into transformSchema</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">
@@ -2454,8 +2434,6 @@ those are checked during schema validation.</p></div><dl class="attributes block
               <h3>Inherited from <span class="extype" name="org.apache.spark.ml.tree.TreeRegressorParams">TreeRegressorParams</span></h3>
             </div><div class="parent" name="org.apache.spark.ml.tree.GBTParams">
               <h3>Inherited from <span class="extype" name="org.apache.spark.ml.tree.GBTParams">GBTParams</span></h3>
-            </div><div class="parent" name="org.apache.spark.ml.param.shared.HasStepSize">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.ml.param.shared.HasStepSize">HasStepSize</span></h3>
             </div><div class="parent" name="org.apache.spark.ml.param.shared.HasMaxIter">
               <h3>Inherited from <span class="extype" name="org.apache.spark.ml.param.shared.HasMaxIter">HasMaxIter</span></h3>
             </div><div class="parent" name="org.apache.spark.ml.tree.TreeEnsembleParams">

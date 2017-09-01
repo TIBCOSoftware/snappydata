@@ -723,13 +723,13 @@
     </span>
       <p class="shortcomment cmt">Method to train a decision tree model for binary or multiclass classification.</p><div class="fullcomment"><div class="comment cmt"><p>Method to train a decision tree model for binary or multiclass classification.
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>Training dataset: RDD of <a href="../regression/LabeledPoint.html" class="extype" name="org.apache.spark.mllib.regression.LabeledPoint">org.apache.spark.mllib.regression.LabeledPoint</a>.
-             Labels should take values {0, 1, ..., numClasses-1}.</p></dd><dt class="param">numClasses</dt><dd class="cmt"><p>Number of classes for classification.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n -&gt; k)
+             Labels should take values {0, 1, ..., numClasses-1}.</p></dd><dt class="param">numClasses</dt><dd class="cmt"><p>Number of classes for classification.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n to k)
                                indicates that feature n is categorical with k categories
                                indexed from 0: {0, 1, ..., k-1}.</p></dd><dt class="param">numTrees</dt><dd class="cmt"><p>Number of trees in the random forest.</p></dd><dt class="param">featureSubsetStrategy</dt><dd class="cmt"><p>Number of features to consider for splits at each node.
                              Supported values: &quot;auto&quot;, &quot;all&quot;, &quot;sqrt&quot;, &quot;log2&quot;, &quot;onethird&quot;.
                              If &quot;auto&quot; is set, this parameter is set based on numTrees:
                                if numTrees == 1, set to &quot;all&quot;;
-                               if numTrees &gt; 1 (forest) set to &quot;sqrt&quot;.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.
+                               if numTrees is greater than 1 (forest) set to &quot;sqrt&quot;.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.
                 Supported values: &quot;gini&quot; (recommended) or &quot;entropy&quot;.</p></dd><dt class="param">maxDepth</dt><dd class="cmt"><p>Maximum depth of the tree (e.g. depth 0 means 1 leaf node, depth 1 means
                 1 internal node + 2 leaf nodes).
                 (suggested value: 4)</p></dd><dt class="param">maxBins</dt><dd class="cmt"><p>Maximum number of bins used for splitting features
@@ -762,7 +762,7 @@
                              Supported values: &quot;auto&quot;, &quot;all&quot;, &quot;sqrt&quot;, &quot;log2&quot;, &quot;onethird&quot;.
                              If &quot;auto&quot; is set, this parameter is set based on numTrees:
                                if numTrees == 1, set to &quot;all&quot;;
-                               if numTrees &gt; 1 (forest) set to &quot;sqrt&quot;.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>Random seed for bootstrapping and choosing feature subsets.</p></dd><dt>returns</dt><dd class="cmt"><p>RandomForestModel that can be used for prediction.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                               if numTrees is greater than 1 (forest) set to &quot;sqrt&quot;.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>Random seed for bootstrapping and choosing feature subsets.</p></dd><dt>returns</dt><dd class="cmt"><p>RandomForestModel that can be used for prediction.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.2.0&quot;</span>
@@ -812,13 +812,13 @@
     </span>
       <p class="shortcomment cmt">Method to train a decision tree model for regression.</p><div class="fullcomment"><div class="comment cmt"><p>Method to train a decision tree model for regression.
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>Training dataset: RDD of <a href="../regression/LabeledPoint.html" class="extype" name="org.apache.spark.mllib.regression.LabeledPoint">org.apache.spark.mllib.regression.LabeledPoint</a>.
-             Labels are real numbers.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n -&gt; k)
+             Labels are real numbers.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n to k)
                                indicates that feature n is categorical with k categories
                                indexed from 0: {0, 1, ..., k-1}.</p></dd><dt class="param">numTrees</dt><dd class="cmt"><p>Number of trees in the random forest.</p></dd><dt class="param">featureSubsetStrategy</dt><dd class="cmt"><p>Number of features to consider for splits at each node.
                              Supported values: &quot;auto&quot;, &quot;all&quot;, &quot;sqrt&quot;, &quot;log2&quot;, &quot;onethird&quot;.
                              If &quot;auto&quot; is set, this parameter is set based on numTrees:
                                if numTrees == 1, set to &quot;all&quot;;
-                               if numTrees &gt; 1 (forest) set to &quot;onethird&quot;.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.
+                               if numTrees is greater than 1 (forest) set to &quot;onethird&quot;.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.
                 The only supported value for regression is &quot;variance&quot;.</p></dd><dt class="param">maxDepth</dt><dd class="cmt"><p>Maximum depth of the tree. (e.g., depth 0 means 1 leaf node, depth 1 means
                 1 internal node + 2 leaf nodes).
                 (suggested value: 4)</p></dd><dt class="param">maxBins</dt><dd class="cmt"><p>Maximum number of bins used for splitting features.
@@ -851,7 +851,7 @@
                              Supported values: &quot;auto&quot;, &quot;all&quot;, &quot;sqrt&quot;, &quot;log2&quot;, &quot;onethird&quot;.
                              If &quot;auto&quot; is set, this parameter is set based on numTrees:
                                if numTrees == 1, set to &quot;all&quot;;
-                               if numTrees &gt; 1 (forest) set to &quot;onethird&quot;.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>Random seed for bootstrapping and choosing feature subsets.</p></dd><dt>returns</dt><dd class="cmt"><p>RandomForestModel that can be used for prediction.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                               if numTrees is greater than 1 (forest) set to &quot;onethird&quot;.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>Random seed for bootstrapping and choosing feature subsets.</p></dd><dt>returns</dt><dd class="cmt"><p>RandomForestModel that can be used for prediction.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.2.0&quot;</span>

@@ -658,10 +658,10 @@ Runs gradient descent on the given training data.</p></div><dl class="paramcmts 
     </span>
       <p class="shortcomment cmt">Set the convergence tolerance.</p><div class="fullcomment"><div class="comment cmt"><p>Set the convergence tolerance. Default 0.001
 convergenceTol is a condition which decides iteration termination.
-The end of iteration is decided based on below logic.</p><ul><li>If the norm of the new solution vector is &gt;1, the diff of solution vectors
+The end of iteration is decided based on below logic.</p><ul><li>If the norm of the new solution vector is greater than 1, the diff of solution vectors
    is compared to relative tolerance which means normalizing by the norm of
-   the new solution vector.</li><li>If the norm of the new solution vector is &lt;=1, the diff of solution vectors
-   is compared to absolute tolerance which is not normalizing.</li></ul><p>Must be between 0.0 and 1.0 inclusively.
+   the new solution vector.</li><li>If the norm of the new solution vector is less than or equal to 1, the diff of solution
+   vectors is compared to absolute tolerance which is not normalizing.</li></ul><p>Must be between 0.0 and 1.0 inclusively.
 </p></div></div>
     </li><li name="org.apache.spark.mllib.optimization.GradientDescent#setGradient" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="setGradient(gradient:org.apache.spark.mllib.optimization.Gradient):GradientDescent.this.type"></a>

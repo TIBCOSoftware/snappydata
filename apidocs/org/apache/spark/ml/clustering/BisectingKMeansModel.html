@@ -51,15 +51,12 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-Model fitted by BisectingKMeans.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Model fitted by BisectingKMeans.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;2.0.0&quot;</span>
     </span>)</span>
-              
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -757,6 +754,30 @@ if neither is set.
       </a>
     </span>
       <p class="shortcomment cmt">Indicates whether this <a href="../Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a> has a corresponding parent.</p><div class="fullcomment"><div class="comment cmt"><p>Indicates whether this <a href="../Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a> has a corresponding parent.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.clustering.BisectingKMeansModel#hasSummary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasSummary:Boolean"></a>
+      <a id="hasSummary:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasSummary</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.clustering.BisectingKMeansModel@hasSummary:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return true if there exists summary of model.</p><div class="fullcomment"><div class="comment cmt"><p>Return true if there exists summary of model.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1154,9 +1175,9 @@ The actual number could be smaller if there are no divisible leaf clusters.</p><
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The minimum number of points (if &gt;= 1.0) or the minimum proportion
-of points (if &lt; 1.0) of a divisible cluster (default: 1.0).</p><div class="fullcomment"><div class="comment cmt"><p>The minimum number of points (if &gt;= 1.0) or the minimum proportion
-of points (if &lt; 1.0) of a divisible cluster (default: 1.0).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>BisectingKMeansParams</dd><dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">The minimum number of points (if greater than or equal to 1.0) or the minimum proportion
+of points (if less than 1.0) of a divisible cluster (default: 1.0).</p><div class="fullcomment"><div class="comment cmt"><p>The minimum number of points (if greater than or equal to 1.0) or the minimum proportion
+of points (if less than 1.0) of a divisible cluster (default: 1.0).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>BisectingKMeansParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;2.0.0&quot;</span>
@@ -1231,9 +1252,9 @@ of points (if &lt; 1.0) of a divisible cluster (default: 1.0).</p></div><dl clas
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.Model#parent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="parent:org.apache.spark.ml.Estimator[M]"></a>
       <a id="parent:Estimator[BisectingKMeansModel]"></a>
@@ -1250,9 +1271,7 @@ this variable gets initialized before other params.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The parent estimator that produced this model.</p><div class="fullcomment"><div class="comment cmt"><p>The parent estimator that produced this model.
-Note: For ensembles' component Models, this value can be null.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a></dd></dl></div>
+      <p class="shortcomment cmt">The parent estimator that produced this model.</p><div class="fullcomment"><div class="comment cmt"><p>The parent estimator that produced this model.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a></dd><dt>Note</dt><dd><span class="cmt"><p>For ensembles' component Models, this value can be null.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasPredictionCol#predictionCol" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="predictionCol:org.apache.spark.ml.param.Param[String]"></a>
       <a id="predictionCol:Param[String]"></a>
@@ -1410,6 +1429,29 @@ Note: For ensembles' component Models, this value can be null.
     </span>
       <p class="shortcomment cmt">Sets a default value for a param.</p><div class="fullcomment"><div class="comment cmt"><p>Sets a default value for a param.</p></div><dl class="paramcmts block"><dt class="param">param</dt><dd class="cmt"><p>param to set the default value. Make sure that this param is initialized before
               this method gets called.</p></dd><dt class="param">value</dt><dd class="cmt"><p>the default value</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.clustering.BisectingKMeansModel#setFeaturesCol" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
+      <a id="setFeaturesCol(value:String):BisectingKMeansModel.this.type"></a>
+      <a id="setFeaturesCol(String):BisectingKMeansModel.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setFeaturesCol</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.ml.clustering.BisectingKMeansModel">BisectingKMeansModel</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.clustering.BisectingKMeansModel@setFeaturesCol(value:String):BisectingKMeansModel.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.Model#setParent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setParent(parent:org.apache.spark.ml.Estimator[M]):M"></a>
       <a id="setParent(Estimator[BisectingKMeansModel]):BisectingKMeansModel"></a>
@@ -1428,6 +1470,54 @@ Note: For ensembles' component Models, this value can be null.
     </span>
       <p class="shortcomment cmt">Sets the parent of this model (Java API).</p><div class="fullcomment"><div class="comment cmt"><p>Sets the parent of this model (Java API).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.clustering.BisectingKMeansModel#setPredictionCol" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
+      <a id="setPredictionCol(value:String):BisectingKMeansModel.this.type"></a>
+      <a id="setPredictionCol(String):BisectingKMeansModel.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setPredictionCol</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.ml.clustering.BisectingKMeansModel">BisectingKMeansModel</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.clustering.BisectingKMeansModel@setPredictionCol(value:String):BisectingKMeansModel.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.ml.clustering.BisectingKMeansModel#summary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="summary:org.apache.spark.ml.clustering.BisectingKMeansSummary"></a>
+      <a id="summary:BisectingKMeansSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">summary</span><span class="result">: <a href="BisectingKMeansSummary.html" class="extype" name="org.apache.spark.ml.clustering.BisectingKMeansSummary">BisectingKMeansSummary</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.clustering.BisectingKMeansModel@summary:org.apache.spark.ml.clustering.BisectingKMeansSummary" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Gets summary of model on training set.</p><div class="fullcomment"><div class="comment cmt"><p>Gets summary of model on training set. An exception is
+thrown if <code>trainingSummary == None</code>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -1550,7 +1640,9 @@ Note: For ensembles' component Models, this value can be null.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.clustering.BisectingKMeansModel">BisectingKMeansModel</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -1720,34 +1812,7 @@ be assumed valid until proven otherwise.
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.param.Params#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.0) Will be removed in 2.1.0. Checks should be merged into transformSchema.">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.clustering.BisectingKMeansModel@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Will be removed in 2.1.0. Checks should be merged into transformSchema.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">
@@ -1794,6 +1859,9 @@ those are checked during schema validation.</p></div><dl class="attributes block
            the parameter values through setters and getters, respectively.</p></div>
             </div><div class="group" name="Ungrouped">
               <h3>Members</h3>
+              
+            </div><div class="group" name="setParam">
+              <h3>Parameter setters</h3>
               
             </div><div class="group" name="getParam">
               <h3>Parameter getters</h3>

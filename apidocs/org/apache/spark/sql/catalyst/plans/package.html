@@ -107,6 +107,24 @@ a base logical plan representation.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.plans.InnerLike" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InnerLikeextendsJoinType"></a>
+      <a id="InnerLike:InnerLike"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="InnerLike.html"><span class="name">InnerLike</span></a><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@InnerLikeextendsJoinType" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The explicitCartesian flag indicates if the inner join was constructed with a CROSS join
+indicating a cartesian product has been explicitly requested.</p>
     </li><li name="org.apache.spark.sql.catalyst.plans.JoinType" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="JoinTypeextendsAnyRef"></a>
       <a id="JoinType:JoinType"></a>
@@ -167,7 +185,7 @@ a base logical plan representation.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="UsingJoin.html"><span class="name">UsingJoin</span></a><span class="params">(<span name="tpe">tpe: <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="usingColumns">usingColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../analysis/UnresolvedAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute">UnresolvedAttribute</a>]</span>)</span><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="UsingJoin.html"><span class="name">UsingJoin</span></a><span class="params">(<span name="tpe">tpe: <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="usingColumns">usingColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@UsingJoinextendsJoinTypewithProductwithSerializable" title="Permalink" target="_top">
@@ -182,7 +200,24 @@ a base logical plan representation.
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.catalyst.plans.FullOuter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.catalyst.plans.Cross" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Cross"></a>
+      <a id="Cross:Cross"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Cross$.html"><span class="name">Cross</span></a><span class="result"> extends <a href="InnerLike.html" class="extype" name="org.apache.spark.sql.catalyst.plans.InnerLike">InnerLike</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@Cross" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.FullOuter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FullOuter"></a>
       <a id="FullOuter:FullOuter"></a>
       <h4 class="signature">
@@ -208,7 +243,7 @@ a base logical plan representation.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="Inner$.html"><span class="name">Inner</span></a><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="Inner$.html"><span class="name">Inner</span></a><span class="result"> extends <a href="InnerLike.html" class="extype" name="org.apache.spark.sql.catalyst.plans.InnerLike">InnerLike</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@Inner" title="Permalink" target="_top">

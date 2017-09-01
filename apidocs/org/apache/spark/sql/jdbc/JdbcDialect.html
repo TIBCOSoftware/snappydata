@@ -54,8 +54,8 @@ Encapsulates everything (extensions, workarounds, quirks) to handle the
 SQL dialect of a certain database or jdbc driver.
 Lots of databases define types that aren't explicitly supported
 by the JDBC spec.  Some JDBC drivers also report inaccurate
-information---for instance, BIT(n&gt;1) being reported as a BIT type is quite
-common, even though BIT in JDBC is meant for single-bit values.  Also, there
+information---for instance, BIT(n<code>&gt;</code>1) being reported as a BIT type is quite
+common, even though BIT in JDBC is meant for single-bit values. Also, there
 does not appear to be a standard name for an unbounded string or binary
 type; we use BLOB and CLOB by default but override with database-specific
 alternatives when these are absent or do not behave correctly.</p><p>Currently, the only thing done by the dialect is type mapping.
@@ -66,6 +66,8 @@ if <code>getJDBCType</code> returns <code>(null, None)</code>, the default type 
 for the given Catalyst type.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -373,6 +375,32 @@ allow dialects that need special treatment to optimize behavior.</p></div><dl cl
       </a>
     </span>
       <p class="shortcomment cmt">Retrieve the jdbc / sql type for a given datatype.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieve the jdbc / sql type for a given datatype.</p></div><dl class="paramcmts block"><dt class="param">dt</dt><dd class="cmt"><p>The datatype (e.g. <a href="../types/StringType.html" class="extype" name="org.apache.spark.sql.types.StringType">org.apache.spark.sql.types.StringType</a>)</p></dd><dt>returns</dt><dd class="cmt"><p>The new JdbcType if there is an override for this DataType</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.jdbc.JdbcDialect#getSchemaQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getSchemaQuery(table:String):String"></a>
+      <a id="getSchemaQuery(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSchemaQuery</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.jdbc.JdbcDialect@getSchemaQuery(table:String):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The SQL query that should be used to discover the schema of a table.</p><div class="fullcomment"><div class="comment cmt"><p>The SQL query that should be used to discover the schema of a table. It only needs to
+ensure that the result set has the same schema as the table, such as by calling
+&quot;SELECT * ...&quot;. Dialects can override this method to return a query that works best in a
+particular database.</p></div><dl class="paramcmts block"><dt class="param">table</dt><dd class="cmt"><p>The name of the table.</p></dd><dt>returns</dt><dd class="cmt"><p>The SQL query to use for discovering the schema.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.jdbc.JdbcDialect#getTableExistsQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getTableExistsQuery(table:String):String"></a>
       <a id="getTableExistsQuery(String):String"></a>
@@ -408,6 +436,27 @@ override this method to return a query that works best in a particular database.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.jdbc.JdbcDialect#isCascadingTruncateTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isCascadingTruncateTable():Option[Boolean]"></a>
+      <a id="isCascadingTruncateTable():Option[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isCascadingTruncateTable</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.jdbc.JdbcDialect@isCascadingTruncateTable():Option[Boolean]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return Some[true] iff <code>TRUNCATE TABLE</code> causes cascading default.</p><div class="fullcomment"><div class="comment cmt"><p>Return Some[true] iff <code>TRUNCATE TABLE</code> causes cascading default.
+Some[true] : TRUNCATE TABLE causes cascading.
+Some[false] : TRUNCATE TABLE does not cause cascading.
+None: The behavior of TRUNCATE TABLE is unknown (default).
+</p></div></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>

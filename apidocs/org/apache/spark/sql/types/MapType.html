@@ -51,10 +51,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type for Maps. Keys in a map are not allowed to have <code>null</code> values.</p><p>Please use <span class="extype" name="DataTypes.createMapType()">DataTypes.createMapType()</span> to create a specific instance.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The data type for Maps. Keys in a map are not allowed to have <code>null</code> values.</p><p>Please use <code>DataTypes.createMapType()</code> to create a specific instance.
 </p></div><dl class="paramcmts block"><dt class="param">keyType</dt><dd class="cmt"><p>The data type of map keys.</p></dd><dt class="param">valueType</dt><dd class="cmt"><p>The data type of map values.</p></dd><dt class="param">valueContainsNull</dt><dd class="cmt"><p>Indicates if map values have <code>null</code> values.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -263,9 +262,9 @@ The data type for Maps. Keys in a map are not allowed to have <code>null</code> 
       </a>
     </span>
       <p class="shortcomment cmt">The default size of a value of the MapType is
-100 * (the default size of the key type + the default size of the value type).</p><div class="fullcomment"><div class="comment cmt"><p>The default size of a value of the MapType is
-100 * (the default size of the key type + the default size of the value type).
-(We assume that there are 100 elements).
+(the default size of the key type + the default size of the value type).</p><div class="fullcomment"><div class="comment cmt"><p>The default size of a value of the MapType is
+(the default size of the key type + the default size of the value type).
+We assume that there is only 1 element on average in a map. See SPARK-18853.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.types.MapType">MapType</a> → <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>

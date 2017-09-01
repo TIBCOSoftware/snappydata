@@ -82,10 +82,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Interface used to load a streaming <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from external storage systems (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Interface used to load a streaming <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from external storage systems (e.g. file systems,
-key-value stores, etc). Use <a href="../SparkSession.html#readStream:org.apache.spark.sql.streaming.DataStreamReader" class="extmbr" name="org.apache.spark.sql.SparkSession#readStream">SparkSession.readStream</a> to access this.
+      <p class="shortcomment cmt">Interface used to load a streaming <code>Dataset</code> from external storage systems (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Interface used to load a streaming <code>Dataset</code> from external storage systems (e.g. file systems,
+key-value stores, etc). Use <code>SparkSession.readStream</code> to access this.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamWriter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -105,11 +107,13 @@ key-value stores, etc). Use <a href="../SparkSession.html#readStream:org.apache.
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-Interface used to write a streaming <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> to external storage systems (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Interface used to write a streaming <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> to external storage systems (e.g. file systems,
-key-value stores, etc). Use <a href="../Dataset.html#writeStream:org.apache.spark.sql.streaming.DataStreamWriter[T]" class="extmbr" name="org.apache.spark.sql.Dataset#writeStream">Dataset.writeStream</a> to access this.
+Interface used to write a streaming <code>Dataset</code> to external storage systems (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Interface used to write a streaming <code>Dataset</code> to external storage systems (e.g. file systems,
+key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DirectKafkaStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -328,6 +332,8 @@ df.write.trigger(ProcessingTime(<span class="num">10.</span>seconds))</pre><p>Ja
 df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SECONDS))</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.RabbitMQDecoder" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="RabbitMQDecoder[T]extendsAnyRef"></a>
@@ -489,29 +495,33 @@ table and CQs are evaluated on those small tables
 Some of the abstraction and code is borrowed from the project:
 https://github.com/Intel-bigdata/spark-streamingsql
 </p>
-    </li><li name="org.apache.spark.sql.streaming.SinkStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SinkStatusextendsAnyRef"></a>
-      <a id="SinkStatus:SinkStatus"></a>
+    </li><li name="org.apache.spark.sql.streaming.SinkProgress" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SinkProgressextendsSerializable"></a>
+      <a id="SinkProgress:SinkProgress"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SinkStatus.html"><span class="name">SinkStatus</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="SinkProgress.html"><span class="name">SinkProgress</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SinkStatusextendsAnyRef" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SinkProgressextendsSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-Status and metrics of a streaming sink.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Status and metrics of a streaming sink.
+Information about progress made for a sink in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
+during a trigger.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Information about progress made for a sink in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
+during a trigger. See <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a> for more information.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.SnappyStreamingContextFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyStreamingContextFactoryextendsSparkContextFactory"></a>
       <a id="SnappyStreamingContextFactory:SnappyStreamingContextFactory"></a>
@@ -580,29 +590,58 @@ Status and metrics of a streaming sink.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.streaming.SourceStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SourceStatusextendsAnyRef"></a>
-      <a id="SourceStatus:SourceStatus"></a>
+    </li><li name="org.apache.spark.sql.streaming.SourceProgress" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SourceProgressextendsSerializable"></a>
+      <a id="SourceProgress:SourceProgress"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SourceStatus.html"><span class="name">SourceStatus</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="SourceProgress.html"><span class="name">SourceProgress</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SourceStatusextendsAnyRef" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SourceProgressextendsSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-Status and metrics of a streaming Source.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Status and metrics of a streaming Source.
+Information about progress made for a source in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
+during a trigger.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Information about progress made for a source in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
+during a trigger. See <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a> for more information.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StateOperatorProgress" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StateOperatorProgressextendsSerializable"></a>
+      <a id="StateOperatorProgress:StateOperatorProgress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StateOperatorProgress.html"><span class="name">StateOperatorProgress</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StateOperatorProgressextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Information about updates made to stateful operators in a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> during a trigger.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Information about updates made to stateful operators in a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> during a trigger.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamBaseRelation" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="StreamBaseRelationextendsBaseRelationwithParentRelationwithStreamPlanwithTableScanwithDestroyRelationwithSerializablewithLogging"></a>
       <a id="StreamBaseRelation:StreamBaseRelation"></a>
@@ -710,6 +749,8 @@ A handle to a query that is executing continuously in the background as new data
 All these methods are thread-safe.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryException" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StreamingQueryExceptionextendsException"></a>
@@ -733,6 +774,8 @@ Exception that stopped a <a href="StreamingQuery.html" class="extype" name="org.
 that caused the failure.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="StreamingQueryListenerextendsAnyRef"></a>
@@ -755,6 +798,8 @@ Interface for listening to events related to <a href="StreamingQuery.html" class
 Interface for listening to events related to <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQueries</a>.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The methods are not thread-safe as they may be called from different threads.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StreamingQueryManagerextendsAnyRef"></a>
@@ -773,14 +818,44 @@ Interface for listening to events related to <a href="StreamingQuery.html" class
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>.
+A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <code>SparkSession</code>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <code>SparkSession</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryProgress" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryProgressextendsSerializable"></a>
+      <a id="StreamingQueryProgress:StreamingQueryProgress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryProgress.html"><span class="name">StreamingQueryProgress</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryProgressextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Information about progress made in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> during
+a trigger.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Information about progress made in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> during
+a trigger. Each event relates to processing done for a single trigger of the streaming
+query. Events are emitted even when no new data is available to be processed.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StreamingQueryStatusextendsAnyRef"></a>
+      <a id="StreamingQueryStatusextendsSerializable"></a>
       <a id="StreamingQueryStatus:StreamingQueryStatus"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -788,20 +863,22 @@ A class to manage all the <a href="StreamingQuery.html" class="extype" name="org
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="StreamingQueryStatus.html"><span class="name">StreamingQueryStatus</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="StreamingQueryStatus.html"><span class="name">StreamingQueryStatus</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryStatusextendsAnyRef" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryStatusextendsSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-A class used to report information about the progress of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-A class used to report information about the progress of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.
+Reports information about the instantaneous status of a streaming query.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Reports information about the instantaneous status of a streaming query.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.TextSocketStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TextSocketStreamRelationextendsStreamBaseRelation"></a>
       <a id="TextSocketStreamRelation:TextSocketStreamRelation"></a>
@@ -857,6 +934,8 @@ Used to indicate how often results should be produced by a <a href="StreamingQue
 Used to indicate how often results should be produced by a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.TweetToHashtagRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -1007,6 +1086,8 @@ Used to create <a href="ProcessingTime.html" class="extype" name="org.apache.spa
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.RabbitMQUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RabbitMQUtils"></a>
@@ -1062,6 +1143,8 @@ Used to create <a href="ProcessingTime.html" class="extype" name="org.apache.spa
 Companion object of <a href="StreamingQueryListener.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener">StreamingQueryListener</a> that defines the listener events.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
 Companion object of <a href="StreamingQueryListener.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener">StreamingQueryListener</a> that defines the listener events.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.twitter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">

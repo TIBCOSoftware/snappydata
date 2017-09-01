@@ -66,7 +66,31 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.catalyst.optimizer.GetCurrentDatabase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.catalyst.optimizer.CheckCartesianProducts" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CheckCartesianProductsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable"></a>
+      <a id="CheckCartesianProducts:CheckCartesianProducts"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CheckCartesianProducts.html"><span class="name">CheckCartesianProducts</span></a><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@CheckCartesianProductsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if there any cartesian products between joins of any type in the optimized plan tree.</p><div class="fullcomment"><div class="comment cmt"><p>Check if there any cartesian products between joins of any type in the optimized plan tree.
+Throw an error if a cartesian product is found without an explicit cross join specified.
+This rule is effectively disabled if the CROSS_JOINS_ENABLED flag is true.</p><p>This rule must be run AFTER the ReorderJoin rule since the join conditions for each join must be
+collected before checking if it is a cartesian product. If you have
+SELECT * from R, S where R.r = S.s,
+the join between R and S is not a cartesian product and therefore should be allowed.
+The predicate R.r = S.s is not recognized as a join condition until the ReorderJoin rule.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.GetCurrentDatabase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GetCurrentDatabaseextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
       <a id="GetCurrentDatabase:GetCurrentDatabase"></a>
       <h4 class="signature">
@@ -92,7 +116,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="OptimizeCodegen.html"><span class="name">OptimizeCodegen</span></a><span class="params">(<span name="conf">conf: <a href="../CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="OptimizeCodegen.html"><span class="name">OptimizeCodegen</span></a><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@OptimizeCodegenextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
@@ -100,7 +124,7 @@
       </a>
     </span>
       <p class="shortcomment cmt">Optimizes expressions by replacing according to CodeGen configuration.</p>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.OptimizeIn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.OptimizeIn" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="OptimizeInextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
       <a id="OptimizeIn:OptimizeIn"></a>
       <h4 class="signature">
@@ -109,16 +133,19 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="OptimizeIn.html"><span class="name">OptimizeIn</span></a><span class="params">(<span name="conf">conf: <a href="../CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="OptimizeIn.html"><span class="name">OptimizeIn</span></a><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@OptimizeInextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Replaces <span class="extype" name="In">(value, seq[Literal])</span> with optimized version<span class="extype" name="InSet">(value, HashSet[Literal])</span>
-which is much faster
-</p>
+      <p class="shortcomment cmt">Optimize IN predicates:
+1.</p><div class="fullcomment"><div class="comment cmt"><p>Optimize IN predicates:
+1. Removes literal repetitions.
+2. Replaces <span class="extype" name="In">(value, seq[Literal])</span> with optimized version
+   <span class="extype" name="InSet">(value, HashSet[Literal])</span> which is much faster.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.Optimizer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="OptimizerextendsRuleExecutor[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="Optimizer:Optimizer"></a>
@@ -202,7 +229,7 @@ Optimizers can override this.</p>
     </span>
       <p class="shortcomment cmt">Combines two adjacent <span class="extype" name="Project">Project</span> operators into one and perform alias substitution,
 merging the expressions into one single expression.</p>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.CollapseRepartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.CollapseRepartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CollapseRepartition"></a>
       <a id="CollapseRepartition:CollapseRepartition"></a>
       <h4 class="signature">
@@ -218,7 +245,34 @@ merging the expressions into one single expression.</p>
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Combines adjacent <span class="extype" name="Repartition">Repartition</span> operators by keeping only the last one.</p>
+      <p class="shortcomment cmt">Combines adjacent <span class="extype" name="Repartition">Repartition</span> and <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span> operator combinations
+by keeping only the one.</p><div class="fullcomment"><div class="comment cmt"><p>Combines adjacent <span class="extype" name="Repartition">Repartition</span> and <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span> operator combinations
+by keeping only the one.
+1. For adjacent <span class="extype" name="Repartition">Repartition</span>s, collapse into the last <span class="extype" name="Repartition">Repartition</span>.
+2. For adjacent <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span>s, collapse into the last <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span>.
+3. For a combination of <span class="extype" name="Repartition">Repartition</span> and <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span>, collapse as a single
+   <span class="extype" name="RepartitionByExpression">RepartitionByExpression</span> with the expression and last number of partition.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.CollapseWindow" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CollapseWindow"></a>
+      <a id="CollapseWindow:CollapseWindow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CollapseWindow$.html"><span class="name">CollapseWindow</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@CollapseWindow" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Collapse Adjacent Window Expression.</p><div class="fullcomment"><div class="comment cmt"><p>Collapse Adjacent Window Expression.
+- If the partition specs and order specs are the same and the window expression are
+  independent, collapse into the parent.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.ColumnPruning" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ColumnPruning"></a>
       <a id="ColumnPruning:ColumnPruning"></a>
@@ -274,6 +328,24 @@ one conjunctive predicate.</p>
     </span>
       <p class="shortcomment cmt">Combines two adjacent <span class="extype" name="Limit">Limit</span> operators into one, merging the
 expressions into one single expression.</p>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.CombineTypedFilters" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CombineTypedFilters"></a>
+      <a id="CombineTypedFilters:CombineTypedFilters"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CombineTypedFilters$.html"><span class="name">CombineTypedFilters</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@CombineTypedFilters" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Combines two adjacent <span class="extype" name="TypedFilter">TypedFilter</span>s, which operate on same type object in condition, into one,
+mering the filter functions into one conjunctive function.</p>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.CombineUnions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CombineUnions"></a>
       <a id="CombineUnions:CombineUnions"></a>
@@ -426,27 +498,6 @@ representation of data item.  For example back to back map operations.
     </span>
       <p class="shortcomment cmt">Removes no-op SortOrder from Sort
 </p>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.EmbedSerializerInFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="EmbedSerializerInFilter"></a>
-      <a id="EmbedSerializerInFilter:EmbedSerializerInFilter"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="EmbedSerializerInFilter$.html"><span class="name">EmbedSerializerInFilter</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@EmbedSerializerInFilter" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Typed <span class="extype" name="Filter">Filter</span> is by default surrounded by a <span class="extype" name="DeserializeToObject">DeserializeToObject</span> beneath it and a
-<span class="extype" name="SerializeFromObject">SerializeFromObject</span> above it.</p><div class="fullcomment"><div class="comment cmt"><p>Typed <span class="extype" name="Filter">Filter</span> is by default surrounded by a <span class="extype" name="DeserializeToObject">DeserializeToObject</span> beneath it and a
-<span class="extype" name="SerializeFromObject">SerializeFromObject</span> above it.  If these serializations can't be eliminated, we should embed
-the deserializer in filter condition to save the extra serialization at last.
-</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.FoldablePropagation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="FoldablePropagation"></a>
       <a id="FoldablePropagation:FoldablePropagation"></a>
@@ -550,6 +601,26 @@ equivalent <span class="extype" name="Literal">Literal</span> values.</p><div cl
 equivalent <span class="extype" name="Literal">Literal</span> values. This rule is more specific with
 Null value propagation from bottom to top of the expression tree.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.PropagateEmptyRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PropagateEmptyRelation"></a>
+      <a id="PropagateEmptyRelation:PropagateEmptyRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PropagateEmptyRelation$.html"><span class="name">PropagateEmptyRelation</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@PropagateEmptyRelation" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Collapse plans consisting empty local relations generated by <a href="PruneFilters$.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer.PruneFilters">PruneFilters</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Collapse plans consisting empty local relations generated by <a href="PruneFilters$.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer.PruneFilters">PruneFilters</a>.
+1. Binary(or Higher)-node Logical Plans</p><ul><li>Union with all empty children.</li><li>Join with one or two empty children (including Intersect/Except).
+2. Unary-node Logical Plans</li><li>Project/Filter/Sample/Join/Limit/Repartition with all empty children.</li><li>Aggregate with all empty children and without AggregateFunction expressions like COUNT.</li><li>Generate(Explode) with all empty children. Others like Hive UDTF may return results.
+</li></ul></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.PruneFilters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="PruneFilters"></a>
       <a id="PruneFilters:PruneFilters"></a>
@@ -615,48 +686,28 @@ evaluated using only the attributes of the left or right side of a join.  Other
 <span class="extype" name="Filter">Filter</span> conditions are moved into the <code>condition</code> of the <span class="extype" name="Join">Join</span>.</p><p>And also pushes down the join filter, where the <code>condition</code> can be evaluated using only the
 attributes of the left or right side of sub query when applicable.</p><p>Check https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior for more details
 </p></div></div>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.PushThroughSetOperations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="PushThroughSetOperations"></a>
-      <a id="PushThroughSetOperations:PushThroughSetOperations"></a>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.PushProjectionThroughUnion" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PushProjectionThroughUnion"></a>
+      <a id="PushProjectionThroughUnion:PushProjectionThroughUnion"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="PushThroughSetOperations$.html"><span class="name">PushThroughSetOperations</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
+        <a href="PushProjectionThroughUnion$.html"><span class="name">PushProjectionThroughUnion</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@PushThroughSetOperations" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@PushProjectionThroughUnion" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Pushes certain operations to both sides of a Union operator.</p><div class="fullcomment"><div class="comment cmt"><p>Pushes certain operations to both sides of a Union operator.
+      <p class="shortcomment cmt">Pushes Project operator to both sides of a Union operator.</p><div class="fullcomment"><div class="comment cmt"><p>Pushes Project operator to both sides of a Union operator.
 Operations that are safe to pushdown are listed as follows.
 Union:
 Right now, Union means UNION ALL, which does not de-duplicate rows. So, it is
-safe to pushdown Filters and Projections through it. Once we add UNION DISTINCT,
-we will not be able to pushdown Projections.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.RemoveAliasOnlyProject" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="RemoveAliasOnlyProject"></a>
-      <a id="RemoveAliasOnlyProject:RemoveAliasOnlyProject"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="RemoveAliasOnlyProject$.html"><span class="name">RemoveAliasOnlyProject</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@RemoveAliasOnlyProject" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Removes the Project only conducting Alias of its child node.</p><div class="fullcomment"><div class="comment cmt"><p>Removes the Project only conducting Alias of its child node.
-It is created mainly for removing extra Project added in EliminateSerialization rule,
-but can also benefit other operators.
+safe to pushdown Filters and Projections through it. Filter pushdown is handled by another
+rule PushDownPredicate. Once we add UNION DISTINCT, we will not be able to pushdown Projections.
 </p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.RemoveDispensableExpressions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RemoveDispensableExpressions"></a>
@@ -693,6 +744,42 @@ but can also benefit other operators.
     </span>
       <p class="shortcomment cmt">Removes literals from group expressions in <span class="extype" name="Aggregate">Aggregate</span>, as they have no effect to the result
 but only makes the grouping key bigger.</p>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.RemoveRedundantAliases" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RemoveRedundantAliases"></a>
+      <a id="RemoveRedundantAliases:RemoveRedundantAliases"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="RemoveRedundantAliases$.html"><span class="name">RemoveRedundantAliases</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@RemoveRedundantAliases" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Remove redundant aliases from a query plan.</p><div class="fullcomment"><div class="comment cmt"><p>Remove redundant aliases from a query plan. A redundant alias is an alias that does not change
+the name or metadata of a column, and does not deduplicate it.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.RemoveRedundantProject" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RemoveRedundantProject"></a>
+      <a id="RemoveRedundantProject:RemoveRedundantProject"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="RemoveRedundantProject$.html"><span class="name">RemoveRedundantProject</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@RemoveRedundantProject" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Remove projections from the query plan that do not make any modifications.</p>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.RemoveRepetitionFromGroupExpressions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RemoveRepetitionFromGroupExpressions"></a>
       <a id="RemoveRepetitionFromGroupExpressions:RemoveRepetitionFromGroupExpressions"></a>
@@ -711,6 +798,23 @@ but only makes the grouping key bigger.</p>
     </span>
       <p class="shortcomment cmt">Removes repetition from group expressions in <span class="extype" name="Aggregate">Aggregate</span>, as they have no effect to the result
 but only makes the grouping key bigger.</p>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.ReorderAssociativeOperator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReorderAssociativeOperator"></a>
+      <a id="ReorderAssociativeOperator:ReorderAssociativeOperator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ReorderAssociativeOperator$.html"><span class="name">ReorderAssociativeOperator</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@ReorderAssociativeOperator" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Reorder associative integral-type operators and fold all constants into one.</p>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.ReorderJoin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ReorderJoin"></a>
       <a id="ReorderJoin:ReorderJoin"></a>

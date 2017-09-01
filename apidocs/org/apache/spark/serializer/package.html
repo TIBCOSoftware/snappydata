@@ -147,13 +147,13 @@ A stream for reading serialized objects.
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
 A Spark serializer that uses Java's built-in serialization.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-A Spark serializer that uses Java's built-in serialization.</p><p>Note that this serializer is not guaranteed to be wire-compatible across different versions of
-Spark. It is intended to be used to serialize/de-serialize data within a single
-Spark application.
+A Spark serializer that uses Java's built-in serialization.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This serializer is not guaranteed to be wire-compatible across different versions of
+Spark. It is intended to be used to serialize/de-serialize data within a single
+Spark application.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.serializer.KryoRegistrator" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="KryoRegistratorextendsAnyRef"></a>
       <a id="KryoRegistrator:KryoRegistrator"></a>
@@ -188,10 +188,12 @@ serialization.</p>
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A Spark serializer that uses the <a href="https://code.google.com/p/kryo/" target="_blank">Kryo serialization library</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A Spark serializer that uses the <a href="https://code.google.com/p/kryo/" target="_blank">Kryo serialization library</a>.</p><p>Note that this serializer is not guaranteed to be wire-compatible across different versions of
+      <p class="shortcomment cmt">A Spark serializer that uses the <a href="https://code.google.com/p/kryo/">
+Kryo serialization library</a>.</a></p><div class="fullcomment"><div class="comment cmt"><p>A Spark serializer that uses the <a href="https://code.google.com/p/kryo/">
+Kryo serialization library</a>.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This serializer is not guaranteed to be wire-compatible across different versions of
 Spark. It is intended to be used to serialize/de-serialize data within a single
-Spark application.
-</p></div></div>
+Spark application.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.serializer.PooledKryoSerializer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="PooledKryoSerializerextendsKryoSerializerwithSerializable"></a>
       <a id="PooledKryoSerializer:PooledKryoSerializer"></a>
@@ -275,12 +277,12 @@ A serializer.</p><div class="fullcomment"><div class="comment cmt"><p>:: Develop
 A serializer. Because some serialization libraries are not thread safe, this class is used to
 create <a href="SerializerInstance.html" class="extype" name="org.apache.spark.serializer.SerializerInstance">org.apache.spark.serializer.SerializerInstance</a> objects that do the actual
 serialization and are guaranteed to only be called from one thread at a time.</p><p>Implementations of this trait should implement:</p><p>1. a zero-arg constructor or a constructor that accepts a <a href="../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">org.apache.spark.SparkConf</a>
-as parameter. If both constructors are defined, the latter takes precedence.</p><p>2. Java serialization interface.</p><p>Note that serializers are not required to be wire-compatible across different versions of Spark.
-They are intended to be used to serialize/de-serialize data within a single Spark application.
+as parameter. If both constructors are defined, the latter takes precedence.</p><p>2. Java serialization interface.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Serializers are not required to be wire-compatible across different versions of Spark.
+They are intended to be used to serialize/de-serialize data within a single Spark application.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.serializer.SerializerInstance" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="SerializerInstanceextendsAnyRef"></a>
       <a id="SerializerInstance:SerializerInstance"></a>

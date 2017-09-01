@@ -240,14 +240,13 @@ features.
 model for classification.</p><div class="fullcomment"><div class="comment cmt"><p>Gradient-Boosted Trees (GBTs) (http://en.wikipedia.org/wiki/Gradient_boosting)
 model for classification.
 It supports binary labels, as well as both continuous and categorical features.
-Note: Multiclass labels are not currently supported.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.6.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Multiclass labels are not currently supported.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.classification.GBTClassifier" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="GBTClassifierextendsPredictor[org.apache.spark.ml.linalg.Vector,org.apache.spark.ml.classification.GBTClassifier,org.apache.spark.ml.classification.GBTClassificationModel]withGBTClassifierParamswithDefaultParamsWritablewithLogging"></a>
       <a id="GBTClassifier:GBTClassifier"></a>
@@ -267,8 +266,7 @@ Note: Multiclass labels are not currently supported.
       <p class="shortcomment cmt">Gradient-Boosted Trees (GBTs) (http://en.wikipedia.org/wiki/Gradient_boosting)
 learning algorithm for classification.</p><div class="fullcomment"><div class="comment cmt"><p>Gradient-Boosted Trees (GBTs) (http://en.wikipedia.org/wiki/Gradient_boosting)
 learning algorithm for classification.
-It supports binary labels, as well as both continuous and categorical features.
-Note: Multiclass labels are not currently supported.</p><p>The implementation is based upon: J.H. Friedman. &quot;Stochastic Gradient Boosting.&quot; 1999.</p><p>Notes on Gradient Boosting vs. TreeBoost:</p><ul><li>This implementation is for Stochastic Gradient Boosting, not for TreeBoost.</li><li>Both algorithms learn tree ensembles by minimizing loss functions.</li><li>TreeBoost (Friedman, 1999) additionally modifies the outputs at tree leaf nodes
+It supports binary labels, as well as both continuous and categorical features.</p><p>The implementation is based upon: J.H. Friedman. &quot;Stochastic Gradient Boosting.&quot; 1999.</p><p>Notes on Gradient Boosting vs. TreeBoost:</p><ul><li>This implementation is for Stochastic Gradient Boosting, not for TreeBoost.</li><li>Both algorithms learn tree ensembles by minimizing loss functions.</li><li>TreeBoost (Friedman, 1999) additionally modifies the outputs at tree leaf nodes
    based on the loss function, whereas the original gradient boosting method does not.</li><li>We expect to implement TreeBoost in the future:
    [https://issues.apache.org/jira/browse/SPARK-4240]
 </li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -277,7 +275,7 @@ Note: Multiclass labels are not currently supported.</p><p>The implementation is
       <span class="symbol">&quot;1.4.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Multiclass labels are not currently supported.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.classification.LogisticRegression" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LogisticRegressionextendsProbabilisticClassifier[org.apache.spark.ml.linalg.Vector,org.apache.spark.ml.classification.LogisticRegression,org.apache.spark.ml.classification.LogisticRegressionModel]withLogisticRegressionParamswithDefaultParamsWritablewithLogging"></a>
       <a id="LogisticRegression:LogisticRegression"></a>
@@ -294,9 +292,8 @@ Note: Multiclass labels are not currently supported.</p><p>The implementation is
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Logistic regression.</p><div class="fullcomment"><div class="comment cmt"><p>Logistic regression.
-Currently, this class only supports binary classification.  It will support multiclass
-in the future.
+      <p class="shortcomment cmt">Logistic regression.</p><div class="fullcomment"><div class="comment cmt"><p>Logistic regression. Supports multinomial logistic (softmax) regression and binomial logistic
+regression.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -381,17 +378,13 @@ for the objective trace.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Classification model based on the Multilayer Perceptron.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Classification model based on the Multilayer Perceptron.
+      <p class="shortcomment cmt">Classification model based on the Multilayer Perceptron.</p><div class="fullcomment"><div class="comment cmt"><p>Classification model based on the Multilayer Perceptron.
 Each layer has sigmoid activation function, output layer has softmax.
-</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>prediction model</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
-              
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.ml.classification.MultilayerPerceptronClassifier" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -410,9 +403,7 @@ Each layer has sigmoid activation function, output layer has softmax.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Classifier trainer based on the Multilayer Perceptron.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Classifier trainer based on the Multilayer Perceptron.
+      <p class="shortcomment cmt">Classifier trainer based on the Multilayer Perceptron.</p><div class="fullcomment"><div class="comment cmt"><p>Classifier trainer based on the Multilayer Perceptron.
 Each layer has sigmoid activation function, output layer has softmax.
 Number of inputs has to be equal to the size of feature vectors.
 Number of outputs has to be equal to the total number of labels.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -420,8 +411,6 @@ Number of outputs has to be equal to the total number of labels.</p></div><dl cl
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
-              
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.ml.classification.NaiveBayes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -441,12 +430,14 @@ Number of outputs has to be equal to the total number of labels.</p></div><dl cl
       </a>
     </span>
       <p class="shortcomment cmt">Naive Bayes Classifiers.</p><div class="fullcomment"><div class="comment cmt"><p>Naive Bayes Classifiers.
-It supports both Multinomial NB
-(<a href="http://nlp.stanford.edu/IR-book/html/htmledition/naive-bayes-text-classification-1.html" target="_blank">http://nlp.stanford.edu/IR-book/html/htmledition/naive-bayes-text-classification-1.html</a>)
+It supports Multinomial NB
+(see <a href="http://nlp.stanford.edu/IR-book/html/htmledition/naive-bayes-text-classification-1.html">
+here</a>)
 which can handle finitely supported discrete data. For example, by converting documents into
 TF-IDF vectors, it can be used for document classification. By making every vector a
 binary (0/1) data, it can also be used as Bernoulli NB
-(<a href="http://nlp.stanford.edu/IR-book/html/htmledition/the-bernoulli-model-1.html" target="_blank">http://nlp.stanford.edu/IR-book/html/htmledition/the-bernoulli-model-1.html</a>).
+(see <a href="http://nlp.stanford.edu/IR-book/html/htmledition/the-bernoulli-model-1.html">
+here</a>).
 The input feature values must be nonnegative.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -577,7 +568,7 @@ Classes are indexed {0, 1, ..., numClasses - 1}.
               
         </dd></dl></div>
     </li><li name="org.apache.spark.ml.classification.RandomForestClassificationModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="RandomForestClassificationModelextendsProbabilisticClassificationModel[org.apache.spark.ml.linalg.Vector,org.apache.spark.ml.classification.RandomForestClassificationModel]withRandomForestClassificationModelParamswithTreeEnsembleModel[org.apache.spark.ml.classification.DecisionTreeClassificationModel]withMLWritablewithSerializable"></a>
+      <a id="RandomForestClassificationModelextendsProbabilisticClassificationModel[org.apache.spark.ml.linalg.Vector,org.apache.spark.ml.classification.RandomForestClassificationModel]withRandomForestClassifierParamswithTreeEnsembleModel[org.apache.spark.ml.classification.DecisionTreeClassificationModel]withMLWritablewithSerializable"></a>
       <a id="RandomForestClassificationModel:RandomForestClassificationModel"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -585,14 +576,14 @@ Classes are indexed {0, 1, ..., numClasses - 1}.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="RandomForestClassificationModel.html"><span class="name">RandomForestClassificationModel</span></a><span class="result"> extends <a href="ProbabilisticClassificationModel.html" class="extype" name="org.apache.spark.ml.classification.ProbabilisticClassificationModel">ProbabilisticClassificationModel</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="RandomForestClassificationModel.html" class="extype" name="org.apache.spark.ml.classification.RandomForestClassificationModel">RandomForestClassificationModel</a>] with <span class="extype" name="org.apache.spark.ml.tree.RandomForestClassificationModelParams">RandomForestClassificationModelParams</span> with <span class="extype" name="org.apache.spark.ml.tree.TreeEnsembleModel">TreeEnsembleModel</span>[<a href="DecisionTreeClassificationModel.html" class="extype" name="org.apache.spark.ml.classification.DecisionTreeClassificationModel">DecisionTreeClassificationModel</a>] with <a href="../util/MLWritable.html" class="extype" name="org.apache.spark.ml.util.MLWritable">MLWritable</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="RandomForestClassificationModel.html"><span class="name">RandomForestClassificationModel</span></a><span class="result"> extends <a href="ProbabilisticClassificationModel.html" class="extype" name="org.apache.spark.ml.classification.ProbabilisticClassificationModel">ProbabilisticClassificationModel</a>[<a href="../linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <a href="RandomForestClassificationModel.html" class="extype" name="org.apache.spark.ml.classification.RandomForestClassificationModel">RandomForestClassificationModel</a>] with <span class="extype" name="org.apache.spark.ml.tree.RandomForestClassifierParams">RandomForestClassifierParams</span> with <span class="extype" name="org.apache.spark.ml.tree.TreeEnsembleModel">TreeEnsembleModel</span>[<a href="DecisionTreeClassificationModel.html" class="extype" name="org.apache.spark.ml.classification.DecisionTreeClassificationModel">DecisionTreeClassificationModel</a>] with <a href="../util/MLWritable.html" class="extype" name="org.apache.spark.ml.util.MLWritable">MLWritable</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.classification.package@RandomForestClassificationModelextendsProbabilisticClassificationModel[org.apache.spark.ml.linalg.Vector,org.apache.spark.ml.classification.RandomForestClassificationModel]withRandomForestClassificationModelParamswithTreeEnsembleModel[org.apache.spark.ml.classification.DecisionTreeClassificationModel]withMLWritablewithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.ml.classification.package@RandomForestClassificationModelextendsProbabilisticClassificationModel[org.apache.spark.ml.linalg.Vector,org.apache.spark.ml.classification.RandomForestClassificationModel]withRandomForestClassifierParamswithTreeEnsembleModel[org.apache.spark.ml.classification.DecisionTreeClassificationModel]withMLWritablewithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"><a href="http://en.wikipedia.org/wiki/Random_forest" target="_blank">Random Forest</a> model for classification.</p><div class="fullcomment"><div class="comment cmt"><p><a href="http://en.wikipedia.org/wiki/Random_forest" target="_blank">Random Forest</a> model for classification.
+      <p class="shortcomment cmt"><a href="http://en.wikipedia.org/wiki/Random_forest">Random Forest</a> model for classification.</a></p><div class="fullcomment"><div class="comment cmt"><p><a href="http://en.wikipedia.org/wiki/Random_forest">Random Forest</a> model for classification.
 It supports both binary and multiclass labels, as well as both continuous and categorical
 features.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -618,8 +609,8 @@ features.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"><a href="http://en.wikipedia.org/wiki/Random_forest" target="_blank">Random Forest</a> learning algorithm for
-classification.</p><div class="fullcomment"><div class="comment cmt"><p><a href="http://en.wikipedia.org/wiki/Random_forest" target="_blank">Random Forest</a> learning algorithm for
+      <p class="shortcomment cmt"><a href="http://en.wikipedia.org/wiki/Random_forest">Random Forest</a> learning algorithm for
+classification.</a></p><div class="fullcomment"><div class="comment cmt"><p><a href="http://en.wikipedia.org/wiki/Random_forest">Random Forest</a> learning algorithm for
 classification.
 It supports both binary and multiclass labels, as well as both continuous and categorical
 features.

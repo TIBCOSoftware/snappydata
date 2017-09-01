@@ -110,7 +110,24 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.executor.Executor.TaskRunner" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.executor.SnappyExecutor.ClassLoaderKey" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClassLoaderKeyextendsAnyRef"></a>
+      <a id="ClassLoaderKey:ClassLoaderKey"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyExecutor$ClassLoaderKey.html"><span class="name">ClassLoaderKey</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@ClassLoaderKeyextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.executor.Executor.TaskRunner" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="TaskRunnerextendsRunnable"></a>
       <a id="TaskRunner:TaskRunner"></a>
       <h4 class="signature">
@@ -246,7 +263,24 @@ new classes defined by the REPL as the user types code
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.executor.SnappyExecutor#createClassLoader" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.executor.Executor#conf" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="conf:org.apache.spark.SparkConf"></a>
+      <a id="conf:SparkConf"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">conf</span><span class="result">: <a href="../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@conf:org.apache.spark.SparkConf" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Executor</dd></dl></div>
+    </li><li name="org.apache.spark.executor.Executor#createClassLoader" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createClassLoader():org.apache.spark.util.MutableURLClassLoader"></a>
       <a id="createClassLoader():MutableURLClassLoader"></a>
       <h4 class="signature">
@@ -266,7 +300,7 @@ new classes defined by the REPL as the user types code
 created by the interpreter to the search path
 </p><div class="fullcomment"><div class="comment cmt"><p>Create a ClassLoader for use in tasks, adding any JARs specified by the user or any classes
 created by the interpreter to the search path
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> → Executor</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Executor</dd></dl></div>
     </li><li name="org.apache.spark.executor.Executor#currentJars" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="currentJars:scala.collection.mutable.HashMap[String,Long]"></a>
       <a id="currentJars:HashMap[String,Long]"></a>
@@ -358,23 +392,6 @@ created by the interpreter to the search path
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.executor.SnappyExecutor#getName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getName(path:String):String"></a>
-      <a id="getName(String):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getName</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@getName(path:String):String" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -426,6 +443,23 @@ created by the interpreter to the search path
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor#isFatalError" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isFatalError(t:Throwable):Boolean"></a>
+      <a id="isFatalError(Throwable):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isFatalError</span><span class="params">(<span name="t">t: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@isFatalError(t:Throwable):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> → Executor</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInfoEnabled:Boolean"></a>
       <a id="isInfoEnabled:Boolean"></a>
@@ -460,6 +494,40 @@ created by the interpreter to the search path
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor#isStoreCloseException" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isStoreCloseException(t:Throwable):Boolean"></a>
+      <a id="isStoreCloseException(Throwable):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isStoreCloseException</span><span class="params">(<span name="t">t: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@isStoreCloseException(t:Throwable):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> → Executor</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor#isStoreException" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isStoreException(t:Throwable):Boolean"></a>
+      <a id="isStoreException(Throwable):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isStoreException</span><span class="params">(<span name="t">t: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@isStoreException(t:Throwable):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> → Executor</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isTraceEnabled:Boolean"></a>
       <a id="isTraceEnabled:Boolean"></a>
@@ -791,7 +859,7 @@ tasks instead of taking the JVM down.</p></div><dl class="paramcmts block"><dt c
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">var</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
         <span class="name">replClassLoader</span><span class="result">: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>
@@ -879,7 +947,7 @@ SparkContext. Also adds any new JARs we fetched to the class loader.
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">var</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
         <span class="name">urlClassLoader</span><span class="result">: <span class="extype" name="org.apache.spark.util.MutableURLClassLoader">MutableURLClassLoader</span></span>

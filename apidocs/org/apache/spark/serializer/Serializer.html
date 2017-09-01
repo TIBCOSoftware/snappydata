@@ -53,12 +53,12 @@
 A serializer. Because some serialization libraries are not thread safe, this class is used to
 create <a href="SerializerInstance.html" class="extype" name="org.apache.spark.serializer.SerializerInstance">org.apache.spark.serializer.SerializerInstance</a> objects that do the actual
 serialization and are guaranteed to only be called from one thread at a time.</p><p>Implementations of this trait should implement:</p><p>1. a zero-arg constructor or a constructor that accepts a <a href="../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">org.apache.spark.SparkConf</a>
-as parameter. If both constructors are defined, the latter takes precedence.</p><p>2. Java serialization interface.</p><p>Note that serializers are not required to be wire-compatible across different versions of Spark.
-They are intended to be used to serialize/de-serialize data within a single Spark application.
+as parameter. If both constructors are defined, the latter takes precedence.</p><p>2. Java serialization interface.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl><div class="toggleContainer block">
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Serializers are not required to be wire-compatible across different versions of Spark.
+They are intended to be used to serialize/de-serialize data within a single Spark application.</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">

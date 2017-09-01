@@ -126,11 +126,10 @@ Class used to compute the gradient for a loss function, given a single data poin
 Compute gradient and loss for a Hinge loss function, as used in SVM binary classification.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
 Compute gradient and loss for a Hinge loss function, as used in SVM binary classification.
 See also the documentation for the precise formulation.
-NOTE: This assumes that the labels are {0,1}
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This assumes that the labels are {0,1}</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.optimization.L1Updater" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="L1UpdaterextendsUpdater"></a>
       <a id="L1Updater:L1Updater"></a>
@@ -154,9 +153,9 @@ Updater for L1 regularized problems.
 Uses a step-size decreasing with the square root of the number of iterations.</p><p>Instead of subgradient of the regularizer, the proximal operator for the
 L1 regularization is applied after the gradient step. This is known to
 result in better sparsity of the intermediate solution.</p><p>The corresponding proximal operator for the L1 norm is the soft-thresholding
-function. That is, each weight component is shrunk towards 0 by shrinkageVal.</p><p>If w &gt;  shrinkageVal, set weight component to w-shrinkageVal.
-If w &lt; -shrinkageVal, set weight component to w+shrinkageVal.
-If -shrinkageVal &lt; w &lt; shrinkageVal, set weight component to 0.</p><p>Equivalently, set weight component to signum(w) * max(0.0, abs(w) - shrinkageVal)
+function. That is, each weight component is shrunk towards 0 by shrinkageVal.</p><p>If w is greater than shrinkageVal, set weight component to w-shrinkageVal.
+If w is less than -shrinkageVal, set weight component to w+shrinkageVal.
+If w is (-shrinkageVal, shrinkageVal), set weight component to 0.</p><p>Equivalently, set weight component to signum(w) * max(0.0, abs(w) - shrinkageVal)
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
@@ -180,7 +179,8 @@ If -shrinkageVal &lt; w &lt; shrinkageVal, set weight component to 0.</p><p>Equi
       <p class="shortcomment cmt">:: DeveloperApi ::
 Class used to solve an optimization problem using Limited-memory BFGS.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
 Class used to solve an optimization problem using Limited-memory BFGS.
-Reference: <a href="http://en.wikipedia.org/wiki/Limited-memory_BFGS" target="_blank">http://en.wikipedia.org/wiki/Limited-memory_BFGS</a></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+Reference: <a href="http://en.wikipedia.org/wiki/Limited-memory_BFGS">
+Wikipedia on Limited-memory BFGS</a></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
@@ -233,31 +233,62 @@ Compute gradient and loss for a multinomial logistic loss function, as used
 in multi-class classification (it is also used in binary logistic regression).</p><p>In <code>The Elements of Statistical Learning: Data Mining, Inference, and Prediction, 2nd Edition</code>
 by Trevor Hastie, Robert Tibshirani, and Jerome Friedman, which can be downloaded from
 http://statweb.stanford.edu/~tibs/ElemStatLearn/ , Eq. (4.17) on page 119 gives the formula of
-multinomial logistic regression model. A simple calculation shows that</p><pre>P(y=<span class="num">0</span>|x, w) = <span class="num">1</span> / (<span class="num">1</span> + \sum_i^{K-<span class="num">1</span>} \exp(x w_i))
-P(y=<span class="num">1</span>|x, w) = exp(x w_1) / (<span class="num">1</span> + \sum_i^{K-<span class="num">1</span>} \exp(x w_i))
-  ...
-P(y=K-<span class="num">1</span>|x, w) = exp(x w_{K-<span class="num">1</span>}) / (<span class="num">1</span> + \sum_i^{K-<span class="num">1</span>} \exp(x w_i))</pre><p>for K classes multiclass classification problem.</p><p>The model weights w = (w_1, w_2, ..., w_{K-1})^T becomes a matrix which has dimension of
+multinomial logistic regression model. A simple calculation shows that</p><p><blockquote>
+   $$
+   P(y=0|x, w) = 1 / (1 + \sum_i^{K-1} \exp(x w_i))\\
+   P(y=1|x, w) = exp(x w_1) / (1 + \sum_i^{K-1} \exp(x w_i))\\
+   ...\\
+   P(y=K-1|x, w) = exp(x w_{K-1}) / (1 + \sum_i^{K-1} \exp(x w_i))\\
+   $$
+</blockquote></p><p>for K classes multiclass classification problem.</p><p>The model weights $w = (w_1, w_2, ..., w_{K-1})^T$ becomes a matrix which has dimension of
 (K-1) * (N+1) if the intercepts are added. If the intercepts are not added, the dimension
-will be (K-1) * N.</p><p>As a result, the loss of objective function for a single instance of data can be written as</p><pre>l(w, x) = -log P(y|x, w) = -\alpha(y) log P(y=<span class="num">0</span>|x, w) - (<span class="num">1</span>-\alpha(y)) log P(y|x, w)
-        = log(<span class="num">1</span> + \sum_i^{K-<span class="num">1</span>}\exp(x w_i)) - (<span class="num">1</span>-\alpha(y)) x w_{y-<span class="num">1</span>}
-        = log(<span class="num">1</span> + \sum_i^{K-<span class="num">1</span>}\exp(margins_i)) - (<span class="num">1</span>-\alpha(y)) margins_{y-<span class="num">1</span>}</pre><p>where \alpha(i) = 1 if i != 0, and
-      \alpha(i) = 0 if i == 0,
-      margins_i = x w_i.</p><p>For optimization, we have to calculate the first derivative of the loss function, and
-a simple calculation shows that</p><pre>\frac{\partial l(w, x)}{\partial w_{ij}}
-  = (\exp(x w_i) / (<span class="num">1</span> + \sum_k^{K-<span class="num">1</span>} \exp(x w_k)) - (<span class="num">1</span>-\alpha(y)\delta_{y, i+<span class="num">1</span>})) * x_j
-  = multiplier_i * x_j</pre><p>where \delta_{i, j} = 1 if i == j,
-      \delta_{i, j} = 0 if i != j, and
+will be (K-1) * N.</p><p>As a result, the loss of objective function for a single instance of data can be written as
+<blockquote>
+   $$
+   \begin{align}
+   l(w, x) &= -log P(y|x, w) = -\alpha(y) log P(y=0|x, w) - (1-\alpha(y)) log P(y|x, w) \\
+           &= log(1 + \sum_i^{K-1}\exp(x w_i)) - (1-\alpha(y)) x w_{y-1} \\
+           &= log(1 + \sum_i^{K-1}\exp(margins_i)) - (1-\alpha(y)) margins_{y-1}
+   \end{align}
+   $$
+</blockquote></p><p>where $\alpha(i) = 1$ if $i \ne 0$, and
+      $\alpha(i) = 0$ if $i == 0$,
+      $margins_i = x w_i$.</p><p>For optimization, we have to calculate the first derivative of the loss function, and
+a simple calculation shows that</p><p><blockquote>
+   $$
+   \begin{align}
+     \frac{\partial l(w, x)}{\partial w_{ij}} &=
+        (\exp(x w_i) / (1 + \sum_k^{K-1} \exp(x w_k)) - (1-\alpha(y)\delta_{y, i+1})) * x_j \\
+                                              &= multiplier_i * x_j
+   \end{align}
+   $$
+</blockquote></p><p>where $\delta_{i, j} = 1$ if $i == j$,
+      $\delta_{i, j} = 0$ if $i != j$, and
       multiplier =
-        \exp(margins_i) / (1 + \sum_k^{K-1} \exp(margins_i)) - (1-\alpha(y)\delta_{y, i+1})</p><p>If any of margins is larger than 709.78, the numerical computation of multiplier and loss
+        $\exp(margins_i) / (1 + \sum_k^{K-1} \exp(margins_i)) - (1-\alpha(y)\delta_{y, i+1})$</p><p>If any of margins is larger than 709.78, the numerical computation of multiplier and loss
 function will be suffered from arithmetic overflow. This issue occurs when there are outliers
 in data which are far away from hyperplane, and this will cause the failing of training once
 infinity / infinity is introduced. Note that this is only a concern when max(margins) &gt; 0.</p><p>Fortunately, when max(margins) = maxMargin &gt; 0, the loss function and the multiplier can be
-easily rewritten into the following equivalent numerically stable formula.</p><pre>l(w, x) = log(<span class="num">1</span> + \sum_i^{K-<span class="num">1</span>}\exp(margins_i)) - (<span class="num">1</span>-\alpha(y)) margins_{y-<span class="num">1</span>}
-        = log(\exp(-maxMargin) + \sum_i^{K-<span class="num">1</span>}\exp(margins_i - maxMargin)) + maxMargin
-          - (<span class="num">1</span>-\alpha(y)) margins_{y-<span class="num">1</span>}
-        = log(<span class="num">1</span> + sum) + maxMargin - (<span class="num">1</span>-\alpha(y)) margins_{y-<span class="num">1</span>}</pre><p>where sum = \exp(-maxMargin) + \sum_i^{K-1}\exp(margins_i - maxMargin) - 1.</p><p>Note that each term, (margins_i - maxMargin) in \exp is smaller than zero; as a result,
-overflow will not happen with this formula.</p><p>For multiplier, similar trick can be applied as the following,</p><pre>multiplier = \exp(margins_i) / (<span class="num">1</span> + \sum_k^{K-<span class="num">1</span>} \exp(margins_i)) - (<span class="num">1</span>-\alpha(y)\delta_{y, i+<span class="num">1</span>})
-           = \exp(margins_i - maxMargin) / (<span class="num">1</span> + sum) - (<span class="num">1</span>-\alpha(y)\delta_{y, i+<span class="num">1</span>})</pre><p>where each term in \exp is also smaller than zero, so overflow is not a concern.</p><p>For the detailed mathematical derivation, see the reference at
+easily rewritten into the following equivalent numerically stable formula.</p><p><blockquote>
+   $$
+   \begin{align}
+     l(w, x) &= log(1 + \sum_i^{K-1}\exp(margins_i)) - (1-\alpha(y)) margins_{y-1} \\
+             &= log(\exp(-maxMargin) + \sum_i^{K-1}\exp(margins_i - maxMargin)) + maxMargin
+                 - (1-\alpha(y)) margins_{y-1} \\
+             &= log(1 + sum) + maxMargin - (1-\alpha(y)) margins_{y-1}
+   \end{align}
+   $$
+</blockquote></p><p>where sum = $\exp(-maxMargin) + \sum_i^{K-1}\exp(margins_i - maxMargin) - 1$.</p><p>Note that each term, $(margins_i - maxMargin)$ in $\exp$ is smaller than zero; as a result,
+overflow will not happen with this formula.</p><p>For multiplier, similar trick can be applied as the following,</p><p><blockquote>
+   $$
+   \begin{align}
+     multiplier
+      &= \exp(margins_i) /
+          (1 + \sum_k^{K-1} \exp(margins_i)) - (1-\alpha(y)\delta_{y, i+1}) \\
+      &= \exp(margins_i - maxMargin) / (1 + sum) - (1-\alpha(y)\delta_{y, i+1})
+   \end{align}
+   $$
+</blockquote></p><p>where each term in $\exp$ is also smaller than zero, so overflow is not a concern.</p><p>For the detailed mathematical derivation, see the reference at
 http://www.slideshare.net/dbtsai/2014-0620-mlor-36132297
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>

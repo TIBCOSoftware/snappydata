@@ -49,15 +49,17 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-The base class for implementing user-defined aggregate functions (UDAF).
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The base class for implementing user-defined aggregate functions (UDAF).
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl><div class="toggleContainer block">
+        </dd><dt>Since</dt><dd><p>1.5.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
-        </div></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent"><a href="../../examples/sql/UserDefinedUntypedAggregation$$MyAverage$.html" class="extype" name="org.apache.spark.examples.sql.UserDefinedUntypedAggregation.MyAverage">MyAverage</a></div>
+          </div></div>
         
 
       <div id="mbrsel">
@@ -133,17 +135,17 @@ The base class for implementing user-defined aggregate functions (UDAF).
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A <span class="extype" name="StructType">StructType</span> represents data types of values in the aggregation buffer.</p><div class="fullcomment"><div class="comment cmt"><p>A <span class="extype" name="StructType">StructType</span> represents data types of values in the aggregation buffer.
+      <p class="shortcomment cmt">A <code>StructType</code> represents data types of values in the aggregation buffer.</p><div class="fullcomment"><div class="comment cmt"><p>A <code>StructType</code> represents data types of values in the aggregation buffer.
 For example, if a <a href="" class="extype" name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction">UserDefinedAggregateFunction</a>'s buffer has two values
-(i.e. two intermediate values) with type of <span class="extype" name="DoubleType">DoubleType</span> and <span class="extype" name="LongType">LongType</span>,
-the returned <span class="extype" name="StructType">StructType</span> will look like</p><p><code><code><code>
+(i.e. two intermediate values) with type of <code>DoubleType</code> and <code>LongType</code>,
+the returned <code>StructType</code> will look like</p><p><code><code><code>
   new StructType()
    .add(&quot;doubleInput&quot;, DoubleType)
    .add(&quot;longInput&quot;, LongType)
-<code><code><code></code></code></code></code></code></code></p><p>The name of a field of this <span class="extype" name="StructType">StructType</span> is only used to identify the corresponding
+<code><code><code></code></code></code></code></code></code></p><p>The name of a field of this <code>StructType</code> is only used to identify the corresponding
 buffer value. Users can choose names to identify the input arguments.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#dataType" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#dataType" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="dataType:org.apache.spark.sql.types.DataType"></a>
       <a id="dataType:DataType"></a>
       <h4 class="signature">
@@ -159,7 +161,8 @@ buffer value. Users can choose names to identify the input arguments.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The <span class="extype" name="DataType">DataType</span> of the returned value of this <a href="" class="extype" name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction">UserDefinedAggregateFunction</a>.</p>
+      <p class="shortcomment cmt">The <code>DataType</code> of the returned value of this <a href="" class="extype" name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction">UserDefinedAggregateFunction</a>.</p><div class="fullcomment"><div class="comment cmt"><p>The <code>DataType</code> of the returned value of this <a href="" class="extype" name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction">UserDefinedAggregateFunction</a>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#deterministic" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="deterministic:Boolean"></a>
       <a id="deterministic:Boolean"></a>
@@ -178,8 +181,8 @@ buffer value. Users can choose names to identify the input arguments.
     </span>
       <p class="shortcomment cmt">Returns true iff this function is deterministic, i.e.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true iff this function is deterministic, i.e. given the same input,
 always return the same output.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#evaluate" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#evaluate" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="evaluate(buffer:org.apache.spark.sql.Row):Any"></a>
       <a id="evaluate(Row):Any"></a>
       <h4 class="signature">
@@ -196,7 +199,9 @@ always return the same output.
       </a>
     </span>
       <p class="shortcomment cmt">Calculates the final result of this <a href="" class="extype" name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction">UserDefinedAggregateFunction</a> based on the given
-aggregation buffer.</p>
+aggregation buffer.</p><div class="fullcomment"><div class="comment cmt"><p>Calculates the final result of this <a href="" class="extype" name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction">UserDefinedAggregateFunction</a> based on the given
+aggregation buffer.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#initialize" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="initialize(buffer:org.apache.spark.sql.expressions.MutableAggregationBuffer):Unit"></a>
       <a id="initialize(MutableAggregationBuffer):Unit"></a>
@@ -216,7 +221,7 @@ aggregation buffer.</p>
       <p class="shortcomment cmt">Initializes the given aggregation buffer, i.e.</p><div class="fullcomment"><div class="comment cmt"><p>Initializes the given aggregation buffer, i.e. the zero value of the aggregation buffer.</p><p>The contract should be that applying the merge function on two initial buffers should just
 return the initial buffer itself, i.e.
 <code>merge(initialBuffer, initialBuffer)</code> should equal <code>initialBuffer</code>.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#inputSchema" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="inputSchema:org.apache.spark.sql.types.StructType"></a>
       <a id="inputSchema:StructType"></a>
@@ -233,15 +238,15 @@ return the initial buffer itself, i.e.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A <span class="extype" name="StructType">StructType</span> represents data types of input arguments of this aggregate function.</p><div class="fullcomment"><div class="comment cmt"><p>A <span class="extype" name="StructType">StructType</span> represents data types of input arguments of this aggregate function.
+      <p class="shortcomment cmt">A <code>StructType</code> represents data types of input arguments of this aggregate function.</p><div class="fullcomment"><div class="comment cmt"><p>A <code>StructType</code> represents data types of input arguments of this aggregate function.
 For example, if a <a href="" class="extype" name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction">UserDefinedAggregateFunction</a> expects two input arguments
-with type of <span class="extype" name="DoubleType">DoubleType</span> and <span class="extype" name="LongType">LongType</span>, the returned <span class="extype" name="StructType">StructType</span> will look like</p><p><code><code><code>
+with type of <code>DoubleType</code> and <code>LongType</code>, the returned <code>StructType</code> will look like</p><p><code><code><code>
   new StructType()
    .add(&quot;doubleInput&quot;, DoubleType)
    .add(&quot;longInput&quot;, LongType)
-<code><code><code></code></code></code></code></code></code></p><p>The name of a field of this <span class="extype" name="StructType">StructType</span> is only used to identify the corresponding
+<code><code><code></code></code></code></code></code></code></p><p>The name of a field of this <code>StructType</code> is only used to identify the corresponding
 input argument. Users can choose names to identify the input arguments.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#merge" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="merge(buffer1:org.apache.spark.sql.expressions.MutableAggregationBuffer,buffer2:org.apache.spark.sql.Row):Unit"></a>
       <a id="merge(MutableAggregationBuffer,Row):Unit"></a>
@@ -259,7 +264,7 @@ input argument. Users can choose names to identify the input arguments.
       </a>
     </span>
       <p class="shortcomment cmt">Merges two aggregation buffers and stores the updated buffer values back to <code>buffer1</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Merges two aggregation buffers and stores the updated buffer values back to <code>buffer1</code>.</p><p>This is called when we merge two partially aggregated data together.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.UserDefinedAggregateFunction#update" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="update(buffer:org.apache.spark.sql.expressions.MutableAggregationBuffer,input:org.apache.spark.sql.Row):Unit"></a>
       <a id="update(MutableAggregationBuffer,Row):Unit"></a>
@@ -277,7 +282,7 @@ input argument. Users can choose names to identify the input arguments.
       </a>
     </span>
       <p class="shortcomment cmt">Updates the given aggregation buffer <code>buffer</code> with new input data from <code>input</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Updates the given aggregation buffer <code>buffer</code> with new input data from <code>input</code>.</p><p>This is called once per input row.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -350,11 +355,11 @@ input argument. Users can choose names to identify the input arguments.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a <a href="../Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> for this UDAF using given <a href="../Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>s as input arguments.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a <a href="../Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> for this UDAF using given <a href="../Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>s as input arguments.
+      <p class="shortcomment cmt">Creates a <code>Column</code> for this UDAF using given <code>Column</code>s as input arguments.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a <code>Column</code> for this UDAF using given <code>Column</code>s as input arguments.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -411,13 +416,13 @@ input argument. Users can choose names to identify the input arguments.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a <a href="../Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> for this UDAF using the distinct values of the given
-<a href="../Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>s as input arguments.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a <a href="../Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> for this UDAF using the distinct values of the given
-<a href="../Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>s as input arguments.
+      <p class="shortcomment cmt">Creates a <code>Column</code> for this UDAF using the distinct values of the given
+<code>Column</code>s as input arguments.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a <code>Column</code> for this UDAF using the distinct values of the given
+<code>Column</code>s as input arguments.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

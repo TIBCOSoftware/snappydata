@@ -49,10 +49,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-A window specification that defines the partitioning, ordering, and frame boundaries.</p><p>Use the static methods in <a href="Window.html" class="extype" name="org.apache.spark.sql.expressions.Window">Window</a> to create a <a href="" class="extype" name="org.apache.spark.sql.expressions.WindowSpec">WindowSpec</a>.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A window specification that defines the partitioning, ordering, and frame boundaries.</p><p>Use the static methods in <a href="Window.html" class="extype" name="org.apache.spark.sql.expressions.Window">Window</a> to create a <a href="" class="extype" name="org.apache.spark.sql.expressions.WindowSpec">WindowSpec</a>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -447,10 +446,34 @@ A window specification that defines the partitioning, ordering, and frame bounda
     </span>
       <p class="shortcomment cmt">Defines the frame boundaries, from <code>start</code> (inclusive) to <code>end</code> (inclusive).</p><div class="fullcomment"><div class="comment cmt"><p>Defines the frame boundaries, from <code>start</code> (inclusive) to <code>end</code> (inclusive).</p><p>Both <code>start</code> and <code>end</code> are relative from the current row. For example, &quot;0&quot; means &quot;current row&quot;,
 while &quot;-1&quot; means one off before the current row, and &quot;5&quot; means the five off after the
-current row.
-</p></div><dl class="paramcmts block"><dt class="param">start</dt><dd class="cmt"><p>boundary start, inclusive.
-             The frame is unbounded if this is the minimum long value.</p></dd><dt class="param">end</dt><dd class="cmt"><p>boundary end, inclusive.
-           The frame is unbounded if this is the maximum long value.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+current row.</p><p>We recommend users use <code>Window.unboundedPreceding</code>, <code>Window.unboundedFollowing</code>,
+and <code>[Window.currentRow</code> to specify special boundary values, rather than using integral
+values directly.</p><p>A range based boundary is based on the actual value of the ORDER BY
+expression(s). An offset is used to alter the value of the ORDER BY expression, for
+instance if the current order by expression has a value of 10 and the lower bound offset
+is -3, the resulting lower bound for the current row will be 10 - 3 = 7. This however puts a
+number of constraints on the ORDER BY expressions: there can be only one expression and this
+expression must have a numerical data type. An exception can be made when the offset is 0,
+because no value modification is needed, in this case multiple and non-numeric ORDER BY
+expression are allowed.</p><pre><span class="kw">import</span> org.apache.spark.sql.expressions.Window
+<span class="kw">val</span> df = <span class="std">Seq</span>((<span class="num">1</span>, <span class="lit">"a"</span>), (<span class="num">1</span>, <span class="lit">"a"</span>), (<span class="num">2</span>, <span class="lit">"a"</span>), (<span class="num">1</span>, <span class="lit">"b"</span>), (<span class="num">2</span>, <span class="lit">"b"</span>), (<span class="num">3</span>, <span class="lit">"b"</span>))
+  .toDF(<span class="lit">"id"</span>, <span class="lit">"category"</span>)
+df.withColumn(<span class="lit">"sum"</span>,
+    sum('id) over Window.partitionBy('category).orderBy('id).rangeBetween(<span class="num">0</span>,<span class="num">1</span>))
+  .show()
+
++---+--------+---+
+| id|category|sum|
++---+--------+---+
+|  <span class="num">1</span>|       b|  <span class="num">3</span>|
+|  <span class="num">2</span>|       b|  <span class="num">5</span>|
+|  <span class="num">3</span>|       b|  <span class="num">3</span>|
+|  <span class="num">1</span>|       a|  <span class="num">4</span>|
+|  <span class="num">1</span>|       a|  <span class="num">4</span>|
+|  <span class="num">2</span>|       a|  <span class="num">2</span>|
++---+--------+---+</pre></div><dl class="paramcmts block"><dt class="param">start</dt><dd class="cmt"><p>boundary start, inclusive. The frame is unbounded if this is
+             the minimum long value (<code>Window.unboundedPreceding</code>).</p></dd><dt class="param">end</dt><dd class="cmt"><p>boundary end, inclusive. The frame is unbounded if this is the
+           maximum long value  (<code>Window.unboundedFollowing</code>).</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.WindowSpec#rowsBetween" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="rowsBetween(start:Long,end:Long):org.apache.spark.sql.expressions.WindowSpec"></a>
       <a id="rowsBetween(Long,Long):WindowSpec"></a>
@@ -469,10 +492,31 @@ current row.
     </span>
       <p class="shortcomment cmt">Defines the frame boundaries, from <code>start</code> (inclusive) to <code>end</code> (inclusive).</p><div class="fullcomment"><div class="comment cmt"><p>Defines the frame boundaries, from <code>start</code> (inclusive) to <code>end</code> (inclusive).</p><p>Both <code>start</code> and <code>end</code> are relative positions from the current row. For example, &quot;0&quot; means
 &quot;current row&quot;, while &quot;-1&quot; means the row before the current row, and &quot;5&quot; means the fifth row
-after the current row.
-</p></div><dl class="paramcmts block"><dt class="param">start</dt><dd class="cmt"><p>boundary start, inclusive.
-             The frame is unbounded if this is the minimum long value.</p></dd><dt class="param">end</dt><dd class="cmt"><p>boundary end, inclusive.
-           The frame is unbounded if this is the maximum long value.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+after the current row.</p><p>We recommend users use <code>Window.unboundedPreceding</code>, <code>Window.unboundedFollowing</code>,
+and <code>[Window.currentRow</code> to specify special boundary values, rather than using integral
+values directly.</p><p>A row based boundary is based on the position of the row within the partition.
+An offset indicates the number of rows above or below the current row, the frame for the
+current row starts or ends. For instance, given a row based sliding frame with a lower bound
+offset of -1 and a upper bound offset of +2. The frame for row with index 5 would range from
+index 4 to index 6.</p><pre><span class="kw">import</span> org.apache.spark.sql.expressions.Window
+<span class="kw">val</span> df = <span class="std">Seq</span>((<span class="num">1</span>, <span class="lit">"a"</span>), (<span class="num">1</span>, <span class="lit">"a"</span>), (<span class="num">2</span>, <span class="lit">"a"</span>), (<span class="num">1</span>, <span class="lit">"b"</span>), (<span class="num">2</span>, <span class="lit">"b"</span>), (<span class="num">3</span>, <span class="lit">"b"</span>))
+  .toDF(<span class="lit">"id"</span>, <span class="lit">"category"</span>)
+df.withColumn(<span class="lit">"sum"</span>,
+    sum('id) over Window.partitionBy('category).orderBy('id).rowsBetween(<span class="num">0</span>,<span class="num">1</span>))
+  .show()
+
++---+--------+---+
+| id|category|sum|
++---+--------+---+
+|  <span class="num">1</span>|       b|  <span class="num">3</span>|
+|  <span class="num">2</span>|       b|  <span class="num">5</span>|
+|  <span class="num">3</span>|       b|  <span class="num">3</span>|
+|  <span class="num">1</span>|       a|  <span class="num">2</span>|
+|  <span class="num">1</span>|       a|  <span class="num">3</span>|
+|  <span class="num">2</span>|       a|  <span class="num">2</span>|
++---+--------+---+</pre></div><dl class="paramcmts block"><dt class="param">start</dt><dd class="cmt"><p>boundary start, inclusive. The frame is unbounded if this is
+             the minimum long value (<code>Window.unboundedPreceding</code>).</p></dd><dt class="param">end</dt><dd class="cmt"><p>boundary end, inclusive. The frame is unbounded if this is the
+           maximum long value  (<code>Window.unboundedFollowing</code>).</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

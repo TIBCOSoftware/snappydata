@@ -162,6 +162,55 @@ an exchange for simple aggregates.</p>
       </a>
     </span>
       <p class="shortcomment cmt">Hash-based aggregate operator that can also fallback to sorting when data exceeds memory size.</p>
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="HashMapGeneratorextendsAnyRef"></a>
+      <a id="HashMapGenerator:HashMapGenerator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HashMapGenerator.html"><span class="name">HashMapGenerator</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.package@HashMapGeneratorextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is a helper class to generate an append-only row-based hash map that can act as a 'cache'
+for extremely fast key-value lookups while evaluating aggregates (and fall back to the
+<code>BytesToBytesMap</code> if a given key isn't found).</p><div class="fullcomment"><div class="comment cmt"><p>This is a helper class to generate an append-only row-based hash map that can act as a 'cache'
+for extremely fast key-value lookups while evaluating aggregates (and fall back to the
+<code>BytesToBytesMap</code> if a given key isn't found). This is 'codegened' in HashAggregate to speed
+up aggregates w/ key.</p><p>NOTE: the generated hash map currently doesn't support nullable keys and falls back to the
+<code>BytesToBytesMap</code> to store them.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.RowBasedHashMapGenerator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RowBasedHashMapGeneratorextendsHashMapGenerator"></a>
+      <a id="RowBasedHashMapGenerator:RowBasedHashMapGenerator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RowBasedHashMapGenerator.html"><span class="name">RowBasedHashMapGenerator</span></a><span class="result"> extends <a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.package@RowBasedHashMapGeneratorextendsHashMapGenerator" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is a helper class to generate an append-only row-based hash map that can act as a 'cache'
+for extremely fast key-value lookups while evaluating aggregates (and fall back to the
+<code>BytesToBytesMap</code> if a given key isn't found).</p><div class="fullcomment"><div class="comment cmt"><p>This is a helper class to generate an append-only row-based hash map that can act as a 'cache'
+for extremely fast key-value lookups while evaluating aggregates (and fall back to the
+<code>BytesToBytesMap</code> if a given key isn't found). This is 'codegened' in HashAggregate to speed
+up aggregates w/ key.</p><p>We also have VectorizedHashMapGenerator, which generates a append-only vectorized hash map.
+We choose one of the two as the 1st level, fast hash map during aggregation.</p><p>NOTE: This row-based hash map currently doesn't support nullable keys and falls back to the
+<code>BytesToBytesMap</code> to store them.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.ScalaUDAF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ScalaUDAFextendsImperativeAggregatewithNonSQLExpressionwithLoggingwithProductwithSerializable"></a>
       <a id="ScalaUDAF:ScalaUDAF"></a>
@@ -256,9 +305,9 @@ sorted by values of <span class="extype" name="groupingExpressions">groupingExpr
       </a>
     </span>
       <p class="shortcomment cmt">An iterator used to evaluate aggregate functions.</p><div class="fullcomment"><div class="comment cmt"><p>An iterator used to evaluate aggregate functions. It operates on <span class="extype" name="UnsafeRow">UnsafeRow</span>s.</p><p>This iterator first uses hash-based aggregation to process input rows. It uses
-a hash map to store groups and their corresponding aggregation buffers. If we
-this map cannot allocate memory from memory manager, it spill the map into disk
-and create a new one. After processed all the input, then merge all the spills
+a hash map to store groups and their corresponding aggregation buffers. If
+this map cannot allocate memory from memory manager, it spills the map into disk
+and creates a new one. After processed all the input, then merge all the spills
 together using external sorter, and do sort-based aggregation.</p><p>The process has the following step:</p><ul><li>Step 0: Do hash-based aggregation.</li><li>Step 1: Sort all entries of the hash map based on values of grouping expressions and
            spill them to disk.</li><li>Step 2: Create an external sorter based on the spilled sorted map entries and reset the map.</li><li>Step 3: Get a sorted <span class="extype" name="KVIterator">KVIterator</span> from the external sorter.</li><li>Step 4: Repeat step 0 until no more input.</li><li>Step 5: Initialize sort-based aggregation on the sorted iterator.
 Then, this iterator works in the way of sort-based aggregation.</li></ul><p>The code of this class is organized as follows:</p><ul><li>Part 1: Initializing aggregate functions.</li><li>Part 2: Methods and fields used by setting aggregation buffer values,
@@ -275,7 +324,7 @@ Then, this iterator works in the way of sort-based aggregation.</li></ul><p>The 
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="TypedAggregateExpression.html"><span class="name">TypedAggregateExpression</span></a><span class="params">(<span name="aggregator">aggregator: <a href="../../expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">expressions.Aggregator</a>[<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="scala.Any">Any</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="inputDeserializer">inputDeserializer: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="bufferSerializer">bufferSerializer: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="bufferDeserializer">bufferDeserializer: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="outputSerializer">outputSerializer: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="outputExternalType">outputExternalType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <a href="../../catalyst/expressions/aggregate/DeclarativeAggregate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.DeclarativeAggregate">DeclarativeAggregate</a> with <a href="../../catalyst/expressions/NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="TypedAggregateExpression.html"><span class="name">TypedAggregateExpression</span></a><span class="params">(<span name="aggregator">aggregator: <a href="../../expressions/Aggregator.html" class="extype" name="org.apache.spark.sql.expressions.Aggregator">expressions.Aggregator</a>[<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="scala.Any">Any</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="inputDeserializer">inputDeserializer: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="inputClass">inputClass: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.Class">Class</span>[_]]</span>, <span name="inputSchema">inputSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="bufferSerializer">bufferSerializer: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="bufferDeserializer">bufferDeserializer: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="outputSerializer">outputSerializer: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="outputExternalType">outputExternalType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="nullable">nullable: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/expressions/aggregate/DeclarativeAggregate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.DeclarativeAggregate">DeclarativeAggregate</a> with <a href="../../catalyst/expressions/NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.package@TypedAggregateExpressionextendsDeclarativeAggregatewithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
@@ -352,7 +401,7 @@ Then, this iterator works in the way of sort-based aggregation.</li></ul><p>The 
     </span>
       
     </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="VectorizedHashMapGeneratorextendsAnyRef"></a>
+      <a id="VectorizedHashMapGeneratorextendsHashMapGenerator"></a>
       <a id="VectorizedHashMapGenerator:VectorizedHashMapGenerator"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -360,10 +409,10 @@ Then, this iterator works in the way of sort-based aggregation.</li></ul><p>The 
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="VectorizedHashMapGenerator.html"><span class="name">VectorizedHashMapGenerator</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="VectorizedHashMapGenerator.html"><span class="name">VectorizedHashMapGenerator</span></a><span class="result"> extends <a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.package@VectorizedHashMapGeneratorextendsAnyRef" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.package@VectorizedHashMapGeneratorextendsHashMapGenerator" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

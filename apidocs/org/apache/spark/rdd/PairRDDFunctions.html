@@ -593,14 +593,13 @@ Simplified version of combineByKeyWithClassTag that hash-partitions the output R
 Generic function to combine the elements for each key using a custom set of aggregation
 functions.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
 Generic function to combine the elements for each key using a custom set of aggregation
-functions. Turns an RDD[(K, V)] into a result of type RDD[(K, C)], for a &quot;combined type&quot; C
-Note that V and C can be different -- for example, one might group an RDD of type
-(Int, Int) into an RDD of type (Int, Seq[Int]). Users provide three functions:</p><ul><li><code>createCombiner</code>, which turns a V into a C (e.g., creates a one-element list)</li><li><code>mergeValue</code>, to merge a V into a C (e.g., adds it to the end of a list)</li><li><code>mergeCombiners</code>, to combine two C's into a single one.</li></ul><p>In addition, users can control the partitioning of the output RDD, and whether to perform
+functions. Turns an RDD[(K, V)] into a result of type RDD[(K, C)], for a &quot;combined type&quot; C</p><p>Users provide three functions:</p><ul><li><code>createCombiner</code>, which turns a V into a C (e.g., creates a one-element list)</li><li><code>mergeValue</code>, to merge a V into a C (e.g., adds it to the end of a list)</li><li><code>mergeCombiners</code>, to combine two C's into a single one.</li></ul><p>In addition, users can control the partitioning of the output RDD, and whether to perform
 map-side aggregation (if a mapper can produce multiple items with the same key).
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>V and C can be different -- for example, one might group an RDD of type
+(Int, Int) into an RDD of type (Int, Seq[Int]).</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.PairRDDFunctions#countApproxDistinctByKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countApproxDistinctByKey(relativeSD:Double):org.apache.spark.rdd.RDD[(K,Long)]"></a>
       <a id="countApproxDistinctByKey(Double):RDD[(K,Long)]"></a>
@@ -682,9 +681,9 @@ Algorithmic Engineering of a State of The Art Cardinality Estimation Algorithm&q
     </span>
       <p class="shortcomment cmt">Return approximate number of distinct values for each key in this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return approximate number of distinct values for each key in this RDD.</p><p>The algorithm used is based on streamlib's implementation of &quot;HyperLogLog in Practice:
 Algorithmic Engineering of a State of The Art Cardinality Estimation Algorithm&quot;, available
-<a href="http://dx.doi.org/10.1145/2452376.2452456">here</a>.</p><p>The relative accuracy is approximately <code>1.054 / sqrt(2^p)<code>. Setting a nonzero </code>sp &gt; p<code>
-would trigger sparse representation of registers, which may reduce the memory consumption
-and increase accuracy when the cardinality is small.
+<a href="http://dx.doi.org/10.1145/2452376.2452456">here</a>.</p><p>The relative accuracy is approximately <code>1.054 / sqrt(2^p)<code>. Setting a nonzero (</code>sp<code> is
+greater than </code>p<code>) would trigger sparse representation of registers, which may reduce the
+memory consumption and increase accuracy when the cardinality is small.
 </code></code></p></div><dl class="paramcmts block"><dt class="param">p</dt><dd class="cmt"><p>The precision value for the normal set.
          <code>p</code> must be a value between 4 and <code>sp</code> if <code>sp</code> is not zero (32 max).</p></dd><dt class="param">sp</dt><dd class="cmt"><p>The precision value for the sparse set, between 0 and 32.
           If <code>sp</code> equals 0, the sparse representation is skipped.</p></dd><dt class="param">partitioner</dt><dd class="cmt"><p>Partitioner to use for the resulting RDD.</p></dd></dl></div>
@@ -704,11 +703,11 @@ and increase accuracy when the cardinality is small.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Count the number of elements for each key, collecting the results to a local Map.</p><div class="fullcomment"><div class="comment cmt"><p>Count the number of elements for each key, collecting the results to a local Map.</p><p>Note that this method should only be used if the resulting map is expected to be small, as
+      <p class="shortcomment cmt">Count the number of elements for each key, collecting the results to a local Map.</p><div class="fullcomment"><div class="comment cmt"><p>Count the number of elements for each key, collecting the results to a local Map.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This method should only be used if the resulting map is expected to be small, as
 the whole thing is loaded into the driver's memory.
 To handle very large results, consider using rdd.mapValues(_ =&gt; 1L).reduceByKey(_ + _), which
-returns an RDD[T, Long] instead of a map.
-</p></div></div>
+returns an RDD[T, Long] instead of a map.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.PairRDDFunctions#countByKeyApprox" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countByKeyApprox(timeout:Long,confidence:Double):org.apache.spark.partial.PartialResult[scala.collection.Map[K,org.apache.spark.partial.BoundedDouble]]"></a>
       <a id="countByKeyApprox(Long,Double):PartialResult[Map[K,BoundedDouble]]"></a>
@@ -971,10 +970,10 @@ in <code>this</code> have key k. Uses the given Partitioner to partition the out
       <p class="shortcomment cmt">Group the values for each key in the RDD into a single sequence.</p><div class="fullcomment"><div class="comment cmt"><p>Group the values for each key in the RDD into a single sequence. Hash-partitions the
 resulting RDD with the existing partitioner/parallelism level. The ordering of elements
 within each group is not guaranteed, and may even differ each time the resulting RDD is
-evaluated.</p><p>Note: This operation may be very expensive. If you are grouping in order to perform an
-aggregation (such as a sum or average) over each key, using <a href="#aggregateByKey[U](zeroValue:U)(seqOp:(U,V)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(K,U)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#aggregateByKey">PairRDDFunctions.aggregateByKey</a>
-or <a href="#reduceByKey(func:(V,V)=&gt;V):org.apache.spark.rdd.RDD[(K,V)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#reduceByKey">PairRDDFunctions.reduceByKey</a> will provide much better performance.
-</p></div></div>
+evaluated.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This operation may be very expensive. If you are grouping in order to perform an
+aggregation (such as a sum or average) over each key, using <code>PairRDDFunctions.aggregateByKey</code>
+or <code>PairRDDFunctions.reduceByKey</code> will provide much better performance.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.PairRDDFunctions#groupByKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupByKey(numPartitions:Int):org.apache.spark.rdd.RDD[(K,Iterable[V])]"></a>
       <a id="groupByKey(Int):RDD[(K,Iterable[V])]"></a>
@@ -993,11 +992,11 @@ or <a href="#reduceByKey(func:(V,V)=&gt;V):org.apache.spark.rdd.RDD[(K,V)]" clas
     </span>
       <p class="shortcomment cmt">Group the values for each key in the RDD into a single sequence.</p><div class="fullcomment"><div class="comment cmt"><p>Group the values for each key in the RDD into a single sequence. Hash-partitions the
 resulting RDD with into <code>numPartitions</code> partitions. The ordering of elements within
-each group is not guaranteed, and may even differ each time the resulting RDD is evaluated.</p><p>Note: This operation may be very expensive. If you are grouping in order to perform an
-aggregation (such as a sum or average) over each key, using <a href="#aggregateByKey[U](zeroValue:U)(seqOp:(U,V)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(K,U)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#aggregateByKey">PairRDDFunctions.aggregateByKey</a>
-or <a href="#reduceByKey(func:(V,V)=&gt;V):org.apache.spark.rdd.RDD[(K,V)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#reduceByKey">PairRDDFunctions.reduceByKey</a> will provide much better performance.</p><p>Note: As currently implemented, groupByKey must be able to hold all the key-value pairs for any
-key in memory. If a key has too many values, it can result in an <span class="extype" name="OutOfMemoryError">OutOfMemoryError</span>.
-</p></div></div>
+each group is not guaranteed, and may even differ each time the resulting RDD is evaluated.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>As currently implemented, groupByKey must be able to hold all the key-value pairs for any
+key in memory. If a key has too many values, it can result in an <span class="extype" name="OutOfMemoryError">OutOfMemoryError</span>.</p></span>, <span class="cmt"><p>This operation may be very expensive. If you are grouping in order to perform an
+aggregation (such as a sum or average) over each key, using <code>PairRDDFunctions.aggregateByKey</code>
+or <code>PairRDDFunctions.reduceByKey</code> will provide much better performance.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.PairRDDFunctions#groupByKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupByKey(partitioner:org.apache.spark.Partitioner):org.apache.spark.rdd.RDD[(K,Iterable[V])]"></a>
       <a id="groupByKey(Partitioner):RDD[(K,Iterable[V])]"></a>
@@ -1017,11 +1016,11 @@ key in memory. If a key has too many values, it can result in an <span class="ex
       <p class="shortcomment cmt">Group the values for each key in the RDD into a single sequence.</p><div class="fullcomment"><div class="comment cmt"><p>Group the values for each key in the RDD into a single sequence. Allows controlling the
 partitioning of the resulting key-value pair RDD by passing a Partitioner.
 The ordering of elements within each group is not guaranteed, and may even differ
-each time the resulting RDD is evaluated.</p><p>Note: This operation may be very expensive. If you are grouping in order to perform an
-aggregation (such as a sum or average) over each key, using <a href="#aggregateByKey[U](zeroValue:U)(seqOp:(U,V)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(K,U)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#aggregateByKey">PairRDDFunctions.aggregateByKey</a>
-or <a href="#reduceByKey(func:(V,V)=&gt;V):org.apache.spark.rdd.RDD[(K,V)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#reduceByKey">PairRDDFunctions.reduceByKey</a> will provide much better performance.</p><p>Note: As currently implemented, groupByKey must be able to hold all the key-value pairs for any
-key in memory. If a key has too many values, it can result in an <span class="extype" name="OutOfMemoryError">OutOfMemoryError</span>.
-</p></div></div>
+each time the resulting RDD is evaluated.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>As currently implemented, groupByKey must be able to hold all the key-value pairs for any
+key in memory. If a key has too many values, it can result in an <span class="extype" name="OutOfMemoryError">OutOfMemoryError</span>.</p></span>, <span class="cmt"><p>This operation may be very expensive. If you are grouping in order to perform an
+aggregation (such as a sum or average) over each key, using <code>PairRDDFunctions.aggregateByKey</code>
+or <code>PairRDDFunctions.reduceByKey</code> will provide much better performance.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.PairRDDFunctions#groupWith" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="groupWith[W1,W2,W3](other1:org.apache.spark.rdd.RDD[(K,W1)],other2:org.apache.spark.rdd.RDD[(K,W2)],other3:org.apache.spark.rdd.RDD[(K,W3)]):org.apache.spark.rdd.RDD[(K,(Iterable[V],Iterable[W1],Iterable[W2],Iterable[W3]))]"></a>
       <a id="groupWith[W1,W2,W3](RDD[(K,W1)],RDD[(K,W2)],RDD[(K,W3)]):RDD[(K,(Iterable[V],Iterable[W1],Iterable[W2],Iterable[W3]))]"></a>
@@ -1854,11 +1853,11 @@ MapReduce job.
     </span>
       <p class="shortcomment cmt">Output the RDD to any Hadoop-supported file system, using a Hadoop <code>OutputFormat</code> class
 supporting the key and value types K and V in this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Output the RDD to any Hadoop-supported file system, using a Hadoop <code>OutputFormat</code> class
-supporting the key and value types K and V in this RDD.</p><p>Note that, we should make sure our tasks are idempotent when speculation is enabled, i.e. do
+supporting the key and value types K and V in this RDD.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>We should make sure our tasks are idempotent when speculation is enabled, i.e. do
 not use output committer that writes data directly.
 There is an example in https://issues.apache.org/jira/browse/SPARK-10063 to show the bad
-result of using direct output committer with speculation enabled.
-</p></div></div>
+result of using direct output committer with speculation enabled.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.PairRDDFunctions#saveAsHadoopFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="saveAsHadoopFile(path:String,keyClass:Class[_],valueClass:Class[_],outputFormatClass:Class[_&lt;:org.apache.hadoop.mapred.OutputFormat[_,_]],codec:Class[_&lt;:org.apache.hadoop.io.compress.CompressionCodec]):Unit"></a>
       <a id="saveAsHadoopFile(String,Class[_],Class[_],Class[_&lt;:OutputFormat[_,_]],Class[_&lt;:CompressionCodec]):Unit"></a>
@@ -1938,11 +1937,11 @@ supporting the key and value types K and V in this RDD.</p>
 Configuration object for that storage system.</p><div class="fullcomment"><div class="comment cmt"><p>Output the RDD to any Hadoop-supported storage system with new Hadoop API, using a Hadoop
 Configuration object for that storage system. The Conf should set an OutputFormat and any
 output paths required (e.g. a table name to write to) in the same way as it would be
-configured for a Hadoop MapReduce job.</p><p>Note that, we should make sure our tasks are idempotent when speculation is enabled, i.e. do
+configured for a Hadoop MapReduce job.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>We should make sure our tasks are idempotent when speculation is enabled, i.e. do
 not use output committer that writes data directly.
 There is an example in https://issues.apache.org/jira/browse/SPARK-10063 to show the bad
-result of using direct output committer with speculation enabled.
-</p></div></div>
+result of using direct output committer with speculation enabled.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.PairRDDFunctions#saveAsNewAPIHadoopFile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="saveAsNewAPIHadoopFile(path:String,keyClass:Class[_],valueClass:Class[_],outputFormatClass:Class[_&lt;:org.apache.hadoop.mapreduce.OutputFormat[_,_]],conf:org.apache.hadoop.conf.Configuration):Unit"></a>
       <a id="saveAsNewAPIHadoopFile(String,Class[_],Class[_],Class[_&lt;:OutputFormat[_,_]],Configuration):Unit"></a>
@@ -2030,7 +2029,7 @@ result of using direct output committer with speculation enabled.
       </a>
     </span>
       <p class="shortcomment cmt">Return an RDD with the pairs from <code>this</code> whose keys are not in <code>other</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Return an RDD with the pairs from <code>this</code> whose keys are not in <code>other</code>.</p><p>Uses <code>this</code> partitioner/partition size, because even if <code>other</code> is huge, the resulting
-RDD will be &lt;= us.
+RDD will be less than or equal to us.
 </p></div></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>

@@ -49,7 +49,14 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Train a linear regression model on one stream of data and make predictions
+on another stream, where the data streams arrive as text files
+into two different directories.</p><p>The rows of the text files must be labeled data points in the form
+<code>(y,[x1,x2,x3,...,xn])</code>
+Where n is the number of features. n must be the same for train and test.</p><p>Usage: StreamingLinearRegressionExample &lt;trainingDir&gt; &lt;testDir&gt;</p><p>To run on your local machine using the two directories <code>trainingDir</code> and <code>testDir</code>,
+with updates every 5 seconds, and 2 features per data point, call:
+   $ bin/run-example mllib.StreamingLinearRegressionExample trainingDir testDir</p><p>As you add text files to <code>trainingDir</code> the model will continuously update.
+Anytime you add text files to <code>testDir</code>, you'll see predictions from the current model.</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>

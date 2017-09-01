@@ -103,7 +103,7 @@
     </span>
       <p class="shortcomment cmt">The wrapper class of Hive input and output schema properties
 </p>
-    </li><li name="org.apache.spark.sql.hive.execution.InsertIntoHiveTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.execution.InsertIntoHiveTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="InsertIntoHiveTableextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="InsertIntoHiveTable:InsertIntoHiveTable"></a>
       <h4 class="signature">
@@ -119,7 +119,16 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Command for writing data out to a Hive table.</p><div class="fullcomment"><div class="comment cmt"><p>Command for writing data out to a Hive table.</p><p>This class is mostly a mess, for legacy reasons (since it evolved in organic ways and had to
+follow Hive's internal implementations closely, which itself was a mess too). Please don't
+blame Reynold for this! He was just moving code around!</p><p>In the future we should converge the write path for Hive with the normal data source write path,
+as defined in <a href="../../execution/datasources/FileFormatWriter$.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormatWriter">org.apache.spark.sql.execution.datasources.FileFormatWriter</a>.
+</p></div><dl class="paramcmts block"><dt class="param">table</dt><dd class="cmt"><p>the logical plan representing the table. In the future this should be a
+             <a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">org.apache.spark.sql.catalyst.catalog.CatalogTable</a> once we converge Hive tables
+             and data source tables.</p></dd><dt class="param">partition</dt><dd class="cmt"><p>a map from the partition key to the partition value (optional). If the partition
+                 value is optional, dynamic partition insert will be performed.
+                 As an example, <code>INSERT INTO tbl PARTITION (a=1, b=2) AS ...</code> would have</p><pre><span class="std">Map</span>(<span class="lit">'a'</span> -&gt; <span class="std">Some</span>(<span class="lit">'1'</span>), <span class="lit">'b'</span> -&gt; <span class="std">Some</span>(<span class="lit">'2'</span>))</pre><p>                 and <code>INSERT INTO tbl PARTITION (a=1, b) AS ...</code>
+                 would have</p><pre><span class="std">Map</span>(<span class="lit">'a'</span> -&gt; <span class="std">Some</span>(<span class="lit">'1'</span>), <span class="lit">'b'</span> -&gt; <span class="std">None</span>)</pre><p>.</p></dd><dt class="param">child</dt><dd class="cmt"><p>the logical plan representing data to write to.</p></dd><dt class="param">overwrite</dt><dd class="cmt"><p>overwrite existing table or partitions.</p></dd><dt class="param">ifNotExists</dt><dd class="cmt"><p>If true, only write if the table or partition does not exist.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.execution.ScriptTransformation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ScriptTransformationextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="ScriptTransformation:ScriptTransformation"></a>

@@ -58,12 +58,12 @@ directory and type following command on the command prompt
 bin/run-example snappydata.WorkingWithObjects
 </pre></p><p>To submit this example as a job to an already running cluster
 <pre>
-  cd $SNAPPY_HOME
-  bin/snappy-job.sh submit
-  --app-name WorkingWithObjects
-  --class org.apache.spark.examples.snappydata.WorkingWithObjects
-  --app-jar examples/jars/quickstart.jar
-  --lead [leadHost:port]
+cd $SNAPPY_HOME
+bin/snappy-job.sh submit
+--app-name WorkingWithObjects
+--class org.apache.spark.examples.snappydata.WorkingWithObjects
+--app-jar examples/jars/quickstart.jar
+--lead [leadHost:port]
 
 Check the status of your job id
 bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]

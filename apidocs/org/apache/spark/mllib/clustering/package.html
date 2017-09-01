@@ -97,8 +97,9 @@ larger clusters get higher priority.
       <span class="symbol">&quot;1.6.0&quot;</span>
     </span>)</span>
               
-        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://glaros.dtc.umn.edu/gkhome/fetch/papers/docclusterKDDTMW00.pdf" target="_blank">Steinbach, Karypis, and Kumar, A comparison of document clustering techniques,
-    KDD Workshop on Text Mining, 2000.</a></p></span></dd></dl></div>
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://glaros.dtc.umn.edu/gkhome/fetch/papers/docclusterKDDTMW00.pdf">
+Steinbach, Karypis, and Kumar, A comparison of document clustering techniques,
+KDD Workshop on Text Mining, 2000.</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.clustering.BisectingKMeansModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="BisectingKMeansModelextendsSerializablewithSaveablewithLogging"></a>
       <a id="BisectingKMeansModel:BisectingKMeansModel"></a>
@@ -204,16 +205,16 @@ specifying each's contribution to the composite.</p><p>Given a set of sample poi
 for a mixture of k Gaussians, iterating until the log-likelihood changes by
 less than convergenceTol, or until it has reached the max number of iterations.
 While this process is generally guaranteed to converge, it is not guaranteed
-to find a global optimum.</p><p>Note: For high-dimensional data (with many features), this algorithm may perform poorly.
-      This is due to high-dimensional data (a) making it difficult to cluster at all (based
-      on statistical/theoretical arguments) and (b) numerical issues with Gaussian distributions.
+to find a global optimum.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.3.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>For high-dimensional data (with many features), this algorithm may perform poorly.
+This is due to high-dimensional data (a) making it difficult to cluster at all (based
+on statistical/theoretical arguments) and (b) numerical issues with Gaussian distributions.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.clustering.GaussianMixtureModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="GaussianMixtureModelextendsSerializablewithSaveable"></a>
       <a id="GaussianMixtureModel:GaussianMixtureModel"></a>
@@ -317,8 +318,8 @@ to it should be cached by the user.
       <span class="symbol">&quot;1.3.0&quot;</span>
     </span>)</span>
               
-        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Latent_Dirichlet_allocation" target="_blank">Latent Dirichlet allocation
-      (Wikipedia)</a></p></span></dd></dl></div>
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Latent_Dirichlet_allocation">
+Latent Dirichlet allocation (Wikipedia)</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.clustering.LDAModel" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="LDAModelextendsSaveable"></a>
       <a id="LDAModel:LDAModel"></a>
@@ -349,7 +350,7 @@ including local and distributed data structures.
       <a id="LDAOptimizer:LDAOptimizer"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">sealed </span>
+        <span class="modifier"></span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
@@ -442,17 +443,18 @@ distribution adaptively.</p><p>Original Online LDA paper:
       </a>
     </span>
       <p class="shortcomment cmt">Power Iteration Clustering (PIC), a scalable graph clustering algorithm developed by
-<a href="http://www.icml2010.org/papers/387.pdf" target="_blank">Lin and Cohen</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Power Iteration Clustering (PIC), a scalable graph clustering algorithm developed by
-<a href="http://www.icml2010.org/papers/387.pdf" target="_blank">Lin and Cohen</a>. From the abstract: PIC finds a very
-low-dimensional embedding of a dataset using truncated power iteration on a normalized pair-wise
-similarity matrix of the data.
+<a href="http://www.icml2010.org/papers/387.pdf">Lin and Cohen</a>.</a></p><div class="fullcomment"><div class="comment cmt"><p>Power Iteration Clustering (PIC), a scalable graph clustering algorithm developed by
+<a href="http://www.icml2010.org/papers/387.pdf">Lin and Cohen</a>. From the abstract: PIC finds
+a very low-dimensional embedding of a dataset using truncated power iteration on a normalized
+pair-wise similarity matrix of the data.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.3.0&quot;</span>
     </span>)</span>
               
-        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Spectral_clustering" target="_blank">Spectral clustering (Wikipedia)</a></p></span></dd></dl></div>
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Spectral_clustering">
+Spectral clustering (Wikipedia)</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.clustering.PowerIterationClusteringModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="PowerIterationClusteringModelextendsSaveablewithSerializable"></a>
       <a id="PowerIterationClusteringModel:PowerIterationClusteringModel"></a>
@@ -534,8 +536,14 @@ algorithms, so it can keep track of a continuously updated weight
 associated with each cluster, and also update the model by
 doing a single iteration of the standard k-means algorithm.</p><p>The update algorithm uses the &quot;mini-batch&quot; KMeans rule,
 generalized to incorporate forgetfullness (i.e. decay).
-The update rule (for each cluster) is:</p><pre>c_t+<span class="num">1</span> = [(c_t * n_t * a) + (x_t * m_t)] / [n_t + m_t]
-n_t+t = n_t * a + m_t</pre><p>Where c_t is the previously estimated centroid for that cluster,
+The update rule (for each cluster) is:</p><p><blockquote>
+   $$
+   \begin{align}
+    c_t+1 &= [(c_t * n_t * a) + (x_t * m_t)] / [n_t + m_t] \\
+    n_t+t &= n_t * a + m_t
+   \end{align}
+   $$
+</blockquote></p><p>Where c_t is the previously estimated centroid for that cluster,
 n_t is the number of points assigned to it thus far, x_t is the centroid
 estimated on the current batch, and m_t is the number of points assigned
 to that centroid in the current batch.</p><p>The decay factor 'a' scales the contribution of the clusters as estimated thus far,

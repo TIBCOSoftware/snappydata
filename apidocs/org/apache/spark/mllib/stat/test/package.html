@@ -159,7 +159,7 @@
       <p class="shortcomment cmt">Performs online 2-sample significance testing for a stream of (Boolean, Double) pairs.</p><div class="fullcomment"><div class="comment cmt"><p>Performs online 2-sample significance testing for a stream of (Boolean, Double) pairs. The
 Boolean identifies which sample each observation comes from, and the Double is the numeric value
 of the observation.</p><p>To address novelty affects, the <code>peacePeriod</code> specifies a set number of initial
-<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">org.apache.spark.rdd.RDD</a> batches of the <span class="extype" name="DStream">DStream</span> to be dropped from significance testing.</p><p>The <code>windowSize</code> sets the number of batches each significance test is to be performed over. The
+<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">org.apache.spark.rdd.RDD</a> batches of the <code>DStream</code> to be dropped from significance testing.</p><p>The <code>windowSize</code> sets the number of batches each significance test is to be performed over. The
 window is sliding with a stride length of 1 batch. Setting windowSize to 0 will perform
 cumulative processing, using all batches seen so far.</p><p>Different tests may be used for assessing statistical significance depending on assumptions
 satisfied by data. For more details, see <span class="extype" name="StreamingTestMethod">StreamingTestMethod</span>. The <code>testMethod</code> specifies

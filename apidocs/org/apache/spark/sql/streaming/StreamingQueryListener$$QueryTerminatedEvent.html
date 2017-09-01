@@ -50,11 +50,13 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-Event representing that termination of a query
+Event representing that termination of a query.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="StreamingQueryListener$$Event.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.Event">Event</a>, <a href="../../scheduler/SparkListenerEvent.html" class="extype" name="org.apache.spark.scheduler.SparkListenerEvent">SparkListenerEvent</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -240,8 +242,8 @@ Event representing that termination of a query
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The exception message of the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> if the query was terminated
-                 with an exception.</p><div class="fullcomment"><div class="comment cmt"><p>The exception message of the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> if the query was terminated
+      <p class="shortcomment cmt">The exception message of the query if the query was terminated
+                 with an exception.</p><div class="fullcomment"><div class="comment cmt"><p>The exception message of the query if the query was terminated
                  with an exception. Otherwise, it will be <code>None</code>.</p></div></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
@@ -300,6 +302,23 @@ Event representing that termination of a query
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminatedEvent#id" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="id:java.util.UUID"></a>
+      <a id="id:UUID"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">id</span><span class="result">: <span class="extype" name="java.util.UUID">UUID</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener$$QueryTerminatedEvent@id:java.util.UUID" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An unique query id that persists across restarts.</p><div class="fullcomment"><div class="comment cmt"><p>An unique query id that persists across restarts. See <code>StreamingQuery.id()</code>.</p></div></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -385,23 +404,23 @@ Event representing that termination of a query
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminatedEvent#queryStatus" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="queryStatus:org.apache.spark.sql.streaming.StreamingQueryStatus"></a>
-      <a id="queryStatus:StreamingQueryStatus"></a>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminatedEvent#runId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="runId:java.util.UUID"></a>
+      <a id="runId:UUID"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">queryStatus</span><span class="result">: <a href="StreamingQueryStatus.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryStatus">StreamingQueryStatus</a></span>
+        <span class="name">runId</span><span class="result">: <span class="extype" name="java.util.UUID">UUID</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener$$QueryTerminatedEvent@queryStatus:org.apache.spark.sql.streaming.StreamingQueryStatus" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryListener$$QueryTerminatedEvent@runId:java.util.UUID" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Information about the status of the query.</p>
+      <p class="shortcomment cmt">A query id that is unique for every start/restart.</p><div class="fullcomment"><div class="comment cmt"><p>A query id that is unique for every start/restart. See <code>StreamingQuery.runId()</code>.</p></div></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

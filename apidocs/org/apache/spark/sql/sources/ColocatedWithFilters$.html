@@ -236,6 +236,24 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
 - <code>canEvaluate(EqualTo(a,c), R)</code> returns <code>false</code>
 - <code>canEvaluate(Literal(1), R)</code> returns <code>true</code> as literals CAN be evaluated on any plan
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.PredicateHelper#canEvaluateWithinJoin" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean"></a>
+      <a id="canEvaluateWithinJoin(Expression):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEvaluateWithinJoin</span><span class="params">(<span name="expr">expr: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ColocatedWithFilters$@canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns true iff <code>expr</code> could be evaluated as a condition within join.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true iff <code>expr</code> could be evaluated as a condition within join.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>

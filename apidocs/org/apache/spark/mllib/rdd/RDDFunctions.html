@@ -387,7 +387,7 @@ Machine learning specific RDD functions.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"><span class="extype" name="sliding(Int,">Int)*</span> with step = 1.</p>
+      <p class="shortcomment cmt"><code>sliding(Int, Int)*</code> with step = 1.</p>
     </li><li name="org.apache.spark.mllib.rdd.RDDFunctions#sliding" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sliding(windowSize:Int,step:Int):org.apache.spark.rdd.RDD[Array[T]]"></a>
       <a id="sliding(Int,Int):RDD[Array[T]]"></a>
@@ -404,8 +404,8 @@ Machine learning specific RDD functions.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a RDD from grouping items of its parent RDD in fixed size blocks by passing a sliding
-window over them.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a RDD from grouping items of its parent RDD in fixed size blocks by passing a sliding
+      <p class="shortcomment cmt">Returns an RDD from grouping items of its parent RDD in fixed size blocks by passing a sliding
+window over them.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an RDD from grouping items of its parent RDD in fixed size blocks by passing a sliding
 window over them. The ordering is first based on the partition index and then the ordering of
 items within each partition. This is similar to sliding in Scala collections, except that it
 becomes an empty RDD if the window size is greater than the total number of items. It needs to

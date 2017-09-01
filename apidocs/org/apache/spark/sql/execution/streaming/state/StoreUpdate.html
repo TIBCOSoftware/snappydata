@@ -54,7 +54,7 @@
           <div class="superTypes hiddenContent"><a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="KeyRemoved.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.KeyRemoved">KeyRemoved</a>, <a href="ValueAdded.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.ValueAdded">ValueAdded</a>, <a href="ValueUpdated.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.ValueUpdated">ValueUpdated</a></div>
+            <div class="subClasses hiddenContent"><a href="ValueAdded.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.ValueAdded">ValueAdded</a>, <a href="ValueRemoved.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.ValueRemoved">ValueRemoved</a>, <a href="ValueUpdated.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.ValueUpdated">ValueUpdated</a></div>
           </div></div>
         
 
@@ -93,10 +93,47 @@
 
         
 
-        
+        <div id="values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.streaming.state.StoreUpdate#key" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="key:org.apache.spark.sql.catalyst.expressions.UnsafeRow"></a>
+      <a id="key:UnsafeRow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">key</span><span class="result">: <a href="../../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.streaming.state.StoreUpdate@key:org.apache.spark.sql.catalyst.expressions.UnsafeRow" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.state.StoreUpdate#value" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="value:org.apache.spark.sql.catalyst.expressions.UnsafeRow"></a>
+      <a id="value:UnsafeRow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">value</span><span class="result">: <a href="../../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.streaming.state.StoreUpdate@value:org.apache.spark.sql.catalyst.expressions.UnsafeRow" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
 
         <div id="values" class="values members">
-              <h3>Value Members</h3>
+              <h3>Concrete Value Members</h3>
               <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a>
       <a id="!=(Any):Boolean"></a>

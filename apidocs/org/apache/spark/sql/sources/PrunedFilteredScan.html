@@ -49,14 +49,13 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>::DeveloperApi::
-A BaseRelation that can eliminate unneeded columns and filter using selected
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A BaseRelation that can eliminate unneeded columns and filter using selected
 predicates before producing an RDD containing all matching tuples as Row objects.</p><p>The actual filter should be the conjunction of all <code>filters</code>,
 i.e. they should be &quot;and&quot; together.</p><p>The pushed down filters are currently purely an optimization as they will all be evaluated
 again.  This means it is safe to use them with methods that produce false positives such
 as filtering partitions based on a bloom filter.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>

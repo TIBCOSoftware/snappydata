@@ -185,7 +185,9 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Java-friendly version of <span class="extype" name="chiSqTest()">chiSqTest()</span></p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <span class="extype" name="chiSqTest()">chiSqTest()</span></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Java-friendly version of <code>chiSqTest()</code>
+</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <code>chiSqTest()</code>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
@@ -265,7 +267,7 @@ negative entries or columns or rows that sum up to 0.
     </span>
       <p class="shortcomment cmt">Conduct Pearson's chi-squared goodness of fit test of the observed data against the uniform
 distribution, with each category having an expected frequency of <code>1 / observed.size</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Conduct Pearson's chi-squared goodness of fit test of the observed data against the uniform
-distribution, with each category having an expected frequency of <code>1 / observed.size</code>.</p><p>Note: <code>observed</code> cannot contain negative values.
+distribution, with each category having an expected frequency of <code>1 / observed.size</code>.
 </p></div><dl class="paramcmts block"><dt class="param">observed</dt><dd class="cmt"><p>Vector containing the observed categorical counts/relative frequencies.</p></dd><dt>returns</dt><dd class="cmt"><p>ChiSquaredTest object containing the test statistic, degrees of freedom, p-value,
         the method used, and the null hypothesis.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -273,7 +275,7 @@ distribution, with each category having an expected frequency of <code>1 / obser
       <span class="symbol">&quot;1.1.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p><code>observed</code> cannot contain negative values.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.stat.Statistics#chiSqTest" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="chiSqTest(observed:org.apache.spark.mllib.linalg.Vector,expected:org.apache.spark.mllib.linalg.Vector):org.apache.spark.mllib.stat.test.ChiSqTestResult"></a>
       <a id="chiSqTest(Vector,Vector):ChiSqTestResult"></a>
@@ -292,9 +294,7 @@ distribution, with each category having an expected frequency of <code>1 / obser
     </span>
       <p class="shortcomment cmt">Conduct Pearson's chi-squared goodness of fit test of the observed data against the
 expected distribution.</p><div class="fullcomment"><div class="comment cmt"><p>Conduct Pearson's chi-squared goodness of fit test of the observed data against the
-expected distribution.</p><p>Note: the two input Vectors need to have the same size.
-      <code>observed</code> cannot contain negative values.
-      <code>expected</code> cannot contain nonpositive values.
+expected distribution.
 </p></div><dl class="paramcmts block"><dt class="param">observed</dt><dd class="cmt"><p>Vector containing the observed categorical counts/relative frequencies.</p></dd><dt class="param">expected</dt><dd class="cmt"><p>Vector containing the expected categorical counts/relative frequencies.
                 <code>expected</code> is rescaled if the <code>expected</code> sum differs from the <code>observed</code> sum.</p></dd><dt>returns</dt><dd class="cmt"><p>ChiSquaredTest object containing the test statistic, degrees of freedom, p-value,
         the method used, and the null hypothesis.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -303,7 +303,9 @@ expected distribution.</p><p>Note: the two input Vectors need to have the same s
       <span class="symbol">&quot;1.1.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The two input Vectors need to have the same size.
+<code>observed</code> cannot contain negative values.
+<code>expected</code> cannot contain nonpositive values.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -367,8 +369,8 @@ expected distribution.</p><p>Note: the two input Vectors need to have the same s
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Java-friendly version of <span class="extype" name="corr()">corr()</span>
-</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <span class="extype" name="corr()">corr()</span>
+      <p class="shortcomment cmt">Java-friendly version of <code>corr()</code>
+</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <code>corr()</code>
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -393,8 +395,7 @@ expected distribution.</p><p>Note: the two input Vectors need to have the same s
       </a>
     </span>
       <p class="shortcomment cmt">Compute the correlation for the input RDDs using the specified method.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the correlation for the input RDDs using the specified method.
-Methods currently supported: <code>pearson</code> (default), <code>spearman</code>.</p><p>Note: the two input RDDs need to have the same number of partitions and the same number of
-elements in each partition.
+Methods currently supported: <code>pearson</code> (default), <code>spearman</code>.
 </p></div><dl class="paramcmts block"><dt class="param">x</dt><dd class="cmt"><p>RDD[Double] of the same cardinality as y.</p></dd><dt class="param">y</dt><dd class="cmt"><p>RDD[Double] of the same cardinality as x.</p></dd><dt class="param">method</dt><dd class="cmt"><p>String specifying the method to use for computing correlation.
               Supported: <code>pearson</code> (default), <code>spearman</code></p></dd><dt>returns</dt><dd class="cmt"><p>A Double containing the correlation between the two input RDD[Double]s using the
         specified method.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -403,7 +404,8 @@ elements in each partition.
       <span class="symbol">&quot;1.1.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The two input RDDs need to have the same number of partitions and the same number of
+elements in each partition.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.stat.Statistics#corr" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="corr(x:org.apache.spark.api.java.JavaRDD[Double],y:org.apache.spark.api.java.JavaRDD[Double]):Double"></a>
       <a id="corr(JavaRDD[Double],JavaRDD[Double]):Double"></a>
@@ -420,8 +422,8 @@ elements in each partition.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Java-friendly version of <span class="extype" name="corr()">corr()</span>
-</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <span class="extype" name="corr()">corr()</span>
+      <p class="shortcomment cmt">Java-friendly version of <code>corr()</code>
+</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <code>corr()</code>
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -446,15 +448,15 @@ elements in each partition.
       </a>
     </span>
       <p class="shortcomment cmt">Compute the Pearson correlation for the input RDDs.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the Pearson correlation for the input RDDs.
-Returns NaN if either vector has 0 variance.</p><p>Note: the two input RDDs need to have the same number of partitions and the same number of
-elements in each partition.
+Returns NaN if either vector has 0 variance.
 </p></div><dl class="paramcmts block"><dt class="param">x</dt><dd class="cmt"><p>RDD[Double] of the same cardinality as y.</p></dd><dt class="param">y</dt><dd class="cmt"><p>RDD[Double] of the same cardinality as x.</p></dd><dt>returns</dt><dd class="cmt"><p>A Double containing the Pearson correlation between the two input RDD[Double]s</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.1.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The two input RDDs need to have the same number of partitions and the same number of
+elements in each partition.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.stat.Statistics#corr" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="corr(X:org.apache.spark.rdd.RDD[org.apache.spark.mllib.linalg.Vector],method:String):org.apache.spark.mllib.linalg.Matrix"></a>
       <a id="corr(RDD[Vector],String):Matrix"></a>
@@ -472,10 +474,7 @@ elements in each partition.
       </a>
     </span>
       <p class="shortcomment cmt">Compute the correlation matrix for the input RDD of Vectors using the specified method.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the correlation matrix for the input RDD of Vectors using the specified method.
-Methods currently supported: <code>pearson</code> (default), <code>spearman</code>.</p><p>Note that for Spearman, a rank correlation, we need to create an RDD[Double] for each column
-and sort it in order to retrieve the ranks and then join the columns back into an RDD[Vector],
-which is fairly costly. Cache the input RDD before calling corr with <code>method = &quot;spearman&quot;</code> to
-avoid recomputing the common lineage.
+Methods currently supported: <code>pearson</code> (default), <code>spearman</code>.
 </p></div><dl class="paramcmts block"><dt class="param">X</dt><dd class="cmt"><p>an RDD[Vector] for which the correlation matrix is to be computed.</p></dd><dt class="param">method</dt><dd class="cmt"><p>String specifying the method to use for computing correlation.
               Supported: <code>pearson</code> (default), <code>spearman</code></p></dd><dt>returns</dt><dd class="cmt"><p>Correlation matrix comparing columns in X.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -483,7 +482,10 @@ avoid recomputing the common lineage.
       <span class="symbol">&quot;1.1.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>For Spearman, a rank correlation, we need to create an RDD[Double] for each column
+and sort it in order to retrieve the ranks and then join the columns back into an RDD[Vector],
+which is fairly costly. Cache the input RDD before calling corr with <code>method = &quot;spearman&quot;</code> to
+avoid recomputing the common lineage.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.stat.Statistics#corr" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="corr(X:org.apache.spark.rdd.RDD[org.apache.spark.mllib.linalg.Vector]):org.apache.spark.mllib.linalg.Matrix"></a>
       <a id="corr(RDD[Vector]):Matrix"></a>
@@ -633,7 +635,9 @@ Columns with 0 covariance produce NaN entries in the correlation matrix.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Java-friendly version of <span class="extype" name="kolmogorovSmirnovTest()">kolmogorovSmirnovTest()</span></p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <span class="extype" name="kolmogorovSmirnovTest()">kolmogorovSmirnovTest()</span></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Java-friendly version of <code>kolmogorovSmirnovTest()</code>
+</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <code>kolmogorovSmirnovTest()</code>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
@@ -700,7 +704,8 @@ For more information on KS Test:</p></div><dl class="paramcmts block"><dt class=
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test" target="_blank">https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test</a></p></span></dd></dl></div>
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test">
+Kolmogorov-Smirnov test (Wikipedia)</a></p></span></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>

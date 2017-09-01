@@ -910,52 +910,52 @@ It mainly contains two parts:
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Iterator → TraversableOnce → GenTraversableOnce</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.AggregationIterator#generateOutput" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateOutput:(org.apache.spark.sql.catalyst.expressions.UnsafeRow,org.apache.spark.sql.catalyst.expressions.MutableRow)=&gt;org.apache.spark.sql.catalyst.expressions.UnsafeRow"></a>
-      <a id="generateOutput:(UnsafeRow,MutableRow)⇒UnsafeRow"></a>
+      <a id="generateOutput:(org.apache.spark.sql.catalyst.expressions.UnsafeRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;org.apache.spark.sql.catalyst.expressions.UnsafeRow"></a>
+      <a id="generateOutput:(UnsafeRow,InternalRow)⇒UnsafeRow"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">generateOutput</span><span class="result">: (<a href="../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>, <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a>) ⇒ <a href="../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a></span>
+        <span class="name">generateOutput</span><span class="result">: (<a href="../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <a href="../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@generateOutput:(org.apache.spark.sql.catalyst.expressions.UnsafeRow,org.apache.spark.sql.catalyst.expressions.MutableRow)=&gt;org.apache.spark.sql.catalyst.expressions.UnsafeRow" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@generateOutput:(org.apache.spark.sql.catalyst.expressions.UnsafeRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;org.apache.spark.sql.catalyst.expressions.UnsafeRow" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.AggregationIterator#generateProcessRow" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateProcessRow(expressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],functions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction],inputAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):(org.apache.spark.sql.catalyst.expressions.MutableRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;Unit"></a>
-      <a id="generateProcessRow(Seq[AggregateExpression],Seq[AggregateFunction],Seq[Attribute]):(MutableRow,InternalRow)⇒Unit"></a>
+      <a id="generateProcessRow(expressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],functions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction],inputAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):(org.apache.spark.sql.catalyst.InternalRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;Unit"></a>
+      <a id="generateProcessRow(Seq[AggregateExpression],Seq[AggregateFunction],Seq[Attribute]):(InternalRow,InternalRow)⇒Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateProcessRow</span><span class="params">(<span name="expressions">expressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/aggregate/AggregateExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression">AggregateExpression</a>]</span>, <span name="functions">functions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/aggregate/AggregateFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction">AggregateFunction</a>]</span>, <span name="inputAttributes">inputAttributes: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: (<a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">generateProcessRow</span><span class="params">(<span name="expressions">expressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/aggregate/AggregateExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression">AggregateExpression</a>]</span>, <span name="functions">functions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/aggregate/AggregateFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction">AggregateFunction</a>]</span>, <span name="inputAttributes">inputAttributes: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: (<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@generateProcessRow(expressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],functions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction],inputAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):(org.apache.spark.sql.catalyst.expressions.MutableRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@generateProcessRow(expressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],functions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction],inputAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):(org.apache.spark.sql.catalyst.InternalRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.AggregationIterator#generateResultProjection" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateResultProjection():(org.apache.spark.sql.catalyst.expressions.UnsafeRow,org.apache.spark.sql.catalyst.expressions.MutableRow)=&gt;org.apache.spark.sql.catalyst.expressions.UnsafeRow"></a>
-      <a id="generateResultProjection():(UnsafeRow,MutableRow)⇒UnsafeRow"></a>
+      <a id="generateResultProjection():(org.apache.spark.sql.catalyst.expressions.UnsafeRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;org.apache.spark.sql.catalyst.expressions.UnsafeRow"></a>
+      <a id="generateResultProjection():(UnsafeRow,InternalRow)⇒UnsafeRow"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateResultProjection</span><span class="params">()</span><span class="result">: (<a href="../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>, <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a>) ⇒ <a href="../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a></span>
+        <span class="name">generateResultProjection</span><span class="params">()</span><span class="result">: (<a href="../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <a href="../../catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@generateResultProjection():(org.apache.spark.sql.catalyst.expressions.UnsafeRow,org.apache.spark.sql.catalyst.expressions.MutableRow)=&gt;org.apache.spark.sql.catalyst.expressions.UnsafeRow" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@generateResultProjection():(org.apache.spark.sql.catalyst.expressions.UnsafeRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;org.apache.spark.sql.catalyst.expressions.UnsafeRow" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1114,18 +1114,18 @@ It mainly contains two parts:
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.AggregationIterator#initializeBuffer" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeBuffer(buffer:org.apache.spark.sql.catalyst.expressions.MutableRow):Unit"></a>
-      <a id="initializeBuffer(MutableRow):Unit"></a>
+      <a id="initializeBuffer(buffer:org.apache.spark.sql.catalyst.InternalRow):Unit"></a>
+      <a id="initializeBuffer(InternalRow):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initializeBuffer</span><span class="params">(<span name="buffer">buffer: <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">initializeBuffer</span><span class="params">(<span name="buffer">buffer: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@initializeBuffer(buffer:org.apache.spark.sql.catalyst.expressions.MutableRow):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@initializeBuffer(buffer:org.apache.spark.sql.catalyst.InternalRow):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1726,18 +1726,18 @@ It mainly contains two parts:
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Iterator</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.AggregationIterator#processRow" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="processRow:(org.apache.spark.sql.catalyst.expressions.MutableRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;Unit"></a>
-      <a id="processRow:(MutableRow,InternalRow)⇒Unit"></a>
+      <a id="processRow:(org.apache.spark.sql.catalyst.InternalRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;Unit"></a>
+      <a id="processRow:(InternalRow,InternalRow)⇒Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">processRow</span><span class="result">: (<a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">processRow</span><span class="result">: (<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@processRow:(org.apache.spark.sql.catalyst.expressions.MutableRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.AggregationIterator@processRow:(org.apache.spark.sql.catalyst.InternalRow,org.apache.spark.sql.catalyst.InternalRow)=&gt;Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

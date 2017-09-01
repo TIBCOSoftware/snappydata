@@ -89,8 +89,8 @@ Encapsulates everything (extensions, workarounds, quirks) to handle the
 SQL dialect of a certain database or jdbc driver.
 Lots of databases define types that aren't explicitly supported
 by the JDBC spec.  Some JDBC drivers also report inaccurate
-information---for instance, BIT(n&gt;1) being reported as a BIT type is quite
-common, even though BIT in JDBC is meant for single-bit values.  Also, there
+information---for instance, BIT(n<code>&gt;</code>1) being reported as a BIT type is quite
+common, even though BIT in JDBC is meant for single-bit values. Also, there
 does not appear to be a standard name for an unbounded string or binary
 type; we use BLOB and CLOB by default but override with database-specific
 alternatives when these are absent or do not behave correctly.</p><p>Currently, the only thing done by the dialect is type mapping.
@@ -101,6 +101,8 @@ if <code>getJDBCType</code> returns <code>(null, None)</code>, the default type 
 for the given Catalyst type.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.jdbc.JdbcType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -127,6 +129,8 @@ values to the database.</p></div><dl class="paramcmts block"><dt class="param">d
                     send a null value to the database.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd></dl></div>
     </li></ol>
             </div>
@@ -152,15 +156,17 @@ values to the database.</p></div><dl class="paramcmts block"><dt class="param">d
       </a>
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
-Registry of dialects that apply to every new jdbc <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">org.apache.spark.sql.DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Registry of dialects that apply to every new jdbc <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">org.apache.spark.sql.DataFrame</a>.</p><p>If multiple matching dialects are registered then all matching ones will be
+Registry of dialects that apply to every new jdbc <code>org.apache.spark.sql.DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Registry of dialects that apply to every new jdbc <code>org.apache.spark.sql.DataFrame</code>.</p><p>If multiple matching dialects are registered then all matching ones will be
 tried in reverse order. A user-added dialect will thus be applied first,
-overwriting the defaults.</p><p>Note that all new dialects are applied to new jdbc DataFrames only. Make
-sure to register your dialects first.
+overwriting the defaults.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>All new dialects are applied to new jdbc DataFrames only. Make
+sure to register your dialects first.</p></span></dd></dl></div>
     </li></ol>
             </div>
 

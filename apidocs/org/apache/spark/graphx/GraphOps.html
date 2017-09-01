@@ -663,7 +663,7 @@ degree to each vertex record</p><pre><span class="kw">val</span> rawGraph: Graph
       <p class="shortcomment cmt">Run a dynamic version of PageRank returning a graph with vertex attributes containing the
 PageRank and edge attributes containing the normalized edge weight.</p><div class="fullcomment"><div class="comment cmt"><p>Run a dynamic version of PageRank returning a graph with vertex attributes containing the
 PageRank and edge attributes containing the normalized edge weight.
-</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="lib/PageRank$.html#runUntilConvergence[VD,ED](graph:org.apache.spark.graphx.Graph[VD,ED],tol:Double,resetProb:Double)(implicitevidence$5:scala.reflect.ClassTag[VD],implicitevidence$6:scala.reflect.ClassTag[ED]):org.apache.spark.graphx.Graph[Double,Double]" class="extmbr" name="org.apache.spark.graphx.lib.PageRank#runUntilConvergence">org.apache.spark.graphx.lib.PageRank$#runUntilConvergence</a></p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="lib/PageRank$.html#runUntilConvergence[VD,ED](graph:org.apache.spark.graphx.Graph[VD,ED],tol:Double,resetProb:Double)(implicitevidence$7:scala.reflect.ClassTag[VD],implicitevidence$8:scala.reflect.ClassTag[ED]):org.apache.spark.graphx.Graph[Double,Double]" class="extmbr" name="org.apache.spark.graphx.lib.PageRank#runUntilConvergence">org.apache.spark.graphx.lib.PageRank$#runUntilConvergence</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.graphx.GraphOps#personalizedPageRank" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="personalizedPageRank(src:org.apache.spark.graphx.VertexId,tol:Double,resetProb:Double):org.apache.spark.graphx.Graph[Double,Double]"></a>
       <a id="personalizedPageRank(VertexId,Double,Double):Graph[Double,Double]"></a>
@@ -683,7 +683,7 @@ PageRank and edge attributes containing the normalized edge weight.
       <p class="shortcomment cmt">Run personalized PageRank for a given vertex, such that all random walks
 are started relative to the source node.</p><div class="fullcomment"><div class="comment cmt"><p>Run personalized PageRank for a given vertex, such that all random walks
 are started relative to the source node.
-</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="lib/PageRank$.html#runUntilConvergenceWithOptions[VD,ED](graph:org.apache.spark.graphx.Graph[VD,ED],tol:Double,resetProb:Double,srcId:Option[org.apache.spark.graphx.VertexId])(implicitevidence$7:scala.reflect.ClassTag[VD],implicitevidence$8:scala.reflect.ClassTag[ED]):org.apache.spark.graphx.Graph[Double,Double]" class="extmbr" name="org.apache.spark.graphx.lib.PageRank#runUntilConvergenceWithOptions">org.apache.spark.graphx.lib.PageRank$#runUntilConvergenceWithOptions</a></p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="lib/PageRank$.html#runUntilConvergenceWithOptions[VD,ED](graph:org.apache.spark.graphx.Graph[VD,ED],tol:Double,resetProb:Double,srcId:Option[org.apache.spark.graphx.VertexId])(implicitevidence$9:scala.reflect.ClassTag[VD],implicitevidence$10:scala.reflect.ClassTag[ED]):org.apache.spark.graphx.Graph[Double,Double]" class="extmbr" name="org.apache.spark.graphx.lib.PageRank#runUntilConvergenceWithOptions">org.apache.spark.graphx.lib.PageRank$#runUntilConvergenceWithOptions</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.graphx.GraphOps#pickRandomVertex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="pickRandomVertex():org.apache.spark.graphx.VertexId"></a>
       <a id="pickRandomVertex():VertexId"></a>
@@ -780,6 +780,25 @@ ideally the size of A should not increase.</i></p></dd><dt>returns</dt><dd class
 containing the PageRank and edge attributes the normalized edge weight.</p><div class="fullcomment"><div class="comment cmt"><p>Run PageRank for a fixed number of iterations returning a graph with vertex attributes
 containing the PageRank and edge attributes the normalized edge weight.
 </p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="lib/PageRank$.html#run[VD,ED](graph:org.apache.spark.graphx.Graph[VD,ED],numIter:Int,resetProb:Double)(implicitevidence$1:scala.reflect.ClassTag[VD],implicitevidence$2:scala.reflect.ClassTag[ED]):org.apache.spark.graphx.Graph[Double,Double]" class="extmbr" name="org.apache.spark.graphx.lib.PageRank#run">org.apache.spark.graphx.lib.PageRank$#run</a></p></span></dd></dl></div>
+    </li><li name="org.apache.spark.graphx.GraphOps#staticParallelPersonalizedPageRank" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="staticParallelPersonalizedPageRank(sources:Array[org.apache.spark.graphx.VertexId],numIter:Int,resetProb:Double):org.apache.spark.graphx.Graph[org.apache.spark.ml.linalg.Vector,Double]"></a>
+      <a id="staticParallelPersonalizedPageRank(Array[VertexId],Int,Double):Graph[Vector,Double]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">staticParallelPersonalizedPageRank</span><span class="params">(<span name="sources">sources: <span class="extype" name="scala.Array">Array</span>[<a href="package.html#VertexId=Long" class="extmbr" name="org.apache.spark.graphx.VertexId">VertexId</a>]</span>, <span name="numIter">numIter: <span class="extype" name="scala.Int">Int</span></span>, <span name="resetProb">resetProb: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">0.15</span></span>)</span><span class="result">: <a href="Graph.html" class="extype" name="org.apache.spark.graphx.Graph">Graph</a>[<a href="../ml/linalg/Vector.html" class="extype" name="org.apache.spark.ml.linalg.Vector">Vector</a>, <span class="extype" name="scala.Double">Double</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.graphx.GraphOps@staticParallelPersonalizedPageRank(sources:Array[org.apache.spark.graphx.VertexId],numIter:Int,resetProb:Double):org.apache.spark.graphx.Graph[org.apache.spark.ml.linalg.Vector,Double]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Run parallel personalized PageRank for a given array of source vertices, such
+that all random walks are started relative to the source vertices
+</p>
     </li><li name="org.apache.spark.graphx.GraphOps#staticPersonalizedPageRank" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="staticPersonalizedPageRank(src:org.apache.spark.graphx.VertexId,numIter:Int,resetProb:Double):org.apache.spark.graphx.Graph[Double,Double]"></a>
       <a id="staticPersonalizedPageRank(VertexId,Int,Double):Graph[Double,Double]"></a>

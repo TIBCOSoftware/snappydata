@@ -49,7 +49,10 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A metric used in a SQL query plan. This is implemented as an <span class="extype" name="AccumulatorV2">AccumulatorV2</span>. Updates on
+the executor side are automatically propagated and shown in the SQL UI through metrics. Updates
+on the driver side must be explicitly posted using <span class="extype" name="SQLMetrics.postDriverMetricUpdates()">SQLMetrics.postDriverMetricUpdates()</span>.
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../util/AccumulatorV2Kryo.html" class="extype" name="org.apache.spark.util.AccumulatorV2Kryo">AccumulatorV2Kryo</a>[<span class="extype" name="scala.Long">Long</span>, <span class="extype" name="scala.Long">Long</span>], <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <a href="../../../util/AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">AccumulatorV2</a>[<span class="extype" name="scala.Long">Long</span>, <span class="extype" name="scala.Long">Long</span>], <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -436,9 +439,8 @@ must return true.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns true if this accumulator has been registered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if this accumulator has been registered.  Note that all accumulators must be
-registered before use, or it will throw exception.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">AccumulatorV2</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns true if this accumulator has been registered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if this accumulator has been registered.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../util/AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">AccumulatorV2</a></dd><dt>Note</dt><dd><span class="cmt"><p>All accumulators must be registered before use, or it will throw exception.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.metric.SQLMetric#isZero" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isZero():Boolean"></a>
       <a id="isZero():Boolean"></a>

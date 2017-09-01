@@ -184,23 +184,25 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="apply(number:Int):BaseType"></a>
-      <a id="apply(Int):Expression"></a>
+      <a id="apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]"></a>
+      <a id="apply(Int):TreeNode[_]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@apply(number:Int):BaseType" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the tree node at the specified number.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number.
-Numbers for each node can be found in the <a href="../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.
+      <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
+Numbers for each node can be found in the <a href="../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>Note that this cannot return BaseType because logical plan's plan node might return
+physical plan for innerChildren, e.g. in-memory relation logical plan node has a reference
+to the physical plan node it is referencing.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#argString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="argString:String"></a>
@@ -438,6 +440,23 @@ is defined (pre-order), and applies the partial function to it.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.XxHash64">XxHash64</a> → <a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#computeHash" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeHash(input:String,dataType:org.apache.spark.sql.types.DataType,result:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String"></a>
+      <a id="computeHash(String,DataType,String,CodegenContext):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">computeHash</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <a href="codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@computeHash(input:String,dataType:org.apache.spark.sql.types.DataType,result:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#containsChild" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="containsChild:Set[org.apache.spark.sql.catalyst.trees.TreeNode[_]]"></a>
       <a id="containsChild:Set[TreeNode[_]]"></a>
@@ -493,9 +512,9 @@ invalid to query the dataType of an unresolved expression (i.e., when <code>reso
       <p class="shortcomment cmt">Returns true when the current expression always return the same result for fixed inputs from
 children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true when the current expression always return the same result for fixed inputs from
 children.</p><p>Note that this means that an expression should be considered as non-deterministic if:
-- if it relies on some mutable internal state, or
-- if it relies on some implicit input that is not part of the children expression list.
-- if it has non-deterministic child or children.</p><p>An example would be <code>SparkPartitionID</code> that relies on the partition id returned by TaskContext.
+- it relies on some mutable internal state, or
+- it relies on some implicit input that is not part of the children expression list.
+- it has non-deterministic child or children.</p><p>An example would be <code>SparkPartitionID</code> that relies on the partition id returned by TaskContext.
 By default leaf expressions are deterministic as Nil.forall(_.deterministic) returns true.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#doGenCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -544,7 +563,7 @@ implementations should override this to do actual code generation.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eval</span><span class="params">(<span name="input">input: <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+        <span class="name">eval</span><span class="params">(<span name="input">input: <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> = <span class="symbol">null</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@eval(input:org.apache.spark.sql.catalyst.InternalRow):Any" title="Permalink" target="_top">
@@ -623,7 +642,7 @@ The condition is recursively applied to this node and all of its children (pre-o
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatArguments</span><span class="result">: <span class="extype" name="scala.collection.Iterator">Iterator</span>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">flatArguments</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@flatArguments:Iterator[Any]" title="Permalink" target="_top">
@@ -725,6 +744,210 @@ executed.</p><p>The following conditions are used to determine suitability for c
 evaluating the expression on an input row.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an <span class="extype" name="ExprCode">ExprCode</span>, that contains the Java source code to generate the result of
 evaluating the expression on an input row.
 </p></div><dl class="paramcmts block"><dt class="param">ctx</dt><dd class="cmt"><p>a <span class="extype" name="CodegenContext">CodegenContext</span></p></dd><dt>returns</dt><dd class="cmt"><p><span class="extype" name="ExprCode">ExprCode</span></p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashBoolean" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashBoolean(input:String,result:String):String"></a>
+      <a id="genHashBoolean(String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashBoolean</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashBoolean(input:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashBytes" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashBytes(b:String,result:String):String"></a>
+      <a id="genHashBytes(String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashBytes</span><span class="params">(<span name="b">b: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashBytes(b:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashCalendarInterval" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashCalendarInterval(input:String,result:String):String"></a>
+      <a id="genHashCalendarInterval(String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashCalendarInterval</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashCalendarInterval(input:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashDecimal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashDecimal(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,d:org.apache.spark.sql.types.DecimalType,input:String,result:String):String"></a>
+      <a id="genHashDecimal(CodegenContext,DecimalType,String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashDecimal</span><span class="params">(<span name="ctx">ctx: <a href="codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="d">d: <a href="../../types/DecimalType.html" class="extype" name="org.apache.spark.sql.types.DecimalType">DecimalType</a></span>, <span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashDecimal(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,d:org.apache.spark.sql.types.DecimalType,input:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashDouble" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashDouble(input:String,result:String):String"></a>
+      <a id="genHashDouble(String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashDouble</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashDouble(input:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashFloat" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashFloat(input:String,result:String):String"></a>
+      <a id="genHashFloat(String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashFloat</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashFloat(input:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashForArray" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashForArray(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:String,result:String,elementType:org.apache.spark.sql.types.DataType,containsNull:Boolean):String"></a>
+      <a id="genHashForArray(CodegenContext,String,String,DataType,Boolean):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashForArray</span><span class="params">(<span name="ctx">ctx: <a href="codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="elementType">elementType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="containsNull">containsNull: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashForArray(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:String,result:String,elementType:org.apache.spark.sql.types.DataType,containsNull:Boolean):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashForMap" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashForMap(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:String,result:String,keyType:org.apache.spark.sql.types.DataType,valueType:org.apache.spark.sql.types.DataType,valueContainsNull:Boolean):String"></a>
+      <a id="genHashForMap(CodegenContext,String,String,DataType,DataType,Boolean):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashForMap</span><span class="params">(<span name="ctx">ctx: <a href="codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyType">keyType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="valueType">valueType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="valueContainsNull">valueContainsNull: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashForMap(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:String,result:String,keyType:org.apache.spark.sql.types.DataType,valueType:org.apache.spark.sql.types.DataType,valueContainsNull:Boolean):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashForStruct" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashForStruct(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:String,result:String,fields:Array[org.apache.spark.sql.types.StructField]):String"></a>
+      <a id="genHashForStruct(CodegenContext,String,String,Array[StructField]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashForStruct</span><span class="params">(<span name="ctx">ctx: <a href="codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="fields">fields: <span class="extype" name="scala.Array">Array</span>[<a href="../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashForStruct(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:String,result:String,fields:Array[org.apache.spark.sql.types.StructField]):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashInt" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashInt(i:String,result:String):String"></a>
+      <a id="genHashInt(String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashInt</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashInt(i:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashLong" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashLong(l:String,result:String):String"></a>
+      <a id="genHashLong(String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashLong</span><span class="params">(<span name="l">l: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashLong(l:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#genHashString" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genHashString(input:String,result:String):String"></a>
+      <a id="genHashString(String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genHashString</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@genHashString(input:String,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#generateTreeString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="generateTreeString(depth:Int,lastChildren:Seq[Boolean],builder:StringBuilder,verbose:Boolean,prefix:String):StringBuilder"></a>
       <a id="generateTreeString(Int,Seq[Boolean],StringBuilder,Boolean,String):StringBuilder"></a>
@@ -743,7 +966,7 @@ evaluating the expression on an input row.
     </span>
       <p class="shortcomment cmt">Appends the string represent of this node and its children to the given StringBuilder.</p><div class="fullcomment"><div class="comment cmt"><p>Appends the string represent of this node and its children to the given StringBuilder.</p><p>The <code>i</code>-th element in <code>lastChildren</code> indicates whether the ancestor of the current node at
 depth <code>i + 1</code> is the last child of its own parent node.  The depth of the root node is 0, and
-<code>lastChildren</code> for the root node should be empty.
+<code>lastChildren</code> for the root node should be empty.</p><p>Note that this traversal (numbering) order must be the same as <span class="extype" name="getNodeNumbered">getNodeNumbered</span>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
@@ -762,23 +985,6 @@ depth <code>i + 1</code> is the last child of its own parent node.  The depth of
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#getNodeNumbered" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType"></a>
-      <a id="getNodeNumbered(trees.MutableInt):Expression"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getNodeNumbered</span><span class="params">(<span name="number">number: <span class="extype" name="org.apache.spark.sql.catalyst.trees.MutableInt">trees.MutableInt</span></span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1010,6 +1216,23 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#nullSafeElementHash" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="nullSafeElementHash(input:String,index:String,nullable:Boolean,elementType:org.apache.spark.sql.types.DataType,result:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String"></a>
+      <a id="nullSafeElementHash(String,String,Boolean,DataType,String,CodegenContext):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nullSafeElementHash</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="index">index: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullable">nullable: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="elementType">elementType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <a href="codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@nullSafeElementHash(input:String,index:String,nullable:Boolean,elementType:org.apache.spark.sql.types.DataType,result:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.HashExpression">HashExpression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.HashExpression#nullable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nullable:Boolean"></a>
       <a id="nullable:Boolean"></a>
@@ -1044,7 +1267,8 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree, where each operator is numbered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree, where each operator is numbered.
-The numbers can be used with <a href="../trees/TreeNode.html#apply(number:Int):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> to easily access specific subtrees.
+The numbers can be used with <a href="../trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">TreeNode.apply</a> to easily access specific subtrees.</p><p>The numbers are based on depth-first traversal of the tree (with innerChildren traversed first
+before children).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#origin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="origin:org.apache.spark.sql.catalyst.trees.Origin"></a>
@@ -1081,6 +1305,25 @@ The numbers can be used with <a href="../trees/TreeNode.html#apply(number:Int):B
     </span>
       <p class="shortcomment cmt">Args to the constructor that should be copied, but not transformed.</p><div class="fullcomment"><div class="comment cmt"><p>Args to the constructor that should be copied, but not transformed.
 These are appended to the transformed args automatically by makeCopy</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#p" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="p(number:Int):BaseType"></a>
+      <a id="p(Int):Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">p</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@p(number:Int):BaseType" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
+Numbers for each node can be found in the <a href="../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>This is a variant of <a href="../trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> that returns the node as BaseType (if the type matches).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#prettyJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyJson:String"></a>
       <a id="prettyJson:String"></a>
@@ -1340,25 +1583,6 @@ When <code>rule</code> does not apply to a given node it is left unchanged.
 Users should not expect a specific directionality. If a specific directionality is needed,
 transformDown or transformUp should be used.
 </p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function use to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType"></a>
-      <a id="transformChildren(PartialFunction[Expression,Expression],(Expression,PartialFunction[Expression,Expression])⇒Expression):Expression"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transformChildren</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="nextOperation">nextOperation: (<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]) ⇒ <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.XxHash64@transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
-this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
-this node.  When <code>rule</code> does not apply to a given node it is left unchanged.</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function used to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformDown" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType"></a>
       <a id="transformDown(PartialFunction[Expression,Expression]):Expression"></a>

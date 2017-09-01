@@ -396,6 +396,25 @@ spill size, etc.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.metric.SQLMetrics#postDriverMetricUpdates" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="postDriverMetricUpdates(sc:org.apache.spark.SparkContext,executionId:String,metrics:Seq[org.apache.spark.sql.execution.metric.SQLMetric]):Unit"></a>
+      <a id="postDriverMetricUpdates(SparkContext,String,Seq[SQLMetric]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">postDriverMetricUpdates</span><span class="params">(<span name="sc">sc: <a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="executionId">executionId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="metrics">metrics: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="SQLMetric.html" class="extype" name="org.apache.spark.sql.execution.metric.SQLMetric">SQLMetric</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.metric.SQLMetrics$@postDriverMetricUpdates(sc:org.apache.spark.SparkContext,executionId:String,metrics:Seq[org.apache.spark.sql.execution.metric.SQLMetric]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Updates metrics based on the driver side value.</p><div class="fullcomment"><div class="comment cmt"><p>Updates metrics based on the driver side value. This is useful for certain metrics that
+are only updated on the driver, e.g. subquery execution time, or number of files.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.metric.SQLMetrics#stringValue" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="stringValue(metricsType:String,values:Seq[Long]):String"></a>
       <a id="stringValue(String,Seq[Long]):String"></a>

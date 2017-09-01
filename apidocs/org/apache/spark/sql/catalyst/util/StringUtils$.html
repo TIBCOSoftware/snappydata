@@ -219,8 +219,8 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.util.StringUtils#escapeLikeRegex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="escapeLikeRegex(v:String):String"></a>
+    </li><li name="org.apache.spark.sql.catalyst.util.StringUtils#escapeLikeRegex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="escapeLikeRegex(pattern:String):String"></a>
       <a id="escapeLikeRegex(String):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -228,14 +228,18 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">escapeLikeRegex</span><span class="params">(<span name="v">v: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">escapeLikeRegex</span><span class="params">(<span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.StringUtils$@escapeLikeRegex(v:String):String" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.StringUtils$@escapeLikeRegex(pattern:String):String" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Validate and convert SQL 'like' pattern to a Java regular expression.</p><div class="fullcomment"><div class="comment cmt"><p>Validate and convert SQL 'like' pattern to a Java regular expression.</p><p>Underscores (_) are converted to '.' and percent signs (%) are converted to '.*', other
+characters are quoted literally. Escaping is done according to the rules specified in
+<a href="../expressions/Like.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Like">org.apache.spark.sql.catalyst.expressions.Like</a> usage documentation. An invalid pattern will
+throw an <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a>.
+</p></div><dl class="paramcmts block"><dt class="param">pattern</dt><dd class="cmt"><p>the SQL pattern to convert</p></dd><dt>returns</dt><dd class="cmt"><p>the equivalent Java regular expression of the pattern</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.util.StringUtils#filterPattern" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="filterPattern(names:Seq[String],pattern:String):Seq[String]"></a>
       <a id="filterPattern(Seq[String],String):Seq[String]"></a>

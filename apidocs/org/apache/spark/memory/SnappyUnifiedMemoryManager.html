@@ -568,6 +568,23 @@ by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be als
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#initMemoryStats" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initMemoryStats(stats:com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats):Unit"></a>
+      <a id="initMemoryStats(MemoryManagerStats):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initMemoryStats</span><span class="params">(<span name="stats">stats: <span class="extype" name="com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats">MemoryManagerStats</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@initMemoryStats(stats:com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
       <a id="initializeLogIfNecessary(Boolean):Unit"></a>
@@ -890,7 +907,11 @@ by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be als
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → UnifiedMemoryManager</dd></dl></div>
+      <p class="shortcomment cmt">the maximum heap memory that is available for use by MemoryManager;
+                     callers should leave out some amount of &quot;reserved memory&quot; for
+                     unaccounted object allocations</p><div class="fullcomment"><div class="comment cmt"><p>the maximum heap memory that is available for use by MemoryManager;
+                     callers should leave out some amount of &quot;reserved memory&quot; for
+                     unaccounted object allocations</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → UnifiedMemoryManager</dd></dl></div>
     </li><li name="org.apache.spark.memory.MemoryManager#maxOffHeapMemory" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="maxOffHeapMemory:Long"></a>
       <a id="maxOffHeapMemory:Long"></a>
@@ -908,6 +929,25 @@ by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be als
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[this] </dd><dt>Definition Classes</dt><dd>MemoryManager</dd></dl></div>
+    </li><li name="org.apache.spark.memory.UnifiedMemoryManager#maxOffHeapStorageMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="maxOffHeapStorageMemory:Long"></a>
+      <a id="maxOffHeapStorageMemory:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxOffHeapStorageMemory</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@maxOffHeapStorageMemory:Long" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Total available off heap memory for storage, in bytes.</p><div class="fullcomment"><div class="comment cmt"><p>Total available off heap memory for storage, in bytes. This amount can vary over time,
+depending on the MemoryManager implementation.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>UnifiedMemoryManager → MemoryManager</dd></dl></div>
     </li><li name="org.apache.spark.memory.UnifiedMemoryManager#maxOnHeapStorageMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="maxOnHeapStorageMemory:Long"></a>
       <a id="maxOnHeapStorageMemory:Long"></a>
@@ -924,8 +964,8 @@ by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be als
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Total available memory for storage, in bytes.</p><div class="fullcomment"><div class="comment cmt"><p>Total available memory for storage, in bytes. This amount can vary over time, depending on
-the MemoryManager implementation.
+      <p class="shortcomment cmt">Total available on heap memory for storage, in bytes.</p><div class="fullcomment"><div class="comment cmt"><p>Total available on heap memory for storage, in bytes. This amount can vary over time,
+depending on the MemoryManager implementation.
 In this model, this is equivalent to the amount of memory not occupied by execution.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>UnifiedMemoryManager → MemoryManager</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -1102,6 +1142,24 @@ and then divide it by a factor of safety.
     </span>
       <p class="shortcomment cmt">Release all storage memory acquired.</p><div class="fullcomment"><div class="comment cmt"><p>Release all storage memory acquired.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>MemoryManager</dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#releaseExecutionMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="releaseExecutionMemory(numBytes:Long,taskAttemptId:Long,memoryMode:org.apache.spark.memory.MemoryMode):Unit"></a>
+      <a id="releaseExecutionMemory(Long,Long,MemoryMode):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">releaseExecutionMemory</span><span class="params">(<span name="numBytes">numBytes: <span class="extype" name="scala.Long">Long</span></span>, <span name="taskAttemptId">taskAttemptId: <span class="extype" name="scala.Long">Long</span></span>, <span name="memoryMode">memoryMode: <a href="MemoryMode.html" class="extype" name="org.apache.spark.memory.MemoryMode">MemoryMode</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@releaseExecutionMemory(numBytes:Long,taskAttemptId:Long,memoryMode:org.apache.spark.memory.MemoryMode):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Release numBytes of execution memory belonging to the given task.</p><div class="fullcomment"><div class="comment cmt"><p>Release numBytes of execution memory belonging to the given task.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → MemoryManager</dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#releaseStorageMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="releaseStorageMemory(numBytes:Long,memoryMode:org.apache.spark.memory.MemoryMode):Unit"></a>
       <a id="releaseStorageMemory(Long,MemoryMode):Unit"></a>

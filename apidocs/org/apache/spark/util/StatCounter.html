@@ -53,8 +53,8 @@
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A class for tracking the statistics of a set of numbers (count, mean and variance) in a
 numerically robust way. Includes support for merging two StatCounters. Based on Welford
-and Chan's <a href="http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance" target="_blank">algorithms</a>
-for running variance.
+and Chan's <a href="http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">
+algorithms</a> for running variance.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -523,6 +523,54 @@ for running variance.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.util.StatCounter#popStdev" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="popStdev:Double"></a>
+      <a id="popStdev:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">popStdev</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.util.StatCounter@popStdev:Double" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the population standard deviation of the values.</p><div class="fullcomment"><div class="comment cmt"><p>Return the population standard deviation of the values.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.util.StatCounter#popVariance" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="popVariance:Double"></a>
+      <a id="popVariance:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">popVariance</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.util.StatCounter@popVariance:Double" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the population variance of the values.</p><div class="fullcomment"><div class="comment cmt"><p>Return the population variance of the values.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.util.StatCounter#sampleStdev" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sampleStdev:Double"></a>
       <a id="sampleStdev:Double"></a>
@@ -575,7 +623,7 @@ by N-1 instead of N.</p>
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return the standard deviation of the values.</p>
+      <p class="shortcomment cmt">Return the population standard deviation of the values.</p>
     </li><li name="org.apache.spark.util.StatCounter#sum" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sum:Double"></a>
       <a id="sum:Double"></a>
@@ -643,7 +691,7 @@ by N-1 instead of N.</p>
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return the variance of the values.</p>
+      <p class="shortcomment cmt">Return the population variance of the values.</p>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

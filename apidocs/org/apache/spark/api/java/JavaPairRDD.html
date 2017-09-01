@@ -712,11 +712,10 @@ aggregation.</p>
       <p class="shortcomment cmt">Generic function to combine the elements for each key using a custom set of aggregation
 functions.</p><div class="fullcomment"><div class="comment cmt"><p>Generic function to combine the elements for each key using a custom set of aggregation
 functions. Turns a JavaPairRDD[(K, V)] into a result of type JavaPairRDD[(K, C)], for a
-&quot;combined type&quot; C. Note that V and C can be different -- for example, one might group an
-RDD of type (Int, Int) into an RDD of type (Int, List[Int]). Users provide three
-functions:</p><ul><li><code>createCombiner</code>, which turns a V into a C (e.g., creates a one-element list)</li><li><code>mergeValue</code>, to merge a V into a C (e.g., adds it to the end of a list)</li><li><code>mergeCombiners</code>, to combine two C's into a single one.</li></ul><p>In addition, users can control the partitioning of the output RDD. This method automatically
+&quot;combined type&quot; C.</p><p>Users provide three functions:</p><ul><li><code>createCombiner</code>, which turns a V into a C (e.g., creates a one-element list)</li><li><code>mergeValue</code>, to merge a V into a C (e.g., adds it to the end of a list)</li><li><code>mergeCombiners</code>, to combine two C's into a single one.</li></ul><p>In addition, users can control the partitioning of the output RDD. This method automatically
 uses map-side aggregation in shuffling the RDD.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>V and C can be different -- for example, one might group an RDD of type (Int, Int) into
+an RDD of type (Int, List[Int]).</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaPairRDD#combineByKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="combineByKey[C](createCombiner:org.apache.spark.api.java.function.Function[V,C],mergeValue:org.apache.spark.api.java.function.Function2[C,V,C],mergeCombiners:org.apache.spark.api.java.function.Function2[C,C,C],partitioner:org.apache.spark.Partitioner,mapSideCombine:Boolean,serializer:org.apache.spark.serializer.Serializer):org.apache.spark.api.java.JavaPairRDD[K,C]"></a>
       <a id="combineByKey[C](Function[V,C],Function2[C,V,C],Function2[C,C,C],Partitioner,Boolean,Serializer):JavaPairRDD[K,C]"></a>
@@ -736,12 +735,11 @@ uses map-side aggregation in shuffling the RDD.
       <p class="shortcomment cmt">Generic function to combine the elements for each key using a custom set of aggregation
 functions.</p><div class="fullcomment"><div class="comment cmt"><p>Generic function to combine the elements for each key using a custom set of aggregation
 functions. Turns a JavaPairRDD[(K, V)] into a result of type JavaPairRDD[(K, C)], for a
-&quot;combined type&quot; C. Note that V and C can be different -- for example, one might group an
-RDD of type (Int, Int) into an RDD of type (Int, List[Int]). Users provide three
-functions:</p><ul><li><code>createCombiner</code>, which turns a V into a C (e.g., creates a one-element list)</li><li><code>mergeValue</code>, to merge a V into a C (e.g., adds it to the end of a list)</li><li><code>mergeCombiners</code>, to combine two C's into a single one.</li></ul><p>In addition, users can control the partitioning of the output RDD, the serializer that is use
+&quot;combined type&quot; C.</p><p>Users provide three functions:</p><ul><li><code>createCombiner</code>, which turns a V into a C (e.g., creates a one-element list)</li><li><code>mergeValue</code>, to merge a V into a C (e.g., adds it to the end of a list)</li><li><code>mergeCombiners</code>, to combine two C's into a single one.</li></ul><p>In addition, users can control the partitioning of the output RDD, the serializer that is use
 for the shuffle, and whether to perform map-side aggregation (if a mapper can produce multiple
 items with the same key).
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>V and C can be different -- for example, one might group an RDD of type (Int, Int) into
+an RDD of type (Int, List[Int]).</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaRDDLike#context" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="context:org.apache.spark.SparkContext"></a>
       <a id="context:SparkContext"></a>
@@ -1620,10 +1618,10 @@ mapping to that key.
       </a>
     </span>
       <p class="shortcomment cmt">Group the values for each key in the RDD into a single sequence.</p><div class="fullcomment"><div class="comment cmt"><p>Group the values for each key in the RDD into a single sequence. Hash-partitions the
-resulting RDD with the existing partitioner/parallelism level.</p><p>Note: If you are grouping in order to perform an aggregation (such as a sum or average) over
-each key, using <a href="#reduceByKey(func:org.apache.spark.api.java.function.Function2[V,V,V]):org.apache.spark.api.java.JavaPairRDD[K,V]" class="extmbr" name="org.apache.spark.api.java.JavaPairRDD#reduceByKey">JavaPairRDD.reduceByKey</a> or <a href="#combineByKey[C](createCombiner:org.apache.spark.api.java.function.Function[V,C],mergeValue:org.apache.spark.api.java.function.Function2[C,V,C],mergeCombiners:org.apache.spark.api.java.function.Function2[C,C,C]):org.apache.spark.api.java.JavaPairRDD[K,C]" class="extmbr" name="org.apache.spark.api.java.JavaPairRDD#combineByKey">JavaPairRDD.combineByKey</a>
-will provide much better performance.
-</p></div></div>
+resulting RDD with the existing partitioner/parallelism level.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>If you are grouping in order to perform an aggregation (such as a sum or average) over
+each key, using <code>JavaPairRDD.reduceByKey</code> or <code>JavaPairRDD.combineByKey</code>
+will provide much better performance.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaPairRDD#groupByKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupByKey(numPartitions:Int):org.apache.spark.api.java.JavaPairRDD[K,Iterable[V]]"></a>
       <a id="groupByKey(Int):JavaPairRDD[K,Iterable[V]]"></a>
@@ -1641,10 +1639,10 @@ will provide much better performance.
       </a>
     </span>
       <p class="shortcomment cmt">Group the values for each key in the RDD into a single sequence.</p><div class="fullcomment"><div class="comment cmt"><p>Group the values for each key in the RDD into a single sequence. Hash-partitions the
-resulting RDD with into <code>numPartitions</code> partitions.</p><p>Note: If you are grouping in order to perform an aggregation (such as a sum or average) over
-each key, using <a href="#reduceByKey(func:org.apache.spark.api.java.function.Function2[V,V,V]):org.apache.spark.api.java.JavaPairRDD[K,V]" class="extmbr" name="org.apache.spark.api.java.JavaPairRDD#reduceByKey">JavaPairRDD.reduceByKey</a> or <a href="#combineByKey[C](createCombiner:org.apache.spark.api.java.function.Function[V,C],mergeValue:org.apache.spark.api.java.function.Function2[C,V,C],mergeCombiners:org.apache.spark.api.java.function.Function2[C,C,C]):org.apache.spark.api.java.JavaPairRDD[K,C]" class="extmbr" name="org.apache.spark.api.java.JavaPairRDD#combineByKey">JavaPairRDD.combineByKey</a>
-will provide much better performance.
-</p></div></div>
+resulting RDD with into <code>numPartitions</code> partitions.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>If you are grouping in order to perform an aggregation (such as a sum or average) over
+each key, using <code>JavaPairRDD.reduceByKey</code> or <code>JavaPairRDD.combineByKey</code>
+will provide much better performance.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaPairRDD#groupByKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupByKey(partitioner:org.apache.spark.Partitioner):org.apache.spark.api.java.JavaPairRDD[K,Iterable[V]]"></a>
       <a id="groupByKey(Partitioner):JavaPairRDD[K,Iterable[V]]"></a>
@@ -1662,10 +1660,10 @@ will provide much better performance.
       </a>
     </span>
       <p class="shortcomment cmt">Group the values for each key in the RDD into a single sequence.</p><div class="fullcomment"><div class="comment cmt"><p>Group the values for each key in the RDD into a single sequence. Allows controlling the
-partitioning of the resulting key-value pair RDD by passing a Partitioner.</p><p>Note: If you are grouping in order to perform an aggregation (such as a sum or average) over
-each key, using <a href="#reduceByKey(func:org.apache.spark.api.java.function.Function2[V,V,V]):org.apache.spark.api.java.JavaPairRDD[K,V]" class="extmbr" name="org.apache.spark.api.java.JavaPairRDD#reduceByKey">JavaPairRDD.reduceByKey</a> or <a href="#combineByKey[C](createCombiner:org.apache.spark.api.java.function.Function[V,C],mergeValue:org.apache.spark.api.java.function.Function2[C,V,C],mergeCombiners:org.apache.spark.api.java.function.Function2[C,C,C]):org.apache.spark.api.java.JavaPairRDD[K,C]" class="extmbr" name="org.apache.spark.api.java.JavaPairRDD#combineByKey">JavaPairRDD.combineByKey</a>
-will provide much better performance.
-</p></div></div>
+partitioning of the resulting key-value pair RDD by passing a Partitioner.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>If you are grouping in order to perform an aggregation (such as a sum or average) over
+each key, using <code>JavaPairRDD.reduceByKey</code> or <code>JavaPairRDD.combineByKey</code>
+will provide much better performance.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaPairRDD#groupWith" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="groupWith[W1,W2,W3](other1:org.apache.spark.api.java.JavaPairRDD[K,W1],other2:org.apache.spark.api.java.JavaPairRDD[K,W2],other3:org.apache.spark.api.java.JavaPairRDD[K,W3]):org.apache.spark.api.java.JavaPairRDD[K,(Iterable[V],Iterable[W1],Iterable[W2],Iterable[W3])]"></a>
       <a id="groupWith[W1,W2,W3](JavaPairRDD[K,W1],JavaPairRDD[K,W2],JavaPairRDD[K,W3]):JavaPairRDD[K,(Iterable[V],Iterable[W1],Iterable[W2],Iterable[W3])]"></a>
@@ -1768,8 +1766,8 @@ will provide much better performance.
       </a>
     </span>
       <p class="shortcomment cmt">Return the intersection of this RDD and another one.</p><div class="fullcomment"><div class="comment cmt"><p>Return the intersection of this RDD and another one. The output will not contain any duplicate
-elements, even if the input RDDs did.</p><p>Note that this method performs a shuffle internally.
-</p></div></div>
+elements, even if the input RDDs did.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This method performs a shuffle internally.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaRDDLike#isCheckpointed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isCheckpointed:Boolean"></a>
       <a id="isCheckpointed:Boolean"></a>

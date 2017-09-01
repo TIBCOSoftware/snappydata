@@ -351,14 +351,14 @@ approach of computing normalized dot products.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Computes the covariance matrix, treating each row as an observation.</p><div class="fullcomment"><div class="comment cmt"><p>Computes the covariance matrix, treating each row as an observation. Note that this cannot
-be computed on matrices with more than 65535 columns.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>a local dense matrix of size n x n</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Computes the covariance matrix, treating each row as an observation.</p><div class="fullcomment"><div class="comment cmt"><p>Computes the covariance matrix, treating each row as an observation.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>a local dense matrix of size n x n</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This cannot be computed on matrices with more than 65535 columns.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.linalg.distributed.RowMatrix#computeGramianMatrix" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="computeGramianMatrix():org.apache.spark.mllib.linalg.Matrix"></a>
       <a id="computeGramianMatrix():Matrix"></a>
@@ -375,17 +375,15 @@ be computed on matrices with more than 65535 columns.</p></div><dl class="paramc
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Computes the Gramian matrix <code>A^T A<code>. Note that this cannot be computed on matrices with
-more than 65535 columns.
-</code></code></p><div class="fullcomment"><div class="comment cmt"><p>Computes the Gramian matrix <code>A^T A<code>. Note that this cannot be computed on matrices with
-more than 65535 columns.
+      <p class="shortcomment cmt">Computes the Gramian matrix <code>A^T A<code>.
+</code></code></p><div class="fullcomment"><div class="comment cmt"><p>Computes the Gramian matrix <code>A^T A<code>.
 </code></code></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This cannot be computed on matrices with more than 65535 columns.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.linalg.distributed.RowMatrix#computePrincipalComponents" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="computePrincipalComponents(k:Int):org.apache.spark.mllib.linalg.Matrix"></a>
       <a id="computePrincipalComponents(Int):Matrix"></a>
@@ -434,7 +432,7 @@ The principal components are stored a local matrix of size n-by-k.
 Each column corresponds for one principal component,
 and the columns are in descending order of component variance.
 The row data do not need to be &quot;centered&quot; first; it is not necessary for
-the mean of each column to be 0.</p><p>Note that this cannot be computed on matrices with more than 65535 columns.
+the mean of each column to be 0.
 </p></div><dl class="paramcmts block"><dt class="param">k</dt><dd class="cmt"><p>number of top principal components.</p></dd><dt>returns</dt><dd class="cmt"><p>a matrix of size n-by-k, whose columns are principal components, and
 a vector of values which indicate how much variance each principal component
 explains</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -443,7 +441,7 @@ explains</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
       <span class="symbol">&quot;1.6.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This cannot be computed on matrices with more than 65535 columns.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.linalg.distributed.RowMatrix#computeSVD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="computeSVD(k:Int,computeU:Boolean,rCond:Double):org.apache.spark.mllib.linalg.SingularValueDecomposition[org.apache.spark.mllib.linalg.distributed.RowMatrix,org.apache.spark.mllib.linalg.Matrix]"></a>
       <a id="computeSVD(Int,Boolean,Double):SingularValueDecomposition[RowMatrix,Matrix]"></a>
@@ -490,7 +488,7 @@ eigen-decomposition is set to 1e-10.
     </span>)</span>
               
         </dd><dt>Note</dt><dd><span class="cmt"><p>The conditions that decide which method to use internally and the default parameters are
-      subject to change.</p></span></dd></dl></div>
+subject to change.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -1053,7 +1051,7 @@ eigen-decomposition is set to 1e-10.
 decomposition (factorization) for the <a href="" class="extype" name="org.apache.spark.mllib.linalg.distributed.RowMatrix">RowMatrix</a> of a tall and skinny shape.
 Reference:
  Paul G. Constantine, David F. Gleich. &quot;Tall and skinny QR factorizations in MapReduce
- architectures&quot;  (<a href="http://dx.doi.org/10.1145/1996092.1996103" target="_blank">http://dx.doi.org/10.1145/1996092.1996103</a>)
+ architectures&quot; (see <a href="http://dx.doi.org/10.1145/1996092.1996103">here</a>)
 </p></div><dl class="paramcmts block"><dt class="param">computeQ</dt><dd class="cmt"><p>whether to computeQ</p></dd><dt>returns</dt><dd class="cmt"><p>QRDecomposition(Q, R), Q = null if computeQ = false.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       

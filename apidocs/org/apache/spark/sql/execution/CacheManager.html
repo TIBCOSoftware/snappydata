@@ -354,43 +354,6 @@ recomputing the in-memory columnar representation of the underlying table is exp
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.CacheManager#invalidateCache" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="invalidateCache(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit"></a>
-      <a id="invalidateCache(LogicalPlan):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">invalidateCache</span><span class="params">(<span name="plan">plan: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.CacheManager@invalidateCache(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Invalidates the cache of any data that contains <code>plan</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Invalidates the cache of any data that contains <code>plan</code>. Note that it is possible that this
-function will over invalidate.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.execution.CacheManager#invalidateCachedPath" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="invalidateCachedPath(sparkSession:org.apache.spark.sql.SparkSession,resourcePath:String):Unit"></a>
-      <a id="invalidateCachedPath(SparkSession,String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">invalidateCachedPath</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="resourcePath">resourcePath: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.CacheManager@invalidateCachedPath(sparkSession:org.apache.spark.sql.SparkSession,resourcePath:String):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Invalidates the cache of any data that contains <code>resourcePath</code> in one or more
-<code>HadoopFsRelation</code> node(s) as part of its logical plan.</p>
     </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isDebugEnabled:Boolean"></a>
       <a id="isDebugEnabled:Boolean"></a>
@@ -765,6 +728,41 @@ function will over invalidate.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.CacheManager#recacheByPath" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="recacheByPath(spark:org.apache.spark.sql.SparkSession,resourcePath:String):Unit"></a>
+      <a id="recacheByPath(SparkSession,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">recacheByPath</span><span class="params">(<span name="spark">spark: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="resourcePath">resourcePath: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.CacheManager@recacheByPath(spark:org.apache.spark.sql.SparkSession,resourcePath:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Tries to re-cache all the cache entries that contain <code>resourcePath</code> in one or more
+<code>HadoopFsRelation</code> node(s) as part of its logical plan.</p>
+    </li><li name="org.apache.spark.sql.execution.CacheManager#recacheByPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="recacheByPlan(spark:org.apache.spark.sql.SparkSession,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit"></a>
+      <a id="recacheByPlan(SparkSession,LogicalPlan):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">recacheByPlan</span><span class="params">(<span name="spark">spark: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="plan">plan: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.CacheManager@recacheByPlan(spark:org.apache.spark.sql.SparkSession,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Tries to re-cache all the cache entries that refer to the given plan.</p>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -799,25 +797,40 @@ function will over invalidate.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.CacheManager#uncacheQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="uncacheQuery(query:org.apache.spark.sql.Dataset[_],blocking:Boolean):Boolean"></a>
-      <a id="uncacheQuery(Dataset[_],Boolean):Boolean"></a>
+    </li><li name="org.apache.spark.sql.execution.CacheManager#uncacheQuery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="uncacheQuery(spark:org.apache.spark.sql.SparkSession,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,blocking:Boolean):Unit"></a>
+      <a id="uncacheQuery(SparkSession,LogicalPlan,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">uncacheQuery</span><span class="params">(<span name="query">query: <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[_]</span>, <span name="blocking">blocking: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">uncacheQuery</span><span class="params">(<span name="spark">spark: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="plan">plan: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="blocking">blocking: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.CacheManager@uncacheQuery(query:org.apache.spark.sql.Dataset[_],blocking:Boolean):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.CacheManager@uncacheQuery(spark:org.apache.spark.sql.SparkSession,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,blocking:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Tries to remove the data for the given <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from the cache.</p><div class="fullcomment"><div class="comment cmt"><p>Tries to remove the data for the given <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from the cache.
-No operation, if it's already uncached.
-</p></div></div>
+      <p class="shortcomment cmt">Un-cache all the cache entries that refer to the given plan.</p>
+    </li><li name="org.apache.spark.sql.execution.CacheManager#uncacheQuery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="uncacheQuery(query:org.apache.spark.sql.Dataset[_],blocking:Boolean):Unit"></a>
+      <a id="uncacheQuery(Dataset[_],Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">uncacheQuery</span><span class="params">(<span name="query">query: <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[_]</span>, <span name="blocking">blocking: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.CacheManager@uncacheQuery(query:org.apache.spark.sql.Dataset[_],blocking:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Un-cache all the cache entries that refer to the given plan.</p>
     </li><li name="org.apache.spark.sql.execution.CacheManager#useCachedData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="useCachedData(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
       <a id="useCachedData(LogicalPlan):LogicalPlan"></a>

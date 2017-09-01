@@ -500,10 +500,10 @@ Represents a one-to-one dependency between ranges of partitions in the parent an
     </span>
       <p class="shortcomment cmt">A <a href="Partitioner.html" class="extype" name="org.apache.spark.Partitioner">org.apache.spark.Partitioner</a> that partitions sortable records by range into roughly
 equal ranges.</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="Partitioner.html" class="extype" name="org.apache.spark.Partitioner">org.apache.spark.Partitioner</a> that partitions sortable records by range into roughly
-equal ranges. The ranges are determined by sampling the content of the RDD passed in.</p><p>Note that the actual number of partitions created by the RangePartitioner might not be the same
+equal ranges. The ranges are determined by sampling the content of the RDD passed in.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>The actual number of partitions created by the RangePartitioner might not be the same
 as the <code>partitions</code> parameter, in the case where the number of sampled records is less than
-the value of <code>partitions</code>.
-</p></div></div>
+the value of <code>partitions</code>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SerializableWritable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SerializableWritable[T&lt;:org.apache.hadoop.io.Writable]extendsSerializable"></a>
       <a id="SerializableWritable[T&lt;:Writable]:SerializableWritable[T]"></a>
@@ -588,7 +588,7 @@ count, collect, reduce.
     </span>
       
     </li><li name="org.apache.spark.SparkConf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SparkConfextendsCloneablewithLogging"></a>
+      <a id="SparkConfextendsCloneablewithLoggingwithSerializable"></a>
       <a id="SparkConf:SparkConf"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -596,10 +596,10 @@ count, collect, reduce.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkConf.html"><span class="name">SparkConf</span></a><span class="result"> extends <span class="extype" name="scala.Cloneable">Cloneable</span> with <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <a href="SparkConf.html"><span class="name">SparkConf</span></a><span class="result"> extends <span class="extype" name="scala.Cloneable">Cloneable</span> with <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#org.apache.spark.package@SparkConfextendsCloneablewithLogging" title="Permalink" target="_top">
+      <a href="../../../index.html#org.apache.spark.package@SparkConfextendsCloneablewithLoggingwithSerializable" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -607,11 +607,11 @@ count, collect, reduce.
 values from any <code>spark.*</code> Java system properties set in your application as well. In this case,
 parameters you set directly on the <code>SparkConf</code> object take priority over system properties.</p><p>For unit tests, you can also call <code>new SparkConf(false)</code> to skip loading external settings and
 get the same configuration no matter what the system properties are.</p><p>All setter methods in this class support chaining. For example, you can write
-<code>new SparkConf().setMaster(&quot;local&quot;).setAppName(&quot;My app&quot;)</code>.</p><p>Note that once a SparkConf object is passed to Spark, it is cloned and can no longer be modified
-by the user. Spark does not support modifying the configuration at runtime.
-</p></div></div>
+<code>new SparkConf().setMaster(&quot;local&quot;).setAppName(&quot;My app&quot;)</code>.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Once a SparkConf object is passed to Spark, it is cloned and can no longer be modified
+by the user. Spark does not support modifying the configuration at runtime.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SparkContextextendsLoggingwithExecutorAllocationClient"></a>
+      <a id="SparkContextextendsLogging"></a>
       <a id="SparkContext:SparkContext"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -619,10 +619,10 @@ by the user. Spark does not support modifying the configuration at runtime.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkContext.html"><span class="name">SparkContext</span></a><span class="result"> extends <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="org.apache.spark.ExecutorAllocationClient">ExecutorAllocationClient</span></span>
+        <a href="SparkContext.html"><span class="name">SparkContext</span></a><span class="result"> extends <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#org.apache.spark.package@SparkContextextendsLoggingwithExecutorAllocationClient" title="Permalink" target="_top">
+      <a href="../../../index.html#org.apache.spark.package@SparkContextextendsLogging" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -949,7 +949,7 @@ associative and commutative operation and can therefore be efficiently supported
 They can be used to implement counters (as in MapReduce) or sums. Spark natively supports
 accumulators of numeric value types, and programmers can add support for new types.</p><p>An accumulator is created from an initial value <code>v</code> by calling
 <a href="SparkContext.html#accumulator[T](initialValue:T,name:String)(implicitparam:org.apache.spark.AccumulatorParam[T]):org.apache.spark.Accumulator[T]" class="extmbr" name="org.apache.spark.SparkContext#accumulator">SparkContext.accumulator</a>.
-Tasks running on the cluster can then add to it using the <a href="Accumulable.html#+=(term:T):Unit" class="extmbr" name="org.apache.spark.Accumulable#+=">+=</a> operator.
+Tasks running on the cluster can then add to it using the <code>+=</code> operator.
 However, they cannot read its value. Only the driver program can read the accumulator's value,
 using its <a href="Accumulator.html#value:R" class="extmbr" name="org.apache.spark.Accumulator#value">#value</a> method.</p><p>The interpreter session below shows an accumulator being used to add up the elements of an array:</p><pre>scala&gt; <span class="kw">val</span> accum = sc.accumulator(<span class="num">0</span>)
 accum: org.apache.spark.Accumulator[<span class="std">Int</span>] = <span class="num">0</span>
@@ -1028,9 +1028,9 @@ available when you create Accumulators of a specific type.
       </a>
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
-A <span class="extype" name="org.apache.spark.scheduler.ShuffleMapTask">org.apache.spark.scheduler.ShuffleMapTask</span> that completed successfully earlier, but we
+A <code>org.apache.spark.scheduler.ShuffleMapTask</code> that completed successfully earlier, but we
 lost the executor before the stage completed.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-A <span class="extype" name="org.apache.spark.scheduler.ShuffleMapTask">org.apache.spark.scheduler.ShuffleMapTask</span> that completed successfully earlier, but we
+A <code>org.apache.spark.scheduler.ShuffleMapTask</code> that completed successfully earlier, but we
 lost the executor before the stage completed. This means Spark needs to reschedule the task
 to be re-executed on a different executor.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -1518,6 +1518,23 @@ GraphX is a graph processing framework built on top of Spark.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.internal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="internal"></a>
+      <a id="internal:internal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="internal/package.html"><span class="name">internal</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@internal" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.io" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="io"></a>
       <a id="io:io"></a>
@@ -1694,8 +1711,8 @@ While in maintenance mode,</p><ul><li>no new features in the RDD-based <code>spa
    implementing new features in the DataFrame-based <code>spark.ml</code> package;</li><li>bug fixes in the RDD-based APIs will still be accepted.</li></ul><p>The developers will continue adding more features to the DataFrame-based APIs in the 2.x series
 to reach feature parity with the RDD-based APIs.
 And once we reach feature parity, this package will be deprecated.
-</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="https://issues.apache.org/jira/browse/SPARK-4591" target="_blank">SPARK-4591</a> to track the progress of
-    feature parity</p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="https://issues.apache.org/jira/browse/SPARK-4591">SPARK-4591</a> to track
+the progress of feature parity</p></span></dd></dl></div>
     </li><li name="org.apache.spark.network" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="network"></a>
       <a id="network:network"></a>
@@ -1916,23 +1933,6 @@ conversions.</p><p>For the Java API of Spark Streaming, take a look at the
 the <a href="streaming/api/java/JavaDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaDStream">org.apache.spark.streaming.api.java.JavaDStream</a> and the
 <a href="streaming/api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">org.apache.spark.streaming.api.java.JavaPairDStream</a> which have the DStream functionality.
 </p></div></div>
-    </li><li name="org.apache.spark.tags" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tags"></a>
-      <a id="tags:tags"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="tags/package.html"><span class="name">tags</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#org.apache.spark.package@tags" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.tools" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="tools"></a>
       <a id="tools:tools"></a>

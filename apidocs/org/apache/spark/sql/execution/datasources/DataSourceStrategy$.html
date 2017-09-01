@@ -671,63 +671,30 @@
 filled in automatically by the QueryPlanner using the other execution strategies that are
 available.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../SparkStrategy.html" class="extype" name="org.apache.spark.sql.execution.SparkStrategy">SparkStrategy</a> → <a href="../../catalyst/planning/GenericStrategy.html" class="extype" name="org.apache.spark.sql.catalyst.planning.GenericStrategy">GenericStrategy</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.DataSourceStrategy#pruneFilterProject" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="pruneFilterProject(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,projects:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],filterPredicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression],scanBuilder:(Seq[org.apache.spark.sql.catalyst.expressions.Attribute],Array[org.apache.spark.sql.sources.Filter])=&gt;org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]):org.apache.spark.sql.execution.SparkPlan"></a>
-      <a id="pruneFilterProject(LogicalRelation,Seq[NamedExpression],Seq[Expression],(Seq[Attribute],Array[Filter])⇒RDD[InternalRow]):SparkPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pruneFilterProject</span><span class="params">(<span name="relation">relation: <a href="LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="projects">projects: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="filterPredicates">filterPredicates: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="scanBuilder">scanBuilder: (<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>], <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]) ⇒ <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>)</span><span class="result">: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSourceStrategy$@pruneFilterProject(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,projects:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],filterPredicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression],scanBuilder:(Seq[org.apache.spark.sql.catalyst.expressions.Attribute],Array[org.apache.spark.sql.sources.Filter])=&gt;org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.DataSourceStrategy#pruneFilterProjectRaw" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="pruneFilterProjectRaw(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,projects:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],filterPredicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression],scanBuilder:(Seq[org.apache.spark.sql.catalyst.expressions.Attribute],Seq[org.apache.spark.sql.catalyst.expressions.Expression],Seq[org.apache.spark.sql.sources.Filter])=&gt;org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]):org.apache.spark.sql.execution.SparkPlan"></a>
-      <a id="pruneFilterProjectRaw(LogicalRelation,Seq[NamedExpression],Seq[Expression],(Seq[Attribute],Seq[Expression],Seq[Filter])⇒RDD[InternalRow]):SparkPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pruneFilterProjectRaw</span><span class="params">(<span name="relation">relation: <a href="LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="projects">projects: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="filterPredicates">filterPredicates: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="scanBuilder">scanBuilder: (<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]) ⇒ <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>)</span><span class="result">: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSourceStrategy$@pruneFilterProjectRaw(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,projects:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],filterPredicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression],scanBuilder:(Seq[org.apache.spark.sql.catalyst.expressions.Attribute],Seq[org.apache.spark.sql.catalyst.expressions.Expression],Seq[org.apache.spark.sql.sources.Filter])=&gt;org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.DataSourceStrategy#selectFilters" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="selectFilters(relation:org.apache.spark.sql.sources.BaseRelation,predicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):(Seq[org.apache.spark.sql.catalyst.expressions.Expression],Seq[org.apache.spark.sql.sources.Filter])"></a>
-      <a id="selectFilters(BaseRelation,Seq[Expression]):(Seq[Expression],Seq[Filter])"></a>
+      <a id="selectFilters(relation:org.apache.spark.sql.sources.BaseRelation,predicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):(Seq[org.apache.spark.sql.catalyst.expressions.Expression],Seq[org.apache.spark.sql.sources.Filter],Set[org.apache.spark.sql.sources.Filter])"></a>
+      <a id="selectFilters(BaseRelation,Seq[Expression]):(Seq[Expression],Seq[Filter],Set[Filter])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">selectFilters</span><span class="params">(<span name="relation">relation: <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>, <span name="predicates">predicates: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: (<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>])</span>
+        <span class="name">selectFilters</span><span class="params">(<span name="relation">relation: <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>, <span name="predicates">predicates: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: (<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>], <span class="extype" name="scala.Predef.Set">Set</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSourceStrategy$@selectFilters(relation:org.apache.spark.sql.sources.BaseRelation,predicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):(Seq[org.apache.spark.sql.catalyst.expressions.Expression],Seq[org.apache.spark.sql.sources.Filter])" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSourceStrategy$@selectFilters(relation:org.apache.spark.sql.sources.BaseRelation,predicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):(Seq[org.apache.spark.sql.catalyst.expressions.Expression],Seq[org.apache.spark.sql.sources.Filter],Set[org.apache.spark.sql.sources.Filter])" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Selects Catalyst predicate <span class="extype" name="Expression">Expression</span>s which are convertible into data source <span class="extype" name="Filter">Filter</span>s
 and can be handled by <code>relation</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Selects Catalyst predicate <span class="extype" name="Expression">Expression</span>s which are convertible into data source <span class="extype" name="Filter">Filter</span>s
 and can be handled by <code>relation</code>.
-</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>A pair of <code>Seq[Expression]</code> and <code>Seq[Filter]</code>. The first element contains all Catalyst
-        predicate <span class="extype" name="Expression">Expression</span>s that are either not convertible or cannot be handled by
-        <code>relation</code>. The second element contains all converted data source <span class="extype" name="Filter">Filter</span>s that
-        will be pushed down to the data source.</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>A triplet of <code>Seq[Expression]</code>, <code>Seq[Filter]</code>, and <code>Seq[Filter]</code> . The first element
+        contains all Catalyst predicate <span class="extype" name="Expression">Expression</span>s that are either not convertible or
+        cannot be handled by <code>relation</code>. The second element contains all converted data source
+        <span class="extype" name="Filter">Filter</span>s that will be pushed down to the data source. The third element contains
+        all <span class="extype" name="Filter">Filter</span>s that are completely filtered at the DataSource.</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

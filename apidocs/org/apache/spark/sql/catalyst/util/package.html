@@ -143,6 +143,24 @@ class because that leads to compilation errors under Scala 2.11.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.util.CaseInsensitiveMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CaseInsensitiveMapextendsMap[String,String]withSerializable"></a>
+      <a id="CaseInsensitiveMap:CaseInsensitiveMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CaseInsensitiveMap.html"><span class="name">CaseInsensitiveMap</span></a><span class="result"> extends <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@CaseInsensitiveMapextendsMap[String,String]withSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Builds a map in which keys are case insensitive
+</p>
     </li><li name="org.apache.spark.sql.catalyst.util.GenericArrayData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GenericArrayDataextendsArrayData"></a>
       <a id="GenericArrayData:GenericArrayData"></a>
@@ -179,6 +197,29 @@ class because that leads to compilation errors under Scala 2.11.
       <p class="shortcomment cmt">This is an internal data representation for map type in Spark SQL.</p><div class="fullcomment"><div class="comment cmt"><p>This is an internal data representation for map type in Spark SQL. This should not implement
 <code>equals</code> and <code>hashCode</code> because the type cannot be used as join keys, grouping keys, or
 in equality tests. See SPARK-9415 and PR#13847 for the discussions.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.QuantileSummaries" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="QuantileSummariesextendsSerializable"></a>
+      <a id="QuantileSummaries:QuantileSummaries"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="QuantileSummaries.html"><span class="name">QuantileSummaries</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@QuantileSummariesextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper class to compute approximate quantile summary.</p><div class="fullcomment"><div class="comment cmt"><p>Helper class to compute approximate quantile summary.
+This implementation is based on the algorithm proposed in the paper:
+&quot;Space-efficient Online Computation of Quantile Summaries&quot; by Greenwald, Michael
+and Khanna, Sanjeev. (http://dx.doi.org/10.1145/375663.375670)</p><p>In order to optimize for speed, it maintains an internal buffer of the last seen samples,
+and only inserts them after crossing a certain size threshold. This guarantees a near-constant
+runtime complexity compared to the original algorithm.
 </p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.util.SerializedArray" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SerializedArrayextendsArrayDatawithSerializedRowData"></a>
@@ -297,6 +338,40 @@ consistent endian format (little-endian) so is suitable for storage.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.util.ArrayData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArrayData"></a>
+      <a id="ArrayData:ArrayData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ArrayData$.html"><span class="name">ArrayData</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@ArrayData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.CompressionCodecs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CompressionCodecs"></a>
+      <a id="CompressionCodecs:CompressionCodecs"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CompressionCodecs$.html"><span class="name">CompressionCodecs</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@CompressionCodecs" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DateTimeUtils"></a>
       <a id="DateTimeUtils:DateTimeUtils"></a>
@@ -332,6 +407,40 @@ precision.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@NumberConverter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.ParseModes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParseModes"></a>
+      <a id="ParseModes:ParseModes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ParseModes$.html"><span class="name">ParseModes</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@ParseModes" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.QuantileSummaries" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QuantileSummaries"></a>
+      <a id="QuantileSummaries:QuantileSummaries"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="QuantileSummaries$.html"><span class="name">QuantileSummaries</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@QuantileSummaries" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

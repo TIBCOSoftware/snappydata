@@ -54,12 +54,14 @@ A handle to a query that is executing continuously in the background as new data
 All these methods are thread-safe.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="../execution/streaming/StreamExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a></div>
+            <div class="subClasses hiddenContent"><a href="../execution/streaming/StreamExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a>, <a href="../execution/streaming/StreamingQueryWrapper.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamingQueryWrapper">StreamingQueryWrapper</a></div>
           </div></div>
         
 
@@ -122,7 +124,13 @@ Otherwise, it returns whether the query has terminated or not within the <code>t
 milliseconds.</p><p>If the query has terminated, then all subsequent calls to this method will either return
 <code>true</code> immediately (if the query was terminated by <code>stop()</code>), or throw the exception
 immediately (if the query has terminated with exception).
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="StreamingQueryException,"><code>StreamingQueryException,</code></span> if <code>this</code> query has terminated with an exception</p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[org.apache.spark.sql.streaming.StreamingQueryException]">...</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><a href="StreamingQueryException.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryException"><code>StreamingQueryException</code></a> if the query has terminated with an exception</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#awaitTermination" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="awaitTermination():Unit"></a>
       <a id="awaitTermination():Unit"></a>
@@ -143,7 +151,13 @@ immediately (if the query has terminated with exception).
 If the query has terminated with an exception, then the exception will be thrown.</p><p>If the query has terminated, then all subsequent calls to this method will either return
 immediately (if the query was terminated by <code>stop()</code>), or throw the exception
 immediately (if the query has terminated with exception).
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="StreamingQueryException,"><code>StreamingQueryException,</code></span> if <code>this</code> query has terminated with an exception.</p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[org.apache.spark.sql.streaming.StreamingQueryException]">...</span>
+    </span>)</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><a href="StreamingQueryException.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryException"><code>StreamingQueryException</code></a> if the query has terminated with an exception.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#exception" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="exception:Option[org.apache.spark.sql.streaming.StreamingQueryException]"></a>
       <a id="exception:Option[StreamingQueryException]"></a>
@@ -197,23 +211,25 @@ immediately (if the query has terminated with exception).
     </span>
       <p class="shortcomment cmt">Prints the physical plan to the console for debugging purposes.</p><div class="fullcomment"><div class="comment cmt"><p>Prints the physical plan to the console for debugging purposes.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#id" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="id:Long"></a>
-      <a id="id:Long"></a>
+      <a id="id:java.util.UUID"></a>
+      <a id="id:UUID"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">id</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">id</span><span class="result">: <span class="extype" name="java.util.UUID">UUID</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@id:Long" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@id:java.util.UUID" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the unique id of this query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the unique id of this query. This id is automatically generated and is unique across
-all queries that have been started in the current process.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns the unique id of this query that persists across restarts from checkpoint data.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the unique id of this query that persists across restarts from checkpoint data.
+That is, this id is generated when a query is started for the first time, and
+will be the same every time it is restarted from checkpoint data. Also see <a href="#runId:java.util.UUID" class="extmbr" name="org.apache.spark.sql.streaming.StreamingQuery#runId">runId</a>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#isActive" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="isActive:Boolean"></a>
       <a id="isActive:Boolean"></a>
@@ -230,7 +246,26 @@ all queries that have been started in the current process.</p></div><dl class="a
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Whether the query is currently active or not</p><div class="fullcomment"><div class="comment cmt"><p>Whether the query is currently active or not</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns <code>true</code> if this query is actively running.</p><div class="fullcomment"><div class="comment cmt"><p>Returns <code>true</code> if this query is actively running.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#lastProgress" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="lastProgress:org.apache.spark.sql.streaming.StreamingQueryProgress"></a>
+      <a id="lastProgress:StreamingQueryProgress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lastProgress</span><span class="result">: <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@lastProgress:org.apache.spark.sql.streaming.StreamingQueryProgress" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the most recent <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a> update of this streaming query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the most recent <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a> update of this streaming query.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#name" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="name:String"></a>
       <a id="name:String"></a>
@@ -247,9 +282,11 @@ all queries that have been started in the current process.</p></div><dl class="a
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the name of the query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name of the query. This name is unique across all active queries. This can be
-set in the <span class="extype" name="org.apache.spark.sql.DataStreamWriter">DataStreamWriter</span> as
-<code>dataframe.writeStream.queryName(&quot;query&quot;).start()</code>.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns the user-specified name of the query, or null if not specified.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the user-specified name of the query, or null if not specified.
+This name can be specified in the <code>org.apache.spark.sql.streaming.DataStreamWriter</code>
+as <code>dataframe.writeStream.queryName(&quot;query&quot;).start()</code>.
+This name, if set, must be unique across all active queries.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#processAllAvailable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="processAllAvailable():Unit"></a>
       <a id="processAllAvailable():Unit"></a>
@@ -271,6 +308,46 @@ This method is intended for testing. Note that in the case of continually arrivi
 method may block forever. Additionally, this method is only guaranteed to block until data that
 has been synchronously appended data to a <a href="../execution/streaming/Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">org.apache.spark.sql.execution.streaming.Source</a>
 prior to invocation. (i.e. <code>getOffset</code> must immediately reflect the addition).</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#recentProgress" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="recentProgress:Array[org.apache.spark.sql.streaming.StreamingQueryProgress]"></a>
+      <a id="recentProgress:Array[StreamingQueryProgress]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">recentProgress</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@recentProgress:Array[org.apache.spark.sql.streaming.StreamingQueryProgress]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an array of the most recent <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a> updates for this query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an array of the most recent <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a> updates for this query.
+The number of progress updates retained for each stream is configured by Spark session
+configuration <code>spark.sql.streaming.numRecentProgressUpdates</code>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#runId" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="runId:java.util.UUID"></a>
+      <a id="runId:UUID"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">runId</span><span class="result">: <span class="extype" name="java.util.UUID">UUID</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@runId:java.util.UUID" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the unique id of this run of the query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the unique id of this run of the query. That is, every start/restart of a query will
+generated a unique runId. Therefore, every time a query is restarted from
+checkpoint, it will have the same <a href="#id:java.util.UUID" class="extmbr" name="org.apache.spark.sql.streaming.StreamingQuery#id">id</a> but different <a href="#runId:java.util.UUID" class="extmbr" name="org.apache.spark.sql.streaming.StreamingQuery#runId">runId</a>s.
+</p></div></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#sparkSession" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="sparkSession:org.apache.spark.sql.SparkSession"></a>
       <a id="sparkSession:SparkSession"></a>
@@ -287,7 +364,8 @@ prior to invocation. (i.e. <code>getOffset</code> must immediately reflect the a
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> associated with <code>this</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> associated with <code>this</code>.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns the <code>SparkSession</code> associated with <code>this</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the <code>SparkSession</code> associated with <code>this</code>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#status" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="status:org.apache.spark.sql.streaming.StreamingQueryStatus"></a>
       <a id="status:StreamingQueryStatus"></a>
@@ -304,7 +382,8 @@ prior to invocation. (i.e. <code>getOffset</code> must immediately reflect the a
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the current status of the query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the current status of the query.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.2</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns the current status of the query.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the current status of the query.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.2</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQuery#stop" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="stop():Unit"></a>
       <a id="stop():Unit"></a>
@@ -323,46 +402,6 @@ prior to invocation. (i.e. <code>getOffset</code> must immediately reflect the a
     </span>
       <p class="shortcomment cmt">Stops the execution of this query if it is running.</p><div class="fullcomment"><div class="comment cmt"><p>Stops the execution of this query if it is running. This method blocks until the threads
 performing execution has stopped.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#sinkStatus" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="sinkStatus:org.apache.spark.sql.streaming.SinkStatus"></a>
-      <a id="sinkStatus:SinkStatus"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.2) use status.sinkStatus">sinkStatus</span><span class="result">: <a href="SinkStatus.html" class="extype" name="org.apache.spark.sql.streaming.SinkStatus">SinkStatus</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@sinkStatus:org.apache.spark.sql.streaming.SinkStatus" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns current status of the sink.</p><div class="fullcomment"><div class="comment cmt"><p>Returns current status of the sink.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.2)</i> use status.sinkStatus</p></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQuery#sourceStatuses" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="sourceStatuses:Array[org.apache.spark.sql.streaming.SourceStatus]"></a>
-      <a id="sourceStatuses:Array[SourceStatus]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.2) use status.sourceStatuses">sourceStatuses</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="SourceStatus.html" class="extype" name="org.apache.spark.sql.streaming.SourceStatus">SourceStatus</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQuery@sourceStatuses:Array[org.apache.spark.sql.streaming.SourceStatus]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns current status of all the sources.</p><div class="fullcomment"><div class="comment cmt"><p>Returns current status of all the sources.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.2)</i> use status.sourceStatuses</p></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li></ol>
             </div>
 

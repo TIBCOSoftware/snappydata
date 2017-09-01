@@ -278,257 +278,36 @@ A SparkListener that prepares information to be displayed on the ExecutorsTab
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorIdToData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorIdToData:scala.collection.mutable.HashMap[String,org.apache.spark.ui.jobs.UIData.ExecutorUIData]"></a>
-      <a id="executorIdToData:HashMap[String,ExecutorUIData]"></a>
+    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorEvents" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="executorEvents:scala.collection.mutable.ListBuffer[org.apache.spark.scheduler.SparkListenerEvent]"></a>
+      <a id="executorEvents:ListBuffer[SparkListenerEvent]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
-        <span class="name">executorIdToData</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.spark.ui.jobs.UIData.ExecutorUIData">ExecutorUIData</span>]</span>
+        <span class="name">executorEvents</span><span class="result">: <span class="extype" name="scala.collection.mutable.ListBuffer">ListBuffer</span>[<a href="../../scheduler/SparkListenerEvent.html" class="extype" name="org.apache.spark.scheduler.SparkListenerEvent">SparkListenerEvent</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorIdToData:scala.collection.mutable.HashMap[String,org.apache.spark.ui.jobs.UIData.ExecutorUIData]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorEvents:scala.collection.mutable.ListBuffer[org.apache.spark.scheduler.SparkListenerEvent]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToDuration" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToDuration:scala.collection.mutable.HashMap[String,Long]"></a>
-      <a id="executorToDuration:HashMap[String,Long]"></a>
+    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToTaskSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="executorToTaskSummary:scala.collection.mutable.LinkedHashMap[String,org.apache.spark.ui.exec.ExecutorTaskSummary]"></a>
+      <a id="executorToTaskSummary:LinkedHashMap[String,ExecutorTaskSummary]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
-        <span class="name">executorToDuration</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
+        <span class="name">executorToTaskSummary</span><span class="result">: <span class="extype" name="scala.collection.mutable.LinkedHashMap">LinkedHashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.spark.ui.exec.ExecutorTaskSummary">ExecutorTaskSummary</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToDuration:scala.collection.mutable.HashMap[String,Long]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToInputBytes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToInputBytes:scala.collection.mutable.HashMap[String,Long]"></a>
-      <a id="executorToInputBytes:HashMap[String,Long]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToInputBytes</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToInputBytes:scala.collection.mutable.HashMap[String,Long]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToInputRecords" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToInputRecords:scala.collection.mutable.HashMap[String,Long]"></a>
-      <a id="executorToInputRecords:HashMap[String,Long]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToInputRecords</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToInputRecords:scala.collection.mutable.HashMap[String,Long]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToJvmGCTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToJvmGCTime:scala.collection.mutable.HashMap[String,Long]"></a>
-      <a id="executorToJvmGCTime:HashMap[String,Long]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToJvmGCTime</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToJvmGCTime:scala.collection.mutable.HashMap[String,Long]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToLogUrls" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToLogUrls:scala.collection.mutable.HashMap[String,Map[String,String]]"></a>
-      <a id="executorToLogUrls:HashMap[String,Map[String,String]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToLogUrls</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToLogUrls:scala.collection.mutable.HashMap[String,Map[String,String]]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToOutputBytes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToOutputBytes:scala.collection.mutable.HashMap[String,Long]"></a>
-      <a id="executorToOutputBytes:HashMap[String,Long]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToOutputBytes</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToOutputBytes:scala.collection.mutable.HashMap[String,Long]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToOutputRecords" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToOutputRecords:scala.collection.mutable.HashMap[String,Long]"></a>
-      <a id="executorToOutputRecords:HashMap[String,Long]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToOutputRecords</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToOutputRecords:scala.collection.mutable.HashMap[String,Long]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToShuffleRead" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToShuffleRead:scala.collection.mutable.HashMap[String,Long]"></a>
-      <a id="executorToShuffleRead:HashMap[String,Long]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToShuffleRead</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToShuffleRead:scala.collection.mutable.HashMap[String,Long]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToShuffleWrite" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToShuffleWrite:scala.collection.mutable.HashMap[String,Long]"></a>
-      <a id="executorToShuffleWrite:HashMap[String,Long]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToShuffleWrite</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToShuffleWrite:scala.collection.mutable.HashMap[String,Long]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToTasksActive" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToTasksActive:scala.collection.mutable.HashMap[String,Int]"></a>
-      <a id="executorToTasksActive:HashMap[String,Int]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToTasksActive</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Int">Int</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToTasksActive:scala.collection.mutable.HashMap[String,Int]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToTasksComplete" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToTasksComplete:scala.collection.mutable.HashMap[String,Int]"></a>
-      <a id="executorToTasksComplete:HashMap[String,Int]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToTasksComplete</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Int">Int</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToTasksComplete:scala.collection.mutable.HashMap[String,Int]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToTasksFailed" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToTasksFailed:scala.collection.mutable.HashMap[String,Int]"></a>
-      <a id="executorToTasksFailed:HashMap[String,Int]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToTasksFailed</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Int">Int</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToTasksFailed:scala.collection.mutable.HashMap[String,Int]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToTasksMax" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToTasksMax:scala.collection.mutable.HashMap[String,Int]"></a>
-      <a id="executorToTasksMax:HashMap[String,Int]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToTasksMax</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Int">Int</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToTasksMax:scala.collection.mutable.HashMap[String,Int]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.ui.exec.ExecutorsListener#executorToTotalCores" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executorToTotalCores:scala.collection.mutable.HashMap[String,Int]"></a>
-      <a id="executorToTotalCores:HashMap[String,Int]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executorToTotalCores</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Int">Int</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToTotalCores:scala.collection.mutable.HashMap[String,Int]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.ui.exec.ExecutorsListener@executorToTaskSummary:scala.collection.mutable.LinkedHashMap[String,org.apache.spark.ui.exec.ExecutorTaskSummary]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

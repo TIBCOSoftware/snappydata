@@ -186,18 +186,18 @@
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD#compileFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="compileFilter(f:org.apache.spark.sql.sources.Filter):Option[String]"></a>
-      <a id="compileFilter(Filter):Option[String]"></a>
+      <a id="compileFilter(f:org.apache.spark.sql.sources.Filter,dialect:org.apache.spark.sql.jdbc.JdbcDialect):Option[String]"></a>
+      <a id="compileFilter(Filter,JdbcDialect):Option[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">compileFilter</span><span class="params">(<span name="f">f: <a href="../../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+        <span class="name">compileFilter</span><span class="params">(<span name="f">f: <a href="../../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a></span>, <span name="dialect">dialect: <a href="../../../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD$@compileFilter(f:org.apache.spark.sql.sources.Filter):Option[String]" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD$@compileFilter(f:org.apache.spark.sql.sources.Filter,dialect:org.apache.spark.sql.jdbc.JdbcDialect):Option[String]" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -636,45 +636,44 @@ Returns None for an unhandled filter.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD#resolveTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="resolveTable(url:String,table:String,properties:java.util.Properties):org.apache.spark.sql.types.StructType"></a>
-      <a id="resolveTable(String,String,Properties):StructType"></a>
+      <a id="resolveTable(options:org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions):org.apache.spark.sql.types.StructType"></a>
+      <a id="resolveTable(JDBCOptions):StructType"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">resolveTable</span><span class="params">(<span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="properties">properties: <span class="extype" name="java.util.Properties">Properties</span></span>)</span><span class="result">: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
+        <span class="name">resolveTable</span><span class="params">(<span name="options">options: <a href="JDBCOptions.html" class="extype" name="org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions">JDBCOptions</a></span>)</span><span class="result">: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD$@resolveTable(url:String,table:String,properties:java.util.Properties):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD$@resolveTable(options:org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Takes a (schema, table) specification and returns the table's Catalyst
 schema.</p><div class="fullcomment"><div class="comment cmt"><p>Takes a (schema, table) specification and returns the table's Catalyst
 schema.
-</p></div><dl class="paramcmts block"><dt class="param">url</dt><dd class="cmt"><p>- The JDBC url to fetch information from.</p></dd><dt class="param">table</dt><dd class="cmt"><p>- The table name of the desired table.  This may also be a
-  SQL query wrapped in parentheses.</p></dd><dt>returns</dt><dd class="cmt"><p>A StructType giving the table's Catalyst schema.</p></dd></dl><dl class="attributes block"> <dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="SQLException"><code>SQLException</code></span> if the table contains an unsupported type.</p></span></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">options</dt><dd class="cmt"><p>- JDBC options that contains url, table and other information.</p></dd><dt>returns</dt><dd class="cmt"><p>A StructType giving the table's Catalyst schema.</p></dd></dl><dl class="attributes block"> <dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="SQLException"><code>SQLException</code></span> if the table contains an unsupported type.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD#scanTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="scanTable(sc:org.apache.spark.SparkContext,schema:org.apache.spark.sql.types.StructType,url:String,properties:java.util.Properties,fqTable:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],parts:Array[org.apache.spark.Partition]):org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
-      <a id="scanTable(SparkContext,StructType,String,Properties,String,Array[String],Array[Filter],Array[spark.Partition]):RDD[InternalRow]"></a>
+      <a id="scanTable(sc:org.apache.spark.SparkContext,schema:org.apache.spark.sql.types.StructType,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],parts:Array[org.apache.spark.Partition],options:org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions):org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
+      <a id="scanTable(SparkContext,StructType,Array[String],Array[Filter],Array[Partition],JDBCOptions):RDD[InternalRow]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">scanTable</span><span class="params">(<span name="sc">sc: <a href="../../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="properties">properties: <span class="extype" name="java.util.Properties">Properties</span></span>, <span name="fqTable">fqTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>, <span name="parts">parts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">spark.Partition</a>]</span>)</span><span class="result">: <a href="../../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
+        <span class="name">scanTable</span><span class="params">(<span name="sc">sc: <a href="../../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>, <span name="parts">parts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="options">options: <a href="JDBCOptions.html" class="extype" name="org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions">JDBCOptions</a></span>)</span><span class="result">: <a href="../../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD$@scanTable(sc:org.apache.spark.SparkContext,schema:org.apache.spark.sql.types.StructType,url:String,properties:java.util.Properties,fqTable:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],parts:Array[org.apache.spark.Partition]):org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD$@scanTable(sc:org.apache.spark.SparkContext,schema:org.apache.spark.sql.types.StructType,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],parts:Array[org.apache.spark.Partition],options:org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions):org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Build and return JDBCRDD from the given information.</p><div class="fullcomment"><div class="comment cmt"><p>Build and return JDBCRDD from the given information.
-</p></div><dl class="paramcmts block"><dt class="param">sc</dt><dd class="cmt"><p>- Your SparkContext.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>- The Catalyst schema of the underlying database table.</p></dd><dt class="param">url</dt><dd class="cmt"><p>- The JDBC url to connect to.</p></dd><dt class="param">fqTable</dt><dd class="cmt"><p>- The fully-qualified table name (or paren'd SQL query) to use.</p></dd><dt class="param">requiredColumns</dt><dd class="cmt"><p>- The names of the columns to SELECT.</p></dd><dt class="param">filters</dt><dd class="cmt"><p>- The filters to include in all WHERE clauses.</p></dd><dt class="param">parts</dt><dd class="cmt"><p>- An array of JDBCPartitions specifying partition ids and
-   per-partition WHERE clauses.</p></dd><dt>returns</dt><dd class="cmt"><p>An RDD representing &quot;SELECT requiredColumns FROM fqTable&quot;.</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">sc</dt><dd class="cmt"><p>- Your SparkContext.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>- The Catalyst schema of the underlying database table.</p></dd><dt class="param">requiredColumns</dt><dd class="cmt"><p>- The names of the columns to SELECT.</p></dd><dt class="param">filters</dt><dd class="cmt"><p>- The filters to include in all WHERE clauses.</p></dd><dt class="param">parts</dt><dd class="cmt"><p>- An array of JDBCPartitions specifying partition ids and
+   per-partition WHERE clauses.</p></dd><dt class="param">options</dt><dd class="cmt"><p>- JDBC options that contains url, table and other information.</p></dd><dt>returns</dt><dd class="cmt"><p>An RDD representing &quot;SELECT requiredColumns FROM fqTable&quot;.</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

@@ -228,7 +228,7 @@ executors the task is trying to fetch from, and thus need to rerun the previous 
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.TaskFailedReason#countTowardsTaskFailures" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.FetchFailed#countTowardsTaskFailures" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countTowardsTaskFailures:Boolean"></a>
       <a id="countTowardsTaskFailures:Boolean"></a>
       <h4 class="signature">
@@ -244,12 +244,15 @@ executors the task is trying to fetch from, and thus need to rerun the previous 
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Whether this task failure should be counted towards the maximum number of times the task is
-allowed to fail before the stage is aborted.</p><div class="fullcomment"><div class="comment cmt"><p>Whether this task failure should be counted towards the maximum number of times the task is
-allowed to fail before the stage is aborted.  Set to false in cases where the task's failure
-was unrelated to the task; for example, if the task failed because the executor it was running
-on was killed.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TaskFailedReason.html" class="extype" name="org.apache.spark.TaskFailedReason">TaskFailedReason</a></dd></dl></div>
+      <p class="shortcomment cmt">Fetch failures lead to a different failure handling path: (1) we don't abort the stage after
+4 task failures, instead we immediately go back to the stage which generated the map output,
+and regenerate the missing data.</p><div class="fullcomment"><div class="comment cmt"><p>Fetch failures lead to a different failure handling path: (1) we don't abort the stage after
+4 task failures, instead we immediately go back to the stage which generated the map output,
+and regenerate the missing data.  (2) we don't count fetch failures for blacklisting, since
+presumably its not the fault of the executor where the task ran, but the executor which
+stored the data. This is especially important because we we might rack up a bunch of
+fetch-failures in rapid succession, on all nodes of the cluster, due to one bad node.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.FetchFailed">FetchFailed</a> → <a href="TaskFailedReason.html" class="extype" name="org.apache.spark.TaskFailedReason">TaskFailedReason</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

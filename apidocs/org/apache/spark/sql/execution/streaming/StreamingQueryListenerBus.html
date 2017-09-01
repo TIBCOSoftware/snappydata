@@ -52,7 +52,9 @@
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A bus to forward events to <span class="extype" name="StreamingQueryListener">StreamingQueryListener</span>s. This one will send received
 <span class="extype" name="StreamingQueryListener.Event">StreamingQueryListener.Event</span>s to the Spark listener bus. It also registers itself with
 Spark listener bus, so that it can receive <span class="extype" name="StreamingQueryListener.Event">StreamingQueryListener.Event</span>s and dispatch them
-to StreamingQueryListener.
+to StreamingQueryListeners.</p><p>Note that each bus and its registered listeners are associated with a single SparkSession
+and StreamingQueryManager. So this bus will dispatch events to registered listeners for only
+those queries that were started in the associated SparkSession.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.util.ListenerBus">ListenerBus</span>[<a href="../../streaming/StreamingQueryListener.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener">StreamingQueryListener</a>, <a href="../../streaming/StreamingQueryListener$$Event.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.Event">Event</a>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../scheduler/SparkListener.html" class="extype" name="org.apache.spark.scheduler.SparkListener">SparkListener</a>, <span class="extype" name="org.apache.spark.scheduler.SparkListenerInterface">SparkListenerInterface</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -243,8 +245,8 @@ to StreamingQueryListener.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Post an event to the specified listener.</p><div class="fullcomment"><div class="comment cmt"><p>Post an event to the specified listener. <code>onPostEvent</code> is guaranteed to be called in the same
-thread for all listeners.
+      <p class="shortcomment cmt">Dispatch events to registered StreamingQueryListeners.</p><div class="fullcomment"><div class="comment cmt"><p>Dispatch events to registered StreamingQueryListeners. Only the events associated queries
+started in the same SparkSession as this ListenerBus will be dispatched to the listeners.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.StreamingQueryListenerBus">StreamingQueryListenerBus</a> → ListenerBus</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
@@ -1030,28 +1032,31 @@ not need to fetch the result remotely).
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Post a StreamingQueryListener event to the Spark listener bus asynchronously.</p><div class="fullcomment"><div class="comment cmt"><p>Post a StreamingQueryListener event to the Spark listener bus asynchronously. This event will
-be dispatched to all StreamingQueryListener in the thread of the Spark listener bus.
+      <p class="shortcomment cmt">Post a StreamingQueryListener event to the added StreamingQueryListeners.</p><div class="fullcomment"><div class="comment cmt"><p>Post a StreamingQueryListener event to the added StreamingQueryListeners.
+Note that only the QueryStarted event is posted to the listener synchronously. Other events
+are dispatched to Spark listener bus. This method is guaranteed to be called by queries in
+the same SparkSession as this listener.
 </p></div></div>
-    </li><li name="org.apache.spark.util.ListenerBus#postToAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="postToAll(event:E):Unit"></a>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamingQueryListenerBus#postToAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="postToAll(event:org.apache.spark.sql.streaming.StreamingQueryListener.Event):Unit"></a>
       <a id="postToAll(Event):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
         <span class="name">postToAll</span><span class="params">(<span name="event">event: <a href="../../streaming/StreamingQueryListener$$Event.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.Event">Event</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamingQueryListenerBus@postToAll(event:E):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.StreamingQueryListenerBus@postToAll(event:org.apache.spark.sql.streaming.StreamingQueryListener.Event):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Post the event to all registered listeners.</p><div class="fullcomment"><div class="comment cmt"><p>Post the event to all registered listeners. The <code>postToAll</code> caller should guarantee calling
-<code>postToAll</code> in the same thread for all events.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ListenerBus</dd></dl></div>
+      <p class="shortcomment cmt">Override the parent <code>postToAll</code> to remove the query id from <code>activeQueryRunIds</code> after all
+the listeners process <code>QueryTerminatedEvent</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Override the parent <code>postToAll</code> to remove the query id from <code>activeQueryRunIds</code> after all
+the listeners process <code>QueryTerminatedEvent</code>. (SPARK-19594)
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.StreamingQueryListenerBus">StreamingQueryListenerBus</a> → ListenerBus</dd></dl></div>
     </li><li name="org.apache.spark.util.ListenerBus#removeListener" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="removeListener(listener:L):Unit"></a>
       <a id="removeListener(StreamingQueryListener):Unit"></a>

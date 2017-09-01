@@ -45,7 +45,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">VectorizedHashMapGenerator</span><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">VectorizedHashMapGenerator</span><span class="result"> extends <a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></span>
       </span>
       </h4>
       
@@ -63,7 +63,7 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
 <code>BytesToBytesMap</code> to store them.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -81,7 +81,7 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator"><span>VectorizedHashMapGenerator</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator"><span>VectorizedHashMapGenerator</span></li><li class="in" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator"><span>HashMapGenerator</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -122,7 +122,7 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator.Buffer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator.Buffer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="BufferextendsProductwithSerializable"></a>
       <a id="Buffer:Buffer"></a>
       <h4 class="signature">
@@ -131,14 +131,14 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="VectorizedHashMapGenerator$Buffer.html"><span class="name">Buffer</span></a><span class="params">(<span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="HashMapGenerator$Buffer.html"><span class="name">Buffer</span></a><span class="params">(<span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@BufferextendsProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.HashMapGenerator@BufferextendsProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -214,7 +214,7 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#buffVars" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator#buffVars" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="buffVars:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]"></a>
       <a id="buffVars:Seq[ExprCode]"></a>
       <h4 class="signature">
@@ -230,9 +230,9 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#bufferValues" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bufferValues:Seq[VectorizedHashMapGenerator.this.Buffer]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator#bufferValues" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bufferValues:Seq[HashMapGenerator.this.Buffer]"></a>
       <a id="bufferValues:Seq[Buffer]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -240,14 +240,14 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">bufferValues</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="VectorizedHashMapGenerator$Buffer.html" class="extype" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator.Buffer">Buffer</a>]</span>
+        <span class="name">bufferValues</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="#BufferextendsProductwithSerializable" class="extmbr" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator.Buffer">Buffer</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@bufferValues:Seq[VectorizedHashMapGenerator.this.Buffer]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@bufferValues:Seq[HashMapGenerator.this.Buffer]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -328,7 +328,24 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#generate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator#genComputeHash" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genComputeHash(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:String,dataType:org.apache.spark.sql.types.DataType,result:String):String"></a>
+      <a id="genComputeHash(CodegenContext,String,DataType,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genComputeHash</span><span class="params">(<span name="ctx">ctx: <a href="../../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="result">result: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@genComputeHash(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:String,dataType:org.apache.spark.sql.types.DataType,result:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator#generate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="generate():String"></a>
       <a id="generate():String"></a>
       <h4 class="signature">
@@ -344,7 +361,129 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator#generateClose" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="generateClose():String"></a>
+      <a id="generateClose():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generateClose</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@generateClose():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#generateEquals" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="generateEquals():String"></a>
+      <a id="generateEquals():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generateEquals</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@generateEquals():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates a method that returns true if the group-by keys exist at a given index in the
+associated <a href="../vectorized/ColumnarBatch.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch">org.apache.spark.sql.execution.vectorized.ColumnarBatch</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Generates a method that returns true if the group-by keys exist at a given index in the
+associated <a href="../vectorized/ColumnarBatch.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch">org.apache.spark.sql.execution.vectorized.ColumnarBatch</a>. For instance, if we
+have 2 long group-by keys, the generated function would be of the form:</p><pre><span class="kw">private</span> boolean equals(int idx, long agg_key, long agg_key1) {
+  <span class="kw">return</span> batch.column(<span class="num">0</span>).getLong(buckets[idx]) == agg_key &amp;&amp;
+    batch.column(<span class="num">1</span>).getLong(buckets[idx]) == agg_key1;
+}</pre></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator">VectorizedHashMapGenerator</a> → <a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#generateFindOrInsert" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="generateFindOrInsert():String"></a>
+      <a id="generateFindOrInsert():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generateFindOrInsert</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@generateFindOrInsert():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates a method that returns a mutable
+<span class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch.Row">org.apache.spark.sql.execution.vectorized.ColumnarBatch.Row</span> which keeps track of the
+aggregate value(s) for a given set of keys.</p><div class="fullcomment"><div class="comment cmt"><p>Generates a method that returns a mutable
+<span class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch.Row">org.apache.spark.sql.execution.vectorized.ColumnarBatch.Row</span> which keeps track of the
+aggregate value(s) for a given set of keys. If the corresponding row doesn't exist, the
+generated method adds the corresponding row in the associated
+<a href="../vectorized/ColumnarBatch.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch">org.apache.spark.sql.execution.vectorized.ColumnarBatch</a>. For instance, if we
+have 2 long group-by keys, the generated function would be of the form:</p><pre>public org.apache.spark.sql.execution.vectorized.ColumnarBatch.Row findOrInsert(
+    long agg_key, long agg_key1) {
+  long h = hash(agg_key, agg_key1);
+  int step = <span class="num">0</span>;
+  int idx = (int) h &amp; (numBuckets - <span class="num">1</span>);
+  <span class="kw">while</span> (step &lt; maxSteps) {
+    <span class="cmt">// Return bucket index if it's either an empty slot or already contains the key</span>
+    <span class="kw">if</span> (buckets[idx] == -<span class="num">1</span>) {
+      batch.column(<span class="num">0</span>).putLong(numRows, agg_key);
+      batch.column(<span class="num">1</span>).putLong(numRows, agg_key1);
+      batch.column(<span class="num">2</span>).putLong(numRows, <span class="num">0</span>);
+      buckets[idx] = numRows++;
+      <span class="kw">return</span> batch.getRow(buckets[idx]);
+    } <span class="kw">else</span> <span class="kw">if</span> (equals(idx, agg_key, agg_key1)) {
+      <span class="kw">return</span> batch.getRow(buckets[idx]);
+    }
+    idx = (idx + <span class="num">1</span>) &amp; (numBuckets - <span class="num">1</span>);
+    step++;
+  }
+  <span class="cmt">// Didn't find it</span>
+  <span class="kw">return</span> <span class="kw">null</span>;
+}</pre></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator">VectorizedHashMapGenerator</a> → <a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator#generateHashFunction" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="generateHashFunction():String"></a>
+      <a id="generateHashFunction():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generateHashFunction</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@generateHashFunction():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates a method that computes a hash by currently xor-ing all individual group-by keys.</p><div class="fullcomment"><div class="comment cmt"><p>Generates a method that computes a hash by currently xor-ing all individual group-by keys. For
+instance, if we have 2 long group-by keys, the generated function would be of the form:</p><pre><span class="kw">private</span> long hash(long agg_key, long agg_key1) {
+  <span class="kw">return</span> agg_key ^ agg_key1;
+  }</pre></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#generateRowIterator" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="generateRowIterator():String"></a>
+      <a id="generateRowIterator():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generateRowIterator</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@generateRowIterator():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator">VectorizedHashMapGenerator</a> → <a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -362,7 +501,7 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#groupingKeySignature" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator#groupingKeySignature" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupingKeySignature:String"></a>
       <a id="groupingKeySignature:String"></a>
       <h4 class="signature">
@@ -378,9 +517,9 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#groupingKeys" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="groupingKeys:Seq[VectorizedHashMapGenerator.this.Buffer]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.HashMapGenerator#groupingKeys" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="groupingKeys:Seq[HashMapGenerator.this.Buffer]"></a>
       <a id="groupingKeys:Seq[Buffer]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -388,14 +527,14 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">groupingKeys</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="VectorizedHashMapGenerator$Buffer.html" class="extype" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator.Buffer">Buffer</a>]</span>
+        <span class="name">groupingKeys</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="#BufferextendsProductwithSerializable" class="extmbr" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator.Buffer">Buffer</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@groupingKeys:Seq[VectorizedHashMapGenerator.this.Buffer]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@groupingKeys:Seq[HashMapGenerator.this.Buffer]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -413,6 +552,23 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator#initializeAggregateHashMap" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initializeAggregateHashMap():String"></a>
+      <a id="initializeAggregateHashMap():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initializeAggregateHashMap</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator@initializeAggregateHashMap():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator">VectorizedHashMapGenerator</a> → <a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -593,7 +749,9 @@ is equivalent to the <code>BytesToBytesMap</code> aggregate buffer.</p><p>NOTE: 
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">
+              <h3>Inherited from <a href="HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

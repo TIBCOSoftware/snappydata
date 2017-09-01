@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(conn:java.sql.Connection,requiredColumns:Array[String],stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,fetchColQuery:String):org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS"></a>
+      <a id="&lt;init&gt;(conn:java.sql.Connection,requiredColumns:Array[String],stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,partitionId:Int,fetchColQuery:String):org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS"></a>
       <a id="&lt;init&gt;:ColumnBatchIteratorOnRS"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnBatchIteratorOnRS</span><span class="params">(<span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="stmt">stmt: <span class="extype" name="java.sql.Statement">Statement</span></span>, <span name="rs">rs: <span class="extype" name="java.sql.ResultSet">ResultSet</span></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>, <span name="fetchColQuery">fetchColQuery: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">ColumnBatchIteratorOnRS</span><span class="params">(<span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="stmt">stmt: <span class="extype" name="java.sql.Statement">Statement</span></span>, <span name="rs">rs: <span class="extype" name="java.sql.ResultSet">ResultSet</span></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="fetchColQuery">fetchColQuery: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@&lt;init&gt;(conn:java.sql.Connection,requiredColumns:Array[String],stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,fetchColQuery:String):org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@&lt;init&gt;(conn:java.sql.Connection,requiredColumns:Array[String],stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,partitionId:Int,fetchColQuery:String):org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -847,7 +847,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#getColumnLob" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getColumnLob(bufferPosition:Int):java.nio.ByteBuffer"></a>
+      <a id="getColumnLob(columnIndex:Int):java.nio.ByteBuffer"></a>
       <a id="getColumnLob(Int):ByteBuffer"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -855,10 +855,44 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getColumnLob</span><span class="params">(<span name="bufferPosition">bufferPosition: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+        <span class="name">getColumnLob</span><span class="params">(<span name="columnIndex">columnIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@getColumnLob(bufferPosition:Int):java.nio.ByteBuffer" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@getColumnLob(columnIndex:Int):java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#getCurrentBatchId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getCurrentBatchId:Long"></a>
+      <a id="getCurrentBatchId:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCurrentBatchId</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@getCurrentBatchId:Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#getCurrentBucketId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getCurrentBucketId:Int"></a>
+      <a id="getCurrentBucketId:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCurrentBucketId</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@getCurrentBucketId:Int" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -880,6 +914,57 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS">ColumnBatchIteratorOnRS</a> → <a href="ResultSetIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">ResultSetIterator</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#getDeletedColumnDecoder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getDeletedColumnDecoder:org.apache.spark.sql.execution.columnar.encoding.DeletedColumnDecoder"></a>
+      <a id="getDeletedColumnDecoder:DeletedColumnDecoder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDeletedColumnDecoder</span><span class="result">: <a href="encoding/DeletedColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.DeletedColumnDecoder">DeletedColumnDecoder</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@getDeletedColumnDecoder:org.apache.spark.sql.execution.columnar.encoding.DeletedColumnDecoder" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#getDeletedRowCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getDeletedRowCount:Int"></a>
+      <a id="getDeletedRowCount:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDeletedRowCount</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@getDeletedRowCount:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#getUpdatedColumnDecoder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getUpdatedColumnDecoder(decoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,field:org.apache.spark.sql.types.StructField,columnIndex:Int):org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase"></a>
+      <a id="getUpdatedColumnDecoder(ColumnDecoder,StructField,Int):UpdatedColumnDecoderBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getUpdatedColumnDecoder</span><span class="params">(<span name="decoder">decoder: <a href="encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>, <span name="field">field: <a href="../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="columnIndex">columnIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="encoding/UpdatedColumnDecoderBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase">UpdatedColumnDecoderBase</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@getUpdatedColumnDecoder(decoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,field:org.apache.spark.sql.types.StructField,columnIndex:Int):org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.collection.Iterator#grouped" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="grouped[B&gt;:A](size:Int):Iterator.this.GroupedIterator[B]"></a>
       <a id="grouped[B&gt;:ByteBuffer](Int):GroupedIterator[B]"></a>

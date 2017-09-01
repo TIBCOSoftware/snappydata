@@ -88,33 +88,7 @@
         <div id="allMembers">
         
 
-        <div id="types" class="types members">
-              <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.stat.StatFunctions.QuantileSummaries" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="QuantileSummariesextendsSerializable"></a>
-      <a id="QuantileSummaries:QuantileSummaries"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StatFunctions$$QuantileSummaries.html"><span class="name">QuantileSummaries</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.stat.StatFunctions$@QuantileSummariesextendsSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Helper class to compute approximate quantile summary.</p><div class="fullcomment"><div class="comment cmt"><p>Helper class to compute approximate quantile summary.
-This implementation is based on the algorithm proposed in the paper:
-&quot;Space-efficient Online Computation of Quantile Summaries&quot; by Greenwald, Michael
-and Khanna, Sanjeev. (http://dx.doi.org/10.1145/375663.375670)</p><p>In order to optimize for speed, it maintains an internal buffer of the last seen samples,
-and only inserts them after crossing a certain size threshold. This guarantees a near-constant
-runtime complexity compared to the original algorithm.
-</p></div></div>
-    </li></ol>
-            </div>
+        
 
         
 
@@ -171,23 +145,6 @@ runtime complexity compared to the original algorithm.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.stat.StatFunctions.QuantileSummaries" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="QuantileSummaries"></a>
-      <a id="QuantileSummaries:QuantileSummaries"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="StatFunctions$$QuantileSummaries$.html"><span class="name">QuantileSummaries</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.stat.StatFunctions$@QuantileSummaries" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -664,8 +621,8 @@ If the DataFrame has N elements and if we request the quantile at probability <c
 of <code>x</code> is close to (p * N).
 More precisely,</p><p>  floor((p - err) * N) &lt;= rank(x) &lt;= ceil((p + err) * N).</p><p>This method implements a variation of the Greenwald-Khanna algorithm (with some speed
 optimizations).
-The algorithm was first present in <a href="http://dx.doi.org/10.1145/375663.375670" target="_blank">Space-efficient
-Online Computation of Quantile Summaries</a> by Greenwald and Khanna.
+The algorithm was first present in <a href="http://dx.doi.org/10.1145/375663.375670">
+Space-efficient Online Computation of Quantile Summaries</a> by Greenwald and Khanna.
 </p></div><dl class="paramcmts block"><dt class="param">df</dt><dd class="cmt"><p>the dataframe</p></dd><dt class="param">cols</dt><dd class="cmt"><p>numerical columns of the dataframe</p></dd><dt class="param">probabilities</dt><dd class="cmt"><p>a list of quantile probabilities
   Each number must belong to [0, 1].
   For example 0 is the minimum, 0.5 is the median, 1 is the maximum.</p></dd><dt class="param">relativeError</dt><dd class="cmt"><p>The relative target precision to achieve (&gt;= 0).

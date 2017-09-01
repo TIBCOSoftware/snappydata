@@ -90,23 +90,26 @@ considered an internal API to Spark SQL and are subject to change between minor 
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.catalyst.CatalystConf" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="CatalystConfextendsAnyRef"></a>
+              <ol><li name="org.apache.spark.sql.catalyst.CatalystConf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CatalystConf=org.apache.spark.sql.internal.SQLConf"></a>
       <a id="CatalystConf:CatalystConf"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <a href="CatalystConf.html"><span class="name">CatalystConf</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">CatalystConf</span><span class="result"> = <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.package@CatalystConfextendsAnyRef" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.package@CatalystConf=org.apache.spark.sql.internal.SQLConf" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Interface for configuration options used in the catalyst module.</p>
+      <p class="shortcomment cmt">This class is only here to minimize the change for ticket SPARK-19944
+(moves SQLConf from sql/core to sql/catalyst).</p><div class="fullcomment"><div class="comment cmt"><p>This class is only here to minimize the change for ticket SPARK-19944
+(moves SQLConf from sql/core to sql/catalyst). This class should eventually be removed.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.DefinedByConstructorParams" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="DefinedByConstructorParamsextendsAnyRef"></a>
       <a id="DefinedByConstructorParams:DefinedByConstructorParams"></a>
@@ -180,7 +183,7 @@ Format (quoted): &quot;<code>name</code>&quot; or &quot;<code>db</code>.<code>na
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">An abstract class for row used internal in Spark SQL, which only contain the columns as
+      <p class="shortcomment cmt">An abstract class for row used internally in Spark SQL, which only contains the columns as
 internal types.</p>
     </li><li name="org.apache.spark.sql.catalyst.SQLBuilder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SQLBuilderextendsLogging"></a>
@@ -222,8 +225,8 @@ supported by this builder (yet).
       <p class="shortcomment cmt">Support for generating catalyst schemas for scala objects.</p><div class="fullcomment"><div class="comment cmt"><p>Support for generating catalyst schemas for scala objects.  Note that unlike its companion
 object, this trait able to work in both the runtime and the compile time (macro) universe.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.catalyst.SimpleCatalystConf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SimpleCatalystConfextendsCatalystConfwithProductwithSerializable"></a>
+    </li><li name="org.apache.spark.sql.catalyst.SimpleCatalystConf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SimpleCatalystConfextendsSQLConfwithProductwithSerializable"></a>
       <a id="SimpleCatalystConf:SimpleCatalystConf"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -231,14 +234,17 @@ object, this trait able to work in both the runtime and the compile time (macro)
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SimpleCatalystConf.html"><span class="name">SimpleCatalystConf</span></a><span class="params">(<span name="caseSensitiveAnalysis">caseSensitiveAnalysis: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="orderByOrdinal">orderByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="groupByOrdinal">groupByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="optimizerMaxIterations">optimizerMaxIterations: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">100</span></span>, <span name="optimizerInSetConversionThreshold">optimizerInSetConversionThreshold: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">10</span></span>, <span name="maxCaseBranchesForCodegen">maxCaseBranchesForCodegen: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">20</span></span>, <span name="runSQLonFile">runSQLonFile: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="warehousePath">warehousePath: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;/user/hive/warehouse&quot;</span></span>)</span><span class="result"> extends <a href="CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SimpleCatalystConf.html"><span class="name">SimpleCatalystConf</span></a><span class="params">(<span name="caseSensitiveAnalysis">caseSensitiveAnalysis: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="orderByOrdinal">orderByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="groupByOrdinal">groupByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="optimizerMaxIterations">optimizerMaxIterations: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">100</span></span>, <span name="optimizerInSetConversionThreshold">optimizerInSetConversionThreshold: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">10</span></span>, <span name="maxCaseBranchesForCodegen">maxCaseBranchesForCodegen: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">20</span></span>, <span name="runSQLonFile">runSQLonFile: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="crossJoinEnabled">crossJoinEnabled: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="warehousePath">warehousePath: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;/user/hive/warehouse&quot;</span></span>)</span><span class="result"> extends <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.package@SimpleCatalystConfextendsCatalystConfwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.package@SimpleCatalystConfextendsSQLConfwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A CatalystConf that can be used for local testing.</p>
+      <p class="shortcomment cmt">A SQLConf that can be used for local testing.</p><div class="fullcomment"><div class="comment cmt"><p>A SQLConf that can be used for local testing. This class is only here to minimize the change
+for ticket SPARK-19944 (moves SQLConf from sql/core to sql/catalyst). This class should
+eventually be removed (test cases should just create SQLConf and set values appropriately).
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.TableIdentifier" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="TableIdentifierextendsIdentifierWithDatabasewithProductwithSerializable"></a>
       <a id="TableIdentifier:TableIdentifier"></a>
@@ -534,6 +540,23 @@ a plan that contains subqueries, both of which are reading from the same table. 
 optimization removes the subqueries, scoping information would be destroyed, eliminating the
 ability to reason about which subquery produced a given attribute.</p><h4>Evaluation</h4><p>The result of expressions can be evaluated using the <code>Expression.apply(Row)</code> method.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.json" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="json"></a>
+      <a id="json:json"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="json/package.html"><span class="name">json</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.package@json" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.optimizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="optimizer"></a>
       <a id="optimizer:optimizer"></a>

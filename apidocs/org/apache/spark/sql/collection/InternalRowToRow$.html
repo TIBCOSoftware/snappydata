@@ -723,9 +723,9 @@ Throws an exception if the type mismatches or if the value is null.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a Map(name -&gt; value) for the requested fieldNames
+      <p class="shortcomment cmt">Returns a Map consisting of names and values for the requested fieldNames
 For primitive types if value is null it returns 'zero value' specific for primitive
-ie.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Map(name -&gt; value) for the requested fieldNames
+ie.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Map consisting of names and values for the requested fieldNames
 For primitive types if value is null it returns 'zero value' specific for primitive
 ie. 0 for Int - use isNullAt to ensure that value is not null
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> when fieldName do not exist.</p></span><span class="cmt"><p><span class="extype" name="UnsupportedOperationException"><code>UnsupportedOperationException</code></span> when schema is not defined.</p></span></dd></dl></div>

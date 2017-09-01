@@ -119,7 +119,13 @@ then the batch should begin with the first record. This method must always retur
 same data for a particular <code>start</code> and <code>end</code> pair; even after the Source has been restarted
 on a different node.</p><p>Higher layers will always call this method with a value of <code>start</code> greater than or equal
 to the last value passed to <code>commit</code> and a value of <code>end</code> less than or equal to the
-last value returned by <code>getOffset</code>
+last value returned by <code>getOffset</code></p><p>It is possible for the <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> type to be a <a href="SerializedOffset.html" class="extype" name="org.apache.spark.sql.execution.streaming.SerializedOffset">SerializedOffset</a> when it was
+obtained from the log. Moreover, <a href="StreamExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a> only compares the <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>
+JSON representation to determine if the two objects are equal. This could have
+ramifications when upgrading <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> JSON formats i.e., two equivalent <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>
+objects could differ between version. Consequently, <a href="StreamExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a> may call
+this method with two such equivalent <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> objects. In which case, the <a href="" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a>
+should return an empty <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.streaming.Source#getOffset" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="getOffset:Option[org.apache.spark.sql.execution.streaming.Offset]"></a>

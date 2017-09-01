@@ -51,8 +51,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: DeveloperApi ::
-A <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object can be constructed by</p><pre>StructType(fields: <span class="std">Seq</span>[StructField])</pre><p>For a <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object, one or multiple <a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>s can be extracted by names.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object can be constructed by</p><pre>StructType(fields: <span class="std">Seq</span>[StructField])</pre><p>For a <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object, one or multiple <a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>s can be extracted by names.
 If multiple <a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>s are extracted, a <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object will be returned.
 If a provided name does not have a matching field, it will be ignored. For the case
 of extracting a single StructField, a <code>null</code> will be returned.
@@ -99,9 +98,9 @@ Example:</p><pre><span class="kw">import</span> org.apache.spark.sql._
 <span class="cmt">// Create a Row with the schema defined by struct</span>
 <span class="kw">val</span> row = Row(Row(<span class="num">1</span>, <span class="num">2</span>, <span class="kw">true</span>))
 <span class="cmt">// row: Row = [[1,2,true]]</span></pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl><div class="toggleContainer block">
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], <span class="extype" name="scala.collection.SeqLike">SeqLike</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]], <span class="extype" name="scala.collection.GenSeq">GenSeq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], <span class="extype" name="scala.collection.GenSeqLike">GenSeqLike</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]], <span class="extype" name="scala.collection.Iterable">Iterable</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], <span class="extype" name="scala.collection.IterableLike">IterableLike</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]], <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.collection.GenIterable">GenIterable</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], <span class="extype" name="scala.collection.GenIterableLike">GenIterableLike</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]], <span class="extype" name="scala.collection.Traversable">Traversable</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], <span class="extype" name="scala.collection.GenTraversable">GenTraversable</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], <span class="extype" name="scala.collection.generic.GenericTraversableTemplate">GenericTraversableTemplate</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.Seq">Seq</span>], <span class="extype" name="scala.collection.TraversableLike">TraversableLike</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]], <span class="extype" name="scala.collection.GenTraversableLike">GenTraversableLike</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]], <span class="extype" name="scala.collection.Parallelizable">Parallelizable</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.parallel.ParSeq">ParSeq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]], <span class="extype" name="scala.collection.TraversableOnce">TraversableOnce</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], <span class="extype" name="scala.collection.GenTraversableOnce">GenTraversableOnce</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], <span class="extype" name="scala.collection.generic.FilterMonadic">FilterMonadic</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]], <span class="extype" name="scala.collection.generic.HasNewBuilder">HasNewBuilder</span>[<a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, Seq[org.apache.spark.sql.types.StructField] @scala.annotation.unchecked.uncheckedVariance], <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="scala.Int">Int</span>, <a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>], (<span class="extype" name="scala.Int">Int</span>) ⇒ <a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="org.apache.spark.sql.types.AbstractDataType">AbstractDataType</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -391,6 +390,28 @@ Example:</p><pre><span class="kw">import</span> org.apache.spark.sql._
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.types.StructType#add" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="add(name:String,dataType:String,nullable:Boolean,comment:String):org.apache.spark.sql.types.StructType"></a>
+      <a id="add(String,String,Boolean,String):StructType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">add</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullable">nullable: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="comment">comment: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.StructType@add(name:String,dataType:String,nullable:Boolean,comment:String):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Creates a new <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> by adding a new field and specifying metadata where the
+dataType is specified as a String.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> by adding a new field and specifying metadata where the
+dataType is specified as a String.</p><pre><span class="kw">val</span> struct = (<span class="kw">new</span> StructType)
+  .add(<span class="lit">"a"</span>, <span class="lit">"int"</span>, <span class="kw">true</span>, <span class="lit">"comment1"</span>)
+  .add(<span class="lit">"b"</span>, <span class="lit">"long"</span>, <span class="kw">false</span>, <span class="lit">"comment2"</span>)
+  .add(<span class="lit">"c"</span>, <span class="lit">"string"</span>, <span class="kw">true</span>, <span class="lit">"comment3"</span>)</pre></div></div>
+    </li><li name="org.apache.spark.sql.types.StructType#add" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="add(name:String,dataType:String,nullable:Boolean,metadata:org.apache.spark.sql.types.Metadata):org.apache.spark.sql.types.StructType"></a>
       <a id="add(String,String,Boolean,Metadata):StructType"></a>
       <h4 class="signature">
@@ -456,6 +477,26 @@ dataType is specified as a String.</p><pre><span class="kw">val</span> struct = 
   .add(<span class="lit">"a"</span>, <span class="lit">"int"</span>)
   .add(<span class="lit">"b"</span>, <span class="lit">"long"</span>)
   .add(<span class="lit">"c"</span>, <span class="lit">"string"</span>)</pre></div></div>
+    </li><li name="org.apache.spark.sql.types.StructType#add" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="add(name:String,dataType:org.apache.spark.sql.types.DataType,nullable:Boolean,comment:String):org.apache.spark.sql.types.StructType"></a>
+      <a id="add(String,DataType,Boolean,String):StructType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">add</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="nullable">nullable: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="comment">comment: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.StructType@add(name:String,dataType:org.apache.spark.sql.types.DataType,nullable:Boolean,comment:String):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Creates a new <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> by adding a new field and specifying metadata.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <a href="" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> by adding a new field and specifying metadata.</p><pre><span class="kw">val</span> struct = (<span class="kw">new</span> StructType)
+  .add(<span class="lit">"a"</span>, IntegerType, <span class="kw">true</span>, <span class="lit">"comment1"</span>)
+  .add(<span class="lit">"b"</span>, LongType, <span class="kw">false</span>, <span class="lit">"comment2"</span>)
+  .add(<span class="lit">"c"</span>, StringType, <span class="kw">true</span>, <span class="lit">"comment3"</span>)</pre></div></div>
     </li><li name="org.apache.spark.sql.types.StructType#add" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="add(name:String,dataType:org.apache.spark.sql.types.DataType,nullable:Boolean,metadata:org.apache.spark.sql.types.Metadata):org.apache.spark.sql.types.StructType"></a>
       <a id="add(String,DataType,Boolean,Metadata):StructType"></a>
@@ -2600,7 +2641,7 @@ original order of fields.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[this] </dd><dt>Definition Classes</dt><dd>TraversableOnce</dd></dl></div>
     </li><li name="scala.PartialFunction#runWith" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="runWith[U](action:B=&gt;U):A=&gt;Boolean"></a>
+      <a id="runWith[U&lt;:&lt;?&gt;](action:&lt;?&gt;):A=&gt;Boolean"></a>
       <a id="runWith[U]((StructField)⇒U):(Int)⇒Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">

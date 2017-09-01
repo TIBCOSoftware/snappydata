@@ -51,10 +51,10 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::</p><p>Latent Dirichlet Allocation (LDA), a topic model designed for text documents.</p><p>Terminology:</p><ul><li>&quot;term&quot; = &quot;word&quot;: an element of the vocabulary</li><li>&quot;token&quot;: instance of a term appearing in a document</li><li>&quot;topic&quot;: multinomial distribution over terms representing some concept</li><li>&quot;document&quot;: one piece of text, corresponding to one row in the input data</li></ul><p>Original LDA paper (journal version):
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Latent Dirichlet Allocation (LDA), a topic model designed for text documents.</p><p>Terminology:</p><ul><li>&quot;term&quot; = &quot;word&quot;: an element of the vocabulary</li><li>&quot;token&quot;: instance of a term appearing in a document</li><li>&quot;topic&quot;: multinomial distribution over terms representing some concept</li><li>&quot;document&quot;: one piece of text, corresponding to one row in the input data</li></ul><p>Original LDA paper (journal version):
  Blei, Ng, and Jordan.  &quot;Latent Dirichlet Allocation.&quot;  JMLR, 2003.</p><p>Input data (featuresCol):
  LDA is given a collection of documents as input data, via the featuresCol parameter.
- Each document is specified as a <span class="extype" name="Vector">Vector</span> of length vocabSize, where each entry is the
+ Each document is specified as a <code>Vector</code> of length vocabSize, where each entry is the
  count for the corresponding term (word) in the document.  Feature transformers such as
  <a href="../feature/Tokenizer.html" class="extype" name="org.apache.spark.ml.feature.Tokenizer">org.apache.spark.ml.feature.Tokenizer</a> and <a href="../feature/CountVectorizer.html" class="extype" name="org.apache.spark.ml.feature.CountVectorizer">org.apache.spark.ml.feature.CountVectorizer</a>
  can be useful for converting text to word count vectors.
@@ -64,10 +64,8 @@
       <span class="symbol">&quot;1.6.0&quot;</span>
     </span>)</span>
               
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Latent_Dirichlet_allocation" target="_blank">Latent Dirichlet allocation
-      (Wikipedia)</a></p></span></dd></dl><div class="toggleContainer block">
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Latent_Dirichlet_allocation">
+Latent Dirichlet allocation (Wikipedia)</a></p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../util/DefaultParamsWritable.html" class="extype" name="org.apache.spark.ml.util.DefaultParamsWritable">DefaultParamsWritable</a>, <a href="../util/MLWritable.html" class="extype" name="org.apache.spark.ml.util.MLWritable">MLWritable</a>, <span class="extype" name="org.apache.spark.ml.clustering.LDAParams">LDAParams</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasCheckpointInterval">HasCheckpointInterval</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasSeed">HasSeed</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasMaxIter">HasMaxIter</span>, <span class="extype" name="org.apache.spark.ml.param.shared.HasFeaturesCol">HasFeaturesCol</span>, <a href="../Estimator.html" class="extype" name="org.apache.spark.ml.Estimator">Estimator</a>[<a href="LDAModel.html" class="extype" name="org.apache.spark.ml.clustering.LDAModel">LDAModel</a>], <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../util/Identifiable.html" class="extype" name="org.apache.spark.ml.util.Identifiable">Identifiable</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -396,9 +394,9 @@ distributions over topics (&quot;theta&quot;).</p><p>This is the parameter to a 
 singleton vector [alpha], then alpha is replicated to a vector of length k in fitting.
 Otherwise, the <a href="#docConcentration:org.apache.spark.ml.param.DoubleArrayParam" class="extmbr" name="org.apache.spark.ml.clustering.LDA#docConcentration">docConcentration</a> vector must be length k.
 (default = automatic)</p><p>Optimizer-specific parameter settings:</p><ul><li>EM<ul><li>Currently only supports symmetric distributions, so all values in the vector should be
-      the same.</li><li>Values should be &gt; 1.0</li><li>default = uniformly (50 / k) + 1, where 50/k is common in LDA libraries and +1 follows
-      from Asuncion et al. (2009), who recommend a +1 adjustment for EM.</li></ul></li><li>Online<ul><li>Values should be &gt;= 0</li><li>default = uniformly (1.0 / k), following the implementation from
-      <a href="https://github.com/Blei-Lab/onlineldavb" target="_blank">https://github.com/Blei-Lab/onlineldavb</a>.
+      the same.</li><li>Values should be greater than 1.0</li><li>default = uniformly (50 / k) + 1, where 50/k is common in LDA libraries and +1 follows
+      from Asuncion et al. (2009), who recommend a +1 adjustment for EM.</li></ul></li><li>Online<ul><li>Values should be greater than or equal to 0</li><li>default = uniformly (1.0 / k), following the implementation from
+      <a href="https://github.com/Blei-Lab/onlineldavb">here</a>.
 </li></ul></li></ul></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>LDAParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1296,8 +1294,8 @@ if neither is set.
       <p class="shortcomment cmt">For EM optimizer only: <a href="#optimizer:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.clustering.LDA#optimizer">optimizer</a> = &quot;em&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>For EM optimizer only: <a href="#optimizer:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.clustering.LDA#optimizer">optimizer</a> = &quot;em&quot;.</p><p>If using checkpointing, this indicates whether to keep the last
 checkpoint. If false, then the checkpoint will be deleted. Deleting the checkpoint can
 cause failures if a data partition is lost, so set this bit with care.
-Note that checkpoints will be cleaned up via reference counting, regardless.</p><p>See <a href="DistributedLDAModel.html#getCheckpointFiles:Array[String]" class="extmbr" name="org.apache.spark.ml.clustering.DistributedLDAModel#getCheckpointFiles">DistributedLDAModel.getCheckpointFiles</a> for getting remaining checkpoints and
-<a href="DistributedLDAModel.html#deleteCheckpointFiles():Unit" class="extmbr" name="org.apache.spark.ml.clustering.DistributedLDAModel#deleteCheckpointFiles">DistributedLDAModel.deleteCheckpointFiles</a> for removing remaining checkpoints.</p><p>Default: true
+Note that checkpoints will be cleaned up via reference counting, regardless.</p><p>See <code>DistributedLDAModel.getCheckpointFiles</code> for getting remaining checkpoints and
+<code>DistributedLDAModel.deleteCheckpointFiles</code> for removing remaining checkpoints.</p><p>Default: true
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>LDAParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1678,10 +1676,10 @@ Default: false
 Currently supported (case-insensitive):</p><ul><li>&quot;online&quot;: Online Variational Bayes (default)</li><li>&quot;em&quot;: Expectation-Maximization</li></ul><p>For details, see the following papers:</p><ul><li>Online LDA:
     Hoffman, Blei and Bach.  &quot;Online Learning for Latent Dirichlet Allocation.&quot;
     Neural Information Processing Systems, 2010.
-    <a href="http://www.cs.columbia.edu/~blei/papers/HoffmanBleiBach2010b.pdf" target="_blank">http://www.cs.columbia.edu/~blei/papers/HoffmanBleiBach2010b.pdf</a></li><li>EM:
+    See <a href="http://www.cs.columbia.edu/~blei/papers/HoffmanBleiBach2010b.pdf">here</a></li><li>EM:
     Asuncion et al.  &quot;On Smoothing and Inference for Topic Models.&quot;
     Uncertainty in Artificial Intelligence, 2009.
-    <a href="http://arxiv.org/pdf/1205.2662.pdf" target="_blank">http://arxiv.org/pdf/1205.2662.pdf</a>
+    See <a href="http://arxiv.org/pdf/1205.2662.pdf">here</a>
 </li></ul></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>LDAParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1706,9 +1704,9 @@ Currently supported (case-insensitive):</p><ul><li>&quot;online&quot;: Online Va
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.util.MLWritable#save" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="save(path:String):Unit"></a>
       <a id="save(String):Unit"></a>
@@ -1934,7 +1932,7 @@ this variable gets initialized before other params.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The features for LDA should be a <span class="extype" name="Vector">Vector</span> representing the word counts in a document.</p><div class="fullcomment"><div class="comment cmt"><p>The features for LDA should be a <span class="extype" name="Vector">Vector</span> representing the word counts in a document.
+      <p class="shortcomment cmt">The features for LDA should be a <code>Vector</code> representing the word counts in a document.</p><div class="fullcomment"><div class="comment cmt"><p>The features for LDA should be a <code>Vector</code> representing the word counts in a document.
 The vector should be of length vocabSize, with counts for each term (word).
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -2213,9 +2211,9 @@ The vector should be of length vocabSize, with counts for each term (word).
       </a>
     </span>
       <p class="shortcomment cmt">For Online optimizer only: <a href="#optimizer:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.clustering.LDA#optimizer">optimizer</a> = &quot;online&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>For Online optimizer only: <a href="#optimizer:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.clustering.LDA#optimizer">optimizer</a> = &quot;online&quot;.</p><p>Fraction of the corpus to be sampled and used in each iteration of mini-batch gradient descent,
-in range (0, 1].</p><p>Note that this should be adjusted in synch with <a href="#maxIter:org.apache.spark.ml.param.IntParam" class="extmbr" name="org.apache.spark.ml.clustering.LDA#maxIter">LDA.maxIter</a>
+in range (0, 1].</p><p>Note that this should be adjusted in synch with <code>LDA.maxIter</code>
 so the entire corpus is used.  Specifically, set both so that
-maxIterations * miniBatchFraction &gt;= 1.</p><p>Note: This is the same as the <code>miniBatchFraction</code> parameter in
+maxIterations * miniBatchFraction greater than or equal to 1.</p><p>Note: This is the same as the <code>miniBatchFraction</code> parameter in
       <a href="../../mllib/clustering/OnlineLDAOptimizer.html" class="extype" name="org.apache.spark.mllib.clustering.OnlineLDAOptimizer">org.apache.spark.mllib.clustering.OnlineLDAOptimizer</a>.</p><p>Default: 0.05, i.e., 5% of total documents.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>LDAParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -2301,9 +2299,9 @@ maxIterations * miniBatchFraction &gt;= 1.</p><p>Note: This is the same as the <
 distributions over terms.</p><div class="fullcomment"><div class="comment cmt"><p>Concentration parameter (commonly named &quot;beta&quot; or &quot;eta&quot;) for the prior placed on topics'
 distributions over terms.</p><p>This is the parameter to a symmetric Dirichlet distribution.</p><p>Note: The topics' distributions over terms are called &quot;beta&quot; in the original LDA paper
 by Blei et al., but are called &quot;phi&quot; in many later papers such as Asuncion et al., 2009.</p><p>If not set by the user, then topicConcentration is set automatically.
- (default = automatic)</p><p>Optimizer-specific parameter settings:</p><ul><li>EM<ul><li>Value should be &gt; 1.0</li><li>default = 0.1 + 1, where 0.1 gives a small amount of smoothing and +1 follows
-      Asuncion et al. (2009), who recommend a +1 adjustment for EM.</li></ul></li><li>Online<ul><li>Value should be &gt;= 0</li><li>default = (1.0 / k), following the implementation from
-      <a href="https://github.com/Blei-Lab/onlineldavb" target="_blank">https://github.com/Blei-Lab/onlineldavb</a>.
+ (default = automatic)</p><p>Optimizer-specific parameter settings:</p><ul><li>EM<ul><li>Value should be greater than 1.0</li><li>default = 0.1 + 1, where 0.1 gives a small amount of smoothing and +1 follows
+      Asuncion et al. (2009), who recommend a +1 adjustment for EM.</li></ul></li><li>Online<ul><li>Value should be greater than or equal to 0</li><li>default = (1.0 / k), following the implementation from
+      <a href="https://github.com/Blei-Lab/onlineldavb">here</a>.
 </li></ul></li></ul></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>LDAParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -2355,7 +2353,9 @@ for each document.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.clustering.LDA">LDA</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -2520,34 +2520,7 @@ be assumed valid until proven otherwise.
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.param.Params#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.0) Will be removed in 2.1.0. Checks should be merged into transformSchema.">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.clustering.LDA@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Will be removed in 2.1.0. Checks should be merged into transformSchema.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">

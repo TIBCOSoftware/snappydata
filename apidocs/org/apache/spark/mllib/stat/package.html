@@ -118,10 +118,13 @@ MultivariateOnlineSummarizer implements <a href="MultivariateStatisticalSummary.
 variance, minimum, maximum, counts, and nonzero counts for instances in sparse or dense vector
 format in an online fashion.</p><p>Two MultivariateOnlineSummarizer can be merged together to have a statistical summary of
 the corresponding joint dataset.</p><p>A numerically stable algorithm is implemented to compute the mean and variance of instances:
-Reference: <a href="http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance" target="_blank">variance-wiki</a>
+Reference: <a href="http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">
+variance-wiki</a>
 Zero elements (including explicit zero values) are skipped when calling add(),
 to have time complexity O(nnz) instead of O(n) for each column.</p><p>For weighted instances, the unbiased estimation of variance is defined by the reliability
-weights: <a href="https://en.wikipedia.org/wiki/Weighted_arithmetic_mean#Reliability_weights" target="_blank">https://en.wikipedia.org/wiki/Weighted_arithmetic_mean#Reliability_weights</a>.
+weights:
+see <a href="https://en.wikipedia.org/wiki/Weighted_arithmetic_mean#Reliability_weights">
+Reliability weights (Wikipedia)</a>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       

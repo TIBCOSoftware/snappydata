@@ -47,7 +47,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SparkContext</span><span class="result"> extends <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="org.apache.spark.ExecutorAllocationClient">ExecutorAllocationClient</span></span>
+        <span class="name">SparkContext</span><span class="result"> extends <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4>
       
@@ -56,7 +56,7 @@ cluster, and can be used to create RDDs, accumulators and broadcast variables on
 creating a new one.  This limitation may eventually be removed; see SPARK-2243 for more details.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.ExecutorAllocationClient">ExecutorAllocationClient</span>, <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -74,7 +74,7 @@ creating a new one.  This limitation may eventually be removed; see SPARK-2243 f
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.SparkContext"><span>SparkContext</span></li><li class="in" name="org.apache.spark.ExecutorAllocationClient"><span>ExecutorAllocationClient</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.SparkContext"><span>SparkContext</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -432,10 +432,10 @@ hdfs:<span class="cmt">//a-hdfs-path/part-nnnnn</span></pre><p>Do
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Load data from a flat binary file, assuming the length of each record is constant.</p><div class="fullcomment"><div class="comment cmt"><p>Load data from a flat binary file, assuming the length of each record is constant.</p><p><b>Note:</b> We ensure that the byte array for each record in the resulting RDD
-has the provided record length.
+      <p class="shortcomment cmt">Load data from a flat binary file, assuming the length of each record is constant.</p><div class="fullcomment"><div class="comment cmt"><p>Load data from a flat binary file, assuming the length of each record is constant.
 </p></div><dl class="paramcmts block"><dt class="param">path</dt><dd class="cmt"><p>Directory to the input data files, the path can be comma separated paths as the
-            list of inputs.</p></dd><dt class="param">recordLength</dt><dd class="cmt"><p>The length at which to split the records</p></dd><dt class="param">conf</dt><dd class="cmt"><p>Configuration for setting up the dataset.</p></dd><dt>returns</dt><dd class="cmt"><p>An RDD of data with values, represented as byte arrays</p></dd></dl></div>
+            list of inputs.</p></dd><dt class="param">recordLength</dt><dd class="cmt"><p>The length at which to split the records</p></dd><dt class="param">conf</dt><dd class="cmt"><p>Configuration for setting up the dataset.</p></dd><dt>returns</dt><dd class="cmt"><p>An RDD of data with values, represented as byte arrays</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>We ensure that the byte array for each record in the resulting RDD
+has the provided record length.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#broadcast" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="broadcast[T](value:T)(implicitevidence$11:scala.reflect.ClassTag[T]):org.apache.spark.broadcast.Broadcast[T]"></a>
       <a id="broadcast[T](T)(ClassTag[T]):Broadcast[T]"></a>
@@ -474,6 +474,24 @@ The variable will be sent to each cluster only once.
       </a>
     </span>
       <p class="shortcomment cmt">Cancel all jobs that have been scheduled or are running.</p>
+    </li><li name="org.apache.spark.SparkContext#cancelJob" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cancelJob(jobId:Int):Unit"></a>
+      <a id="cancelJob(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cancelJob</span><span class="params">(<span name="jobId">jobId: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.SparkContext@cancelJob(jobId:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Cancel a given job if it's scheduled or running.</p><div class="fullcomment"><div class="comment cmt"><p>Cancel a given job if it's scheduled or running.
+</p></div><dl class="paramcmts block"><dt class="param">jobId</dt><dd class="cmt"><p>the job ID to cancel</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Throws <code>InterruptedException</code> if the cancel message cannot be sent</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#cancelJobGroup" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="cancelJobGroup(groupId:String):Unit"></a>
       <a id="cancelJobGroup(String):Unit"></a>
@@ -490,9 +508,27 @@ The variable will be sent to each cluster only once.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Cancel active jobs for the specified group.</p><div class="fullcomment"><div class="comment cmt"><p>Cancel active jobs for the specified group. See <a href="#setJobGroup(groupId:String,description:String,interruptOnCancel:Boolean):Unit" class="extmbr" name="org.apache.spark.SparkContext#setJobGroup">org.apache.spark.SparkContext.setJobGroup</a>
+      <p class="shortcomment cmt">Cancel active jobs for the specified group.</p><div class="fullcomment"><div class="comment cmt"><p>Cancel active jobs for the specified group. See <code>org.apache.spark.SparkContext.setJobGroup</code>
 for more information.
 </p></div></div>
+    </li><li name="org.apache.spark.SparkContext#cancelStage" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cancelStage(stageId:Int):Unit"></a>
+      <a id="cancelStage(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cancelStage</span><span class="params">(<span name="stageId">stageId: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.SparkContext@cancelStage(stageId:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Cancel a given stage and all jobs associated with it.</p><div class="fullcomment"><div class="comment cmt"><p>Cancel a given stage and all jobs associated with it.
+</p></div><dl class="paramcmts block"><dt class="param">stageId</dt><dd class="cmt"><p>the stage ID to cancel</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Throws <code>InterruptedException</code> if the cancel message cannot be sent</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#checkpointFile" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="checkpointFile[T](path:String)(implicitevidence$5:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]"></a>
       <a id="checkpointFile[T](String)(ClassTag[T]):RDD[T]"></a>
@@ -584,7 +620,7 @@ of actions and RDDs.</p>
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Create and register a <span class="extype" name="CollectionAccumulator">CollectionAccumulator</span>, which starts with empty list and accumulates
+      <p class="shortcomment cmt">Create and register a <code>CollectionAccumulator</code>, which starts with empty list and accumulates
 inputs by adding them into the list.</p>
     </li><li name="org.apache.spark.SparkContext#collectionAccumulator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="collectionAccumulator[T]:org.apache.spark.util.CollectionAccumulator[T]"></a>
@@ -602,7 +638,7 @@ inputs by adding them into the list.</p>
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Create and register a <span class="extype" name="CollectionAccumulator">CollectionAccumulator</span>, which starts with empty list and accumulates
+      <p class="shortcomment cmt">Create and register a <code>CollectionAccumulator</code>, which starts with empty list and accumulates
 inputs by adding them into the list.</p>
     </li><li name="org.apache.spark.SparkContext#defaultMinPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="defaultMinPartitions:Int"></a>
@@ -920,7 +956,7 @@ Return information about blocks stored in all of the slaves
       </a>
     </span>
       <p class="shortcomment cmt">Get a local property set in this thread, or null if it is missing.</p><div class="fullcomment"><div class="comment cmt"><p>Get a local property set in this thread, or null if it is missing. See
-<a href="#setLocalProperty(key:String,value:String):Unit" class="extmbr" name="org.apache.spark.SparkContext#setLocalProperty">org.apache.spark.SparkContext.setLocalProperty</a>.
+<code>org.apache.spark.SparkContext.setLocalProperty</code>.
 </p></div></div>
     </li><li name="org.apache.spark.SparkContext#getPersistentRDDs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getPersistentRDDs:scala.collection.Map[Int,org.apache.spark.rdd.RDD[_]]"></a>
@@ -939,8 +975,7 @@ Return information about blocks stored in all of the slaves
       </a>
     </span>
       <p class="shortcomment cmt">Returns an immutable map of RDDs that have marked themselves as persistent via cache() call.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an immutable map of RDDs that have marked themselves as persistent via cache() call.
-Note that this does not necessarily mean the caching or computation was successful.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This does not necessarily mean the caching or computation was successful.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#getPoolForName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getPoolForName(pool:String):Option[org.apache.spark.scheduler.Schedulable]"></a>
       <a id="getPoolForName(String):Option[Schedulable]"></a>
@@ -1024,9 +1059,9 @@ they take, etc.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A default Hadoop Configuration for the Hadoop code (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>A default Hadoop Configuration for the Hadoop code (e.g. file systems) that we reuse.</p><p><b>Note:</b> As it will be reused in all Hadoop RDDs, it's better not to modify it unless you
-plan to set some global configurations for all Hadoop RDDs.
-</p></div></div>
+      <p class="shortcomment cmt">A default Hadoop Configuration for the Hadoop code (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>A default Hadoop Configuration for the Hadoop code (e.g. file systems) that we reuse.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>As it will be reused in all Hadoop RDDs, it's better not to modify it unless you
+plan to set some global configurations for all Hadoop RDDs.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#hadoopFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hadoopFile[K,V,F&lt;:org.apache.hadoop.mapred.InputFormat[K,V]](path:String)(implicitkm:scala.reflect.ClassTag[K],implicitvm:scala.reflect.ClassTag[V],implicitfm:scala.reflect.ClassTag[F]):org.apache.spark.rdd.RDD[(K,V)]"></a>
       <a id="hadoopFile[K,V,F&lt;:InputFormat[K,V]](String)(ClassTag[K],ClassTag[V],ClassTag[F]):RDD[(K,V)]"></a>
@@ -1046,12 +1081,11 @@ plan to set some global configurations for all Hadoop RDDs.
       <p class="shortcomment cmt">Smarter version of hadoopFile() that uses class tags to figure out the classes of keys,
 values and the InputFormat so that users don't need to pass them directly.</p><div class="fullcomment"><div class="comment cmt"><p>Smarter version of hadoopFile() that uses class tags to figure out the classes of keys,
 values and the InputFormat so that users don't need to pass them directly. Instead, callers
-can just write, for example,</p><pre><span class="kw">val</span> file = sparkContext.hadoopFile[LongWritable, Text, TextInputFormat](path)</pre><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+can just write, for example,</p><pre><span class="kw">val</span> file = sparkContext.hadoopFile[LongWritable, Text, TextInputFormat](path)</pre></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.
-</p></div></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#hadoopFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hadoopFile[K,V,F&lt;:org.apache.hadoop.mapred.InputFormat[K,V]](path:String,minPartitions:Int)(implicitkm:scala.reflect.ClassTag[K],implicitvm:scala.reflect.ClassTag[V],implicitfm:scala.reflect.ClassTag[F]):org.apache.spark.rdd.RDD[(K,V)]"></a>
       <a id="hadoopFile[K,V,F&lt;:InputFormat[K,V]](String,Int)(ClassTag[K],ClassTag[V],ClassTag[F]):RDD[(K,V)]"></a>
@@ -1071,12 +1105,11 @@ copy them using a <code>map</code> function.
       <p class="shortcomment cmt">Smarter version of hadoopFile() that uses class tags to figure out the classes of keys,
 values and the InputFormat so that users don't need to pass them directly.</p><div class="fullcomment"><div class="comment cmt"><p>Smarter version of hadoopFile() that uses class tags to figure out the classes of keys,
 values and the InputFormat so that users don't need to pass them directly. Instead, callers
-can just write, for example,</p><pre><span class="kw">val</span> file = sparkContext.hadoopFile[LongWritable, Text, TextInputFormat](path, minPartitions)</pre><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+can just write, for example,</p><pre><span class="kw">val</span> file = sparkContext.hadoopFile[LongWritable, Text, TextInputFormat](path, minPartitions)</pre></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.
-</p></div></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#hadoopFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hadoopFile[K,V](path:String,inputFormatClass:Class[_&lt;:org.apache.hadoop.mapred.InputFormat[K,V]],keyClass:Class[K],valueClass:Class[V],minPartitions:Int):org.apache.spark.rdd.RDD[(K,V)]"></a>
       <a id="hadoopFile[K,V](String,Class[_&lt;:InputFormat[K,V]],Class[K],Class[V],Int):RDD[(K,V)]"></a>
@@ -1093,12 +1126,13 @@ copy them using a <code>map</code> function.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get an RDD for a Hadoop file with an arbitrary InputFormat</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop file with an arbitrary InputFormat</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+      <p class="shortcomment cmt">Get an RDD for a Hadoop file with an arbitrary InputFormat
+</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop file with an arbitrary InputFormat
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.
-</p></div></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#hadoopRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hadoopRDD[K,V](conf:org.apache.hadoop.mapred.JobConf,inputFormatClass:Class[_&lt;:org.apache.hadoop.mapred.InputFormat[K,V]],keyClass:Class[K],valueClass:Class[V],minPartitions:Int):org.apache.spark.rdd.RDD[(K,V)]"></a>
       <a id="hadoopRDD[K,V](JobConf,Class[_&lt;:InputFormat[K,V]],Class[K],Class[V],Int):RDD[(K,V)]"></a>
@@ -1122,12 +1156,11 @@ using the older MapReduce API (<code>org.apache.hadoop.mapred</code>).
 </p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>JobConf for setting up the dataset. Note: This will be put into a Broadcast.
             Therefore if you plan to reuse this conf to create multiple RDDs, you need to make
             sure you won't modify the conf. A safe approach is always creating a new conf for
-            a new RDD.</p></dd><dt class="param">inputFormatClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">keyClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">valueClass</dt><dd class="cmt"><p>Class of the values</p></dd><dt class="param">minPartitions</dt><dd class="cmt"><p>Minimum number of Hadoop Splits to generate.
-<b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+            a new RDD.</p></dd><dt class="param">inputFormatClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">keyClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">valueClass</dt><dd class="cmt"><p>Class of the values</p></dd><dt class="param">minPartitions</dt><dd class="cmt"><p>Minimum number of Hadoop Splits to generate.</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.</p></dd></dl></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1299,14 +1332,14 @@ copy them using a <code>map</code> function.</p></dd></dl></div>
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
 Request that the cluster manager kill the specified executor.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Request that the cluster manager kill the specified executor.</p><p>Note: This is an indication to the cluster manager that the application wishes to adjust
-its resource usage downwards. If the application wishes to replace the executor it kills
-through this method with a new one, it should follow up explicitly with a call to
-{{SparkContext#requestExecutors}}.
-</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>whether the request is received.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.SparkContext">SparkContext</a> → ExecutorAllocationClient</dd><dt>Annotations</dt><dd>
+Request that the cluster manager kill the specified executor.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>whether the request is received.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This is an indication to the cluster manager that the application wishes to adjust
+its resource usage downwards. If the application wishes to replace the executor it kills
+through this method with a new one, it should follow up explicitly with a call to
+{{SparkContext#requestExecutors}}.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#killExecutors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="killExecutors(executorIds:Seq[String]):Boolean"></a>
       <a id="killExecutors(Seq[String]):Boolean"></a>
@@ -1325,14 +1358,14 @@ through this method with a new one, it should follow up explicitly with a call t
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
 Request that the cluster manager kill the specified executors.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Request that the cluster manager kill the specified executors.</p><p>Note: This is an indication to the cluster manager that the application wishes to adjust
-its resource usage downwards. If the application wishes to replace the executors it kills
-through this method with new ones, it should follow up explicitly with a call to
-{{SparkContext#requestExecutors}}.
-</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>whether the request is received.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.SparkContext">SparkContext</a> → ExecutorAllocationClient</dd><dt>Annotations</dt><dd>
+Request that the cluster manager kill the specified executors.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>whether the request is received.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This is an indication to the cluster manager that the application wishes to adjust
+its resource usage downwards. If the application wishes to replace the executors it kills
+through this method with new ones, it should follow up explicitly with a call to
+{{SparkContext#requestExecutors}}.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#listFiles" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="listFiles():Seq[String]"></a>
       <a id="listFiles():Seq[String]"></a>
@@ -1713,12 +1746,12 @@ Create a new partition for each collection item.
     </span>
       <p class="shortcomment cmt">Get an RDD for a given Hadoop file with an arbitrary new API InputFormat
 and extra configuration options to pass to the input format.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a given Hadoop file with an arbitrary new API InputFormat
-and extra configuration options to pass to the input format.</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+and extra configuration options to pass to the input format.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.
-</p></div></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#newAPIHadoopFile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="newAPIHadoopFile[K,V,F&lt;:org.apache.hadoop.mapreduce.InputFormat[K,V]](path:String)(implicitkm:scala.reflect.ClassTag[K],implicitvm:scala.reflect.ClassTag[V],implicitfm:scala.reflect.ClassTag[F]):org.apache.spark.rdd.RDD[(K,V)]"></a>
       <a id="newAPIHadoopFile[K,V,F&lt;:InputFormat[K,V]](String)(ClassTag[K],ClassTag[V],ClassTag[F]):RDD[(K,V)]"></a>
@@ -1758,12 +1791,11 @@ and extra configuration options to pass to the input format.
 </p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>Configuration for setting up the dataset. Note: This will be put into a Broadcast.
             Therefore if you plan to reuse this conf to create multiple RDDs, you need to make
             sure you won't modify the conf. A safe approach is always creating a new conf for
-            a new RDD.</p></dd><dt class="param">fClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">kClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">vClass</dt><dd class="cmt"><p>Class of the values
-<b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+            a new RDD.</p></dd><dt class="param">fClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">kClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">vClass</dt><dd class="cmt"><p>Class of the values</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.</p></dd></dl></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -1879,9 +1911,8 @@ modified collection. Pass a copy of the argument to avoid this.</p></span></dd><
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Register the given accumulator with given name.</p><div class="fullcomment"><div class="comment cmt"><p>Register the given accumulator with given name.  Note that accumulators must be registered
-before use, or it will throw exception.
-</p></div></div>
+      <p class="shortcomment cmt">Register the given accumulator with given name.</p><div class="fullcomment"><div class="comment cmt"><p>Register the given accumulator with given name.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Accumulators must be registered before use, or it will throw exception.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#register" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="register(acc:org.apache.spark.util.AccumulatorV2[_,_]):Unit"></a>
       <a id="register(AccumulatorV2[_,_]):Unit"></a>
@@ -1898,9 +1929,8 @@ before use, or it will throw exception.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Register the given accumulator.</p><div class="fullcomment"><div class="comment cmt"><p>Register the given accumulator.  Note that accumulators must be registered before use, or it
-will throw exception.
-</p></div></div>
+      <p class="shortcomment cmt">Register the given accumulator.</p><div class="fullcomment"><div class="comment cmt"><p>Register the given accumulator.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Accumulators must be registered before use, or it will throw exception.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#removeAddedJar" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="removeAddedJar(name:String):Unit"></a>
       <a id="removeAddedJar(String):Unit"></a>
@@ -1936,7 +1966,7 @@ will throw exception.
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
 Request an additional number of executors from the cluster manager.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Request an additional number of executors from the cluster manager.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>whether the request is received.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.SparkContext">SparkContext</a> → ExecutorAllocationClient</dd><dt>Annotations</dt><dd>
+Request an additional number of executors from the cluster manager.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>whether the request is received.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
@@ -1963,7 +1993,7 @@ to help it make decisions.</p></div><dl class="paramcmts block"><dt class="param
                     we'd want to be allocated.</p></dd><dt class="param">localityAwareTasks</dt><dd class="cmt"><p>The number of tasks in all active stages that have a locality
                           preferences. This includes running, pending, and completed tasks.</p></dd><dt class="param">hostToLocalTaskCount</dt><dd class="cmt"><p>A map of hosts to the number of tasks from all active stages
                             that would like to like to run on that host.
-                            This includes running, pending, and completed tasks.</p></dd><dt>returns</dt><dd class="cmt"><p>whether the request is acknowledged by the cluster manager.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.SparkContext">SparkContext</a> → ExecutorAllocationClient</dd><dt>Annotations</dt><dd>
+                            This includes running, pending, and completed tasks.</p></dd><dt>returns</dt><dd class="cmt"><p>whether the request is acknowledged by the cluster manager.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
@@ -2138,12 +2168,12 @@ IntWritable). The most natural thing would've been to have implicit objects for 
 converters, but then we couldn't have an object for every subclass of Writable (you can't
 have a parameterized singleton object). We use functions instead to create a new converter
 for the appropriate type. In addition, we pass the converter a ClassTag of its type to
-allow it to figure out the Writable class to use in the subclass case.</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+allow it to figure out the Writable class to use in the subclass case.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.
-</p></div></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#sequenceFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sequenceFile[K,V](path:String,keyClass:Class[K],valueClass:Class[V]):org.apache.spark.rdd.RDD[(K,V)]"></a>
       <a id="sequenceFile[K,V](String,Class[K],Class[V]):RDD[(K,V)]"></a>
@@ -2160,12 +2190,12 @@ copy them using a <code>map</code> function.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get an RDD for a Hadoop SequenceFile with given key and value types.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop SequenceFile with given key and value types.</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+      <p class="shortcomment cmt">Get an RDD for a Hadoop SequenceFile with given key and value types.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop SequenceFile with given key and value types.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.
-</p></div></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#sequenceFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sequenceFile[K,V](path:String,keyClass:Class[K],valueClass:Class[V],minPartitions:Int):org.apache.spark.rdd.RDD[(K,V)]"></a>
       <a id="sequenceFile[K,V](String,Class[K],Class[V],Int):RDD[(K,V)]"></a>
@@ -2182,12 +2212,12 @@ copy them using a <code>map</code> function.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get an RDD for a Hadoop SequenceFile with given key and value types.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop SequenceFile with given key and value types.</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+      <p class="shortcomment cmt">Get an RDD for a Hadoop SequenceFile with given key and value types.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop SequenceFile with given key and value types.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD or directly passing it to an aggregation or shuffle
 operation will create many references to the same object.
 If you plan to directly cache, sort, or aggregate Hadoop writable objects, you should first
-copy them using a <code>map</code> function.
-</p></div></div>
+copy them using a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.SparkContext#setCallSite" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="setCallSite(shortCallSite:String):Unit"></a>
       <a id="setCallSite(String):Unit"></a>
@@ -2262,7 +2292,7 @@ be a HDFS path if running on a cluster.
 different value or cleared.</p><div class="fullcomment"><div class="comment cmt"><p>Assigns a group ID to all the jobs started by this thread until the group ID is set to a
 different value or cleared.</p><p>Often, a unit of execution in an application consists of multiple Spark actions or jobs.
 Application programmers can use this method to group all those jobs together and give a
-group description. Once set, the Spark web UI will associate such jobs with this group.</p><p>The application can also use <a href="#cancelJobGroup(groupId:String):Unit" class="extmbr" name="org.apache.spark.SparkContext#cancelJobGroup">org.apache.spark.SparkContext.cancelJobGroup</a> to cancel all
+group description. Once set, the Spark web UI will associate such jobs with this group.</p><p>The application can also use <code>org.apache.spark.SparkContext.cancelJobGroup</code> to cancel all
 running jobs in this group. For example,</p><pre><span class="cmt">// In the main thread:</span>
 sc.setJobGroup(<span class="lit">"some_job_to_cancel"</span>, <span class="lit">"some job description"</span>)
 sc.parallelize(<span class="num">1</span> to <span class="num">10000</span>, <span class="num">2</span>).map { i <span class="kw">=&gt;</span> Thread.sleep(<span class="num">10</span>); i }.count()
@@ -2383,7 +2413,7 @@ Valid log levels include: ALL, DEBUG, ERROR, FATAL, INFO, OFF, TRACE, WARN</p></
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Shut down the SparkContext.</p>
     </li><li name="org.apache.spark.SparkContext#submitJob" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="submitJob[T,U,R](rdd:org.apache.spark.rdd.RDD[T],processPartition:Iterator[T]=&gt;U,partitions:Seq[Int],resultHandler:(Int,U)=&gt;Unit,resultFunc:=&gt;R):org.apache.spark.SimpleFutureAction[R]"></a>
       <a id="submitJob[T,U,R](RDD[T],(Iterator[T])⇒U,Seq[Int],(Int,U)⇒Unit,⇒R):SimpleFutureAction[R]"></a>
@@ -2744,9 +2774,7 @@ values to using the <code>+=</code> method. Only the driver can access the accum
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.ExecutorAllocationClient">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.ExecutorAllocationClient">ExecutorAllocationClient</span></h3>
-            </div><div class="parent" name="org.apache.spark.Logging">
+        <div class="parent" name="org.apache.spark.Logging">
               <h3>Inherited from <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>

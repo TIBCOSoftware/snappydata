@@ -66,7 +66,24 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.examples.sql.streaming.JavaStructuredNetworkWordCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.examples.sql.streaming.JavaStructuredKafkaWordCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JavaStructuredKafkaWordCountextendsObject"></a>
+      <a id="JavaStructuredKafkaWordCount:JavaStructuredKafkaWordCount"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JavaStructuredKafkaWordCount.html"><span class="name">JavaStructuredKafkaWordCount</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.sql.streaming.package@JavaStructuredKafkaWordCountextendsObject" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.examples.sql.streaming.JavaStructuredNetworkWordCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="JavaStructuredNetworkWordCountextendsObject"></a>
       <a id="JavaStructuredNetworkWordCount:JavaStructuredNetworkWordCount"></a>
       <h4 class="signature">
@@ -107,7 +124,42 @@
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.examples.sql.streaming.StructuredNetworkWordCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.examples.sql.streaming.StructuredKafkaWordCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StructuredKafkaWordCount"></a>
+      <a id="StructuredKafkaWordCount:StructuredKafkaWordCount"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredKafkaWordCount$.html"><span class="name">StructuredKafkaWordCount</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.sql.streaming.package@StructuredKafkaWordCount" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Consumes messages from one or more topics in Kafka and does wordcount.</p><div class="fullcomment"><div class="comment cmt"><p>Consumes messages from one or more topics in Kafka and does wordcount.
+Usage: StructuredKafkaWordCount &lt;bootstrap-servers&gt; &lt;subscribe-type&gt; &lt;topics&gt;
+  &lt;bootstrap-servers&gt; The Kafka &quot;bootstrap.servers&quot; configuration. A
+  comma-separated list of host:port.
+  &lt;subscribe-type&gt; There are three kinds of type, i.e. 'assign', 'subscribe',
+  'subscribePattern'.
+  |- &lt;assign&gt; Specific TopicPartitions to consume. Json string
+  |  {&quot;topicA&quot;:[0,1],&quot;topicB&quot;:[2,4]}.
+  |- &lt;subscribe&gt; The topic list to subscribe. A comma-separated list of
+  |  topics.
+  |- &lt;subscribePattern&gt; The pattern used to subscribe to topic(s).
+  |  Java regex string.
+  |- Only one of &quot;assign, &quot;subscribe&quot; or &quot;subscribePattern&quot; options can be
+  |  specified for Kafka source.
+  &lt;topics&gt; Different value format depends on the value of 'subscribe-type'.</p><p>Example:
+   <code>$ bin/run-example \
+     sql.streaming.StructuredKafkaWordCount host1:port1,host2:port2 \
+     subscribe topic1,topic2</code>
+</p></div></div>
+    </li><li name="org.apache.spark.examples.sql.streaming.StructuredNetworkWordCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StructuredNetworkWordCount"></a>
       <a id="StructuredNetworkWordCount:StructuredNetworkWordCount"></a>
       <h4 class="signature">

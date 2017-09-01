@@ -271,7 +271,7 @@ times (use <code>.distinct()</code> to eliminate them).
     </span>
       <p class="shortcomment cmt">A unique ID for this RDD (within its SparkContext).</p><div class="fullcomment"><div class="comment cmt"><p>A unique ID for this RDD (within its SparkContext).</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#aggregate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$29:scala.reflect.ClassTag[U]):U"></a>
+      <a id="aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$30:scala.reflect.ClassTag[U]):U"></a>
       <a id="aggregate[U](U)((U,Edge[ED])⇒U,(U,U)⇒U)(ClassTag[U]):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -282,7 +282,7 @@ times (use <code>.distinct()</code> to eliminate them).
         <span class="name">aggregate</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="zeroValue">zeroValue: <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>)</span><span class="params">(<span name="seqOp">seqOp: (<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>, <a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>, <span name="combOp">combOp: (<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>, <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$29:scala.reflect.ClassTag[U]):U" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$30:scala.reflect.ClassTag[U]):U" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -330,7 +330,8 @@ allocation.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).</p><div class="fullcomment"><div class="comment cmt"><p>Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+      <p class="shortcomment cmt">Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).</p><div class="fullcomment"><div class="comment cmt"><p>Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#cartesian" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="cartesian[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$5:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]"></a>
       <a id="cartesian[U](RDD[U])(ClassTag[U]):RDD[(Edge[ED],U)]"></a>
@@ -390,7 +391,7 @@ memory, otherwise saving it on a file will require recomputation.
       </a>
     </span>
       <p class="shortcomment cmt">Clears the dependencies of this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Clears the dependencies of this RDD. This method must ensure that all references
-to the original parent RDDs is removed to enable the parent RDDs to be garbage
+to the original parent RDDs are removed to enable the parent RDDs to be garbage
 collected. Subclasses of RDD may override this method for implementing their own cleaning
 logic. See <a href="../rdd/UnionRDD.html" class="extype" name="org.apache.spark.rdd.UnionRDD">org.apache.spark.rdd.UnionRDD</a> for an example.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
@@ -435,19 +436,21 @@ logic. See <a href="../rdd/UnionRDD.html" class="extype" name="org.apache.spark.
     </span>
       <p class="shortcomment cmt">Return a new RDD that is reduced into <code>numPartitions</code> partitions.</p><div class="fullcomment"><div class="comment cmt"><p>Return a new RDD that is reduced into <code>numPartitions</code> partitions.</p><p>This results in a narrow dependency, e.g. if you go from 1000 partitions
 to 100 partitions, there will not be a shuffle, instead each of the 100
-new partitions will claim 10 of the current partitions.</p><p>However, if you're doing a drastic coalesce, e.g. to numPartitions = 1,
+new partitions will claim 10 of the current partitions. If a larger number
+of partitions is requested, it will stay at the current number of partitions.</p><p>However, if you're doing a drastic coalesce, e.g. to numPartitions = 1,
 this may result in your computation taking place on fewer nodes than
 you like (e.g. one node in the case of numPartitions = 1). To avoid this,
 you can pass shuffle = true. This will add a shuffle step, but means the
 current upstream partitions will be executed in parallel (per whatever
-the current partitioning is).</p><p>Note: With shuffle = true, you can actually coalesce to a larger number
+the current partitioning is).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>With shuffle = true, you can actually coalesce to a larger number
 of partitions. This is useful if you have a small number of partitions,
 say 100, potentially with a few partitions being abnormally large. Calling
 coalesce(1000, shuffle = true) will result in 1000 partitions with the
-data distributed using a hash partitioner.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+data distributed using a hash partitioner. The optional partition coalescer
+passed in must be serializable.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#collect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="collect[U](f:PartialFunction[T,U])(implicitevidence$28:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
+      <a id="collect[U](f:PartialFunction[T,U])(implicitevidence$29:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
       <a id="collect[U](PartialFunction[Edge[ED],U])(ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -458,7 +461,7 @@ data distributed using a hash partitioner.
         <span class="name">collect</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>], <span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@collect[U](f:PartialFunction[T,U])(implicitevidence$28:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@collect[U](f:PartialFunction[T,U])(implicitevidence$29:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -481,7 +484,7 @@ data distributed using a hash partitioner.
       </a>
     </span>
       <p class="shortcomment cmt">Return an array that contains all of the elements in this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return an array that contains all of the elements in this RDD.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>this method should only be used if the resulting array is expected to be small, as
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This method should only be used if the resulting array is expected to be small, as
 all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.graphx.EdgeRDD#compute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="compute(part:org.apache.spark.Partition,context:org.apache.spark.TaskContext):Iterator[org.apache.spark.graphx.Edge[ED]]"></a>
@@ -601,9 +604,9 @@ Algorithmic Engineering of a State of The Art Cardinality Estimation Algorithm&q
     </span>
       <p class="shortcomment cmt">Return approximate number of distinct elements in the RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return approximate number of distinct elements in the RDD.</p><p>The algorithm used is based on streamlib's implementation of &quot;HyperLogLog in Practice:
 Algorithmic Engineering of a State of The Art Cardinality Estimation Algorithm&quot;, available
-<a href="http://dx.doi.org/10.1145/2452376.2452456">here</a>.</p><p>The relative accuracy is approximately <code>1.054 / sqrt(2^p)<code>. Setting a nonzero </code>sp &gt; p<code>
-would trigger sparse representation of registers, which may reduce the memory consumption
-and increase accuracy when the cardinality is small.
+<a href="http://dx.doi.org/10.1145/2452376.2452456">here</a>.</p><p>The relative accuracy is approximately <code>1.054 / sqrt(2^p)<code>. Setting a nonzero (</code>sp<code> is greater
+than </code>p<code>) would trigger sparse representation of registers, which may reduce the memory
+consumption and increase accuracy when the cardinality is small.
 </code></code></p></div><dl class="paramcmts block"><dt class="param">p</dt><dd class="cmt"><p>The precision value for the normal set.
          <code>p</code> must be a value between 4 and <code>sp</code> if <code>sp</code> is not zero (32 max).</p></dd><dt class="param">sp</dt><dd class="cmt"><p>The precision value for the sparse set, between 0 and 32.
           If <code>sp</code> equals 0, the sparse representation is skipped.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
@@ -623,11 +626,10 @@ and increase accuracy when the cardinality is small.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return the count of each unique value in this RDD as a local map of (value, count) pairs.</p><div class="fullcomment"><div class="comment cmt"><p>Return the count of each unique value in this RDD as a local map of (value, count) pairs.</p><p>Note that this method should only be used if the resulting map is expected to be small, as
+      <p class="shortcomment cmt">Return the count of each unique value in this RDD as a local map of (value, count) pairs.</p><div class="fullcomment"><div class="comment cmt"><p>Return the count of each unique value in this RDD as a local map of (value, count) pairs.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This method should only be used if the resulting map is expected to be small, as
 the whole thing is loaded into the driver's memory.
-To handle very large results, consider using rdd.map(x =&gt; (x, 1L)).reduceByKey(_ + _), which
-returns an RDD[T, Long] instead of a map.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+To handle very large results, consider using</p><pre>rdd.map(x <span class="kw">=&gt;</span> (x, <span class="num">1</span>L)).reduceByKey(_ + _)</pre><p>, which returns an RDD[T, Long] instead of a map.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#countByValueApprox" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countByValueApprox(timeout:Long,confidence:Double)(implicitord:Ordering[T]):org.apache.spark.partial.PartialResult[scala.collection.Map[T,org.apache.spark.partial.BoundedDouble]]"></a>
       <a id="countByValueApprox(Long,Double)(Ordering[Edge[ED]]):PartialResult[Map[Edge[ED],BoundedDouble]]"></a>
@@ -796,7 +798,7 @@ RDD is checkpointed or not.
       <p class="shortcomment cmt">Return the first element in this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return the first element in this RDD.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#firstParent" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="firstParent[U](implicitevidence$31:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
+      <a id="firstParent[U](implicitevidence$32:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
       <a id="firstParent[U](ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -807,7 +809,7 @@ RDD is checkpointed or not.
         <span class="name">firstParent</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.firstParent.U">U</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.firstParent.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@firstParent[U](implicitevidence$31:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@firstParent[U](implicitevidence$32:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1069,10 +1071,10 @@ be called once, so it is safe to implement a time-consuming computation in it.</
     </span>
       <p class="shortcomment cmt">Return an RDD of grouped items.</p><div class="fullcomment"><div class="comment cmt"><p>Return an RDD of grouped items. Each group consists of a key and a sequence of elements
 mapping to that key. The ordering of elements within each group is not guaranteed, and
-may even differ each time the resulting RDD is evaluated.</p><p>Note: This operation may be very expensive. If you are grouping in order to perform an
-aggregation (such as a sum or average) over each key, using <a href="../rdd/PairRDDFunctions.html#aggregateByKey[U](zeroValue:U)(seqOp:(U,V)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(K,U)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#aggregateByKey">PairRDDFunctions.aggregateByKey</a>
-or <a href="../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org.apache.spark.rdd.RDD[(K,V)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#reduceByKey">PairRDDFunctions.reduceByKey</a> will provide much better performance.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+may even differ each time the resulting RDD is evaluated.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This operation may be very expensive. If you are grouping in order to perform an
+aggregation (such as a sum or average) over each key, using <code>PairRDDFunctions.aggregateByKey</code>
+or <code>PairRDDFunctions.reduceByKey</code> will provide much better performance.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#groupBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupBy[K](f:T=&gt;K,numPartitions:Int)(implicitkt:scala.reflect.ClassTag[K]):org.apache.spark.rdd.RDD[(K,Iterable[T])]"></a>
       <a id="groupBy[K]((Edge[ED])⇒K,Int)(ClassTag[K]):RDD[(K,Iterable[Edge[ED]])]"></a>
@@ -1091,10 +1093,10 @@ or <a href="../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org.apach
     </span>
       <p class="shortcomment cmt">Return an RDD of grouped elements.</p><div class="fullcomment"><div class="comment cmt"><p>Return an RDD of grouped elements. Each group consists of a key and a sequence of elements
 mapping to that key. The ordering of elements within each group is not guaranteed, and
-may even differ each time the resulting RDD is evaluated.</p><p>Note: This operation may be very expensive. If you are grouping in order to perform an
-aggregation (such as a sum or average) over each key, using <a href="../rdd/PairRDDFunctions.html#aggregateByKey[U](zeroValue:U)(seqOp:(U,V)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(K,U)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#aggregateByKey">PairRDDFunctions.aggregateByKey</a>
-or <a href="../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org.apache.spark.rdd.RDD[(K,V)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#reduceByKey">PairRDDFunctions.reduceByKey</a> will provide much better performance.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+may even differ each time the resulting RDD is evaluated.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This operation may be very expensive. If you are grouping in order to perform an
+aggregation (such as a sum or average) over each key, using <code>PairRDDFunctions.aggregateByKey</code>
+or <code>PairRDDFunctions.reduceByKey</code> will provide much better performance.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#groupBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupBy[K](f:T=&gt;K)(implicitkt:scala.reflect.ClassTag[K]):org.apache.spark.rdd.RDD[(K,Iterable[T])]"></a>
       <a id="groupBy[K]((Edge[ED])⇒K)(ClassTag[K]):RDD[(K,Iterable[Edge[ED]])]"></a>
@@ -1113,10 +1115,10 @@ or <a href="../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org.apach
     </span>
       <p class="shortcomment cmt">Return an RDD of grouped items.</p><div class="fullcomment"><div class="comment cmt"><p>Return an RDD of grouped items. Each group consists of a key and a sequence of elements
 mapping to that key. The ordering of elements within each group is not guaranteed, and
-may even differ each time the resulting RDD is evaluated.</p><p>Note: This operation may be very expensive. If you are grouping in order to perform an
-aggregation (such as a sum or average) over each key, using <a href="../rdd/PairRDDFunctions.html#aggregateByKey[U](zeroValue:U)(seqOp:(U,V)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(K,U)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#aggregateByKey">PairRDDFunctions.aggregateByKey</a>
-or <a href="../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org.apache.spark.rdd.RDD[(K,V)]" class="extmbr" name="org.apache.spark.rdd.PairRDDFunctions#reduceByKey">PairRDDFunctions.reduceByKey</a> will provide much better performance.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+may even differ each time the resulting RDD is evaluated.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This operation may be very expensive. If you are grouping in order to perform an
+aggregation (such as a sum or average) over each key, using <code>PairRDDFunctions.aggregateByKey</code>
+or <code>PairRDDFunctions.reduceByKey</code> will provide much better performance.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1185,8 +1187,8 @@ or <a href="../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org.apach
       </a>
     </span>
       <p class="shortcomment cmt">Return the intersection of this RDD and another one.</p><div class="fullcomment"><div class="comment cmt"><p>Return the intersection of this RDD and another one. The output will not contain any duplicate
-elements, even if the input RDDs did.  Performs a hash partition across the cluster</p><p>Note that this method performs a shuffle internally.
-</p></div><dl class="paramcmts block"><dt class="param">numPartitions</dt><dd class="cmt"><p>How many partitions to use in the resulting RDD</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+elements, even if the input RDDs did.  Performs a hash partition across the cluster
+</p></div><dl class="paramcmts block"><dt class="param">numPartitions</dt><dd class="cmt"><p>How many partitions to use in the resulting RDD</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This method performs a shuffle internally.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#intersection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="intersection(other:org.apache.spark.rdd.RDD[T],partitioner:org.apache.spark.Partitioner)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]"></a>
       <a id="intersection(RDD[Edge[ED]],Partitioner)(Ordering[Edge[ED]]):RDD[Edge[ED]]"></a>
@@ -1204,8 +1206,8 @@ elements, even if the input RDDs did.  Performs a hash partition across the clus
       </a>
     </span>
       <p class="shortcomment cmt">Return the intersection of this RDD and another one.</p><div class="fullcomment"><div class="comment cmt"><p>Return the intersection of this RDD and another one. The output will not contain any duplicate
-elements, even if the input RDDs did.</p><p>Note that this method performs a shuffle internally.
-</p></div><dl class="paramcmts block"><dt class="param">partitioner</dt><dd class="cmt"><p>Partitioner to use for the resulting RDD</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+elements, even if the input RDDs did.
+</p></div><dl class="paramcmts block"><dt class="param">partitioner</dt><dd class="cmt"><p>Partitioner to use for the resulting RDD</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This method performs a shuffle internally.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#intersection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="intersection(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]"></a>
       <a id="intersection(RDD[Edge[ED]]):RDD[Edge[ED]]"></a>
@@ -1223,8 +1225,8 @@ elements, even if the input RDDs did.</p><p>Note that this method performs a shu
       </a>
     </span>
       <p class="shortcomment cmt">Return the intersection of this RDD and another one.</p><div class="fullcomment"><div class="comment cmt"><p>Return the intersection of this RDD and another one. The output will not contain any duplicate
-elements, even if the input RDDs did.</p><p>Note that this method performs a shuffle internally.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+elements, even if the input RDDs did.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This method performs a shuffle internally.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#isCheckpointed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isCheckpointed:Boolean"></a>
       <a id="isCheckpointed:Boolean"></a>
@@ -1277,7 +1279,7 @@ elements, even if the input RDDs did.</p><p>Note that this method performs a shu
       </a>
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>true if and only if the RDD contains no elements at all. Note that an RDD
-        may be empty even when it has at least 1 partition.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>due to complications in the internal implementation, this method will raise an
+        may be empty even when it has at least 1 partition.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>Due to complications in the internal implementation, this method will raise an
 exception if called on an RDD of <code>Nothing</code> or <code>Null</code>. This may be come up in practice
 because, for example, the type of <code>parallelize(Seq())</code> is <code>RDD[Nothing]</code>.
 (<code>parallelize(Seq())</code> should be avoided anyway in favor of <code>parallelize(Seq[T]())</code>.)</p></span></dd></dl></div>
@@ -1637,7 +1639,7 @@ with their cached blocks. If you must use both features, you are advised to set
 should be <code>false</code> unless this is a pair RDD and the input function doesn't modify the keys.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#mapPartitionsWithIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="mapPartitionsWithIndex[U](f:(Int,Iterator[T])=&gt;Iterator[U],preservesPartitioning:Boolean)(implicitevidence$8:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
+      <a id="mapPartitionsWithIndex[U](f:(Int,Iterator[T])=&gt;Iterator[U],preservesPartitioning:Boolean)(implicitevidence$9:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
       <a id="mapPartitionsWithIndex[U]((Int,Iterator[Edge[ED]])⇒Iterator[U],Boolean)(ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1648,7 +1650,7 @@ should be <code>false</code> unless this is a pair RDD and the input function do
         <span class="name">mapPartitionsWithIndex</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]]) ⇒ <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@mapPartitionsWithIndex[U](f:(Int,Iterator[T])=&gt;Iterator[U],preservesPartitioning:Boolean)(implicitevidence$8:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@mapPartitionsWithIndex[U](f:(Int,Iterator[T])=&gt;Iterator[U],preservesPartitioning:Boolean)(implicitevidence$9:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1760,7 +1762,7 @@ should be <code>false</code> unless this is a pair RDD and the input function do
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#parent" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="parent[U](j:Int)(implicitevidence$32:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
+      <a id="parent[U](j:Int)(implicitevidence$33:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
       <a id="parent[U](Int)(ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1771,7 +1773,7 @@ should be <code>false</code> unless this is a pair RDD and the input function do
         <span class="name">parent</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="j">j: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.parent.U">U</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.parent.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@parent[U](j:Int)(implicitevidence$32:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@parent[U](j:Int)(implicitevidence$33:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1829,7 +1831,8 @@ RDD is checkpointed or not.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).</p><div class="fullcomment"><div class="comment cmt"><p>Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+      <p class="shortcomment cmt">Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).</p><div class="fullcomment"><div class="comment cmt"><p>Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#persist" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="persist(newLevel:org.apache.spark.storage.StorageLevel):RDD.this.type"></a>
       <a id="persist(StorageLevel):EdgeRDD.this.type"></a>
@@ -1879,9 +1882,8 @@ even for empty partitions.</p><p>The print behavior can be customized by providi
                        will be called with each RDD element as the 1st parameter, and the
                        print line function (like out.println()) as the 2nd parameter.
                        An example of pipe the RDD data of groupBy() in a streaming way,
-                       instead of constructing a huge String to concat all the elements:
-                       def printRDDElement(record:(String, Seq[String]), f:String=&gt;Unit) =
-                         for (e &lt;- record._2) {f(e)}</p></dd><dt class="param">separateWorkingDir</dt><dd class="cmt"><p>Use separate working directories for each task.</p></dd><dt class="param">bufferSize</dt><dd class="cmt"><p>Buffer size for the stdin writer for the piped process.</p></dd><dt class="param">encoding</dt><dd class="cmt"><p>Char encoding used for interacting (via stdin, stdout and stderr) with
+                       instead of constructing a huge String to concat all the elements:</p><pre><span class="kw">def</span> printRDDElement(record:(<span class="std">String</span>, <span class="std">Seq</span>[<span class="std">String</span>]), f:<span class="std">String</span><span class="kw">=&gt;</span><span class="std">Unit</span>) =
+  <span class="kw">for</span> (e <span class="kw">&lt;-</span> record._2) {f(e)}</pre></dd><dt class="param">separateWorkingDir</dt><dd class="cmt"><p>Use separate working directories for each task.</p></dd><dt class="param">bufferSize</dt><dd class="cmt"><p>Buffer size for the stdin writer for the piped process.</p></dd><dt class="param">encoding</dt><dd class="cmt"><p>Char encoding used for interacting (via stdin, stdout and stderr) with
                 the piped process</p></dd><dt>returns</dt><dd class="cmt"><p>the result RDD</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#pipe" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="pipe(command:String,env:scala.collection.Map[String,String]):org.apache.spark.rdd.RDD[String]"></a>
@@ -2016,7 +2018,9 @@ which can avoid performing a shuffle.
       <p class="shortcomment cmt">Return a sampled subset of this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return a sampled subset of this RDD.
 </p></div><dl class="paramcmts block"><dt class="param">withReplacement</dt><dd class="cmt"><p>can elements be sampled multiple times (replaced when sampled out)</p></dd><dt class="param">fraction</dt><dd class="cmt"><p>expected size of the sample as a fraction of this RDD's size
  without replacement: probability that each element is chosen; fraction must be [0, 1]
- with replacement: expected number of times each element is chosen; fraction must be &gt;= 0</p></dd><dt class="param">seed</dt><dd class="cmt"><p>seed for the random number generator</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+ with replacement: expected number of times each element is chosen; fraction must be greater
+ than or equal to 0</p></dd><dt class="param">seed</dt><dd class="cmt"><p>seed for the random number generator</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This is NOT guaranteed to provide exactly the fraction of the count
+of the given <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#saveAsObjectFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="saveAsObjectFile(path:String):Unit"></a>
       <a id="saveAsObjectFile(String):Unit"></a>
@@ -2231,8 +2235,8 @@ RDD will be &lt;= us.
       <p class="shortcomment cmt">Take the first num elements of the RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Take the first num elements of the RDD. It works by first scanning one partition, and use the
 results from that partition to estimate the number of additional partitions needed to satisfy
 the limit.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>due to complications in the internal implementation, this method will raise
-an exception if called on an RDD of <code>Nothing</code> or <code>Null</code>.</p></span>, <span class="cmt"><p>this method should only be used if the resulting array is expected to be small, as
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>Due to complications in the internal implementation, this method will raise
+an exception if called on an RDD of <code>Nothing</code> or <code>Null</code>.</p></span>, <span class="cmt"><p>This method should only be used if the resulting array is expected to be small, as
 all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#takeOrdered" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="takeOrdered(num:Int)(implicitord:Ordering[T]):Array[T]"></a>
@@ -2257,7 +2261,7 @@ For example:</p><pre>sc.parallelize(<span class="std">Seq</span>(<span class="nu
 <span class="cmt">// returns Array(2)</span>
 
 sc.parallelize(<span class="std">Seq</span>(<span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span>, <span class="num">6</span>)).takeOrdered(<span class="num">2</span>)
-<span class="cmt">// returns Array(2, 3)</span></pre></div><dl class="paramcmts block"><dt class="param">num</dt><dd class="cmt"><p>k, the number of elements to return</p></dd><dt class="param">ord</dt><dd class="cmt"><p>the implicit ordering for T</p></dd><dt>returns</dt><dd class="cmt"><p>an array of top elements</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>this method should only be used if the resulting array is expected to be small, as
+<span class="cmt">// returns Array(2, 3)</span></pre></div><dl class="paramcmts block"><dt class="param">num</dt><dd class="cmt"><p>k, the number of elements to return</p></dd><dt class="param">ord</dt><dd class="cmt"><p>the implicit ordering for T</p></dd><dt>returns</dt><dd class="cmt"><p>an array of top elements</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This method should only be used if the resulting array is expected to be small, as
 all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#takeSample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="takeSample(withReplacement:Boolean,num:Int,seed:Long):Array[T]"></a>
@@ -2329,10 +2333,10 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return an iterator that contains all of the elements in this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return an iterator that contains all of the elements in this RDD.</p><p>The iterator will consume as much memory as the largest partition in this RDD.</p><p>Note: this results in multiple Spark jobs, and if the input RDD is the result
+      <p class="shortcomment cmt">Return an iterator that contains all of the elements in this RDD.</p><div class="fullcomment"><div class="comment cmt"><p>Return an iterator that contains all of the elements in this RDD.</p><p>The iterator will consume as much memory as the largest partition in this RDD.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This results in multiple Spark jobs, and if the input RDD is the result
 of a wide transformation (e.g. join with different partitioners), to avoid
-recomputing the input RDD should be cached first.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+recomputing the input RDD should be cached first.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -2373,10 +2377,10 @@ implicit Ordering[T] and maintains the ordering. This does the opposite of
 <span class="cmt">// returns Array(12)</span>
 
 sc.parallelize(<span class="std">Seq</span>(<span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span>, <span class="num">6</span>)).top(<span class="num">2</span>)
-<span class="cmt">// returns Array(6, 5)</span></pre></div><dl class="paramcmts block"><dt class="param">num</dt><dd class="cmt"><p>k, the number of top elements to return</p></dd><dt class="param">ord</dt><dd class="cmt"><p>the implicit ordering for T</p></dd><dt>returns</dt><dd class="cmt"><p>an array of top elements</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>this method should only be used if the resulting array is expected to be small, as
+<span class="cmt">// returns Array(6, 5)</span></pre></div><dl class="paramcmts block"><dt class="param">num</dt><dd class="cmt"><p>k, the number of top elements to return</p></dd><dt class="param">ord</dt><dd class="cmt"><p>the implicit ordering for T</p></dd><dt>returns</dt><dd class="cmt"><p>an array of top elements</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>This method should only be used if the resulting array is expected to be small, as
 all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#treeAggregate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="treeAggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U,depth:Int)(implicitevidence$30:scala.reflect.ClassTag[U]):U"></a>
+      <a id="treeAggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U,depth:Int)(implicitevidence$31:scala.reflect.ClassTag[U]):U"></a>
       <a id="treeAggregate[U](U)((U,Edge[ED])⇒U,(U,U)⇒U,Int)(ClassTag[U]):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2387,12 +2391,12 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
         <span class="name">treeAggregate</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="zeroValue">zeroValue: <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>)</span><span class="params">(<span name="seqOp">seqOp: (<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>, <a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>, <span name="combOp">combOp: (<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>, <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>, <span name="depth">depth: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@treeAggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U,depth:Int)(implicitevidence$30:scala.reflect.ClassTag[U]):U" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@treeAggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U,depth:Int)(implicitevidence$31:scala.reflect.ClassTag[U]):U" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Aggregates the elements of this RDD in a multi-level tree pattern.</p><div class="fullcomment"><div class="comment cmt"><p>Aggregates the elements of this RDD in a multi-level tree pattern.
-</p></div><dl class="paramcmts block"><dt class="param">depth</dt><dd class="cmt"><p>suggested depth of the tree (default: 2)</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>See also</dt><dd><span class="cmt"><p><a href="../rdd/RDD.html#aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$29:scala.reflect.ClassTag[U]):U" class="extmbr" name="org.apache.spark.rdd.RDD#aggregate">org.apache.spark.rdd.RDD#aggregate</a></p></span></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">depth</dt><dd class="cmt"><p>suggested depth of the tree (default: 2)</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>See also</dt><dd><span class="cmt"><p><a href="../rdd/RDD.html#aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$30:scala.reflect.ClassTag[U]):U" class="extmbr" name="org.apache.spark.rdd.RDD#aggregate">org.apache.spark.rdd.RDD#aggregate</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#treeReduce" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="treeReduce(f:(T,T)=&gt;T,depth:Int):T"></a>
       <a id="treeReduce((Edge[ED],Edge[ED])⇒Edge[ED],Int):Edge[ED]"></a>
@@ -2518,7 +2522,7 @@ times (use <code>.distinct()</code> to eliminate them).
               
         </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zip" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="zip[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$9:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]"></a>
+      <a id="zip[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$10:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]"></a>
       <a id="zip[U](RDD[U])(ClassTag[U]):RDD[(Edge[ED],U)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2529,7 +2533,7 @@ times (use <code>.distinct()</code> to eliminate them).
         <span class="name">zip</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="other">other: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>], <span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>)]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zip[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$9:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zip[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$10:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2540,7 +2544,7 @@ partitions* and the *same number of elements in each partition* (e.g. one was ma
 a map on the other).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D])(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$24:scala.reflect.ClassTag[B],implicitevidence$25:scala.reflect.ClassTag[C],implicitevidence$26:scala.reflect.ClassTag[D],implicitevidence$27:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
+      <a id="zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D])(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$25:scala.reflect.ClassTag[B],implicitevidence$26:scala.reflect.ClassTag[C],implicitevidence$27:scala.reflect.ClassTag[D],implicitevidence$28:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
       <a id="zipPartitions[B,C,D,V](RDD[B],RDD[C],RDD[D])((Iterator[Edge[ED]],Iterator[B],Iterator[C],Iterator[D])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[D],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2551,13 +2555,13 @@ a map on the other).
         <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="D">D</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="rdd4">rdd4: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]) ⇒ <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="arg3">arg3: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D])(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$24:scala.reflect.ClassTag[B],implicitevidence$25:scala.reflect.ClassTag[C],implicitevidence$26:scala.reflect.ClassTag[D],implicitevidence$27:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D])(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$25:scala.reflect.ClassTag[B],implicitevidence$26:scala.reflect.ClassTag[C],implicitevidence$27:scala.reflect.ClassTag[D],implicitevidence$28:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$20:scala.reflect.ClassTag[B],implicitevidence$21:scala.reflect.ClassTag[C],implicitevidence$22:scala.reflect.ClassTag[D],implicitevidence$23:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
+      <a id="zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$21:scala.reflect.ClassTag[B],implicitevidence$22:scala.reflect.ClassTag[C],implicitevidence$23:scala.reflect.ClassTag[D],implicitevidence$24:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
       <a id="zipPartitions[B,C,D,V](RDD[B],RDD[C],RDD[D],Boolean)((Iterator[Edge[ED]],Iterator[B],Iterator[C],Iterator[D])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[D],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2568,13 +2572,13 @@ a map on the other).
         <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="D">D</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="rdd4">rdd4: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]) ⇒ <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="arg3">arg3: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$20:scala.reflect.ClassTag[B],implicitevidence$21:scala.reflect.ClassTag[C],implicitevidence$22:scala.reflect.ClassTag[D],implicitevidence$23:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$21:scala.reflect.ClassTag[B],implicitevidence$22:scala.reflect.ClassTag[C],implicitevidence$23:scala.reflect.ClassTag[D],implicitevidence$24:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C])(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$17:scala.reflect.ClassTag[B],implicitevidence$18:scala.reflect.ClassTag[C],implicitevidence$19:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
+      <a id="zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C])(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$18:scala.reflect.ClassTag[B],implicitevidence$19:scala.reflect.ClassTag[C],implicitevidence$20:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
       <a id="zipPartitions[B,C,V](RDD[B],RDD[C])((Iterator[Edge[ED]],Iterator[B],Iterator[C])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2585,13 +2589,13 @@ a map on the other).
         <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]) ⇒ <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C])(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$17:scala.reflect.ClassTag[B],implicitevidence$18:scala.reflect.ClassTag[C],implicitevidence$19:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C])(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$18:scala.reflect.ClassTag[B],implicitevidence$19:scala.reflect.ClassTag[C],implicitevidence$20:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$14:scala.reflect.ClassTag[B],implicitevidence$15:scala.reflect.ClassTag[C],implicitevidence$16:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
+      <a id="zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$15:scala.reflect.ClassTag[B],implicitevidence$16:scala.reflect.ClassTag[C],implicitevidence$17:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
       <a id="zipPartitions[B,C,V](RDD[B],RDD[C],Boolean)((Iterator[Edge[ED]],Iterator[B],Iterator[C])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2602,13 +2606,13 @@ a map on the other).
         <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]) ⇒ <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$14:scala.reflect.ClassTag[B],implicitevidence$15:scala.reflect.ClassTag[C],implicitevidence$16:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$15:scala.reflect.ClassTag[B],implicitevidence$16:scala.reflect.ClassTag[C],implicitevidence$17:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B])(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$12:scala.reflect.ClassTag[B],implicitevidence$13:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
+      <a id="zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B])(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$13:scala.reflect.ClassTag[B],implicitevidence$14:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
       <a id="zipPartitions[B,V](RDD[B])((Iterator[Edge[ED]],Iterator[B])⇒Iterator[V])(ClassTag[B],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2619,13 +2623,13 @@ a map on the other).
         <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]) ⇒ <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B])(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$12:scala.reflect.ClassTag[B],implicitevidence$13:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B])(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$13:scala.reflect.ClassTag[B],implicitevidence$14:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$10:scala.reflect.ClassTag[B],implicitevidence$11:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
+      <a id="zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$11:scala.reflect.ClassTag[B],implicitevidence$12:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
       <a id="zipPartitions[B,V](RDD[B],Boolean)((Iterator[Edge[ED]],Iterator[B])⇒Iterator[V])(ClassTag[B],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2636,7 +2640,7 @@ a map on the other).
         <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a>[<span class="extype" name="org.apache.spark.graphx.EdgeRDD.ED">ED</span>]], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]) ⇒ <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$10:scala.reflect.ClassTag[B],implicitevidence$11:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.graphx.EdgeRDD@zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$11:scala.reflect.ClassTag[B],implicitevidence$12:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2665,11 +2669,11 @@ of elements in each partition.
       <p class="shortcomment cmt">Zips this RDD with its element indices.</p><div class="fullcomment"><div class="comment cmt"><p>Zips this RDD with its element indices. The ordering is first based on the partition index
 and then the ordering of items within each partition. So the first item in the first
 partition gets index 0, and the last item in the last partition receives the largest index.</p><p>This is similar to Scala's zipWithIndex but it uses Long instead of Int as the index type.
-This method needs to trigger a spark job when this RDD contains more than one partitions.</p><p>Note that some RDDs, such as those returned by groupBy(), do not guarantee order of
+This method needs to trigger a spark job when this RDD contains more than one partitions.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>Some RDDs, such as those returned by groupBy(), do not guarantee order of
 elements in a partition. The index assigned to each element is therefore not guaranteed,
 and may even change if the RDD is reevaluated. If a fixed ordering is required to guarantee
-the same index assignments, you should sort the RDD with sortByKey() or save it to a file.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+the same index assignments, you should sort the RDD with sortByKey() or save it to a file.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipWithUniqueId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipWithUniqueId():org.apache.spark.rdd.RDD[(T,Long)]"></a>
       <a id="zipWithUniqueId():RDD[(Edge[ED],Long)]"></a>
@@ -2688,11 +2692,11 @@ the same index assignments, you should sort the RDD with sortByKey() or save it 
     </span>
       <p class="shortcomment cmt">Zips this RDD with generated unique Long ids.</p><div class="fullcomment"><div class="comment cmt"><p>Zips this RDD with generated unique Long ids. Items in the kth partition will get ids k, n+k,
 2*n+k, ..., where n is the number of partitions. So there may exist gaps, but this method
-won't trigger a spark job, which is different from <a href="../rdd/RDD.html#zipWithIndex():org.apache.spark.rdd.RDD[(T,Long)]" class="extmbr" name="org.apache.spark.rdd.RDD#zipWithIndex">org.apache.spark.rdd.RDD#zipWithIndex</a>.</p><p>Note that some RDDs, such as those returned by groupBy(), do not guarantee order of
+won't trigger a spark job, which is different from <a href="../rdd/RDD.html#zipWithIndex():org.apache.spark.rdd.RDD[(T,Long)]" class="extmbr" name="org.apache.spark.rdd.RDD#zipWithIndex">org.apache.spark.rdd.RDD#zipWithIndex</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>Some RDDs, such as those returned by groupBy(), do not guarantee order of
 elements in a partition. The unique ID assigned to each element is therefore not guaranteed,
 and may even change if the RDD is reevaluated. If a fixed ordering is required to guarantee
-the same index assignments, you should sort the RDD with sortByKey() or save it to a file.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+the same index assignments, you should sort the RDD with sortByKey() or save it to a file.</p></span></dd></dl></div>
     </li></ol>
             </div>
 

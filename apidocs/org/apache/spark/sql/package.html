@@ -139,13 +139,11 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-Thrown when a query fails to analyze, usually because the query itself is invalid.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Thrown when a query fails to analyze, usually because the query itself is invalid.
+      <p class="shortcomment cmt">Thrown when a query fails to analyze, usually because the query itself is invalid.</p><div class="fullcomment"><div class="comment cmt"><p>Thrown when a query fails to analyze, usually because the query itself is invalid.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.BlockAndExecutorId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="BlockAndExecutorIdextendsExternalizable"></a>
       <a id="BlockAndExecutorId:BlockAndExecutorId"></a>
@@ -234,14 +232,18 @@ when inserting into a partitioned table if number of partitions don't match.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A column that will be computed based on the data in a <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A column that will be computed based on the data in a <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>A new column is constructed based on the input columns present in a dataframe:</p><pre>df(<span class="lit">"columnName"</span>)            <span class="cmt">// On a specific DataFrame.</span>
+      <p class="shortcomment cmt">A column that will be computed based on the data in a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>A column that will be computed based on the data in a <code>DataFrame</code>.</p><p>A new column is constructed based on the input columns present in a dataframe:</p><pre>df(<span class="lit">"columnName"</span>)            <span class="cmt">// On a specific DataFrame.</span>
 col(<span class="lit">"columnName"</span>)           <span class="cmt">// A generic column no yet associated with a DataFrame.</span>
 col(<span class="lit">"columnName.field"</span>)     <span class="cmt">// Extracting a struct field</span>
 col(<span class="lit">"`a.column.with.dots`"</span>) <span class="cmt">// Escape `.` in column names.</span>
 $<span class="lit">"columnName"</span>               <span class="cmt">// Scala short hand for a named column.</span>
 expr(<span class="lit">"a + 1"</span>)               <span class="cmt">// A column that is constructed from a parsed SQL Expression.</span>
 lit(<span class="lit">"abc"</span>)                  <span class="cmt">// A column that produces a literal (constant) value.</span></pre><p><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> objects can be composed to form complex expressions:</p><pre>$<span class="lit">"a"</span> + <span class="num">1</span>
-$<span class="lit">"a"</span> === $<span class="lit">"b"</span></pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+$<span class="lit">"a"</span> === $<span class="lit">"b"</span></pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The internal Catalyst expression can be accessed via &quot;expr&quot;, but this method is for
+debugging purposes only and can change in any future Spark releases.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.ColumnName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ColumnNameextendsColumn"></a>
       <a id="ColumnName:ColumnName"></a>
@@ -258,13 +260,47 @@ $<span class="lit">"a"</span> === $<span class="lit">"b"</span></pre></div><dl c
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-A convenient class used for constructing schema.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-A convenient class used for constructing schema.
+      <p class="shortcomment cmt">A convenient class used for constructing schema.</p><div class="fullcomment"><div class="comment cmt"><p>A convenient class used for constructing schema.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.CreateTableUsing" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CreateTableUsingextendsLeafNodewithCommandwithProductwithSerializable"></a>
+      <a id="CreateTableUsing:CreateTableUsing"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CreateTableUsing.html"><span class="name">CreateTableUsing</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="temporary">temporary: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="allowExisting">allowExisting: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="managedIfNoPath">managedIfNoPath: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@CreateTableUsingextendsLeafNodewithCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to represent the operation of create table using a data source.</p><div class="fullcomment"><div class="comment cmt"><p>Used to represent the operation of create table using a data source.
+</p></div><dl class="paramcmts block"><dt class="param">allowExisting</dt><dd class="cmt"><p>If it is true, we will do nothing when the table already exists.
+                     If it is false, an exception will be thrown</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CreateTableUsingAsSelectextendsLeafNodewithCommandwithProductwithSerializable"></a>
+      <a id="CreateTableUsingAsSelect:CreateTableUsingAsSelect"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CreateTableUsingAsSelect.html"><span class="name">CreateTableUsingAsSelect</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="mode">mode: <a href="SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@CreateTableUsingAsSelectextendsLeafNodewithCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A node used to support CTAS statements and saveAsTable for the data source API.</p>
     </li><li name="org.apache.spark.sql.DMLExternalTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DMLExternalTableextendsLeafNodewithCommandwithProductwithSerializable"></a>
       <a id="DMLExternalTable:DMLExternalTable"></a>
@@ -332,11 +368,9 @@ A convenient class used for constructing schema.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Functionality for working with missing data in <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Functionality for working with missing data in <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s.
+      <p class="shortcomment cmt">Functionality for working with missing data in <code>DataFrame</code>s.</p><div class="fullcomment"><div class="comment cmt"><p>Functionality for working with missing data in <code>DataFrame</code>s.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -356,8 +390,11 @@ Functionality for working with missing data in <a href="#DataFrame=org.apache.sp
       </a>
     </span>
       <p class="shortcomment cmt">Interface used to load a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from external storage systems (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Interface used to load a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from external storage systems (e.g. file systems,
-key-value stores, etc). Use <a href="SparkSession.html#read:org.apache.spark.sql.DataFrameReader" class="extmbr" name="org.apache.spark.sql.SparkSession#read">SparkSession.read</a> to access this.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+key-value stores, etc). Use <code>SparkSession.read</code> to access this.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameStatFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DataFrameStatFunctionsextendsAnyRef"></a>
       <a id="DataFrameStatFunctions:DataFrameStatFunctions"></a>
@@ -374,11 +411,9 @@ key-value stores, etc). Use <a href="SparkSession.html#read:org.apache.spark.sql
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Statistic functions for <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Statistic functions for <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s.
+      <p class="shortcomment cmt">Statistic functions for <code>DataFrame</code>s.</p><div class="fullcomment"><div class="comment cmt"><p>Statistic functions for <code>DataFrame</code>s.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameWithTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -415,8 +450,11 @@ Statistic functions for <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apa
       </a>
     </span>
       <p class="shortcomment cmt">Interface used to write a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> to external storage systems (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Interface used to write a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> to external storage systems (e.g. file systems,
-key-value stores, etc). Use <a href="Dataset.html#write:org.apache.spark.sql.DataFrameWriter[T]" class="extmbr" name="org.apache.spark.sql.Dataset#write">Dataset.write</a> to access this.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+key-value stores, etc). Use <code>Dataset.write</code> to access this.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameWriterJavaFunctions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DataFrameWriterJavaFunctionsextendsAnyRef"></a>
       <a id="DataFrameWriterJavaFunctions:DataFrameWriterJavaFunctions"></a>
@@ -453,7 +491,7 @@ key-value stores, etc). Use <a href="Dataset.html#write:org.apache.spark.sql.Dat
       <p class="shortcomment cmt">A Dataset is a strongly typed collection of domain-specific objects that can be transformed
 in parallel using functional or relational operations.</p><div class="fullcomment"><div class="comment cmt"><p>A Dataset is a strongly typed collection of domain-specific objects that can be transformed
 in parallel using functional or relational operations. Each Dataset also has an untyped view
-called a <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, which is a Dataset of <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>.</p><p>Operations available on Datasets are divided into transformations and actions. Transformations
+called a <code>DataFrame</code>, which is a Dataset of <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>.</p><p>Operations available on Datasets are divided into transformations and actions. Transformations
 are the ones that produce new Datasets, and actions are the ones that trigger computation and
 return results. Example transformations include map, filter, select, and aggregate (<code>groupBy</code>).
 Example actions count, show, or writing data out to file systems.</p><p>Datasets are &quot;lazy&quot;, i.e. computations are only triggered when an action is invoked. Internally,
@@ -489,7 +527,10 @@ Dataset&lt;Row&gt; department = spark.read().parquet(<span class="lit">"..."</sp
 people.filter(<span class="lit">"age"</span>.gt(<span class="num">30</span>))
   .join(department, people.col(<span class="lit">"deptId"</span>).equalTo(department(<span class="lit">"id"</span>)))
   .groupBy(department.col(<span class="lit">"name"</span>), <span class="lit">"gender"</span>)
-  .agg(avg(people.col(<span class="lit">"salary"</span>)), max(people.col(<span class="lit">"age"</span>)));</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+  .agg(avg(people.col(<span class="lit">"salary"</span>)), max(people.col(<span class="lit">"age"</span>)));</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DatasetHolder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DatasetHolder[T]extendsProductwithSerializable"></a>
       <a id="DatasetHolder[T]:DatasetHolder[T]"></a>
@@ -506,7 +547,10 @@ people.filter(<span class="lit">"age"</span>.gt(<span class="num">30</span>))
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A container for a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>, used for implicit conversions in Scala.</p><div class="fullcomment"><div class="comment cmt"><p>A container for a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>, used for implicit conversions in Scala.</p><p>To use this, import implicit conversions in SQL:</p><pre><span class="kw">import</span> sqlContext.implicits._</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+      <p class="shortcomment cmt">A container for a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>, used for implicit conversions in Scala.</p><div class="fullcomment"><div class="comment cmt"><p>A container for a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>, used for implicit conversions in Scala.</p><p>To use this, import implicit conversions in SQL:</p><pre><span class="kw">import</span> sqlContext.implicits._</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DelegateRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DelegateRDD[T]extendsRDD[T]withSerializable"></a>
       <a id="DelegateRDD[T]:DelegateRDD[T]"></a>
@@ -572,6 +616,8 @@ Dataset&lt;Tuple2&lt;Integer, <span class="std">String</span>&gt;&gt; ds2 = cont
 </li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
                 <span class="name">@implicitNotFound</span><span class="args">(<span>
       
       <span class="defval" name="&quot;Unable to find encoder for type stored in a Dataset.  Primitive types &quot; +<br/>  &quot;(Int, String, etc) and Product types (case classes) are supported by importing &quot; +<br/>  &quot;spark.implicits._  Support for serializing other types will be added in future &quot; +<br/>  &quot;releases.&quot;">...</span>
@@ -599,6 +645,8 @@ Holder for experimental methods for the bravest.</p><div class="fullcomment"><di
 Holder for experimental methods for the bravest. We make NO guarantee about the stability
 regarding binary compatibility and source compatibility of methods here.</p><pre>spark.experimental.extraStrategies += ...</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Unstable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.ExternalClusterMode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -653,11 +701,11 @@ Spark/Yarn cluster where cluster nodes themselves boot up as GemXD cluster.</p>
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-A class to consume data generated by a <span class="extype" name="StreamingQuery">StreamingQuery</span>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-A class to consume data generated by a <span class="extype" name="StreamingQuery">StreamingQuery</span>. Typically this is used to send the
+A class to consume data generated by a <code>StreamingQuery</code>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+A class to consume data generated by a <code>StreamingQuery</code>. Typically this is used to send the
 generated data to external systems. Each partition will use a new deserialized instance, so you
 usually should do all the initialization (e.g. opening a connection or initiating a transaction)
-in the <code>open</code> method.</p><p>Scala example:</p><pre>datasetOfString.write.foreach(<span class="kw">new</span> ForeachWriter[<span class="std">String</span>] {
+in the <code>open</code> method.</p><p>Scala example:</p><pre>datasetOfString.writeStream.foreach(<span class="kw">new</span> ForeachWriter[<span class="std">String</span>] {
 
   <span class="kw">def</span> open(partitionId: <span class="std">Long</span>, version: <span class="std">Long</span>): <span class="std">Boolean</span> = {
     <span class="cmt">// open connection</span>
@@ -670,7 +718,7 @@ in the <code>open</code> method.</p><p>Scala example:</p><pre>datasetOfString.wr
   <span class="kw">def</span> close(errorOrNull: Throwable): <span class="std">Unit</span> = {
     <span class="cmt">// close the connection</span>
   }
-})</pre><p>Java example:</p><pre>datasetOfString.write().foreach(<span class="kw">new</span> ForeachWriter&lt;<span class="std">String</span>&gt;() {
+})</pre><p>Java example:</p><pre>datasetOfString.writeStream().foreach(<span class="kw">new</span> ForeachWriter&lt;<span class="std">String</span>&gt;() {
 
   @Override
   public boolean open(long partitionId, long version) {
@@ -688,6 +736,8 @@ in the <code>open</code> method.</p><p>Scala example:</p><pre>datasetOfString.wr
   }
 });</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.InsertCachedPlanHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -748,6 +798,8 @@ construct a <a href="KeyValueGroupedDataset.html" class="extype" name="org.apach
 an existing <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Keyword" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -820,10 +872,13 @@ so any changes to this class need to be reflected in the serializer.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A set of methods for aggregations on a <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, created by <a href="Dataset.html#groupBy(col1:String,cols:String*):org.apache.spark.sql.RelationalGroupedDataset" class="extmbr" name="org.apache.spark.sql.Dataset#groupBy">Dataset.groupBy</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A set of methods for aggregations on a <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, created by <a href="Dataset.html#groupBy(col1:String,cols:String*):org.apache.spark.sql.RelationalGroupedDataset" class="extmbr" name="org.apache.spark.sql.Dataset#groupBy">Dataset.groupBy</a>.</p><p>The main method is the agg function, which has multiple variants. This class also contains
+      <p class="shortcomment cmt">A set of methods for aggregations on a <code>DataFrame</code>, created by <code>Dataset.groupBy</code>.</p><div class="fullcomment"><div class="comment cmt"><p>A set of methods for aggregations on a <code>DataFrame</code>, created by <code>Dataset.groupBy</code>.</p><p>The main method is the agg function, which has multiple variants. This class also contains
 convenience some first order statistics such as mean, sum for convenience.</p><p>This class was named <code>GroupedData</code> in Spark 1.x.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.Row" visbl="pub" data-isabs="true" fullComment="yes" group="row">
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Row" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="RowextendsSerializable"></a>
       <a id="Row:Row"></a>
       <h4 class="signature">
@@ -841,7 +896,7 @@ convenience some first order statistics such as mean, sum for convenience.</p><p
     </span>
       <p class="shortcomment cmt">Represents one row of output from a relational operator.</p><div class="fullcomment"><div class="comment cmt"><p>Represents one row of output from a relational operator.  Allows both generic access by ordinal,
 which will incur boxing overhead for primitives, as well as native primitive access.</p><p>It is invalid to use the native primitive interface to retrieve a value that is null, instead a
-user must check <code>isNullAt</code> before attempting to retrieve a value that might be null.</p><p>To create a new Row, use <span class="extype" name="RowFactory.create()">RowFactory.create()</span> in Java or <span class="extype" name="Row.apply()">Row.apply()</span> in Scala.</p><p>A <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> object can be constructed by providing field values. Example:</p><pre><span class="kw">import</span> org.apache.spark.sql._
+user must check <code>isNullAt</code> before attempting to retrieve a value that might be null.</p><p>To create a new Row, use <code>RowFactory.create()</code> in Java or <code>Row.apply()</code> in Scala.</p><p>A <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> object can be constructed by providing field values. Example:</p><pre><span class="kw">import</span> org.apache.spark.sql._
 
 <span class="cmt">// Create a Row from values.</span>
 Row(value1, value2, value3, ...)
@@ -867,7 +922,10 @@ An example of native primitive access:</p><pre><span class="cmt">// using the ro
 <span class="kw">val</span> pairs = sql(<span class="lit">"SELECT key, value FROM src"</span>).rdd.map {
   <span class="kw">case</span> Row(key: <span class="std">Int</span>, value: <span class="std">String</span>) <span class="kw">=&gt;</span>
     key -&gt; value
-}</pre></div></div>
+}</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.RowFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RowFactoryextendsObject"></a>
       <a id="RowFactory:RowFactory"></a>
@@ -901,8 +959,11 @@ An example of native primitive access:</p><pre><span class="cmt">// using the ro
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Runtime configuration interface for Spark.</p><div class="fullcomment"><div class="comment cmt"><p>Runtime configuration interface for Spark. To access this, use <a href="SparkSession.html#conf:org.apache.spark.sql.RuntimeConfig" class="extmbr" name="org.apache.spark.sql.SparkSession#conf">SparkSession.conf</a>.</p><p>Options set here are automatically propagated to the Hadoop configuration during I/O.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Runtime configuration interface for Spark.</p><div class="fullcomment"><div class="comment cmt"><p>Runtime configuration interface for Spark. To access this, use <code>SparkSession.conf</code>.</p><p>Options set here are automatically propagated to the Hadoop configuration during I/O.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SQLContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SQLContextextendsLoggingwithSerializable"></a>
       <a id="SQLContext:SQLContext"></a>
@@ -921,7 +982,10 @@ An example of native primitive access:</p><pre><span class="cmt">// using the ro
     </span>
       <p class="shortcomment cmt">The entry point for working with structured data (rows and columns) in Spark 1.x.</p><div class="fullcomment"><div class="comment cmt"><p>The entry point for working with structured data (rows and columns) in Spark 1.x.</p><p>As of Spark 2.0, this is replaced by <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>. However, we are keeping the class
 here for backward compatibility.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.0.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SQLImplicits" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="SQLImplicitsextendsAnyRef"></a>
       <a id="SQLImplicits:SQLImplicits"></a>
@@ -939,7 +1003,10 @@ here for backward compatibility.
       </a>
     </span>
       <p class="shortcomment cmt">A collection of implicit methods for converting common Scala objects into <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>s.</p><div class="fullcomment"><div class="comment cmt"><p>A collection of implicit methods for converting common Scala objects into <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>s.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SampleDataFrame" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SampleDataFrameextendsDataFramewithSerializable"></a>
       <a id="SampleDataFrame:SampleDataFrame"></a>
@@ -1340,7 +1407,7 @@ Spark driver that also hosts a job-server and GemFireXD accessor.
     </span>
       
     </li><li name="org.apache.spark.sql.SparkSession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SparkSessionextendsSerializablewithLogging"></a>
+      <a id="SparkSessionextendsSerializablewithCloseablewithLogging"></a>
       <a id="SparkSession:SparkSession"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1348,10 +1415,10 @@ Spark driver that also hosts a job-server and GemFireXD accessor.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkSession.html"><span class="name">SparkSession</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+        <a href="SparkSession.html"><span class="name">SparkSession</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="java.io.Closeable">Closeable</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@SparkSessionextendsSerializablewithLogging" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SparkSessionextendsSerializablewithCloseablewithLogging" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1360,26 +1427,10 @@ to get an existing session:</p><pre>SparkSession.builder().getOrCreate()</pre><p
   .master(<span class="lit">"local"</span>)
   .appName(<span class="lit">"Word Count"</span>)
   .config(<span class="lit">"spark.some.config.option"</span>, <span class="lit">"some-value"</span>)
-  .getOrCreate()</pre></div></div>
-    </li><li name="org.apache.spark.sql.SplitClusterMode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SplitClusterModeextendsClusterModewithProductwithSerializable"></a>
-      <a id="SplitClusterMode:SplitClusterMode"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="SplitClusterMode.html"><span class="name">SplitClusterMode</span></a><span class="params">(<span name="sc">sc: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="ClusterMode.html" class="extype" name="org.apache.spark.sql.ClusterMode">ClusterMode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@SplitClusterModeextendsClusterModewithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">This is for the two cluster mode: one is the normal snappy cluster, and
-this one is a separate local/Spark/Yarn/Mesos cluster fetching data from
-the snappy cluster on demand that just remains like an external datastore.</p>
+  .getOrCreate()</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.Strategy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="Strategy=org.apache.spark.sql.execution.SparkStrategy"></a>
       <a id="Strategy:Strategy"></a>
@@ -1403,6 +1454,8 @@ writing libraries should instead consider using the stable APIs provided in
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
+                <span class="name">@Unstable</span><span class="args">()</span>
+              
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.TableNotFoundException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TableNotFoundExceptionextendsAnalysisExceptionwithSerializable"></a>
@@ -1421,7 +1474,7 @@ writing libraries should instead consider using the stable APIs provided in
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.ThinClientConnectorMode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.ThinClientConnectorMode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ThinClientConnectorModeextendsClusterModewithProductwithSerializable"></a>
       <a id="ThinClientConnectorMode:ThinClientConnectorMode"></a>
       <h4 class="signature">
@@ -1437,12 +1490,10 @@ writing libraries should instead consider using the stable APIs provided in
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Similar to SplitClusterMode but this will use thin client driver for making
-connections to Snappy cluster.</p><div class="fullcomment"><div class="comment cmt"><p>Similar to SplitClusterMode but this will use thin client driver for making
-connections to Snappy cluster.</p><p>This is for the two cluster mode: one is
+      <p class="shortcomment cmt">This is for the two cluster mode: one is
 the normal snappy cluster, and this one is a separate local/Spark/Yarn/Mesos
 cluster fetching data from the snappy cluster on demand that just
-remains like an external datastore.</p></div></div>
+remains like an external datastore.</p>
     </li><li name="org.apache.spark.sql.TimeEpoch" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TimeEpochextendsAnyRef"></a>
       <a id="TimeEpoch:TimeEpoch"></a>
@@ -1479,7 +1530,10 @@ remains like an external datastore.</p></div></div>
       <p class="shortcomment cmt">A <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> where an <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> has been given for the expected input and return type.</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> where an <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> has been given for the expected input and return type.
 To create a <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>, use the <code>as</code> function on a <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>.
 </p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>The input type expected for this expression.  Can be <code>Any</code> if the expression is type
-          checked by the analyzer instead of the compiler (i.e. <code>expr(&quot;sum(...)&quot;)</code>).</p></dd><dt class="tparam">U</dt><dd class="cmt"><p>The output type of this column.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+          checked by the analyzer instead of the compiler (i.e. <code>expr(&quot;sum(...)&quot;)</code>).</p></dd><dt class="tparam">U</dt><dd class="cmt"><p>The output type of this column.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.UDFRegistration" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="UDFRegistrationextendsLogging"></a>
       <a id="UDFRegistration:UDFRegistration"></a>
@@ -1496,9 +1550,10 @@ To create a <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Functions for registering user-defined functions.</p><div class="fullcomment"><div class="comment cmt"><p>Functions for registering user-defined functions. Use <a href="SQLContext.html#udf:org.apache.spark.sql.UDFRegistration" class="extmbr" name="org.apache.spark.sql.SQLContext#udf">SQLContext.udf</a> to access this.
-Note that the user-defined functions must be deterministic.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Functions for registering user-defined functions.</p><div class="fullcomment"><div class="comment cmt"><p>Functions for registering user-defined functions. Use <code>SparkSession.udf</code> to access this:</p><pre>spark.udf</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The user-defined functions must be deterministic.</p></span></dd></dl></div>
     </li></ol>
             </div>
 
@@ -1562,6 +1617,8 @@ Methods for creating an <a href="Encoder.html" class="extype" name="org.apache.s
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.LockUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="LockUtils"></a>
@@ -1597,7 +1654,7 @@ Methods for creating an <a href="Encoder.html" class="extype" name="org.apache.s
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.Row" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.Row" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="Row"></a>
       <a id="Row:Row"></a>
       <h4 class="signature">
@@ -1613,7 +1670,10 @@ Methods for creating an <a href="Encoder.html" class="extype" name="org.apache.s
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SQLContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SQLContext"></a>
       <a id="SQLContext:SQLContext"></a>
@@ -1755,7 +1815,7 @@ getOrCreate instead of the global one.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.SparkSession" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.SparkSession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SparkSession"></a>
       <a id="SparkSession:SparkSession"></a>
       <h4 class="signature">
@@ -1771,7 +1831,10 @@ getOrCreate instead of the global one.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.api" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="api"></a>
       <a id="api:api"></a>
@@ -1824,23 +1887,6 @@ getOrCreate instead of the global one.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.backwardcomp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="backwardcomp"></a>
-      <a id="backwardcomp:backwardcomp"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="backwardcomp/package.html"><span class="name">backwardcomp</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@backwardcomp" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="catalog"></a>
       <a id="catalog:catalog"></a>
@@ -1877,6 +1923,23 @@ getOrCreate instead of the global one.
       <p class="shortcomment cmt">Catalyst is a library for manipulating relational query plans.</p><div class="fullcomment"><div class="comment cmt"><p>Catalyst is a library for manipulating relational query plans.  All classes in catalyst are
 considered an internal API to Spark SQL and are subject to change between minor releases.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalysts" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="catalysts"></a>
+      <a id="catalysts:catalysts"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="catalysts/package.html"><span class="name">catalysts</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@catalysts" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.collection" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="collection"></a>
       <a id="collection:collection"></a>
@@ -1947,11 +2010,9 @@ to change between minor releases.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Functions available for <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Functions available for <a href="#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+      <p class="shortcomment cmt">Functions available for DataFrame operations.</p><div class="fullcomment"><div class="comment cmt"><p>Functions available for DataFrame operations.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.hive" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -2182,10 +2243,7 @@ structs, arrays and maps.</p>
         </div>
 
         <div id="groupedMembers">
-        <div class="group" name="row">
-              <h3>Row</h3>
-              
-            </div><div class="group" name="Ungrouped">
+        <div class="group" name="Ungrouped">
               <h3>Ungrouped</h3>
               
             </div>

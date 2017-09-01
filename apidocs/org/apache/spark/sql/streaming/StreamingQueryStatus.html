@@ -45,18 +45,20 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">StreamingQueryStatus</span><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">StreamingQueryStatus</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-A class used to report information about the progress of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.
+Reports information about the instantaneous status of a streaming query.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -74,7 +76,7 @@ A class used to report information about the progress of a <a href="StreamingQue
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.streaming.StreamingQueryStatus"><span>StreamingQueryStatus</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.streaming.StreamingQueryStatus"><span>StreamingQueryStatus</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -91,7 +93,28 @@ A class used to report information about the progress of a <a href="StreamingQue
 
       <div id="template">
         <div id="allMembers">
-        
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#&lt;init&gt;" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(message:String,isDataAvailable:Boolean,isTriggerActive:Boolean):org.apache.spark.sql.streaming.StreamingQueryStatus"></a>
+      <a id="&lt;init&gt;:StreamingQueryStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">StreamingQueryStatus</span><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isDataAvailable">isDataAvailable: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isTriggerActive">isTriggerActive: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@&lt;init&gt;(message:String,isDataAvailable:Boolean,isTriggerActive:Boolean):org.apache.spark.sql.streaming.StreamingQueryStatus" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">message</dt><dd class="cmt"><p>A human readable description of what the stream is currently doing.</p></dd><dt class="param">isDataAvailable</dt><dd class="cmt"><p>True when there is new data to be processed.</p></dd><dt class="param">isTriggerActive</dt><dd class="cmt"><p>True when the trigger is actively firing, false when waiting for the
+                       next trigger time.</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
+    </li></ol>
+            </div>
 
         
 
@@ -281,41 +304,23 @@ A class used to report information about the progress of a <a href="StreamingQue
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#id" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="id:Long"></a>
-      <a id="id:Long"></a>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#isDataAvailable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isDataAvailable:Boolean"></a>
+      <a id="isDataAvailable:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">id</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">isDataAvailable</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@id:Long" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@isDataAvailable:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Id of the query.</p><div class="fullcomment"><div class="comment cmt"><p>Id of the query. This id is unique across
-         all queries that have been started in the current process.</p></div></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#inputRate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="inputRate:Double"></a>
-      <a id="inputRate:Double"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">inputRate</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@inputRate:Double" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Current rate (rows/sec) at which data is being generated by all the sources.</p>
+      <p class="shortcomment cmt">True when there is new data to be processed.</p>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -333,6 +338,24 @@ A class used to report information about the progress of a <a href="StreamingQue
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#isTriggerActive" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isTriggerActive:Boolean"></a>
+      <a id="isTriggerActive:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isTriggerActive</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@isTriggerActive:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">True when the trigger is actively firing, false when waiting for the
+                       next trigger time.</p>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#json" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="json:String"></a>
       <a id="json:String"></a>
@@ -350,41 +373,23 @@ A class used to report information about the progress of a <a href="StreamingQue
       </a>
     </span>
       <p class="shortcomment cmt">The compact JSON representation of this status.</p>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#latency" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="latency:Option[Double]"></a>
-      <a id="latency:Option[Double]"></a>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#message" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="message:String"></a>
+      <a id="message:String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">latency</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Double">Double</span>]</span>
+        <span class="name">message</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@latency:Option[Double]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@message:String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Current average latency between the data being available in source and the sink
-                  writing the corresponding output.</p>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#name" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="name:String"></a>
-      <a id="name:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@name:String" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Name of the query.</p><div class="fullcomment"><div class="comment cmt"><p>Name of the query. This name is unique across all active queries.</p></div></div>
+      <p class="shortcomment cmt">A human readable description of what the stream is currently doing.</p>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -453,58 +458,6 @@ A class used to report information about the progress of a <a href="StreamingQue
       </a>
     </span>
       <p class="shortcomment cmt">The pretty (i.e.</p><div class="fullcomment"><div class="comment cmt"><p>The pretty (i.e. indented) JSON representation of this status.</p></div></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#processingRate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="processingRate:Double"></a>
-      <a id="processingRate:Double"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">processingRate</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@processingRate:Double" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Current rate (rows/sec) at which the query is processing data from
-                      all the sources.</p>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#sinkStatus" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="sinkStatus:org.apache.spark.sql.streaming.SinkStatus"></a>
-      <a id="sinkStatus:SinkStatus"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">sinkStatus</span><span class="result">: <a href="SinkStatus.html" class="extype" name="org.apache.spark.sql.streaming.SinkStatus">SinkStatus</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@sinkStatus:org.apache.spark.sql.streaming.SinkStatus" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Current status of the sink.</p>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#sourceStatuses" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="sourceStatuses:Array[org.apache.spark.sql.streaming.SourceStatus]"></a>
-      <a id="sourceStatuses:Array[SourceStatus]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">sourceStatuses</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="SourceStatus.html" class="extype" name="org.apache.spark.sql.streaming.SourceStatus">SourceStatus</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@sourceStatuses:Array[org.apache.spark.sql.streaming.SourceStatus]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Current statuses of the sources.</p>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -522,23 +475,6 @@ A class used to report information about the progress of a <a href="StreamingQue
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#timestamp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="timestamp:Long"></a>
-      <a id="timestamp:Long"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">timestamp</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@timestamp:Long" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Timestamp (ms) of when this query was generated.</p>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -556,26 +492,6 @@ A class used to report information about the progress of a <a href="StreamingQue
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryStatus">StreamingQueryStatus</a> → AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus#triggerDetails" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="triggerDetails:java.util.Map[String,String]"></a>
-      <a id="triggerDetails:Map[String,String]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">triggerDetails</span><span class="result">: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryStatus@triggerDetails:java.util.Map[String,String]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Low-level details of the currently active trigger (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Low-level details of the currently active trigger (e.g. number of
-                     rows processed in trigger, latency of intermediate steps, etc.).
-                     If no trigger is active, then it will have details of the last completed
-                     trigger.</p></div></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -654,7 +570,11 @@ A class used to report information about the progress of a <a href="StreamingQue
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

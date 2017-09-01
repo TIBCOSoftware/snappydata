@@ -66,79 +66,59 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.datasources.AnalyzeCreateTableAsSelect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="AnalyzeCreateTableAsSelectextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
-      <a id="AnalyzeCreateTableAsSelect:AnalyzeCreateTableAsSelect"></a>
+              <ol><li name="org.apache.spark.sql.execution.datasources.AnalyzeCreateTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AnalyzeCreateTableextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
+      <a id="AnalyzeCreateTable:AnalyzeCreateTable"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="AnalyzeCreateTableAsSelect.html"><span class="name">AnalyzeCreateTableAsSelect</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="AnalyzeCreateTable.html"><span class="name">AnalyzeCreateTable</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@AnalyzeCreateTableAsSelectextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@AnalyzeCreateTableextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Analyze the query in CREATE TABLE AS SELECT (CTAS).</p><div class="fullcomment"><div class="comment cmt"><p>Analyze the query in CREATE TABLE AS SELECT (CTAS). After analysis, <a href="PreWriteCheck.html" class="extype" name="org.apache.spark.sql.execution.datasources.PreWriteCheck">PreWriteCheck</a> also
-can detect the cases that are not allowed.
+      <p class="shortcomment cmt">Analyze <a href="CreateTable.html" class="extype" name="org.apache.spark.sql.execution.datasources.CreateTable">CreateTable</a> and do some normalization and checking.</p><div class="fullcomment"><div class="comment cmt"><p>Analyze <a href="CreateTable.html" class="extype" name="org.apache.spark.sql.execution.datasources.CreateTable">CreateTable</a> and do some normalization and checking.
+For CREATE TABLE AS SELECT, the SELECT query is also analyzed.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.CaseInsensitiveMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CaseInsensitiveMapextendsMap[String,String]withSerializable"></a>
-      <a id="CaseInsensitiveMap:CaseInsensitiveMap"></a>
+    </li><li name="org.apache.spark.sql.execution.datasources.CatalogFileIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CatalogFileIndexextendsFileIndex"></a>
+      <a id="CatalogFileIndex:CatalogFileIndex"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="CaseInsensitiveMap.html"><span class="name">CaseInsensitiveMap</span></a><span class="result"> extends <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CatalogFileIndex.html"><span class="name">CatalogFileIndex</span></a><span class="result"> extends <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CaseInsensitiveMapextendsMap[String,String]withSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CatalogFileIndexextendsFileIndex" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Builds a map in which keys are case insensitive
-</p>
-    </li><li name="org.apache.spark.sql.execution.datasources.CreateTableUsing" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="CreateTableUsingextendsLeafNodewithCommandwithProductwithSerializable"></a>
-      <a id="CreateTableUsing:CreateTableUsing"></a>
+      <p class="shortcomment cmt">A <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a> for a metastore catalog table.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.CreateTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CreateTableextendsLeafNodewithCommandwithProductwithSerializable"></a>
+      <a id="CreateTable:CreateTable"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CreateTableUsing.html"><span class="name">CreateTableUsing</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="temporary">temporary: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="allowExisting">allowExisting: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="managedIfNoPath">managedIfNoPath: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CreateTable.html"><span class="name">CreateTable</span></a><span class="params">(<span name="tableDesc">tableDesc: <a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a></span>, <span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="query">query: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTableUsingextendsLeafNodewithCommandwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTableextendsLeafNodewithCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Used to represent the operation of create table using a data source.</p><div class="fullcomment"><div class="comment cmt"><p>Used to represent the operation of create table using a data source.
-</p></div><dl class="paramcmts block"><dt class="param">allowExisting</dt><dd class="cmt"><p>If it is true, we will do nothing when the table already exists.
-                     If it is false, an exception will be thrown</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.CreateTableUsingAsSelect" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CreateTableUsingAsSelectextendsLeafNodewithCommandwithProductwithSerializable"></a>
-      <a id="CreateTableUsingAsSelect:CreateTableUsingAsSelect"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="CreateTableUsingAsSelect.html"><span class="name">CreateTableUsingAsSelect</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTableUsingAsSelectextendsLeafNodewithCommandwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">A node used to support CTAS statements and saveAsTable for the data source API.</p>
+      
     </li><li name="org.apache.spark.sql.execution.datasources.CreateTempViewUsing" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CreateTempViewUsingextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
       <a id="CreateTempViewUsing:CreateTempViewUsing"></a>
@@ -148,14 +128,14 @@ can detect the cases that are not allowed.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CreateTempViewUsing.html"><span class="name">CreateTempViewUsing</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="replace">replace: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CreateTempViewUsing.html"><span class="name">CreateTempViewUsing</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="replace">replace: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="global">global: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@CreateTempViewUsingextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Create or replace a local/global temporary view with given data source.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.DataSource" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DataSourceextendsLoggingwithProductwithSerializable"></a>
       <a id="DataSource:DataSource"></a>
@@ -165,7 +145,7 @@ can detect the cases that are not allowed.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="DataSource.html"><span class="name">DataSource</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="className">className: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="paths">paths: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Nil</span></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="DataSource.html"><span class="name">DataSource</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="className">className: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="paths">paths: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Nil</span></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>, <span name="catalogTable">catalogTable: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@DataSourceextendsLoggingwithProductwithSerializable" title="Permalink" target="_top">
@@ -183,8 +163,13 @@ metadata.  For example, when reading a partitioned table from a file system, par
 will be inferred from the directory layout even if they are not specified.
 </p></div><dl class="paramcmts block"><dt class="param">paths</dt><dd class="cmt"><p>A list of file system paths that hold data.  These will be globbed before and
              qualified. This option only works when reading from a <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a>.</p></dd><dt class="param">userSpecifiedSchema</dt><dd class="cmt"><p>An optional specification of the schema of the data. When present
-                           we skip attempting to infer the schema.</p></dd><dt class="param">partitionColumns</dt><dd class="cmt"><p>A list of column names that the relation is partitioned by.  When this
-                        list is empty, the relation is unpartitioned.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>An optional specification for bucketing (hash-partitioning) of the data.</p></dd></dl></div>
+                           we skip attempting to infer the schema.</p></dd><dt class="param">partitionColumns</dt><dd class="cmt"><p>A list of column names that the relation is partitioned by. This list is
+                        generally empty during the read path, unless this DataSource is managed
+                        by Hive. In these cases, during <code>resolveRelation</code>, we will call
+                        <code>getOrInferFileFormatSchema</code> for file based DataSources to infer the
+                        partitioning. In other cases, if this list is empty, then this table
+                        is unpartitioned.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>An optional specification for bucketing (hash-partitioning) of the data.</p></dd><dt class="param">catalogTable</dt><dd class="cmt"><p>Optional catalog table reference that can be used to push down operations
+                    over the datasource to the catalog service.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.DataSourceAnalysis" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DataSourceAnalysisextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
       <a id="DataSourceAnalysis:DataSourceAnalysis"></a>
@@ -194,7 +179,7 @@ will be inferred from the directory layout even if they are not specified.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="DataSourceAnalysis.html"><span class="name">DataSourceAnalysis</span></a><span class="params">(<span name="conf">conf: <a href="../../catalyst/CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="DataSourceAnalysis.html"><span class="name">DataSourceAnalysis</span></a><span class="params">(<span name="conf">conf: <a href="../../catalyst/package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@DataSourceAnalysisextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
@@ -203,24 +188,6 @@ will be inferred from the directory layout even if they are not specified.
     </span>
       <p class="shortcomment cmt">Replaces generic operations with specific variants that are designed to work with Spark
 SQL Data Sources.</p>
-    </li><li name="org.apache.spark.sql.execution.datasources.FileCatalog" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="FileCatalogextendsAnyRef"></a>
-      <a id="FileCatalog:FileCatalog"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="FileCatalog.html"><span class="name">FileCatalog</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@FileCatalogextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">An interface for objects capable of enumerating the files that comprise a relation as well
-as the partitioning characteristics of those files.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.FileFormat" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="FileFormatextendsAnyRef"></a>
       <a id="FileFormat:FileFormat"></a>
@@ -238,7 +205,25 @@ as the partitioning characteristics of those files.</p>
       </a>
     </span>
       <p class="shortcomment cmt">Used to read and write data stored in files to/from the <span class="extype" name="InternalRow">InternalRow</span> format.</p>
-    </li><li name="org.apache.spark.sql.execution.datasources.FilePartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.datasources.FileIndex" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FileIndexextendsAnyRef"></a>
+      <a id="FileIndex:FileIndex"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FileIndex.html"><span class="name">FileIndex</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@FileIndexextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An interface for objects capable of enumerating the root paths of a relation as well as the
+partitions of a relation subject to some pruning expressions.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.FilePartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FilePartitionextendsPartitionwithProductwithSerializable"></a>
       <a id="FilePartition:FilePartition"></a>
       <h4 class="signature">
@@ -247,17 +232,15 @@ as the partitioning characteristics of those files.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="FilePartition.html"><span class="name">FilePartition</span></a><span class="params">(<span name="index">index: <span class="extype" name="scala.Int">Int</span></span>, <span name="files">files: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="PartitionedFile.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitionedFile">PartitionedFile</a>]</span>)</span><span class="result"> extends <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">spark.Partition</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="FilePartition.html"><span class="name">FilePartition</span></a><span class="params">(<span name="index">index: <span class="extype" name="scala.Int">Int</span></span>, <span name="files">files: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="PartitionedFile.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitionedFile">PartitionedFile</a>]</span>)</span><span class="result"> extends <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@FilePartitionextendsPartitionwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A collection of files that should be read as a single task possibly from multiple partitioned
-directories.</p><div class="fullcomment"><div class="comment cmt"><p>A collection of files that should be read as a single task possibly from multiple partitioned
-directories.</p><p>TODO: This currently does not take locality information about the files into account.
-</p></div></div>
+      <p class="shortcomment cmt">A collection of file blocks that should be read as a single task
+(possibly from multiple partitioned directories).</p>
     </li><li name="org.apache.spark.sql.execution.datasources.FileScanRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FileScanRDDextendsRDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="FileScanRDD:FileScanRDD"></a>
@@ -274,7 +257,28 @@ directories.</p><p>TODO: This currently does not take locality information about
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">An RDD that scans a list of file partitions.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.FileStatusCache" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="FileStatusCacheextendsAnyRef"></a>
+      <a id="FileStatusCache:FileStatusCache"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStatusCache.html"><span class="name">FileStatusCache</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@FileStatusCacheextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A cache of the leaf files of partition directories.</p><div class="fullcomment"><div class="comment cmt"><p>A cache of the leaf files of partition directories. We cache these files in order to speed
+up iterated queries over the same set of partitions. Otherwise, each query would have to
+hit remote storage in order to gather file statistics for physical planning.</p><p>Each resolved catalog table has its own FileStatusCache. When the backing relation for the
+table is refreshed via refreshTable() or refreshByPath(), this cache will be invalidated.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.datasources.FindDataSourceTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FindDataSourceTableextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="FindDataSourceTable:FindDataSourceTable"></a>
@@ -320,7 +324,7 @@ in that file.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="HadoopFsRelation.html"><span class="name">HadoopFsRelation</span></a><span class="params">(<span name="location">location: <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a></span>, <span name="partitionSchema">partitionSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="dataSchema">dataSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../FileRelation.html" class="extype" name="org.apache.spark.sql.execution.FileRelation">FileRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="HadoopFsRelation.html"><span class="name">HadoopFsRelation</span></a><span class="params">(<span name="location">location: <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a></span>, <span name="partitionSchema">partitionSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="dataSchema">dataSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../FileRelation.html" class="extype" name="org.apache.spark.sql.execution.FileRelation">FileRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@HadoopFsRelationextendsBaseRelationwithFileRelationwithProductwithSerializable" title="Permalink" target="_top">
@@ -329,9 +333,27 @@ in that file.</p>
     </span>
       <p class="shortcomment cmt">Acts as a container for all of the metadata required to read from a datasource.</p><div class="fullcomment"><div class="comment cmt"><p>Acts as a container for all of the metadata required to read from a datasource. All discovery,
 resolution and merging logic for schemas and partitions has been removed.
-</p></div><dl class="paramcmts block"><dt class="param">location</dt><dd class="cmt"><p>A <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a> that can enumerate the locations of all the files that comprise
-                this relation.</p></dd><dt class="param">partitionSchema</dt><dd class="cmt"><p>The schema of the columns (if any) that are used to partition the relation</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>The schema of any remaining columns.  Note that if any partition columns are
+</p></div><dl class="paramcmts block"><dt class="param">location</dt><dd class="cmt"><p>A <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a> that can enumerate the locations of all the files that
+                comprise this relation.</p></dd><dt class="param">partitionSchema</dt><dd class="cmt"><p>The schema of the columns (if any) that are used to partition the relation</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>The schema of any remaining columns.  Note that if any partition columns are
                   present in the actual data files as well, they are preserved.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>Describes the bucketing (hash-partitioning of the files by some column values).</p></dd><dt class="param">fileFormat</dt><dd class="cmt"><p>A file format that can be used to read and write the data in files.</p></dd><dt class="param">options</dt><dd class="cmt"><p>Configuration used when reading / writing data.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.InMemoryFileIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InMemoryFileIndexextendsPartitioningAwareFileIndex"></a>
+      <a id="InMemoryFileIndex:InMemoryFileIndex"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="InMemoryFileIndex.html"><span class="name">InMemoryFileIndex</span></a><span class="result"> extends <a href="PartitioningAwareFileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitioningAwareFileIndex">PartitioningAwareFileIndex</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@InMemoryFileIndexextendsPartitioningAwareFileIndex" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a> that generates the list of files to process by recursively listing all the
+files present in <code>paths</code>.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="InsertIntoDataSourceCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
       <a id="InsertIntoDataSourceCommand:InsertIntoDataSourceCommand"></a>
@@ -341,7 +363,7 @@ resolution and merging logic for schemas and partitions has been removed.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="InsertIntoDataSourceCommand.html"><span class="name">InsertIntoDataSourceCommand</span></a><span class="params">(<span name="logicalRelation">logicalRelation: <a href="LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="overwrite">overwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InsertIntoDataSourceCommand.html"><span class="name">InsertIntoDataSourceCommand</span></a><span class="params">(<span name="logicalRelation">logicalRelation: <a href="LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="overwrite">overwrite: <a href="../../catalyst/plans/logical/OverwriteOptions.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions">OverwriteOptions</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@InsertIntoDataSourceCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
@@ -358,7 +380,7 @@ resolution and merging logic for schemas and partitions has been removed.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="InsertIntoHadoopFsRelationCommand.html"><span class="name">InsertIntoHadoopFsRelationCommand</span></a><span class="params">(<span name="outputPath">outputPath: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="refreshFunction">refreshFunction: () ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InsertIntoHadoopFsRelationCommand.html"><span class="name">InsertIntoHadoopFsRelationCommand</span></a><span class="params">(<span name="outputPath">outputPath: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>, <span name="staticPartitionKeys">staticPartitionKeys: <a href="../../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>, <span name="customPartitionLocations">customPartitionLocations: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="refreshFunction">refreshFunction: (<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a>]) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="catalogTable">catalogTable: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@InsertIntoHadoopFsRelationCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
@@ -366,38 +388,14 @@ resolution and merging logic for schemas and partitions has been removed.
       </a>
     </span>
       <p class="shortcomment cmt">A command for writing data to a <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A command for writing data to a <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a>.  Supports both overwriting and appending.
-Writing to dynamic partitions is also supported.  Each <a href="InsertIntoHadoopFsRelationCommand.html" class="extype" name="org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand">InsertIntoHadoopFsRelationCommand</a>
-issues a single write job, and owns a UUID that identifies this job.  Each concrete
-implementation of <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> should use this UUID together with task id to generate
-unique file path for each task output file.  This UUID is passed to executor side via a
-property named <code>spark.sql.sources.writeJobUUID</code>.</p><p>Different writer containers, <span class="extype" name="DefaultWriterContainer">DefaultWriterContainer</span> and <span class="extype" name="DynamicPartitionWriterContainer">DynamicPartitionWriterContainer</span>
-are used to write to normal tables and tables with dynamic partitions.</p><p>Basic work flow of this command is:</p><ol class="decimal"><li>Driver side setup, including output committer initialization and data source specific
-     preparation work for the write job to be issued.
-  2. Issues a write job consists of one or more executor side tasks, each of which writes all
-     rows within an RDD partition.
-  3. If no exception is thrown in a task, commits that task, otherwise aborts that task;  If any
-     exception is thrown during task commitment, also aborts that task.
-  4. If all tasks are committed, commit the job, otherwise aborts the job;  If any exception is
-     thrown during job commitment, also aborts the job.
-</li></ol></div></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.ListingFileCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ListingFileCatalogextendsPartitioningAwareFileCatalog"></a>
-      <a id="ListingFileCatalog:ListingFileCatalog"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ListingFileCatalog.html"><span class="name">ListingFileCatalog</span></a><span class="result"> extends <a href="PartitioningAwareFileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitioningAwareFileCatalog">PartitioningAwareFileCatalog</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@ListingFileCatalogextendsPartitioningAwareFileCatalog" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">A <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a> that generates the list of files to process by recursively listing all the
-files present in <code>paths</code>.</p>
+Writing to dynamic partitions is also supported.
+</p></div><dl class="paramcmts block"><dt class="param">staticPartitionKeys</dt><dd class="cmt"><p>partial partitioning spec for write. This defines the scope of
+                           partition overwrites: when the spec is empty, all partitions are
+                           overwritten. When it covers a prefix of the partition keys, only
+                           partitions matching the prefix are overwritten.</p></dd><dt class="param">customPartitionLocations</dt><dd class="cmt"><p>mapping of partition specs to their custom locations. The
+                                caller should guarantee that exactly those table partitions
+                                falling under the specified static partition keys are contained
+                                in this map, and that no other partitions are.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.LogicalRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LogicalRelationextendsLeafNodewithMultiInstanceRelationwithProductwithSerializable"></a>
       <a id="LogicalRelation:LogicalRelation"></a>
@@ -407,7 +405,7 @@ files present in <code>paths</code>.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="LogicalRelation.html"><span class="name">LogicalRelation</span></a><span class="params">(<span name="relation">relation: <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>, <span name="expectedOutputAttributes">expectedOutputAttributes: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="metastoreTableIdentifier">metastoreTableIdentifier: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../../catalyst/analysis/MultiInstanceRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation">MultiInstanceRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="LogicalRelation.html"><span class="name">LogicalRelation</span></a><span class="params">(<span name="relation">relation: <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>, <span name="expectedOutputAttributes">expectedOutputAttributes: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="catalogTable">catalogTable: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../../catalyst/analysis/MultiInstanceRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation">MultiInstanceRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@LogicalRelationextendsLeafNodewithMultiInstanceRelationwithProductwithSerializable" title="Permalink" target="_top">
@@ -434,17 +432,12 @@ this purpose.  See https://issues.apache.org/jira/browse/SPARK-10741 for more de
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">::Experimental::
-<a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> is used together with <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> for persisting rows to the
-underlying file system.</p><div class="fullcomment"><div class="comment cmt"><p>::Experimental::
-<a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> is used together with <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> for persisting rows to the
+      <p class="shortcomment cmt"><a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> is used together with <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> for persisting rows to the
+underlying file system.</p><div class="fullcomment"><div class="comment cmt"><p><a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> is used together with <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> for persisting rows to the
 underlying file system.  Subclasses of <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> must provide a zero-argument constructor.
 An <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> instance is created and initialized when a new output file is opened on
 executor side.  This instance is used to persist rows to this single output file.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.datasources.OutputWriterFactory" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="OutputWriterFactoryextendsSerializable"></a>
       <a id="OutputWriterFactory:OutputWriterFactory"></a>
@@ -461,34 +454,11 @@ executor side.  This instance is used to persist rows to this single output file
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">::Experimental::
-A factory that produces <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s.</p><div class="fullcomment"><div class="comment cmt"><p>::Experimental::
-A factory that produces <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s.  A new <a href="OutputWriterFactory.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriterFactory">OutputWriterFactory</a> is created on driver
+      <p class="shortcomment cmt">A factory that produces <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s.</p><div class="fullcomment"><div class="comment cmt"><p>A factory that produces <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s.  A new <a href="OutputWriterFactory.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriterFactory">OutputWriterFactory</a> is created on driver
 side for each write job issued when writing to a <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a>, and then gets serialized
 to executor side to create actual <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s on the fly.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.Partition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="PartitionextendsProductwithSerializable"></a>
-      <a id="Partition:Partition"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="Partition.html"><span class="name">Partition</span></a><span class="params">(<span name="values">values: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="files">files: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.hadoop.fs.FileStatus">FileStatus</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitionextendsProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">A collection of data files from a partitioned relation, along with the partition values in the
-form of an <span class="extype" name="InternalRow">InternalRow</span>.</p>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitionDirectory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitionDirectory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PartitionDirectoryextendsProductwithSerializable"></a>
       <a id="PartitionDirectory:PartitionDirectory"></a>
       <h4 class="signature">
@@ -497,10 +467,28 @@ form of an <span class="extype" name="InternalRow">InternalRow</span>.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="PartitionDirectory.html"><span class="name">PartitionDirectory</span></a><span class="params">(<span name="values">values: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="path">path: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="PartitionDirectory.html"><span class="name">PartitionDirectory</span></a><span class="params">(<span name="values">values: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="files">files: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.hadoop.fs.FileStatus">FileStatus</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitionDirectoryextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A collection of data files from a partitioned relation, along with the partition values in the
+form of an <span class="extype" name="InternalRow">InternalRow</span>.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitionPath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PartitionPathextendsProductwithSerializable"></a>
+      <a id="PartitionPath:PartitionPath"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionPath.html"><span class="name">PartitionPath</span></a><span class="params">(<span name="values">values: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="path">path: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitionPathextendsProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -517,7 +505,7 @@ in the form of a Row.  Before scanning, the files at <code>path</code> need to b
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="PartitionSpec.html"><span class="name">PartitionSpec</span></a><span class="params">(<span name="partitionColumns">partitionColumns: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="partitions">partitions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="PartitionDirectory.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitionDirectory">PartitionDirectory</a>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="PartitionSpec.html"><span class="name">PartitionSpec</span></a><span class="params">(<span name="partitionColumns">partitionColumns: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="partitions">partitions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="PartitionPath.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitionPath">PartitionPath</a>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitionSpecextendsProductwithSerializable" title="Permalink" target="_top">
@@ -541,28 +529,26 @@ in the form of a Row.  Before scanning, the files at <code>path</code> need to b
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A single file that should be read, along with partition column values that
-need to be prepended to each row.</p><div class="fullcomment"><div class="comment cmt"><p>A single file that should be read, along with partition column values that
-need to be prepended to each row.  The reading should start at the first
-valid record found after <code>start</code>.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningAwareFileCatalog" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="PartitioningAwareFileCatalogextendsFileCatalogwithLogging"></a>
-      <a id="PartitioningAwareFileCatalog:PartitioningAwareFileCatalog"></a>
+      <p class="shortcomment cmt">A part (i.e.</p><div class="fullcomment"><div class="comment cmt"><p>A part (i.e. &quot;block&quot;) of a single file that should be read, along with partition column values
+that need to be prepended to each row.
+</p></div><dl class="paramcmts block"><dt class="param">partitionValues</dt><dd class="cmt"><p>value of partition columns to be prepended to each row.</p></dd><dt class="param">filePath</dt><dd class="cmt"><p>path of the file to read</p></dd><dt class="param">start</dt><dd class="cmt"><p>the beginning offset (in bytes) of the block.</p></dd><dt class="param">length</dt><dd class="cmt"><p>number of bytes to read.</p></dd><dt class="param">locations</dt><dd class="cmt"><p>locality information (list of nodes that have the data).</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningAwareFileIndex" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="PartitioningAwareFileIndexextendsFileIndexwithLogging"></a>
+      <a id="PartitioningAwareFileIndex:PartitioningAwareFileIndex"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="PartitioningAwareFileCatalog.html"><span class="name">PartitioningAwareFileCatalog</span></a><span class="result"> extends <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+        <a href="PartitioningAwareFileIndex.html"><span class="name">PartitioningAwareFileIndex</span></a><span class="result"> extends <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitioningAwareFileCatalogextendsFileCatalogwithLogging" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitioningAwareFileIndexextendsFileIndexwithLogging" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">An abstract class that represents <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a>s that are aware of partitioned tables.</p><div class="fullcomment"><div class="comment cmt"><p>An abstract class that represents <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a>s that are aware of partitioned tables.
+      <p class="shortcomment cmt">An abstract class that represents <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a>s that are aware of partitioned tables.</p><div class="fullcomment"><div class="comment cmt"><p>An abstract class that represents <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a>s that are aware of partitioned tables.
 It provides the necessary methods to parse partition data based on a set of files.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.datasources.PreWriteCheck" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -574,7 +560,7 @@ It provides the necessary methods to parse partition data based on a set of file
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="PreWriteCheck.html"><span class="name">PreWriteCheck</span></a><span class="params">(<span name="conf">conf: <span class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</span></span>, <span name="catalog">catalog: <a href="../../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></span>)</span><span class="result"> extends (<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="PreWriteCheck.html"><span class="name">PreWriteCheck</span></a><span class="params">(<span name="conf">conf: <a href="../../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>, <span name="catalog">catalog: <a href="../../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></span>)</span><span class="result"> extends (<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PreWriteCheckextendsorg.apache.spark.sql.catalyst.plans.logical.LogicalPlan=&gt;UnitwithProductwithSerializable" title="Permalink" target="_top">
@@ -591,7 +577,7 @@ It provides the necessary methods to parse partition data based on a set of file
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="PreprocessTableInsertion.html"><span class="name">PreprocessTableInsertion</span></a><span class="params">(<span name="conf">conf: <span class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</span></span>)</span><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="PreprocessTableInsertion.html"><span class="name">PreprocessTableInsertion</span></a><span class="params">(<span name="conf">conf: <a href="../../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>)</span><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PreprocessTableInsertionextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
@@ -673,6 +659,24 @@ column batches by pretending they are rows.
       </a>
     </span>
       <p class="shortcomment cmt">Try to replaces <span class="extype" name="UnresolvedRelation">UnresolvedRelation</span>s with <a href="ResolveDataSource.html" class="extype" name="org.apache.spark.sql.execution.datasources.ResolveDataSource">ResolveDataSource</a>.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.SQLHadoopMapReduceCommitProtocol" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SQLHadoopMapReduceCommitProtocolextendsHadoopMapReduceCommitProtocolwithSerializablewithLogging"></a>
+      <a id="SQLHadoopMapReduceCommitProtocol:SQLHadoopMapReduceCommitProtocol"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SQLHadoopMapReduceCommitProtocol.html"><span class="name">SQLHadoopMapReduceCommitProtocol</span></a><span class="result"> extends <a href="../../../internal/io/HadoopMapReduceCommitProtocol.html" class="extype" name="org.apache.spark.internal.io.HadoopMapReduceCommitProtocol">HadoopMapReduceCommitProtocol</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@SQLHadoopMapReduceCommitProtocolextendsHadoopMapReduceCommitProtocolwithSerializablewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A variant of <span class="extype" name="HadoopMapReduceCommitProtocol">HadoopMapReduceCommitProtocol</span> that allows specifying the actual
+Hadoop output committer using an option specified in SQLConf.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.TextBasedFileFormat" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="TextBasedFileFormatextendsFileFormat"></a>
       <a id="TextBasedFileFormat:TextBasedFileFormat"></a>
@@ -714,6 +718,23 @@ column batches by pretending they are rows.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.datasources.DataSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DataSource"></a>
+      <a id="DataSource:DataSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DataSource$.html"><span class="name">DataSource</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@DataSource" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.datasources.DataSourceStrategy" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DataSourceStrategy"></a>
       <a id="DataSourceStrategy:DataSourceStrategy"></a>
@@ -731,6 +752,23 @@ column batches by pretending they are rows.
       </a>
     </span>
       <p class="shortcomment cmt">A Strategy for planning scans over data sources defined using the sources API.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.FileFormatWriter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileFormatWriter"></a>
+      <a id="FileFormatWriter:FileFormatWriter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FileFormatWriter$.html"><span class="name">FileFormatWriter</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@FileFormatWriter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A helper object for writing FileFormat data out to a location.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.FileSourceStrategy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="FileSourceStrategy"></a>
       <a id="FileSourceStrategy:FileSourceStrategy"></a>
@@ -755,36 +793,71 @@ by user specified columns.</p><p>At a high level planning occurs in several phas
     is under the threshold with the addition of the next file, add it.  If not, open a new bucket
     and add it.  Proceed to the next file.
 </li></ul></li></ul></div></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.HadoopFsRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="HadoopFsRelation"></a>
-      <a id="HadoopFsRelation:HadoopFsRelation"></a>
+    </li><li name="org.apache.spark.sql.execution.datasources.FileStatusCache" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStatusCache"></a>
+      <a id="FileStatusCache:FileStatusCache"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="HadoopFsRelation$.html"><span class="name">HadoopFsRelation</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="FileStatusCache$.html"><span class="name">FileStatusCache</span></a>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@HadoopFsRelation" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@FileStatusCache" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Helper methods for gathering metadata from HDFS.</p>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitionDirectory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="PartitionDirectory"></a>
-      <a id="PartitionDirectory:PartitionDirectory"></a>
+      <p class="shortcomment cmt">Use <span class="extype" name="FileStatusCache.getOrCreate()">FileStatusCache.getOrCreate()</span> to construct a globally shared file status cache.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.HiveOnlyCheck" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveOnlyCheck"></a>
+      <a id="HiveOnlyCheck:HiveOnlyCheck"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="PartitionDirectory$.html"><span class="name">PartitionDirectory</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="HiveOnlyCheck$.html"><span class="name">HiveOnlyCheck</span></a><span class="result"> extends (<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitionDirectory" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@HiveOnlyCheck" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A rule to check whether the functions are supported only when Hive support is enabled
+</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.NoopCache" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NoopCache"></a>
+      <a id="NoopCache:NoopCache"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="NoopCache$.html"><span class="name">NoopCache</span></a><span class="result"> extends <a href="FileStatusCache.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileStatusCache">FileStatusCache</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@NoopCache" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A non-caching implementation used when partition file status caching is disabled.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitionPath" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PartitionPath"></a>
+      <a id="PartitionPath:PartitionPath"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionPath$.html"><span class="name">PartitionPath</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitionPath" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -802,6 +875,23 @@ by user specified columns.</p><p>At a high level planning occurs in several phas
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitionSpec" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningAwareFileIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PartitioningAwareFileIndex"></a>
+      <a id="PartitioningAwareFileIndex:PartitioningAwareFileIndex"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitioningAwareFileIndex$.html"><span class="name">PartitioningAwareFileIndex</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.package@PartitioningAwareFileIndex" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

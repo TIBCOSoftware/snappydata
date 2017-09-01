@@ -45,14 +45,14 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">GeneratePredicate</span><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, (<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span>]</span>
+        <span class="name">GeneratePredicate</span><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a>]</span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Generates bytecode that evaluates a boolean <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> on a given input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, (<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -223,18 +223,18 @@ cosmetically.
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GeneratePredicate#create" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="create(predicate:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.InternalRow=&gt;Boolean"></a>
-      <a id="create(Expression):(InternalRow)⇒Boolean"></a>
+      <a id="create(predicate:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.codegen.Predicate"></a>
+      <a id="create(Expression):Predicate"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">create</span><span class="params">(<span name="predicate">predicate: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: (<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">create</span><span class="params">(<span name="predicate">predicate: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.GeneratePredicate$@create(predicate:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.InternalRow=&gt;Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.GeneratePredicate$@create(predicate:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.codegen.Predicate" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -300,14 +300,14 @@ already available.
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator#generate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="generate(expressions:InType):OutType"></a>
-      <a id="generate(Expression):(InternalRow)⇒Boolean"></a>
+      <a id="generate(Expression):Predicate"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generate</span><span class="params">(<span name="expressions">expressions: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: (<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">generate</span><span class="params">(<span name="expressions">expressions: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.GeneratePredicate$@generate(expressions:InType):OutType" title="Permalink" target="_top">
@@ -317,14 +317,14 @@ already available.
       <p class="shortcomment cmt">Generates the requested evaluator given already bound expression(s).</p><div class="fullcomment"><div class="comment cmt"><p>Generates the requested evaluator given already bound expression(s).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator#generate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="generate(expressions:InType,inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):OutType"></a>
-      <a id="generate(Expression,Seq[Attribute]):(InternalRow)⇒Boolean"></a>
+      <a id="generate(Expression,Seq[Attribute]):Predicate"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generate</span><span class="params">(<span name="expressions">expressions: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="inputSchema">inputSchema: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: (<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">generate</span><span class="params">(<span name="expressions">expressions: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="inputSchema">inputSchema: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: <a href="Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.GeneratePredicate$@generate(expressions:InType,inputSchema:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):OutType" title="Permalink" target="_top">
@@ -857,7 +857,7 @@ expressions that don't support codegen
 
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">
-              <h3>Inherited from <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, (<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span>]</h3>
+              <h3>Inherited from <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a>]</h3>
             </div><div class="parent" name="org.apache.spark.internal.Logging">
               <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
             </div><div class="parent" name="scala.AnyRef">

@@ -49,8 +49,11 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Runtime configuration interface for Spark. To access this, use <a href="SparkSession.html#conf:org.apache.spark.sql.RuntimeConfig" class="extmbr" name="org.apache.spark.sql.SparkSession#conf">SparkSession.conf</a>.</p><p>Options set here are automatically propagated to the Hadoop configuration during I/O.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Runtime configuration interface for Spark. To access this, use <code>SparkSession.conf</code>.</p><p>Options set here are automatically propagated to the Hadoop configuration during I/O.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -361,7 +364,8 @@
       <span class="symbol">&quot;if the key is not set&quot;</span>
     </span>)</span>
               
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="NoSuchElementException"><code>NoSuchElementException</code></span> if the key is not set and does not have a default value</p></span></dd></dl></div>
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="java.util.NoSuchElementException"><code>java.util.NoSuchElementException</code></span> if the key is not set and does not have a default
+                                         value</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.RuntimeConfig#getAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getAll:Map[String,String]"></a>
       <a id="getAll:Map[String,String]"></a>

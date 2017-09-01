@@ -51,14 +51,13 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>java.math.BigDecimal</code> values.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The data type representing <code>java.math.BigDecimal</code> values.
 A Decimal that must have fixed precision (the maximum number of digits) and scale (the number
-of digits on right side of dot).</p><p>The precision can be up to 38, scale can also be up to 38 (less or equal to precision).</p><p>The default precision and scale is (10, 0).</p><p>Please use <span class="extype" name="DataTypes.createDecimalType()">DataTypes.createDecimalType()</span> to create a specific instance.
+of digits on right side of dot).</p><p>The precision can be up to 38, scale can also be up to 38 (less or equal to precision).</p><p>The default precision and scale is (10, 0).</p><p>Please use <code>DataTypes.createDecimalType()</code> to create a specific instance.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl><div class="toggleContainer block">
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="org.apache.spark.sql.types.FractionalType">FractionalType</span>, <a href="NumericType.html" class="extype" name="org.apache.spark.sql.types.NumericType">NumericType</a>, <a href="AtomicType.html" class="extype" name="org.apache.spark.sql.types.AtomicType">AtomicType</a>, <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="org.apache.spark.sql.types.AbstractDataType">AbstractDataType</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -281,7 +280,9 @@ of digits on right side of dot).</p><p>The precision can be up to 38, scale can 
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The default size of a value of the DecimalType is 8 bytes (precision &lt;= 18) or 16 bytes.</p><div class="fullcomment"><div class="comment cmt"><p>The default size of a value of the DecimalType is 8 bytes (precision &lt;= 18) or 16 bytes.
+      <p class="shortcomment cmt">The default size of a value of the DecimalType is 8 bytes when precision is at most 18,
+and 16 bytes otherwise.</p><div class="fullcomment"><div class="comment cmt"><p>The default size of a value of the DecimalType is 8 bytes when precision is at most 18,
+and 16 bytes otherwise.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.types.DecimalType">DecimalType</a> → <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>

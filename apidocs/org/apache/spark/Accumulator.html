@@ -55,7 +55,7 @@ associative and commutative operation and can therefore be efficiently supported
 They can be used to implement counters (as in MapReduce) or sums. Spark natively supports
 accumulators of numeric value types, and programmers can add support for new types.</p><p>An accumulator is created from an initial value <code>v</code> by calling
 <a href="SparkContext.html#accumulator[T](initialValue:T,name:String)(implicitparam:org.apache.spark.AccumulatorParam[T]):org.apache.spark.Accumulator[T]" class="extmbr" name="org.apache.spark.SparkContext#accumulator">SparkContext.accumulator</a>.
-Tasks running on the cluster can then add to it using the <a href="Accumulable.html#+=(term:T):Unit" class="extmbr" name="org.apache.spark.Accumulable#+=">+=</a> operator.
+Tasks running on the cluster can then add to it using the <code>+=</code> operator.
 However, they cannot read its value. Only the driver program can read the accumulator's value,
 using its <a href="#value:R" class="extmbr" name="org.apache.spark.Accumulator#value">#value</a> method.</p><p>The interpreter session below shows an accumulator being used to add up the elements of an array:</p><pre>scala&gt; <span class="kw">val</span> accum = sc.accumulator(<span class="num">0</span>)
 accum: org.apache.spark.Accumulator[<span class="std">Int</span>] = <span class="num">0</span>

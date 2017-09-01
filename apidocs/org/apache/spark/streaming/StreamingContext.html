@@ -361,9 +361,9 @@ generating one byte array per record.</p><div class="fullcomment"><div class="co
 for new files and reads them as flat binary files, assuming a fixed length per record,
 generating one byte array per record. Files must be written to the monitored directory
 by &quot;moving&quot; them from another location within the same file system. File names
-starting with . are ignored.</p><p><b>Note:</b> We ensure that the byte array for each record in the
-resulting RDDs of the DStream has the provided record length.
-</p></div><dl class="paramcmts block"><dt class="param">directory</dt><dd class="cmt"><p>HDFS directory to monitor for new file</p></dd><dt class="param">recordLength</dt><dd class="cmt"><p>length of each record in bytes</p></dd></dl></div>
+starting with . are ignored.
+</p></div><dl class="paramcmts block"><dt class="param">directory</dt><dd class="cmt"><p>HDFS directory to monitor for new file</p></dd><dt class="param">recordLength</dt><dd class="cmt"><p>length of each record in bytes</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>We ensure that the byte array for each record in the
+resulting RDDs of the DStream has the provided record length.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.StreamingContext#checkpoint" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="checkpoint(directory:String):Unit"></a>
       <a id="checkpoint(String):Unit"></a>
@@ -941,10 +941,10 @@ location within the same file system. File names starting with . are ignored.</p
       </a>
     </span>
       <p class="shortcomment cmt">Create an input stream from a queue of RDDs.</p><div class="fullcomment"><div class="comment cmt"><p>Create an input stream from a queue of RDDs. In each batch,
-it will process either one or all of the RDDs returned by the queue.</p><p>NOTE: Arbitrary RDDs can be added to <code>queueStream</code>, there is no way to recover data of
-those RDDs, so <code>queueStream</code> doesn't support checkpointing.
+it will process either one or all of the RDDs returned by the queue.
 </p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs. Modifications to this data structure must be synchronized.</p></dd><dt class="param">oneAtATime</dt><dd class="cmt"><p>Whether only one RDD should be consumed from the queue in every interval</p></dd><dt class="param">defaultRDD</dt><dd class="cmt"><p>Default RDD is returned by the DStream when the queue is empty.
-                  Set as null if no RDD should be returned when empty</p></dd></dl></div>
+                  Set as null if no RDD should be returned when empty</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Arbitrary RDDs can be added to <code>queueStream</code>, there is no way to recover data of
+those RDDs, so <code>queueStream</code> doesn't support checkpointing.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.StreamingContext#queueStream" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="queueStream[T](queue:scala.collection.mutable.Queue[org.apache.spark.rdd.RDD[T]],oneAtATime:Boolean)(implicitevidence$13:scala.reflect.ClassTag[T]):org.apache.spark.streaming.dstream.InputDStream[T]"></a>
       <a id="queueStream[T](Queue[RDD[T]],Boolean)(ClassTag[T]):InputDStream[T]"></a>
@@ -962,9 +962,9 @@ those RDDs, so <code>queueStream</code> doesn't support checkpointing.
       </a>
     </span>
       <p class="shortcomment cmt">Create an input stream from a queue of RDDs.</p><div class="fullcomment"><div class="comment cmt"><p>Create an input stream from a queue of RDDs. In each batch,
-it will process either one or all of the RDDs returned by the queue.</p><p>NOTE: Arbitrary RDDs can be added to <code>queueStream</code>, there is no way to recover data of
-those RDDs, so <code>queueStream</code> doesn't support checkpointing.
-</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs. Modifications to this data structure must be synchronized.</p></dd><dt class="param">oneAtATime</dt><dd class="cmt"><p>Whether only one RDD should be consumed from the queue in every interval</p></dd></dl></div>
+it will process either one or all of the RDDs returned by the queue.
+</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs. Modifications to this data structure must be synchronized.</p></dd><dt class="param">oneAtATime</dt><dd class="cmt"><p>Whether only one RDD should be consumed from the queue in every interval</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Arbitrary RDDs can be added to <code>queueStream</code>, there is no way to recover data of
+those RDDs, so <code>queueStream</code> doesn't support checkpointing.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.StreamingContext#rawSocketStream" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="rawSocketStream[T](hostname:String,port:Int,storageLevel:org.apache.spark.storage.StorageLevel)(implicitevidence$3:scala.reflect.ClassTag[T]):org.apache.spark.streaming.dstream.ReceiverInputDStream[T]"></a>
       <a id="rawSocketStream[T](String,Int,StorageLevel)(ClassTag[T]):ReceiverInputDStream[T]"></a>

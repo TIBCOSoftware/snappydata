@@ -54,8 +54,8 @@ be prepared to handle empty / missing information.  For example, a job's stage i
 but the status API may not have any information about the details of those stages, so
 <code>getStageInfo</code> could potentially return <code>null</code> for a valid stage id.</p><p>To limit memory usage, these APIs only provide information on recent jobs / stages.  These APIs
 will provide information for the last <code>spark.ui.retainedStages</code> stages and
-<code>spark.ui.retainedJobs</code> jobs.</p><p>NOTE: this class's constructor should be considered private and may be subject to change.
-</p></div><div class="toggleContainer block">
+<code>spark.ui.retainedJobs</code> jobs.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This class's constructor should be considered private and may be subject to change.</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>

@@ -103,7 +103,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Analyzer</span><span class="params">(<span name="catalog">catalog: <a href="../catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></span>, <span name="conf">conf: <a href="../CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span>
+        <span class="name">Analyzer</span><span class="params">(<span name="catalog">catalog: <a href="../catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></span>, <span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.Analyzer@&lt;init&gt;(catalog:org.apache.spark.sql.catalyst.catalog.SessionCatalog,conf:org.apache.spark.sql.catalyst.CatalystConf):org.apache.spark.sql.catalyst.analysis.Analyzer" title="Permalink" target="_top">
@@ -120,7 +120,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Analyzer</span><span class="params">(<span name="catalog">catalog: <a href="../catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></span>, <span name="conf">conf: <a href="../CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>, <span name="maxIterations">maxIterations: <span class="extype" name="scala.Int">Int</span></span>)</span>
+        <span class="name">Analyzer</span><span class="params">(<span name="catalog">catalog: <a href="../catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></span>, <span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>, <span name="maxIterations">maxIterations: <span class="extype" name="scala.Int">Int</span></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.Analyzer@&lt;init&gt;(catalog:org.apache.spark.sql.catalyst.catalog.SessionCatalog,conf:org.apache.spark.sql.catalyst.CatalystConf,maxIterations:Int):org.apache.spark.sql.catalyst.analysis.Analyzer" title="Permalink" target="_top">
@@ -260,8 +260,7 @@ execution reaches fix point (i.e. converge) before maxIterations, it will stop.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Substitute child plan with cte definitions
-</p>
+      <p class="shortcomment cmt">Analyze cte definitions and substitute child plan with analyzed cte definitions.</p>
     </li><li name="org.apache.spark.sql.catalyst.analysis.Analyzer.ExtractGenerator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ExtractGenerator"></a>
       <a id="ExtractGenerator:ExtractGenerator"></a>
@@ -806,6 +805,24 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
 - <code>canEvaluate(EqualTo(a,c), R)</code> returns <code>false</code>
 - <code>canEvaluate(Literal(1), R)</code> returns <code>true</code> as literals CAN be evaluated on any plan
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.PredicateHelper#canEvaluateWithinJoin" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean"></a>
+      <a id="canEvaluateWithinJoin(Expression):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEvaluateWithinJoin</span><span class="params">(<span name="expr">expr: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.Analyzer@canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns true iff <code>expr</code> could be evaluated as a condition within join.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true iff <code>expr</code> could be evaluated as a condition within join.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.analysis.CheckAnalysis#checkAnalysis" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="checkAnalysis(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit"></a>
       <a id="checkAnalysis(LogicalPlan):Unit"></a>
@@ -1026,6 +1043,23 @@ These rules will be evaluated after our built-in check rules.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.CheckAnalysis#hasMapType" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasMapType(dt:org.apache.spark.sql.types.DataType):Boolean"></a>
+      <a id="hasMapType(DataType):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasMapType</span><span class="params">(<span name="dt">dt: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.Analyzer@hasMapType(dt:org.apache.spark.sql.types.DataType):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="CheckAnalysis.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.CheckAnalysis">CheckAnalysis</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1332,6 +1366,23 @@ These rules will be evaluated after our built-in check rules.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.CheckAnalysis#mapColumnInSetOperation" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapColumnInSetOperation(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Option[org.apache.spark.sql.catalyst.expressions.Attribute]"></a>
+      <a id="mapColumnInSetOperation(LogicalPlan):Option[Attribute]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapColumnInSetOperation</span><span class="params">(<span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.Analyzer@mapColumnInSetOperation(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Option[org.apache.spark.sql.catalyst.expressions.Attribute]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="CheckAnalysis.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.CheckAnalysis">CheckAnalysis</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>

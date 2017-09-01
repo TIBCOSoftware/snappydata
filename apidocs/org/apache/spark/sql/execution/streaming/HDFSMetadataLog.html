@@ -47,7 +47,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">HDFSMetadataLog</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a>[<span class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog.T">T</span>] with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+        <span class="name">HDFSMetadataLog</span><span class="tparams">[<span name="T">T &lt;: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="result"> extends <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a>[<span class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog.T">T</span>] with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
       </span>
       </h4>
       
@@ -61,7 +61,7 @@ files in a directory always shows the latest files.
           <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a>[<span class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog.T">T</span>], <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a>, <a href="FileStreamSinkLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog">FileStreamSinkLog</a>, <a href="FileStreamSourceLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog">FileStreamSourceLog</a></div>
+            <div class="subClasses hiddenContent"><a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a>, <a href="FileStreamSinkLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog">FileStreamSinkLog</a>, <a href="FileStreamSourceLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog">FileStreamSourceLog</a>, <a href="OffsetSeqLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeqLog">OffsetSeqLog</a></div>
           </div></div>
         
 
@@ -192,14 +192,7 @@ files in a directory always shows the latest files.
       </a>
     </span>
       <p class="shortcomment cmt">Store the metadata for the specified batchId and return <code>true</code> if successful.</p><div class="fullcomment"><div class="comment cmt"><p>Store the metadata for the specified batchId and return <code>true</code> if successful. If the batchId's
-metadata has already been stored, this method will return <code>false</code>.</p><p>Note that this method must be called on a <span class="extype" name="org.apache.spark.util.UninterruptibleThread">org.apache.spark.util.UninterruptibleThread</span>
-so that interrupts can be disabled while writing the batch file. This is because there is a
-potential dead-lock in Hadoop &quot;Shell.runCommand&quot; before 2.5.0 (HADOOP-10622). If the thread
-running &quot;Shell.runCommand&quot; is interrupted, then the thread can get deadlocked. In our
-case, <code>writeBatch</code> creates a file using HDFS API and calls &quot;Shell.runCommand&quot; to set the
-file permissions, and can get deadlocked if the stream execution thread is stopped by
-interrupt. Hence, we make sure that this method is called on <span class="extype" name="UninterruptibleThread">UninterruptibleThread</span> which
-allows us to disable interrupts here. Also see SPARK-14131.
+metadata has already been stored, this method will return <code>false</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> → <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
@@ -218,6 +211,25 @@ allows us to disable interrupts here. Also see SPARK-14131.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog#batchFilesFilter" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="batchFilesFilter:org.apache.hadoop.fs.PathFilter"></a>
+      <a id="batchFilesFilter:PathFilter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batchFilesFilter</span><span class="result">: <span class="extype" name="org.apache.hadoop.fs.PathFilter">PathFilter</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.HDFSMetadataLog@batchFilesFilter:org.apache.hadoop.fs.PathFilter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <code>PathFilter</code> to filter only batch files
+</p><div class="fullcomment"><div class="comment cmt"><p>A <code>PathFilter</code> to filter only batch files
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog#batchIdToPath" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="batchIdToPath(batchId:Long):org.apache.hadoop.fs.Path"></a>
       <a id="batchIdToPath(Long):Path"></a>
@@ -386,6 +398,23 @@ allows us to disable interrupts here. Also see SPARK-14131.
     </span>
       <p class="shortcomment cmt">Return the metadata for the specified batchId if it's stored.</p><div class="fullcomment"><div class="comment cmt"><p>Return the metadata for the specified batchId if it's stored. Otherwise, return None.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> → <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog#get" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="get(batchFile:org.apache.hadoop.fs.Path):Option[T]"></a>
+      <a id="get(Path):Option[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">get</span><span class="params">(<span name="batchFile">batchFile: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.HDFSMetadataLog@get(batchFile:org.apache.hadoop.fs.Path):Option[T]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the deserialized metadata in a batch file, or None if file not exist.</p></dd></dl><dl class="attributes block"> <dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> when path does not point to a batch file.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -421,6 +450,26 @@ allows us to disable interrupts here. Also see SPARK-14131.
     </span>
       <p class="shortcomment cmt">Return the latest batch Id and its metadata if exist.</p><div class="fullcomment"><div class="comment cmt"><p>Return the latest batch Id and its metadata if exist.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> → <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog#getOrderedBatchFiles" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getOrderedBatchFiles():Array[org.apache.hadoop.fs.FileStatus]"></a>
+      <a id="getOrderedBatchFiles():Array[FileStatus]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getOrderedBatchFiles</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.hadoop.fs.FileStatus">FileStatus</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.HDFSMetadataLog@getOrderedBatchFiles():Array[org.apache.hadoop.fs.FileStatus]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get an array of [FileStatus] referencing batch files.</p><div class="fullcomment"><div class="comment cmt"><p>Get an array of [FileStatus] referencing batch files.
+The array is sorted by most recent batch file first to
+oldest batch file.
+</p></div></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>

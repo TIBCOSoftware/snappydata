@@ -66,7 +66,7 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.metric.SQLMetric" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.metric.SQLMetric" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SQLMetricextendsAccumulatorV2Kryo[Long,Long]withKryoSerializable"></a>
       <a id="SQLMetric:SQLMetric"></a>
       <h4 class="signature">
@@ -82,7 +82,10 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">A metric used in a SQL query plan.</p><div class="fullcomment"><div class="comment cmt"><p>A metric used in a SQL query plan. This is implemented as an <span class="extype" name="AccumulatorV2">AccumulatorV2</span>. Updates on
+the executor side are automatically propagated and shown in the SQL UI through metrics. Updates
+on the driver side must be explicitly posted using <span class="extype" name="SQLMetrics.postDriverMetricUpdates()">SQLMetrics.postDriverMetricUpdates()</span>.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.metric.SQLMetricInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SQLMetricInfoextendsAnyRef"></a>
       <a id="SQLMetricInfo:SQLMetricInfo"></a>

@@ -113,19 +113,19 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.internal.SnappySessionState.AnalyzeChildQuery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="AnalyzeChildQueryextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
-      <a id="AnalyzeChildQuery:AnalyzeChildQuery"></a>
+              <ol><li name="org.apache.spark.sql.internal.SnappySessionState.AnalyzeMutableOperations" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AnalyzeMutableOperationsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
+      <a id="AnalyzeMutableOperations:AnalyzeMutableOperations"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$AnalyzeChildQuery.html"><span class="name">AnalyzeChildQuery</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SnappySessionState$AnalyzeMutableOperations.html"><span class="name">AnalyzeMutableOperations</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@AnalyzeChildQueryextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@AnalyzeMutableOperationsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -278,25 +278,24 @@ exchange on one side of a non-collocated join in many cases.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionState</dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#analyze" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="analyze(tableName:String):Unit"></a>
-      <a id="analyze(String):Unit"></a>
+      <a id="analyze(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,noscan:Boolean):Unit"></a>
+      <a id="analyze(TableIdentifier,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">analyze</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">analyze</span><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="noscan">noscan: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@analyze(tableName:String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@analyze(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,noscan:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Analyzes the given table in the current database to generate statistics, which will be
 used in query optimizations.</p><div class="fullcomment"><div class="comment cmt"><p>Analyzes the given table in the current database to generate statistics, which will be
-used in query optimizations.</p><p>Right now, it only supports catalog tables and it only updates the size of a catalog table
-in the external catalog.
+used in query optimizations.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionState</dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionState#analyzer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="analyzer:org.apache.spark.sql.catalyst.analysis.Analyzer"></a>
@@ -316,6 +315,23 @@ in the external catalog.
     </span>
       <p class="shortcomment cmt">Logical query plan analyzer for resolving unresolved attributes and relations.</p><div class="fullcomment"><div class="comment cmt"><p>Logical query plan analyzer for resolving unresolved attributes and relations.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#analyzerPrepare" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="analyzerPrepare:org.apache.spark.sql.catalyst.analysis.Analyzer"></a>
+      <a id="analyzerPrepare:Analyzer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">analyzerPrepare</span><span class="result">: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@analyzerPrepare:org.apache.spark.sql.catalyst.analysis.Analyzer" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -460,23 +476,6 @@ in the external catalog.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SessionState#executeSql" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="executeSql(sql:String):org.apache.spark.sql.execution.QueryExecution"></a>
-      <a id="executeSql(String):QueryExecution"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">executeSql</span><span class="params">(<span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../execution/QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@executeSql(sql:String):org.apache.spark.sql.execution.QueryExecution" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionState</dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#experimentalMethods" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="experimentalMethods:org.apache.spark.sql.ExperimentalMethods"></a>
       <a id="experimentalMethods:ExperimentalMethods"></a>
@@ -570,6 +569,40 @@ in the external catalog.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#getExtendedCheckRules" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getExtendedCheckRules:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan=&gt;Unit]"></a>
+      <a id="getExtendedCheckRules:Seq[(LogicalPlan)⇒Unit]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getExtendedCheckRules</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@getExtendedCheckRules:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan=&gt;Unit]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#getExtendedResolutionRules" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getExtendedResolutionRules(analyzer:org.apache.spark.sql.catalyst.analysis.Analyzer):Seq[org.apache.spark.sql.catalyst.rules.Rule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]]"></a>
+      <a id="getExtendedResolutionRules(Analyzer):Seq[Rule[LogicalPlan]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getExtendedResolutionRules</span><span class="params">(<span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@getExtendedResolutionRules(analyzer:org.apache.spark.sql.catalyst.analysis.Analyzer):Seq[org.apache.spark.sql.catalyst.rules.Rule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.internal.SnappySessionState#getTablePartitions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getTablePartitions(region:com.gemstone.gemfire.internal.cache.CacheDistributionAdvisee):Array[org.apache.spark.Partition]"></a>
       <a id="getTablePartitions(CacheDistributionAdvisee):Array[Partition]"></a>
@@ -898,19 +931,19 @@ that listen for execution metrics.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#sharedState" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="sharedState:org.apache.spark.sql.internal.SnappySharedState"></a>
-      <a id="sharedState:SnappySharedState"></a>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#snappySharedState" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="snappySharedState:org.apache.spark.sql.hive.SnappySharedState"></a>
+      <a id="snappySharedState:SnappySharedState"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">sharedState</span><span class="result">: <span class="extype" name="org.apache.spark.sql.internal.SnappySharedState">SnappySharedState</span></span>
+        <span class="name">snappySharedState</span><span class="result">: <a href="../hive/SnappySharedState.html" class="extype" name="org.apache.spark.sql.hive.SnappySharedState">SnappySharedState</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@sharedState:org.apache.spark.sql.internal.SnappySharedState" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@snappySharedState:org.apache.spark.sql.hive.SnappySharedState" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

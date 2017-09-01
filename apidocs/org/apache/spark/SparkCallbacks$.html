@@ -188,18 +188,18 @@ the variables are private[spark]
               
         </dd></dl></div>
     </li><li name="org.apache.spark.SparkCallbacks#createExecutorEnv" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="createExecutorEnv(conf:org.apache.spark.SparkConf,executorId:String,hostname:String,port:Int,numCores:Int,isLocal:Boolean):org.apache.spark.SparkEnv"></a>
-      <a id="createExecutorEnv(SparkConf,String,String,Int,Int,Boolean):SparkEnv"></a>
+      <a id="createExecutorEnv(driverConf:org.apache.spark.SparkConf,executorId:String,hostname:String,port:Int,numCores:Int,ioEncryptionKey:Option[Array[Byte]],isLocal:Boolean):org.apache.spark.SparkEnv"></a>
+      <a id="createExecutorEnv(SparkConf,String,String,Int,Int,Option[Array[Byte]],Boolean):SparkEnv"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createExecutorEnv</span><span class="params">(<span name="conf">conf: <a href="SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="executorId">executorId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="hostname">hostname: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="port">port: <span class="extype" name="scala.Int">Int</span></span>, <span name="numCores">numCores: <span class="extype" name="scala.Int">Int</span></span>, <span name="isLocal">isLocal: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="SparkEnv.html" class="extype" name="org.apache.spark.SparkEnv">SparkEnv</a></span>
+        <span class="name">createExecutorEnv</span><span class="params">(<span name="driverConf">driverConf: <a href="SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="executorId">executorId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="hostname">hostname: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="port">port: <span class="extype" name="scala.Int">Int</span></span>, <span name="numCores">numCores: <span class="extype" name="scala.Int">Int</span></span>, <span name="ioEncryptionKey">ioEncryptionKey: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]]</span>, <span name="isLocal">isLocal: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="SparkEnv.html" class="extype" name="org.apache.spark.SparkEnv">SparkEnv</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#org.apache.spark.SparkCallbacks$@createExecutorEnv(conf:org.apache.spark.SparkConf,executorId:String,hostname:String,port:Int,numCores:Int,isLocal:Boolean):org.apache.spark.SparkEnv" title="Permalink" target="_top">
+      <a href="../../../index.html#org.apache.spark.SparkCallbacks$@createExecutorEnv(driverConf:org.apache.spark.SparkConf,executorId:String,hostname:String,port:Int,numCores:Int,ioEncryptionKey:Option[Array[Byte]],isLocal:Boolean):org.apache.spark.SparkEnv" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -239,18 +239,18 @@ the variables are private[spark]
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.SparkCallbacks#fetchDriverProperty" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="fetchDriverProperty(host:String,executorConf:org.apache.spark.SparkConf,port:Int,url:String):Seq[(String,String)]"></a>
-      <a id="fetchDriverProperty(String,SparkConf,Int,String):Seq[(String,String)]"></a>
+      <a id="fetchDriverProperty(appId:String,host:String,executorConf:org.apache.spark.SparkConf,port:Int,url:String):(Option[Array[Byte]],Seq[(String,String)])"></a>
+      <a id="fetchDriverProperty(String,String,SparkConf,Int,String):(Option[Array[Byte]],Seq[(String,String)])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fetchDriverProperty</span><span class="params">(<span name="host">host: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="executorConf">executorConf: <a href="SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="port">port: <span class="extype" name="scala.Int">Int</span></span>, <span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+        <span class="name">fetchDriverProperty</span><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="host">host: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="executorConf">executorConf: <a href="SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="port">port: <span class="extype" name="scala.Int">Int</span></span>, <span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: (<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]], <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#org.apache.spark.SparkCallbacks$@fetchDriverProperty(host:String,executorConf:org.apache.spark.SparkConf,port:Int,url:String):Seq[(String,String)]" title="Permalink" target="_top">
+      <a href="../../../index.html#org.apache.spark.SparkCallbacks$@fetchDriverProperty(appId:String,host:String,executorConf:org.apache.spark.SparkConf,port:Int,url:String):(Option[Array[Byte]],Seq[(String,String)])" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -431,6 +431,23 @@ the variables are private[spark]
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.SparkCallbacks#setAuthenticatorForJettyServer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setAuthenticatorForJettyServer():Unit"></a>
+      <a id="setAuthenticatorForJettyServer():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setAuthenticatorForJettyServer</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.SparkCallbacks$@setAuthenticatorForJettyServer():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.SparkCallbacks#stopExecutor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="stopExecutor(env:org.apache.spark.SparkEnv):Unit"></a>
       <a id="stopExecutor(SparkEnv):Unit"></a>

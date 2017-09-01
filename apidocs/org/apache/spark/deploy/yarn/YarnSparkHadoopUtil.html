@@ -390,23 +390,6 @@ configuration.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil">YarnSparkHadoopUtil</a> → <a href="../SparkHadoopUtil.html" class="extype" name="org.apache.spark.deploy.SparkHadoopUtil">SparkHadoopUtil</a></dd></dl></div>
-    </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#getNameNodesToAccess" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getNameNodesToAccess(sparkConf:org.apache.spark.SparkConf):Set[org.apache.hadoop.fs.Path]"></a>
-      <a id="getNameNodesToAccess(SparkConf):Set[Path]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getNameNodesToAccess</span><span class="params">(<span name="sparkConf">sparkConf: <a href="../../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="org.apache.hadoop.fs.Path">Path</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@getNameNodesToAccess(sparkConf:org.apache.spark.SparkConf):Set[org.apache.hadoop.fs.Path]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Get the list of namenodes the user may access.</p>
     </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#getSecretKeyFromUserCredentials" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getSecretKeyFromUserCredentials(key:String):Array[Byte]"></a>
       <a id="getSecretKeyFromUserCredentials(String):Array[Byte]"></a>
@@ -424,45 +407,6 @@ configuration.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil">YarnSparkHadoopUtil</a> → <a href="../SparkHadoopUtil.html" class="extype" name="org.apache.spark.deploy.SparkHadoopUtil">SparkHadoopUtil</a></dd></dl></div>
-    </li><li name="org.apache.spark.deploy.SparkHadoopUtil#getTimeFromNowToRenewal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getTimeFromNowToRenewal(sparkConf:org.apache.spark.SparkConf,fraction:Double,credentials:org.apache.hadoop.security.Credentials):Long"></a>
-      <a id="getTimeFromNowToRenewal(SparkConf,Double,Credentials):Long"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getTimeFromNowToRenewal</span><span class="params">(<span name="sparkConf">sparkConf: <a href="../../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="fraction">fraction: <span class="extype" name="scala.Double">Double</span></span>, <span name="credentials">credentials: <span class="extype" name="org.apache.hadoop.security.Credentials">Credentials</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@getTimeFromNowToRenewal(sparkConf:org.apache.spark.SparkConf,fraction:Double,credentials:org.apache.hadoop.security.Credentials):Long" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">How much time is remaining (in millis) from now to (fraction * renewal time for the token that
-is valid the latest)?
-This will return -ve (or 0) value if the fraction of validity has already expired.</p><div class="fullcomment"><div class="comment cmt"><p>How much time is remaining (in millis) from now to (fraction * renewal time for the token that
-is valid the latest)?
-This will return -ve (or 0) value if the fraction of validity has already expired.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SparkHadoopUtil.html" class="extype" name="org.apache.spark.deploy.SparkHadoopUtil">SparkHadoopUtil</a></dd></dl></div>
-    </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#getTokenRenewer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getTokenRenewer(conf:org.apache.hadoop.conf.Configuration):String"></a>
-      <a id="getTokenRenewer(Configuration):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getTokenRenewer</span><span class="params">(<span name="conf">conf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@getTokenRenewer(conf:org.apache.hadoop.conf.Configuration):String" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.deploy.SparkHadoopUtil#globPath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="globPath(pattern:org.apache.hadoop.fs.Path):Seq[org.apache.hadoop.fs.Path]"></a>
       <a id="globPath(Path):Seq[Path]"></a>
@@ -1019,117 +963,6 @@ subsystems.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#obtainTokenForHBase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="obtainTokenForHBase(conf:org.apache.hadoop.conf.Configuration):Option[org.apache.hadoop.security.token.Token[org.apache.hadoop.security.token.TokenIdentifier]]"></a>
-      <a id="obtainTokenForHBase(Configuration):Option[Token[TokenIdentifier]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">obtainTokenForHBase</span><span class="params">(<span name="conf">conf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.hadoop.security.token.Token">Token</span>[<span class="extype" name="org.apache.hadoop.security.token.TokenIdentifier">TokenIdentifier</span>]]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@obtainTokenForHBase(conf:org.apache.hadoop.conf.Configuration):Option[org.apache.hadoop.security.token.Token[org.apache.hadoop.security.token.TokenIdentifier]]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Obtain a security token for HBase.</p><div class="fullcomment"><div class="comment cmt"><p>Obtain a security token for HBase.</p><p>Requirements</p><p>1. <code>&quot;hbase.security.authentication&quot; == &quot;kerberos&quot;</code>
-2. The HBase classes <code>HBaseConfiguration</code> and <code>TokenUtil</code> could be loaded
-and invoked.
-</p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>Hadoop configuration; an HBase configuration is created
-            from this.</p></dd><dt>returns</dt><dd class="cmt"><p>a token if the requirements were met, <code>None</code> if not.</p></dd></dl></div>
-    </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#obtainTokenForHBase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="obtainTokenForHBase(sparkConf:org.apache.spark.SparkConf,conf:org.apache.hadoop.conf.Configuration,credentials:org.apache.hadoop.security.Credentials):Unit"></a>
-      <a id="obtainTokenForHBase(SparkConf,Configuration,Credentials):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">obtainTokenForHBase</span><span class="params">(<span name="sparkConf">sparkConf: <a href="../../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="conf">conf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>, <span name="credentials">credentials: <span class="extype" name="org.apache.hadoop.security.Credentials">Credentials</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@obtainTokenForHBase(sparkConf:org.apache.spark.SparkConf,conf:org.apache.hadoop.conf.Configuration,credentials:org.apache.hadoop.security.Credentials):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Obtain a security token for HBase.</p>
-    </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#obtainTokenForHBaseInner" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="obtainTokenForHBaseInner(conf:org.apache.hadoop.conf.Configuration):Option[org.apache.hadoop.security.token.Token[org.apache.hadoop.security.token.TokenIdentifier]]"></a>
-      <a id="obtainTokenForHBaseInner(Configuration):Option[Token[TokenIdentifier]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">obtainTokenForHBaseInner</span><span class="params">(<span name="conf">conf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.hadoop.security.token.Token">Token</span>[<span class="extype" name="org.apache.hadoop.security.token.TokenIdentifier">TokenIdentifier</span>]]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@obtainTokenForHBaseInner(conf:org.apache.hadoop.conf.Configuration):Option[org.apache.hadoop.security.token.Token[org.apache.hadoop.security.token.TokenIdentifier]]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Obtain a security token for HBase if <code>&quot;hbase.security.authentication&quot; == &quot;kerberos&quot;</code>
-</p><div class="fullcomment"><div class="comment cmt"><p>Obtain a security token for HBase if <code>&quot;hbase.security.authentication&quot; == &quot;kerberos&quot;</code>
-</p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>Hadoop configuration; an HBase configuration is created
-            from this.</p></dd><dt>returns</dt><dd class="cmt"><p>a token if one was needed</p></dd></dl></div>
-    </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#obtainTokenForHiveMetastore" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="obtainTokenForHiveMetastore(conf:org.apache.hadoop.conf.Configuration):Option[org.apache.hadoop.security.token.Token[org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier]]"></a>
-      <a id="obtainTokenForHiveMetastore(Configuration):Option[Token[DelegationTokenIdentifier]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">obtainTokenForHiveMetastore</span><span class="params">(<span name="conf">conf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.hadoop.security.token.Token">Token</span>[<span class="extype" name="org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier">DelegationTokenIdentifier</span>]]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@obtainTokenForHiveMetastore(conf:org.apache.hadoop.conf.Configuration):Option[org.apache.hadoop.security.token.Token[org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier]]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Obtains token for the Hive metastore, using the current user as the principal.</p><div class="fullcomment"><div class="comment cmt"><p>Obtains token for the Hive metastore, using the current user as the principal.
-Some exceptions are caught and downgraded to a log message.</p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>hadoop configuration; the Hive configuration will be based on this</p></dd><dt>returns</dt><dd class="cmt"><p>a token, or <code>None</code> if there's no need for a token (no metastore URI or principal
-        in the config), or if a binding exception was caught and downgraded.</p></dd></dl></div>
-    </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#obtainTokenForHiveMetastore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="obtainTokenForHiveMetastore(sparkConf:org.apache.spark.SparkConf,conf:org.apache.hadoop.conf.Configuration,credentials:org.apache.hadoop.security.Credentials):Unit"></a>
-      <a id="obtainTokenForHiveMetastore(SparkConf,Configuration,Credentials):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">obtainTokenForHiveMetastore</span><span class="params">(<span name="sparkConf">sparkConf: <a href="../../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="conf">conf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>, <span name="credentials">credentials: <span class="extype" name="org.apache.hadoop.security.Credentials">Credentials</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@obtainTokenForHiveMetastore(sparkConf:org.apache.spark.SparkConf,conf:org.apache.hadoop.conf.Configuration,credentials:org.apache.hadoop.security.Credentials):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Obtains token for the Hive metastore and adds them to the credentials.</p>
-    </li><li name="org.apache.spark.deploy.yarn.YarnSparkHadoopUtil#obtainTokensForNamenodes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="obtainTokensForNamenodes(paths:Set[org.apache.hadoop.fs.Path],conf:org.apache.hadoop.conf.Configuration,creds:org.apache.hadoop.security.Credentials,renewer:Option[String]):Unit"></a>
-      <a id="obtainTokensForNamenodes(Set[Path],Configuration,Credentials,Option[String]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">obtainTokensForNamenodes</span><span class="params">(<span name="paths">paths: <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="org.apache.hadoop.fs.Path">Path</span>]</span>, <span name="conf">conf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>, <span name="creds">creds: <span class="extype" name="org.apache.hadoop.security.Credentials">Credentials</span></span>, <span name="renewer">renewer: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.deploy.yarn.YarnSparkHadoopUtil@obtainTokensForNamenodes(paths:Set[org.apache.hadoop.fs.Path],conf:org.apache.hadoop.conf.Configuration,creds:org.apache.hadoop.security.Credentials,renewer:Option[String]):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Obtains tokens for the namenodes passed in and adds them to the credentials.</p>
     </li><li name="org.apache.spark.deploy.SparkHadoopUtil#runAsSparkUser" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="runAsSparkUser(func:()=&gt;Unit):Unit"></a>
       <a id="runAsSparkUser(()⇒Unit):Unit"></a>

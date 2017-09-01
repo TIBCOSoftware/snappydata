@@ -1207,8 +1207,9 @@ if neither is set.
       <p class="shortcomment cmt">Specifies the minimum number of different documents a term must appear in to be included
 in the vocabulary.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the minimum number of different documents a term must appear in to be included
 in the vocabulary.
-If this is an integer &gt;= 1, this specifies the number of documents the term must appear in;
-if this is a double in [0,1), then this specifies the fraction of documents.</p><p>Default: 1.0</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>CountVectorizerParams</dd></dl></div>
+If this is an integer greater than or equal to 1, this specifies the number of documents
+the term must appear in; if this is a double in [0,1), then this specifies the fraction of
+documents.</p><p>Default: 1.0</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>CountVectorizerParams</dd></dl></div>
     </li><li name="org.apache.spark.ml.feature.CountVectorizerParams#minTF" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="minTF:org.apache.spark.ml.param.DoubleParam"></a>
       <a id="minTF:DoubleParam"></a>
@@ -1227,8 +1228,8 @@ if this is a double in [0,1), then this specifies the fraction of documents.</p>
     </span>
       <p class="shortcomment cmt">Filter to ignore rare words in a document.</p><div class="fullcomment"><div class="comment cmt"><p>Filter to ignore rare words in a document. For each document, terms with
 frequency/count less than the given threshold are ignored.
-If this is an integer &gt;= 1, then this specifies a count (of times the term must appear
-in the document);
+If this is an integer greater than or equal to 1, then this specifies a count (of times the
+term must appear in the document);
 if this is a double in [0,1), then this specifies a fraction (out of the document's token
 count).</p><p>Note that the parameter is only used in transform of <a href="CountVectorizerModel.html" class="extype" name="org.apache.spark.ml.feature.CountVectorizerModel">CountVectorizerModel</a> and does not
 affect fitting.</p><p>Default: 1.0</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>CountVectorizerParams</dd></dl></div>
@@ -1317,9 +1318,9 @@ affect fitting.</p><p>Default: 1.0</p></div><dl class="attributes block"> <dt>De
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.util.MLWritable#save" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="save(path:String):Unit"></a>
       <a id="save(String):Unit"></a>
@@ -1631,7 +1632,9 @@ this variable gets initialized before other params.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.feature.CountVectorizer">CountVectorizer</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -1814,34 +1817,7 @@ vocabSize terms ordered by term frequency across the corpus.</p><p>Default: 2<su
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.param.Params#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.0) Will be removed in 2.1.0. Checks should be merged into transformSchema.">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.feature.CountVectorizer@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Will be removed in 2.1.0. Checks should be merged into transformSchema.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">

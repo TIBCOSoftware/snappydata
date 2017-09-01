@@ -49,10 +49,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-A convenient class used for constructing schema.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A convenient class used for constructing schema.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -516,7 +515,7 @@ The following types of extraction are supported:</p><ul><li>Given an Array, an i
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type array.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type array.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type array.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type array.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#as" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="as(alias:String,metadata:org.apache.spark.sql.types.Metadata):org.apache.spark.sql.Column"></a>
       <a id="as(String,Metadata):Column"></a>
@@ -663,11 +662,53 @@ results into the correct JVM types.</p></div><dl class="attributes block"> <dt>D
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns an ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order.</span>
+      <p class="shortcomment cmt">Returns an ascending ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ascending ordering used in sorting.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order.</span>
 df.sort(df(<span class="lit">"age"</span>).asc)
 
 <span class="cmt">// Java</span>
 df.sort(df.col(<span class="lit">"age"</span>).asc());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#asc_nulls_first" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="asc_nulls_first:org.apache.spark.sql.Column"></a>
+      <a id="asc_nulls_first:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc_nulls_first</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.ColumnName@asc_nulls_first:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an ascending ordering used in sorting, where null values appear before non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ascending ordering used in sorting, where null values appear before non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order and null values appearing first.</span>
+df.sort(df(<span class="lit">"age"</span>).asc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).asc_nulls_last());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#asc_nulls_last" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="asc_nulls_last:org.apache.spark.sql.Column"></a>
+      <a id="asc_nulls_last:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc_nulls_last</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.ColumnName@asc_nulls_last:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an ordering used in sorting, where null values appear after non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting, where null values appear after non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order and null values appearing last.</span>
+df.sort(df(<span class="lit">"age"</span>).asc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).asc_nulls_last());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#between" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="between(lowerBound:Any,upperBound:Any):org.apache.spark.sql.Column"></a>
       <a id="between(Any,Any):Column"></a>
@@ -702,7 +743,7 @@ df.sort(df.col(<span class="lit">"age"</span>).asc());</pre></div><dl class="att
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type binary.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type binary.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type binary.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type binary.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#bitwiseAND" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="bitwiseAND(other:Any):org.apache.spark.sql.Column"></a>
       <a id="bitwiseAND(Any):Column"></a>
@@ -770,7 +811,7 @@ df.sort(df.col(<span class="lit">"age"</span>).asc());</pre></div><dl class="att
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type boolean.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type boolean.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type boolean.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type boolean.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.ColumnName#byte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="byte:org.apache.spark.sql.types.StructField"></a>
       <a id="byte:StructField"></a>
@@ -787,7 +828,7 @@ df.sort(df.col(<span class="lit">"age"</span>).asc());</pre></div><dl class="att
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type byte.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type byte.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type byte.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type byte.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#cast" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="cast(to:String):org.apache.spark.sql.Column"></a>
       <a id="cast(String):Column"></a>
@@ -888,7 +929,7 @@ df.select(df(<span class="lit">"colA"</span>).cast(<span class="lit">"int"</span
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type date.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type date.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type date.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type date.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.ColumnName#decimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="decimal(precision:Int,scale:Int):org.apache.spark.sql.types.StructField"></a>
       <a id="decimal(Int,Int):StructField"></a>
@@ -905,7 +946,7 @@ df.select(df(<span class="lit">"colA"</span>).cast(<span class="lit">"int"</span
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type decimal.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type decimal.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type decimal.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type decimal.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.ColumnName#decimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="decimal:org.apache.spark.sql.types.StructField"></a>
       <a id="decimal:StructField"></a>
@@ -922,7 +963,7 @@ df.select(df(<span class="lit">"colA"</span>).cast(<span class="lit">"int"</span
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type decimal.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type decimal.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type decimal.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type decimal.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#desc" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="desc:org.apache.spark.sql.Column"></a>
       <a id="desc:Column"></a>
@@ -939,11 +980,53 @@ df.select(df(<span class="lit">"colA"</span>).cast(<span class="lit">"int"</span
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns an ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in descending order.</span>
+      <p class="shortcomment cmt">Returns an ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting.</p><pre><span class="cmt">// Scala</span>
 df.sort(df(<span class="lit">"age"</span>).desc)
 
 <span class="cmt">// Java</span>
 df.sort(df.col(<span class="lit">"age"</span>).desc());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#desc_nulls_first" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="desc_nulls_first:org.apache.spark.sql.Column"></a>
+      <a id="desc_nulls_first:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc_nulls_first</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.ColumnName@desc_nulls_first:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a descending ordering used in sorting, where null values appear before non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a descending ordering used in sorting, where null values appear before non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in descending order and null values appearing first.</span>
+df.sort(df(<span class="lit">"age"</span>).desc_nulls_first)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).desc_nulls_first());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#desc_nulls_last" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="desc_nulls_last:org.apache.spark.sql.Column"></a>
+      <a id="desc_nulls_last:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc_nulls_last</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.ColumnName@desc_nulls_last:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a descending ordering used in sorting, where null values appear after non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a descending ordering used in sorting, where null values appear after non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in descending order and null values appearing last.</span>
+df.sort(df(<span class="lit">"age"</span>).desc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).desc_nulls_last());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#divide" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="divide(other:Any):org.apache.spark.sql.Column"></a>
       <a id="divide(Any):Column"></a>
@@ -981,7 +1064,7 @@ people.select( people(<span class="lit">"height"</span>).divide(people(<span cla
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type double.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type double.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type double.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type double.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#endsWith" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="endsWith(literal:String):org.apache.spark.sql.Column"></a>
       <a id="endsWith(String):Column"></a>
@@ -1110,7 +1193,7 @@ df.filter( col(<span class="lit">"colA"</span>).equalTo(col(<span class="lit">"c
     </span>
       <p class="shortcomment cmt">Prints the expression to the console for debugging purpose.</p><div class="fullcomment"><div class="comment cmt"><p>Prints the expression to the console for debugging purpose.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.Column#expr" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.Column#expr" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="expr:org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="expr:Expression"></a>
       <h4 class="signature">
@@ -1126,7 +1209,7 @@ df.filter( col(<span class="lit">"colA"</span>).equalTo(col(<span class="lit">"c
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -1166,7 +1249,7 @@ df.filter( col(<span class="lit">"colA"</span>).equalTo(col(<span class="lit">"c
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type float.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type float.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type float.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type float.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#geq" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="geq(other:Any):org.apache.spark.sql.Column"></a>
       <a id="geq(Any):Column"></a>
@@ -1221,7 +1304,7 @@ people.select( people(<span class="lit">"age"</span>).geq(<span class="num">21</
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">An expression that gets a field by name in a <span class="extype" name="StructType">StructType</span>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets a field by name in a <span class="extype" name="StructType">StructType</span>.
+      <p class="shortcomment cmt">An expression that gets a field by name in a <code>StructType</code>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets a field by name in a <code>StructType</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#getItem" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="getItem(key:Any):org.apache.spark.sql.Column"></a>
@@ -1240,8 +1323,8 @@ people.select( people(<span class="lit">"age"</span>).geq(<span class="num">21</
       </a>
     </span>
       <p class="shortcomment cmt">An expression that gets an item at position <code>ordinal</code> out of an array,
-or gets a value by key <code>key</code> in a <span class="extype" name="MapType">MapType</span>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets an item at position <code>ordinal</code> out of an array,
-or gets a value by key <code>key</code> in a <span class="extype" name="MapType">MapType</span>.
+or gets a value by key <code>key</code> in a <code>MapType</code>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets an item at position <code>ordinal</code> out of an array,
+or gets a value by key <code>key</code> in a <code>MapType</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#gt" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="gt(other:Any):org.apache.spark.sql.Column"></a>
@@ -1315,7 +1398,7 @@ people.select( people(<span class="lit">"age"</span>).gt(<span class="num">21</s
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type int.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type int.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type int.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type int.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isDebugEnabled:Boolean"></a>
       <a id="isDebugEnabled:Boolean"></a>
@@ -1720,7 +1803,7 @@ people.select( people(<span class="lit">"age"</span>).leq(<span class="num">21</
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type long.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type long.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type long.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type long.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#lt" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="lt(other:Any):org.apache.spark.sql.Column"></a>
       <a id="lt(Any):Column"></a>
@@ -1775,7 +1858,7 @@ people.select( people(<span class="lit">"age"</span>).lt(<span class="num">21</s
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type map.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type map.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type map.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type map.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#minus" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="minus(other:Any):org.apache.spark.sql.Column"></a>
       <a id="minus(Any):Column"></a>
@@ -2076,7 +2159,7 @@ people.select( people(<span class="lit">"height"</span>).plus(people(<span class
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type short.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type short.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type short.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type short.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#startsWith" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="startsWith(literal:String):org.apache.spark.sql.Column"></a>
       <a id="startsWith(String):Column"></a>
@@ -2129,7 +2212,7 @@ people.select( people(<span class="lit">"height"</span>).plus(people(<span class
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type string.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type string.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type string.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type string.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.ColumnName#struct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="struct(structType:org.apache.spark.sql.types.StructType):org.apache.spark.sql.types.StructField"></a>
       <a id="struct(StructType):StructField"></a>
@@ -2146,7 +2229,7 @@ people.select( people(<span class="lit">"height"</span>).plus(people(<span class
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type struct.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type struct.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type struct.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type struct.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.ColumnName#struct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="struct(fields:org.apache.spark.sql.types.StructField*):org.apache.spark.sql.types.StructField"></a>
       <a id="struct(StructField*):StructField"></a>
@@ -2163,7 +2246,7 @@ people.select( people(<span class="lit">"height"</span>).plus(people(<span class
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type struct.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type struct.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type struct.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type struct.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#substr" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="substr(startPos:Int,len:Int):org.apache.spark.sql.Column"></a>
       <a id="substr(Int,Int):Column"></a>
@@ -2231,7 +2314,7 @@ people.select( people(<span class="lit">"height"</span>).plus(people(<span class
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a new <span class="extype" name="StructField">StructField</span> of type timestamp.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <span class="extype" name="StructField">StructField</span> of type timestamp.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Creates a new <code>StructField</code> of type timestamp.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new <code>StructField</code> of type timestamp.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

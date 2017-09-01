@@ -51,15 +51,15 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Model representing the result of matrix factorization.</p><p>Note: If you create the model directly using constructor, please be aware that fast prediction
-requires cached user/product features and their associated partitioners.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Model representing the result of matrix factorization.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;0.8.0&quot;</span>
     </span>)</span>
               
-        </dd></dl><div class="toggleContainer block">
+        </dd><dt>Note</dt><dd><span class="cmt"><p>If you create the model directly using constructor, please be aware that fast prediction
+requires cached user/product features and their associated partitioners.</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -687,7 +687,7 @@ requires cached user/product features and their associated partitioners.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Java-friendly version of <a href="#predict(usersProducts:org.apache.spark.api.java.JavaPairRDD[Integer,Integer]):org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.recommendation.Rating]" class="extmbr" name="org.apache.spark.mllib.recommendation.MatrixFactorizationModel#predict">MatrixFactorizationModel.predict</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <a href="#predict(usersProducts:org.apache.spark.api.java.JavaPairRDD[Integer,Integer]):org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.recommendation.Rating]" class="extmbr" name="org.apache.spark.mllib.recommendation.MatrixFactorizationModel#predict">MatrixFactorizationModel.predict</a>.
+      <p class="shortcomment cmt">Java-friendly version of <code>MatrixFactorizationModel.predict</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <code>MatrixFactorizationModel.predict</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -917,7 +917,7 @@ rating field. Semantics of score is same as recommendUsers API</p></dd></dl><dl 
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Save this model to the given path.</p><div class="fullcomment"><div class="comment cmt"><p>Save this model to the given path.</p><p>This saves:</p><ul><li>human-readable (JSON) model metadata to path/metadata/</li><li>Parquet formatted data to path/data/</li></ul><p>The model may be loaded using <span class="extype" name="Loader.load">Loader.load</span>.
+      <p class="shortcomment cmt">Save this model to the given path.</p><div class="fullcomment"><div class="comment cmt"><p>Save this model to the given path.</p><p>This saves:</p><ul><li>human-readable (JSON) model metadata to path/metadata/</li><li>Parquet formatted data to path/data/</li></ul><p>The model may be loaded using <code>Loader.load</code>.
 </p></div><dl class="paramcmts block"><dt class="param">sc</dt><dd class="cmt"><p>Spark context used to save model data.</p></dd><dt class="param">path</dt><dd class="cmt"><p>Path specifying the directory in which to save this model.
              If the directory already exists, this method throws an exception.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.recommendation.MatrixFactorizationModel">MatrixFactorizationModel</a> → <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>

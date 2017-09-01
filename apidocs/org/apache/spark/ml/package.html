@@ -258,7 +258,8 @@ Abstraction for a model for prediction tasks (regression and classification).
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
 Abstraction for prediction problems (regression and classification).</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Abstraction for prediction problems (regression and classification).
+Abstraction for prediction problems (regression and classification). It accepts all NumericType
+labels and will automatically cast it to DoubleType in <code>fit()</code>.
 </p></div><dl class="paramcmts block"><dt class="tparam">FeaturesType</dt><dd class="cmt"><p>Type of features.
                       E.g., <a href="../mllib/linalg/VectorUDT.html" class="extype" name="org.apache.spark.mllib.linalg.VectorUDT">org.apache.spark.mllib.linalg.VectorUDT</a> for vector features.</p></dd><dt class="tparam">Learner</dt><dd class="cmt"><p>Specialization of this class.  If you subclass this type, use this type
                  parameter to specify the concrete type.</p></dd><dt class="tparam">M</dt><dd class="cmt"><p>Specialization of <a href="PredictionModel.html" class="extype" name="org.apache.spark.ml.PredictionModel">PredictionModel</a>.  If you subclass this type, use this type
@@ -517,7 +518,8 @@ model.transform(df)
 The major difference is that most scikit-learn feature transformers operate eagerly on the entire
 input dataset, while MLlib's feature transformers operate lazily on individual columns,
 which is more efficient and flexible to handle large and complex datasets.
-</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="http://scikit-learn.org/stable/modules/preprocessing.html" target="_blank">scikit-learn.preprocessing</a></p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="http://scikit-learn.org/stable/modules/preprocessing.html">
+scikit-learn.preprocessing</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.linalg" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="linalg"></a>
       <a id="linalg:linalg"></a>

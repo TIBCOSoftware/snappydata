@@ -45,15 +45,15 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">FilePartition</span><span class="params">(<span name="index">index: <span class="extype" name="scala.Int">Int</span></span>, <span name="files">files: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="PartitionedFile.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitionedFile">PartitionedFile</a>]</span>)</span><span class="result"> extends <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">spark.Partition</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">FilePartition</span><span class="params">(<span name="index">index: <span class="extype" name="scala.Int">Int</span></span>, <span name="files">files: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="PartitionedFile.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitionedFile">PartitionedFile</a>]</span>)</span><span class="result"> extends <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A collection of files that should be read as a single task possibly from multiple partitioned
-directories.</p><p>TODO: This currently does not take locality information about the files into account.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A collection of file blocks that should be read as a single task
+(possibly from multiple partitioned directories).
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">spark.Partition</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -502,7 +502,7 @@ directories.</p><p>TODO: This currently does not take locality information about
             </div><div class="parent" name="scala.Equals">
               <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
             </div><div class="parent" name="org.apache.spark.Partition">
-              <h3>Inherited from <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">spark.Partition</a></h3>
+              <h3>Inherited from <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a></h3>
             </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">

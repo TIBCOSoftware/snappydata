@@ -45,15 +45,14 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">With</span><span class="params">(<span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="cteRelations">cteRelations: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="SubqueryAlias.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias">SubqueryAlias</a>]</span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">With</span><span class="params">(<span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="cteRelations">cteRelations: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="SubqueryAlias.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias">SubqueryAlias</a>)]</span>)</span><span class="result"> extends <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A container for holding named common table expressions (CTEs) and a query plan.
 This operator will be removed during analysis and the relations will be substituted into child.
-</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The final query of this CTE.</p></dd><dt class="param">cteRelations</dt><dd class="cmt"><p>Queries that this CTE defined,
-                    key is the alias of the CTE definition,
-                    value is the CTE definition.</p></dd></dl><div class="toggleContainer block">
+</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The final query of this CTE.</p></dd><dt class="param">cteRelations</dt><dd class="cmt"><p>A sequence of pair (alias, the CTE definition) that this CTE defined
+                    Each CTE can see the base tables and the previously defined CTEs only.</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a>, <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -93,7 +92,7 @@ This operator will be removed during analysis and the relations will be substitu
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.catalyst.plans.logical.With#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,cteRelations:Map[String,org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias]):org.apache.spark.sql.catalyst.plans.logical.With"></a>
+      <a id="&lt;init&gt;(child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,cteRelations:Seq[(String,org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias)]):org.apache.spark.sql.catalyst.plans.logical.With"></a>
       <a id="&lt;init&gt;:With"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -101,16 +100,15 @@ This operator will be removed during analysis and the relations will be substitu
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">With</span><span class="params">(<span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="cteRelations">cteRelations: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="SubqueryAlias.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias">SubqueryAlias</a>]</span>)</span>
+        <span class="name">With</span><span class="params">(<span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="cteRelations">cteRelations: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="SubqueryAlias.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias">SubqueryAlias</a>)]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@&lt;init&gt;(child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,cteRelations:Map[String,org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias]):org.apache.spark.sql.catalyst.plans.logical.With" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@&lt;init&gt;(child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,cteRelations:Seq[(String,org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias)]):org.apache.spark.sql.catalyst.plans.logical.With" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The final query of this CTE.</p></dd><dt class="param">cteRelations</dt><dd class="cmt"><p>Queries that this CTE defined,
-                    key is the alias of the CTE definition,
-                    value is the CTE definition.</p></dd></dl></div>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The final query of this CTE.</p></dd><dt class="param">cteRelations</dt><dd class="cmt"><p>A sequence of pair (alias, the CTE definition) that this CTE defined
+                    Each CTE can see the base tables and the previously defined CTEs only.</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -211,23 +209,25 @@ verification.  Note that this is only an optimization used to avoid analyzing tr
 have already been analyzed, and can be reset by transformations.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="apply(number:Int):BaseType"></a>
-      <a id="apply(Int):LogicalPlan"></a>
+      <a id="apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]"></a>
+      <a id="apply(Int):TreeNode[_]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
+        <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@apply(number:Int):BaseType" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the tree node at the specified number.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number.
-Numbers for each node can be found in the <a href="../../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.
+      <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
+Numbers for each node can be found in the <a href="../../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>Note that this cannot return BaseType because logical plan's plan node might return
+physical plan for innerChildren, e.g. in-memory relation logical plan node has a reference
+to the physical plan node it is referencing.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#argString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="argString:String"></a>
@@ -324,7 +324,7 @@ pasted in the REPL to build an equivalent Tree.
       <a id="children:Seq[LogicalPlan]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -373,6 +373,23 @@ Children should not change. Immutability required for containsChild optimization
       </a>
     </span>
       <p class="shortcomment cmt">Args that have cleaned such that differences in expression id should not affect equality</p><div class="fullcomment"><div class="comment cmt"><p>Args that have cleaned such that differences in expression id should not affect equality</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#cleanExpression" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cleanExpression(e:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Expression"></a>
+      <a id="cleanExpression(Expression):Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cleanExpression</span><span class="params">(<span name="e">e: <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@cleanExpression(e:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -492,24 +509,23 @@ evaluate to <code>true</code> for all rows produced.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.With#cteRelations" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="cteRelations:Map[String,org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias]"></a>
-      <a id="cteRelations:Map[String,SubqueryAlias]"></a>
+      <a id="cteRelations:Seq[(String,org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias)]"></a>
+      <a id="cteRelations:Seq[(String,SubqueryAlias)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">cteRelations</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="SubqueryAlias.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias">SubqueryAlias</a>]</span>
+        <span class="name">cteRelations</span><span class="result">: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="SubqueryAlias.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias">SubqueryAlias</a>)]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@cteRelations:Map[String,org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias]" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@cteRelations:Seq[(String,org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias)]" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Queries that this CTE defined,
-                    key is the alias of the CTE definition,
-                    value is the CTE definition.</p>
+      <p class="shortcomment cmt">A sequence of pair (alias, the CTE definition) that this CTE defined
+                    Each CTE can see the base tables and the previously defined CTEs only.</p>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -678,7 +694,7 @@ resulting collections.
     </span>
       <p class="shortcomment cmt">Appends the string represent of this node and its children to the given StringBuilder.</p><div class="fullcomment"><div class="comment cmt"><p>Appends the string represent of this node and its children to the given StringBuilder.</p><p>The <code>i</code>-th element in <code>lastChildren</code> indicates whether the ancestor of the current node at
 depth <code>i + 1</code> is the last child of its own parent node.  The depth of the root node is 0, and
-<code>lastChildren</code> for the root node should be empty.
+<code>lastChildren</code> for the root node should be empty.</p><p>Note that this traversal (numbering) order must be the same as <span class="extype" name="getNodeNumbered">getNodeNumbered</span>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode#getAliasedConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getAliasedConstraints(projectList:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
@@ -718,23 +734,6 @@ expressions with the corresponding alias
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#getNodeNumbered" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType"></a>
-      <a id="getNodeNumbered(MutableInt):LogicalPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getNodeNumbered</span><span class="params">(<span name="number">number: <span class="extype" name="org.apache.spark.sql.catalyst.trees.MutableInt">MutableInt</span></span>)</span><span class="result">: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@getNodeNumbered(number:org.apache.spark.sql.catalyst.trees.MutableInt):BaseType" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#getRelevantConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getRelevantConstraints(constraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="getRelevantConstraints(Set[Expression]):Set[Expression]"></a>
@@ -789,25 +788,25 @@ appear in the <a href="../QueryPlan.html#outputSet:org.apache.spark.sql.catalyst
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#innerChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="innerChildren:Seq[org.apache.spark.sql.catalyst.plans.QueryPlan[_]]"></a>
-      <a id="innerChildren:Seq[QueryPlan[_]]"></a>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.With#innerChildren" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="innerChildren:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="innerChildren:Seq[LogicalPlan]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">innerChildren</span><span class="result">: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[_]]</span>
+        <span class="name">innerChildren</span><span class="result">: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@innerChildren:Seq[org.apache.spark.sql.catalyst.plans.QueryPlan[_]]" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@innerChildren:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">All the nodes that should be shown as a inner nested tree of this node.</p><div class="fullcomment"><div class="comment cmt"><p>All the nodes that should be shown as a inner nested tree of this node.
 For example, this can be used to show sub-queries.
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.With">With</a> → <a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#inputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="inputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="inputSet:AttributeSet"></a>
@@ -1188,6 +1187,26 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Returns a copy of this node where <code>f</code> has been applied to all the nodes children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>f</code> has been applied to all the nodes children.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#mapExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapExpressions(f:org.apache.spark.sql.catalyst.expressions.Expression=&gt;org.apache.spark.sql.catalyst.expressions.Expression):QueryPlan.this.type"></a>
+      <a id="mapExpressions((Expression)⇒Expression):With.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapExpressions</span><span class="params">(<span name="f">f: (<a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>) ⇒ <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.With">With</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@mapExpressions(f:org.apache.spark.sql.catalyst.expressions.Expression=&gt;org.apache.spark.sql.catalyst.expressions.Expression):QueryPlan.this.type" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Apply a map function to each expression present in this query operator, and return a new
+query operator based on the mapped expressions.</p><div class="fullcomment"><div class="comment cmt"><p>Apply a map function to each expression present in this query operator, and return a new
+query operator based on the mapped expressions.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#mapProductIterator" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mapProductIterator[B](f:Any=&gt;B)(implicitevidence$1:scala.reflect.ClassTag[B]):Array[B]"></a>
       <a id="mapProductIterator[B]((Any)⇒B)(ClassTag[B]):Array[B]"></a>
@@ -1332,7 +1351,8 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree, where each operator is numbered.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree, where each operator is numbered.
-The numbers can be used with <a href="../../trees/TreeNode.html#apply(number:Int):BaseType" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> to easily access specific subtrees.
+The numbers can be used with <a href="../../trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">TreeNode.apply</a> to easily access specific subtrees.</p><p>The numbers are based on depth-first traversal of the tree (with innerChildren traversed first
+before children).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#origin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="origin:org.apache.spark.sql.catalyst.trees.Origin"></a>
@@ -1404,6 +1424,25 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
     </span>
       <p class="shortcomment cmt">Returns the set of attributes that are output by this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the set of attributes that are output by this node.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#p" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="p(number:Int):BaseType"></a>
+      <a id="p(Int):LogicalPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">p</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@p(number:Int):BaseType" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
+Numbers for each node can be found in the <a href="../../trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>This is a variant of <a href="../../trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> that returns the node as BaseType (if the type matches).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#prettyJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyJson:String"></a>
       <a id="prettyJson:String"></a>
@@ -1717,7 +1756,7 @@ can do better should override this function.
       </a>
     </span>
       <p class="shortcomment cmt">Returns the output schema in the tree format.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the output schema in the tree format.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#simpleString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.With#simpleString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="simpleString:String"></a>
       <a id="simpleString:String"></a>
       <h4 class="signature">
@@ -1733,7 +1772,7 @@ can do better should override this function.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">ONE line description of this node.</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+      <p class="shortcomment cmt">ONE line description of this node.</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.With">With</a> → <a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan#statePrefix" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="statePrefix:String"></a>
       <a id="statePrefix:String"></a>
@@ -1761,14 +1800,14 @@ can do better should override this function.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">statistics</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Statistics">Statistics</span></span>
+        <span class="name">statistics</span><span class="result">: <a href="Statistics.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Statistics">Statistics</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@statistics:org.apache.spark.sql.catalyst.plans.logical.Statistics" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Computes <span class="extype" name="Statistics">Statistics</span> for this plan.</p><div class="fullcomment"><div class="comment cmt"><p>Computes <span class="extype" name="Statistics">Statistics</span> for this plan. The default implementation assumes the output
+      <p class="shortcomment cmt">Computes <a href="Statistics.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Statistics">Statistics</a> for this plan.</p><div class="fullcomment"><div class="comment cmt"><p>Computes <a href="Statistics.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Statistics">Statistics</a> for this plan. The default implementation assumes the output
 cardinality is the product of all child plan's cardinality, i.e. applies in the case
 of cartesian joins.</p><p><a href="LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a>s must override this.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> → <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></dd></dl></div>
@@ -1900,25 +1939,6 @@ transformDown or transformUp should be used.
 and all its children.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of running <a href="../QueryPlan.html#transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressions">transformExpressions</a> on this node
 and all its children.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType"></a>
-      <a id="transformChildren(PartialFunction[LogicalPlan,LogicalPlan],(LogicalPlan,PartialFunction[LogicalPlan,LogicalPlan])⇒LogicalPlan):LogicalPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transformChildren</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>, <span name="nextOperation">nextOperation: (<a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]) ⇒ <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.With@transformChildren(rule:PartialFunction[BaseType,BaseType],nextOperation:(BaseType,PartialFunction[BaseType,BaseType])=&gt;BaseType):BaseType" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
-this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node where <code>rule</code> has been recursively applied to all the children of
-this node.  When <code>rule</code> does not apply to a given node it is left unchanged.</p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function used to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transformDown" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType"></a>
       <a id="transformDown(PartialFunction[LogicalPlan,LogicalPlan]):LogicalPlan"></a>

@@ -50,12 +50,14 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-The interface of query execution listener that can be used to analyze execution metrics.</p><p>Note that implementations should guarantee thread-safety as they can be invoked by
-multiple different threads.
+The interface of query execution listener that can be used to analyze execution metrics.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd></dl><div class="toggleContainer block">
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Implementations should guarantee thread-safety as they can be invoked by
+multiple different threads.</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -115,12 +117,11 @@ multiple different threads.
       </a>
     </span>
       <p class="shortcomment cmt">A callback function that will be called when a query execution failed.</p><div class="fullcomment"><div class="comment cmt"><p>A callback function that will be called when a query execution failed.
-Note that this can be invoked by multiple different threads.
 </p></div><dl class="paramcmts block"><dt class="param">funcName</dt><dd class="cmt"><p>the name of the action that triggered this query.</p></dd><dt class="param">qe</dt><dd class="cmt"><p>the QueryExecution object that carries detail information like logical plan,
           physical plan, etc.</p></dd><dt class="param">exception</dt><dd class="cmt"><p>the exception that failed this query.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This can be invoked by multiple different threads.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.util.QueryExecutionListener#onSuccess" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="onSuccess(funcName:String,qe:org.apache.spark.sql.execution.QueryExecution,durationNs:Long):Unit"></a>
       <a id="onSuccess(String,QueryExecution,Long):Unit"></a>
@@ -138,12 +139,11 @@ Note that this can be invoked by multiple different threads.
       </a>
     </span>
       <p class="shortcomment cmt">A callback function that will be called when a query executed successfully.</p><div class="fullcomment"><div class="comment cmt"><p>A callback function that will be called when a query executed successfully.
-Note that this can be invoked by multiple different threads.
 </p></div><dl class="paramcmts block"><dt class="param">funcName</dt><dd class="cmt"><p>name of the action that triggered this query.</p></dd><dt class="param">qe</dt><dd class="cmt"><p>the QueryExecution object that carries detail information like logical plan,
           physical plan, etc.</p></dd><dt class="param">durationNs</dt><dd class="cmt"><p>the execution time for this query in nanoseconds.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This can be invoked by multiple different threads.</p></span></dd></dl></div>
     </li></ol>
             </div>
 

@@ -245,7 +245,7 @@ Abstract class representing all the specifications of the DStream transformation
 <code>mapWithState</code> operation of a
 <a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">pair DStream</a> (Scala) or a
 <a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">JavaPairDStream</a> (Java).
-Use <span class="extype" name="org.apache.spark.streaming.StateSpec.function()">StateSpec.function</span> factory methods
+Use <code>org.apache.spark.streaming.StateSpec.function()</code> factory methods
 to create instances of this class.</p><p>Example in Scala:</p><pre><span class="cmt">// A mapping function that maintains an integer state and return a String</span>
 <span class="kw">def</span> mappingFunction(key: <span class="std">String</span>, value: <span class="std">Option</span>[<span class="std">Int</span>], state: State[<span class="std">Int</span>]): <span class="std">Option</span>[<span class="std">String</span>] = {
   <span class="cmt">// Use state.exists(), state.get(), state.update() and state.remove()</span>
@@ -445,13 +445,13 @@ a given number of seconds.</p>
       </a>
     </span>
       <p class="shortcomment cmt">:: Experimental ::
-Builder object for creating instances of <a href="StateSpec.html" class="extype" name="org.apache.spark.streaming.StateSpec">StateSpec</a>
+Builder object for creating instances of <code>org.apache.spark.streaming.StateSpec</code>
 that is used for specifying the parameters of the DStream transformation <code>mapWithState</code>
 that is used for specifying the parameters of the DStream transformation
 <code>mapWithState</code> operation of a
 <a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">pair DStream</a> (Scala) or a
 <a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">JavaPairDStream</a> (Java).</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Builder object for creating instances of <a href="StateSpec.html" class="extype" name="org.apache.spark.streaming.StateSpec">StateSpec</a>
+Builder object for creating instances of <code>org.apache.spark.streaming.StateSpec</code>
 that is used for specifying the parameters of the DStream transformation <code>mapWithState</code>
 that is used for specifying the parameters of the DStream transformation
 <code>mapWithState</code> operation of a

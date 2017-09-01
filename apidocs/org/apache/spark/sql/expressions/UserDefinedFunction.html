@@ -49,18 +49,16 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A user-defined function. To create one, use the <code>udf</code> functions in <a href="../functions$.html" class="extype" name="org.apache.spark.sql.functions">functions</a>.
-Note that the user-defined functions must be deterministic. Due to optimization,
-duplicate invocations may be eliminated or the function may even be invoked more times than
-it is present in the query.
-As an example:</p><pre><span class="cmt">// Defined a UDF that returns true or false based on some numeric score.</span>
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A user-defined function. To create one, use the <code>udf</code> functions in <code>functions</code>.</p><p>As an example:</p><pre><span class="cmt">// Defined a UDF that returns true or false based on some numeric score.</span>
 <span class="kw">val</span> predict = udf((score: <span class="std">Double</span>) <span class="kw">=&gt;</span> <span class="kw">if</span> (score &gt; <span class="num">0.5</span>) <span class="kw">true</span> <span class="kw">else</span> <span class="kw">false</span>)
 
 <span class="cmt">// Projects a column that adds a prediction column based on the score column.</span>
 df.select( predict(df(<span class="lit">"score"</span>)) )</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The user-defined functions must be deterministic. Due to optimization,
+duplicate invocations may be eliminated or the function may even be invoked more times than
+it is present in the query.</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -176,7 +174,7 @@ df.select( predict(df(<span class="lit">"score"</span>)) )</pre></div><dl class=
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.expressions.UserDefinedFunction#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.expressions.UserDefinedFunction#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="apply(exprs:org.apache.spark.sql.Column*):org.apache.spark.sql.Column"></a>
       <a id="apply(Column*):Column"></a>
       <h4 class="signature">
@@ -192,7 +190,8 @@ df.select( predict(df(<span class="lit">"score"</span>)) )</pre></div><dl class=
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Returns an expression that invokes the UDF, using the given arguments.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an expression that invokes the UDF, using the given arguments.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>

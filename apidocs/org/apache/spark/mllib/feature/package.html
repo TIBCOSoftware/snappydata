@@ -82,7 +82,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a ChiSquared feature selector.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a ChiSquared feature selector.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Creates a ChiSquared feature selector.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a ChiSquared feature selector.
+The selector supports different selection methods: <code>numTopFeatures</code>, <code>percentile</code>, <code>fpr</code>.</p><ul><li><code>numTopFeatures</code> chooses a fixed number of top features according to a chi-squared test.</li><li><code>percentile</code> is similar but chooses a fraction of all features instead of a fixed number.</li><li><code>fpr</code> chooses all features whose p-value is below a threshold, thus controlling the false
+   positive rate of selection.
+By default, the selection method is <code>numTopFeatures</code>, with the default number of top features
+set to 50.
+</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.3.0&quot;</span>

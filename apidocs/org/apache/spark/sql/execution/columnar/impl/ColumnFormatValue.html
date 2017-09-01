@@ -41,7 +41,7 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -54,14 +54,17 @@ ByteBuffer. This can be either a direct buffer or a heap buffer depending
 on the system off-heap configuration. The reason for a separate type is to
 easily store data off-heap without any major changes to engine otherwise as
 well as efficiently serialize/deserialize them directly to Oplog/socket.</p><p>This class extends <span class="extype" name="SerializedDiskBuffer">SerializedDiskBuffer</span> to avoid a copy when
-reading/writing from Oplog. Consequently it has a pre-serialized buffer
-that has the serialization header at the start (typeID + classID + size).
-This helps it avoid additional byte writes when transferring data to the
-channels as well as avoiding trimming of buffer when reading from it.
+reading/writing from Oplog. Consequently it writes the serialization header
+itself (typeID + classID + size) into stream as would be written by
+DataSerializer.writeObject. This helps it avoid additional byte writes when
+transferring data to the channels.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="com.gemstone.gemfire.internal.cache.lru.Sizeable">Sizeable</span>, <span class="extype" name="com.pivotal.gemfirexd.internal.engine.GfxdSerializable">GfxdSerializable</span>, <span class="extype" name="com.gemstone.gemfire.internal.DSFIDFactory.GfxdDSFID">GfxdDSFID</span>, <span class="extype" name="com.gemstone.gemfire.internal.DataSerializableFixedID">DataSerializableFixedID</span>, <span class="extype" name="com.gemstone.gemfire.internal.SerializationVersions">SerializationVersions</span>, <span class="extype" name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer">SerializedDiskBuffer</span>, <span class="extype" name="com.gemstone.gemfire.internal.shared.ByteBufferReference">ByteBufferReference</span>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
-        </div></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent"><a href="../encoding/ColumnDeleteDelta.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta">ColumnDeleteDelta</a>, <a href="ColumnDelta.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnDelta">ColumnDelta</a></div>
+          </div></div>
         
 
       <div id="mbrsel">
@@ -208,6 +211,23 @@ channels as well as avoiding trimming of buffer when reading from it.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#channelSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="channelSize():Int"></a>
+      <a id="channelSize():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">channelSize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@channelSize():Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → SerializedDiskBuffer</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -229,6 +249,94 @@ channels as well as avoiding trimming of buffer when reading from it.
       
       <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
     </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#columnBuffer" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="columnBuffer:java.nio.ByteBuffer"></a>
+      <a id="columnBuffer:ByteBuffer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">columnBuffer</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@columnBuffer:java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#copyToHeap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="copyToHeap(owner:String):Unit"></a>
+      <a id="copyToHeap(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">copyToHeap</span><span class="params">(<span name="owner">owner: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@copyToHeap(owner:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → SerializedDiskBuffer</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#diskId" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="diskId:com.gemstone.gemfire.internal.cache.DiskId"></a>
+      <a id="diskId:DiskId"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">diskId</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.DiskId">DiskId</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@diskId:com.gemstone.gemfire.internal.cache.DiskId" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#diskRegion" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="diskRegion:com.gemstone.gemfire.internal.cache.persistence.DiskRegionView"></a>
+      <a id="diskRegion:DiskRegionView"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">diskRegion</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.persistence.DiskRegionView">DiskRegionView</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@diskRegion:com.gemstone.gemfire.internal.cache.persistence.DiskRegionView" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#duplicateBuffer" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="duplicateBuffer(buffer:java.nio.ByteBuffer):java.nio.ByteBuffer"></a>
+      <a id="duplicateBuffer(ByteBuffer):ByteBuffer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">duplicateBuffer</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>)</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@duplicateBuffer(buffer:java.nio.ByteBuffer):java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -310,7 +418,7 @@ channels as well as avoiding trimming of buffer when reading from it.
       <a id="getBufferRetain():ByteBuffer"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -328,7 +436,9 @@ for eager release to work else off-heap object may keep around
 occupying system RAM until the next GC cycle. Callers may decide
 whether to keep the <a href="#release():Unit" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#release">release</a> method in a finally block to ensure
 its invocation, or do it only in normal paths because JVM reference
-collector will eventually clean it in any case.
+collector will eventually clean it in any case.</p><p>Calls to this specific class are guaranteed to always return buffers
+which have position as zero so callers can make simplifying assumptions
+about the same.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → ByteBufferReference</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
@@ -352,7 +462,7 @@ collector will eventually clean it in any case.
       <a id="getDSFID():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -471,7 +581,7 @@ collector will eventually clean it in any case.
       <a id="isDirect:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -522,7 +632,7 @@ collector will eventually clean it in any case.
       <a id="needsRelease():Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -637,18 +747,18 @@ collector will eventually clean it in any case.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SerializedDiskBuffer → ByteBufferReference</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#setBuffer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="setBuffer(buffer:java.nio.ByteBuffer,changeOwnerToStorage:Boolean,writeSerializationHeader:Boolean):Unit"></a>
-      <a id="setBuffer(ByteBuffer,Boolean,Boolean):Unit"></a>
+      <a id="setBuffer(buffer:java.nio.ByteBuffer,changeOwnerToStorage:Boolean):Unit"></a>
+      <a id="setBuffer(ByteBuffer,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setBuffer</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="changeOwnerToStorage">changeOwnerToStorage: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="writeSerializationHeader">writeSerializationHeader: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setBuffer</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="changeOwnerToStorage">changeOwnerToStorage: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@setBuffer(buffer:java.nio.ByteBuffer,changeOwnerToStorage:Boolean,writeSerializationHeader:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@setBuffer(buffer:java.nio.ByteBuffer,changeOwnerToStorage:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -658,7 +768,7 @@ collector will eventually clean it in any case.
       <a id="setDiskId(DiskId,DiskRegionView):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -675,7 +785,7 @@ collector will eventually clean it in any case.
       <a id="size():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -812,7 +922,7 @@ collector will eventually clean it in any case.
       <a id="write(OutputStreamChannel):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -847,6 +957,23 @@ collector will eventually clean it in any case.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#writeSerializationHeader" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="writeSerializationHeader(src:java.nio.ByteBuffer,writeBuf:java.nio.ByteBuffer):Boolean"></a>
+      <a id="writeSerializationHeader(ByteBuffer,ByteBuffer):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">writeSerializationHeader</span><span class="params">(<span name="src">src: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="writeBuf">writeBuf: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@writeSerializationHeader(src:java.nio.ByteBuffer,writeBuf:java.nio.ByteBuffer):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → SerializedDiskBuffer</dd></dl></div>
     </li></ol>
             </div>
 

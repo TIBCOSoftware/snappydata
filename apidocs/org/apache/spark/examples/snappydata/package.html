@@ -92,12 +92,12 @@ directory and type following command on the command prompt
 bin/run-example snappydata.WorkingWithObjects
 </pre></p><p>To submit this example as a job to an already running cluster
 <pre>
-  cd $SNAPPY_HOME
-  bin/snappy-job.sh submit
-  --app-name WorkingWithObjects
-  --class org.apache.spark.examples.snappydata.WorkingWithObjects
-  --app-jar examples/jars/quickstart.jar
-  --lead [leadHost:port]
+cd $SNAPPY_HOME
+bin/snappy-job.sh submit
+--app-name WorkingWithObjects
+--class org.apache.spark.examples.snappydata.WorkingWithObjects
+--app-jar examples/jars/quickstart.jar
+--lead [leadHost:port]
 
 Check the status of your job id
 bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
@@ -131,7 +131,7 @@ bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Person.html"><span class="name">Person</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="address">address: <a href="Address.html" class="extype" name="org.apache.spark.examples.snappydata.Address">Address</a></span>, <span name="emergencyContacts">emergencyContacts: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="Person.html"><span class="name">Person</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="address">address: <a href="Address.html" class="extype" name="org.apache.spark.examples.snappydata.Address">Address</a></span>, <span name="emergencyContacts">emergencyContacts: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@PersonextendsProductwithSerializable" title="Permalink" target="_top">

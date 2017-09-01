@@ -100,7 +100,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SparkPlanner</span><span class="params">(<span name="sparkContext">sparkContext: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="conf">conf: <span class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</span></span>, <span name="extraStrategies">extraStrategies: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../package.html#Strategy=org.apache.spark.sql.execution.SparkStrategy" class="extmbr" name="org.apache.spark.sql.Strategy">Strategy</a>]</span>)</span>
+        <span class="name">SparkPlanner</span><span class="params">(<span name="sparkContext">sparkContext: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="conf">conf: <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>, <span name="extraStrategies">extraStrategies: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../package.html#Strategy=org.apache.spark.sql.execution.SparkStrategy" class="extmbr" name="org.apache.spark.sql.Strategy">Strategy</a>]</span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkPlanner@&lt;init&gt;(sparkContext:org.apache.spark.SparkContext,conf:org.apache.spark.sql.internal.SQLConf,extraStrategies:Seq[org.apache.spark.sql.Strategy]):org.apache.spark.sql.execution.SparkPlanner" title="Permalink" target="_top">
@@ -368,6 +368,23 @@ be replaced with the real relation using the <code>Source</code> in <code>Stream
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.SparkPlanner#collectPlaceholders" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="collectPlaceholders(plan:org.apache.spark.sql.execution.SparkPlan):Seq[(org.apache.spark.sql.execution.SparkPlan,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)]"></a>
+      <a id="collectPlaceholders(SparkPlan):Seq[(SparkPlan,LogicalPlan)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collectPlaceholders</span><span class="params">(<span name="plan">plan: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkPlanner@collectPlaceholders(plan:org.apache.spark.sql.execution.SparkPlan):Seq[(org.apache.spark.sql.execution.SparkPlan,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Collects placeholders marked as <span class="extype" name="planLater">planLater</span> by strategy and its <span class="extype" name="LogicalPlan">LogicalPlan</span>s</p><div class="fullcomment"><div class="comment cmt"><p>Collects placeholders marked as <span class="extype" name="planLater">planLater</span> by strategy and its <span class="extype" name="LogicalPlan">LogicalPlan</span>s</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkPlanner">SparkPlanner</a> → <a href="../catalyst/planning/QueryPlanner.html" class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner">QueryPlanner</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlanner#conf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="conf:org.apache.spark.sql.internal.SQLConf"></a>
       <a id="conf:SQLConf"></a>
@@ -377,7 +394,7 @@ be replaced with the real relation using the <code>Source</code> in <code>Stream
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">conf</span><span class="result">: <span class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</span></span>
+        <span class="name">conf</span><span class="result">: <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkPlanner@conf:org.apache.spark.sql.internal.SQLConf" title="Permalink" target="_top">
@@ -578,8 +595,8 @@ be replaced with the real relation using the <code>Source</code> in <code>Stream
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.SparkPlanner#plan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="plan(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Iterator[org.apache.spark.sql.execution.SparkPlan]"></a>
+    </li><li name="org.apache.spark.sql.catalyst.planning.QueryPlanner#plan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="plan(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Iterator[PhysicalPlan]"></a>
       <a id="plan(LogicalPlan):Iterator[SparkPlan]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -590,11 +607,11 @@ be replaced with the real relation using the <code>Source</code> in <code>Stream
         <span class="name">plan</span><span class="params">(<span name="plan">plan: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkPlanner@plan(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Iterator[org.apache.spark.sql.execution.SparkPlan]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkPlanner@plan(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Iterator[PhysicalPlan]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkPlanner">SparkPlanner</a> → <a href="../catalyst/planning/QueryPlanner.html" class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner">QueryPlanner</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/planning/QueryPlanner.html" class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner">QueryPlanner</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlanner#pruneFilterProject" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="pruneFilterProject(projectList:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression],filterPredicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression],prunePushedDownFilters:Seq[org.apache.spark.sql.catalyst.expressions.Expression]=&gt;Seq[org.apache.spark.sql.catalyst.expressions.Expression],scanBuilder:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]=&gt;org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="pruneFilterProject(Seq[NamedExpression],Seq[Expression],(Seq[Expression])⇒Seq[Expression],(Seq[Attribute])⇒SparkPlan):SparkPlan"></a>
@@ -620,6 +637,23 @@ further eliminated out after filtering has been done.</p><p>The <code>prunePushe
 away by the filter pushdown optimization.</p><p>The required attributes for both filtering and expression evaluation are passed to the
 provided <code>scanBuilder</code> function so that it can avoid unnecessary column materialization.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.SparkPlanner#prunePlans" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="prunePlans(plans:Iterator[org.apache.spark.sql.execution.SparkPlan]):Iterator[org.apache.spark.sql.execution.SparkPlan]"></a>
+      <a id="prunePlans(Iterator[SparkPlan]):Iterator[SparkPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">prunePlans</span><span class="params">(<span name="plans">plans: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkPlanner@prunePlans(plans:Iterator[org.apache.spark.sql.execution.SparkPlan]):Iterator[org.apache.spark.sql.execution.SparkPlan]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Prunes bad plans to prevent combinatorial explosion.</p><div class="fullcomment"><div class="comment cmt"><p>Prunes bad plans to prevent combinatorial explosion.</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkPlanner">SparkPlanner</a> → <a href="../catalyst/planning/QueryPlanner.html" class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner">QueryPlanner</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkStrategies#singleRowRdd" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="singleRowRdd:org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="singleRowRdd:RDD[InternalRow]"></a>

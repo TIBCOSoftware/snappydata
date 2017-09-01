@@ -28,10 +28,12 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img alt="Class" src="../../../../../../lib/class_big.png" />
+        <a href="DataSource$.html" title="See companion object"><img alt="Class/Object" src="../../../../../../lib/class_to_object_big.png" /></a>
         <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">datasources</a></p>
-        <h1>DataSource</h1><h3><span class="morelinks"><div>Related Doc:
-            <a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">package datasources</a>
+        <h1><a href="DataSource$.html" title="See companion object">DataSource</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="DataSource$.html" title="See companion object">object DataSource</a>
+            | <a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">package datasources</a>
           </div></span></h3><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
@@ -45,7 +47,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">DataSource</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="className">className: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="paths">paths: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Nil</span></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">DataSource</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="className">className: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="paths">paths: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Nil</span></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>, <span name="catalogTable">catalogTable: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -60,8 +62,13 @@ metadata.  For example, when reading a partitioned table from a file system, par
 will be inferred from the directory layout even if they are not specified.
 </p></div><dl class="paramcmts block"><dt class="param">paths</dt><dd class="cmt"><p>A list of file system paths that hold data.  These will be globbed before and
              qualified. This option only works when reading from a <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a>.</p></dd><dt class="param">userSpecifiedSchema</dt><dd class="cmt"><p>An optional specification of the schema of the data. When present
-                           we skip attempting to infer the schema.</p></dd><dt class="param">partitionColumns</dt><dd class="cmt"><p>A list of column names that the relation is partitioned by.  When this
-                        list is empty, the relation is unpartitioned.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>An optional specification for bucketing (hash-partitioning) of the data.</p></dd></dl><div class="toggleContainer block">
+                           we skip attempting to infer the schema.</p></dd><dt class="param">partitionColumns</dt><dd class="cmt"><p>A list of column names that the relation is partitioned by. This list is
+                        generally empty during the read path, unless this DataSource is managed
+                        by Hive. In these cases, during <code>resolveRelation</code>, we will call
+                        <code>getOrInferFileFormatSchema</code> for file based DataSources to infer the
+                        partitioning. In other cases, if this list is empty, then this table
+                        is unpartitioned.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>An optional specification for bucketing (hash-partitioning) of the data.</p></dd><dt class="param">catalogTable</dt><dd class="cmt"><p>Optional catalog table reference that can be used to push down operations
+                    over the datasource to the catalog service.</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -101,7 +108,7 @@ will be inferred from the directory layout even if they are not specified.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.datasources.DataSource#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,className:String,paths:Seq[String],userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],partitionColumns:Seq[String],bucketSpec:Option[org.apache.spark.sql.execution.datasources.BucketSpec],options:Map[String,String]):org.apache.spark.sql.execution.datasources.DataSource"></a>
+      <a id="&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,className:String,paths:Seq[String],userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],partitionColumns:Seq[String],bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec],options:Map[String,String],catalogTable:Option[org.apache.spark.sql.catalyst.catalog.CatalogTable]):org.apache.spark.sql.execution.datasources.DataSource"></a>
       <a id="&lt;init&gt;:DataSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -109,17 +116,22 @@ will be inferred from the directory layout even if they are not specified.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">DataSource</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="className">className: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="paths">paths: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Nil</span></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>)</span>
+        <span class="name">DataSource</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="className">className: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="paths">paths: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Nil</span></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>, <span name="catalogTable">catalogTable: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,className:String,paths:Seq[String],userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],partitionColumns:Seq[String],bucketSpec:Option[org.apache.spark.sql.execution.datasources.BucketSpec],options:Map[String,String]):org.apache.spark.sql.execution.datasources.DataSource" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,className:String,paths:Seq[String],userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],partitionColumns:Seq[String],bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec],options:Map[String,String],catalogTable:Option[org.apache.spark.sql.catalyst.catalog.CatalogTable]):org.apache.spark.sql.execution.datasources.DataSource" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">paths</dt><dd class="cmt"><p>A list of file system paths that hold data.  These will be globbed before and
              qualified. This option only works when reading from a <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a>.</p></dd><dt class="param">userSpecifiedSchema</dt><dd class="cmt"><p>An optional specification of the schema of the data. When present
-                           we skip attempting to infer the schema.</p></dd><dt class="param">partitionColumns</dt><dd class="cmt"><p>A list of column names that the relation is partitioned by.  When this
-                        list is empty, the relation is unpartitioned.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>An optional specification for bucketing (hash-partitioning) of the data.</p></dd></dl></div>
+                           we skip attempting to infer the schema.</p></dd><dt class="param">partitionColumns</dt><dd class="cmt"><p>A list of column names that the relation is partitioned by. This list is
+                        generally empty during the read path, unless this DataSource is managed
+                        by Hive. In these cases, during <code>resolveRelation</code>, we will call
+                        <code>getOrInferFileFormatSchema</code> for file based DataSources to infer the
+                        partitioning. In other cases, if this list is empty, then this table
+                        is unpartitioned.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>An optional specification for bucketing (hash-partitioning) of the data.</p></dd><dt class="param">catalogTable</dt><dd class="cmt"><p>Optional catalog table reference that can be used to push down operations
+                    over the datasource to the catalog service.</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -218,7 +230,7 @@ will be inferred from the directory layout even if they are not specified.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.DataSource#bucketSpec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bucketSpec:Option[org.apache.spark.sql.execution.datasources.BucketSpec]"></a>
+      <a id="bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec]"></a>
       <a id="bucketSpec:Option[BucketSpec]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -226,14 +238,32 @@ will be inferred from the directory layout even if they are not specified.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">bucketSpec</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>
+        <span class="name">bucketSpec</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@bucketSpec:Option[org.apache.spark.sql.execution.datasources.BucketSpec]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">An optional specification for bucketing (hash-partitioning) of the data.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.DataSource#catalogTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="catalogTable:Option[org.apache.spark.sql.catalyst.catalog.CatalogTable]"></a>
+      <a id="catalogTable:Option[CatalogTable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">catalogTable</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@catalogTable:Option[org.apache.spark.sql.catalyst.catalog.CatalogTable]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Optional catalog table reference that can be used to push down operations
+                    over the datasource to the catalog service.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.DataSource#className" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="className:String"></a>
       <a id="className:String"></a>
@@ -756,8 +786,12 @@ be read.</p>
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A list of column names that the relation is partitioned by.</p><div class="fullcomment"><div class="comment cmt"><p>A list of column names that the relation is partitioned by.  When this
-                        list is empty, the relation is unpartitioned.</p></div></div>
+      <p class="shortcomment cmt">A list of column names that the relation is partitioned by.</p><div class="fullcomment"><div class="comment cmt"><p>A list of column names that the relation is partitioned by. This list is
+                        generally empty during the read path, unless this DataSource is managed
+                        by Hive. In these cases, during <code>resolveRelation</code>, we will call
+                        <code>getOrInferFileFormatSchema</code> for file based DataSources to infer the
+                        partitioning. In other cases, if this list is empty, then this table
+                        is unpartitioned.</p></div></div>
     </li><li name="org.apache.spark.sql.execution.datasources.DataSource#paths" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="paths:Seq[String]"></a>
       <a id="paths:Seq[String]"></a>
@@ -794,7 +828,7 @@ be read.</p>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.datasources.DataSource#resolveRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="resolveRelation(checkPathExist:Boolean):org.apache.spark.sql.sources.BaseRelation"></a>
+      <a id="resolveRelation(checkFilesExist:Boolean):org.apache.spark.sql.sources.BaseRelation"></a>
       <a id="resolveRelation(Boolean):BaseRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -802,10 +836,10 @@ be read.</p>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">resolveRelation</span><span class="params">(<span name="checkPathExist">checkPathExist: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>
+        <span class="name">resolveRelation</span><span class="params">(<span name="checkFilesExist">checkFilesExist: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@resolveRelation(checkPathExist:Boolean):org.apache.spark.sql.sources.BaseRelation" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@resolveRelation(checkFilesExist:Boolean):org.apache.spark.sql.sources.BaseRelation" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -813,9 +847,11 @@ be read.</p>
 <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.DataSource">DataSource</a>
 </p><div class="fullcomment"><div class="comment cmt"><p>Create a resolved <span class="extype" name="BaseRelation">BaseRelation</span> that can be used to read data from or write data into this
 <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.DataSource">DataSource</a>
-</p></div><dl class="paramcmts block"><dt class="param">checkPathExist</dt><dd class="cmt"><p>A flag to indicate whether to check the existence of path or not.
-                      This flag will be set to false when we create an empty table (the
-                      path of the table does not exist).</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">checkFilesExist</dt><dd class="cmt"><p>Whether to confirm that the files exist when generating the
+                       non-streaming file based datasource. StructuredStreaming jobs already
+                       list file existence, and when generating incremental jobs, the batch
+                       is considered as a non-streaming file based data source. Since we know
+                       that files already exist, we don't need to check them again.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.DataSource#sourceInfo" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sourceInfo:DataSource.this.SourceInfo"></a>
       <a id="sourceInfo:SourceInfo"></a>
@@ -955,22 +991,40 @@ be read.</p>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.DataSource#write" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="write(mode:org.apache.spark.sql.SaveMode,data:org.apache.spark.sql.DataFrame):org.apache.spark.sql.sources.BaseRelation"></a>
-      <a id="write(SaveMode,DataFrame):BaseRelation"></a>
+      <a id="write(mode:org.apache.spark.sql.SaveMode,data:org.apache.spark.sql.DataFrame):Unit"></a>
+      <a id="write(SaveMode,DataFrame):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">write</span><span class="params">(<span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="data">data: <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>)</span><span class="result">: <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>
+        <span class="name">write</span><span class="params">(<span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="data">data: <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@write(mode:org.apache.spark.sql.SaveMode,data:org.apache.spark.sql.DataFrame):org.apache.spark.sql.sources.BaseRelation" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@write(mode:org.apache.spark.sql.SaveMode,data:org.apache.spark.sql.DataFrame):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Writes the give <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> out to this <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.DataSource">DataSource</a>.</p>
+      <p class="shortcomment cmt">Writes the given <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> out to this <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.DataSource">DataSource</a>.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.DataSource#writeAndRead" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="writeAndRead(mode:org.apache.spark.sql.SaveMode,data:org.apache.spark.sql.DataFrame):org.apache.spark.sql.sources.BaseRelation"></a>
+      <a id="writeAndRead(SaveMode,DataFrame):BaseRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">writeAndRead</span><span class="params">(<span name="mode">mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="data">data: <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>)</span><span class="result">: <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.DataSource@writeAndRead(mode:org.apache.spark.sql.SaveMode,data:org.apache.spark.sql.DataFrame):org.apache.spark.sql.sources.BaseRelation" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Writes the given <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> out to this <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.DataSource">DataSource</a> and returns a <span class="extype" name="BaseRelation">BaseRelation</span> for
+the following reading.</p>
     </li></ol>
             </div>
 

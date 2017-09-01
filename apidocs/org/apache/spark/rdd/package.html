@@ -123,14 +123,14 @@
       </a>
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
-A RDD that cogroups its parents.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-A RDD that cogroups its parents. For each key k in parent RDDs, the resulting RDD contains a
-tuple with the list of values for that key.</p><p>Note: This is an internal API. We recommend users use RDD.cogroup(...) instead of
-instantiating this directly.
+An RDD that cogroups its parents.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+An RDD that cogroups its parents. For each key k in parent RDDs, the resulting RDD contains a
+tuple with the list of values for that key.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This is an internal API. We recommend users use RDD.cogroup(...) instead of
+instantiating this directly.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.DoubleRDDFunctions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DoubleRDDFunctionsextendsLoggingwithSerializable"></a>
       <a id="DoubleRDDFunctions:DoubleRDDFunctions"></a>
@@ -168,12 +168,12 @@ instantiating this directly.
 An RDD that provides core functionality for reading data stored in Hadoop (e.g., files in HDFS,
 sources in HBase, or S3), using the older MapReduce API (<code>org.apache.hadoop.mapred</code>).</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
 An RDD that provides core functionality for reading data stored in Hadoop (e.g., files in HDFS,
-sources in HBase, or S3), using the older MapReduce API (<code>org.apache.hadoop.mapred</code>).</p><p>Note: Instantiating this class directly is not recommended, please use
-<span class="extype" name="org.apache.spark.SparkContext.hadoopRDD()">org.apache.spark.SparkContext.hadoopRDD()</span>
+sources in HBase, or S3), using the older MapReduce API (<code>org.apache.hadoop.mapred</code>).
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Instantiating this class directly is not recommended, please use
+<code>org.apache.spark.SparkContext.hadoopRDD()</code></p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.JdbcRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="JdbcRDD[T]extendsRDD[T]withLogging"></a>
       <a id="JdbcRDD[T]:JdbcRDD[T]"></a>
@@ -213,12 +213,12 @@ For usage example, see test case JdbcRDDSuite.
 An RDD that provides core functionality for reading data stored in Hadoop (e.g., files in HDFS,
 sources in HBase, or S3), using the new MapReduce API (<code>org.apache.hadoop.mapreduce</code>).</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
 An RDD that provides core functionality for reading data stored in Hadoop (e.g., files in HDFS,
-sources in HBase, or S3), using the new MapReduce API (<code>org.apache.hadoop.mapreduce</code>).</p><p>Note: Instantiating this class directly is not recommended, please use
-<span class="extype" name="org.apache.spark.SparkContext.newAPIHadoopRDD()">org.apache.spark.SparkContext.newAPIHadoopRDD()</span>
+sources in HBase, or S3), using the new MapReduce API (<code>org.apache.hadoop.mapreduce</code>).
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Instantiating this class directly is not recommended, please use
+<code>org.apache.spark.SparkContext.newAPIHadoopRDD()</code></p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.OrderedRDDFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="OrderedRDDFunctions[K,V,P&lt;:Product2[K,V]]extendsLoggingwithSerializable"></a>
       <a id="OrderedRDDFunctions[K,V,P&lt;:Product2[K,V]]:OrderedRDDFunctions[K,V,P]"></a>
@@ -306,8 +306,8 @@ A PartitionCoalescer defines how to coalesce the partitions of a given RDD.
       </a>
     </span>
       <p class="shortcomment cmt">::DeveloperApi::
-A group of <a href="../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>s</p><div class="fullcomment"><div class="comment cmt"><p>::DeveloperApi::
-A group of <a href="../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>s</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+A group of <code>Partition</code>s</p><div class="fullcomment"><div class="comment cmt"><p>::DeveloperApi::
+A group of <code>Partition</code>s</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
@@ -328,9 +328,9 @@ A group of <a href="../Partition.html" class="extype" name="org.apache.spark.Par
       </a>
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
-A RDD used to prune RDD partitions/partitions so we can avoid launching tasks on
+An RDD used to prune RDD partitions/partitions so we can avoid launching tasks on
 all partitions.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-A RDD used to prune RDD partitions/partitions so we can avoid launching tasks on
+An RDD used to prune RDD partitions/partitions so we can avoid launching tasks on
 all partitions. An example use case: If we know the RDD is partitioned by range,
 and the execution DAG has a filter on the key, we can avoid launching tasks
 on partitions that don't have the range covering the key.
@@ -368,8 +368,8 @@ through implicit.</p><p>Internally, each RDD is characterized by five main prope
    an HDFS file)</li></ul><p>All of the scheduling and execution in Spark is done based on these methods, allowing each RDD
 to implement its own way of computing itself. Indeed, users can implement custom RDDs (e.g. for
 reading data from a new storage system) by overriding these functions. Please refer to the
-<a href="http://people.csail.mit.edu/matei/papers/2012/nsdi_spark.pdf" target="_blank">Spark paper</a> for more details
-on RDD internals.
+<a href="http://people.csail.mit.edu/matei/papers/2012/nsdi_spark.pdf">Spark paper</a>
+for more details on RDD internals.
 </p></div></div>
     </li><li name="org.apache.spark.rdd.SequenceFileRDDFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SequenceFileRDDFunctions[K,V]extendsLoggingwithSerializable"></a>
@@ -389,8 +389,9 @@ on RDD internals.
     </span>
       <p class="shortcomment cmt">Extra functions available on RDDs of (key, value) pairs to create a Hadoop SequenceFile,
 through an implicit conversion.</p><div class="fullcomment"><div class="comment cmt"><p>Extra functions available on RDDs of (key, value) pairs to create a Hadoop SequenceFile,
-through an implicit conversion. Note that this can't be part of PairRDDFunctions because
-we need more implicit parameters to convert our keys and values to Writable.</p></div></div>
+through an implicit conversion.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This can't be part of PairRDDFunctions because we need more implicit parameters to
+convert our keys and values to Writable.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.ShuffledRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ShuffledRDD[K,V,C]extendsRDD[(K,C)]"></a>
       <a id="ShuffledRDD[K,V,C]:ShuffledRDD[K,V,C]"></a>

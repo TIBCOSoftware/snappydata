@@ -139,6 +139,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
         
     </li>
@@ -163,19 +170,40 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../">Best practices</a>
+        <a class="" href="../">Best Practices</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Best practices</span></li>
+    <li><span>Best Practices</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../capacity_planning/">Setting up your Cluster </a>
+        <a class="" href="../setup_cluster/">Setting up your Cluster</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../ha_considerations/">HA Considerations</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../memory_management/">Memory Management</a>
         
     </li>
 
@@ -186,20 +214,26 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#overview">Overview</a></li>
+                <li class="toctree-l3"><a href="#designing-your-database-and-schema">Designing your Database and Schema</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-column-vs-row-table">Using Column vs Row Table</a></li>
+            
+                <li class="toctree-l3"><a href="#design-principles-of-scalable-partition-aware-databases">Design Principles of Scalable, Partition-Aware Databases</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-partitioned-vs-replicated-row-table">Using Partitioned vs Replicated Row Table</a></li>
+                    <li><a class="toctree-l4" href="#identify-entity-groups-and-partitioning-keys">Identify Entity Groups and Partitioning Keys</a></li>
                 
-                    <li><a class="toctree-l4" href="#applying-partitioning-scheme">Applying Partitioning Scheme</a></li>
+                    <li><a class="toctree-l4" href="#adapting-a-database-schema">Adapting a Database Schema</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-redundancy">Using Redundancy</a></li>
-                
-                    <li><a class="toctree-l4" href="#overflow-configuration">Overflow Configuration</a></li>
+                    <li><a class="toctree-l4" href="#guidelines-for-adapting-a-database-to-snappydata">Guidelines for Adapting a Database to SnappyData</a></li>
                 
             
             </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../important_settings/">Important Settings</a>
         
     </li>
 
@@ -223,7 +257,36 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
+        <a class="" href="../../monitoring/managing_and_monitoring/">Managing and Monitoring</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Managing and Monitoring</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitoring/">SnappyData Pulse</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../security/security/">Security</a>
         
     </li>
 <li>
@@ -250,6 +313,13 @@
             
     <ul class="subnav">
     <li><span>SQL Reference Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/alter-table/">ALTER TABLE</a>
+        
+    </li>
 
         
             
@@ -382,6 +452,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
         
     </li>
@@ -396,7 +473,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/select/">SELECT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/set-isolation/">SET ISOLATION</a>
         
     </li>
 
@@ -427,14 +518,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
+        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures and Built-in Functions</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Built-in System Procedures</span></li>
+    <li><span>Built-in System Procedures and Built-in Functions</span></li>
 
         
             
@@ -461,6 +552,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/inbuilt_system_procedures/set-trace-flag/">SET_TRACE_FLAG</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/dsid/">DSID</a>
         
     </li>
 
@@ -497,6 +595,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/sysdiskstores/">SYSDISKSTORES</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
 
@@ -568,6 +673,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/autocommit/">autocommit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/commit/">commit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/interactive_commands/connect_client/">connect client</a>
         
     </li>
@@ -611,6 +730,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/interactive_commands/maximumdisplaywidth/">MaximumDisplayWidth</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/rollback/">rollback</a>
         
     </li>
 
@@ -810,6 +936,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/misc/passwordless_ssh/">Configuring SSH Login without Password</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
         
     </li>
@@ -820,7 +953,71 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_docs/">Additional Information</a>
+        <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Troubleshooting Common Problems</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/member_startup_problems/">Member Startup Problems</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/recovering_from_a_conflictingpersistentdataexception/">Recovering from a ConflictingPersistentDataException</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing Disk Full Errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from Disk Full Errors</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../additional_files/additional_docs/">Additional Information</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../additional_files/license_model/">License Model</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../release_notes/release_notes_1.0-rc/">Release Notes</a>
         
     </li>
 <li>
@@ -861,7 +1058,7 @@
     
       
         
-          <li>Best practices &raquo;</li>
+          <li>Best Practices &raquo;</li>
         
       
     
@@ -881,72 +1078,178 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="overview">Overview</h1>
+                <h1 id="designing-your-database-and-schema">Designing your Database and Schema</h1>
 <p>The following topics are covered in this section:</p>
 <ul>
-<li><a href="#column-row">Using Column vs Row Table</a></li>
-<li><a href="#partition-replicate">Using Partitioned vs Replicated Row Table</a></li>
-<li><a href="#partition-scheme">Applying Partitioning Scheme</a></li>
-<li><a href="#redundancy">Using Redundancy</a></li>
-<li><a href="#overflow">Overflow Configuration</a></li>
+<li>
+<p><a href="#design-schema">Design Principles of Scalable, Partition-Aware Databases</a></p>
+</li>
+<li>
+<p><a href="#entity_groups">Identify Entity Groups and Partitioning Keys</a></p>
+</li>
+<li>
+<p><a href="#adapting_existing_schema">Adapting a Database Schema</a></p>
+</li>
 </ul>
-<p><a id="column-row"></a></p>
-<h2 id="using-column-vs-row-table">Using Column vs Row Table</h2>
-<p>A columnar table data is stored in a sequence of columns, whereas, in a row table it stores table records in a sequence of rows.</p>
-<p><a id="column-table"></a></p>
-<h3 id="using-column-tables">Using Column Tables</h3>
-<p><strong>Analytical Queries</strong>: A column table has distinct advantages for OLAP queries and therefore large tables involved in such queries are recommended to be created as columnar tables. These tables are rarely mutated (deleted/updated).
-For a given query on a column table, only the required columns are read (since only the required subset columns are to be scanned), which gives a better scan performance. Thus, aggregation queries execute faster on a column table compared  to a  row table.</p>
-<p><strong>Compression of Data</strong>: Another advantage that the column table offers is it allows highly efficient compression of data which reduces the total storage footprint for large tables.</p>
-<p>Column tables are not suitable for OLTP scenarios. In this case, row tables are recommended.</p>
-<p><a id="row-table"></a></p>
-<h3 id="using-row-tables">Using Row Tables</h3>
-<p><strong>OLTP Queries</strong>: Row tables are designed to return the entire row efficiently and are suited for OLTP scenarios when the tables are required to be mutated frequently (when the table rows need to be updated/deleted based on some conditions). In these cases, row tables offer distinct advantages over the column tables.</p>
-<p><strong>Point queries</strong>: Row tables are also suitable for point queries (for example, queries that select only a few records based on certain where clause conditions). </p>
-<p><strong>Small Dimension Tables</strong>: Row tables are also suitable to create small dimension tables as these can be created as replicated tables (table data replicated on all data servers).</p>
-<p><strong>Create Index</strong>: Row tables also allow the creation of an index on certain columns of the table which improves  performance.</p>
+<p><a id="design-schema"></a></p>
+<h1 id="design-principles-of-scalable-partition-aware-databases">Design Principles of Scalable, Partition-Aware Databases</h1>
+<p>The key design goal for achieving linear scaling is to use a partitioning strategy that allows most data access (queries) to be pruned to a single partition. This avoids expensive locking operations across multiple partitions during query execution.</p>
+<p>In a highly concurrent system that has thousands of connections, multiple queries are generally spread uniformly across the entire data set (and therefore across all partitions). Therefore, increasing the number of data stores enables linear scalability. Given sufficient network performance, additional connections can be supported without degrading the response time for queries.</p>
+<p>The general strategy for designing a SnappyData database is to identify the tables to partition or replicate in the SnappyData cluster, and then to determine the correct partitioning key(s) for partitioned tables. This usually requires an iterative process to produce the optimal design:</p>
+<ol>
+<li>
+<p>Read <a href="#entity_groups">Identify Entity Groups and Partitioning Keys</a> and <a href="../optimizing_query_latency/#partition-replicate">Replicate Dimension Tables</a> to understand the basic rules for defining partitioned or replicated tables.</p>
+</li>
+<li>
+<p>Evaluate your data access patterns to define those entity groups that are candidates for partitioning. Focus your efforts on commonly-joined entities. Colocating commonly joined tables will improve the performance of join queries by avoiding shuffle of data when the join is on partitioning keys.</p>
+</li>
+<li>
+<p>Identify all of the tables in the entity groups.</p>
+</li>
+<li>
+<p>Identify the “partitioning key” for each partitioned table. The partitioning key is the column or set of columns that are common across a set of related tables. Look for parent-child relationships in the joined tables.</p>
+</li>
+<li>
+<p>Identify all of the tables that are candidates for replication. You can replicate table data for high availability, or to colocate table data that is necessary to execute joins.</p>
+</li>
+</ol>
+<p><a id="entity_groups"></a></p>
+<h2 id="identify-entity-groups-and-partitioning-keys">Identify Entity Groups and Partitioning Keys</h2>
+<p>In relational database terms, an entity group corresponds to rows that are related to one another through foreign key relationships. Members of an entity group are typically related by parent-child relationships and can be managed in a single partition. To design a SnappyData database for data partitioning, begin by identifying “entity groups” and their associated partitioning keys.</p>
+<p>For example:</p>
+<ul>
+<li>
+<p>In a customer order management system, most transactions operate on data related to a single customer at a time. Queries frequently join a customer’s billing information with their orders and shipping information. For this type of application, you partition related tables using the customer identity. Any customer row along with their “order” and “shipping” rows forms a single entity group that has the customer ID as the entity group identity (the partitioning key). You would partition related tables using the customer identity, which would enable you to scale the system linearly by adding more members to support additional customers.</p>
+</li>
+<li>
+<p>In a system that manages a product catalog (product categories, product specifications, customer reviews, rebates, related products, and so forth) most data access focuses on a single product at a time. In this type of system, you would partition data on the product key and add members as needed to manage additional products.</p>
+</li>
+<li>
+<p>In an online auction application, you may need to stream incoming auction bids to hundreds of clients with very low latency. To do so, you would manage selected “hot” auctions on a single partition, so that they receive sufficient processing power. As the processing demand increases, you would add more partitions and route the application logic that matches bids to clients to the data store itself.</p>
+</li>
+<li>
+<p>In a financial trading engine that constantly matches bid prices to asking prices for thousands of securities, you would partition data using the ID of the security. To ensure low-latency execution when a security’s market data changes, you would colocate all of the related reference data with the matching algorithm.</p>
+</li>
+</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>In the current release of SnappyData, updates and deletes are not supported on column tables. This feature will be added in a future release.</p>
+<p><a href="http://en.wikipedia.org/wiki/Shard_(database_architecture)">Sharding</a> is a database partitioning strategy where groups of table rows are stored on separate database servers and potentially different instances of the same schema, creating groups of data that can be accessed independently. SnappyData does encourage applications to use sharding techniques.</p>
 </div>
-<p><a id="partition-replicate"></a></p>
-<h2 id="using-partitioned-vs-replicated-row-table">Using Partitioned vs Replicated Row Table</h2>
-<p>In SnappyData, row tables can be either partitioned across all servers or replicated on every server. For row tables, large fact tables should be partitioned whereas, dimension tables can be replicated.</p>
-<p>The SnappyData architecture encourages you to denormalize “dimension” tables into fact tables when possible, and then replicate remaining dimension tables to all datastores in the distributed system.</p>
-<p>Most databases follow the <a href="http://en.wikipedia.org/wiki/Star_schema">star schema</a> design pattern where large “fact” tables store key information about the events in a system or a business process. For example, a fact table would store rows for events like product sales or bank transactions. Each fact table generally has foreign key relationships to multiple “dimension” tables, which describe further aspects of each row in the fact table.</p>
-<p>When designing a database schema for SnappyData, the main goal with a typical star schema database is to partition the entities in fact tables. Slow-changing dimension tables should then be replicated on each data store that hosts a partitioned fact table. In this way, a join between the fact table and any number of its dimension tables can be executed concurrently on each partition, without requiring multiple network hops to other members in the distributed system.</p>
-<p><a id="partition-scheme"></a></p>
-<h2 id="applying-partitioning-scheme">Applying Partitioning Scheme</h2>
-<p><a id="collocated-joins"></a>
-<strong>Collocated Joins</strong></br>
-Collocating frequently joined partitioned tables is the best practice to improve the performance of join queries. When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's  local data. </p>
-<p>If the two tables are not collocated, partitions with same column values for the two tables can be on different nodes thus requiring the data to be shuffled between nodes causing the query performance to degrade.</p>
-<p>For an example on collocated joins, refer to <a href="../../howto/#how-to-perform-a-collocated-join">How to collocate tables for doing a collocated join</a>.</p>
-<p><a id="buckets"></a>
-<strong>Buckets</strong></br>
-The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
-Unit of data movement is a bucket, and buckets of collocated tables move together. When a new server joins, the  <a href="../../configuring_cluster/property_description/#rebalance">-rebalance</a> option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY&gt;0 has been specified). </br>
-There is also a system procedure <a href="../../reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets">call sys.rebalance_all_buckets()</a> that can be used to trigger rebalance.
-For more information on BUCKETS, refer to <a href="../capacity_planning/#buckets">BUCKETS</a>.</p>
-<p><a id="dimension"></a>
-<strong>Criteria for Column Partitioning</strong></br>
-SnappyData partition is mainly for distributed and collocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query are executed concurrently.</br>
-If only a single partition is active and is used largely by queries (especially concurrent queries) it means a significant bottleneck where only a single partition is active all the time, while others are idle. This serializes execution into a single thread handling that partition. Therefore, it is not recommended to use DATE/TIMESTAMP as partitioning.</p>
-<p><a id="redundancy"></a></p>
-<h2 id="using-redundancy">Using Redundancy</h2>
-<p>REDUNDANCY clause of <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the SnappyData members fails or shuts down. </p>
-<p>A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table data. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage.</p>
-<p>For an example of the REDUNDANCY clause refer to <a href="../../programming_guide/#tables-in-snappydata">Tables in SnappyData</a>.</p>
-<p><a id="overflow"></a></p>
-<h2 id="overflow-configuration">Overflow Configuration</h2>
-<p>In SnappyData, column tables by default overflow to disk.  For row tables, the use EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria.  </p>
-<p>This allows table data to be either evicted or destroyed based on the current memory consumption of the server. Use the <code>OVERFLOW</code> clause to specify the action to be taken upon the eviction event. </p>
-<p>For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.</p>
-<p>Refer to <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> link to understand how to configure OVERFLOW and EVICTION_BY clauses.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The default action for OVERFLOW is to destroy the evicted rows.</p>
-</div>
+<p>By identifying entity groups and using those groups as the basis for SnappyData partitioning and colocation, you can realize these benefits:</p>
+<ul>
+<li>
+<p><strong>Rebalancing</strong>: SnappyData rebalances the data automatically by making sure that related rows are migrated together and without any integrity loss. This enables you to add capacity as needed.</p>
+</li>
+<li>
+<p><strong>Parallel scatter-gather</strong>: Queries that cannot be pruned to a single partition are automatically executed in parallel on data stores. </p>
+</li>
+<li>
+<p><strong>Subqueries on remote partitions</strong>: Even when a query is pruned to a single partition, the query can execute subqueries that operate on data that is stored on remote partitions.</p>
+</li>
+</ul>
+<p><a id="adapting_existing_schema"></a></p>
+<h2 id="adapting-a-database-schema">Adapting a Database Schema</h2>
+<p>If you have an existing database design that you want to deploy to SnappyData, translate the entity-relationship model into a physical design that is optimized for SnappyData design principles.</p>
+<h2 id="guidelines-for-adapting-a-database-to-snappydata">Guidelines for Adapting a Database to SnappyData</h2>
+<p>This example shows tables from the Microsoft <a href="http://msdn.microsoft.com/en-us/library/aa276825(SQL.80).aspx">Northwind Traders sample database</a>.</p>
+<p>In order to adapt this schema for use in SnappyData, follow the basic steps outlined in <a href="#design-schema">Design Principles of Scalable, Partition-Aware Databases</a>:</p>
+<ol>
+<li>
+<p>Determine the entity groups.</p>
+<p>Entity groups are generally course-grained entities that have children, grand children, and so forth, and they are commonly used in queries. This example chooses these entity groups:</p>
+<table>
+<thead>
+<tr>
+<th>Entity Group</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td>This group uses the customer identity along with orders and order details as the children</td>
+</tr>
+<tr>
+<td>Product</td>
+<td>This group uses product d etails along with the associated supplier information</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Identify the tables in each entity group.
+    Identify the tables that belong to each entity group. In this example, entity groups use the following tables.</p>
+<table>
+<thead>
+<tr>
+<th>Entity Group</th>
+<th>Tables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td>Customers </br>Orders</br>Shippers</br>Order Details</td>
+</tr>
+<tr>
+<td>Product</td>
+<td>Product</br>Suppliers</br>Category</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Define the partitioning key for each group.</br>
+    In this example, the partitioning keys are:</p>
+<table>
+<thead>
+<tr>
+<th>Entity Group</th>
+<th>Partitioning key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td>CustomerID</td>
+</tr>
+<tr>
+<td>Product</td>
+<td>ProductID</td>
+</tr>
+</tbody>
+</table>
+<p>This example uses customerID as the partitioning key for the Customer group. The customer row and all associated orders will be colocated into a single partition. To explicitly colocate Orders with its parent customer row, use the <code>colocate with</code> clause in the create table statement:</p>
+<pre><code>create table orders (&lt;column definitions&gt;) 
+using column options ('partition_by' customerID, 
+'colocate_with' customers);
+</code></pre>
+<p>In this way, SnappyData supports any queries that join any the Customers and Orders tables. This join query would be distributed to all partitions and executed in parallel, with the results streamed back to the client:</p>
+<pre><code>select * from customer c , orders o where c.customerID = o.customerID;
+</code></pre>
+<p>A query such as this would be pruned to the single partition that stores “customer100” and executed only on that SnappyData member:</p>
+<pre><code>select * from customer c, orders o where c.customerID = o.customerID  and c.customerID = 'customer100';
+</code></pre>
+<p>The optimization provided when queries are highly selective comes from engaging the query processor and indexing on a single member rather than on all partitions. With all customer data managed in memory, query response times are very fast. </br>
+Finally, consider a case where an application needs to access customer order data for several customers:</p>
+<pre><code>select * from customer c, orders o 
+where c.customerID = o.customerID and c.customerID IN ('cust1', 'cust2', 'cust3');
+</code></pre>
+<p>Here, SnappyData prunes the query execution to only those partitions that host ‘cust1’, 'cust2’, and 'cust3’. The union of the results is then returned to the caller.
+Note that the selection of customerID as the partitioning key means that the OrderDetails and Shippers tables cannot be partitioned and colocated with Customers and Orders (because OrderDetails and Shippers do not contain the customerID value for partitioning). </p>
+</li>
+<li>
+<p>Identify replicated tables.</br>
+    If we assume that the number of categories and suppliers rarely changes, those tables can be replicated in the SnappyData cluster (replicated to all of the SnappyData members that host the entity group). If we assume that the Products table does change often and can be relatively large in size, then partitioning is a better strategy for that table.
+    So for the product entity group, table Products is partitioned by ProductID, and the Suppliers and Categories tables are replicated to all of the members where Products is partitioned.
+    Applications can now join Products, Suppliers and categories. For example:</p>
+<pre><code>select * from Products p , Suppliers s, Categories c 
+where c.categoryID = p.categoryID and p.supplierID = s.supplierID 
+and p.productID IN ('someProductKey1', ' someProductKey2', ' someProductKey3');
+</code></pre>
+<p>In the above query, SnappyData prunes the query execution to only those partitions that host 'someProductKey1’, ’ someProductKey2’, and ’ someProductKey3.’</p>
+</li>
+</ol>
               
             </div>
           </div>
@@ -954,10 +1257,10 @@ If only a single partition is active and is used largely by queries (especially 
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../aqp/" class="btn btn-neutral float-right" title="Synopsis Data Engine (SDE)">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../important_settings/" class="btn btn-neutral float-right" title="Important Settings">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../capacity_planning/" class="btn btn-neutral" title="Setting up your Cluster "><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../memory_management/" class="btn btn-neutral" title="Memory Management"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -989,10 +1292,10 @@ If only a single partition is active and is used largely by queries (especially 
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../capacity_planning/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../memory_management/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../aqp/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../important_settings/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

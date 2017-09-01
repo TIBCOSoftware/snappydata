@@ -45,7 +45,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SparkConf</span><span class="result"> extends <span class="extype" name="scala.Cloneable">Cloneable</span> with <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <span class="name">SparkConf</span><span class="result"> extends <span class="extype" name="scala.Cloneable">Cloneable</span> with <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -53,11 +53,11 @@
 values from any <code>spark.*</code> Java system properties set in your application as well. In this case,
 parameters you set directly on the <code>SparkConf</code> object take priority over system properties.</p><p>For unit tests, you can also call <code>new SparkConf(false)</code> to skip loading external settings and
 get the same configuration no matter what the system properties are.</p><p>All setter methods in this class support chaining. For example, you can write
-<code>new SparkConf().setMaster(&quot;local&quot;).setAppName(&quot;My app&quot;)</code>.</p><p>Note that once a SparkConf object is passed to Spark, it is cloned and can no longer be modified
-by the user. Spark does not support modifying the configuration at runtime.
-</p></div><div class="toggleContainer block">
+<code>new SparkConf().setMaster(&quot;local&quot;).setAppName(&quot;My app&quot;)</code>.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Once a SparkConf object is passed to Spark, it is cloned and can no longer be modified
+by the user. Spark does not support modifying the configuration at runtime.</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <span class="extype" name="scala.Cloneable">Cloneable</span>, <span class="extype" name="java.lang.Cloneable">Cloneable</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <span class="extype" name="scala.Cloneable">Cloneable</span>, <span class="extype" name="java.lang.Cloneable">Cloneable</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -75,7 +75,7 @@ by the user. Spark does not support modifying the configuration at runtime.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.SparkConf"><span>SparkConf</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.Cloneable"><span>Cloneable</span></li><li class="in" name="java.lang.Cloneable"><span>Cloneable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.SparkConf"><span>SparkConf</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.Cloneable"><span>Cloneable</span></li><li class="in" name="java.lang.Cloneable"><span>Cloneable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -347,6 +347,24 @@ by the user. Spark does not support modifying the configuration at runtime.
       </a>
     </span>
       <p class="shortcomment cmt">Get all parameters as a list of pairs</p>
+    </li><li name="org.apache.spark.SparkConf#getAllWithPrefix" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getAllWithPrefix(prefix:String):Array[(String,String)]"></a>
+      <a id="getAllWithPrefix(String):Array[(String,String)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAllWithPrefix</span><span class="params">(<span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.SparkConf@getAllWithPrefix(prefix:String):Array[(String,String)]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get all parameters that start with <code>prefix</code>
+</p>
     </li><li name="org.apache.spark.SparkConf#getAppId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getAppId:String"></a>
       <a id="getAppId:String"></a>
@@ -1479,7 +1497,11 @@ configuration out for debugging.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.Logging">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="org.apache.spark.Logging">
               <h3>Inherited from <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></h3>
             </div><div class="parent" name="scala.Cloneable">
               <h3>Inherited from <span class="extype" name="scala.Cloneable">Cloneable</span></h3>

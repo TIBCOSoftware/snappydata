@@ -143,7 +143,7 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">PageRank algorithm implementation.</p><div class="fullcomment"><div class="comment cmt"><p>PageRank algorithm implementation. There are two implementations of PageRank implemented.</p><p>The first implementation uses the standalone <a href="../Graph.html" class="extype" name="org.apache.spark.graphx.Graph">Graph</a> interface and runs PageRank
+      <p class="shortcomment cmt">PageRank algorithm implementation.</p><div class="fullcomment"><div class="comment cmt"><p>PageRank algorithm implementation. There are two implementations of PageRank implemented.</p><p>The first implementation uses the standalone <code>Graph</code> interface and runs PageRank
 for a fixed number of iterations:</p><pre><span class="kw">var</span> PR = <span class="std">Array</span>.fill(n)( <span class="num">1.0</span> )
 <span class="kw">val</span> oldPR = <span class="std">Array</span>.fill(n)( <span class="num">1.0</span> )
 <span class="kw">for</span>( iter <span class="kw">&lt;-</span> <span class="num">0</span> until numIter ) {
@@ -151,7 +151,7 @@ for a fixed number of iterations:</p><pre><span class="kw">var</span> PR = <span
   <span class="kw">for</span>( i <span class="kw">&lt;-</span> <span class="num">0</span> until n ) {
     PR[i] = alpha + (<span class="num">1</span> - alpha) * inNbrs[i].map(j <span class="kw">=&gt;</span> oldPR[j] / outDeg[j]).sum
   }
-}</pre><p>The second implementation uses the <a href="../Pregel$.html" class="extype" name="org.apache.spark.graphx.Pregel">Pregel</a> interface and runs PageRank until
+}</pre><p>The second implementation uses the <code>Pregel</code> interface and runs PageRank until
 convergence:</p><pre><span class="kw">var</span> PR = <span class="std">Array</span>.fill(n)( <span class="num">1.0</span> )
 <span class="kw">val</span> oldPR = <span class="std">Array</span>.fill(n)( <span class="num">0.0</span> )
 <span class="kw">while</span>( max(abs(PR - oldPr)) &gt; tol ) {
@@ -160,9 +160,9 @@ convergence:</p><pre><span class="kw">var</span> PR = <span class="std">Array</s
     PR[i] = alpha + (<span class="num">1</span> - \alpha) * inNbrs[i].map(j <span class="kw">=&gt;</span> oldPR[j] / outDeg[j]).sum
   }
 }</pre><p><code>alpha</code> is the random reset probability (typically 0.15), <code>inNbrs[i]</code> is the set of
-neighbors which link to <code>i</code> and <code>outDeg[j]</code> is the out degree of vertex <code>j</code>.</p><p>Note that this is not the &quot;normalized&quot; PageRank and as a consequence pages that have no
-inlinks will have a PageRank of alpha.
-</p></div></div>
+neighbors which link to <code>i</code> and <code>outDeg[j]</code> is the out degree of vertex <code>j</code>.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is not the &quot;normalized&quot; PageRank and as a consequence pages that have no
+inlinks will have a PageRank of alpha.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.graphx.lib.SVDPlusPlus" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SVDPlusPlus"></a>
       <a id="SVDPlusPlus:SVDPlusPlus"></a>
@@ -232,7 +232,7 @@ vertex attribute is a map containing the shortest-path distance to each reachabl
       </a>
     </span>
       <p class="shortcomment cmt">Compute the number of triangles passing through each vertex.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the number of triangles passing through each vertex.</p><p>The algorithm is relatively straightforward and can be computed in three steps:</p><ul><li> Compute the set of neighbors for each vertex</li><li> For each edge compute the intersection of the sets and send the count to both vertices.</li><li> Compute the sum at each vertex and divide by two since each triangle is counted twice.</li></ul><p>There are two implementations.  The default <code>TriangleCount.run</code> implementation first removes
-self cycles and canonicalizes the graph to ensure that the following conditions hold:</p><ul><li> There are no self edges</li><li> All edges are oriented src &gt; dst</li><li> There are no duplicate edges</li></ul><p>However, the canonicalization procedure is costly as it requires repartitioning the graph.
+self cycles and canonicalizes the graph to ensure that the following conditions hold:</p><ul><li> There are no self edges</li><li> All edges are oriented (src is greater than dst)</li><li> There are no duplicate edges</li></ul><p>However, the canonicalization procedure is costly as it requires repartitioning the graph.
 If the input data is already in &quot;canonical form&quot; with self cycles removed then the
 <code>TriangleCount.runPreCanonicalized</code> should be used instead.</p><pre><span class="kw">val</span> canonicalGraph = graph.mapEdges(e <span class="kw">=&gt;</span> <span class="num">1</span>).removeSelfEdges().canonicalizeEdges()
 <span class="kw">val</span> counts = TriangleCount.runPreCanonicalized(canonicalGraph).vertices</pre></div></div>

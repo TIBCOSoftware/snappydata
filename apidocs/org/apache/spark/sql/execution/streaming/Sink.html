@@ -116,8 +116,9 @@ batch.
     </span>
       <p class="shortcomment cmt">Adds a batch of data to this sink.</p><div class="fullcomment"><div class="comment cmt"><p>Adds a batch of data to this sink. The data for a given <code>batchId</code> is deterministic and if
 this method is called more than once with the same batchId (which will happen in the case of
-failures), then <code>data</code> should only be added once.</p><p>Note: You cannot apply any operators on <code>data</code> except consuming it (e.g., <code>collect/foreach</code>).
-Otherwise, you may get a wrong result.
+failures), then <code>data</code> should only be added once.</p><p>Note 1: You cannot apply any operators on <code>data</code> except consuming it (e.g., <code>collect/foreach</code>).
+Otherwise, you may get a wrong result.</p><p>Note 2: The method is supposed to be executed synchronously, i.e. the method should only return
+after data is consumed by sink successfully.
 </p></div></div>
     </li></ol>
             </div>

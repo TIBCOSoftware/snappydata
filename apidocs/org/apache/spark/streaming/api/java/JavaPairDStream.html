@@ -377,7 +377,7 @@ org.apache.spark.rdd.PairRDDFunctions for more information.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Method that generates a RDD for the given Duration</p>
+      <p class="shortcomment cmt">Method that generates an RDD for the given Duration</p>
     </li><li name="org.apache.spark.streaming.api.java.JavaDStreamLike#context" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="context():org.apache.spark.streaming.StreamingContext"></a>
       <a id="context():StreamingContext"></a>
@@ -1246,8 +1246,8 @@ Return a <a href="JavaMapWithStateDStream.html" class="extype" name="org.apache.
 Return a <a href="JavaMapWithStateDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaMapWithStateDStream">JavaMapWithStateDStream</a> by applying a function to every key-value element of
 <code>this</code> stream, while maintaining some state data for each unique key. The mapping function
 and other specification (e.g. partitioners, timeouts, initial state data, etc.) of this
-transformation can be specified using <a href="../../StateSpec.html" class="extype" name="org.apache.spark.streaming.StateSpec">StateSpec</a> class. The state data is accessible in
-as a parameter of type <a href="../../State.html" class="extype" name="org.apache.spark.streaming.State">State</a> in the mapping function.</p><p>Example of using <code>mapWithState</code>:</p><pre><span class="cmt">// A mapping function that maintains an integer state and return a string</span>
+transformation can be specified using <code>StateSpec</code> class. The state data is accessible in
+as a parameter of type <code>State</code> in the mapping function.</p><p>Example of using <code>mapWithState</code>:</p><pre><span class="cmt">// A mapping function that maintains an integer state and return a string</span>
 Function3&lt;<span class="std">String</span>, Optional&lt;Integer&gt;, State&lt;Integer&gt;, <span class="std">String</span>&gt; mappingFunction =
     <span class="kw">new</span> Function3&lt;<span class="std">String</span>, Optional&lt;Integer&gt;, State&lt;Integer&gt;, <span class="std">String</span>&gt;() {
         @Override

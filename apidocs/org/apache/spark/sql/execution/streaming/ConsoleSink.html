@@ -183,8 +183,9 @@
     </span>
       <p class="shortcomment cmt">Adds a batch of data to this sink.</p><div class="fullcomment"><div class="comment cmt"><p>Adds a batch of data to this sink. The data for a given <code>batchId</code> is deterministic and if
 this method is called more than once with the same batchId (which will happen in the case of
-failures), then <code>data</code> should only be added once.</p><p>Note: You cannot apply any operators on <code>data</code> except consuming it (e.g., <code>collect/foreach</code>).
-Otherwise, you may get a wrong result.
+failures), then <code>data</code> should only be added once.</p><p>Note 1: You cannot apply any operators on <code>data</code> except consuming it (e.g., <code>collect/foreach</code>).
+Otherwise, you may get a wrong result.</p><p>Note 2: The method is supposed to be executed synchronously, i.e. the method should only return
+after data is consumed by sink successfully.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.ConsoleSink">ConsoleSink</a> → <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>

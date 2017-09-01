@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">UsingJoin</span><span class="params">(<span name="tpe">tpe: <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="usingColumns">usingColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../analysis/UnresolvedAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute">UnresolvedAttribute</a>]</span>)</span><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">UsingJoin</span><span class="params">(<span name="tpe">tpe: <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="usingColumns">usingColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.catalyst.plans.UsingJoin#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(tpe:org.apache.spark.sql.catalyst.plans.JoinType,usingColumns:Seq[org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute]):org.apache.spark.sql.catalyst.plans.UsingJoin"></a>
+      <a id="&lt;init&gt;(tpe:org.apache.spark.sql.catalyst.plans.JoinType,usingColumns:Seq[String]):org.apache.spark.sql.catalyst.plans.UsingJoin"></a>
       <a id="&lt;init&gt;:UsingJoin"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">UsingJoin</span><span class="params">(<span name="tpe">tpe: <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="usingColumns">usingColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../analysis/UnresolvedAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute">UnresolvedAttribute</a>]</span>)</span>
+        <span class="name">UsingJoin</span><span class="params">(<span name="tpe">tpe: <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="usingColumns">usingColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.UsingJoin@&lt;init&gt;(tpe:org.apache.spark.sql.catalyst.plans.JoinType,usingColumns:Seq[org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute]):org.apache.spark.sql.catalyst.plans.UsingJoin" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.UsingJoin@&lt;init&gt;(tpe:org.apache.spark.sql.catalyst.plans.JoinType,usingColumns:Seq[String]):org.apache.spark.sql.catalyst.plans.UsingJoin" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -382,18 +382,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.catalyst.plans.UsingJoin#usingColumns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="usingColumns:Seq[org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute]"></a>
-      <a id="usingColumns:Seq[UnresolvedAttribute]"></a>
+      <a id="usingColumns:Seq[String]"></a>
+      <a id="usingColumns:Seq[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">usingColumns</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../analysis/UnresolvedAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute">UnresolvedAttribute</a>]</span>
+        <span class="name">usingColumns</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.UsingJoin@usingColumns:Seq[org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.UsingJoin@usingColumns:Seq[String]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

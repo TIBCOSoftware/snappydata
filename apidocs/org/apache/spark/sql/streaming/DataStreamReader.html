@@ -49,10 +49,12 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Interface used to load a streaming <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from external storage systems (e.g. file systems,
-key-value stores, etc). Use <a href="../SparkSession.html#readStream:org.apache.spark.sql.streaming.DataStreamReader" class="extmbr" name="org.apache.spark.sql.SparkSession#readStream">SparkSession.readStream</a> to access this.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Interface used to load a streaming <code>Dataset</code> from external storage systems (e.g. file systems,
+key-value stores, etc). Use <code>SparkSession.readStream</code> to access this.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -206,7 +208,7 @@ key-value stores, etc). Use <a href="../SparkSession.html#readStream:org.apache.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a CSV file stream and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a CSV file stream and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>This function will go through the input once to determine the input schema if <code>inferSchema</code>
+      <p class="shortcomment cmt">Loads a CSV file stream and returns the result as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a CSV file stream and returns the result as a <code>DataFrame</code>.</p><p>This function will go through the input once to determine the input schema if <code>inferSchema</code>
 is enabled. To avoid going through the entire data once, disable <code>inferSchema</code> option or
 specify the schema explicitly using <span class="extype" name="schema">schema</span>.</p><p>You can set the following CSV-specific options to deal with CSV files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
 considered in every trigger.</li><li><code>sep</code> (default <code>,</code>): sets the single character as a separator for each
@@ -227,8 +229,8 @@ Custom date formats follow the formats at <code>java.text.SimpleDateFormat</code
 date type.</li><li><code>timestampFormat</code> (default <code>yyyy-MM-dd'T'HH:mm:ss.SSSZZ</code>): sets the string that
 indicates a timestamp format. Custom date formats follow the formats at
 <code>java.text.SimpleDateFormat</code>. This applies to timestamp type.</li><li><code>maxColumns</code> (default <code>20480</code>): defines a hard limit of how many columns
-a record can have.</li><li><code>maxCharsPerColumn</code> (default <code>1000000</code>): defines the maximum number of characters allowed
-for any given value being read.</li><li><code>mode</code> (default <code>PERMISSIVE</code>): allows a mode for dealing with corrupt records
+a record can have.</li><li><code>maxCharsPerColumn</code> (default <code>-1</code>): defines the maximum number of characters allowed
+for any given value being read. By default, it is -1 meaning unlimited length</li><li><code>mode</code> (default <code>PERMISSIVE</code>): allows a mode for dealing with corrupt records
    during parsing.</li><li><code>PERMISSIVE</code> : sets other fields to <code>null</code> when it meets a corrupted record. When
       a schema is set by user, it sets <code>null</code> for extra fields.</li><li><code>DROPMALFORMED</code> : ignores the whole corrupted records.</li><li><code>FAILFAST</code> : throws an exception when it meets corrupted records.</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -441,7 +443,9 @@ for any given value being read.</li><li><code>mode</code> (default <code>PERMISS
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a JSON file stream (one object per line) and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file stream (one object per line) and returns the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>This function goes through the input once to determine the input schema. If you know the
+      <p class="shortcomment cmt">Loads a JSON file stream (<a href="http://jsonlines.org/">JSON Lines text format or
+newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</a></p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file stream (<a href="http://jsonlines.org/">JSON Lines text format or
+newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</p><p>This function goes through the input once to determine the input schema. If you know the
 schema in advance, use the version that specifies the schema to avoid the extra scan.</p><p>You can set the following JSON-specific options to deal with non-standard JSON files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
 considered in every trigger.</li><li><code>primitivesAsString</code> (default <code>false</code>): infers all primitive values as a string type</li><li><code>prefersDecimal</code> (default <code>false</code>): infers all floating-point values as a decimal
 type. If the values do not fit in decimal, then it infers them as doubles.</li><li><code>allowComments</code> (default <code>false</code>): ignores Java/C++ style comment in JSON records</li><li><code>allowUnquotedFieldNames</code> (default <code>false</code>): allows unquoted JSON field names</li><li><code>allowSingleQuotes</code> (default <code>true</code>): allows single quotes in addition to double quotes</li><li><code>allowNumericLeadingZeros</code> (default <code>false</code>): allows leading zeros in numbers
@@ -472,7 +476,7 @@ indicates a timestamp format. Custom date formats follow the formats at
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads input in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that read from some path.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that read from some path.
+      <p class="shortcomment cmt">Loads input in as a <code>DataFrame</code>, for data streams that read from some path.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <code>DataFrame</code>, for data streams that read from some path.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#load" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="load():org.apache.spark.sql.DataFrame"></a>
@@ -490,8 +494,8 @@ indicates a timestamp format. Custom date formats follow the formats at
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads input data stream in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that don't require a path
-(e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input data stream in as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data streams that don't require a path
+      <p class="shortcomment cmt">Loads input data stream in as a <code>DataFrame</code>, for data streams that don't require a path
+(e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input data stream in as a <code>DataFrame</code>, for data streams that don't require a path
 (e.g. external key-value stores).
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -873,9 +877,10 @@ indicates a timestamp format. Custom date formats follow the formats at
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a Parquet file stream, returning the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a Parquet file stream, returning the result as a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>You can set the following Parquet-specific option(s) for reading Parquet files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
+      <p class="shortcomment cmt">Loads a Parquet file stream, returning the result as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a Parquet file stream, returning the result as a <code>DataFrame</code>.</p><p>You can set the following Parquet-specific option(s) for reading Parquet files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
 considered in every trigger.</li><li><code>mergeSchema</code> (default is the value specified in <code>spark.sql.parquet.mergeSchema</code>): sets
-whether we should merge schemas collected from all Parquet part-files. This will override
+whether we should merge schemas collected from all
+Parquet part-files. This will override
 <code>spark.sql.parquet.mergeSchema</code>.</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DataStreamReader#schema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="schema(schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.streaming.DataStreamReader"></a>
@@ -930,14 +935,38 @@ skip the schema inference step, and thus speed up data loading.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads text files and returns a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
-&quot;value&quot;, and followed by partitioned columns if there are any.</p><div class="fullcomment"><div class="comment cmt"><p>Loads text files and returns a <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
+      <p class="shortcomment cmt">Loads text files and returns a <code>DataFrame</code> whose schema starts with a string column named
+&quot;value&quot;, and followed by partitioned columns if there are any.</p><div class="fullcomment"><div class="comment cmt"><p>Loads text files and returns a <code>DataFrame</code> whose schema starts with a string column named
 &quot;value&quot;, and followed by partitioned columns if there are any.</p><p>Each line in the text files is a new row in the resulting DataFrame. For example:</p><pre><span class="cmt">// Scala:</span>
 spark.readStream.text(<span class="lit">"/path/to/directory/"</span>)
 
 <span class="cmt">// Java:</span>
 spark.readStream().text(<span class="lit">"/path/to/directory/"</span>)</pre><p>You can set the following text-specific options to deal with text files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
 considered in every trigger.</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.DataStreamReader#textFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="textFile(path:String):org.apache.spark.sql.Dataset[String]"></a>
+      <a id="textFile(String):Dataset[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">textFile</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.DataStreamReader@textFile(path:String):org.apache.spark.sql.Dataset[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Loads text file(s) and returns a <code>Dataset</code> of String.</p><div class="fullcomment"><div class="comment cmt"><p>Loads text file(s) and returns a <code>Dataset</code> of String. The underlying schema of the Dataset
+contains a single string column named &quot;value&quot;.</p><p>If the directory structure of the text files contains partitioning information, those are
+ignored in the resulting Dataset. To include partitioning information as columns, use <code>text</code>.</p><p>Each line in the text file is a new element in the resulting Dataset. For example:</p><pre><span class="cmt">// Scala:</span>
+spark.readStream.textFile(<span class="lit">"/path/to/spark/README.md"</span>)
+
+<span class="cmt">// Java:</span>
+spark.readStream().textFile(<span class="lit">"/path/to/spark/README.md"</span>)</pre><p>You can set the following text-specific options to deal with text files:</p><ul><li><code>maxFilesPerTrigger</code> (default: no max limit): sets the maximum number of new files to be
+considered in every trigger.</li></ul></div><dl class="paramcmts block"><dt class="param">path</dt><dd class="cmt"><p>input path</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

@@ -66,23 +66,26 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.catalyst.catalog.CatalogColumn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CatalogColumnextendsProductwithSerializable"></a>
-      <a id="CatalogColumn:CatalogColumn"></a>
+              <ol><li name="org.apache.spark.sql.catalyst.catalog.BucketSpec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BucketSpecextendsProductwithSerializable"></a>
+      <a id="BucketSpec:BucketSpec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CatalogColumn.html"><span class="name">CatalogColumn</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullable">nullable: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="comment">comment: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="BucketSpec.html"><span class="name">BucketSpec</span></a><span class="params">(<span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="bucketColumnNames">bucketColumnNames: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sortColumnNames">sortColumnNames: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@CatalogColumnextendsProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@BucketSpecextendsProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A column in a table.</p>
+      <p class="shortcomment cmt">A container for bucketing information.</p><div class="fullcomment"><div class="comment cmt"><p>A container for bucketing information.
+Bucketing is a technology for decomposing data sets into more manageable parts, and the number
+of buckets is fixed so it does not fluctuate with data.
+</p></div><dl class="paramcmts block"><dt class="param">numBuckets</dt><dd class="cmt"><p>number of buckets.</p></dd><dt class="param">bucketColumnNames</dt><dd class="cmt"><p>the names of the columns that used to generate the bucket id.</p></dd><dt class="param">sortColumnNames</dt><dd class="cmt"><p>the names of the columns that used to sort data in each bucket.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CatalogDatabaseextendsProductwithSerializable"></a>
       <a id="CatalogDatabase:CatalogDatabase"></a>
@@ -147,7 +150,7 @@ probably remove this interface.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CatalogStorageFormat.html"><span class="name">CatalogStorageFormat</span></a><span class="params">(<span name="locationUri">locationUri: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="inputFormat">inputFormat: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="outputFormat">outputFormat: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="serde">serde: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="compressed">compressed: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="serdeProperties">serdeProperties: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CatalogStorageFormat.html"><span class="name">CatalogStorageFormat</span></a><span class="params">(<span name="locationUri">locationUri: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="inputFormat">inputFormat: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="outputFormat">outputFormat: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="serde">serde: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="compressed">compressed: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="properties">properties: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@CatalogStorageFormatextendsProductwithSerializable" title="Permalink" target="_top">
@@ -164,7 +167,7 @@ probably remove this interface.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CatalogTable.html"><span class="name">CatalogTable</span></a><span class="params">(<span name="identifier">identifier: <a href="../TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="tableType">tableType: <a href="CatalogTableType.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTableType">CatalogTableType</a></span>, <span name="storage">storage: <a href="CatalogStorageFormat.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat">CatalogStorageFormat</a></span>, <span name="schema">schema: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CatalogColumn.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogColumn">CatalogColumn</a>]</span>, <span name="partitionColumnNames">partitionColumnNames: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="sortColumnNames">sortColumnNames: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="bucketColumnNames">bucketColumnNames: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>, <span name="owner">owner: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;&quot;</span></span>, <span name="createTime">createTime: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">System.currentTimeMillis</span></span>, <span name="lastAccessTime">lastAccessTime: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">1</span></span>, <span name="properties">properties: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>, <span name="viewOriginalText">viewOriginalText: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="viewText">viewText: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="comment">comment: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="unsupportedFeatures">unsupportedFeatures: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CatalogTable.html"><span class="name">CatalogTable</span></a><span class="params">(<span name="identifier">identifier: <a href="../TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="tableType">tableType: <a href="CatalogTableType.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTableType">CatalogTableType</a></span>, <span name="storage">storage: <a href="CatalogStorageFormat.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat">CatalogStorageFormat</a></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="provider">provider: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="partitionColumnNames">partitionColumnNames: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="owner">owner: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;&quot;</span></span>, <span name="createTime">createTime: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">System.currentTimeMillis</span></span>, <span name="lastAccessTime">lastAccessTime: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">1</span></span>, <span name="properties">properties: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>, <span name="stats">stats: <span class="extype" name="scala.Option">Option</span>[<a href="../plans/logical/Statistics.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Statistics">Statistics</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="viewOriginalText">viewOriginalText: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="viewText">viewText: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="comment">comment: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="unsupportedFeatures">unsupportedFeatures: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="tracksPartitionsInCatalog">tracksPartitionsInCatalog: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="schemaPreservesCase">schemaPreservesCase: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@CatalogTableextendsProductwithSerializable" title="Permalink" target="_top">
@@ -173,8 +176,15 @@ probably remove this interface.
     </span>
       <p class="shortcomment cmt">A table defined in the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>A table defined in the catalog.</p><p>Note that Hive's metastore also tracks skewed columns. We should consider adding that in the
 future once we have a better understanding of how we want to handle skewed columns.
-</p></div><dl class="paramcmts block"><dt class="param">unsupportedFeatures</dt><dd class="cmt"><p>is a list of string descriptions of features that are used by the
-       underlying table but not supported by Spark SQL yet.</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">provider</dt><dd class="cmt"><p>the name of the data source provider for this table, e.g. parquet, json, etc.
+                Can be None if this table is a View, should be &quot;hive&quot; for hive serde tables.</p></dd><dt class="param">unsupportedFeatures</dt><dd class="cmt"><p>is a list of string descriptions of features that are used by the
+       underlying table but not supported by Spark SQL yet.</p></dd><dt class="param">tracksPartitionsInCatalog</dt><dd class="cmt"><p>whether this table's partition metadata is stored in the
+                                 catalog. If false, it is inferred automatically based on file
+                                 structure.</p></dd><dt class="param">schemaPreservesCase</dt><dd class="cmt"><p>Whether or not the schema resolved for this table is case-sensitive.
+                          When using a Hive Metastore, this flag is set to false if a case-
+                          sensitive schema was unable to be read from the table properties.
+                          Used to trigger case-sensitive schema inference at query time, when
+                          configured.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CatalogTablePartitionextendsProductwithSerializable"></a>
       <a id="CatalogTablePartition:CatalogTablePartition"></a>
@@ -226,7 +236,7 @@ future once we have a better understanding of how we want to handle skewed colum
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Interface for the system catalog (of columns, partitions, tables, and databases).</p><div class="fullcomment"><div class="comment cmt"><p>Interface for the system catalog (of columns, partitions, tables, and databases).</p><p>This is only used for non-temporary items, and implementations must be thread-safe as they
+      <p class="shortcomment cmt">Interface for the system catalog (of functions, partitions, tables, and databases).</p><div class="fullcomment"><div class="comment cmt"><p>Interface for the system catalog (of functions, partitions, tables, and databases).</p><p>This is only used for non-temporary items, and implementations must be thread-safe as they
 can be accessed in multiple threads. This is an external catalog because it is expected to
 interact with external systems.</p><p>Implementations should throw <span class="extype" name="NoSuchDatabaseException">NoSuchDatabaseException</span> when databases don't exist.
 </p></div></div>
@@ -285,6 +295,27 @@ to avoid of explicitly passing SQLContext around.
       </a>
     </span>
       <p class="shortcomment cmt">A trait that represents the type of a resourced needed by a function.</p>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.GlobalTempViewManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GlobalTempViewManagerextendsAnyRef"></a>
+      <a id="GlobalTempViewManager:GlobalTempViewManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GlobalTempViewManager.html"><span class="name">GlobalTempViewManager</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@GlobalTempViewManagerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A thread-safe manager for global temporary views, providing atomic operations to manage them,
+e.g.</p><div class="fullcomment"><div class="comment cmt"><p>A thread-safe manager for global temporary views, providing atomic operations to manage them,
+e.g. create, update, remove, etc.</p><p>Note that, the view name is always case-sensitive here, callers are responsible to format the
+view name w.r.t. case-sensitive config.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="InMemoryCatalogextendsExternalCatalog"></a>
       <a id="InMemoryCatalog:InMemoryCatalog"></a>
@@ -334,7 +365,7 @@ tables and functions of the Spark Session that it belongs to.</p><p>This class m
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SimpleCatalogRelation.html"><span class="name">SimpleCatalogRelation</span></a><span class="params">(<span name="databaseName">databaseName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="metadata">metadata: <a href="CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a></span>, <span name="alias">alias: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <a href="../plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="CatalogRelation.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogRelation">CatalogRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SimpleCatalogRelation.html"><span class="name">SimpleCatalogRelation</span></a><span class="params">(<span name="databaseName">databaseName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="metadata">metadata: <a href="CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a></span>)</span><span class="result"> extends <a href="../plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="CatalogRelation.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogRelation">CatalogRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@SimpleCatalogRelationextendsLeafNodewithCatalogRelationwithProductwithSerializable" title="Permalink" target="_top">
@@ -418,6 +449,23 @@ tables and functions of the Spark Session that it belongs to.</p><p>This class m
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.catalog.CatalogUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CatalogUtils"></a>
+      <a id="CatalogUtils:CatalogUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CatalogUtils$.html"><span class="name">CatalogUtils</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@CatalogUtils" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.catalog.DummyFunctionResourceLoader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DummyFunctionResourceLoader"></a>
       <a id="DummyFunctionResourceLoader:DummyFunctionResourceLoader"></a>
@@ -431,6 +479,23 @@ tables and functions of the Spark Session that it belongs to.</p><p>This class m
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@DummyFunctionResourceLoader" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalogUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExternalCatalogUtils"></a>
+      <a id="ExternalCatalogUtils:ExternalCatalogUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExternalCatalogUtils$.html"><span class="name">ExternalCatalogUtils</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.catalog.package@ExternalCatalogUtils" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

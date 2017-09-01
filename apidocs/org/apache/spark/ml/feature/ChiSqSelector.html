@@ -53,7 +53,11 @@
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Chi-Squared feature selection, which selects categorical features to use for predicting a
 categorical label.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+The selector supports different selection methods: <code>numTopFeatures</code>, <code>percentile</code>, <code>fpr</code>.</p><ul><li><code>numTopFeatures</code> chooses a fixed number of top features according to a chi-squared test.</li><li><code>percentile</code> is similar but chooses a fraction of all features instead of a fixed number.</li><li><code>fpr</code> chooses all features whose p-value is below a threshold, thus controlling the false
+   positive rate of selection.
+By default, the selection method is <code>numTopFeatures</code>, with the default number of top features
+set to 50.
+</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.6.0&quot;</span>
@@ -603,6 +607,31 @@ Subclasses could override this to optimize multi-model training.
                 <span class="name">@varargs</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelectorParams#fpr" visbl="pub" data-isabs="false" fullComment="yes" group="param">
+      <a id="fpr:org.apache.spark.ml.param.DoubleParam"></a>
+      <a id="fpr:DoubleParam"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fpr</span><span class="result">: <a href="../param/DoubleParam.html" class="extype" name="org.apache.spark.ml.param.DoubleParam">DoubleParam</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@fpr:org.apache.spark.ml.param.DoubleParam" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The highest p-value for features to be kept.</p><div class="fullcomment"><div class="comment cmt"><p>The highest p-value for features to be kept.
+Only applicable when selectorType = &quot;fpr&quot;.
+Default value is 0.05.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.Params#get" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="get[T](param:org.apache.spark.ml.param.Param[T]):Option[T]"></a>
       <a id="get[T](Param[T]):Option[T]"></a>
@@ -673,6 +702,29 @@ Subclasses could override this to optimize multi-model training.
       </a>
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasFeaturesCol</dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelectorParams#getFpr" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
+      <a id="getFpr:Double"></a>
+      <a id="getFpr:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFpr</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@getFpr:Double" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasLabelCol#getLabelCol" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
       <a id="getLabelCol:String"></a>
       <a id="getLabelCol:String"></a>
@@ -706,7 +758,13 @@ Subclasses could override this to optimize multi-model training.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd></dl></div>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.6.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.Params#getOrDefault" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getOrDefault[T](param:org.apache.spark.ml.param.Param[T]):T"></a>
       <a id="getOrDefault[T](Param[T]):T"></a>
@@ -760,6 +818,52 @@ if neither is set.
       </a>
     </span>
       <p class="shortcomment cmt">Gets a param by its name.</p><div class="fullcomment"><div class="comment cmt"><p>Gets a param by its name.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelectorParams#getPercentile" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
+      <a id="getPercentile:Double"></a>
+      <a id="getPercentile:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPercentile</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@getPercentile:Double" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelectorParams#getSelectorType" visbl="pub" data-isabs="false" fullComment="yes" group="getParam">
+      <a id="getSelectorType:String"></a>
+      <a id="getSelectorType:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSelectorType</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@getSelectorType:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.Params#hasDefault" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hasDefault[T](param:org.apache.spark.ml.param.Param[T]):Boolean"></a>
       <a id="hasDefault[T](Param[T]):Boolean"></a>
@@ -1219,9 +1323,17 @@ if neither is set.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Number of features that selector will select (ordered by statistic value descending).</p><div class="fullcomment"><div class="comment cmt"><p>Number of features that selector will select (ordered by statistic value descending). If the
+      <p class="shortcomment cmt">Number of features that selector will select, ordered by ascending p-value.</p><div class="fullcomment"><div class="comment cmt"><p>Number of features that selector will select, ordered by ascending p-value. If the
 number of features is less than numTopFeatures, then this will select all features.
-The default value of numTopFeatures is 50.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd></dl></div>
+Only applicable when selectorType = &quot;numTopFeatures&quot;.
+The default value of numTopFeatures is 50.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.6.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasOutputCol#outputCol" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="outputCol:org.apache.spark.ml.param.Param[String]"></a>
       <a id="outputCol:Param[String]"></a>
@@ -1256,9 +1368,34 @@ The default value of numTopFeatures is 50.</p></div><dl class="attributes block"
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelectorParams#percentile" visbl="pub" data-isabs="false" fullComment="yes" group="param">
+      <a id="percentile:org.apache.spark.ml.param.DoubleParam"></a>
+      <a id="percentile:DoubleParam"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">percentile</span><span class="result">: <a href="../param/DoubleParam.html" class="extype" name="org.apache.spark.ml.param.DoubleParam">DoubleParam</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@percentile:org.apache.spark.ml.param.DoubleParam" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Percentile of features that selector will select, ordered by statistics value descending.</p><div class="fullcomment"><div class="comment cmt"><p>Percentile of features that selector will select, ordered by statistics value descending.
+Only applicable when selectorType = &quot;percentile&quot;.
+Default value is 0.1.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.util.MLWritable#save" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="save(path:String):Unit"></a>
       <a id="save(String):Unit"></a>
@@ -1285,6 +1422,30 @@ this variable gets initialized before other params.
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="defval" name="&quot;If the input path already exists but overwrite is not enabled.&quot;">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelectorParams#selectorType" visbl="pub" data-isabs="false" fullComment="yes" group="param">
+      <a id="selectorType:org.apache.spark.ml.param.Param[String]"></a>
+      <a id="selectorType:Param[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">selectorType</span><span class="result">: <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@selectorType:org.apache.spark.ml.param.Param[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The selector type of the ChisqSelector.</p><div class="fullcomment"><div class="comment cmt"><p>The selector type of the ChisqSelector.
+Supported options: &quot;numTopFeatures&quot; (default), &quot;percentile&quot;, &quot;fpr&quot;.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>ChiSqSelectorParams</dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
     </span>)</span>
               
         </dd></dl></div>
@@ -1405,6 +1566,29 @@ this variable gets initialized before other params.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelector#setFpr" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
+      <a id="setFpr(value:Double):ChiSqSelector.this.type"></a>
+      <a id="setFpr(Double):ChiSqSelector.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setFpr</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.ml.feature.ChiSqSelector">ChiSqSelector</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@setFpr(value:Double):ChiSqSelector.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.ml.feature.ChiSqSelector#setLabelCol" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
       <a id="setLabelCol(value:String):ChiSqSelector.this.type"></a>
       <a id="setLabelCol(String):ChiSqSelector.this.type"></a>
@@ -1474,6 +1658,52 @@ this variable gets initialized before other params.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelector#setPercentile" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
+      <a id="setPercentile(value:Double):ChiSqSelector.this.type"></a>
+      <a id="setPercentile(Double):ChiSqSelector.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setPercentile</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.ml.feature.ChiSqSelector">ChiSqSelector</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@setPercentile(value:Double):ChiSqSelector.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.ml.feature.ChiSqSelector#setSelectorType" visbl="pub" data-isabs="false" fullComment="yes" group="setParam">
+      <a id="setSelectorType(value:String):ChiSqSelector.this.type"></a>
+      <a id="setSelectorType(String):ChiSqSelector.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setSelectorType</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.ml.feature.ChiSqSelector">ChiSqSelector</a>.this.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@setSelectorType(value:String):ChiSqSelector.this.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -1524,7 +1754,9 @@ this variable gets initialized before other params.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.feature.ChiSqSelector">ChiSqSelector</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -1671,34 +1903,7 @@ be assumed valid until proven otherwise.
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.param.Params#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.0) Will be removed in 2.1.0. Checks should be merged into transformSchema.">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.feature.ChiSqSelector@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Will be removed in 2.1.0. Checks should be merged into transformSchema.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">

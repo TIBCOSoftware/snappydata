@@ -28,12 +28,10 @@
         </head>
         <body class="type">
       <div id="definition">
-        <a href="HadoopFsRelation$.html" title="See companion object"><img alt="Class/Object" src="../../../../../../lib/class_to_object_big.png" /></a>
+        <img alt="Class" src="../../../../../../lib/class_big.png" />
         <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">datasources</a></p>
-        <h1><a href="HadoopFsRelation$.html" title="See companion object">HadoopFsRelation</a></h1><h3><span class="morelinks"><div>
-            Related Docs:
-            <a href="HadoopFsRelation$.html" title="See companion object">object HadoopFsRelation</a>
-            | <a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">package datasources</a>
+        <h1>HadoopFsRelation</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">package datasources</a>
           </div></span></h3><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
@@ -47,14 +45,14 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">HadoopFsRelation</span><span class="params">(<span name="location">location: <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a></span>, <span name="partitionSchema">partitionSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="dataSchema">dataSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../FileRelation.html" class="extype" name="org.apache.spark.sql.execution.FileRelation">FileRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">HadoopFsRelation</span><span class="params">(<span name="location">location: <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a></span>, <span name="partitionSchema">partitionSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="dataSchema">dataSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../FileRelation.html" class="extype" name="org.apache.spark.sql.execution.FileRelation">FileRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Acts as a container for all of the metadata required to read from a datasource. All discovery,
 resolution and merging logic for schemas and partitions has been removed.
-</p></div><dl class="paramcmts block"><dt class="param">location</dt><dd class="cmt"><p>A <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a> that can enumerate the locations of all the files that comprise
-                this relation.</p></dd><dt class="param">partitionSchema</dt><dd class="cmt"><p>The schema of the columns (if any) that are used to partition the relation</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>The schema of any remaining columns.  Note that if any partition columns are
+</p></div><dl class="paramcmts block"><dt class="param">location</dt><dd class="cmt"><p>A <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a> that can enumerate the locations of all the files that
+                comprise this relation.</p></dd><dt class="param">partitionSchema</dt><dd class="cmt"><p>The schema of the columns (if any) that are used to partition the relation</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>The schema of any remaining columns.  Note that if any partition columns are
                   present in the actual data files as well, they are preserved.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>Describes the bucketing (hash-partitioning of the files by some column values).</p></dd><dt class="param">fileFormat</dt><dd class="cmt"><p>A file format that can be used to read and write the data in files.</p></dd><dt class="param">options</dt><dd class="cmt"><p>Configuration used when reading / writing data.</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../FileRelation.html" class="extype" name="org.apache.spark.sql.execution.FileRelation">FileRelation</a>, <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -95,7 +93,7 @@ resolution and merging logic for schemas and partitions has been removed.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.datasources.HadoopFsRelation#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(location:org.apache.spark.sql.execution.datasources.FileCatalog,partitionSchema:org.apache.spark.sql.types.StructType,dataSchema:org.apache.spark.sql.types.StructType,bucketSpec:Option[org.apache.spark.sql.execution.datasources.BucketSpec],fileFormat:org.apache.spark.sql.execution.datasources.FileFormat,options:Map[String,String])(sparkSession:org.apache.spark.sql.SparkSession):org.apache.spark.sql.execution.datasources.HadoopFsRelation"></a>
+      <a id="&lt;init&gt;(location:org.apache.spark.sql.execution.datasources.FileIndex,partitionSchema:org.apache.spark.sql.types.StructType,dataSchema:org.apache.spark.sql.types.StructType,bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec],fileFormat:org.apache.spark.sql.execution.datasources.FileFormat,options:Map[String,String])(sparkSession:org.apache.spark.sql.SparkSession):org.apache.spark.sql.execution.datasources.HadoopFsRelation"></a>
       <a id="&lt;init&gt;:HadoopFsRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -103,15 +101,15 @@ resolution and merging logic for schemas and partitions has been removed.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">HadoopFsRelation</span><span class="params">(<span name="location">location: <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a></span>, <span name="partitionSchema">partitionSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="dataSchema">dataSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span>
+        <span class="name">HadoopFsRelation</span><span class="params">(<span name="location">location: <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a></span>, <span name="partitionSchema">partitionSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="dataSchema">dataSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="fileFormat">fileFormat: <a href="FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation@&lt;init&gt;(location:org.apache.spark.sql.execution.datasources.FileCatalog,partitionSchema:org.apache.spark.sql.types.StructType,dataSchema:org.apache.spark.sql.types.StructType,bucketSpec:Option[org.apache.spark.sql.execution.datasources.BucketSpec],fileFormat:org.apache.spark.sql.execution.datasources.FileFormat,options:Map[String,String])(sparkSession:org.apache.spark.sql.SparkSession):org.apache.spark.sql.execution.datasources.HadoopFsRelation" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation@&lt;init&gt;(location:org.apache.spark.sql.execution.datasources.FileIndex,partitionSchema:org.apache.spark.sql.types.StructType,dataSchema:org.apache.spark.sql.types.StructType,bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec],fileFormat:org.apache.spark.sql.execution.datasources.FileFormat,options:Map[String,String])(sparkSession:org.apache.spark.sql.SparkSession):org.apache.spark.sql.execution.datasources.HadoopFsRelation" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">location</dt><dd class="cmt"><p>A <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a> that can enumerate the locations of all the files that comprise
-                this relation.</p></dd><dt class="param">partitionSchema</dt><dd class="cmt"><p>The schema of the columns (if any) that are used to partition the relation</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>The schema of any remaining columns.  Note that if any partition columns are
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">location</dt><dd class="cmt"><p>A <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a> that can enumerate the locations of all the files that
+                comprise this relation.</p></dd><dt class="param">partitionSchema</dt><dd class="cmt"><p>The schema of the columns (if any) that are used to partition the relation</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>The schema of any remaining columns.  Note that if any partition columns are
                   present in the actual data files as well, they are preserved.</p></dd><dt class="param">bucketSpec</dt><dd class="cmt"><p>Describes the bucketing (hash-partitioning of the files by some column values).</p></dd><dt class="param">fileFormat</dt><dd class="cmt"><p>A file format that can be used to read and write the data in files.</p></dd><dt class="param">options</dt><dd class="cmt"><p>Configuration used when reading / writing data.</p></dd></dl></div>
     </li></ol>
             </div>
@@ -191,7 +189,7 @@ resolution and merging logic for schemas and partitions has been removed.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.HadoopFsRelation#bucketSpec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bucketSpec:Option[org.apache.spark.sql.execution.datasources.BucketSpec]"></a>
+      <a id="bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec]"></a>
       <a id="bucketSpec:Option[BucketSpec]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -199,10 +197,10 @@ resolution and merging logic for schemas and partitions has been removed.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">bucketSpec</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span>]</span>
+        <span class="name">bucketSpec</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation@bucketSpec:Option[org.apache.spark.sql.execution.datasources.BucketSpec]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation@bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -357,23 +355,23 @@ resolution and merging logic for schemas and partitions has been removed.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.HadoopFsRelation#location" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="location:org.apache.spark.sql.execution.datasources.FileCatalog"></a>
-      <a id="location:FileCatalog"></a>
+      <a id="location:org.apache.spark.sql.execution.datasources.FileIndex"></a>
+      <a id="location:FileIndex"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">location</span><span class="result">: <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a></span>
+        <span class="name">location</span><span class="result">: <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation@location:org.apache.spark.sql.execution.datasources.FileCatalog" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation@location:org.apache.spark.sql.execution.datasources.FileIndex" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A <a href="FileCatalog.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileCatalog">FileCatalog</a> that can enumerate the locations of all the files that comprise
-                this relation.</p>
+      <p class="shortcomment cmt">A <a href="FileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileIndex">FileIndex</a> that can enumerate the locations of all the files that
+                comprise this relation.</p>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -408,12 +406,12 @@ resolution and merging logic for schemas and partitions has been removed.
       </a>
     </span>
       <p class="shortcomment cmt">Whether does it need to convert the objects in Row to internal representation, for example:
- java.lang.String -&gt; UTF8String
- java.lang.Decimal -&gt; Decimal</p><div class="fullcomment"><div class="comment cmt"><p>Whether does it need to convert the objects in Row to internal representation, for example:
- java.lang.String -&gt; UTF8String
- java.lang.Decimal -&gt; Decimal</p><p>If <code>needConversion</code> is <code>false</code>, buildScan() should return an <span class="extype" name="RDD">RDD</span> of <span class="extype" name="InternalRow">InternalRow</span></p><p>Note: The internal representation is not stable across releases and thus data sources outside
-of Spark SQL should leave this as true.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+ java.lang.String to UTF8String
+ java.lang.Decimal to Decimal</p><div class="fullcomment"><div class="comment cmt"><p>Whether does it need to convert the objects in Row to internal representation, for example:
+ java.lang.String to UTF8String
+ java.lang.Decimal to Decimal</p><p>If <code>needConversion</code> is <code>false</code>, buildScan() should return an <code>RDD</code> of <code>InternalRow</code>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.4.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The internal representation is not stable across releases and thus data sources outside
+of Spark SQL should leave this as true.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -499,40 +497,6 @@ of Spark SQL should leave this as true.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.datasources.HadoopFsRelation#partitionSpec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="partitionSpec:org.apache.spark.sql.execution.datasources.PartitionSpec"></a>
-      <a id="partitionSpec:PartitionSpec"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">partitionSpec</span><span class="result">: <a href="PartitionSpec.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitionSpec">PartitionSpec</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation@partitionSpec:org.apache.spark.sql.execution.datasources.PartitionSpec" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.datasources.HadoopFsRelation#refresh" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="refresh():Unit"></a>
-      <a id="refresh():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">refresh</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.HadoopFsRelation@refresh():Unit" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.datasources.HadoopFsRelation#schema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="schema:org.apache.spark.sql.types.StructType"></a>
       <a id="schema:StructType"></a>
@@ -570,9 +534,9 @@ of Spark SQL should leave this as true.
 to decide when it is safe to broadcast a relation and can be overridden by sources that
 know the size ahead of time. By default, the system will assume that tables are too
 large to broadcast. This method will be called multiple times during query planning
-and thus should not perform expensive operations for each invocation.</p><p>Note that it is always better to overestimate size than underestimate, because underestimation
-could lead to execution plans that are suboptimal (i.e. broadcasting a very large table).
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> → <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+and thus should not perform expensive operations for each invocation.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a> → <a href="../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>It is always better to overestimate size than underestimate, because underestimation
+could lead to execution plans that are suboptimal (i.e. broadcasting a very large table).</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.datasources.HadoopFsRelation#sparkSession" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sparkSession:org.apache.spark.sql.SparkSession"></a>
       <a id="sparkSession:SparkSession"></a>

@@ -213,9 +213,9 @@ training weights except for the objective trace.
       </a>
     </span>
       <p class="shortcomment cmt">Standard error of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>Standard error of estimated coefficients and intercept.
-This value is only available when using the &quot;normal&quot; solver.</p><p>If <a href="LinearRegression.html#fitIntercept:org.apache.spark.ml.param.BooleanParam" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#fitIntercept">LinearRegression.fitIntercept</a> is set to true,
+This value is only available when using the &quot;normal&quot; solver.</p><p>If <code>LinearRegression.fitIntercept</code> is set to true,
 then the last element returned corresponds to the intercept.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>See also</dt><dd><span class="cmt"><p><a href="LinearRegression.html#solver:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#solver">LinearRegression.solver</a></p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>See also</dt><dd><span class="cmt"><p><code>LinearRegression.solver</code></p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.regression.LinearRegressionSummary#devianceResiduals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="devianceResiduals:Array[Double]"></a>
       <a id="devianceResiduals:Array[Double]"></a>
@@ -288,15 +288,16 @@ the square root of the instance weights.
     </span>
       <p class="shortcomment cmt">Returns the explained variance regression score.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the explained variance regression score.
 explainedVariance = 1 - variance(y - \hat{y}) / variance(y)
-Reference: <a href="http://en.wikipedia.org/wiki/Explained_variation" target="_blank">http://en.wikipedia.org/wiki/Explained_variation</a></p><p>Note: This ignores instance weights (setting all to 1.0) from <a href="LinearRegression.html#weightCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#weightCol">LinearRegression.weightCol</a>.
-      This will change in later Spark versions.
+Reference: <a href="http://en.wikipedia.org/wiki/Explained_variation">
+Wikipedia explain variation</a>
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This ignores instance weights (setting all to 1.0) from <code>LinearRegression.weightCol</code>.
+This will change in later Spark versions.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.regression.LinearRegressionSummary#featuresCol" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="featuresCol:String"></a>
       <a id="featuresCol:String"></a>
@@ -423,15 +424,15 @@ Reference: <a href="http://en.wikipedia.org/wiki/Explained_variation" target="_b
     </span>
       <p class="shortcomment cmt">Returns the mean absolute error, which is a risk function corresponding to the
 expected value of the absolute error loss or l1-norm loss.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the mean absolute error, which is a risk function corresponding to the
-expected value of the absolute error loss or l1-norm loss.</p><p>Note: This ignores instance weights (setting all to 1.0) from <a href="LinearRegression.html#weightCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#weightCol">LinearRegression.weightCol</a>.
-      This will change in later Spark versions.
+expected value of the absolute error loss or l1-norm loss.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This ignores instance weights (setting all to 1.0) from <code>LinearRegression.weightCol</code>.
+This will change in later Spark versions.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.regression.LinearRegressionSummary#meanSquaredError" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="meanSquaredError:Double"></a>
       <a id="meanSquaredError:Double"></a>
@@ -450,15 +451,15 @@ expected value of the absolute error loss or l1-norm loss.</p><p>Note: This igno
     </span>
       <p class="shortcomment cmt">Returns the mean squared error, which is a risk function corresponding to the
 expected value of the squared error loss or quadratic loss.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the mean squared error, which is a risk function corresponding to the
-expected value of the squared error loss or quadratic loss.</p><p>Note: This ignores instance weights (setting all to 1.0) from <a href="LinearRegression.html#weightCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#weightCol">LinearRegression.weightCol</a>.
-      This will change in later Spark versions.
+expected value of the squared error loss or quadratic loss.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This ignores instance weights (setting all to 1.0) from <code>LinearRegression.weightCol</code>.
+This will change in later Spark versions.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -561,9 +562,9 @@ expected value of the squared error loss or quadratic loss.</p><p>Note: This ign
       </a>
     </span>
       <p class="shortcomment cmt">Two-sided p-value of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>Two-sided p-value of estimated coefficients and intercept.
-This value is only available when using the &quot;normal&quot; solver.</p><p>If <a href="LinearRegression.html#fitIntercept:org.apache.spark.ml.param.BooleanParam" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#fitIntercept">LinearRegression.fitIntercept</a> is set to true,
+This value is only available when using the &quot;normal&quot; solver.</p><p>If <code>LinearRegression.fitIntercept</code> is set to true,
 then the last element returned corresponds to the intercept.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>See also</dt><dd><span class="cmt"><p><a href="LinearRegression.html#solver:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#solver">LinearRegression.solver</a></p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>See also</dt><dd><span class="cmt"><p><code>LinearRegression.solver</code></p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.regression.LinearRegressionSummary#predictionCol" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="predictionCol:String"></a>
       <a id="predictionCol:String"></a>
@@ -617,15 +618,16 @@ then the last element returned corresponds to the intercept.
       </a>
     </span>
       <p class="shortcomment cmt">Returns R<sup>2</sup>, the coefficient of determination.</p><div class="fullcomment"><div class="comment cmt"><p>Returns R<sup>2</sup>, the coefficient of determination.
-Reference: <a href="http://en.wikipedia.org/wiki/Coefficient_of_determination" target="_blank">http://en.wikipedia.org/wiki/Coefficient_of_determination</a></p><p>Note: This ignores instance weights (setting all to 1.0) from <a href="LinearRegression.html#weightCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#weightCol">LinearRegression.weightCol</a>.
-      This will change in later Spark versions.
+Reference: <a href="http://en.wikipedia.org/wiki/Coefficient_of_determination">
+Wikipedia coefficient of determination</a>
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This ignores instance weights (setting all to 1.0) from <code>LinearRegression.weightCol</code>.
+This will change in later Spark versions.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.regression.LinearRegressionSummary#residuals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="residuals:org.apache.spark.sql.DataFrame"></a>
       <a id="residuals:DataFrame"></a>
@@ -667,15 +669,15 @@ Reference: <a href="http://en.wikipedia.org/wiki/Coefficient_of_determination" t
     </span>
       <p class="shortcomment cmt">Returns the root mean squared error, which is defined as the square root of
 the mean squared error.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the root mean squared error, which is defined as the square root of
-the mean squared error.</p><p>Note: This ignores instance weights (setting all to 1.0) from <a href="LinearRegression.html#weightCol:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#weightCol">LinearRegression.weightCol</a>.
-      This will change in later Spark versions.
+the mean squared error.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This ignores instance weights (setting all to 1.0) from <code>LinearRegression.weightCol</code>.
+This will change in later Spark versions.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -710,9 +712,9 @@ the mean squared error.</p><p>Note: This ignores instance weights (setting all t
       </a>
     </span>
       <p class="shortcomment cmt">T-statistic of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>T-statistic of estimated coefficients and intercept.
-This value is only available when using the &quot;normal&quot; solver.</p><p>If <a href="LinearRegression.html#fitIntercept:org.apache.spark.ml.param.BooleanParam" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#fitIntercept">LinearRegression.fitIntercept</a> is set to true,
+This value is only available when using the &quot;normal&quot; solver.</p><p>If <code>LinearRegression.fitIntercept</code> is set to true,
 then the last element returned corresponds to the intercept.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>See also</dt><dd><span class="cmt"><p><a href="LinearRegression.html#solver:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#solver">LinearRegression.solver</a></p></span></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>See also</dt><dd><span class="cmt"><p><code>LinearRegression.solver</code></p></span></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -746,13 +748,14 @@ then the last element returned corresponds to the intercept.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Number of training iterations until termination</p><div class="fullcomment"><div class="comment cmt"><p>Number of training iterations until termination</p><p>This value is only available when using the &quot;l-bfgs&quot; solver.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Number of training iterations until termination</p><div class="fullcomment"><div class="comment cmt"><p>Number of training iterations until termination</p><p>This value is only available when using the &quot;l-bfgs&quot; solver.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
               
-        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="LinearRegression.html#solver:org.apache.spark.ml.param.Param[String]" class="extmbr" name="org.apache.spark.ml.regression.LinearRegression#solver">LinearRegression.solver</a></p></span></dd></dl></div>
+        </dd><dt>See also</dt><dd><span class="cmt"><p><code>LinearRegression.solver</code></p></span></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -827,30 +830,7 @@ then the last element returned corresponds to the intercept.
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.regression.LinearRegressionSummary#model" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="model:org.apache.spark.ml.regression.LinearRegressionModel"></a>
-      <a id="model:LinearRegressionModel"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.0) The model field is deprecated and will be removed in 2.1.0.">model</span><span class="result">: <a href="LinearRegressionModel.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionModel">LinearRegressionModel</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.regression.LinearRegressionTrainingSummary@model:org.apache.spark.ml.regression.LinearRegressionModel" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.LinearRegressionSummary">LinearRegressionSummary</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> The model field is deprecated and will be removed in 2.1.0.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">

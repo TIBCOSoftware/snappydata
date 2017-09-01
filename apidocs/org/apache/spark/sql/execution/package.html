@@ -200,23 +200,6 @@ on deserialized object directly.</p>
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.BatchedDataSourceScanExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="BatchedDataSourceScanExecextendsSparkPlanwithDataSourceScanExecwithCodegenSupportwithProductwithSerializable"></a>
-      <a id="BatchedDataSourceScanExec:BatchedDataSourceScanExec"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="BatchedDataSourceScanExec.html"><span class="name">BatchedDataSourceScanExec</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="relation">relation: <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>, <span name="outputPartitioning">outputPartitioning: <a href="../catalyst/plans/physical/Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a></span>, <span name="metadata">metadata: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="metastoreTableIdentifier">metastoreTableIdentifier: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="DataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.DataSourceScanExec">DataSourceScanExec</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@BatchedDataSourceScanExecextendsSparkPlanwithDataSourceScanExecwithCodegenSupportwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Physical plan node for scanning data from a batched relation.</p>
     </li><li name="org.apache.spark.sql.execution.BinaryExecNode" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="BinaryExecNodeextendsSparkPlan"></a>
       <a id="BinaryExecNode:BinaryExecNode"></a>
@@ -384,7 +367,13 @@ Note: we assume the output of each <a href="CoGroupedIterator.html#GroupedIterat
       <p class="shortcomment cmt">Physical plan for returning a new RDD that has exactly <code>numPartitions</code> partitions.</p><div class="fullcomment"><div class="comment cmt"><p>Physical plan for returning a new RDD that has exactly <code>numPartitions</code> partitions.
 Similar to coalesce defined on an <span class="extype" name="RDD">RDD</span>, this operation results in a narrow dependency, e.g.
 if you go from 1000 partitions to 100 partitions, there will not be a shuffle, instead each of
-the 100 new partitions will claim 10 of the current partitions.
+the 100 new partitions will claim 10 of the current partitions.  If a larger number of partitions
+is requested, it will stay at the current number of partitions.</p><p>However, if you're doing a drastic coalesce, e.g. to numPartitions = 1,
+this may result in your computation taking place on fewer nodes than
+you like (e.g. one node in the case of numPartitions = 1). To avoid this,
+you see ShuffleExchange. This will add a shuffle step, but means the
+current upstream partitions will be executed in parallel (per whatever
+the current partitioning is).
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.CoalescedPartitioner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CoalescedPartitionerextendsPartitioner"></a>
@@ -465,7 +454,7 @@ a SparkContext.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CollapseCodegenStages.html"><span class="name">CollapseCodegenStages</span></a><span class="params">(<span name="conf">conf: <span class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</span></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CollapseCodegenStages.html"><span class="name">CollapseCodegenStages</span></a><span class="params">(<span name="conf">conf: <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CollapseCodegenStagesextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable" title="Permalink" target="_top">
@@ -493,7 +482,7 @@ a SparkContext.</p>
 logical plan, which happens when the user is collecting results back to the driver.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.DataSourceScanExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="DataSourceScanExecextendsSparkPlanwithLeafExecNode"></a>
+      <a id="DataSourceScanExecextendsSparkPlanwithLeafExecNodewithCodegenSupport"></a>
       <a id="DataSourceScanExec:DataSourceScanExec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -501,10 +490,10 @@ logical plan, which happens when the user is collecting results back to the driv
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="DataSourceScanExec.html"><span class="name">DataSourceScanExec</span></a><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a></span>
+        <a href="DataSourceScanExec.html"><span class="name">DataSourceScanExec</span></a><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@DataSourceScanExecextendsSparkPlanwithLeafExecNode" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@DataSourceScanExecextendsSparkPlanwithLeafExecNodewithCodegenSupport" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -537,7 +526,7 @@ The output of this operator is a single-field safe row containing the deserializ
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="DictionaryCode.html"><span class="name">DictionaryCode</span></a><span class="params">(<span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueAssignCode">valueAssignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="DictionaryCode.html"><span class="name">DictionaryCode</span></a><span class="params">(<span name="dictionary">dictionary: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="bufferVar">bufferVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@DictionaryCodeextendsProductwithSerializable" title="Permalink" target="_top">
@@ -581,6 +570,23 @@ dictionary reference and its index when dictionary encoding is being used.</p>
     </span>
       <p class="shortcomment cmt">Efficient SparkPlan with code generation support to consume an RDD
 that has an <span class="extype" name="ExpressionEncoder">ExpressionEncoder</span>.</p>
+    </li><li name="org.apache.spark.sql.execution.ExecSubqueryExpression" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ExecSubqueryExpressionextendsPlanExpression[org.apache.spark.sql.execution.SubqueryExec]"></a>
+      <a id="ExecSubqueryExpression:ExecSubqueryExpression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExecSubqueryExpression.html"><span class="name">ExecSubqueryExpression</span></a><span class="result"> extends <a href="../catalyst/expressions/PlanExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PlanExpression">PlanExpression</a>[<a href="SubqueryExec.html" class="extype" name="org.apache.spark.sql.execution.SubqueryExec">SubqueryExec</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ExecSubqueryExpressionextendsPlanExpression[org.apache.spark.sql.execution.SubqueryExec]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The base class for subquery that is used in SparkPlan.</p>
     </li><li name="org.apache.spark.sql.execution.ExecutePlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ExecutePlanextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="ExecutePlan:ExecutePlan"></a>
@@ -621,6 +627,40 @@ an explicit collect. Only use for plans returning small results.
 multiple output rows for an input row.</p><div class="fullcomment"><div class="comment cmt"><p>Apply all of the GroupExpressions to every input row, hence we will get
 multiple output rows for an input row.</p></div><dl class="paramcmts block"><dt class="param">projections</dt><dd class="cmt"><p>The group of expressions, all of the group expressions should
                    output the same schema specified bye the parameter <code>output</code></p></dd><dt class="param">output</dt><dd class="cmt"><p>The output Schema</p></dd><dt class="param">child</dt><dd class="cmt"><p>Child operator</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ExternalRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExternalRDD[T]extendsLeafNodewithObjectProducerwithMultiInstanceRelationwithProductwithSerializable"></a>
+      <a id="ExternalRDD[T]:ExternalRDD[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExternalRDD.html"><span class="name">ExternalRDD</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="outputObjAttr">outputObjAttr: <a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.ExternalRDD.T">T</span>]</span>)</span><span class="params">(<span name="session">session: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../catalyst/plans/logical/ObjectProducer.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.ObjectProducer">ObjectProducer</a> with <a href="../catalyst/analysis/MultiInstanceRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation">MultiInstanceRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ExternalRDD[T]extendsLeafNodewithObjectProducerwithMultiInstanceRelationwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Logical plan node for scanning data from an RDD.</p>
+    </li><li name="org.apache.spark.sql.execution.ExternalRDDScanExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExternalRDDScanExec[T]extendsSparkPlanwithLeafExecNodewithObjectProducerExecwithProductwithSerializable"></a>
+      <a id="ExternalRDDScanExec[T]:ExternalRDDScanExec[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExternalRDDScanExec.html"><span class="name">ExternalRDDScanExec</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="outputObjAttr">outputObjAttr: <a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.ExternalRDDScanExec.T">T</span>]</span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a> with <a href="ObjectProducerExec.html" class="extype" name="org.apache.spark.sql.execution.ObjectProducerExec">ObjectProducerExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ExternalRDDScanExec[T]extendsSparkPlanwithLeafExecNodewithObjectProducerExecwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Physical plan node for scanning data from an RDD.</p>
     </li><li name="org.apache.spark.sql.execution.FileRelation" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="FileRelationextendsAnyRef"></a>
       <a id="FileRelation:FileRelation"></a>
@@ -641,6 +681,24 @@ multiple output rows for an input row.</p></div><dl class="paramcmts block"><dt 
 the list of paths that it returns will be returned to a user who calls <code>inputPaths</code> on any
 DataFrame that queries this relation.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.FileSourceScanExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FileSourceScanExecextendsSparkPlanwithDataSourceScanExecwithProductwithSerializable"></a>
+      <a id="FileSourceScanExec:FileSourceScanExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileSourceScanExec.html"><span class="name">FileSourceScanExec</span></a><span class="params">(<span name="relation">relation: <a href="datasources/HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a></span>, <span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="outputSchema">outputSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="partitionFilters">partitionFilters: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="dataFilters">dataFilters: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>, <span name="metastoreTableIdentifier">metastoreTableIdentifier: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="DataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.DataSourceScanExec">DataSourceScanExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@FileSourceScanExecextendsSparkPlanwithDataSourceScanExecwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Physical plan node for scanning data from HadoopFsRelations.</p><div class="fullcomment"><div class="comment cmt"><p>Physical plan node for scanning data from HadoopFsRelations.
+</p></div><dl class="paramcmts block"><dt class="param">relation</dt><dd class="cmt"><p>The file-based relation to scan.</p></dd><dt class="param">output</dt><dd class="cmt"><p>Output attributes of the scan.</p></dd><dt class="param">outputSchema</dt><dd class="cmt"><p>Output schema of the scan.</p></dd><dt class="param">partitionFilters</dt><dd class="cmt"><p>Predicates to use for partition pruning.</p></dd><dt class="param">dataFilters</dt><dd class="cmt"><p>Data source filters to use for filtering data within partitions.</p></dd><dt class="param">metastoreTableIdentifier</dt><dd class="cmt"><p>identifier for the table in the metastore.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.FilterExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FilterExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithPredicateHelperwithProductwithSerializable"></a>
       <a id="FilterExec:FilterExec"></a>
@@ -688,7 +746,7 @@ The result of this function is flattened before being output.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="GenerateExec.html"><span class="name">GenerateExec</span></a><span class="params">(<span name="generator">generator: <a href="../catalyst/expressions/Generator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Generator">Generator</a></span>, <span name="join">join: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="outer">outer: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="child">child: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="GenerateExec.html"><span class="name">GenerateExec</span></a><span class="params">(<span name="generator">generator: <a href="../catalyst/expressions/Generator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Generator">Generator</a></span>, <span name="join">join: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="outer">outer: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="generatorOutput">generatorOutput: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="child">child: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@GenerateExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable" title="Permalink" target="_top">
@@ -701,8 +759,9 @@ output of each into a new stream of rows.  This operation is similar to a <code>
 programming with one important additional feature, which allows the input rows to be joined with
 their output.</p></div><dl class="paramcmts block"><dt class="param">generator</dt><dd class="cmt"><p>the generator expression</p></dd><dt class="param">join</dt><dd class="cmt"><p>when true, each output row is implicitly joined with the input tuple that produced
              it.</p></dd><dt class="param">outer</dt><dd class="cmt"><p>when true, each input row will be output at least once, even if the output of the
-             given <code>generator</code> is empty. <code>outer</code> has no effect when <code>join</code> is false.</p></dd><dt class="param">output</dt><dd class="cmt"><p>the output attributes of this node, which constructed in analysis phase,
-              and we can not change it, as the parent node bound with it already.</p></dd></dl></div>
+             given <code>generator</code> is empty. <code>outer</code> has no effect when <code>join</code> is false.</p></dd><dt class="param">generatorOutput</dt><dd class="cmt"><p>the qualified output attributes of the generator of this node, which
+                       constructed in analysis phase, and we can not change it, as the
+                       parent node bound with it already.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.GlobalLimitExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GlobalLimitExecextendsSparkPlanwithBaseLimitExecwithProductwithSerializable"></a>
       <a id="GlobalLimitExec:GlobalLimitExec"></a>
@@ -786,6 +845,23 @@ The purpose for that is:
    separate operation or add a time parameter to addData()?</p><p>4. Decide if we want to be mutable or functional in this datastruct.
    Current version is mutable.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.InSubquery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InSubqueryextendsExecSubqueryExpressionwithProductwithSerializable"></a>
+      <a id="InSubquery:InSubquery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="InSubquery.html"><span class="name">InSubquery</span></a><span class="params">(<span name="child">child: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="plan">plan: <a href="SubqueryExec.html" class="extype" name="org.apache.spark.sql.execution.SubqueryExec">SubqueryExec</a></span>, <span name="exprId">exprId: <a href="../catalyst/expressions/ExprId.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExprId">ExprId</a></span>, <span name="result">result: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Any">Any</span>] = <span class="symbol">null</span></span>, <span name="updated">updated: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result"> extends <a href="ExecSubqueryExpression.html" class="extype" name="org.apache.spark.sql.execution.ExecSubqueryExpression">ExecSubqueryExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@InSubqueryextendsExecSubqueryExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A subquery that will check the value of <code>child</code> whether is in the result of a query or not.</p>
     </li><li name="org.apache.spark.sql.execution.InputAdapter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="InputAdapterextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable"></a>
       <a id="InputAdapter:InputAdapter"></a>
@@ -891,7 +967,7 @@ that consumes an RDD iterator of InternalRow.
     </span>
       <p class="shortcomment cmt">Physical plan node for scanning data from a local collection.</p>
     </li><li name="org.apache.spark.sql.execution.LogicalRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="LogicalRDDextendsLogicalPlanwithMultiInstanceRelationwithProductwithSerializable"></a>
+      <a id="LogicalRDDextendsLeafNodewithMultiInstanceRelationwithProductwithSerializable"></a>
       <a id="LogicalRDD:LogicalRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -899,14 +975,14 @@ that consumes an RDD iterator of InternalRow.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="LogicalRDD.html"><span class="name">LogicalRDD</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>)</span><span class="params">(<span name="session">session: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <a href="../catalyst/analysis/MultiInstanceRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation">MultiInstanceRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="LogicalRDD.html"><span class="name">LogicalRDD</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="outputPartitioning">outputPartitioning: <a href="../catalyst/plans/physical/Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a> = <span class="symbol"><span class="name"><a href="../../../../package.html">UnknownPartitioning(0)</a></span></span></span>, <span name="outputOrdering">outputOrdering: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/SortOrder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</a>] = <span class="symbol">Nil</span></span>)</span><span class="params">(<span name="session">session: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../catalyst/analysis/MultiInstanceRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation">MultiInstanceRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@LogicalRDDextendsLogicalPlanwithMultiInstanceRelationwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@LogicalRDDextendsLeafNodewithMultiInstanceRelationwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Logical plan node for scanning data from an RDD.</p>
+      <p class="shortcomment cmt">Logical plan node for scanning data from an RDD of InternalRow.</p>
     </li><li name="org.apache.spark.sql.execution.MapElementsExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="MapElementsExecextendsSparkPlanwithObjectConsumerExecwithObjectProducerExecwithCodegenSupportwithProductwithSerializable"></a>
       <a id="MapElementsExec:MapElementsExec"></a>
@@ -1070,6 +1146,33 @@ to be used for both group by aggregation as well as for HashJoins.
       </a>
     </span>
       <p class="shortcomment cmt">Physical version of <code>ObjectProducer</code>.</p>
+    </li><li name="org.apache.spark.sql.execution.OptimizeMetadataOnlyQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OptimizeMetadataOnlyQueryextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
+      <a id="OptimizeMetadataOnlyQuery:OptimizeMetadataOnlyQuery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OptimizeMetadataOnlyQuery.html"><span class="name">OptimizeMetadataOnlyQuery</span></a><span class="params">(<span name="catalog">catalog: <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></span>, <span name="conf">conf: <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@OptimizeMetadataOnlyQueryextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This rule optimizes the execution of queries that can be answered by looking only at
+partition-level metadata.</p><div class="fullcomment"><div class="comment cmt"><p>This rule optimizes the execution of queries that can be answered by looking only at
+partition-level metadata. This applies when all the columns scanned are partition columns, and
+the query has an aggregate operator that satisfies the following conditions:
+1. aggregate expression is partition columns.
+ e.g. SELECT col FROM tbl GROUP BY col.
+2. aggregate function on partition columns with DISTINCT.
+ e.g. SELECT col1, count(DISTINCT col2) FROM tbl GROUP BY col1.
+3. aggregate function on partition columns which have same result w or w/o DISTINCT keyword.
+ e.g. SELECT col1, Max(col2) FROM tbl GROUP BY col1.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.OutputFakerExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="OutputFakerExecextendsSparkPlanwithProductwithSerializable"></a>
       <a id="OutputFakerExec:OutputFakerExec"></a>
@@ -1221,14 +1324,14 @@ changing them, because a lot of developers use the feature for debugging.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="RDDScanExec.html"><span class="name">RDDScanExec</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="nodeName">nodeName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="RDDScanExec.html"><span class="name">RDDScanExec</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="nodeName">nodeName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="outputPartitioning">outputPartitioning: <a href="../catalyst/plans/physical/Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a> = <span class="symbol"><span class="name"><a href="../../../../package.html">UnknownPartitioning(0)</a></span></span></span>, <span name="outputOrdering">outputOrdering: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/SortOrder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</a>] = <span class="symbol">Nil</span></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@RDDScanExecextendsSparkPlanwithLeafExecNodewithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Physical plan node for scanning data from an RDD.</p>
+      <p class="shortcomment cmt">Physical plan node for scanning data from an RDD of InternalRow.</p>
     </li><li name="org.apache.spark.sql.execution.RangeExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RangeExecextendsSparkPlanwithLeafExecNodewithCodegenSupportwithProductwithSerializable"></a>
       <a id="RangeExec:RangeExec"></a>
@@ -1263,8 +1366,26 @@ changing them, because a lot of developers use the feature for debugging.
       </a>
     </span>
       <p class="shortcomment cmt">Created by vivekb on 21/10/16.</p>
+    </li><li name="org.apache.spark.sql.execution.ReuseSubquery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReuseSubqueryextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable"></a>
+      <a id="ReuseSubquery:ReuseSubquery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ReuseSubquery.html"><span class="name">ReuseSubquery</span></a><span class="params">(<span name="conf">conf: <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ReuseSubqueryextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Find out duplicated exchanges in the spark plan, then use the same exchange for all the
+references.</p>
     </li><li name="org.apache.spark.sql.execution.RowDataSourceScanExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="RowDataSourceScanExecextendsSparkPlanwithDataSourceScanExecwithCodegenSupportwithProductwithSerializable"></a>
+      <a id="RowDataSourceScanExecextendsSparkPlanwithDataSourceScanExecwithProductwithSerializable"></a>
       <a id="RowDataSourceScanExec:RowDataSourceScanExec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1272,10 +1393,10 @@ changing them, because a lot of developers use the feature for debugging.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="RowDataSourceScanExec.html"><span class="name">RowDataSourceScanExec</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="relation">relation: <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>, <span name="outputPartitioning">outputPartitioning: <a href="../catalyst/plans/physical/Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a></span>, <span name="metadata">metadata: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="metastoreTableIdentifier">metastoreTableIdentifier: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="DataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.DataSourceScanExec">DataSourceScanExec</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="RowDataSourceScanExec.html"><span class="name">RowDataSourceScanExec</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="relation">relation: <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a></span>, <span name="outputPartitioning">outputPartitioning: <a href="../catalyst/plans/physical/Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a></span>, <span name="metadata">metadata: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="metastoreTableIdentifier">metastoreTableIdentifier: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="DataSourceScanExec.html" class="extype" name="org.apache.spark.sql.execution.DataSourceScanExec">DataSourceScanExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@RowDataSourceScanExecextendsSparkPlanwithDataSourceScanExecwithCodegenSupportwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@RowDataSourceScanExecextendsSparkPlanwithDataSourceScanExecwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1357,7 +1478,7 @@ iterator to consume the next row, whereas RowIterator combines these calls into 
     </span>
       
     </li><li name="org.apache.spark.sql.execution.ScalarSubquery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ScalarSubqueryextendsSubqueryExpressionwithProductwithSerializable"></a>
+      <a id="ScalarSubqueryextendsExecSubqueryExpressionwithProductwithSerializable"></a>
       <a id="ScalarSubquery:ScalarSubquery"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1365,10 +1486,10 @@ iterator to consume the next row, whereas RowIterator combines these calls into 
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="ScalarSubquery.html"><span class="name">ScalarSubquery</span></a><span class="params">(<span name="executedPlan">executedPlan: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="exprId">exprId: <a href="../catalyst/expressions/ExprId.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExprId">ExprId</a></span>)</span><span class="result"> extends <a href="../catalyst/expressions/SubqueryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SubqueryExpression">SubqueryExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="ScalarSubquery.html"><span class="name">ScalarSubquery</span></a><span class="params">(<span name="plan">plan: <a href="SubqueryExec.html" class="extype" name="org.apache.spark.sql.execution.SubqueryExec">SubqueryExec</a></span>, <span name="exprId">exprId: <a href="../catalyst/expressions/ExprId.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExprId">ExprId</a></span>)</span><span class="result"> extends <a href="ExecSubqueryExpression.html" class="extype" name="org.apache.spark.sql.execution.ExecSubqueryExpression">ExecSubqueryExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ScalarSubqueryextendsSubqueryExpressionwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ScalarSubqueryextendsExecSubqueryExpressionwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1829,7 +1950,7 @@ last time slot and short fall from previous rounds.</p>
 meta-data including number of samples collected, total number of rows
 in the stratum seen so far, the QCS key, reservoir of samples etc.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.SubqueryExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.SubqueryExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SubqueryExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="SubqueryExec:SubqueryExec"></a>
       <h4 class="signature">
@@ -1845,15 +1966,14 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Physical plan for a subquery.</p><div class="fullcomment"><div class="comment cmt"><p>Physical plan for a subquery.</p><p>This is used to generate tree string for SparkScalarSubquery.
-</p></div></div>
+      <p class="shortcomment cmt">Physical plan for a subquery.</p>
     </li><li name="org.apache.spark.sql.execution.TableExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="TableExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportOnExecutor"></a>
       <a id="TableExec:TableExec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
       </span>
       <span class="symbol">
         <a href="TableExec.html"><span class="name">TableExec</span></a><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupportOnExecutor.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">CodegenSupportOnExecutor</a></span>
@@ -1863,7 +1983,7 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Common methods for bulk inserts into column and row tables.</p>
+      <p class="shortcomment cmt">Base class for bulk insert/mutation operations for column and row tables.</p>
     </li><li name="org.apache.spark.sql.execution.TakeOrderedAndProjectExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="TakeOrderedAndProjectExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="TakeOrderedAndProjectExec:TakeOrderedAndProjectExec"></a>
@@ -2113,81 +2233,22 @@ function.</p><p>Here is the call graph of to generate Java source (plan A suppor
 used to generated code for BoundReference.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.WholeStageCodegenRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="WholeStageCodegenRDDextendsZippedPartitionsBaseRDD[org.apache.spark.sql.catalyst.InternalRow]withSerializablewithKryoSerializable"></a>
+      <a id="WholeStageCodegenRDDextendsZippedPartitionsBaseRDD[org.apache.spark.sql.catalyst.InternalRow]withSerializablewithKryoSerializablewithProduct"></a>
       <a id="WholeStageCodegenRDD:WholeStageCodegenRDD"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="WholeStageCodegenRDD.html"><span class="name">WholeStageCodegenRDD</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.rdd.ZippedPartitionsBaseRDD">ZippedPartitionsBaseRDD</span>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>] with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@WholeStageCodegenRDDextendsZippedPartitionsBaseRDD[org.apache.spark.sql.catalyst.InternalRow]withSerializablewithKryoSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.WindowExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="WindowExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
-      <a id="WindowExec:WindowExec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="WindowExec.html"><span class="name">WindowExec</span></a><span class="params">(<span name="windowExpression">windowExpression: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>, <span name="partitionSpec">partitionSpec: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="orderSpec">orderSpec: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/SortOrder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</a>]</span>, <span name="child">child: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="WholeStageCodegenRDD.html"><span class="name">WholeStageCodegenRDD</span></a><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="source">source: <a href="../catalyst/expressions/codegen/CodeAndComment.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment">CodeAndComment</a></span>, <span name="references">references: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Any">Any</span>]</span>, <span name="durationMs">durationMs: <a href="metric/SQLMetric.html" class="extype" name="org.apache.spark.sql.execution.metric.SQLMetric">SQLMetric</a></span>, <span name="inputRDDs">inputRDDs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.rdd.ZippedPartitionsBaseRDD">ZippedPartitionsBaseRDD</span>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>] with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span> with <span class="extype" name="scala.Product">Product</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@WindowExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@WholeStageCodegenRDDextendsZippedPartitionsBaseRDD[org.apache.spark.sql.catalyst.InternalRow]withSerializablewithKryoSerializablewithProduct" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">This class calculates and outputs (windowed) aggregates over the rows in a single (sorted)
-partition.</p><div class="fullcomment"><div class="comment cmt"><p>This class calculates and outputs (windowed) aggregates over the rows in a single (sorted)
-partition. The aggregates are calculated for each row in the group. Special processing
-instructions, frames, are used to calculate these aggregates. Frames are processed in the order
-specified in the window specification (the ORDER BY ... clause). There are four different frame
-types:
-- Entire partition: The frame is the entire partition, i.e.
-  UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING. For this case, window function will take all
-  rows as inputs and be evaluated once.
-- Growing frame: We only add new rows into the frame, i.e. UNBOUNDED PRECEDING AND ....
-  Every time we move to a new row to process, we add some rows to the frame. We do not remove
-  rows from this frame.
-- Shrinking frame: We only remove rows from the frame, i.e. ... AND UNBOUNDED FOLLOWING.
-  Every time we move to a new row to process, we remove some rows from the frame. We do not add
-  rows to this frame.
-- Moving frame: Every time we move to a new row to process, we remove some rows from the frame
-  and we add some rows to the frame. Examples are:
-    1 PRECEDING AND CURRENT ROW and 1 FOLLOWING AND 2 FOLLOWING.
-- Offset frame: The frame consist of one row, which is an offset number of rows away from the
-  current row. Only <span class="extype" name="OffsetWindowFunction">OffsetWindowFunction</span>s can be processed in an offset frame.</p><p>Different frame boundaries can be used in Growing, Shrinking and Moving frames. A frame
-boundary can be either Row or Range based:
-- Row Based: A row based boundary is based on the position of the row within the partition.
-  An offset indicates the number of rows above or below the current row, the frame for the
-  current row starts or ends. For instance, given a row based sliding frame with a lower bound
-  offset of -1 and a upper bound offset of +2. The frame for row with index 5 would range from
-  index 4 to index 6.
-- Range based: A range based boundary is based on the actual value of the ORDER BY
-  expression(s). An offset is used to alter the value of the ORDER BY expression, for
-  instance if the current order by expression has a value of 10 and the lower bound offset
-  is -3, the resulting lower bound for the current row will be 10 - 3 = 7. This however puts a
-  number of constraints on the ORDER BY expressions: there can be only one expression and this
-  expression must have a numerical data type. An exception can be made when the offset is 0,
-  because no value modification is needed, in this case multiple and non-numeric ORDER BY
-  expression are allowed.</p><p>This is quite an expensive operator because every row for a single group must be in the same
-partition and partitions must be sorted according to the grouping and sort order. The operator
-requires the planner to take care of the partitioning and sorting.</p><p>The operator is semi-blocking. The window functions and aggregates are calculated one group at
-a time, the result will only be made available after the processing for the entire group has
-finished. The operator is able to process different frame configurations at the same time. This
-is done by delegating the actual frame processing (i.e. calculation of the window functions) to
-specialized classes, see <span class="extype" name="WindowFunctionFrame">WindowFunctionFrame</span>, which take care of their own frame type:
-Entire Partition, Sliding, Growing &amp; Shrinking. Boundary evaluation is also delegated to a pair
-of specialized classes: <span class="extype" name="RowBoundOrdering">RowBoundOrdering</span> &amp; <span class="extype" name="RangeBoundOrdering">RangeBoundOrdering</span>.
-</p></div></div>
+      
     </li></ol>
             </div>
 
@@ -2283,23 +2344,6 @@ of specialized classes: <span class="extype" name="RowBoundOrdering">RowBoundOrd
 pool and connection properties.</p><div class="fullcomment"><div class="comment cmt"><p>A global way to obtain a pooled DataSource with a given set of
 pool and connection properties.</p><p>Supports Tomcat-JDBC pool and HikariCP.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.DataSourceScanExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DataSourceScanExec"></a>
-      <a id="DataSourceScanExec:DataSourceScanExec"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="DataSourceScanExec$.html"><span class="name">DataSourceScanExec</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@DataSourceScanExec" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.DictionaryOptimizedMapAccessor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DictionaryOptimizedMapAccessor"></a>
       <a id="DictionaryOptimizedMapAccessor:DictionaryOptimizedMapAccessor"></a>
@@ -2350,6 +2394,23 @@ Given this, the additional overhead of array maintenance may not be worth
 the effort (and could possibly even reduce overall performance in some
 cases), hence this optimization is currently only for string type.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.ExternalRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExternalRDD"></a>
+      <a id="ExternalRDD:ExternalRDD"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExternalRDD$.html"><span class="name">ExternalRDD</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ExternalRDD" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.GroupedIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GroupedIterator"></a>
       <a id="GroupedIterator:GroupedIterator"></a>
@@ -2550,6 +2611,23 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSampler" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.SubqueryExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SubqueryExec"></a>
+      <a id="SubqueryExec:SubqueryExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SubqueryExec$.html"><span class="name">SubqueryExec</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SubqueryExec" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2958,6 +3036,23 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@vectorized" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.window" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="window"></a>
+      <a id="window:window"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="window/package.html"><span class="name">window</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@window" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

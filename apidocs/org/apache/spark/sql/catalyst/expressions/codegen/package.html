@@ -490,11 +490,11 @@ This is used to prettify generated code when in debug mode (or exceptions).</p><
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Generates byte code that produces a <a href="../MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a> object that can update itself based on a new
-input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> for a fixed set of <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expressions</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Generates byte code that produces a <a href="../MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a> object that can update itself based on a new
+      <p class="shortcomment cmt">Generates byte code that produces a <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object that can update itself based on a new
+input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> for a fixed set of <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expressions</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Generates byte code that produces a <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object that can update itself based on a new
 input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> for a fixed set of <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expressions</a>.
 It exposes a <code>target</code> method, which is used to set the row that will be updated.
-The internal <a href="../MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a> object created internally is used only when <code>target</code> is not used.
+The internal <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object created internally is used only when <code>target</code> is not used.
 </p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GenerateOrdering" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GenerateOrdering"></a>
@@ -522,7 +522,7 @@ The internal <a href="../MutableRow.html" class="extype" name="org.apache.spark.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="GeneratePredicate$.html"><span class="name">GeneratePredicate</span></a><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, (<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span>]</span>
+        <a href="GeneratePredicate$.html"><span class="name">GeneratePredicate</span></a><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@GeneratePredicate" title="Permalink" target="_top">
@@ -546,7 +546,7 @@ The internal <a href="../MutableRow.html" class="extype" name="org.apache.spark.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Generates byte code that produces a <a href="../MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a> object (not an <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>) that can update
+      <p class="shortcomment cmt">Generates byte code that produces a <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object (not an <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>) that can update
 itself based on a new input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> for a fixed set of <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expressions</a>.</p>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="GenerateUnsafeProjection"></a>

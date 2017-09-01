@@ -336,27 +336,6 @@ be raised at type checking phase.
     </span>
       <p class="shortcomment cmt">Applies any changes to <span class="extype" name="AttributeReference">AttributeReference</span> data types that are made by other rules to
 instances higher in the query tree.</p>
-    </li><li name="org.apache.spark.sql.catalyst.analysis.TypeCoercion.StringToIntegralCasts" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StringToIntegralCasts"></a>
-      <a id="StringToIntegralCasts:StringToIntegralCasts"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="TypeCoercion$$StringToIntegralCasts$.html"><span class="name">StringToIntegralCasts</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.TypeCoercion$@StringToIntegralCasts" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">When encountering a cast from a string representing a valid fractional number to an integral
-type the jvm will throw a <code>java.lang.NumberFormatException</code>.</p><div class="fullcomment"><div class="comment cmt"><p>When encountering a cast from a string representing a valid fractional number to an integral
-type the jvm will throw a <code>java.lang.NumberFormatException</code>.  Hive, in contrast, returns the
-truncated version of this number.
-</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.analysis.TypeCoercion.WidenSetOperationTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="WidenSetOperationTypes"></a>
       <a id="WidenSetOperationTypes:WidenSetOperationTypes"></a>

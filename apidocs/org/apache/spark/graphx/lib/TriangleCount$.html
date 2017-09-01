@@ -50,7 +50,7 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Compute the number of triangles passing through each vertex.</p><p>The algorithm is relatively straightforward and can be computed in three steps:</p><ul><li> Compute the set of neighbors for each vertex</li><li> For each edge compute the intersection of the sets and send the count to both vertices.</li><li> Compute the sum at each vertex and divide by two since each triangle is counted twice.</li></ul><p>There are two implementations.  The default <code>TriangleCount.run</code> implementation first removes
-self cycles and canonicalizes the graph to ensure that the following conditions hold:</p><ul><li> There are no self edges</li><li> All edges are oriented src &gt; dst</li><li> There are no duplicate edges</li></ul><p>However, the canonicalization procedure is costly as it requires repartitioning the graph.
+self cycles and canonicalizes the graph to ensure that the following conditions hold:</p><ul><li> There are no self edges</li><li> All edges are oriented (src is greater than dst)</li><li> There are no duplicate edges</li></ul><p>However, the canonicalization procedure is costly as it requires repartitioning the graph.
 If the input data is already in &quot;canonical form&quot; with self cycles removed then the
 <code>TriangleCount.runPreCanonicalized</code> should be used instead.</p><pre><span class="kw">val</span> canonicalGraph = graph.mapEdges(e <span class="kw">=&gt;</span> <span class="num">1</span>).removeSelfEdges().canonicalizeEdges()
 <span class="kw">val</span> counts = TriangleCount.runPreCanonicalized(canonicalGraph).vertices</pre></div><div class="toggleContainer block">

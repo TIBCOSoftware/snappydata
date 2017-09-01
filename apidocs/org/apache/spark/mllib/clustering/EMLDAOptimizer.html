@@ -419,14 +419,14 @@ according to the Asuncion et al. (2009) paper referenced below.</p><p>References
     </span>
       <p class="shortcomment cmt">If using checkpointing, this indicates whether to keep the last checkpoint (vs clean up).</p><div class="fullcomment"><div class="comment cmt"><p>If using checkpointing, this indicates whether to keep the last checkpoint (vs clean up).
 Deleting the checkpoint can cause failures if a data partition is lost, so set this bit with
-care.  Note that checkpoints will be cleaned up via reference counting, regardless.</p><p>Default: true
+care.</p><p>Default: true
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;2.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Checkpoints will be cleaned up via reference counting, regardless.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

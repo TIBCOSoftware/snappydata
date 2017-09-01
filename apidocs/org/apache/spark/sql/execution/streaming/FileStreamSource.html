@@ -228,23 +228,23 @@
 equal to <code>end</code> and will only request offsets greater than <code>end</code> in the future.</p><div class="fullcomment"><div class="comment cmt"><p>Informs the source that Spark has completed processing all data for offsets less than or
 equal to <code>end</code> and will only request offsets greater than <code>end</code> in the future.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource">FileStreamSource</a> → <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSource#currentOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="currentOffset:org.apache.spark.sql.execution.streaming.LongOffset"></a>
-      <a id="currentOffset:LongOffset"></a>
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSource#currentLogOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="currentLogOffset:Long"></a>
+      <a id="currentLogOffset:Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">currentOffset</span><span class="result">: <a href="LongOffset.html" class="extype" name="org.apache.spark.sql.execution.streaming.LongOffset">LongOffset</a></span>
+        <span class="name">currentLogOffset</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@currentOffset:org.apache.spark.sql.execution.streaming.LongOffset" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSource@currentLogOffset:Long" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return the latest offset in the source</p>
+      <p class="shortcomment cmt">Return the latest offset in the <a href="FileStreamSourceLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog">FileStreamSourceLog</a></p>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

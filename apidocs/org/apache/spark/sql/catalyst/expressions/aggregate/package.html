@@ -126,6 +126,35 @@ aggregate functions.
       </a>
     </span>
       <p class="shortcomment cmt">The mode of an <a href="AggregateFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction">AggregateFunction</a>.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.ApproximatePercentile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ApproximatePercentileextendsTypedImperativeAggregate[org.apache.spark.sql.catalyst.expressions.aggregate.ApproximatePercentile.PercentileDigest]withProductwithSerializable"></a>
+      <a id="ApproximatePercentile:ApproximatePercentile"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ApproximatePercentile.html"><span class="name">ApproximatePercentile</span></a><span class="params">(<span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="percentageExpression">percentageExpression: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="accuracyExpression">accuracyExpression: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="mutableAggBufferOffset">mutableAggBufferOffset: <span class="extype" name="scala.Int">Int</span></span>, <span name="inputAggBufferOffset">inputAggBufferOffset: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="TypedImperativeAggregate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.TypedImperativeAggregate">TypedImperativeAggregate</a>[<a href="ApproximatePercentile$$PercentileDigest.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.ApproximatePercentile.PercentileDigest">PercentileDigest</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.aggregate.package@ApproximatePercentileextendsTypedImperativeAggregate[org.apache.spark.sql.catalyst.expressions.aggregate.ApproximatePercentile.PercentileDigest]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The ApproximatePercentile function returns the approximate percentile(s) of a column at the given
+percentage(s).</p><div class="fullcomment"><div class="comment cmt"><p>The ApproximatePercentile function returns the approximate percentile(s) of a column at the given
+percentage(s). A percentile is a watermark value below which a given percentage of the column
+values fall. For example, the percentile of column <code>col</code> at percentage 50% is the median of
+column <code>col</code>.</p><p>This function supports partial aggregation.
+</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>child expression that can produce column value with <code>child.eval(inputRow)</code></p></dd><dt class="param">percentageExpression</dt><dd class="cmt"><p>Expression that represents a single percentage value or
+                            an array of percentage values. Each percentage value must be between
+                            0.0 and 1.0.</p></dd><dt class="param">accuracyExpression</dt><dd class="cmt"><p>Integer literal expression of approximation accuracy. Higher value
+                          yields better accuracy, the default value is
+                          DEFAULT_PERCENTILE_ACCURACY.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.Average" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="AverageextendsDeclarativeAggregatewithProductwithSerializable"></a>
       <a id="Average:Average"></a>
@@ -168,7 +197,8 @@ variable from the mean. Central moments are often used to characterize the prope
 the shape of a distribution.</p><p>This class implements online, one-pass algorithms for computing the central moments of a set of
 points.</p><p>Behavior:</p><ul><li>null values are ignored</li><li>returns <code>Double.NaN</code> when the column contains <code>Double.NaN</code> values</li></ul><p>References:</p><ul><li>Xiangrui Meng.  &quot;Simpler Online Updates for Arbitrary-Order Central Moments.&quot;
      2015. http://arxiv.org/abs/1510.04923
-</li></ul></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance" target="_blank">Algorithms for calculating variance (Wikipedia)</a></p></span></dd></dl></div>
+</li></ul></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">
+Algorithms for calculating variance (Wikipedia)</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.Collect" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="CollectextendsImperativeAggregate"></a>
       <a id="Collect:Collect"></a>
@@ -227,7 +257,7 @@ eventually Out of Memory Errors.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Collect a list of unique elements.</p><div class="fullcomment"><div class="comment cmt"><p>Collect a list of unique elements.
+      <p class="shortcomment cmt">Collect a set of unique elements.</p><div class="fullcomment"><div class="comment cmt"><p>Collect a set of unique elements.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
               
@@ -524,6 +554,34 @@ a single partition, and we use a single reducer to do the aggregation.).
                 <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.Percentile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PercentileextendsTypedImperativeAggregate[org.apache.spark.util.collection.OpenHashMap[AnyRef,Long]]withProductwithSerializable"></a>
+      <a id="Percentile:Percentile"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Percentile.html"><span class="name">Percentile</span></a><span class="params">(<span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="percentageExpression">percentageExpression: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="mutableAggBufferOffset">mutableAggBufferOffset: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">0</span></span>, <span name="inputAggBufferOffset">inputAggBufferOffset: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">0</span></span>)</span><span class="result"> extends <a href="TypedImperativeAggregate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.TypedImperativeAggregate">TypedImperativeAggregate</a>[<span class="extype" name="org.apache.spark.util.collection.OpenHashMap">OpenHashMap</span>[<a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Long">Long</span>]] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.aggregate.package@PercentileextendsTypedImperativeAggregate[org.apache.spark.util.collection.OpenHashMap[AnyRef,Long]]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The Percentile aggregate function returns the exact percentile(s) of numeric column <code>expr</code> at
+the given percentage(s) with value range in [0.0, 1.0].</p><div class="fullcomment"><div class="comment cmt"><p>The Percentile aggregate function returns the exact percentile(s) of numeric column <code>expr</code> at
+the given percentage(s) with value range in [0.0, 1.0].</p><p>The operator is bound to the slower sort based aggregation path because the number of elements
+and their partial order cannot be determined in advance. Therefore we have to store all the
+elements in memory, and that too many elements can cause GC paused and eventually OutOfMemory
+Errors.
+</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>child expression that produce numeric column value with <code>child.eval(inputRow)</code></p></dd><dt class="param">percentageExpression</dt><dd class="cmt"><p>Expression that represents a single percentage value or an array of
+                            percentage values. Each percentage value must be in the range
+                            [0.0, 1.0].</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.PivotFirst" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="PivotFirstextendsImperativeAggregatewithProductwithSerializable"></a>
       <a id="PivotFirst:PivotFirst"></a>
@@ -630,6 +688,57 @@ z | 3</p><p>with pivotColumn=A, valueColumn=B, and pivotColumnValues=[z,y] the o
                 <span class="name">@<a href="../ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.TypedImperativeAggregate" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="TypedImperativeAggregate[T]extendsImperativeAggregate"></a>
+      <a id="TypedImperativeAggregate[T]:TypedImperativeAggregate[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TypedImperativeAggregate.html"><span class="name">TypedImperativeAggregate</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="ImperativeAggregate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.ImperativeAggregate">ImperativeAggregate</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.aggregate.package@TypedImperativeAggregate[T]extendsImperativeAggregate" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Aggregation function which allows **arbitrary** user-defined java object to be used as internal
+aggregation buffer.</p><div class="fullcomment"><div class="comment cmt"><p>Aggregation function which allows **arbitrary** user-defined java object to be used as internal
+aggregation buffer.</p><pre>aggregation buffer <span class="kw">for</span> normal aggregation function `avg`            aggregate buffer <span class="kw">for</span> `sum`
+          |                                                                  |
+          v                                                                  v
+        +--------------+---------------+-----------------------------------+-------------+
+        |  sum1 (<span class="std">Long</span>) | count1 (<span class="std">Long</span>) | generic user-defined java objects | sum2 (<span class="std">Long</span>) |
+        +--------------+---------------+-----------------------------------+-------------+
+                                         ^
+                                         |
+          aggregation buffer <span class="kw">object</span> <span class="kw">for</span> `TypedImperativeAggregate` aggregation function</pre><p>General work flow:</p><p>Stage 1: initialize aggregate buffer object.</p><ol class="decimal"><li>The framework calls <code>initialize(buffer: MutableRow)</code> to set up the empty aggregate buffer.
+  2. In <code>initialize</code>, we call <code>createAggregationBuffer(): T</code> to get the initial buffer object,
+     and set it to the global buffer row.</li></ol><p>Stage 2: process input rows.</p><p>  If the aggregate mode is <code>Partial</code> or <code>Complete</code>:</p><ol class="decimal"><li>The framework calls <code>update(buffer: MutableRow, input: InternalRow)</code> to process the input
+       row.
+    2. In <code>update</code>, we get the buffer object from the global buffer row and call
+       <code>update(buffer: T, input: InternalRow): Unit</code>.</li></ol><p>  If the aggregate mode is <code>PartialMerge</code> or <code>Final</code>:</p><ol class="decimal"><li>The framework call <code>merge(buffer: MutableRow, inputBuffer: InternalRow)</code> to process the
+       input row, which are serialized buffer objects shuffled from other nodes.
+    2. In <code>merge</code>, we get the buffer object from the global buffer row, and get the binary data
+       from input row and deserialize it to buffer object, then we call
+       <code>merge(buffer: T, input: T): Unit</code> to merge these 2 buffer objects.</li></ol><p>Stage 3: output results.</p><p>  If the aggregate mode is <code>Partial</code> or <code>PartialMerge</code>:</p><ol class="decimal"><li>The framework calls <code>serializeAggregateBufferInPlace</code> to replace the buffer object in the
+       global buffer row with binary data.
+    2. In <code>serializeAggregateBufferInPlace</code>, we get the buffer object from the global buffer row
+       and call <code>serialize(buffer: T): Array[Byte]</code> to serialize the buffer object to binary.
+    3. The framework outputs buffer attributes and shuffle them to other nodes.</li></ol><p>  If the aggregate mode is <code>Final</code> or <code>Complete</code>:</p><ol class="decimal"><li>The framework calls <code>eval(buffer: InternalRow)</code> to calculate the final result.
+    2. In <code>eval</code>, we get the buffer object from the global buffer row and call
+       <code>eval(buffer: T): Any</code> to get the final result.
+    3. The framework outputs these final results.</li></ol><p>Window function work flow:
+  The framework calls <code>update(buffer: MutableRow, input: InternalRow)</code> several times and then
+  call <code>eval(buffer: InternalRow)</code>, so there is no need for window operator to call
+  <code>serializeAggregateBufferInPlace</code>.</p><p>NOTE: SQL with TypedImperativeAggregate functions is planned in sort based aggregation,
+instead of hash based aggregation, as TypedImperativeAggregate use BinaryType as aggregation
+buffer's storage format, which is not supported by hash based aggregation. Hash based
+aggregation only support aggregation buffer of mutable types (like LongType, IntType that have
+fixed length and can be mutated in place in UnsafeRow)
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.VariancePop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="VariancePopextendsCentralMomentAggwithProductwithSerializable"></a>
       <a id="VariancePop:VariancePop"></a>
@@ -690,6 +799,23 @@ z | 3</p><p>with pivotColumn=A, valueColumn=B, and pivotColumnValues=[z,y] the o
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.aggregate.package@AggregateExpression" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.ApproximatePercentile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ApproximatePercentile"></a>
+      <a id="ApproximatePercentile:ApproximatePercentile"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ApproximatePercentile$.html"><span class="name">ApproximatePercentile</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.aggregate.package@ApproximatePercentile" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

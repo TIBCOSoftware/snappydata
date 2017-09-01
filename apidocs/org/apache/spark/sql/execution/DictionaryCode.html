@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">DictionaryCode</span><span class="params">(<span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueAssignCode">valueAssignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">DictionaryCode</span><span class="params">(<span name="dictionary">dictionary: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="bufferVar">bufferVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -91,7 +91,7 @@ dictionary reference and its index when dictionary encoding is being used.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.DictionaryCode#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(dictionaryCode:String,valueAssignCode:String,dictionary:String,dictionaryIndex:String,dictionaryLen:String):org.apache.spark.sql.execution.DictionaryCode"></a>
+      <a id="&lt;init&gt;(dictionary:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,bufferVar:String,dictionaryIndex:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):org.apache.spark.sql.execution.DictionaryCode"></a>
       <a id="&lt;init&gt;:DictionaryCode"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@ dictionary reference and its index when dictionary encoding is being used.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">DictionaryCode</span><span class="params">(<span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueAssignCode">valueAssignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">DictionaryCode</span><span class="params">(<span name="dictionary">dictionary: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="bufferVar">bufferVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@&lt;init&gt;(dictionaryCode:String,valueAssignCode:String,dictionary:String,dictionaryIndex:String,dictionaryLen:String):org.apache.spark.sql.execution.DictionaryCode" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@&lt;init&gt;(dictionary:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,bufferVar:String,dictionaryIndex:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):org.apache.spark.sql.execution.DictionaryCode" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -184,6 +184,23 @@ dictionary reference and its index when dictionary encoding is being used.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.DictionaryCode#bufferVar" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bufferVar:String"></a>
+      <a id="bufferVar:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bufferVar</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@bufferVar:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -208,52 +225,35 @@ dictionary reference and its index when dictionary encoding is being used.
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.DictionaryCode#dictionary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="dictionary:String"></a>
-      <a id="dictionary:String"></a>
+      <a id="dictionary:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a>
+      <a id="dictionary:ExprCode"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">dictionary</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">dictionary</span><span class="result">: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@dictionary:String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@dictionary:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.DictionaryCode#dictionaryIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="dictionaryIndex:String"></a>
-      <a id="dictionaryIndex:String"></a>
+      <a id="dictionaryIndex:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a>
+      <a id="dictionaryIndex:ExprCode"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">dictionaryIndex</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">dictionaryIndex</span><span class="result">: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@dictionaryIndex:String" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.DictionaryCode#dictionaryLen" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="dictionaryLen:String"></a>
-      <a id="dictionaryLen:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">dictionaryLen</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@dictionaryLen:String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@dictionaryIndex:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -276,18 +276,35 @@ dictionary reference and its index when dictionary encoding is being used.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.DictionaryCode#evaluateDictionaryCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="evaluateDictionaryCode(ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):String"></a>
-      <a id="evaluateDictionaryCode(ExprCode):String"></a>
+      <a id="evaluateDictionaryCode():String"></a>
+      <a id="evaluateDictionaryCode():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">evaluateDictionaryCode</span><span class="params">(<span name="ev">ev: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">evaluateDictionaryCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@evaluateDictionaryCode(ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@evaluateDictionaryCode():String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.DictionaryCode#evaluateIndexCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="evaluateIndexCode():String"></a>
+      <a id="evaluateIndexCode():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evaluateIndexCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@evaluateIndexCode():String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -417,23 +434,6 @@ dictionary reference and its index when dictionary encoding is being used.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.DictionaryCode#valueAssignCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="valueAssignCode:String"></a>
-      <a id="valueAssignCode:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">valueAssignCode</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@valueAssignCode:String" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

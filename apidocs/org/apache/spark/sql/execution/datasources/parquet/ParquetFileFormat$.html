@@ -147,23 +147,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat#apacheParquetLogger" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apacheParquetLogger:java.util.logging.Logger"></a>
-      <a id="apacheParquetLogger:Logger"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apacheParquetLogger</span><span class="result">: <span class="extype" name="java.util.logging.Logger">Logger</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$@apacheParquetLogger:java.util.logging.Logger" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -584,29 +567,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat#mergeMetastoreParquetSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="mergeMetastoreParquetSchema(metastoreSchema:org.apache.spark.sql.types.StructType,parquetSchema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.types.StructType"></a>
-      <a id="mergeMetastoreParquetSchema(StructType,StructType):StructType"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">mergeMetastoreParquetSchema</span><span class="params">(<span name="metastoreSchema">metastoreSchema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="parquetSchema">parquetSchema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$@mergeMetastoreParquetSchema(metastoreSchema:org.apache.spark.sql.types.StructType,parquetSchema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Reconciles Hive Metastore case insensitivity issue and data type conflicts between Metastore
-schema and Parquet schema.</p><div class="fullcomment"><div class="comment cmt"><p>Reconciles Hive Metastore case insensitivity issue and data type conflicts between Metastore
-schema and Parquet schema.</p><p>Hive doesn't retain case information, while Parquet is case sensitive. On the other hand, the
-schema read from Parquet files may be incomplete (e.g. older versions of Parquet doesn't
-distinguish binary and string).  This method generates a correct schema by merging Metastore
-schema data types and Parquet schema field names.
-</p></div></div>
     </li><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat#mergeSchemasInParallel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mergeSchemasInParallel(filesToTouch:Seq[org.apache.hadoop.fs.FileStatus],sparkSession:org.apache.spark.sql.SparkSession):Option[org.apache.spark.sql.types.StructType]"></a>
       <a id="mergeSchemasInParallel(Seq[FileStatus],SparkSession):Option[StructType]"></a>
@@ -681,23 +641,6 @@ schema data types and Parquet schema field names.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat#parquetLogger" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="parquetLogger:java.util.logging.Logger"></a>
-      <a id="parquetLogger:Logger"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">parquetLogger</span><span class="result">: <span class="extype" name="java.util.logging.Logger">Logger</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$@parquetLogger:java.util.logging.Logger" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat#readSchemaFromFooter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readSchemaFromFooter(footer:org.apache.parquet.hadoop.Footer,converter:org.apache.spark.sql.execution.datasources.parquet.ParquetSchemaConverter):org.apache.spark.sql.types.StructType"></a>
       <a id="readSchemaFromFooter(Footer,ParquetSchemaConverter):StructType"></a>
@@ -718,23 +661,6 @@ schema data types and Parquet schema field names.
 can be found in the file metadata, returns the deserialized <span class="extype" name="StructType">StructType</span>, otherwise, returns
 a <span class="extype" name="StructType">StructType</span> converted from the <span class="extype" name="MessageType">MessageType</span> stored in this footer.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat#redirectParquetLogsViaSLF4J" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="redirectParquetLogsViaSLF4J:Unit"></a>
-      <a id="redirectParquetLogsViaSLF4J:Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">redirectParquetLogsViaSLF4J</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$@redirectParquetLogsViaSLF4J:Unit" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

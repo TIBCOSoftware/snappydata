@@ -145,23 +145,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#DEFAULT_PARTITION_NAME" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DEFAULT_PARTITION_NAME:String"></a>
-      <a id="DEFAULT_PARTITION_NAME:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">DEFAULT_PARTITION_NAME</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@DEFAULT_PARTITION_NAME:String" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -179,23 +162,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#charToEscape" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="charToEscape:java.util.BitSet"></a>
-      <a id="charToEscape:BitSet"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">charToEscape</span><span class="result">: <span class="extype" name="java.util.BitSet">BitSet</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@charToEscape:java.util.BitSet" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -253,23 +219,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#escapePathName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="escapePathName(path:String):String"></a>
-      <a id="escapePathName(String):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">escapePathName</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@escapePathName(path:String):String" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -310,6 +259,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#getPathFragment" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getPathFragment(spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,partitionSchema:org.apache.spark.sql.types.StructType):String"></a>
+      <a id="getPathFragment(TablePartitionSpec,StructType):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPathFragment</span><span class="params">(<span name="spec">spec: <a href="../../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>, <span name="partitionSchema">partitionSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@getPathFragment(spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec,partitionSchema:org.apache.spark.sql.types.StructType):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is the inverse of parsePathFragment().</p>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -361,23 +327,27 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#needsEscaping" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="needsEscaping(c:Char):Boolean"></a>
-      <a id="needsEscaping(Char):Boolean"></a>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#normalizePartitionSpec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalizePartitionSpec[T](partitionSpec:Map[String,T],partColNames:Seq[String],tblName:String,resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Map[String,T]"></a>
+      <a id="normalizePartitionSpec[T](Map[String,T],Seq[String],String,Resolver):Map[String,T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">needsEscaping</span><span class="params">(<span name="c">c: <span class="extype" name="scala.Char">Char</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">normalizePartitionSpec</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="partitionSpec">partitionSpec: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.spark.sql.execution.datasources.PartitioningUtils.normalizePartitionSpec.T">T</span>]</span>, <span name="partColNames">partColNames: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="tblName">tblName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="resolver">resolver: <a href="../../catalyst/analysis/package.html#Resolver=(String,String)=&gt;Boolean" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.Resolver">Resolver</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.spark.sql.execution.datasources.PartitioningUtils.normalizePartitionSpec.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@needsEscaping(c:Char):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@normalizePartitionSpec[T](partitionSpec:Map[String,T],partColNames:Seq[String],tblName:String,resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Map[String,T]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Normalize the column names in partition specification, w.r.t.</p><div class="fullcomment"><div class="comment cmt"><p>Normalize the column names in partition specification, w.r.t. the real partition column names
+and case sensitivity. e.g., if the partition spec has a column named <code>monTh</code>, and there is a
+partition column named <code>month</code>, and it's case insensitive, we will normalize <code>monTh</code> to
+<code>month</code>.
+</p></div></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -412,6 +382,45 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#parsePathFragment" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parsePathFragment(pathFragment:String):org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec"></a>
+      <a id="parsePathFragment(String):TablePartitionSpec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parsePathFragment</span><span class="params">(<span name="pathFragment">pathFragment: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@parsePathFragment(pathFragment:String):org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Given a partition path fragment, e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Given a partition path fragment, e.g. <code>fieldOne=1/fieldTwo=2</code>, returns a parsed spec
+for that fragment as a <code>TablePartitionSpec</code>, e.g. <code>Map((&quot;fieldOne&quot;, &quot;1&quot;), (&quot;fieldTwo&quot;, &quot;2&quot;))</code>.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#parsePathFragmentAsSeq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parsePathFragmentAsSeq(pathFragment:String):Seq[(String,String)]"></a>
+      <a id="parsePathFragmentAsSeq(String):Seq[(String,String)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parsePathFragmentAsSeq</span><span class="params">(<span name="pathFragment">pathFragment: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@parsePathFragmentAsSeq(pathFragment:String):Seq[(String,String)]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Given a partition path fragment, e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Given a partition path fragment, e.g. <code>fieldOne=1/fieldTwo=2</code>, returns a parsed spec
+for that fragment as a <code>Seq[(String, String)]</code>, e.g.
+<code>Seq((&quot;fieldOne&quot;, &quot;1&quot;), (&quot;fieldTwo&quot;, &quot;2&quot;))</code>.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#partitionColumnsSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="partitionColumnsSchema(schema:org.apache.spark.sql.types.StructType,partitionColumns:Seq[String],caseSensitive:Boolean):org.apache.spark.sql.types.StructType"></a>
       <a id="partitionColumnsSchema(StructType,Seq[String],Boolean):StructType"></a>
@@ -483,23 +492,6 @@ DoubleType -&gt; StringType</pre></div></div>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#unescapePathName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="unescapePathName(path:String):String"></a>
-      <a id="unescapePathName(String):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">unescapePathName</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitioningUtils$@unescapePathName(path:String):String" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.datasources.PartitioningUtils#validatePartitionColumn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="validatePartitionColumn(schema:org.apache.spark.sql.types.StructType,partitionColumns:Seq[String],caseSensitive:Boolean):Unit"></a>
       <a id="validatePartitionColumn(StructType,Seq[String],Boolean):Unit"></a>

@@ -238,10 +238,10 @@ class cannot mutate the source of the information. Accesses are not thread-safe.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return the blocks stored in this block manager.</p><div class="fullcomment"><div class="comment cmt"><p>Return the blocks stored in this block manager.</p><p>Note that this is somewhat expensive, as it involves cloning the underlying maps and then
+      <p class="shortcomment cmt">Return the blocks stored in this block manager.</p><div class="fullcomment"><div class="comment cmt"><p>Return the blocks stored in this block manager.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is somewhat expensive, as it involves cloning the underlying maps and then
 concatenating them together. Much faster alternatives exist for common operations such as
-contains, get, and size.
-</p></div></div>
+contains, get, and size.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.storage.StorageStatus#cacheSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="cacheSize:Long"></a>
       <a id="cacheSize:Long"></a>
@@ -299,8 +299,7 @@ contains, get, and size.
       </a>
     </span>
       <p class="shortcomment cmt">Return whether the given block is stored in this block manager in O(1) time.</p><div class="fullcomment"><div class="comment cmt"><p>Return whether the given block is stored in this block manager in O(1) time.
-Note that this is much faster than <code>this.blocks.contains</code>, which is O(blocks) time.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is much faster than <code>this.blocks.contains</code>, which is O(blocks) time.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.storage.StorageStatus#diskUsed" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="diskUsed:Long"></a>
       <a id="diskUsed:Long"></a>
@@ -409,8 +408,7 @@ Note that this is much faster than <code>this.blocks.contains</code>, which is O
       </a>
     </span>
       <p class="shortcomment cmt">Return the given block stored in this block manager in O(1) time.</p><div class="fullcomment"><div class="comment cmt"><p>Return the given block stored in this block manager in O(1) time.
-Note that this is much faster than <code>this.blocks.get</code>, which is O(blocks) time.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is much faster than <code>this.blocks.get</code>, which is O(blocks) time.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -598,8 +596,7 @@ Note that this is much faster than <code>this.blocks.get</code>, which is O(bloc
       </a>
     </span>
       <p class="shortcomment cmt">Return the number of blocks stored in this block manager in O(RDDs) time.</p><div class="fullcomment"><div class="comment cmt"><p>Return the number of blocks stored in this block manager in O(RDDs) time.
-Note that this is much faster than <code>this.blocks.size</code>, which is O(blocks) time.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is much faster than <code>this.blocks.size</code>, which is O(blocks) time.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.storage.StorageStatus#numRddBlocks" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="numRddBlocks:Int"></a>
       <a id="numRddBlocks:Int"></a>
@@ -617,8 +614,7 @@ Note that this is much faster than <code>this.blocks.size</code>, which is O(blo
       </a>
     </span>
       <p class="shortcomment cmt">Return the number of RDD blocks stored in this block manager in O(RDDs) time.</p><div class="fullcomment"><div class="comment cmt"><p>Return the number of RDD blocks stored in this block manager in O(RDDs) time.
-Note that this is much faster than <code>this.rddBlocks.size</code>, which is O(RDD blocks) time.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is much faster than <code>this.rddBlocks.size</code>, which is O(RDD blocks) time.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.storage.StorageStatus#numRddBlocksById" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="numRddBlocksById(rddId:Int):Int"></a>
       <a id="numRddBlocksById(Int):Int"></a>
@@ -636,9 +632,8 @@ Note that this is much faster than <code>this.rddBlocks.size</code>, which is O(
       </a>
     </span>
       <p class="shortcomment cmt">Return the number of blocks that belong to the given RDD in O(1) time.</p><div class="fullcomment"><div class="comment cmt"><p>Return the number of blocks that belong to the given RDD in O(1) time.
-Note that this is much faster than <code>this.rddBlocksById(rddId).size</code>, which is
-O(blocks in this RDD) time.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is much faster than <code>this.rddBlocksById(rddId).size</code>, which is
+O(blocks in this RDD) time.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.storage.StorageStatus#rddBlocks" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="rddBlocks:scala.collection.Map[org.apache.spark.storage.BlockId,org.apache.spark.storage.BlockStatus]"></a>
       <a id="rddBlocks:Map[BlockId,BlockStatus]"></a>
@@ -655,10 +650,10 @@ O(blocks in this RDD) time.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return the RDD blocks stored in this block manager.</p><div class="fullcomment"><div class="comment cmt"><p>Return the RDD blocks stored in this block manager.</p><p>Note that this is somewhat expensive, as it involves cloning the underlying maps and then
+      <p class="shortcomment cmt">Return the RDD blocks stored in this block manager.</p><div class="fullcomment"><div class="comment cmt"><p>Return the RDD blocks stored in this block manager.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This is somewhat expensive, as it involves cloning the underlying maps and then
 concatenating them together. Much faster alternatives exist for common operations such as
-getting the memory, disk, and off-heap memory sizes occupied by this RDD.
-</p></div></div>
+getting the memory, disk, and off-heap memory sizes occupied by this RDD.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.storage.StorageStatus#rddBlocksById" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="rddBlocksById(rddId:Int):scala.collection.Map[org.apache.spark.storage.BlockId,org.apache.spark.storage.BlockStatus]"></a>
       <a id="rddBlocksById(Int):Map[BlockId,BlockStatus]"></a>

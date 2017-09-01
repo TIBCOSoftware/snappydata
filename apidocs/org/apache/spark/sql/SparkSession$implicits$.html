@@ -51,9 +51,11 @@
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
 (Scala-specific) Implicit methods available in Scala for converting
-common Scala objects into <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s.</p><pre><span class="kw">val</span> sparkSession = SparkSession.builder.getOrCreate()
+common Scala objects into <code>DataFrame</code>s.</p><pre><span class="kw">val</span> sparkSession = SparkSession.builder.getOrCreate()
 <span class="kw">import</span> sparkSession.implicits._</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>

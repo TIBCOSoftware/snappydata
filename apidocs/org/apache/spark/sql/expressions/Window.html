@@ -51,13 +51,12 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-Utility functions for defining window in DataFrames.</p><pre><span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Utility functions for defining window in DataFrames.</p><pre><span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>
 Window.partitionBy(<span class="lit">"country"</span>).orderBy(<span class="lit">"date"</span>).rowsBetween(<span class="std">Long</span>.MinValue, <span class="num">0</span>)
 
 <span class="cmt">// PARTITION BY country ORDER BY date ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING</span>
 Window.partitionBy(<span class="lit">"country"</span>).orderBy(<span class="lit">"date"</span>).rowsBetween(-<span class="num">3</span>, <span class="num">3</span>)</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>

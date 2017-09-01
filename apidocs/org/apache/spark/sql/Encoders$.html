@@ -54,6 +54,8 @@ Methods for creating an <a href="Encoder.html" class="extype" name="org.apache.s
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -549,8 +551,8 @@ The Scala primitive encoder is available as <a href="#scalaShort:org.apache.spar
       </a>
     </span>
       <p class="shortcomment cmt">Creates an encoder that serializes objects of type T using generic Java serialization.</p><div class="fullcomment"><div class="comment cmt"><p>Creates an encoder that serializes objects of type T using generic Java serialization.
-This encoder maps T into a single byte array (binary) field.</p><p>Note that this is extremely inefficient and should only be used as the last resort.</p><p>T must be publicly accessible.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+This encoder maps T into a single byte array (binary) field.</p><p>T must be publicly accessible.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This is extremely inefficient and should only be used as the last resort.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Encoders#javaSerialization" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="javaSerialization[T](implicitevidence$2:scala.reflect.ClassTag[T]):org.apache.spark.sql.Encoder[T]"></a>
       <a id="javaSerialization[T](ClassTag[T]):Encoder[T]"></a>
@@ -569,8 +571,8 @@ This encoder maps T into a single byte array (binary) field.</p><p>Note that thi
     </span>
       <p class="shortcomment cmt">(Scala-specific) Creates an encoder that serializes objects of type T using generic Java
 serialization.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Creates an encoder that serializes objects of type T using generic Java
-serialization. This encoder maps T into a single byte array (binary) field.</p><p>Note that this is extremely inefficient and should only be used as the last resort.</p><p>T must be publicly accessible.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+serialization. This encoder maps T into a single byte array (binary) field.</p><p>T must be publicly accessible.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This is extremely inefficient and should only be used as the last resort.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Encoders#kryo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="kryo[T](clazz:Class[T]):org.apache.spark.sql.Encoder[T]"></a>
       <a id="kryo[T](Class[T]):Encoder[T]"></a>

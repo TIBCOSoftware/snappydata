@@ -85,6 +85,23 @@
       <p class="shortcomment cmt">A wrapper for a JDBC Driver to work around SPARK-6913.</p><div class="fullcomment"><div class="comment cmt"><p>A wrapper for a JDBC Driver to work around SPARK-6913.</p><p>The problem is in <code>java.sql.DriverManager</code> class that can't access drivers loaded by
 Spark ClassLoader.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JDBCOptionsextendsSerializable"></a>
+      <a id="JDBCOptions:JDBCOptions"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JDBCOptions.html"><span class="name">JDBCOptions</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.package@JDBCOptionsextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Options for the JDBC data source.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="JDBCPartitionextendsPartitionwithProductwithSerializable"></a>
       <a id="JDBCPartition:JDBCPartition"></a>
@@ -94,7 +111,7 @@ Spark ClassLoader.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="JDBCPartition.html"><span class="name">JDBCPartition</span></a><span class="params">(<span name="whereClause">whereClause: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="idx">idx: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">spark.Partition</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="JDBCPartition.html"><span class="name">JDBCPartition</span></a><span class="params">(<span name="whereClause">whereClause: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="idx">idx: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.package@JDBCPartitionextendsPartitionwithProductwithSerializable" title="Permalink" target="_top">
@@ -103,7 +120,7 @@ Spark ClassLoader.
     </span>
       <p class="shortcomment cmt">Data corresponding to one partition of a JDBCRDD.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="JdbcRelationProviderextendsRelationProviderwithDataSourceRegister"></a>
+      <a id="JdbcRelationProviderextendsCreatableRelationProviderwithRelationProviderwithDataSourceRegister"></a>
       <a id="JdbcRelationProvider:JdbcRelationProvider"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -111,10 +128,10 @@ Spark ClassLoader.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="JdbcRelationProvider.html"><span class="name">JdbcRelationProvider</span></a><span class="result"> extends <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a> with <a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+        <a href="JdbcRelationProvider.html"><span class="name">JdbcRelationProvider</span></a><span class="result"> extends <a href="../../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a> with <a href="../../../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a> with <a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.package@JdbcRelationProviderextendsRelationProviderwithDataSourceRegister" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.package@JdbcRelationProviderextendsCreatableRelationProviderwithRelationProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -146,6 +163,23 @@ Spark ClassLoader.
 so it can't load JDBC drivers accessible by Spark ClassLoader.</p><div class="fullcomment"><div class="comment cmt"><p>java.sql.DriverManager is always loaded by bootstrap classloader,
 so it can't load JDBC drivers accessible by Spark ClassLoader.</p><p>To solve the problem, drivers from user-supplied jars are wrapped into thin wrapper.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JDBCOptions"></a>
+      <a id="JDBCOptions:JDBCOptions"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JDBCOptions$.html"><span class="name">JDBCOptions</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.jdbc.package@JDBCOptions" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="JDBCRDD"></a>
       <a id="JDBCRDD:JDBCRDD"></a>

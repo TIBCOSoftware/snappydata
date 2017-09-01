@@ -98,7 +98,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SparkSqlAstBuilder</span><span class="params">(<span name="conf">conf: <span class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</span></span>)</span>
+        <span class="name">SparkSqlAstBuilder</span><span class="params">(<span name="conf">conf: <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@&lt;init&gt;(conf:org.apache.spark.sql.internal.SQLConf):org.apache.spark.sql.execution.SparkSqlAstBuilder" title="Permalink" target="_top">
@@ -243,19 +243,37 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#createStructType" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="createStructType(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ColTypeListContext):org.apache.spark.sql.types.StructType"></a>
-      <a id="createStructType(ColTypeListContext):StructType"></a>
+    </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#createSchema" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createSchema(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ColTypeListContext):org.apache.spark.sql.types.StructType"></a>
+      <a id="createSchema(ColTypeListContext):StructType"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createStructType</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.ColTypeListContext">ColTypeListContext</span></span>)</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
+        <span class="name">createSchema</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.ColTypeListContext">ColTypeListContext</span></span>)</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@createStructType(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ColTypeListContext):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@createSchema(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ColTypeListContext):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Create top level table schema.</p><div class="fullcomment"><div class="comment cmt"><p>Create top level table schema.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/parser/AstBuilder.html" class="extype" name="org.apache.spark.sql.catalyst.parser.AstBuilder">AstBuilder</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#createStructType" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createStructType(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeListContext):org.apache.spark.sql.types.StructType"></a>
+      <a id="createStructType(ComplexColTypeListContext):StructType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createStructType</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeListContext">ComplexColTypeListContext</span></span>)</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@createStructType(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeListContext):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -958,8 +976,8 @@ hooks.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Create an <span class="extype" name="AnalyzeTableCommand">AnalyzeTableCommand</span> command.</p><div class="fullcomment"><div class="comment cmt"><p>Create an <span class="extype" name="AnalyzeTableCommand">AnalyzeTableCommand</span> command. This currently only implements the NOSCAN
-option (other options are passed on to Hive) e.g.:</p><pre>ANALYZE TABLE table COMPUTE STATISTICS NOSCAN;</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkSqlAstBuilder">SparkSqlAstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
+      <p class="shortcomment cmt">Create an <span class="extype" name="AnalyzeTableCommand">AnalyzeTableCommand</span> command or an <span class="extype" name="AnalyzeColumnCommand">AnalyzeColumnCommand</span> command.</p><div class="fullcomment"><div class="comment cmt"><p>Create an <span class="extype" name="AnalyzeTableCommand">AnalyzeTableCommand</span> command or an <span class="extype" name="AnalyzeColumnCommand">AnalyzeColumnCommand</span> command.
+Example SQL for analyzing table :</p><pre>ANALYZE TABLE table COMPUTE STATISTICS [NOSCAN];</pre><p>Example SQL for analyzing columns :</p><pre>ANALYZE TABLE table COMPUTE STATISTICS FOR COLUMNS column1, column2;</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkSqlAstBuilder">SparkSqlAstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#visitArithmeticBinary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="visitArithmeticBinary(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ArithmeticBinaryContext):org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="visitArithmeticBinary(ArithmeticBinaryContext):Expression"></a>
@@ -1114,7 +1132,7 @@ option (other options are passed on to Hive) e.g.:</p><pre>ANALYZE TABLE table C
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkSqlAstBuilder#visitBucketSpec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="visitBucketSpec(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.BucketSpecContext):org.apache.spark.sql.execution.datasources.BucketSpec"></a>
+      <a id="visitBucketSpec(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.BucketSpecContext):org.apache.spark.sql.catalyst.catalog.BucketSpec"></a>
       <a id="visitBucketSpec(BucketSpecContext):BucketSpec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1122,10 +1140,10 @@ option (other options are passed on to Hive) e.g.:</p><pre>ANALYZE TABLE table C
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">visitBucketSpec</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.BucketSpecContext">BucketSpecContext</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.datasources.BucketSpec">BucketSpec</span></span>
+        <span class="name">visitBucketSpec</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.BucketSpecContext">BucketSpecContext</span></span>)</span><span class="result">: <a href="../catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@visitBucketSpec(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.BucketSpecContext):org.apache.spark.sql.execution.datasources.BucketSpec" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@visitBucketSpec(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.BucketSpecContext):org.apache.spark.sql.catalyst.catalog.BucketSpec" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1221,7 +1239,7 @@ combine the results of the context children. In all other cases null is returned
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Create a <span class="extype" name="StructField">StructField</span> from a column definition.</p><div class="fullcomment"><div class="comment cmt"><p>Create a <span class="extype" name="StructField">StructField</span> from a column definition.
+      <p class="shortcomment cmt">Create a top level <span class="extype" name="StructField">StructField</span> from a column definition.</p><div class="fullcomment"><div class="comment cmt"><p>Create a top level <span class="extype" name="StructField">StructField</span> from a column definition.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/AstBuilder.html" class="extype" name="org.apache.spark.sql.catalyst.parser.AstBuilder">AstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#visitColTypeList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="visitColTypeList(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ColTypeListContext):Seq[org.apache.spark.sql.types.StructField]"></a>
@@ -1302,6 +1320,42 @@ operators are supported:
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#visitComplexColType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="visitComplexColType(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeContext):org.apache.spark.sql.types.StructField"></a>
+      <a id="visitComplexColType(ComplexColTypeContext):StructField"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">visitComplexColType</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeContext">ComplexColTypeContext</span></span>)</span><span class="result">: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@visitComplexColType(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeContext):org.apache.spark.sql.types.StructField" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Create a <span class="extype" name="StructField">StructField</span> from a column definition.</p><div class="fullcomment"><div class="comment cmt"><p>Create a <span class="extype" name="StructField">StructField</span> from a column definition.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/AstBuilder.html" class="extype" name="org.apache.spark.sql.catalyst.parser.AstBuilder">AstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#visitComplexColTypeList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="visitComplexColTypeList(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeListContext):Seq[org.apache.spark.sql.types.StructField]"></a>
+      <a id="visitComplexColTypeList(ComplexColTypeListContext):Seq[StructField]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">visitComplexColTypeList</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeListContext">ComplexColTypeListContext</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@visitComplexColTypeList(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexColTypeListContext):Seq[org.apache.spark.sql.types.StructField]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Create a <span class="extype" name="StructType">StructType</span> from a number of column definitions.</p><div class="fullcomment"><div class="comment cmt"><p>Create a <span class="extype" name="StructType">StructType</span> from a number of column definitions.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/AstBuilder.html" class="extype" name="org.apache.spark.sql.catalyst.parser.AstBuilder">AstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#visitComplexDataType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="visitComplexDataType(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ComplexDataTypeContext):org.apache.spark.sql.types.DataType"></a>
       <a id="visitComplexDataType(ComplexDataTypeContext):DataType"></a>
@@ -1425,9 +1479,7 @@ operators are supported:
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Create a table, returning either a <span class="extype" name="CreateTableCommand">CreateTableCommand</span> or a
-<span class="extype" name="CreateHiveTableAsSelectLogicalPlan">CreateHiveTableAsSelectLogicalPlan</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Create a table, returning either a <span class="extype" name="CreateTableCommand">CreateTableCommand</span> or a
-<span class="extype" name="CreateHiveTableAsSelectLogicalPlan">CreateHiveTableAsSelectLogicalPlan</span>.</p><p>This is not used to create datasource tables, which is handled through
+      <p class="shortcomment cmt">Create a table, returning a <span class="extype" name="CreateTable">CreateTable</span> logical plan.</p><div class="fullcomment"><div class="comment cmt"><p>Create a table, returning a <span class="extype" name="CreateTable">CreateTable</span> logical plan.</p><p>This is not used to create datasource tables, which is handled through
 &quot;CREATE TABLE ... USING ...&quot;.</p><p>Note: several features are currently not supported - temporary tables, bucketing,
 skewed columns and storage handlers (STORED BY).</p><p>Expected format:</p><pre>CREATE [EXTERNAL] TABLE [IF NOT EXISTS] [db_name.]table_name
 [(col1[:] data_type [COMMENT col_comment], ...)]
@@ -1490,8 +1542,15 @@ LIKE [other_db_name.]existing_table_name</pre></div><dl class="attributes block"
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Create a <span class="extype" name="CreateTableUsing">CreateTableUsing</span> or a <span class="extype" name="CreateTableUsingAsSelect">CreateTableUsingAsSelect</span> logical plan.</p><div class="fullcomment"><div class="comment cmt"><p>Create a <span class="extype" name="CreateTableUsing">CreateTableUsing</span> or a <span class="extype" name="CreateTableUsingAsSelect">CreateTableUsingAsSelect</span> logical plan.</p><p>TODO add bucketing and partitioning.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkSqlAstBuilder">SparkSqlAstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
+      <p class="shortcomment cmt">Create a data source table, returning a <span class="extype" name="CreateTable">CreateTable</span> logical plan.</p><div class="fullcomment"><div class="comment cmt"><p>Create a data source table, returning a <span class="extype" name="CreateTable">CreateTable</span> logical plan.</p><p>Expected format:</p><pre>CREATE [EXTERNAL] TABLE [IF NOT EXISTS] [db_name.]table_name
+USING table_provider
+[OPTIONS table_property_list]
+[PARTITIONED BY (col_name, col_name, ...)]
+[CLUSTERED BY (col_name, col_name, ...)
+ [SORTED BY (col_name [ASC|DESC], ...)]
+ INTO num_buckets BUCKETS
+]
+[AS select_statement];</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkSqlAstBuilder">SparkSqlAstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkSqlAstBuilder#visitCreateTempViewUsing" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="visitCreateTempViewUsing(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.CreateTempViewUsingContext):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
       <a id="visitCreateTempViewUsing(CreateTempViewUsingContext):LogicalPlan"></a>
@@ -1526,7 +1585,7 @@ LIKE [other_db_name.]existing_table_name</pre></div><dl class="attributes block"
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Create or replace a view.</p><div class="fullcomment"><div class="comment cmt"><p>Create or replace a view. This creates a <span class="extype" name="CreateViewCommand">CreateViewCommand</span> command.</p><p>For example:</p><pre>CREATE [OR REPLACE] [TEMPORARY] VIEW [IF NOT EXISTS] [db_name.]view_name
+      <p class="shortcomment cmt">Create or replace a view.</p><div class="fullcomment"><div class="comment cmt"><p>Create or replace a view. This creates a <span class="extype" name="CreateViewCommand">CreateViewCommand</span> command.</p><p>For example:</p><pre>CREATE [OR REPLACE] [[GLOBAL] TEMPORARY] VIEW [IF NOT EXISTS] [db_name.]view_name
 [(column_name [COMMENT column_comment], ...) ]
 [COMMENT view_comment]
 [TBLPROPERTIES (property_name = property_value, ...)]
@@ -3114,24 +3173,6 @@ Example SQL :</p><pre>RESET;</pre></div><dl class="attributes block"> <dt>Defini
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#visitScientificDecimalLiteral" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="visitScientificDecimalLiteral(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ScientificDecimalLiteralContext):org.apache.spark.sql.catalyst.expressions.Literal"></a>
-      <a id="visitScientificDecimalLiteral(ScientificDecimalLiteralContext):Literal"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">visitScientificDecimalLiteral</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.ScientificDecimalLiteralContext">ScientificDecimalLiteralContext</span></span>)</span><span class="result">: <a href="../catalyst/expressions/Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@visitScientificDecimalLiteral(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.ScientificDecimalLiteralContext):org.apache.spark.sql.catalyst.expressions.Literal" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Create a double literal for a number denoted in scientific notation.</p><div class="fullcomment"><div class="comment cmt"><p>Create a double literal for a number denoted in scientific notation.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/AstBuilder.html" class="extype" name="org.apache.spark.sql.catalyst.parser.AstBuilder">AstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.parser.AstBuilder#visitSearchedCase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="visitSearchedCase(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.SearchedCaseContext):org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="visitSearchedCase(SearchedCaseContext):Expression"></a>
@@ -3210,6 +3251,7 @@ character in the raw string.
 - UNION [DISTINCT]
 - UNION ALL
 - EXCEPT [DISTINCT]
+- MINUS [DISTINCT]
 - INTERSECT [DISTINCT]
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/AstBuilder.html" class="extype" name="org.apache.spark.sql.catalyst.parser.AstBuilder">AstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor#visitSetQuantifier" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -3845,6 +3887,25 @@ identifier.
       <p class="shortcomment cmt">Convert a table property list into a key-value map.</p><div class="fullcomment"><div class="comment cmt"><p>Convert a table property list into a key-value map.
 This should be called through <span class="extype" name="visitPropertyKeyValues">visitPropertyKeyValues</span> or <span class="extype" name="visitPropertyKeys">visitPropertyKeys</span>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkSqlAstBuilder">SparkSqlAstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.SparkSqlAstBuilder#visitTablePropertyValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="visitTablePropertyValue(value:org.apache.spark.sql.catalyst.parser.SqlBaseParser.TablePropertyValueContext):String"></a>
+      <a id="visitTablePropertyValue(TablePropertyValueContext):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">visitTablePropertyValue</span><span class="params">(<span name="value">value: <span class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser.TablePropertyValueContext">TablePropertyValueContext</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SparkSqlAstBuilder@visitTablePropertyValue(value:org.apache.spark.sql.catalyst.parser.SqlBaseParser.TablePropertyValueContext):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A table property value can be String, Integer, Boolean or Decimal.</p><div class="fullcomment"><div class="comment cmt"><p>A table property value can be String, Integer, Boolean or Decimal. This function extracts
+the property value based on whether its a string, integer, boolean or decimal literal.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.SparkSqlAstBuilder">SparkSqlAstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor#visitTableProvider" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="visitTableProvider(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.TableProviderContext):T"></a>
       <a id="visitTableProvider(TableProviderContext):AnyRef"></a>
@@ -3967,7 +4028,7 @@ they do not require the user to specify braces when calling them.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Create a typed Literal expression.</p><div class="fullcomment"><div class="comment cmt"><p>Create a typed Literal expression. A typed literal has the following SQL syntax:</p><pre>[TYPE] '[VALUE]<span class="lit">'</span></pre><p>Currently Date and Timestamp typed literals are supported.</p><p>TODO what the added value of this over casting?
+      <p class="shortcomment cmt">Create a typed Literal expression.</p><div class="fullcomment"><div class="comment cmt"><p>Create a typed Literal expression. A typed literal has the following SQL syntax:</p><pre>[TYPE] '[VALUE]<span class="lit">'</span></pre><p>Currently Date, Timestamp and Binary typed literals are supported.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/parser/AstBuilder.html" class="extype" name="org.apache.spark.sql.catalyst.parser.AstBuilder">AstBuilder</a> → <a href="../catalyst/parser/SqlBaseBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseBaseVisitor">SqlBaseBaseVisitor</a> → <a href="../catalyst/parser/SqlBaseVisitor.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseVisitor">SqlBaseVisitor</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkSqlAstBuilder#visitUncacheTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="visitUncacheTable(ctx:org.apache.spark.sql.catalyst.parser.SqlBaseParser.UncacheTableContext):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>

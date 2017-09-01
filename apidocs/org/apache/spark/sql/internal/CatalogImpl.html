@@ -49,7 +49,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Internal implementation of the user-facing <span class="extype" name="Catalog">Catalog</span>.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Internal implementation of the user-facing <code>Catalog</code>.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -411,25 +411,62 @@ It will use the default data source configured by spark.sql.sources.default.
     </span>
       <p class="shortcomment cmt">Returns the current default database in this session.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the current default database in this session.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.CatalogImpl#dropTempView" visbl="pub" data-isabs="false" fullComment="yes" group="ddl_ops">
-      <a id="dropTempView(viewName:String):Unit"></a>
-      <a id="dropTempView(String):Unit"></a>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#databaseExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="databaseExists(dbName:String):Boolean"></a>
+      <a id="databaseExists(String):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dropTempView</span><span class="params">(<span name="viewName">viewName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">databaseExists</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@dropTempView(viewName:String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@databaseExists(dbName:String):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Drops the temporary view with the given view name in the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Drops the temporary view with the given view name in the catalog.
+      <p class="shortcomment cmt">Check if the database with the specified name exists.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the database with the specified name exists.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#dropGlobalTempView" visbl="pub" data-isabs="false" fullComment="yes" group="ddl_ops">
+      <a id="dropGlobalTempView(viewName:String):Boolean"></a>
+      <a id="dropGlobalTempView(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropGlobalTempView</span><span class="params">(<span name="viewName">viewName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@dropGlobalTempView(viewName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Drops the global temporary view with the given view name in the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Drops the global temporary view with the given view name in the catalog.
 If the view has been cached/persisted before, it's also unpersisted.
-</p></div><dl class="paramcmts block"><dt class="param">viewName</dt><dd class="cmt"><p>the name of the view to be dropped.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">viewName</dt><dd class="cmt"><p>the name of the view to be dropped.</p></dd><dt>returns</dt><dd class="cmt"><p>true if the view is dropped successfully, false otherwise.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#dropTempView" visbl="pub" data-isabs="false" fullComment="yes" group="ddl_ops">
+      <a id="dropTempView(viewName:String):Boolean"></a>
+      <a id="dropTempView(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropTempView</span><span class="params">(<span name="viewName">viewName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@dropTempView(viewName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Drops the local temporary view with the given view name in the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Drops the local temporary view with the given view name in the catalog.
+If the view has been cached/persisted before, it's also unpersisted.
+</p></div><dl class="paramcmts block"><dt class="param">viewName</dt><dd class="cmt"><p>the name of the view to be dropped.</p></dd><dt>returns</dt><dd class="cmt"><p>true if the view is dropped successfully, false otherwise.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -487,6 +524,43 @@ If the view has been cached/persisted before, it's also unpersisted.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#functionExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="functionExists(dbName:String,functionName:String):Boolean"></a>
+      <a id="functionExists(String,String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">functionExists</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@functionExists(dbName:String,functionName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if the function with the specified name exists in the specified database.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the function with the specified name exists in the specified database.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#functionExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="functionExists(functionName:String):Boolean"></a>
+      <a id="functionExists(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">functionExists</span><span class="params">(<span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@functionExists(functionName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if the function with the specified name exists.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the function with the specified name exists. This can either be a temporary function
+or a function in the current database.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -504,6 +578,103 @@ If the view has been cached/persisted before, it's also unpersisted.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#getDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDatabase(dbName:String):org.apache.spark.sql.catalog.Database"></a>
+      <a id="getDatabase(String):Database"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDatabase</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalog/Database.html" class="extype" name="org.apache.spark.sql.catalog.Database">Database</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@getDatabase(dbName:String):org.apache.spark.sql.catalog.Database" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the database with the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Get the database with the specified name. This throws an <code>AnalysisException</code> when no
+<code>Database</code> can be found.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#getFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getFunction(dbName:String,functionName:String):org.apache.spark.sql.catalog.Function"></a>
+      <a id="getFunction(String,String):Function"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFunction</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalog/Function.html" class="extype" name="org.apache.spark.sql.catalog.Function">Function</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@getFunction(dbName:String,functionName:String):org.apache.spark.sql.catalog.Function" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the function with the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Get the function with the specified name. This returns <code>None</code> when no <code>Function</code> can be
+found.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#getFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getFunction(functionName:String):org.apache.spark.sql.catalog.Function"></a>
+      <a id="getFunction(String):Function"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFunction</span><span class="params">(<span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalog/Function.html" class="extype" name="org.apache.spark.sql.catalog.Function">Function</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@getFunction(functionName:String):org.apache.spark.sql.catalog.Function" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the function with the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Get the function with the specified name. This function can be a temporary function or a
+function in the current database. This throws an <code>AnalysisException</code> when no <code>Function</code>
+can be found.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#getTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTable(dbName:String,tableName:String):org.apache.spark.sql.catalog.Table"></a>
+      <a id="getTable(String,String):Table"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTable</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalog/Table.html" class="extype" name="org.apache.spark.sql.catalog.Table">Table</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@getTable(dbName:String,tableName:String):org.apache.spark.sql.catalog.Table" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the table or view with the specified name in the specified database.</p><div class="fullcomment"><div class="comment cmt"><p>Get the table or view with the specified name in the specified database. This throws an
+<code>AnalysisException</code> when no <code>Table</code> can be found.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#getTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTable(tableName:String):org.apache.spark.sql.catalog.Table"></a>
+      <a id="getTable(String):Table"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalog/Table.html" class="extype" name="org.apache.spark.sql.catalog.Table">Table</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@getTable(tableName:String):org.apache.spark.sql.catalog.Table" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the table or view with the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Get the table or view with the specified name. This table can be a temporary view or a
+table/view in the current database. This throws an <code>AnalysisException</code> when no <code>Table</code>
+can be found.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -779,6 +950,24 @@ This includes all temporary tables.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#recoverPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="ddl_ops">
+      <a id="recoverPartitions(tableName:String):Unit"></a>
+      <a id="recoverPartitions(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">recoverPartitions</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@recoverPartitions(tableName:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Recover all the partitions in the directory of a table and update the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Recover all the partitions in the directory of a table and update the catalog.
+</p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>the name of the table to be repaired.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd><dt>Since</dt><dd><p>2.1.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.CatalogImpl#refreshByPath" visbl="pub" data-isabs="false" fullComment="yes" group="cachemgmt">
       <a id="refreshByPath(resourcePath:String):Unit"></a>
       <a id="refreshByPath(String):Unit"></a>
@@ -816,7 +1005,7 @@ the given data source path.
       </a>
     </span>
       <p class="shortcomment cmt">Refresh the cache entry for a table, if any.</p><div class="fullcomment"><div class="comment cmt"><p>Refresh the cache entry for a table, if any. For Hive metastore table, the metadata
-is refreshed.
+is refreshed. For data source tables, the schema will not be inferred and refreshed.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.CatalogImpl#setCurrentDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setCurrentDatabase(dbName:String):Unit"></a>
@@ -859,6 +1048,43 @@ is refreshed.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tableExists(dbName:String,tableName:String):Boolean"></a>
+      <a id="tableExists(String,String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableExists</span><span class="params">(<span name="dbName">dbName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@tableExists(dbName:String,tableName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if the table or view with the specified name exists in the specified database.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the table or view with the specified name exists in the specified database.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.CatalogImpl#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tableExists(tableName:String):Boolean"></a>
+      <a id="tableExists(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableExists</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.CatalogImpl@tableExists(tableName:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Check if the table or view with the specified name exists.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the table or view with the specified name exists. This can either be a temporary
+view or a table/view in the current database.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> → <a href="../catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

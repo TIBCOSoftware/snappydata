@@ -99,7 +99,7 @@ When the reader uses <code>allFiles</code> to list all files, this method only r
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(metadataLogVersion:String,sparkSession:org.apache.spark.sql.SparkSession,path:String):org.apache.spark.sql.execution.streaming.FileStreamSinkLog"></a>
+      <a id="&lt;init&gt;(metadataLogVersion:Int,sparkSession:org.apache.spark.sql.SparkSession,path:String):org.apache.spark.sql.execution.streaming.FileStreamSinkLog"></a>
       <a id="&lt;init&gt;:FileStreamSinkLog"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -107,10 +107,10 @@ When the reader uses <code>allFiles</code> to list all files, this method only r
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">FileStreamSinkLog</span><span class="params">(<span name="metadataLogVersion">metadataLogVersion: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">FileStreamSinkLog</span><span class="params">(<span name="metadataLogVersion">metadataLogVersion: <span class="extype" name="scala.Int">Int</span></span>, <span name="sparkSession">sparkSession: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@&lt;init&gt;(metadataLogVersion:String,sparkSession:org.apache.spark.sql.SparkSession,path:String):org.apache.spark.sql.execution.streaming.FileStreamSinkLog" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@&lt;init&gt;(metadataLogVersion:Int,sparkSession:org.apache.spark.sql.SparkSession,path:String):org.apache.spark.sql.execution.streaming.FileStreamSinkLog" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -192,14 +192,7 @@ When the reader uses <code>allFiles</code> to list all files, this method only r
       </a>
     </span>
       <p class="shortcomment cmt">Store the metadata for the specified batchId and return <code>true</code> if successful.</p><div class="fullcomment"><div class="comment cmt"><p>Store the metadata for the specified batchId and return <code>true</code> if successful. If the batchId's
-metadata has already been stored, this method will return <code>false</code>.</p><p>Note that this method must be called on a <span class="extype" name="org.apache.spark.util.UninterruptibleThread">org.apache.spark.util.UninterruptibleThread</span>
-so that interrupts can be disabled while writing the batch file. This is because there is a
-potential dead-lock in Hadoop &quot;Shell.runCommand&quot; before 2.5.0 (HADOOP-10622). If the thread
-running &quot;Shell.runCommand&quot; is interrupted, then the thread can get deadlocked. In our
-case, <code>writeBatch</code> creates a file using HDFS API and calls &quot;Shell.runCommand&quot; to set the
-file permissions, and can get deadlocked if the stream execution thread is stopped by
-interrupt. Hence, we make sure that this method is called on <span class="extype" name="UninterruptibleThread">UninterruptibleThread</span> which
-allows us to disable interrupts here. Also see SPARK-14131.
+metadata has already been stored, this method will return <code>false</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a> → <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> → <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog#allFiles" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="allFiles():Array[T]"></a>
@@ -236,6 +229,25 @@ allows us to disable interrupts here. Also see SPARK-14131.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog#batchFilesFilter" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="batchFilesFilter:org.apache.hadoop.fs.PathFilter"></a>
+      <a id="batchFilesFilter:PathFilter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batchFilesFilter</span><span class="result">: <span class="extype" name="org.apache.hadoop.fs.PathFilter">PathFilter</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@batchFilesFilter:org.apache.hadoop.fs.PathFilter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <code>PathFilter</code> to filter only batch files
+</p><div class="fullcomment"><div class="comment cmt"><p>A <code>PathFilter</code> to filter only batch files
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog#batchIdToPath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="batchIdToPath(batchId:Long):org.apache.hadoop.fs.Path"></a>
       <a id="batchIdToPath(Long):Path"></a>
@@ -276,13 +288,13 @@ allows us to disable interrupts here. Also see SPARK-14131.
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog#compactInterval" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog#compactInterval" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="compactInterval:Int"></a>
       <a id="compactInterval:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="modifier">final </span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
         <span class="name">compactInterval</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
@@ -292,7 +304,7 @@ allows us to disable interrupts here. Also see SPARK-14131.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog">FileStreamSinkLog</a> → <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog#compactLogs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="compactLogs(logs:Seq[org.apache.spark.sql.execution.streaming.SinkFileStatus]):Seq[org.apache.spark.sql.execution.streaming.SinkFileStatus]"></a>
       <a id="compactLogs(Seq[SinkFileStatus]):Seq[SinkFileStatus]"></a>
@@ -311,6 +323,23 @@ allows us to disable interrupts here. Also see SPARK-14131.
     </span>
       <p class="shortcomment cmt">Filter out the obsolete logs.</p><div class="fullcomment"><div class="comment cmt"><p>Filter out the obsolete logs.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog">FileStreamSinkLog</a> → <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog#defaultCompactInterval" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="defaultCompactInterval:Int"></a>
+      <a id="defaultCompactInterval:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultCompactInterval</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@defaultCompactInterval:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog">FileStreamSinkLog</a> → <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog#deserialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="deserialize(in:java.io.InputStream):Array[T]"></a>
       <a id="deserialize(InputStream):Array[SinkFileStatus]"></a>
@@ -328,24 +357,6 @@ allows us to disable interrupts here. Also see SPARK-14131.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a> → <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog#deserializeData" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="deserializeData(encodedString:String):org.apache.spark.sql.execution.streaming.SinkFileStatus"></a>
-      <a id="deserializeData(String):SinkFileStatus"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">deserializeData</span><span class="params">(<span name="encodedString">encodedString: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="SinkFileStatus.html" class="extype" name="org.apache.spark.sql.execution.streaming.SinkFileStatus">SinkFileStatus</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@deserializeData(encodedString:String):org.apache.spark.sql.execution.streaming.SinkFileStatus" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Deserialize the string into data object.</p><div class="fullcomment"><div class="comment cmt"><p>Deserialize the string into data object.
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog">FileStreamSinkLog</a> → <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -481,6 +492,23 @@ old files while another one keeps retrying. Setting a reasonable cleanup delay c
     </span>
       <p class="shortcomment cmt">Return the metadata for the specified batchId if it's stored.</p><div class="fullcomment"><div class="comment cmt"><p>Return the metadata for the specified batchId if it's stored. Otherwise, return None.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> → <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog#get" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="get(batchFile:org.apache.hadoop.fs.Path):Option[T]"></a>
+      <a id="get(Path):Option[Array[SinkFileStatus]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">get</span><span class="params">(<span name="batchFile">batchFile: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Array">Array</span>[<a href="SinkFileStatus.html" class="extype" name="org.apache.spark.sql.execution.streaming.SinkFileStatus">SinkFileStatus</a>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@get(batchFile:org.apache.hadoop.fs.Path):Option[T]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the deserialized metadata in a batch file, or None if file not exist.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a></dd><dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> when path does not point to a batch file.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -516,6 +544,26 @@ old files while another one keeps retrying. Setting a reasonable cleanup delay c
     </span>
       <p class="shortcomment cmt">Return the latest batch Id and its metadata if exist.</p><div class="fullcomment"><div class="comment cmt"><p>Return the latest batch Id and its metadata if exist.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> → <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog#getOrderedBatchFiles" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getOrderedBatchFiles():Array[org.apache.hadoop.fs.FileStatus]"></a>
+      <a id="getOrderedBatchFiles():Array[FileStatus]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getOrderedBatchFiles</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.hadoop.fs.FileStatus">FileStatus</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@getOrderedBatchFiles():Array[org.apache.hadoop.fs.FileStatus]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get an array of [FileStatus] referencing batch files.</p><div class="fullcomment"><div class="comment cmt"><p>Get an array of [FileStatus] referencing batch files.
+The array is sorted by most recent batch file first to
+oldest batch file.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -873,6 +921,23 @@ old files while another one keeps retrying. Setting a reasonable cleanup delay c
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog#minBatchesToRetain" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="minBatchesToRetain:Int"></a>
+      <a id="minBatchesToRetain:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">minBatchesToRetain</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@minBatchesToRetain:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -976,24 +1041,6 @@ old files while another one keeps retrying. Setting a reasonable cleanup delay c
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a> → <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog#serializeData" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="serializeData(data:org.apache.spark.sql.execution.streaming.SinkFileStatus):String"></a>
-      <a id="serializeData(SinkFileStatus):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">serializeData</span><span class="params">(<span name="data">data: <a href="SinkFileStatus.html" class="extype" name="org.apache.spark.sql.execution.streaming.SinkFileStatus">SinkFileStatus</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.FileStreamSinkLog@serializeData(data:org.apache.spark.sql.execution.streaming.SinkFileStatus):String" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Serialize the data into encoded string.</p><div class="fullcomment"><div class="comment cmt"><p>Serialize the data into encoded string.
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog">FileStreamSinkLog</a> → <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

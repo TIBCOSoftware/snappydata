@@ -50,11 +50,13 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>::Experimental::
-Implemented by objects that can produce a streaming <span class="extype" name="Source">Source</span> for a specific format or system.
+Implemented by objects that can produce a streaming <code>Source</code> for a specific format or system.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd></dl><div class="toggleContainer block">
+                <span class="name">@Unstable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -100,7 +102,7 @@ Implemented by objects that can produce a streaming <span class="extype" name="S
 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="org.apache.spark.sql.sources.StreamSourceProvider#createSource" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.sources.StreamSourceProvider#createSource" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="createSource(sqlContext:org.apache.spark.sql.SQLContext,metadataPath:String,schema:Option[org.apache.spark.sql.types.StructType],providerName:String,parameters:Map[String,String]):org.apache.spark.sql.execution.streaming.Source"></a>
       <a id="createSource(SQLContext,String,Option[StructType],String,Map[String,String]):Source"></a>
       <h4 class="signature">
@@ -116,8 +118,8 @@ Implemented by objects that can produce a streaming <span class="extype" name="S
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.sources.StreamSourceProvider#sourceSchema" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.StreamSourceProvider#sourceSchema" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="sourceSchema(sqlContext:org.apache.spark.sql.SQLContext,schema:Option[org.apache.spark.sql.types.StructType],providerName:String,parameters:Map[String,String]):(String,org.apache.spark.sql.types.StructType)"></a>
       <a id="sourceSchema(SQLContext,Option[StructType],String,Map[String,String]):(String,StructType)"></a>
       <h4 class="signature">
@@ -133,7 +135,7 @@ Implemented by objects that can produce a streaming <span class="extype" name="S
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the name and schema of the source that can be used to continually read data.</p>
+      <p class="shortcomment cmt">Returns the name and schema of the source that can be used to continually read data.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name and schema of the source that can be used to continually read data.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li></ol>
             </div>
 

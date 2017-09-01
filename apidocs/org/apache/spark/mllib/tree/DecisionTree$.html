@@ -675,13 +675,11 @@
       </a>
     </span>
       <p class="shortcomment cmt">Method to train a decision tree model.</p><div class="fullcomment"><div class="comment cmt"><p>Method to train a decision tree model.
-The method supports binary and multiclass classification and regression.</p><p>Note: Using <a href="#trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier">org.apache.spark.mllib.tree.DecisionTree$#trainClassifier</a>
-      and <a href="#trainRegressor(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainRegressor">org.apache.spark.mllib.tree.DecisionTree$#trainRegressor</a>
-      is recommended to clearly separate classification and regression.
+The method supports binary and multiclass classification and regression.
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>Training dataset: RDD of <a href="../regression/LabeledPoint.html" class="extype" name="org.apache.spark.mllib.regression.LabeledPoint">org.apache.spark.mllib.regression.LabeledPoint</a>.
              For classification, labels should take values {0, 1, ..., numClasses-1}.
              For regression, labels are real numbers.</p></dd><dt class="param">algo</dt><dd class="cmt"><p>Type of decision tree, either classification or regression.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.</p></dd><dt class="param">maxDepth</dt><dd class="cmt"><p>Maximum depth of the tree (e.g. depth 0 means 1 leaf node, depth 1 means
-                1 internal node + 2 leaf nodes).</p></dd><dt class="param">numClasses</dt><dd class="cmt"><p>Number of classes for classification. Default value of 2.</p></dd><dt class="param">maxBins</dt><dd class="cmt"><p>Maximum number of bins used for splitting features.</p></dd><dt class="param">quantileCalculationStrategy</dt><dd class="cmt"><p>Algorithm for calculating quantiles.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n -&gt; k)
+                1 internal node + 2 leaf nodes).</p></dd><dt class="param">numClasses</dt><dd class="cmt"><p>Number of classes for classification. Default value of 2.</p></dd><dt class="param">maxBins</dt><dd class="cmt"><p>Maximum number of bins used for splitting features.</p></dd><dt class="param">quantileCalculationStrategy</dt><dd class="cmt"><p>Algorithm for calculating quantiles.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n to k)
                                indicates that feature n is categorical with k categories
                                indexed from 0: {0, 1, ..., k-1}.</p></dd><dt>returns</dt><dd class="cmt"><p>DecisionTreeModel that can be used for prediction.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -689,7 +687,9 @@ The method supports binary and multiclass classification and regression.</p><p>N
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Using <a href="#trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier">org.apache.spark.mllib.tree.DecisionTree$#trainClassifier</a>
+and <a href="#trainRegressor(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainRegressor">org.apache.spark.mllib.tree.DecisionTree$#trainRegressor</a>
+is recommended to clearly separate classification and regression.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.tree.DecisionTree#train" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="train(input:org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint],algo:org.apache.spark.mllib.tree.configuration.Algo.Algo,impurity:org.apache.spark.mllib.tree.impurity.Impurity,maxDepth:Int,numClasses:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel"></a>
       <a id="train(RDD[LabeledPoint],Algo,Impurity,Int,Int):DecisionTreeModel"></a>
@@ -707,9 +707,7 @@ The method supports binary and multiclass classification and regression.</p><p>N
       </a>
     </span>
       <p class="shortcomment cmt">Method to train a decision tree model.</p><div class="fullcomment"><div class="comment cmt"><p>Method to train a decision tree model.
-The method supports binary and multiclass classification and regression.</p><p>Note: Using <a href="#trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier">org.apache.spark.mllib.tree.DecisionTree$#trainClassifier</a>
-      and <a href="#trainRegressor(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainRegressor">org.apache.spark.mllib.tree.DecisionTree$#trainRegressor</a>
-      is recommended to clearly separate classification and regression.
+The method supports binary and multiclass classification and regression.
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>Training dataset: RDD of <a href="../regression/LabeledPoint.html" class="extype" name="org.apache.spark.mllib.regression.LabeledPoint">org.apache.spark.mllib.regression.LabeledPoint</a>.
              For classification, labels should take values {0, 1, ..., numClasses-1}.
              For regression, labels are real numbers.</p></dd><dt class="param">algo</dt><dd class="cmt"><p>Type of decision tree, either classification or regression.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.</p></dd><dt class="param">maxDepth</dt><dd class="cmt"><p>Maximum depth of the tree (e.g. depth 0 means 1 leaf node, depth 1 means
@@ -719,7 +717,9 @@ The method supports binary and multiclass classification and regression.</p><p>N
       <span class="symbol">&quot;1.2.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Using <a href="#trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier">org.apache.spark.mllib.tree.DecisionTree$#trainClassifier</a>
+and <a href="#trainRegressor(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainRegressor">org.apache.spark.mllib.tree.DecisionTree$#trainRegressor</a>
+is recommended to clearly separate classification and regression.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.tree.DecisionTree#train" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="train(input:org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint],algo:org.apache.spark.mllib.tree.configuration.Algo.Algo,impurity:org.apache.spark.mllib.tree.impurity.Impurity,maxDepth:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel"></a>
       <a id="train(RDD[LabeledPoint],Algo,Impurity,Int):DecisionTreeModel"></a>
@@ -737,9 +737,7 @@ The method supports binary and multiclass classification and regression.</p><p>N
       </a>
     </span>
       <p class="shortcomment cmt">Method to train a decision tree model.</p><div class="fullcomment"><div class="comment cmt"><p>Method to train a decision tree model.
-The method supports binary and multiclass classification and regression.</p><p>Note: Using <a href="#trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier">org.apache.spark.mllib.tree.DecisionTree$#trainClassifier</a>
-      and <a href="#trainRegressor(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainRegressor">org.apache.spark.mllib.tree.DecisionTree$#trainRegressor</a>
-      is recommended to clearly separate classification and regression.
+The method supports binary and multiclass classification and regression.
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>Training dataset: RDD of <a href="../regression/LabeledPoint.html" class="extype" name="org.apache.spark.mllib.regression.LabeledPoint">org.apache.spark.mllib.regression.LabeledPoint</a>.
              For classification, labels should take values {0, 1, ..., numClasses-1}.
              For regression, labels are real numbers.</p></dd><dt class="param">algo</dt><dd class="cmt"><p>Type of decision tree, either classification or regression.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.</p></dd><dt class="param">maxDepth</dt><dd class="cmt"><p>Maximum depth of the tree (e.g. depth 0 means 1 leaf node, depth 1 means
@@ -749,7 +747,9 @@ The method supports binary and multiclass classification and regression.</p><p>N
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Using <a href="#trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier">org.apache.spark.mllib.tree.DecisionTree$#trainClassifier</a>
+and <a href="#trainRegressor(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainRegressor">org.apache.spark.mllib.tree.DecisionTree$#trainRegressor</a>
+is recommended to clearly separate classification and regression.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.tree.DecisionTree#train" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="train(input:org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint],strategy:org.apache.spark.mllib.tree.configuration.Strategy):org.apache.spark.mllib.tree.model.DecisionTreeModel"></a>
       <a id="train(RDD[LabeledPoint],Strategy):DecisionTreeModel"></a>
@@ -767,9 +767,7 @@ The method supports binary and multiclass classification and regression.</p><p>N
       </a>
     </span>
       <p class="shortcomment cmt">Method to train a decision tree model.</p><div class="fullcomment"><div class="comment cmt"><p>Method to train a decision tree model.
-The method supports binary and multiclass classification and regression.</p><p>Note: Using <a href="#trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier">org.apache.spark.mllib.tree.DecisionTree$#trainClassifier</a>
-      and <a href="#trainRegressor(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainRegressor">org.apache.spark.mllib.tree.DecisionTree$#trainRegressor</a>
-      is recommended to clearly separate classification and regression.
+The method supports binary and multiclass classification and regression.
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>Training dataset: RDD of <a href="../regression/LabeledPoint.html" class="extype" name="org.apache.spark.mllib.regression.LabeledPoint">org.apache.spark.mllib.regression.LabeledPoint</a>.
              For classification, labels should take values {0, 1, ..., numClasses-1}.
              For regression, labels are real numbers.</p></dd><dt class="param">strategy</dt><dd class="cmt"><p>The configuration parameters for the tree algorithm which specify the type
@@ -780,7 +778,9 @@ The method supports binary and multiclass classification and regression.</p><p>N
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Using <a href="#trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier">org.apache.spark.mllib.tree.DecisionTree$#trainClassifier</a>
+and <a href="#trainRegressor(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel" class="extmbr" name="org.apache.spark.mllib.tree.DecisionTree#trainRegressor">org.apache.spark.mllib.tree.DecisionTree$#trainRegressor</a>
+is recommended to clearly separate classification and regression.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.tree.DecisionTree#trainClassifier" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="trainClassifier(input:org.apache.spark.api.java.JavaRDD[org.apache.spark.mllib.regression.LabeledPoint],numClasses:Int,categoricalFeaturesInfo:java.util.Map[Integer,Integer],impurity:String,maxDepth:Int,maxBins:Int):org.apache.spark.mllib.tree.model.DecisionTreeModel"></a>
       <a id="trainClassifier(JavaRDD[LabeledPoint],Int,Map[Integer,Integer],String,Int,Int):DecisionTreeModel"></a>
@@ -824,7 +824,7 @@ The method supports binary and multiclass classification and regression.</p><p>N
     </span>
       <p class="shortcomment cmt">Method to train a decision tree model for binary or multiclass classification.</p><div class="fullcomment"><div class="comment cmt"><p>Method to train a decision tree model for binary or multiclass classification.
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>Training dataset: RDD of <a href="../regression/LabeledPoint.html" class="extype" name="org.apache.spark.mllib.regression.LabeledPoint">org.apache.spark.mllib.regression.LabeledPoint</a>.
-             Labels should take values {0, 1, ..., numClasses-1}.</p></dd><dt class="param">numClasses</dt><dd class="cmt"><p>Number of classes for classification.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n -&gt; k)
+             Labels should take values {0, 1, ..., numClasses-1}.</p></dd><dt class="param">numClasses</dt><dd class="cmt"><p>Number of classes for classification.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n to k)
                                indicates that feature n is categorical with k categories
                                indexed from 0: {0, 1, ..., k-1}.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.
                 Supported values: &quot;gini&quot; (recommended) or &quot;entropy&quot;.</p></dd><dt class="param">maxDepth</dt><dd class="cmt"><p>Maximum depth of the tree (e.g. depth 0 means 1 leaf node, depth 1 means
@@ -880,7 +880,7 @@ The method supports binary and multiclass classification and regression.</p><p>N
     </span>
       <p class="shortcomment cmt">Method to train a decision tree model for regression.</p><div class="fullcomment"><div class="comment cmt"><p>Method to train a decision tree model for regression.
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>Training dataset: RDD of <a href="../regression/LabeledPoint.html" class="extype" name="org.apache.spark.mllib.regression.LabeledPoint">org.apache.spark.mllib.regression.LabeledPoint</a>.
-             Labels are real numbers.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n -&gt; k)
+             Labels are real numbers.</p></dd><dt class="param">categoricalFeaturesInfo</dt><dd class="cmt"><p>Map storing arity of categorical features. An entry (n to k)
                                indicates that feature n is categorical with k categories
                                indexed from 0: {0, 1, ..., k-1}.</p></dd><dt class="param">impurity</dt><dd class="cmt"><p>Criterion used for information gain calculation.
                 The only supported value for regression is &quot;variance&quot;.</p></dd><dt class="param">maxDepth</dt><dd class="cmt"><p>Maximum depth of the tree (e.g. depth 0 means 1 leaf node, depth 1 means

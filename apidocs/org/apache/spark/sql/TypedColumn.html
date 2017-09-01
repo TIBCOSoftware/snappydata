@@ -52,7 +52,10 @@
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> where an <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> has been given for the expected input and return type.
 To create a <a href="" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>, use the <code>as</code> function on a <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>.
 </p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>The input type expected for this expression.  Can be <code>Any</code> if the expression is type
-          checked by the analyzer instead of the compiler (i.e. <code>expr(&quot;sum(...)&quot;)</code>).</p></dd><dt class="tparam">U</dt><dd class="cmt"><p>The output type of this column.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl><div class="toggleContainer block">
+          checked by the analyzer instead of the compiler (i.e. <code>expr(&quot;sum(...)&quot;)</code>).</p></dd><dt class="tparam">U</dt><dd class="cmt"><p>The output type of this column.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -644,11 +647,53 @@ results into the correct JVM types.</p></div><dl class="attributes block"> <dt>D
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns an ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order.</span>
+      <p class="shortcomment cmt">Returns an ascending ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ascending ordering used in sorting.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order.</span>
 df.sort(df(<span class="lit">"age"</span>).asc)
 
 <span class="cmt">// Java</span>
 df.sort(df.col(<span class="lit">"age"</span>).asc());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#asc_nulls_first" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="asc_nulls_first:org.apache.spark.sql.Column"></a>
+      <a id="asc_nulls_first:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc_nulls_first</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.TypedColumn@asc_nulls_first:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an ascending ordering used in sorting, where null values appear before non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ascending ordering used in sorting, where null values appear before non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order and null values appearing first.</span>
+df.sort(df(<span class="lit">"age"</span>).asc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).asc_nulls_last());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#asc_nulls_last" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="asc_nulls_last:org.apache.spark.sql.Column"></a>
+      <a id="asc_nulls_last:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc_nulls_last</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.TypedColumn@asc_nulls_last:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an ordering used in sorting, where null values appear after non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting, where null values appear after non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order and null values appearing last.</span>
+df.sort(df(<span class="lit">"age"</span>).asc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).asc_nulls_last());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#between" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="between(lowerBound:Any,upperBound:Any):org.apache.spark.sql.Column"></a>
       <a id="between(Any,Any):Column"></a>
@@ -818,11 +863,53 @@ df.select(df(<span class="lit">"colA"</span>).cast(<span class="lit">"int"</span
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns an ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in descending order.</span>
+      <p class="shortcomment cmt">Returns an ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting.</p><pre><span class="cmt">// Scala</span>
 df.sort(df(<span class="lit">"age"</span>).desc)
 
 <span class="cmt">// Java</span>
 df.sort(df.col(<span class="lit">"age"</span>).desc());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#desc_nulls_first" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="desc_nulls_first:org.apache.spark.sql.Column"></a>
+      <a id="desc_nulls_first:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc_nulls_first</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.TypedColumn@desc_nulls_first:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a descending ordering used in sorting, where null values appear before non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a descending ordering used in sorting, where null values appear before non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in descending order and null values appearing first.</span>
+df.sort(df(<span class="lit">"age"</span>).desc_nulls_first)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).desc_nulls_first());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#desc_nulls_last" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="desc_nulls_last:org.apache.spark.sql.Column"></a>
+      <a id="desc_nulls_last:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc_nulls_last</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.TypedColumn@desc_nulls_last:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a descending ordering used in sorting, where null values appear after non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a descending ordering used in sorting, where null values appear after non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in descending order and null values appearing last.</span>
+df.sort(df(<span class="lit">"age"</span>).desc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).desc_nulls_last());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#divide" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="divide(other:Any):org.apache.spark.sql.Column"></a>
       <a id="divide(Any):Column"></a>
@@ -972,7 +1059,7 @@ df.filter( col(<span class="lit">"colA"</span>).equalTo(col(<span class="lit">"c
     </span>
       <p class="shortcomment cmt">Prints the expression to the console for debugging purpose.</p><div class="fullcomment"><div class="comment cmt"><p>Prints the expression to the console for debugging purpose.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.Column#expr" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.Column#expr" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="expr:org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="expr:Expression"></a>
       <h4 class="signature">
@@ -988,7 +1075,7 @@ df.filter( col(<span class="lit">"colA"</span>).equalTo(col(<span class="lit">"c
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -1066,7 +1153,7 @@ people.select( people(<span class="lit">"age"</span>).geq(<span class="num">21</
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">An expression that gets a field by name in a <span class="extype" name="StructType">StructType</span>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets a field by name in a <span class="extype" name="StructType">StructType</span>.
+      <p class="shortcomment cmt">An expression that gets a field by name in a <code>StructType</code>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets a field by name in a <code>StructType</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#getItem" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
       <a id="getItem(key:Any):org.apache.spark.sql.Column"></a>
@@ -1085,8 +1172,8 @@ people.select( people(<span class="lit">"age"</span>).geq(<span class="num">21</
       </a>
     </span>
       <p class="shortcomment cmt">An expression that gets an item at position <code>ordinal</code> out of an array,
-or gets a value by key <code>key</code> in a <span class="extype" name="MapType">MapType</span>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets an item at position <code>ordinal</code> out of an array,
-or gets a value by key <code>key</code> in a <span class="extype" name="MapType">MapType</span>.
+or gets a value by key <code>key</code> in a <code>MapType</code>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets an item at position <code>ordinal</code> out of an array,
+or gets a value by key <code>key</code> in a <code>MapType</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Column#gt" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
       <a id="gt(other:Any):org.apache.spark.sql.Column"></a>

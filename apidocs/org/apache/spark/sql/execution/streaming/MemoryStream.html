@@ -378,7 +378,13 @@ then the batch should begin with the first record. This method must always retur
 same data for a particular <code>start</code> and <code>end</code> pair; even after the Source has been restarted
 on a different node.</p><p>Higher layers will always call this method with a value of <code>start</code> greater than or equal
 to the last value passed to <code>commit</code> and a value of <code>end</code> less than or equal to the
-last value returned by <code>getOffset</code>
+last value returned by <code>getOffset</code></p><p>It is possible for the <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> type to be a <a href="SerializedOffset.html" class="extype" name="org.apache.spark.sql.execution.streaming.SerializedOffset">SerializedOffset</a> when it was
+obtained from the log. Moreover, <a href="StreamExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a> only compares the <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>
+JSON representation to determine if the two objects are equal. This could have
+ramifications when upgrading <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> JSON formats i.e., two equivalent <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>
+objects could differ between version. Consequently, <a href="StreamExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a> may call
+this method with two such equivalent <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> objects. In which case, the <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a>
+should return an empty <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.streaming.MemoryStream">MemoryStream</a> → <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
@@ -912,35 +918,35 @@ Returns <code>None</code> if this source has never received any data.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.streaming.MemoryStream#toDF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="toDF()(implicitsqlContext:org.apache.spark.sql.SQLContext):org.apache.spark.sql.DataFrame"></a>
-      <a id="toDF()(SQLContext):DataFrame"></a>
+      <a id="toDF():org.apache.spark.sql.DataFrame"></a>
+      <a id="toDF():DataFrame"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toDF</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="sqlContext">sqlContext: <a href="../../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>)</span><span class="result">: <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>
+        <span class="name">toDF</span><span class="params">()</span><span class="result">: <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.MemoryStream@toDF()(implicitsqlContext:org.apache.spark.sql.SQLContext):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.MemoryStream@toDF():org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.streaming.MemoryStream#toDS" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="toDS()(implicitsqlContext:org.apache.spark.sql.SQLContext):org.apache.spark.sql.Dataset[A]"></a>
-      <a id="toDS()(SQLContext):Dataset[A]"></a>
+      <a id="toDS():org.apache.spark.sql.Dataset[A]"></a>
+      <a id="toDS():Dataset[A]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toDS</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="sqlContext">sqlContext: <a href="../../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>)</span><span class="result">: <a href="../../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.execution.streaming.MemoryStream.A">A</span>]</span>
+        <span class="name">toDS</span><span class="params">()</span><span class="result">: <a href="../../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.execution.streaming.MemoryStream.A">A</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.MemoryStream@toDS()(implicitsqlContext:org.apache.spark.sql.SQLContext):org.apache.spark.sql.Dataset[A]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.MemoryStream@toDS():org.apache.spark.sql.Dataset[A]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

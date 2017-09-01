@@ -901,24 +901,6 @@ separated by space. For example,</p><pre><span class="num">0.5</span> <span clas
       <p class="shortcomment cmt">An example runner for decision trees and random forests.</p><div class="fullcomment"><div class="comment cmt"><p>An example runner for decision trees and random forests. Run with</p><pre>./bin/run-example org.apache.spark.examples.mllib.DecisionTreeRunner [options]</pre><p>If you use it as a template to create your own app, please use <code>spark-submit</code> to submit your app.</p><p>Note: This script treats all features as real-valued (not categorical).
       To include categorical features, modify categoricalFeaturesInfo.
 </p></div></div>
-    </li><li name="org.apache.spark.examples.mllib.DenseGaussianMixture" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="DenseGaussianMixture"></a>
-      <a id="DenseGaussianMixture:DenseGaussianMixture"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="DenseGaussianMixture$.html"><span class="name">DenseGaussianMixture</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.examples.mllib.package@DenseGaussianMixture" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">An example Gaussian Mixture Model EM app.</p><div class="fullcomment"><div class="comment cmt"><p>An example Gaussian Mixture Model EM app. Run with</p><pre>./bin/run-example mllib.DenseGaussianMixture &lt;input&gt; &lt;k&gt; &lt;convergenceTol&gt;</pre><p>If you use it as a template to create your own app, please use <code>spark-submit</code> to submit your app.
-</p></div></div>
     </li><li name="org.apache.spark.examples.mllib.DenseKMeans" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DenseKMeans"></a>
       <a id="DenseKMeans:DenseKMeans"></a>
@@ -1637,33 +1619,7 @@ Where y is some identifier. n must be the same for train and test.</p><p>Usage:
 with updates every 5 seconds, 2 dimensions per data point, and 3 clusters, call:
    $ bin/run-example mllib.StreamingKMeansExample trainingDir testDir 5 3 2</p><p>As you add text files to <code>trainingDir</code> the clusters will continuously update.
 Anytime you add text files to <code>testDir</code>, you'll see predicted labels using the current model.</p></div></div>
-    </li><li name="org.apache.spark.examples.mllib.StreamingLinearRegression" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StreamingLinearRegression"></a>
-      <a id="StreamingLinearRegression:StreamingLinearRegression"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="StreamingLinearRegression$.html"><span class="name">StreamingLinearRegression</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.examples.mllib.package@StreamingLinearRegression" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Train a linear regression model on one stream of data and make predictions
-on another stream, where the data streams arrive as text files
-into two different directories.</p><div class="fullcomment"><div class="comment cmt"><p>Train a linear regression model on one stream of data and make predictions
-on another stream, where the data streams arrive as text files
-into two different directories.</p><p>The rows of the text files must be labeled data points in the form
-<code>(y,[x1,x2,x3,...,xn])</code>
-Where n is the number of features. n must be the same for train and test.</p><p>Usage: StreamingLinearRegression &lt;trainingDir&gt; &lt;testDir&gt; &lt;batchDuration&gt; &lt;numFeatures&gt;</p><p>To run on your local machine using the two directories <code>trainingDir</code> and <code>testDir</code>,
-with updates every 5 seconds, and 2 features per data point, call:
-   $ bin/run-example mllib.StreamingLinearRegression trainingDir testDir 5 2</p><p>As you add text files to <code>trainingDir</code> the model will continuously update.
-Anytime you add text files to <code>testDir</code>, you'll see predictions from the current model.</p></div></div>
-    </li><li name="org.apache.spark.examples.mllib.StreamingLinearRegressionExample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.examples.mllib.StreamingLinearRegressionExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StreamingLinearRegressionExample"></a>
       <a id="StreamingLinearRegressionExample:StreamingLinearRegressionExample"></a>
       <h4 class="signature">
@@ -1679,7 +1635,16 @@ Anytime you add text files to <code>testDir</code>, you'll see predictions from 
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Train a linear regression model on one stream of data and make predictions
+on another stream, where the data streams arrive as text files
+into two different directories.</p><div class="fullcomment"><div class="comment cmt"><p>Train a linear regression model on one stream of data and make predictions
+on another stream, where the data streams arrive as text files
+into two different directories.</p><p>The rows of the text files must be labeled data points in the form
+<code>(y,[x1,x2,x3,...,xn])</code>
+Where n is the number of features. n must be the same for train and test.</p><p>Usage: StreamingLinearRegressionExample &lt;trainingDir&gt; &lt;testDir&gt;</p><p>To run on your local machine using the two directories <code>trainingDir</code> and <code>testDir</code>,
+with updates every 5 seconds, and 2 features per data point, call:
+   $ bin/run-example mllib.StreamingLinearRegressionExample trainingDir testDir</p><p>As you add text files to <code>trainingDir</code> the model will continuously update.
+Anytime you add text files to <code>testDir</code>, you'll see predictions from the current model.</p></div></div>
     </li><li name="org.apache.spark.examples.mllib.StreamingLogisticRegression" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StreamingLogisticRegression"></a>
       <a id="StreamingLogisticRegression:StreamingLogisticRegression"></a>

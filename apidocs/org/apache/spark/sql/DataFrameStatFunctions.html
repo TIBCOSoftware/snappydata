@@ -49,10 +49,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-Statistic functions for <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Statistic functions for <code>DataFrame</code>s.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -170,15 +169,15 @@ Statistic functions for <a href="package.html#DataFrame=org.apache.spark.sql.Dat
 If the DataFrame has N elements and if we request the quantile at probability <code>p</code> up to error
 <code>err</code>, then the algorithm will return a sample <code>x</code> from the DataFrame so that the *exact* rank
 of <code>x</code> is close to (p * N).
-More precisely,</p><p>  floor((p - err) * N) &lt;= rank(x) &lt;= ceil((p + err) * N).</p><p>This method implements a variation of the Greenwald-Khanna algorithm (with some speed
+More precisely,</p><pre>floor((p - err) * N) &lt;= rank(x) &lt;= ceil((p + err) * N)</pre><p>This method implements a variation of the Greenwald-Khanna algorithm (with some speed
 optimizations).
-The algorithm was first present in <a href="http://dx.doi.org/10.1145/375663.375670" target="_blank">Space-efficient
-Online Computation of Quantile Summaries</a> by Greenwald and Khanna.
+The algorithm was first present in <a href="http://dx.doi.org/10.1145/375663.375670">
+Space-efficient Online Computation of Quantile Summaries</a> by Greenwald and Khanna.
 </p></div><dl class="paramcmts block"><dt class="param">col</dt><dd class="cmt"><p>the name of the numerical column</p></dd><dt class="param">probabilities</dt><dd class="cmt"><p>a list of quantile probabilities
   Each number must belong to [0, 1].
-  For example 0 is the minimum, 0.5 is the median, 1 is the maximum.</p></dd><dt class="param">relativeError</dt><dd class="cmt"><p>The relative target precision to achieve (&gt;= 0).
+  For example 0 is the minimum, 0.5 is the median, 1 is the maximum.</p></dd><dt class="param">relativeError</dt><dd class="cmt"><p>The relative target precision to achieve (greater or equal to 0).
   If set to zero, the exact quantiles are computed, which could be very expensive.
-  Note that values greater than 1 are accepted but give the same result as 1.</p></dd><dt>returns</dt><dd class="cmt"><p>the approximate quantiles at the given probabilities</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+  Note that values greater than 1 are accepted but give the same result as 1.</p></dd><dt>returns</dt><dd class="cmt"><p>the approximate quantiles at the given probabilities</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>NaN values will be removed from the numerical column before calculation</p></span></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -352,7 +351,7 @@ res1: <span class="std">Double</span> = <span class="num">0.613</span>...</pre><
       </a>
     </span>
       <p class="shortcomment cmt">Builds a Count-min Sketch over a specified column.</p><div class="fullcomment"><div class="comment cmt"><p>Builds a Count-min Sketch over a specified column.
-</p></div><dl class="paramcmts block"><dt class="param">col</dt><dd class="cmt"><p>the column over which the sketch is built</p></dd><dt class="param">eps</dt><dd class="cmt"><p>relative error of the sketch</p></dd><dt class="param">confidence</dt><dd class="cmt"><p>confidence of the sketch</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a <span class="extype" name="CountMinSketch">CountMinSketch</span> over column <code>colName</code></p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">col</dt><dd class="cmt"><p>the column over which the sketch is built</p></dd><dt class="param">eps</dt><dd class="cmt"><p>relative error of the sketch</p></dd><dt class="param">confidence</dt><dd class="cmt"><p>confidence of the sketch</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a <code>CountMinSketch</code> over column <code>colName</code></p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameStatFunctions#countMinSketch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countMinSketch(col:org.apache.spark.sql.Column,depth:Int,width:Int,seed:Int):org.apache.spark.util.sketch.CountMinSketch"></a>
       <a id="countMinSketch(Column,Int,Int,Int):CountMinSketch"></a>
@@ -370,7 +369,7 @@ res1: <span class="std">Double</span> = <span class="num">0.613</span>...</pre><
       </a>
     </span>
       <p class="shortcomment cmt">Builds a Count-min Sketch over a specified column.</p><div class="fullcomment"><div class="comment cmt"><p>Builds a Count-min Sketch over a specified column.
-</p></div><dl class="paramcmts block"><dt class="param">col</dt><dd class="cmt"><p>the column over which the sketch is built</p></dd><dt class="param">depth</dt><dd class="cmt"><p>depth of the sketch</p></dd><dt class="param">width</dt><dd class="cmt"><p>width of the sketch</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a <span class="extype" name="CountMinSketch">CountMinSketch</span> over column <code>colName</code></p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">col</dt><dd class="cmt"><p>the column over which the sketch is built</p></dd><dt class="param">depth</dt><dd class="cmt"><p>depth of the sketch</p></dd><dt class="param">width</dt><dd class="cmt"><p>width of the sketch</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a <code>CountMinSketch</code> over column <code>colName</code></p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameStatFunctions#countMinSketch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countMinSketch(colName:String,eps:Double,confidence:Double,seed:Int):org.apache.spark.util.sketch.CountMinSketch"></a>
       <a id="countMinSketch(String,Double,Double,Int):CountMinSketch"></a>
@@ -388,7 +387,7 @@ res1: <span class="std">Double</span> = <span class="num">0.613</span>...</pre><
       </a>
     </span>
       <p class="shortcomment cmt">Builds a Count-min Sketch over a specified column.</p><div class="fullcomment"><div class="comment cmt"><p>Builds a Count-min Sketch over a specified column.
-</p></div><dl class="paramcmts block"><dt class="param">colName</dt><dd class="cmt"><p>name of the column over which the sketch is built</p></dd><dt class="param">eps</dt><dd class="cmt"><p>relative error of the sketch</p></dd><dt class="param">confidence</dt><dd class="cmt"><p>confidence of the sketch</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a <span class="extype" name="CountMinSketch">CountMinSketch</span> over column <code>colName</code></p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">colName</dt><dd class="cmt"><p>name of the column over which the sketch is built</p></dd><dt class="param">eps</dt><dd class="cmt"><p>relative error of the sketch</p></dd><dt class="param">confidence</dt><dd class="cmt"><p>confidence of the sketch</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a <code>CountMinSketch</code> over column <code>colName</code></p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameStatFunctions#countMinSketch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countMinSketch(colName:String,depth:Int,width:Int,seed:Int):org.apache.spark.util.sketch.CountMinSketch"></a>
       <a id="countMinSketch(String,Int,Int,Int):CountMinSketch"></a>
@@ -406,7 +405,7 @@ res1: <span class="std">Double</span> = <span class="num">0.613</span>...</pre><
       </a>
     </span>
       <p class="shortcomment cmt">Builds a Count-min Sketch over a specified column.</p><div class="fullcomment"><div class="comment cmt"><p>Builds a Count-min Sketch over a specified column.
-</p></div><dl class="paramcmts block"><dt class="param">colName</dt><dd class="cmt"><p>name of the column over which the sketch is built</p></dd><dt class="param">depth</dt><dd class="cmt"><p>depth of the sketch</p></dd><dt class="param">width</dt><dd class="cmt"><p>width of the sketch</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a <span class="extype" name="CountMinSketch">CountMinSketch</span> over column <code>colName</code></p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">colName</dt><dd class="cmt"><p>name of the column over which the sketch is built</p></dd><dt class="param">depth</dt><dd class="cmt"><p>depth of the sketch</p></dd><dt class="param">width</dt><dd class="cmt"><p>width of the sketch</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a <code>CountMinSketch</code> over column <code>colName</code></p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameStatFunctions#cov" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="cov(col1:String,col2:String):Double"></a>
       <a id="cov(String,String):Double"></a>
@@ -539,9 +538,10 @@ ct.show()
     </span>
       <p class="shortcomment cmt">(Scala-specific) Finding frequent items for columns, possibly with false positives.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Finding frequent items for columns, possibly with false positives. Using the
 frequent element count algorithm described in
-<a href="http://dx.doi.org/10.1145/762471.762473," target="_blank">proposed by Karp, Schenker, and Papadimitriou</a>.
+<a href="http://dx.doi.org/10.1145/762471.762473">here</a>, proposed by Karp, Schenker,
+and Papadimitriou.
 Uses a <code>default</code> support of 1%.</p><p>This function is meant for exploratory data analysis, as we make no guarantee about the
-backward compatibility of the schema of the resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+backward compatibility of the schema of the resulting <code>DataFrame</code>.
 </p></div><dl class="paramcmts block"><dt class="param">cols</dt><dd class="cmt"><p>the names of the columns to search frequent items in.</p></dd><dt>returns</dt><dd class="cmt"><p>A Local DataFrame with the Array of frequent items for each column.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameStatFunctions#freqItems" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="freqItems(cols:Seq[String],support:Double):org.apache.spark.sql.DataFrame"></a>
@@ -561,8 +561,9 @@ backward compatibility of the schema of the resulting <a href="package.html#Data
     </span>
       <p class="shortcomment cmt">(Scala-specific) Finding frequent items for columns, possibly with false positives.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Finding frequent items for columns, possibly with false positives. Using the
 frequent element count algorithm described in
-<a href="http://dx.doi.org/10.1145/762471.762473," target="_blank">proposed by Karp, Schenker, and Papadimitriou</a>.</p><p>This function is meant for exploratory data analysis, as we make no guarantee about the
-backward compatibility of the schema of the resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+<a href="http://dx.doi.org/10.1145/762471.762473">here</a>, proposed by Karp, Schenker,
+and Papadimitriou.</p><p>This function is meant for exploratory data analysis, as we make no guarantee about the
+backward compatibility of the schema of the resulting <code>DataFrame</code>.
 </p></div><dl class="paramcmts block"><dt class="param">cols</dt><dd class="cmt"><p>the names of the columns to search frequent items in.</p></dd><dt>returns</dt><dd class="cmt"><p>A Local DataFrame with the Array of frequent items for each column.</p><pre><span class="kw">val</span> rows = <span class="std">Seq</span>.tabulate(<span class="num">100</span>) { i <span class="kw">=&gt;</span>
   <span class="kw">if</span> (i % <span class="num">2</span> == <span class="num">0</span>) (<span class="num">1</span>, -<span class="num">1.0</span>) <span class="kw">else</span> (i, i * -<span class="num">1.0</span>)
 }
@@ -604,9 +605,10 @@ freqPairs.select(explode($<span class="lit">"a-b_freqItems"</span>).as(<span cla
     </span>
       <p class="shortcomment cmt">Finding frequent items for columns, possibly with false positives.</p><div class="fullcomment"><div class="comment cmt"><p>Finding frequent items for columns, possibly with false positives. Using the
 frequent element count algorithm described in
-<a href="http://dx.doi.org/10.1145/762471.762473," target="_blank">proposed by Karp, Schenker, and Papadimitriou</a>.
+<a href="http://dx.doi.org/10.1145/762471.762473">here</a>, proposed by Karp,
+Schenker, and Papadimitriou.
 Uses a <code>default</code> support of 1%.</p><p>This function is meant for exploratory data analysis, as we make no guarantee about the
-backward compatibility of the schema of the resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+backward compatibility of the schema of the resulting <code>DataFrame</code>.
 </p></div><dl class="paramcmts block"><dt class="param">cols</dt><dd class="cmt"><p>the names of the columns to search frequent items in.</p></dd><dt>returns</dt><dd class="cmt"><p>A Local DataFrame with the Array of frequent items for each column.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameStatFunctions#freqItems" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="freqItems(cols:Array[String],support:Double):org.apache.spark.sql.DataFrame"></a>
@@ -626,9 +628,10 @@ backward compatibility of the schema of the resulting <a href="package.html#Data
     </span>
       <p class="shortcomment cmt">Finding frequent items for columns, possibly with false positives.</p><div class="fullcomment"><div class="comment cmt"><p>Finding frequent items for columns, possibly with false positives. Using the
 frequent element count algorithm described in
-<a href="http://dx.doi.org/10.1145/762471.762473," target="_blank">proposed by Karp, Schenker, and Papadimitriou</a>.
+<a href="http://dx.doi.org/10.1145/762471.762473">here</a>, proposed by Karp,
+Schenker, and Papadimitriou.
 The <code>support</code> should be greater than 1e-4.</p><p>This function is meant for exploratory data analysis, as we make no guarantee about the
-backward compatibility of the schema of the resulting <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+backward compatibility of the schema of the resulting <code>DataFrame</code>.
 </p></div><dl class="paramcmts block"><dt class="param">cols</dt><dd class="cmt"><p>the names of the columns to search frequent items in.</p></dd><dt class="param">support</dt><dd class="cmt"><p>The minimum frequency for an item to be considered <code>frequent</code>. Should be greater
                than 1e-4.</p></dd><dt>returns</dt><dd class="cmt"><p>A Local DataFrame with the Array of frequent items for each column.</p><pre><span class="kw">val</span> rows = <span class="std">Seq</span>.tabulate(<span class="num">100</span>) { i <span class="kw">=&gt;</span>
   <span class="kw">if</span> (i % <span class="num">2</span> == <span class="num">0</span>) (<span class="num">1</span>, -<span class="num">1.0</span>) <span class="kw">else</span> (i, i * -<span class="num">1.0</span>)
@@ -772,7 +775,7 @@ freqPairs.select(explode($<span class="lit">"a-b_freqItems"</span>).as(<span cla
       </a>
     </span>
       <p class="shortcomment cmt">Returns a stratified sample without replacement based on the fraction given on each stratum.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a stratified sample without replacement based on the fraction given on each stratum.</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>stratum type</p></dd><dt class="param">col</dt><dd class="cmt"><p>column that defines strata</p></dd><dt class="param">fractions</dt><dd class="cmt"><p>sampling fraction for each stratum. If a stratum is not specified, we treat
-                 its fraction as zero.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that represents the stratified sample</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+                 its fraction as zero.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a new <code>DataFrame</code> that represents the stratified sample</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameStatFunctions#sampleBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sampleBy[T](col:String,fractions:Map[T,Double],seed:Long):org.apache.spark.sql.DataFrame"></a>
       <a id="sampleBy[T](String,Map[T,Double],Long):DataFrame"></a>
@@ -790,7 +793,7 @@ freqPairs.select(explode($<span class="lit">"a-b_freqItems"</span>).as(<span cla
       </a>
     </span>
       <p class="shortcomment cmt">Returns a stratified sample without replacement based on the fraction given on each stratum.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a stratified sample without replacement based on the fraction given on each stratum.</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>stratum type</p></dd><dt class="param">col</dt><dd class="cmt"><p>column that defines strata</p></dd><dt class="param">fractions</dt><dd class="cmt"><p>sampling fraction for each stratum. If a stratum is not specified, we treat
-                 its fraction as zero.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that represents the stratified sample</p><pre><span class="kw">val</span> df = spark.createDataFrame(<span class="std">Seq</span>((<span class="num">1</span>, <span class="num">1</span>), (<span class="num">1</span>, <span class="num">2</span>), (<span class="num">2</span>, <span class="num">1</span>), (<span class="num">2</span>, <span class="num">1</span>), (<span class="num">2</span>, <span class="num">3</span>), (<span class="num">3</span>, <span class="num">2</span>),
+                 its fraction as zero.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>a new <code>DataFrame</code> that represents the stratified sample</p><pre><span class="kw">val</span> df = spark.createDataFrame(<span class="std">Seq</span>((<span class="num">1</span>, <span class="num">1</span>), (<span class="num">1</span>, <span class="num">2</span>), (<span class="num">2</span>, <span class="num">1</span>), (<span class="num">2</span>, <span class="num">1</span>), (<span class="num">2</span>, <span class="num">3</span>), (<span class="num">3</span>, <span class="num">2</span>),
   (<span class="num">3</span>, <span class="num">3</span>))).toDF(<span class="lit">"key"</span>, <span class="lit">"value"</span>)
 <span class="kw">val</span> fractions = <span class="std">Map</span>(<span class="num">1</span> -&gt; <span class="num">1.0</span>, <span class="num">3</span> -&gt; <span class="num">0.5</span>)
 df.stat.sampleBy(<span class="lit">"key"</span>, fractions, <span class="num">36</span>L).show()

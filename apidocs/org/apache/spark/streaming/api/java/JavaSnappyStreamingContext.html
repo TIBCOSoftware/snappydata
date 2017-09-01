@@ -380,11 +380,12 @@ will be thrown in this thread.
     </span>
       <p class="shortcomment cmt">Create an input stream that monitors a Hadoop-compatible filesystem
 for new files and reads them as flat binary files with fixed record lengths,
-yielding byte arrays</p><div class="fullcomment"><div class="comment cmt"><p>Create an input stream that monitors a Hadoop-compatible filesystem
+yielding byte arrays
+</p><div class="fullcomment"><div class="comment cmt"><p>Create an input stream that monitors a Hadoop-compatible filesystem
 for new files and reads them as flat binary files with fixed record lengths,
-yielding byte arrays</p><p><b>Note:</b> We ensure that the byte array for each record in the
-resulting RDDs of the DStream has the provided record length.
-</p></div><dl class="paramcmts block"><dt class="param">directory</dt><dd class="cmt"><p>HDFS directory to monitor for new files</p></dd><dt class="param">recordLength</dt><dd class="cmt"><p>The length at which to split the records</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd></dl></div>
+yielding byte arrays
+</p></div><dl class="paramcmts block"><dt class="param">directory</dt><dd class="cmt"><p>HDFS directory to monitor for new files</p></dd><dt class="param">recordLength</dt><dd class="cmt"><p>The length at which to split the records</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd><dt>Note</dt><dd><span class="cmt"><p>We ensure that the byte array for each record in the
+resulting RDDs of the DStream has the provided record length.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.api.java.JavaStreamingContext#checkpoint" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="checkpoint(directory:String):Unit"></a>
       <a id="checkpoint(String):Unit"></a>
@@ -739,11 +740,11 @@ location within the same file system. File names starting with . are ignored.</p
       </a>
     </span>
       <p class="shortcomment cmt">Create an input stream from a queue of RDDs.</p><div class="fullcomment"><div class="comment cmt"><p>Create an input stream from a queue of RDDs. In each batch,
-it will process either one or all of the RDDs returned by the queue.</p><p>NOTE:
+it will process either one or all of the RDDs returned by the queue.
+</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs</p></dd><dt class="param">oneAtATime</dt><dd class="cmt"><p>Whether only one RDD should be consumed from the queue in every interval</p></dd><dt class="param">defaultRDD</dt><dd class="cmt"><p>Default RDD is returned by the DStream when the queue is empty</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd><dt>Note</dt><dd><span class="cmt"><p>
 1. Changes to the queue after the stream is created will not be recognized.
 2. Arbitrary RDDs can be added to <code>queueStream</code>, there is no way to recover data of
-those RDDs, so <code>queueStream</code> doesn't support checkpointing.
-</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs</p></dd><dt class="param">oneAtATime</dt><dd class="cmt"><p>Whether only one RDD should be consumed from the queue in every interval</p></dd><dt class="param">defaultRDD</dt><dd class="cmt"><p>Default RDD is returned by the DStream when the queue is empty</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd></dl></div>
+those RDDs, so <code>queueStream</code> doesn't support checkpointing.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.api.java.JavaStreamingContext#queueStream" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="queueStream[T](queue:java.util.Queue[org.apache.spark.api.java.JavaRDD[T]],oneAtATime:Boolean):org.apache.spark.streaming.api.java.JavaInputDStream[T]"></a>
       <a id="queueStream[T](Queue[JavaRDD[T]],Boolean):JavaInputDStream[T]"></a>
@@ -761,11 +762,11 @@ those RDDs, so <code>queueStream</code> doesn't support checkpointing.
       </a>
     </span>
       <p class="shortcomment cmt">Create an input stream from a queue of RDDs.</p><div class="fullcomment"><div class="comment cmt"><p>Create an input stream from a queue of RDDs. In each batch,
-it will process either one or all of the RDDs returned by the queue.</p><p>NOTE:
+it will process either one or all of the RDDs returned by the queue.
+</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs</p></dd><dt class="param">oneAtATime</dt><dd class="cmt"><p>Whether only one RDD should be consumed from the queue in every interval</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd><dt>Note</dt><dd><span class="cmt"><p>
 1. Changes to the queue after the stream is created will not be recognized.
 2. Arbitrary RDDs can be added to <code>queueStream</code>, there is no way to recover data of
-those RDDs, so <code>queueStream</code> doesn't support checkpointing.
-</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs</p></dd><dt class="param">oneAtATime</dt><dd class="cmt"><p>Whether only one RDD should be consumed from the queue in every interval</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd></dl></div>
+those RDDs, so <code>queueStream</code> doesn't support checkpointing.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.api.java.JavaStreamingContext#queueStream" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="queueStream[T](queue:java.util.Queue[org.apache.spark.api.java.JavaRDD[T]]):org.apache.spark.streaming.api.java.JavaDStream[T]"></a>
       <a id="queueStream[T](Queue[JavaRDD[T]]):JavaDStream[T]"></a>
@@ -783,11 +784,11 @@ those RDDs, so <code>queueStream</code> doesn't support checkpointing.
       </a>
     </span>
       <p class="shortcomment cmt">Create an input stream from a queue of RDDs.</p><div class="fullcomment"><div class="comment cmt"><p>Create an input stream from a queue of RDDs. In each batch,
-it will process either one or all of the RDDs returned by the queue.</p><p>NOTE:
+it will process either one or all of the RDDs returned by the queue.
+</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd><dt>Note</dt><dd><span class="cmt"><p>
 1. Changes to the queue after the stream is created will not be recognized.
 2. Arbitrary RDDs can be added to <code>queueStream</code>, there is no way to recover data of
-those RDDs, so <code>queueStream</code> doesn't support checkpointing.
-</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>Type of objects in the RDD</p></dd><dt class="param">queue</dt><dd class="cmt"><p>Queue of RDDs</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd></dl></div>
+those RDDs, so <code>queueStream</code> doesn't support checkpointing.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.api.java.JavaStreamingContext#rawSocketStream" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="rawSocketStream[T](hostname:String,port:Int):org.apache.spark.streaming.api.java.JavaReceiverInputDStream[T]"></a>
       <a id="rawSocketStream[T](String,Int):JavaReceiverInputDStream[T]"></a>
@@ -1196,12 +1197,11 @@ file system. File names starting with . are ignored.</p></div><dl class="paramcm
       <p class="shortcomment cmt">Create a new DStream in which each RDD is generated by applying a function on RDDs of
 the DStreams.</p><div class="fullcomment"><div class="comment cmt"><p>Create a new DStream in which each RDD is generated by applying a function on RDDs of
 the DStreams. The order of the JavaRDDs in the transform function parameter will be the
-same as the order of corresponding DStreams in the list. Note that for adding a
-JavaPairDStream in the list of JavaDStreams, convert it to a JavaDStream using
-<a href="JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">org.apache.spark.streaming.api.java.JavaPairDStream</a>.toJavaDStream().
+same as the order of corresponding DStreams in the list.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd><dt>Note</dt><dd><span class="cmt"><p>For adding a JavaPairDStream in the list of JavaDStreams, convert it to a
+JavaDStream using <a href="JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">org.apache.spark.streaming.api.java.JavaPairDStream</a>.toJavaDStream().
 In the transform function, convert the JavaRDD corresponding to that JavaDStream to
-a JavaPairRDD using org.apache.spark.api.java.JavaPairRDD.fromJavaRDD().
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd></dl></div>
+a JavaPairRDD using org.apache.spark.api.java.JavaPairRDD.fromJavaRDD().</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.api.java.JavaStreamingContext#transformToPair" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformToPair[K,V](dstreams:java.util.List[org.apache.spark.streaming.api.java.JavaDStream[_]],transformFunc:org.apache.spark.api.java.function.Function2[java.util.List[org.apache.spark.api.java.JavaRDD[_]],org.apache.spark.streaming.Time,org.apache.spark.api.java.JavaPairRDD[K,V]]):org.apache.spark.streaming.api.java.JavaPairDStream[K,V]"></a>
       <a id="transformToPair[K,V](List[JavaDStream[_]],Function2[List[JavaRDD[_]],Time,JavaPairRDD[K,V]]):JavaPairDStream[K,V]"></a>
@@ -1221,12 +1221,11 @@ a JavaPairRDD using org.apache.spark.api.java.JavaPairRDD.fromJavaRDD().
       <p class="shortcomment cmt">Create a new DStream in which each RDD is generated by applying a function on RDDs of
 the DStreams.</p><div class="fullcomment"><div class="comment cmt"><p>Create a new DStream in which each RDD is generated by applying a function on RDDs of
 the DStreams. The order of the JavaRDDs in the transform function parameter will be the
-same as the order of corresponding DStreams in the list. Note that for adding a
-JavaPairDStream in the list of JavaDStreams, convert it to a JavaDStream using
-<a href="JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">org.apache.spark.streaming.api.java.JavaPairDStream</a>.toJavaDStream().
+same as the order of corresponding DStreams in the list.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd><dt>Note</dt><dd><span class="cmt"><p>For adding a JavaPairDStream in the list of JavaDStreams, convert it to
+a JavaDStream using <a href="JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">org.apache.spark.streaming.api.java.JavaPairDStream</a>.toJavaDStream().
 In the transform function, convert the JavaRDD corresponding to that JavaDStream to
-a JavaPairRDD using org.apache.spark.api.java.JavaPairRDD.fromJavaRDD().
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">JavaStreamingContext</a></dd></dl></div>
+a JavaPairRDD using org.apache.spark.api.java.JavaPairRDD.fromJavaRDD().</p></span></dd></dl></div>
     </li><li name="org.apache.spark.streaming.api.java.JavaStreamingContext#union" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="union[K,V](first:org.apache.spark.streaming.api.java.JavaPairDStream[K,V],rest:java.util.List[org.apache.spark.streaming.api.java.JavaPairDStream[K,V]]):org.apache.spark.streaming.api.java.JavaPairDStream[K,V]"></a>
       <a id="union[K,V](JavaPairDStream[K,V],List[JavaPairDStream[K,V]]):JavaPairDStream[K,V]"></a>

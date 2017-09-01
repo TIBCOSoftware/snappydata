@@ -172,7 +172,7 @@ TODO We need to investigate if we can phase out this class and use HiveUtils dir
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="RelationInfo.html"><span class="name">RelationInfo</span></a><span class="params">(<span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>, <span name="partitioningCols">partitioningCols: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="indexCols">indexCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="pkCols">pkCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="partitions">partitions: <span class="extype" name="scala.Array">Array</span>[<a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="embdClusterRelDestroyVersion">embdClusterRelDestroyVersion: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="RelationInfo.html"><span class="name">RelationInfo</span></a><span class="params">(<span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="partitioningCols">partitioningCols: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="indexCols">indexCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="pkCols">pkCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="partitions">partitions: <span class="extype" name="scala.Array">Array</span>[<a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="embdClusterRelDestroyVersion">embdClusterRelDestroyVersion: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.hive.package@RelationInfoextendsProductwithSerializable" title="Permalink" target="_top">
@@ -197,6 +197,23 @@ TODO We need to investigate if we can phase out this class and use HiveUtils dir
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.hive.SnappyConnectorAQPCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyConnectorAQPCatalogextendsSnappyStoreAQPHiveCatalogwithConnectorCatalog"></a>
+      <a id="SnappyConnectorAQPCatalog:SnappyConnectorAQPCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyConnectorAQPCatalog.html"><span class="name">SnappyConnectorAQPCatalog</span></a><span class="result"> extends <a href="SnappyStoreAQPHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> with <a href="ConnectorCatalog.html" class="extype" name="org.apache.spark.sql.hive.ConnectorCatalog">ConnectorCatalog</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyConnectorAQPCatalogextendsSnappyStoreAQPHiveCatalogwithConnectorCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.hive.SnappyConnectorCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyConnectorCatalogextendsSnappyStoreHiveCatalogwithConnectorCatalog"></a>
       <a id="SnappyConnectorCatalog:SnappyConnectorCatalog"></a>
@@ -214,19 +231,19 @@ TODO We need to investigate if we can phase out this class and use HiveUtils dir
       </a>
     </span>
       <p class="shortcomment cmt">Catalog used when SnappyData Connector mode is used over thin client JDBC connection.</p>
-    </li><li name="org.apache.spark.sql.hive.SnappyHiveMetaStoreEventListener" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyHiveMetaStoreEventListenerextendsMetaStoreEventListenerwithLogging"></a>
-      <a id="SnappyHiveMetaStoreEventListener:SnappyHiveMetaStoreEventListener"></a>
+    </li><li name="org.apache.spark.sql.hive.SnappySharedState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappySharedStateextendsSharedState"></a>
+      <a id="SnappySharedState:SnappySharedState"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyHiveMetaStoreEventListener.html"><span class="name">SnappyHiveMetaStoreEventListener</span></a><span class="result"> extends <span class="extype" name="org.apache.hadoop.hive.metastore.MetaStoreEventListener">MetaStoreEventListener</span> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <a href="SnappySharedState.html"><span class="name">SnappySharedState</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.internal.SharedState">SharedState</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyHiveMetaStoreEventListenerextendsMetaStoreEventListenerwithLogging" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappySharedStateextendsSharedState" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -236,7 +253,7 @@ TODO We need to investigate if we can phase out this class and use HiveUtils dir
       <a id="SnappyStoreAQPHiveCatalog:SnappyStoreAQPHiveCatalog"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -308,6 +325,23 @@ Configuration for Hive is read from hive-site.xml on the classpath.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.hive.package@ExternalTableType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.HiveExternalCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveExternalCatalog"></a>
+      <a id="HiveExternalCatalog:HiveExternalCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveExternalCatalog$.html"><span class="name">HiveExternalCatalog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@HiveExternalCatalog" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -147,18 +147,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$MutableProjection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableProjection">MutableProjection</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.MutableProjection#target" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="target(row:org.apache.spark.sql.catalyst.expressions.MutableRow):org.apache.spark.sql.catalyst.expressions.package.MutableProjection"></a>
-      <a id="target(MutableRow):MutableProjection"></a>
+      <a id="target(row:org.apache.spark.sql.catalyst.InternalRow):org.apache.spark.sql.catalyst.expressions.package.MutableProjection"></a>
+      <a id="target(InternalRow):MutableProjection"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">target</span><span class="params">(<span name="row">row: <a href="../MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></span>)</span><span class="result">: <a href="../package$$MutableProjection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableProjection">MutableProjection</a></span>
+        <span class="name">target</span><span class="params">(<span name="row">row: <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>)</span><span class="result">: <a href="../package$$MutableProjection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableProjection">MutableProjection</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.BaseMutableProjection@target(row:org.apache.spark.sql.catalyst.expressions.MutableRow):org.apache.spark.sql.catalyst.expressions.package.MutableProjection" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.BaseMutableProjection@target(row:org.apache.spark.sql.catalyst.InternalRow):org.apache.spark.sql.catalyst.expressions.package.MutableProjection" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -390,6 +390,26 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.Projection#initialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initialize(partitionIndex:Int):Unit"></a>
+      <a id="initialize(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initialize</span><span class="params">(<span name="partitionIndex">partitionIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.BaseMutableProjection@initialize(partitionIndex:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Initializes internal states given the current partition index.</p><div class="fullcomment"><div class="comment cmt"><p>Initializes internal states given the current partition index.
+This is used by nondeterministic expressions to set initial states.
+The default implementation does nothing.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$Projection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Projection">Projection</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>

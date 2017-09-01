@@ -221,10 +221,10 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Creates a relation with the given parameters based on the contents of the given
-DataFrame.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a relation with the given parameters based on the contents of the given
-DataFrame. The mode specifies the expected behavior of createRelation when
-data already exists.
+      <p class="shortcomment cmt">Save the DataFrame to the destination and return a relation with the given parameters based on
+the contents of the given DataFrame.</p><div class="fullcomment"><div class="comment cmt"><p>Save the DataFrame to the destination and return a relation with the given parameters based on
+the contents of the given DataFrame. The mode specifies the expected behavior of createRelation
+when data already exists.
 Right now, there are three modes, Append, Overwrite, and ErrorIfExists.
 Append mode means that when saving a DataFrame to a data source, if data already exists,
 contents of the DataFrame are expected to be appended to existing data.
@@ -250,9 +250,8 @@ if data already exists, an exception is expected to be thrown.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a new base relation with the given parameters.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new base relation with the given parameters.
-Note: the parameters' keywords are case insensitive and this insensitivity is enforced
-by the Map that is passed to the function.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../sources/MutableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.MutableRelationProvider">MutableRelationProvider</a> → <a href="../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../sources/MutableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.MutableRelationProvider">MutableRelationProvider</a> → <a href="../sources/RelationProvider.html" class="extype" name="org.apache.spark.sql.sources.RelationProvider">RelationProvider</a></dd><dt>Note</dt><dd><span class="cmt"><p>The parameters' keywords are case insensitive and this insensitivity is enforced
+by the Map that is passed to the function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.MutableRelationProvider#createRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createRelation(sqlContext:org.apache.spark.sql.SQLContext,options:Map[String,String],schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.row.JDBCMutableRelation"></a>
       <a id="createRelation(SQLContext,Map[String,String],StructType):JDBCMutableRelation"></a>
@@ -270,9 +269,8 @@ by the Map that is passed to the function.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a new base relation with the given parameters and user defined schema.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new base relation with the given parameters and user defined schema.
-Note: the parameters' keywords are case insensitive and this insensitivity is enforced
-by the Map that is passed to the function.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../sources/MutableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.MutableRelationProvider">MutableRelationProvider</a> → <a href="../sources/SchemaRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.SchemaRelationProvider">SchemaRelationProvider</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../sources/MutableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.MutableRelationProvider">MutableRelationProvider</a> → <a href="../sources/SchemaRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.SchemaRelationProvider">SchemaRelationProvider</a></dd><dt>Note</dt><dd><span class="cmt"><p>The parameters' keywords are case insensitive and this insensitivity is enforced
+by the Map that is passed to the function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.MutableRelationProvider#createRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createRelation(sqlContext:org.apache.spark.sql.SQLContext,mode:org.apache.spark.sql.SaveMode,options:Map[String,String],schema:String,data:Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]):org.apache.spark.sql.row.JDBCMutableRelation"></a>
       <a id="createRelation(SQLContext,SaveMode,Map[String,String],String,Option[LogicalPlan]):JDBCMutableRelation"></a>

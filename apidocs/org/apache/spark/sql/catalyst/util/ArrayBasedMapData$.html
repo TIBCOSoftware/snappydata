@@ -148,39 +148,91 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply(keys:Array[Any],values:Array[Any]):org.apache.spark.sql.catalyst.util.ArrayBasedMapData"></a>
-      <a id="apply(Array[Any],Array[Any]):ArrayBasedMapData"></a>
+      <a id="apply(keys:Array[_],values:Array[_]):org.apache.spark.sql.catalyst.util.ArrayBasedMapData"></a>
+      <a id="apply(Array[_],Array[_]):ArrayBasedMapData"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="keys">keys: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Any">Any</span>]</span>, <span name="values">values: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="result">: <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a></span>
+        <span class="name">apply</span><span class="params">(<span name="keys">keys: <span class="extype" name="scala.Array">Array</span>[_]</span>, <span name="values">values: <span class="extype" name="scala.Array">Array</span>[_]</span>)</span><span class="result">: <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.ArrayBasedMapData$@apply(keys:Array[Any],values:Array[Any]):org.apache.spark.sql.catalyst.util.ArrayBasedMapData" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.ArrayBasedMapData$@apply(keys:Array[_],values:Array[_]):org.apache.spark.sql.catalyst.util.ArrayBasedMapData" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply(map:Map[Any,Any]):org.apache.spark.sql.catalyst.util.ArrayBasedMapData"></a>
-      <a id="apply(Map[Any,Any]):ArrayBasedMapData"></a>
+    </li><li name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply(iterator:Iterator[Tuple2[_,_]],size:Int,keyConverter:Any=&gt;Any,valueConverter:Any=&gt;Any):org.apache.spark.sql.catalyst.util.ArrayBasedMapData"></a>
+      <a id="apply(Iterator[Tuple2[_,_]],Int,(Any)⇒Any,(Any)⇒Any):ArrayBasedMapData"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="map">map: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="result">: <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a></span>
+        <span class="name">apply</span><span class="params">(<span name="iterator">iterator: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="scala.Tuple2">Tuple2</span>[_, _]]</span>, <span name="size">size: <span class="extype" name="scala.Int">Int</span></span>, <span name="keyConverter">keyConverter: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span></span>, <span name="valueConverter">valueConverter: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.ArrayBasedMapData$@apply(map:Map[Any,Any]):org.apache.spark.sql.catalyst.util.ArrayBasedMapData" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.ArrayBasedMapData$@apply(iterator:Iterator[Tuple2[_,_]],size:Int,keyConverter:Any=&gt;Any,valueConverter:Any=&gt;Any):org.apache.spark.sql.catalyst.util.ArrayBasedMapData" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Creates a <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a> by applying the given converters over
+each (key -&gt; value) pair from the given iterator
+</p><div class="fullcomment"><div class="comment cmt"><p>Creates a <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a> by applying the given converters over
+each (key -&gt; value) pair from the given iterator
+</p></div><dl class="paramcmts block"><dt class="param">iterator</dt><dd class="cmt"><p>Input iterator</p></dd><dt class="param">size</dt><dd class="cmt"><p>Number of elements</p></dd><dt class="param">keyConverter</dt><dd class="cmt"><p>This function is applied over all the keys extracted from the
+                    given iterator to obtain the output map's keys</p></dd><dt class="param">valueConverter</dt><dd class="cmt"><p>This function is applied over all the values extracted from the
+                      given iterator to obtain the output map's values</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply(map:scala.collection.Map[_,_],keyConverter:Any=&gt;Any,valueConverter:Any=&gt;Any):org.apache.spark.sql.catalyst.util.ArrayBasedMapData"></a>
+      <a id="apply(Map[_,_],(Any)⇒Any,(Any)⇒Any):ArrayBasedMapData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="map">map: <span class="extype" name="scala.collection.Map">Map</span>[_, _]</span>, <span name="keyConverter">keyConverter: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span> = <span class="symbol">identity</span></span>, <span name="valueConverter">valueConverter: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span> = <span class="symbol">identity</span></span>)</span><span class="result">: <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.ArrayBasedMapData$@apply(map:scala.collection.Map[_,_],keyConverter:Any=&gt;Any,valueConverter:Any=&gt;Any):org.apache.spark.sql.catalyst.util.ArrayBasedMapData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Creates a <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a> by applying the given converters over
+each (key -&gt; value) pair of the input map
+</p><div class="fullcomment"><div class="comment cmt"><p>Creates a <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a> by applying the given converters over
+each (key -&gt; value) pair of the input map
+</p></div><dl class="paramcmts block"><dt class="param">map</dt><dd class="cmt"><p>Input map</p></dd><dt class="param">keyConverter</dt><dd class="cmt"><p>This function is applied over all the keys of the input map to
+                    obtain the output map's keys</p></dd><dt class="param">valueConverter</dt><dd class="cmt"><p>This function is applied over all the values of the input map to
+                      obtain the output map's values</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply(javaMap:java.util.Map[_,_],keyConverter:Any=&gt;Any,valueConverter:Any=&gt;Any):org.apache.spark.sql.catalyst.util.ArrayBasedMapData"></a>
+      <a id="apply(Map[_,_],(Any)⇒Any,(Any)⇒Any):ArrayBasedMapData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="javaMap">javaMap: <span class="extype" name="java.util.Map">Map</span>[_, _]</span>, <span name="keyConverter">keyConverter: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span></span>, <span name="valueConverter">valueConverter: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.ArrayBasedMapData$@apply(javaMap:java.util.Map[_,_],keyConverter:Any=&gt;Any,valueConverter:Any=&gt;Any):org.apache.spark.sql.catalyst.util.ArrayBasedMapData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Creates a <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a> by applying the given converters over
+each (key -&gt; value) pair of the input <span class="extype" name="java.util.Map">java.util.Map</span>
+</p><div class="fullcomment"><div class="comment cmt"><p>Creates a <a href="ArrayBasedMapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData">ArrayBasedMapData</a> by applying the given converters over
+each (key -&gt; value) pair of the input <span class="extype" name="java.util.Map">java.util.Map</span>
+</p></div><dl class="paramcmts block"><dt class="param">javaMap</dt><dd class="cmt"><p>Input map</p></dd><dt class="param">keyConverter</dt><dd class="cmt"><p>This function is applied over all the keys of the input map to
+                    obtain the output map's keys</p></dd><dt class="param">valueConverter</dt><dd class="cmt"><p>This function is applied over all the values of the input map to
+                      obtain the output map's values</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>

@@ -698,55 +698,55 @@ Otherwise, we always get the object inspector according to its data type(in cata
     </span>
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">dataType</dt><dd class="cmt"><p>Catalyst data type</p></dd><dt>returns</dt><dd class="cmt"><p>Hive java object inspector (recursively), not the Writable ObjectInspector
 We can easily map to the Hive built-in object inspector according to the data type.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
-    </li><li name="org.apache.spark.sql.hive.HiveInspectors#unwrap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="unwrap(data:Any,oi:org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector):Any"></a>
-      <a id="unwrap(Any,ObjectInspector):Any"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">unwrap</span><span class="params">(<span name="data">data: <span class="extype" name="scala.Any">Any</span></span>, <span name="oi">oi: <span class="extype" name="org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector">ObjectInspector</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.HiveScriptIOSchema@unwrap(data:Any,oi:org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector):Any" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Converts hive types to native catalyst types.</p><div class="fullcomment"><div class="comment cmt"><p>Converts hive types to native catalyst types.</p></div><dl class="paramcmts block"><dt class="param">data</dt><dd class="cmt"><p>the data in Hive type</p></dd><dt class="param">oi</dt><dd class="cmt"><p>the ObjectInspector associated with the Hive Type</p></dd><dt>returns</dt><dd class="cmt"><p>convert the data into catalyst type
-TODO return the function of (data =&gt; Any) instead for performance consideration
-Strictly follows the following order in unwrapping (constant OI has the higher priority):
- Constant Null object inspector =&gt;
-   return null
- Constant object inspector =&gt;
-   extract the value from constant object inspector
- Check whether the <code>data</code> is null =&gt;
-   return null if true
- If object inspector prefers writable =&gt;
-   extract writable from <code>data</code> and then get the catalyst type from the writable
- Extract the java object directly from the object inspector
- NOTICE: the complex data type requires recursive unwrapping.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.HiveInspectors#unwrapperFor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="unwrapperFor(field:org.apache.hadoop.hive.serde2.objectinspector.StructField):(Any,org.apache.spark.sql.catalyst.expressions.MutableRow,Int)=&gt;Unit"></a>
-      <a id="unwrapperFor(StructField):(Any,MutableRow,Int)⇒Unit"></a>
+      <a id="unwrapperFor(field:org.apache.hadoop.hive.serde2.objectinspector.StructField):(Any,org.apache.spark.sql.catalyst.InternalRow,Int)=&gt;Unit"></a>
+      <a id="unwrapperFor(StructField):(Any,InternalRow,Int)⇒Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unwrapperFor</span><span class="params">(<span name="field">field: <span class="extype" name="org.apache.hadoop.hive.serde2.objectinspector.StructField">StructField</span></span>)</span><span class="result">: (<span class="extype" name="scala.Any">Any</span>, <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a>, <span class="extype" name="scala.Int">Int</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">unwrapperFor</span><span class="params">(<span name="field">field: <span class="extype" name="org.apache.hadoop.hive.serde2.objectinspector.StructField">StructField</span></span>)</span><span class="result">: (<span class="extype" name="scala.Any">Any</span>, <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>, <span class="extype" name="scala.Int">Int</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.HiveScriptIOSchema@unwrapperFor(field:org.apache.hadoop.hive.serde2.objectinspector.StructField):(Any,org.apache.spark.sql.catalyst.expressions.MutableRow,Int)=&gt;Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.HiveScriptIOSchema@unwrapperFor(field:org.apache.hadoop.hive.serde2.objectinspector.StructField):(Any,org.apache.spark.sql.catalyst.InternalRow,Int)=&gt;Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Builds specific unwrappers ahead of time according to object inspector
-types to avoid pattern matching and branching costs per row.</p><div class="fullcomment"><div class="comment cmt"><p>Builds specific unwrappers ahead of time according to object inspector
+      <p class="shortcomment cmt">Builds unwrappers ahead of time according to object inspector
+types to avoid pattern matching and branching costs per row.</p><div class="fullcomment"><div class="comment cmt"><p>Builds unwrappers ahead of time according to object inspector
 types to avoid pattern matching and branching costs per row.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">field</dt><dd class="cmt"><p>The HiveStructField to create an unwrapper for.</p></dd><dt>returns</dt><dd class="cmt"><p>A function that performs in-place updating of a MutableRow.
+        Use the overloaded ObjectInspector version for assignments.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.HiveInspectors#unwrapperFor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unwrapperFor(objectInspector:org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector):Any=&gt;Any"></a>
+      <a id="unwrapperFor(ObjectInspector):(Any)⇒Any"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unwrapperFor</span><span class="params">(<span name="objectInspector">objectInspector: <span class="extype" name="org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector">ObjectInspector</span></span>)</span><span class="result">: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.HiveScriptIOSchema@unwrapperFor(objectInspector:org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector):Any=&gt;Any" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Builds unwrappers ahead of time according to object inspector
+types to avoid pattern matching and branching costs per row.</p><div class="fullcomment"><div class="comment cmt"><p>Builds unwrappers ahead of time according to object inspector
+types to avoid pattern matching and branching costs per row.</p><p>Strictly follows the following order in unwrapping (constant OI has the higher priority):
+Constant Null object inspector =&gt;
+  return null
+Constant object inspector =&gt;
+  extract the value from constant object inspector
+If object inspector prefers writable =&gt;
+  extract writable from <code>data</code> and then get the catalyst type from the writable
+Extract the java object directly from the object inspector</p><p>NOTICE: the complex data type requires recursive unwrapping.
+</p></div><dl class="paramcmts block"><dt class="param">objectInspector</dt><dd class="cmt"><p>the ObjectInspector used to create an unwrapper.</p></dd><dt>returns</dt><dd class="cmt"><p>A function that unwraps data objects.
+        Use the overloaded HiveStructField version for in-place updating of a MutableRow.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -817,35 +817,35 @@ types to avoid pattern matching and branching costs per row.
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.HiveInspectors#wrap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="wrap(row:Seq[Any],inspectors:Seq[org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector],cache:Array[AnyRef],dataTypes:Array[org.apache.spark.sql.types.DataType]):Array[AnyRef]"></a>
-      <a id="wrap(Seq[Any],Seq[ObjectInspector],Array[AnyRef],Array[DataType]):Array[AnyRef]"></a>
+      <a id="wrap(row:Seq[Any],wrappers:Array[Any=&gt;Any],cache:Array[AnyRef],dataTypes:Array[org.apache.spark.sql.types.DataType]):Array[AnyRef]"></a>
+      <a id="wrap(Seq[Any],Array[(Any)⇒Any],Array[AnyRef],Array[DataType]):Array[AnyRef]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">wrap</span><span class="params">(<span name="row">row: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Any">Any</span>]</span>, <span name="inspectors">inspectors: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector">ObjectInspector</span>]</span>, <span name="cache">cache: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>, <span name="dataTypes">dataTypes: <span class="extype" name="scala.Array">Array</span>[<a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
+        <span class="name">wrap</span><span class="params">(<span name="row">row: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Any">Any</span>]</span>, <span name="wrappers">wrappers: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span>]</span>, <span name="cache">cache: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>, <span name="dataTypes">dataTypes: <span class="extype" name="scala.Array">Array</span>[<a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.HiveScriptIOSchema@wrap(row:Seq[Any],inspectors:Seq[org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector],cache:Array[AnyRef],dataTypes:Array[org.apache.spark.sql.types.DataType]):Array[AnyRef]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.HiveScriptIOSchema@wrap(row:Seq[Any],wrappers:Array[Any=&gt;Any],cache:Array[AnyRef],dataTypes:Array[org.apache.spark.sql.types.DataType]):Array[AnyRef]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.HiveInspectors#wrap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="wrap(row:org.apache.spark.sql.catalyst.InternalRow,inspectors:Seq[org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector],cache:Array[AnyRef],dataTypes:Array[org.apache.spark.sql.types.DataType]):Array[AnyRef]"></a>
-      <a id="wrap(InternalRow,Seq[ObjectInspector],Array[AnyRef],Array[DataType]):Array[AnyRef]"></a>
+      <a id="wrap(row:org.apache.spark.sql.catalyst.InternalRow,wrappers:Array[Any=&gt;Any],cache:Array[AnyRef],dataTypes:Array[org.apache.spark.sql.types.DataType]):Array[AnyRef]"></a>
+      <a id="wrap(InternalRow,Array[(Any)⇒Any],Array[AnyRef],Array[DataType]):Array[AnyRef]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">wrap</span><span class="params">(<span name="row">row: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="inspectors">inspectors: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector">ObjectInspector</span>]</span>, <span name="cache">cache: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>, <span name="dataTypes">dataTypes: <span class="extype" name="scala.Array">Array</span>[<a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
+        <span class="name">wrap</span><span class="params">(<span name="row">row: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="wrappers">wrappers: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span>]</span>, <span name="cache">cache: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>, <span name="dataTypes">dataTypes: <span class="extype" name="scala.Array">Array</span>[<a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.HiveScriptIOSchema@wrap(row:org.apache.spark.sql.catalyst.InternalRow,inspectors:Seq[org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector],cache:Array[AnyRef],dataTypes:Array[org.apache.spark.sql.types.DataType]):Array[AnyRef]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.HiveScriptIOSchema@wrap(row:org.apache.spark.sql.catalyst.InternalRow,wrappers:Array[Any=&gt;Any],cache:Array[AnyRef],dataTypes:Array[org.apache.spark.sql.types.DataType]):Array[AnyRef]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -866,16 +866,7 @@ types to avoid pattern matching and branching costs per row.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Converts native catalyst types to the types expected by Hive</p><div class="fullcomment"><div class="comment cmt"><p>Converts native catalyst types to the types expected by Hive</p></div><dl class="paramcmts block"><dt class="param">a</dt><dd class="cmt"><p>the value to be wrapped</p></dd><dt class="param">oi</dt><dd class="cmt"><p>This ObjectInspector associated with the value returned by this function, and
-          the ObjectInspector should also be consistent with those returned from
-          toInspector: DataType =&gt; ObjectInspector and
-          toInspector: Expression =&gt; ObjectInspector
-Strictly follows the following order in wrapping (constant OI has the higher priority):
-  Constant object inspector =&gt; return the bundled value of Constant object inspector
-  Check whether the <code>a</code> is null =&gt; return null if true
-  If object inspector prefers writable object =&gt; return a Writable for the given data <code>a</code>
-  Map the catalyst data to the boxed java primitive
- NOTICE: the complex data type requires recursive wrapping.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.HiveInspectors#wrapperFor" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wrapperFor(oi:org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector,dataType:org.apache.spark.sql.types.DataType):Any=&gt;Any"></a>
       <a id="wrapperFor(ObjectInspector,DataType):(Any)⇒Any"></a>
@@ -893,7 +884,6 @@ Strictly follows the following order in wrapping (constant OI has the higher pri
       </a>
     </span>
       <p class="shortcomment cmt">Wraps with Hive types based on object inspector.</p><div class="fullcomment"><div class="comment cmt"><p>Wraps with Hive types based on object inspector.
-TODO: Consolidate all hive OI/data interface code.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>HiveInspectors</dd></dl></div>
     </li></ol>
             </div>

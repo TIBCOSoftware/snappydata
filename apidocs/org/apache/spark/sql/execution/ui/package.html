@@ -151,6 +151,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.ui.SnappySQLListener" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappySQLListenerextendsSQLListener"></a>
+      <a id="SnappySQLListener:SnappySQLListener"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySQLListener.html"><span class="name">SnappySQLListener</span></a><span class="result"> extends <a href="SQLListener.html" class="extype" name="org.apache.spark.sql.execution.ui.SQLListener">SQLListener</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.ui.package@SnappySQLListenerextendsSQLListener" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Snappy's SQL Listener.</p>
     </li><li name="org.apache.spark.sql.execution.ui.SparkListenerDriverAccumUpdates" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SparkListenerDriverAccumUpdatesextendsSparkListenerEventwithProductwithSerializable"></a>
       <a id="SparkListenerDriverAccumUpdates:SparkListenerDriverAccumUpdates"></a>
@@ -167,7 +184,10 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">A message used to update SQL metric value for driver-side updates (which doesn't get reflected
+automatically).</p><div class="fullcomment"><div class="comment cmt"><p>A message used to update SQL metric value for driver-side updates (which doesn't get reflected
+automatically).
+</p></div><dl class="paramcmts block"><dt class="param">executionId</dt><dd class="cmt"><p>The execution id for a query, so we can find the query plan.</p></dd><dt class="param">accumUpdates</dt><dd class="cmt"><p>Map from accumulator id to the metric value (metrics are always 64-bit ints).</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
@@ -211,6 +231,23 @@
                 <span class="name">@<a href="../../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparkListenerSQLPlanExecutionStartextendsSparkListenerEventwithProductwithSerializable"></a>
+      <a id="SparkListenerSQLPlanExecutionStart:SparkListenerSQLPlanExecutionStart"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkListenerSQLPlanExecutionStart.html"><span class="name">SparkListenerSQLPlanExecutionStart</span></a><span class="params">(<span name="executionId">executionId: <span class="extype" name="scala.Long">Long</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="details">details: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="physicalPlanDescription">physicalPlanDescription: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="sparkPlanInfo">sparkPlanInfo: <a href="../SparkPlanInfo.html" class="extype" name="org.apache.spark.sql.execution.SparkPlanInfo">SparkPlanInfo</a></span>, <span name="time">time: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="../../../scheduler/SparkListenerEvent.html" class="extype" name="org.apache.spark.scheduler.SparkListenerEvent">SparkListenerEvent</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.ui.package@SparkListenerSQLPlanExecutionStartextendsSparkListenerEventwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A new event that is fired when a plan is executed to get an RDD.</p>
     </li><li name="org.apache.spark.sql.execution.ui.SparkPlanGraph" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SparkPlanGraphextendsProductwithSerializable"></a>
       <a id="SparkPlanGraph:SparkPlanGraph"></a>

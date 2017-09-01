@@ -314,19 +314,19 @@
       </a>
     </span>
       <p class="shortcomment cmt">Compute a histogram using the provided buckets.</p><div class="fullcomment"><div class="comment cmt"><p>Compute a histogram using the provided buckets. The buckets are all open
-to the right except for the last which is closed
+to the right except for the last which is closed.
  e.g. for the array
  [1, 10, 20, 50] the buckets are [1, 10) [10, 20) [20, 50]
- e.g 1&lt;=x&lt;10 , 10&lt;=x&lt;20, 20&lt;=x&lt;=50
- And on the input of 1 and 50 we would have a histogram of 1, 0, 1</p><p>Note: if your histogram is evenly spaced (e.g. [0, 10, 20, 30]) this can be switched
+ e.g <code><=x<10, 10<=x<20, 20<=x<=50</code>
+ And on the input of 1 and 50 we would have a histogram of 1, 0, 1
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>If your histogram is evenly spaced (e.g. [0, 10, 20, 30]) this can be switched
 from an O(log n) insertion to O(1) per element. (where n = # buckets) if you set evenBuckets
 to true.
 buckets must be sorted and not contain any duplicates.
 buckets array must be at least two elements
 All NaN entries are treated the same. If you have a NaN bucket it must be
 the maximum value of the last position and all NaN entries will be counted
-in that bucket.
-</p></div></div>
+in that bucket.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.DoubleRDDFunctions#histogram" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="histogram(bucketCount:Int):(Array[Double],Array[Long])"></a>
       <a id="histogram(Int):(Array[Double],Array[Long])"></a>
@@ -725,6 +725,54 @@ If the elements in RDD do not vary (max == min) always returns a single bucket.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.rdd.DoubleRDDFunctions#popStdev" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="popStdev():Double"></a>
+      <a id="popStdev():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">popStdev</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.rdd.DoubleRDDFunctions@popStdev():Double" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Compute the population standard deviation of this RDD's elements.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the population standard deviation of this RDD's elements.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.rdd.DoubleRDDFunctions#popVariance" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="popVariance():Double"></a>
+      <a id="popVariance():Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">popVariance</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.rdd.DoubleRDDFunctions@popVariance():Double" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Compute the population variance of this RDD's elements.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the population variance of this RDD's elements.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.rdd.DoubleRDDFunctions#sampleStdev" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sampleStdev():Double"></a>
       <a id="sampleStdev():Double"></a>
@@ -795,7 +843,7 @@ count of the RDD's elements in one operation.</p>
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Compute the standard deviation of this RDD's elements.</p>
+      <p class="shortcomment cmt">Compute the population standard deviation of this RDD's elements.</p>
     </li><li name="org.apache.spark.rdd.DoubleRDDFunctions#sum" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sum():Double"></a>
       <a id="sum():Double"></a>
@@ -880,7 +928,7 @@ count of the RDD's elements in one operation.</p>
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Compute the variance of this RDD's elements.</p>
+      <p class="shortcomment cmt">Compute the population variance of this RDD's elements.</p>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

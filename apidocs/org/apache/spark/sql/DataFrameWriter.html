@@ -50,8 +50,11 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Interface used to write a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> to external storage systems (e.g. file systems,
-key-value stores, etc). Use <a href="Dataset.html#write:org.apache.spark.sql.DataFrameWriter[T]" class="extmbr" name="org.apache.spark.sql.Dataset#write">Dataset.write</a> to access this.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
+key-value stores, etc). Use <code>Dataset.write</code> to access this.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -181,7 +184,7 @@ key-value stores, etc). Use <a href="Dataset.html#write:org.apache.spark.sql.Dat
       </a>
     </span>
       <p class="shortcomment cmt">Buckets the output by the given columns.</p><div class="fullcomment"><div class="comment cmt"><p>Buckets the output by the given columns. If specified, the output is laid out on the file
-system similar to Hive's bucketing scheme.</p><p>This is applicable for Parquet, JSON and ORC.
+system similar to Hive's bucketing scheme.</p><p>This is applicable for all file-based data sources (e.g. Parquet, JSON) staring Spark 2.1.0.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
               
@@ -225,7 +228,7 @@ system similar to Hive's bucketing scheme.</p><p>This is applicable for Parquet,
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in CSV format at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in CSV format at the specified path.
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> in CSV format at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> in CSV format at the specified path.
 This is equivalent to:</p><pre>format(<span class="lit">"csv"</span>).save(path)</pre><p>You can set the following CSV-specific option(s) for writing CSV files:</p><ul><li><code>sep</code> (default <code>,</code>): sets the single character as a separator for each
 field and value.</li><li><code>quote</code> (default <code>&quot;</code>): sets the single character used for escaping quoted values where
 the separator can be part of the value.</li><li><code>escape</code> (default <code>\</code>): sets the single character used for escaping quotes inside
@@ -364,8 +367,9 @@ indicates a timestamp format. Custom date formats follow the formats at
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Inserts the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> to the specified table.</p><div class="fullcomment"><div class="comment cmt"><p>Inserts the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> to the specified table. It requires that
-the schema of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> is the same as the schema of the table.</p><p>Note: Unlike <code>saveAsTable</code>, <code>insertInto</code> ignores the column names and just uses position-based
+      <p class="shortcomment cmt">Inserts the content of the <code>DataFrame</code> to the specified table.</p><div class="fullcomment"><div class="comment cmt"><p>Inserts the content of the <code>DataFrame</code> to the specified table. It requires that
+the schema of the <code>DataFrame</code> is the same as the schema of the table.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Unlike <code>saveAsTable</code>, <code>insertInto</code> ignores the column names and just uses position-based
 resolution. For example:</p><pre>scala&gt; <span class="std">Seq</span>((<span class="num">1</span>, <span class="num">2</span>)).toDF(<span class="lit">"i"</span>, <span class="lit">"j"</span>).write.mode(<span class="lit">"overwrite"</span>).saveAsTable(<span class="lit">"t1"</span>)
 scala&gt; <span class="std">Seq</span>((<span class="num">3</span>, <span class="num">4</span>)).toDF(<span class="lit">"j"</span>, <span class="lit">"i"</span>).write.insertInto(<span class="lit">"t1"</span>)
 scala&gt; <span class="std">Seq</span>((<span class="num">5</span>, <span class="num">6</span>)).toDF(<span class="lit">"a"</span>, <span class="lit">"b"</span>).write.insertInto(<span class="lit">"t1"</span>)
@@ -376,8 +380,7 @@ scala&gt; sql(<span class="lit">"select * from t1"</span>).show
 |  <span class="num">5</span>|  <span class="num">6</span>|
 |  <span class="num">3</span>|  <span class="num">4</span>|
 |  <span class="num">1</span>|  <span class="num">2</span>|
-+---+---+</pre><p>Because it inserts data to an existing table, format or options will be ignored.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
++---+---+</pre><p>Because it inserts data to an existing table, format or options will be ignored.</p></span></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -411,14 +414,22 @@ scala&gt; sql(<span class="lit">"select * from t1"</span>).show
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> to an external database table via JDBC.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> to an external database table via JDBC. In the case the
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> to an external database table via JDBC.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> to an external database table via JDBC. In the case the
 table already exists in the external database, behavior of this function depends on the
 save mode, specified by the <code>mode</code> function (default to throwing an exception).</p><p>Don't create too many partitions in parallel on a large cluster; otherwise Spark might crash
-your external database systems.
+your external database systems.</p><p>You can set the following JDBC-specific option(s) for storing JDBC:</p><ul><li><code>truncate</code> (default <code>false</code>): use <code>TRUNCATE TABLE</code> instead of <code>DROP TABLE</code>.</li></ul><p>In case of failures, users should turn off <code>truncate</code> option to use <code>DROP TABLE</code> again. Also,
+due to the different behavior of <code>TRUNCATE TABLE</code> among DBMS, it's not always safe to use this.
+MySQLDialect, DB2Dialect, MsSqlServerDialect, DerbyDialect, and OracleDialect supports this
+while PostgresDialect and default JDBCDirect doesn't. For unknown and unsupported JDBCDirect,
+the user option <code>truncate</code> is ignored.
 </p></div><dl class="paramcmts block"><dt class="param">url</dt><dd class="cmt"><p>JDBC database url of the form <code>jdbc:subprotocol:subname</code></p></dd><dt class="param">table</dt><dd class="cmt"><p>Name of the table in the external database.</p></dd><dt class="param">connectionProperties</dt><dd class="cmt"><p>JDBC database connection arguments, a list of arbitrary string
                             tag/value. Normally at least a &quot;user&quot; and &quot;password&quot; property
                             should be included. &quot;batchsize&quot; can be used to control the
-                            number of rows per insert.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+                            number of rows per insert. &quot;isolationLevel&quot; can be one of
+                            &quot;NONE&quot;, &quot;READ_COMMITTED&quot;, &quot;READ_UNCOMMITTED&quot;, &quot;REPEATABLE_READ&quot;,
+                            or &quot;SERIALIZABLE&quot;, corresponding to standard transaction
+                            isolation levels defined by JDBC's Connection object, with default
+                            of &quot;READ_UNCOMMITTED&quot;.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameWriter#json" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="json(path:String):Unit"></a>
       <a id="json(String):Unit"></a>
@@ -435,7 +446,9 @@ your external database systems.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in JSON format at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in JSON format at the specified path.
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> in JSON format (<a href="http://jsonlines.org/">
+JSON Lines text format or newline-delimited JSON</a>) at the specified path.</a></p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> in JSON format (<a href="http://jsonlines.org/">
+JSON Lines text format or newline-delimited JSON</a>) at the specified path.
 This is equivalent to:</p><pre>format(<span class="lit">"json"</span>).save(path)</pre><p>You can set the following JSON-specific option(s) for writing JSON files:</p><ul><li><code>compression</code> (default <code>null</code>): compression codec to use when saving to file. This can be
 one of the known case-insensitive shorten names (<code>none</code>, <code>bzip2</code>, <code>gzip</code>, <code>lz4</code>,
 <code>snappy</code> and <code>deflate</code>).</li><li><code>dateFormat</code> (default <code>yyyy-MM-dd</code>): sets the string that indicates a date format.
@@ -654,7 +667,7 @@ indicates a timestamp format. Custom date formats follow the formats at
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in ORC format at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in ORC format at the specified path.
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> in ORC format at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> in ORC format at the specified path.
 This is equivalent to:</p><pre>format(<span class="lit">"orc"</span>).save(path)</pre><p>You can set the following ORC-specific option(s) for writing ORC files:</p><ul><li><code>compression</code> (default <code>snappy</code>): compression codec to use when saving to file. This can be
 one of the known case-insensitive shorten names(<code>none</code>, <code>snappy</code>, <code>zlib</code>, and <code>lzo</code>).
 This will override <code>orc.compress</code>.</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Currently, this method can only be used after enabling Hive support</p></span></dd></dl></div>
@@ -674,7 +687,7 @@ This will override <code>orc.compress</code>.</li></ul></div><dl class="attribut
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in Parquet format at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in Parquet format at the specified path.
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> in Parquet format at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> in Parquet format at the specified path.
 This is equivalent to:</p><pre>format(<span class="lit">"parquet"</span>).save(path)</pre><p>You can set the following Parquet-specific option(s) for writing Parquet files:</p><ul><li><code>compression</code> (default is the value specified in <code>spark.sql.parquet.compression.codec</code>):
 compression codec to use when saving to file. This can be one of the known case-insensitive
 shorten names(none, <code>snappy</code>, <code>gzip</code>, and <code>lzo</code>). This will override
@@ -700,7 +713,7 @@ laid out on the file system similar to Hive's partitioning scheme. As an example
 partition a dataset by year and then month, the directory layout would look like:</p><ul><li>year=2016/month=01/</li><li>year=2016/month=02/</li></ul><p>Partitioning is one of the most widely used techniques to optimize physical data layout.
 It provides a coarse-grained index for skipping unnecessary data reads when queries have
 predicates on the partitioned columns. In order for partitioning to work well, the number
-of distinct values in each column should typically be less than tens of thousands.</p><p>This was initially applicable for Parquet but in 1.5+ covers JSON, text, ORC and avro as well.
+of distinct values in each column should typically be less than tens of thousands.</p><p>This is applicable for all file-based data sources (e.g. Parquet, JSON) staring Spark 2.1.0.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
               
@@ -721,7 +734,7 @@ of distinct values in each column should typically be less than tens of thousand
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> as the specified table.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> as the specified table.
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> as the specified table.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> as the specified table.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameWriter#save" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="save(path:String):Unit"></a>
@@ -739,7 +752,7 @@ of distinct values in each column should typically be less than tens of thousand
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> at the specified path.
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> at the specified path.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameWriter#saveAsTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="saveAsTable(tableName:String):Unit"></a>
@@ -757,11 +770,11 @@ of distinct values in each column should typically be less than tens of thousand
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> as the specified table.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> as the specified table.</p><p>In the case the table already exists, behavior of this function depends on the
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> as the specified table.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> as the specified table.</p><p>In the case the table already exists, behavior of this function depends on the
 save mode, specified by the <code>mode</code> function (default to throwing an exception).
-When <code>mode</code> is <code>Overwrite</code>, the schema of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> does not need to be
+When <code>mode</code> is <code>Overwrite</code>, the schema of the <code>DataFrame</code> does not need to be
 the same as that of the existing table.</p><p>When <code>mode</code> is <code>Append</code>, if there is an existing table, we will use the format and options of
-the existing table. The column order in the schema of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> doesn't need to be same
+the existing table. The column order in the schema of the <code>DataFrame</code> doesn't need to be same
 as that of the existing table. Unlike <code>insertInto</code>, <code>saveAsTable</code> will use the column names to
 find the correct column positions. For example:</p><pre>scala&gt; <span class="std">Seq</span>((<span class="num">1</span>, <span class="num">2</span>)).toDF(<span class="lit">"i"</span>, <span class="lit">"j"</span>).write.mode(<span class="lit">"overwrite"</span>).saveAsTable(<span class="lit">"t1"</span>)
 scala&gt; <span class="std">Seq</span>((<span class="num">3</span>, <span class="num">4</span>)).toDF(<span class="lit">"j"</span>, <span class="lit">"i"</span>).write.mode(<span class="lit">"append"</span>).saveAsTable(<span class="lit">"t1"</span>)
@@ -771,7 +784,7 @@ scala&gt; sql(<span class="lit">"select * from t1"</span>).show
 +---+---+
 |  <span class="num">1</span>|  <span class="num">2</span>|
 |  <span class="num">4</span>|  <span class="num">3</span>|
-+---+---+</pre><p>When the DataFrame is created from a non-partitioned <span class="extype" name="HadoopFsRelation">HadoopFsRelation</span> with a single input
++---+---+</pre><p>When the DataFrame is created from a non-partitioned <code>HadoopFsRelation</code> with a single input
 path, and the data source provider can be mapped to an existing Hive builtin SerDe (i.e. ORC
 and Parquet), the table is persisted in a Hive compatible format, which means other systems
 like Hive will be able to read this table. Otherwise, the table is persisted in a Spark SQL
@@ -793,7 +806,7 @@ specific format.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Sorts the output in each bucket by the given columns.</p><div class="fullcomment"><div class="comment cmt"><p>Sorts the output in each bucket by the given columns.</p><p>This is applicable for Parquet, JSON and ORC.
+      <p class="shortcomment cmt">Sorts the output in each bucket by the given columns.</p><div class="fullcomment"><div class="comment cmt"><p>Sorts the output in each bucket by the given columns.</p><p>This is applicable for all file-based data sources (e.g. Parquet, JSON) staring Spark 2.1.0.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
               
@@ -831,7 +844,7 @@ specific format.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in a text file at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> in a text file at the specified path.
+      <p class="shortcomment cmt">Saves the content of the <code>DataFrame</code> in a text file at the specified path.</p><div class="fullcomment"><div class="comment cmt"><p>Saves the content of the <code>DataFrame</code> in a text file at the specified path.
 The DataFrame must have only one column that is of string type.
 Each row becomes a new line in the output file. For example:</p><pre><span class="cmt">// Scala:</span>
 df.write.text(<span class="lit">"/path/to/output"</span>)

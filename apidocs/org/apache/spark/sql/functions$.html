@@ -49,10 +49,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-Functions available for <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Functions available for DataFrame operations.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -226,78 +225,78 @@ Functions available for <a href="package.html#DataFrame=org.apache.spark.sql.Dat
     </span>
       <p class="shortcomment cmt">Returns the date that is numMonths after startDate.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the date that is numMonths after startDate.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.functions#approxCountDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
-      <a id="approxCountDistinct(columnName:String,rsd:Double):org.apache.spark.sql.Column"></a>
-      <a id="approxCountDistinct(String,Double):Column"></a>
+    </li><li name="org.apache.spark.sql.functions#approx_count_distinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
+      <a id="approx_count_distinct(columnName:String,rsd:Double):org.apache.spark.sql.Column"></a>
+      <a id="approx_count_distinct(String,Double):Column"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">approxCountDistinct</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rsd">rsd: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+        <span class="name">approx_count_distinct</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rsd">rsd: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.functions$@approxCountDistinct(columnName:String,rsd:Double):org.apache.spark.sql.Column" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@approx_count_distinct(columnName:String,rsd:Double):org.apache.spark.sql.Column" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Aggregate function: returns the approximate number of distinct items in a group.</p><div class="fullcomment"><div class="comment cmt"><p>Aggregate function: returns the approximate number of distinct items in a group.
-</p></div><dl class="paramcmts block"><dt class="param">rsd</dt><dd class="cmt"><p>maximum estimation error allowed (default = 0.05)</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.functions#approxCountDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
-      <a id="approxCountDistinct(e:org.apache.spark.sql.Column,rsd:Double):org.apache.spark.sql.Column"></a>
-      <a id="approxCountDistinct(Column,Double):Column"></a>
+</p></div><dl class="paramcmts block"><dt class="param">rsd</dt><dd class="cmt"><p>maximum estimation error allowed (default = 0.05)</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#approx_count_distinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
+      <a id="approx_count_distinct(e:org.apache.spark.sql.Column,rsd:Double):org.apache.spark.sql.Column"></a>
+      <a id="approx_count_distinct(Column,Double):Column"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">approxCountDistinct</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="rsd">rsd: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+        <span class="name">approx_count_distinct</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="rsd">rsd: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.functions$@approxCountDistinct(e:org.apache.spark.sql.Column,rsd:Double):org.apache.spark.sql.Column" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@approx_count_distinct(e:org.apache.spark.sql.Column,rsd:Double):org.apache.spark.sql.Column" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Aggregate function: returns the approximate number of distinct items in a group.</p><div class="fullcomment"><div class="comment cmt"><p>Aggregate function: returns the approximate number of distinct items in a group.
-</p></div><dl class="paramcmts block"><dt class="param">rsd</dt><dd class="cmt"><p>maximum estimation error allowed (default = 0.05)</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.functions#approxCountDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
-      <a id="approxCountDistinct(columnName:String):org.apache.spark.sql.Column"></a>
-      <a id="approxCountDistinct(String):Column"></a>
+</p></div><dl class="paramcmts block"><dt class="param">rsd</dt><dd class="cmt"><p>maximum estimation error allowed (default = 0.05)</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#approx_count_distinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
+      <a id="approx_count_distinct(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="approx_count_distinct(String):Column"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">approxCountDistinct</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+        <span class="name">approx_count_distinct</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.functions$@approxCountDistinct(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@approx_count_distinct(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Aggregate function: returns the approximate number of distinct items in a group.</p><div class="fullcomment"><div class="comment cmt"><p>Aggregate function: returns the approximate number of distinct items in a group.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.functions#approxCountDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
-      <a id="approxCountDistinct(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
-      <a id="approxCountDistinct(Column):Column"></a>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#approx_count_distinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
+      <a id="approx_count_distinct(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="approx_count_distinct(Column):Column"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">approxCountDistinct</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+        <span class="name">approx_count_distinct</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.functions$@approxCountDistinct(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@approx_count_distinct(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Aggregate function: returns the approximate number of distinct items in a group.</p><div class="fullcomment"><div class="comment cmt"><p>Aggregate function: returns the approximate number of distinct items in a group.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#array" visbl="pub" data-isabs="false" fullComment="yes" group="normal_funcs">
       <a id="array(colName:String,colNames:String*):org.apache.spark.sql.Column"></a>
       <a id="array(String,String*):Column"></a>
@@ -356,7 +355,7 @@ Functions available for <a href="package.html#DataFrame=org.apache.spark.sql.Dat
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns true if the array contains <code>value</code></p><div class="fullcomment"><div class="comment cmt"><p>Returns true if the array contains <code>value</code></p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns null if the array is null, true if the array contains <code>value</code>, and false otherwise.</p><div class="fullcomment"><div class="comment cmt"><p>Returns null if the array is null, true if the array contains <code>value</code>, and false otherwise.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -390,8 +389,45 @@ Functions available for <a href="package.html#DataFrame=org.apache.spark.sql.Dat
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a sort expression based on ascending order of the column.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sort expression based on ascending order of the column.</p><pre><span class="cmt">// Sort by dept in ascending order, and then age in descending order.</span>
-df.sort(asc(<span class="lit">"dept"</span>), desc(<span class="lit">"age"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns a sort expression based on ascending order of the column.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sort expression based on ascending order of the column.</p><pre>df.sort(asc(<span class="lit">"dept"</span>), desc(<span class="lit">"age"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#asc_nulls_first" visbl="pub" data-isabs="false" fullComment="yes" group="sort_funcs">
+      <a id="asc_nulls_first(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="asc_nulls_first(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc_nulls_first</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@asc_nulls_first(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a sort expression based on ascending order of the column,
+and null values return before non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sort expression based on ascending order of the column,
+and null values return before non-null values.</p><pre>df.sort(asc_nulls_last(<span class="lit">"dept"</span>), desc(<span class="lit">"age"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#asc_nulls_last" visbl="pub" data-isabs="false" fullComment="yes" group="sort_funcs">
+      <a id="asc_nulls_last(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="asc_nulls_last(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc_nulls_last</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@asc_nulls_last(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a sort expression based on ascending order of the column,
+and null values appear after non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sort expression based on ascending order of the column,
+and null values appear after non-null values.</p><pre>df.sort(asc_nulls_last(<span class="lit">"dept"</span>), desc(<span class="lit">"age"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#ascii" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
       <a id="ascii(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
       <a id="ascii(Column):Column"></a>
@@ -796,8 +832,8 @@ left.join(broadcast(right), <span class="lit">"joinKey"</span>)</pre></div><dl c
       </a>
     </span>
       <p class="shortcomment cmt">Round the value of <code>e</code> to <code>scale</code> decimal places with HALF_EVEN round mode
-if <code>scale</code> &gt;= 0 or at integral part when <code>scale</code> &lt; 0.</p><div class="fullcomment"><div class="comment cmt"><p>Round the value of <code>e</code> to <code>scale</code> decimal places with HALF_EVEN round mode
-if <code>scale</code> &gt;= 0 or at integral part when <code>scale</code> &lt; 0.
+if <code>scale</code> is greater than or equal to 0 or at integral part when <code>scale</code> is less than 0.</p><div class="fullcomment"><div class="comment cmt"><p>Round the value of <code>e</code> to <code>scale</code> decimal places with HALF_EVEN round mode
+if <code>scale</code> is greater than or equal to 0 or at integral part when <code>scale</code> is less than 0.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#bround" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
       <a id="bround(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
@@ -1500,9 +1536,9 @@ cumeDist(x) = number of values before (and including) x / N</pre></div><dl class
       <p class="shortcomment cmt">Converts a date/timestamp/string to a value of string in the format specified by the date
 format given by the second argument.</p><div class="fullcomment"><div class="comment cmt"><p>Converts a date/timestamp/string to a value of string in the format specified by the date
 format given by the second argument.</p><p>A pattern could be for instance <code>dd.MM.yyyy</code> and could return a string like '18.03.1993'. All
-pattern letters of <span class="extype" name="java.text.SimpleDateFormat">java.text.SimpleDateFormat</span> can be used.</p><p>NOTE: Use when ever possible specialized functions like <a href="#year(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" class="extmbr" name="org.apache.spark.sql.functions#year">year</a>. These benefit from a
-specialized implementation.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+pattern letters of <span class="extype" name="java.text.SimpleDateFormat">java.text.SimpleDateFormat</span> can be used.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Use when ever possible specialized functions like <a href="#year(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" class="extmbr" name="org.apache.spark.sql.functions#year">year</a>. These benefit from a
+specialized implementation.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#date_sub" visbl="pub" data-isabs="false" fullComment="yes" group="datetime_funcs">
       <a id="date_sub(start:org.apache.spark.sql.Column,days:Int):org.apache.spark.sql.Column"></a>
       <a id="date_sub(Column,Int):Column"></a>
@@ -1592,6 +1628,42 @@ specialized implementation.
 (one of 'US-ASCII', 'ISO-8859-1', 'UTF-8', 'UTF-16BE', 'UTF-16LE', 'UTF-16').
 If either argument is null, the result will also be null.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#degrees" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
+      <a id="degrees(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="degrees(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">degrees</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@degrees(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts an angle measured in radians to an approximately equivalent angle measured in degrees.</p><div class="fullcomment"><div class="comment cmt"><p>Converts an angle measured in radians to an approximately equivalent angle measured in degrees.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#degrees" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
+      <a id="degrees(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="degrees(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">degrees</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@degrees(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts an angle measured in radians to an approximately equivalent angle measured in degrees.</p><div class="fullcomment"><div class="comment cmt"><p>Converts an angle measured in radians to an approximately equivalent angle measured in degrees.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#dense_rank" visbl="pub" data-isabs="false" fullComment="yes" group="window_funcs">
       <a id="dense_rank():org.apache.spark.sql.Column"></a>
       <a id="dense_rank():Column"></a>
@@ -1608,10 +1680,11 @@ If either argument is null, the result will also be null.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Window function: returns the rank of rows within a window partition, without any gaps.</p><div class="fullcomment"><div class="comment cmt"><p>Window function: returns the rank of rows within a window partition, without any gaps.</p><p>The difference between rank and denseRank is that denseRank leaves no gaps in ranking
-sequence when there are ties. That is, if you were ranking a competition using denseRank
+      <p class="shortcomment cmt">Window function: returns the rank of rows within a window partition, without any gaps.</p><div class="fullcomment"><div class="comment cmt"><p>Window function: returns the rank of rows within a window partition, without any gaps.</p><p>The difference between rank and dense_rank is that denseRank leaves no gaps in ranking
+sequence when there are ties. That is, if you were ranking a competition using dense_rank
 and had three people tie for second place, you would say that all three were in second
-place and that the next person came in third.
+place and that the next person came in third. Rank would give me sequential numbers, making
+the person that came in third place (after the ties) would register as coming in fifth.</p><p>This is equivalent to the DENSE_RANK function in SQL.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#desc" visbl="pub" data-isabs="false" fullComment="yes" group="sort_funcs">
       <a id="desc(columnName:String):org.apache.spark.sql.Column"></a>
@@ -1629,8 +1702,45 @@ place and that the next person came in third.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a sort expression based on the descending order of the column.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sort expression based on the descending order of the column.</p><pre><span class="cmt">// Sort by dept in ascending order, and then age in descending order.</span>
-df.sort(asc(<span class="lit">"dept"</span>), desc(<span class="lit">"age"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns a sort expression based on the descending order of the column.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sort expression based on the descending order of the column.</p><pre>df.sort(asc(<span class="lit">"dept"</span>), desc(<span class="lit">"age"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#desc_nulls_first" visbl="pub" data-isabs="false" fullComment="yes" group="sort_funcs">
+      <a id="desc_nulls_first(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="desc_nulls_first(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc_nulls_first</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@desc_nulls_first(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a sort expression based on the descending order of the column,
+and null values appear before non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sort expression based on the descending order of the column,
+and null values appear before non-null values.</p><pre>df.sort(asc(<span class="lit">"dept"</span>), desc_nulls_first(<span class="lit">"age"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#desc_nulls_last" visbl="pub" data-isabs="false" fullComment="yes" group="sort_funcs">
+      <a id="desc_nulls_last(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="desc_nulls_last(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc_nulls_last</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@desc_nulls_last(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a sort expression based on the descending order of the column,
+and null values appear after non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a sort expression based on the descending order of the column,
+and null values appear after non-null values.</p><pre>df.sort(asc(<span class="lit">"dept"</span>), desc_nulls_last(<span class="lit">"age"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#encode" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
       <a id="encode(value:org.apache.spark.sql.Column,charset:String):org.apache.spark.sql.Column"></a>
       <a id="encode(Column,String):Column"></a>
@@ -1968,7 +2078,7 @@ value it sees when ignoreNulls is set to true. If all values are null, then null
       <p class="shortcomment cmt">Formats numeric column x to a format like '#,###,###.##', rounded to d decimal places,
 and returns the result as a string column.</p><div class="fullcomment"><div class="comment cmt"><p>Formats numeric column x to a format like '#,###,###.##', rounded to d decimal places,
 and returns the result as a string column.</p><p>If d is 0, the result has no decimal point or fractional part.
-If d &lt; 0, the result will be null.
+If d is less than 0, the result will be null.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#format_string" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
       <a id="format_string(format:String,arguments:org.apache.spark.sql.Column*):org.apache.spark.sql.Column"></a>
@@ -1991,6 +2101,86 @@ If d &lt; 0, the result will be null.
                 <span class="name">@varargs</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#from_json" visbl="pub" data-isabs="false" fullComment="yes" group="collection_funcs">
+      <a id="from_json(e:org.apache.spark.sql.Column,schema:String,options:java.util.Map[String,String]):org.apache.spark.sql.Column"></a>
+      <a id="from_json(Column,String,Map[String,String]):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">from_json</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@from_json(e:org.apache.spark.sql.Column,schema:String,options:java.util.Map[String,String]):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Parses a column containing a JSON string into a <code>StructType</code> with the specified schema.</p><div class="fullcomment"><div class="comment cmt"><p>Parses a column containing a JSON string into a <code>StructType</code> with the specified schema.
+Returns <code>null</code>, in the case of an unparseable string.
+</p></div><dl class="paramcmts block"><dt class="param">e</dt><dd class="cmt"><p>a string column containing JSON data.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>the schema to use when parsing the json string as a json string</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#from_json" visbl="pub" data-isabs="false" fullComment="yes" group="collection_funcs">
+      <a id="from_json(e:org.apache.spark.sql.Column,schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.Column"></a>
+      <a id="from_json(Column,StructType):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">from_json</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="schema">schema: <a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@from_json(e:org.apache.spark.sql.Column,schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Parses a column containing a JSON string into a <code>StructType</code> with the specified schema.</p><div class="fullcomment"><div class="comment cmt"><p>Parses a column containing a JSON string into a <code>StructType</code> with the specified schema.
+Returns <code>null</code>, in the case of an unparseable string.
+</p></div><dl class="paramcmts block"><dt class="param">e</dt><dd class="cmt"><p>a string column containing JSON data.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>the schema to use when parsing the json string</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#from_json" visbl="pub" data-isabs="false" fullComment="yes" group="collection_funcs">
+      <a id="from_json(e:org.apache.spark.sql.Column,schema:org.apache.spark.sql.types.StructType,options:java.util.Map[String,String]):org.apache.spark.sql.Column"></a>
+      <a id="from_json(Column,StructType,Map[String,String]):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">from_json</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="schema">schema: <a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="options">options: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@from_json(e:org.apache.spark.sql.Column,schema:org.apache.spark.sql.types.StructType,options:java.util.Map[String,String]):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Java-specific) Parses a column containing a JSON string into a <code>StructType</code> with the
+specified schema.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific) Parses a column containing a JSON string into a <code>StructType</code> with the
+specified schema. Returns <code>null</code>, in the case of an unparseable string.
+</p></div><dl class="paramcmts block"><dt class="param">e</dt><dd class="cmt"><p>a string column containing JSON data.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>the schema to use when parsing the json string</p></dd><dt class="param">options</dt><dd class="cmt"><p>options to control how the json is parsed. accepts the same options and the
+               json data source.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#from_json" visbl="pub" data-isabs="false" fullComment="yes" group="collection_funcs">
+      <a id="from_json(e:org.apache.spark.sql.Column,schema:org.apache.spark.sql.types.StructType,options:Map[String,String]):org.apache.spark.sql.Column"></a>
+      <a id="from_json(Column,StructType,Map[String,String]):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">from_json</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="schema">schema: <a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@from_json(e:org.apache.spark.sql.Column,schema:org.apache.spark.sql.types.StructType,options:Map[String,String]):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Scala-specific) Parses a column containing a JSON string into a <code>StructType</code> with the
+specified schema.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Parses a column containing a JSON string into a <code>StructType</code> with the
+specified schema. Returns <code>null</code>, in the case of an unparseable string.
+</p></div><dl class="paramcmts block"><dt class="param">e</dt><dd class="cmt"><p>a string column containing JSON data.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>the schema to use when parsing the json string</p></dd><dt class="param">options</dt><dd class="cmt"><p>options to control how the json is parsed. accepts the same options and the
+               json data source.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#from_unixtime" visbl="pub" data-isabs="false" fullComment="yes" group="datetime_funcs">
       <a id="from_unixtime(ut:org.apache.spark.sql.Column,f:String):org.apache.spark.sql.Column"></a>
       <a id="from_unixtime(Column,String):Column"></a>
@@ -2049,7 +2239,9 @@ format.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></d
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Assumes given timestamp is UTC and converts to given timezone.</p><div class="fullcomment"><div class="comment cmt"><p>Assumes given timestamp is UTC and converts to given timezone.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Given a timestamp, which corresponds to a certain time of day in UTC, returns another timestamp
+that corresponds to the same time of day in the given timezone.</p><div class="fullcomment"><div class="comment cmt"><p>Given a timestamp, which corresponds to a certain time of day in UTC, returns another timestamp
+that corresponds to the same time of day in the given timezone.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -2187,8 +2379,7 @@ or not, returns 1 for aggregated or 0 for not aggregated in the result set.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Aggregate function: returns the level of grouping, equals to</p><div class="fullcomment"><div class="comment cmt"><p>Aggregate function: returns the level of grouping, equals to</p><p>  (grouping(c1) &lt;&lt; (n-1)) + (grouping(c2) &lt;&lt; (n-2)) + ... + grouping(cn)</p><p>Note: the list of columns should match with grouping columns exactly.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Aggregate function: returns the level of grouping, equals to</p><div class="fullcomment"><div class="comment cmt"><p>Aggregate function: returns the level of grouping, equals to</p><pre>(grouping(c1) &lt;&lt;; (n-<span class="num">1</span>)) + (grouping(c2) &lt;&lt;; (n-<span class="num">2</span>)) + ... + grouping(cn)</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The list of columns should match with grouping columns exactly.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#grouping_id" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
       <a id="grouping_id(cols:org.apache.spark.sql.Column*):org.apache.spark.sql.Column"></a>
       <a id="grouping_id(Column*):Column"></a>
@@ -2205,9 +2396,8 @@ or not, returns 1 for aggregated or 0 for not aggregated in the result set.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Aggregate function: returns the level of grouping, equals to</p><div class="fullcomment"><div class="comment cmt"><p>Aggregate function: returns the level of grouping, equals to</p><p>  (grouping(c1) &lt;&lt; (n-1)) + (grouping(c2) &lt;&lt; (n-2)) + ... + grouping(cn)</p><p>Note: the list of columns should match with grouping columns exactly, or empty (means all the
-grouping columns).
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Aggregate function: returns the level of grouping, equals to</p><div class="fullcomment"><div class="comment cmt"><p>Aggregate function: returns the level of grouping, equals to</p><pre>(grouping(c1) &lt;&lt;; (n-<span class="num">1</span>)) + (grouping(c2) &lt;&lt;; (n-<span class="num">2</span>)) + ... + grouping(cn)</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The list of columns should match with grouping columns exactly, or empty (means all the
+grouping columns).</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#hash" visbl="pub" data-isabs="false" fullComment="yes" group="misc_funcs">
       <a id="hash(cols:org.apache.spark.sql.Column*):org.apache.spark.sql.Column"></a>
       <a id="hash(Column*):Column"></a>
@@ -2479,9 +2669,9 @@ Words are delimited by whitespace.</p><p>For example, &quot;hello world&quot; wi
       </a>
     </span>
       <p class="shortcomment cmt">Locate the position of the first occurrence of substr column in the given string.</p><div class="fullcomment"><div class="comment cmt"><p>Locate the position of the first occurrence of substr column in the given string.
-Returns null if either of the arguments are null.</p><p>NOTE: The position is not zero based, but 1 based index, returns 0 if substr
-could not be found in str.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+Returns null if either of the arguments are null.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The position is not zero based, but 1 based index. Returns 0 if substr
+could not be found in str.</p></span></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -2971,9 +3161,9 @@ Otherwise, a new <a href="Column.html" class="extype" name="org.apache.spark.sql
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Locate the position of the first occurrence of substr in a string column, after position pos.</p><div class="fullcomment"><div class="comment cmt"><p>Locate the position of the first occurrence of substr in a string column, after position pos.</p><p>NOTE: The position is not zero based, but 1 based index. returns 0 if substr
-could not be found in str.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Locate the position of the first occurrence of substr in a string column, after position pos.</p><div class="fullcomment"><div class="comment cmt"><p>Locate the position of the first occurrence of substr in a string column, after position pos.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The position is not zero based, but 1 based index. returns 0 if substr
+could not be found in str.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#locate" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
       <a id="locate(substr:String,str:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
       <a id="locate(String,Column):Column"></a>
@@ -2991,9 +3181,8 @@ could not be found in str.
       </a>
     </span>
       <p class="shortcomment cmt">Locate the position of the first occurrence of substr.</p><div class="fullcomment"><div class="comment cmt"><p>Locate the position of the first occurrence of substr.
-NOTE: The position is not zero based, but 1 based index, returns 0 if substr
-could not be found in str.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The position is not zero based, but 1 based index. Returns 0 if substr
+could not be found in str.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#log" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
       <a id="log(base:Double,columnName:String):org.apache.spark.sql.Column"></a>
       <a id="log(Double,String):Column"></a>
@@ -3418,10 +3607,8 @@ Alias for avg.
       <p class="shortcomment cmt">A column expression that generates monotonically increasing 64-bit integers.</p><div class="fullcomment"><div class="comment cmt"><p>A column expression that generates monotonically increasing 64-bit integers.</p><p>The generated ID is guaranteed to be monotonically increasing and unique, but not consecutive.
 The current implementation puts the partition ID in the upper 31 bits, and the record number
 within each partition in the lower 33 bits. The assumption is that the data frame has
-less than 1 billion partitions, and each partition has less than 8 billion records.</p><p>As an example, consider a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> with two partitions, each with 3 records.
-This expression would return the following IDs:
-0, 1, 2, 8589934592 (1L &lt;&lt; 33), 8589934593, 8589934594.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+less than 1 billion partitions, and each partition has less than 8 billion records.</p><p>As an example, consider a <code>DataFrame</code> with two partitions, each with 3 records.
+This expression would return the following IDs:</p><pre><span class="num">0</span>, <span class="num">1</span>, <span class="num">2</span>, <span class="num">8589934592</span> (<span class="num">1</span>L &lt;&lt; <span class="num">33</span>), <span class="num">8589934593</span>, <span class="num">8589934594.</span></pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#month" visbl="pub" data-isabs="false" fullComment="yes" group="datetime_funcs">
       <a id="month(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
       <a id="month(Column):Column"></a>
@@ -3608,7 +3795,7 @@ df.filter( not(df.col(<span class="lit">"isActive"</span>)) );</pre></div><dl cl
     </span>
       <p class="shortcomment cmt">Window function: returns the ntile group id (from 1 to <code>n</code> inclusive) in an ordered window
 partition.</p><div class="fullcomment"><div class="comment cmt"><p>Window function: returns the ntile group id (from 1 to <code>n</code> inclusive) in an ordered window
-partition. Fow example, if <code>n</code> is 4, the first quarter of the rows will get value 1, the second
+partition. For example, if <code>n</code> is 4, the first quarter of the rows will get value 1, the second
 quarter will get 2, the third quarter will get 3, and the last quarter will get 4.</p><p>This is equivalent to the NTILE function in SQL.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#percent_rank" visbl="pub" data-isabs="false" fullComment="yes" group="window_funcs">
@@ -3826,6 +4013,42 @@ quarter will get 2, the third quarter will get 3, and the last quarter will get 
       </a>
     </span>
       <p class="shortcomment cmt">Extracts the quarter as an integer from a given date/timestamp/string.</p><div class="fullcomment"><div class="comment cmt"><p>Extracts the quarter as an integer from a given date/timestamp/string.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#radians" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
+      <a id="radians(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="radians(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">radians</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@radians(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts an angle measured in degrees to an approximately equivalent angle measured in radians.</p><div class="fullcomment"><div class="comment cmt"><p>Converts an angle measured in degrees to an approximately equivalent angle measured in radians.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#radians" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
+      <a id="radians(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="radians(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">radians</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@radians(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts an angle measured in degrees to an approximately equivalent angle measured in radians.</p><div class="fullcomment"><div class="comment cmt"><p>Converts an angle measured in degrees to an approximately equivalent angle measured in radians.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#rand" visbl="pub" data-isabs="false" fullComment="yes" group="normal_funcs">
       <a id="rand():org.apache.spark.sql.Column"></a>
       <a id="rand():Column"></a>
@@ -3842,7 +4065,9 @@ quarter will get 2, the third quarter will get 3, and the last quarter will get 
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Generate a random column with i.i.d.</p><div class="fullcomment"><div class="comment cmt"><p>Generate a random column with i.i.d. samples from U[0.0, 1.0].
+      <p class="shortcomment cmt">Generate a random column with independent and identically distributed (i.i.d.) samples
+from U[0.0, 1.0].</p><div class="fullcomment"><div class="comment cmt"><p>Generate a random column with independent and identically distributed (i.i.d.) samples
+from U[0.0, 1.0].
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#rand" visbl="pub" data-isabs="false" fullComment="yes" group="normal_funcs">
       <a id="rand(seed:Long):org.apache.spark.sql.Column"></a>
@@ -3860,8 +4085,10 @@ quarter will get 2, the third quarter will get 3, and the last quarter will get 
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Generate a random column with i.i.d.</p><div class="fullcomment"><div class="comment cmt"><p>Generate a random column with i.i.d. samples from U[0.0, 1.0].</p><p>Note that this is indeterministic when data partitions are not fixed.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Generate a random column with independent and identically distributed (i.i.d.) samples
+from U[0.0, 1.0].</p><div class="fullcomment"><div class="comment cmt"><p>Generate a random column with independent and identically distributed (i.i.d.) samples
+from U[0.0, 1.0].
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This is indeterministic when data partitions are not fixed.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#randn" visbl="pub" data-isabs="false" fullComment="yes" group="normal_funcs">
       <a id="randn():org.apache.spark.sql.Column"></a>
       <a id="randn():Column"></a>
@@ -3878,7 +4105,9 @@ quarter will get 2, the third quarter will get 3, and the last quarter will get 
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Generate a column with i.i.d.</p><div class="fullcomment"><div class="comment cmt"><p>Generate a column with i.i.d. samples from the standard normal distribution.
+      <p class="shortcomment cmt">Generate a column with independent and identically distributed (i.i.d.) samples from
+the standard normal distribution.</p><div class="fullcomment"><div class="comment cmt"><p>Generate a column with independent and identically distributed (i.i.d.) samples from
+the standard normal distribution.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#randn" visbl="pub" data-isabs="false" fullComment="yes" group="normal_funcs">
       <a id="randn(seed:Long):org.apache.spark.sql.Column"></a>
@@ -3896,8 +4125,10 @@ quarter will get 2, the third quarter will get 3, and the last quarter will get 
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Generate a column with i.i.d.</p><div class="fullcomment"><div class="comment cmt"><p>Generate a column with i.i.d. samples from the standard normal distribution.</p><p>Note that this is indeterministic when data partitions are not fixed.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Generate a column with independent and identically distributed (i.i.d.) samples from
+the standard normal distribution.</p><div class="fullcomment"><div class="comment cmt"><p>Generate a column with independent and identically distributed (i.i.d.) samples from
+the standard normal distribution.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This is indeterministic when data partitions are not fixed.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#rank" visbl="pub" data-isabs="false" fullComment="yes" group="window_funcs">
       <a id="rank():org.apache.spark.sql.Column"></a>
       <a id="rank():Column"></a>
@@ -3914,10 +4145,11 @@ quarter will get 2, the third quarter will get 3, and the last quarter will get 
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Window function: returns the rank of rows within a window partition.</p><div class="fullcomment"><div class="comment cmt"><p>Window function: returns the rank of rows within a window partition.</p><p>The difference between rank and denseRank is that denseRank leaves no gaps in ranking
-sequence when there are ties. That is, if you were ranking a competition using denseRank
+      <p class="shortcomment cmt">Window function: returns the rank of rows within a window partition.</p><div class="fullcomment"><div class="comment cmt"><p>Window function: returns the rank of rows within a window partition.</p><p>The difference between rank and dense_rank is that dense_rank leaves no gaps in ranking
+sequence when there are ties. That is, if you were ranking a competition using dense_rank
 and had three people tie for second place, you would say that all three were in second
-place and that the next person came in third.</p><p>This is equivalent to the RANK function in SQL.
+place and that the next person came in third. Rank would give me sequential numbers, making
+the person that came in third place (after the ties) would register as coming in fifth.</p><p>This is equivalent to the RANK function in SQL.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#regexp_extract" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
       <a id="regexp_extract(e:org.apache.spark.sql.Column,exp:String,groupIdx:Int):org.apache.spark.sql.Column"></a>
@@ -3938,6 +4170,24 @@ place and that the next person came in third.</p><p>This is equivalent to the RA
       <p class="shortcomment cmt">Extract a specific group matched by a Java regex, from the specified string column.</p><div class="fullcomment"><div class="comment cmt"><p>Extract a specific group matched by a Java regex, from the specified string column.
 If the regex did not match, or the specified group did not match, an empty string is returned.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#regexp_replace" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
+      <a id="regexp_replace(e:org.apache.spark.sql.Column,pattern:org.apache.spark.sql.Column,replacement:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="regexp_replace(Column,Column,Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">regexp_replace</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="pattern">pattern: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="replacement">replacement: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@regexp_replace(e:org.apache.spark.sql.Column,pattern:org.apache.spark.sql.Column,replacement:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Replace all substrings of the specified string value that match regexp with rep.</p><div class="fullcomment"><div class="comment cmt"><p>Replace all substrings of the specified string value that match regexp with rep.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#regexp_replace" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
       <a id="regexp_replace(e:org.apache.spark.sql.Column,pattern:String,replacement:String):org.apache.spark.sql.Column"></a>
       <a id="regexp_replace(Column,String,String):Column"></a>
@@ -4048,9 +4298,9 @@ is equal to a mathematical integer.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Round the value of <code>e</code> to <code>scale</code> decimal places if <code>scale</code> &gt;= 0
-or at integral part when <code>scale</code> &lt; 0.</p><div class="fullcomment"><div class="comment cmt"><p>Round the value of <code>e</code> to <code>scale</code> decimal places if <code>scale</code> &gt;= 0
-or at integral part when <code>scale</code> &lt; 0.
+      <p class="shortcomment cmt">Round the value of <code>e</code> to <code>scale</code> decimal places if <code>scale</code> is greater than or equal to 0
+or at integral part when <code>scale</code> is less than 0.</p><div class="fullcomment"><div class="comment cmt"><p>Round the value of <code>e</code> to <code>scale</code> decimal places if <code>scale</code> is greater than or equal to 0
+or at integral part when <code>scale</code> is less than 0.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#round" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
       <a id="round(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
@@ -4216,8 +4466,8 @@ will return a long value else it will return an integer value.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Shift the given value numBits right.</p><div class="fullcomment"><div class="comment cmt"><p>Shift the given value numBits right. If the given value is a long value, it will return
-a long value else it will return an integer value.
+      <p class="shortcomment cmt">(Signed) shift the given value numBits right.</p><div class="fullcomment"><div class="comment cmt"><p>(Signed) shift the given value numBits right. If the given value is a long value, it will
+return a long value else it will return an integer value.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#shiftRightUnsigned" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
       <a id="shiftRightUnsigned(e:org.apache.spark.sql.Column,numBits:Int):org.apache.spark.sql.Column"></a>
@@ -4416,8 +4666,8 @@ it will return a long value else it will return an integer value.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Sorts the input array for the given column in ascending / descending order,
-according to the natural ordering of the array elements.</p><div class="fullcomment"><div class="comment cmt"><p>Sorts the input array for the given column in ascending / descending order,
+      <p class="shortcomment cmt">Sorts the input array for the given column in ascending or descending order,
+according to the natural ordering of the array elements.</p><div class="fullcomment"><div class="comment cmt"><p>Sorts the input array for the given column in ascending or descending order,
 according to the natural ordering of the array elements.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#sort_array" visbl="pub" data-isabs="false" fullComment="yes" group="collection_funcs">
@@ -4474,8 +4724,8 @@ according to the natural ordering of the array elements.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Partition ID of the Spark task.</p><div class="fullcomment"><div class="comment cmt"><p>Partition ID of the Spark task.</p><p>Note that this is indeterministic because it depends on data partitioning and task scheduling.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Partition ID.</p><div class="fullcomment"><div class="comment cmt"><p>Partition ID.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>This is indeterministic because it depends on data partitioning and task scheduling.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#split" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
       <a id="split(str:org.apache.spark.sql.Column,pattern:String):org.apache.spark.sql.Column"></a>
       <a id="split(Column,String):Column"></a>
@@ -4493,8 +4743,7 @@ according to the natural ordering of the array elements.
       </a>
     </span>
       <p class="shortcomment cmt">Splits str around pattern (pattern is a regular expression).</p><div class="fullcomment"><div class="comment cmt"><p>Splits str around pattern (pattern is a regular expression).
-NOTE: pattern is a string representation of the regular expression.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Pattern is a string representation of the regular expression.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#sqrt" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
       <a id="sqrt(colName:String):org.apache.spark.sql.Column"></a>
       <a id="sqrt(String):Column"></a>
@@ -4685,7 +4934,7 @@ the expression in a group.
       </a>
     </span>
       <p class="shortcomment cmt">Creates a new struct column.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new struct column.
-If the input column is a column in a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, or a derived column expression
+If the input column is a column in a <code>DataFrame</code>, or a derived column expression
 that is named (i.e. aliased), its name would be remained as the StructField's name,
 otherwise, the newly generated StructField's name would be auto generated as col${index + 1},
 i.e. col1, col2, col3, ...
@@ -4898,78 +5147,6 @@ right) is returned. substring_index performs a case-sensitive match when searchi
     </span>
       <p class="shortcomment cmt">Computes the hyperbolic tangent of the given value.</p><div class="fullcomment"><div class="comment cmt"><p>Computes the hyperbolic tangent of the given value.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.functions#toDegrees" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
-      <a id="toDegrees(columnName:String):org.apache.spark.sql.Column"></a>
-      <a id="toDegrees(String):Column"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toDegrees</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.functions$@toDegrees(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Converts an angle measured in radians to an approximately equivalent angle measured in degrees.</p><div class="fullcomment"><div class="comment cmt"><p>Converts an angle measured in radians to an approximately equivalent angle measured in degrees.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.functions#toDegrees" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
-      <a id="toDegrees(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
-      <a id="toDegrees(Column):Column"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toDegrees</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.functions$@toDegrees(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Converts an angle measured in radians to an approximately equivalent angle measured in degrees.</p><div class="fullcomment"><div class="comment cmt"><p>Converts an angle measured in radians to an approximately equivalent angle measured in degrees.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.functions#toRadians" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
-      <a id="toRadians(columnName:String):org.apache.spark.sql.Column"></a>
-      <a id="toRadians(String):Column"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toRadians</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.functions$@toRadians(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Converts an angle measured in degrees to an approximately equivalent angle measured in radians.</p><div class="fullcomment"><div class="comment cmt"><p>Converts an angle measured in degrees to an approximately equivalent angle measured in radians.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.functions#toRadians" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
-      <a id="toRadians(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
-      <a id="toRadians(Column):Column"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toRadians</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.functions$@toRadians(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Converts an angle measured in degrees to an approximately equivalent angle measured in radians.</p><div class="fullcomment"><div class="comment cmt"><p>Converts an angle measured in degrees to an approximately equivalent angle measured in radians.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -5005,6 +5182,68 @@ right) is returned. substring_index performs a case-sensitive match when searchi
     </span>
       <p class="shortcomment cmt">Converts the column into DateType.</p><div class="fullcomment"><div class="comment cmt"><p>Converts the column into DateType.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#to_json" visbl="pub" data-isabs="false" fullComment="yes" group="collection_funcs">
+      <a id="to_json(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="to_json(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">to_json</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@to_json(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts a column containing a <code>StructType</code> into a JSON string with the
+specified schema.</p><div class="fullcomment"><div class="comment cmt"><p>Converts a column containing a <code>StructType</code> into a JSON string with the
+specified schema. Throws an exception, in the case of an unsupported type.
+</p></div><dl class="paramcmts block"><dt class="param">e</dt><dd class="cmt"><p>a struct column.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#to_json" visbl="pub" data-isabs="false" fullComment="yes" group="collection_funcs">
+      <a id="to_json(e:org.apache.spark.sql.Column,options:java.util.Map[String,String]):org.apache.spark.sql.Column"></a>
+      <a id="to_json(Column,Map[String,String]):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">to_json</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="options">options: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@to_json(e:org.apache.spark.sql.Column,options:java.util.Map[String,String]):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Java-specific) Converts a column containing a <code>StructType</code> into a JSON string with the
+specified schema.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific) Converts a column containing a <code>StructType</code> into a JSON string with the
+specified schema. Throws an exception, in the case of an unsupported type.
+</p></div><dl class="paramcmts block"><dt class="param">e</dt><dd class="cmt"><p>a struct column.</p></dd><dt class="param">options</dt><dd class="cmt"><p>options to control how the struct column is converted into a json string.
+               accepts the same options and the json data source.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#to_json" visbl="pub" data-isabs="false" fullComment="yes" group="collection_funcs">
+      <a id="to_json(e:org.apache.spark.sql.Column,options:Map[String,String]):org.apache.spark.sql.Column"></a>
+      <a id="to_json(Column,Map[String,String]):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">to_json</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@to_json(e:org.apache.spark.sql.Column,options:Map[String,String]):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Scala-specific) Converts a column containing a <code>StructType</code> into a JSON string with the
+specified schema.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Converts a column containing a <code>StructType</code> into a JSON string with the
+specified schema. Throws an exception, in the case of an unsupported type.
+</p></div><dl class="paramcmts block"><dt class="param">e</dt><dd class="cmt"><p>a struct column.</p></dd><dt class="param">options</dt><dd class="cmt"><p>options to control how the struct column is converted into a json string.
+               accepts the same options and the json data source.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#to_utc_timestamp" visbl="pub" data-isabs="false" fullComment="yes" group="datetime_funcs">
       <a id="to_utc_timestamp(ts:org.apache.spark.sql.Column,tz:String):org.apache.spark.sql.Column"></a>
       <a id="to_utc_timestamp(Column,String):Column"></a>
@@ -5021,7 +5260,9 @@ right) is returned. substring_index performs a case-sensitive match when searchi
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Assumes given timestamp is in given timezone and converts to UTC.</p><div class="fullcomment"><div class="comment cmt"><p>Assumes given timestamp is in given timezone and converts to UTC.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Given a timestamp, which corresponds to a certain time of day in the given timezone, returns
+another timestamp that corresponds to the same time of day in UTC.</p><div class="fullcomment"><div class="comment cmt"><p>Given a timestamp, which corresponds to a certain time of day in the given timezone, returns
+another timestamp that corresponds to the same time of day in UTC.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#translate" visbl="pub" data-isabs="false" fullComment="yes" group="string_funcs">
       <a id="translate(src:org.apache.spark.sql.Column,matchingString:String,replaceString:String):org.apache.spark.sql.Column"></a>
       <a id="translate(Column,String,String):Column"></a>
@@ -5674,6 +5915,8 @@ processing time.
                       valid duration identifiers.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#window" visbl="pub" data-isabs="false" fullComment="yes" group="datetime_funcs">
       <a id="window(timeColumn:org.apache.spark.sql.Column,windowDuration:String,slideDuration:String):org.apache.spark.sql.Column"></a>
@@ -5713,6 +5956,8 @@ processing time.
                      identifiers. This duration is likewise absolute, and does not vary
                     according to a calendar.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#window" visbl="pub" data-isabs="false" fullComment="yes" group="datetime_funcs">
@@ -5757,6 +6002,8 @@ processing time.
                  <code>startTime</code> as <code>15 minutes</code>.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.functions#year" visbl="pub" data-isabs="false" fullComment="yes" group="datetime_funcs">
       <a id="year(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
@@ -5782,7 +6029,87 @@ processing time.
 
         <div id="values" class="values members">
               <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.sql.functions#monotonicallyIncreasingId" visbl="pub" data-isabs="false" fullComment="yes" group="normal_funcs">
+              <ol><li name="org.apache.spark.sql.functions#approxCountDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
+      <a id="approxCountDistinct(columnName:String,rsd:Double):org.apache.spark.sql.Column"></a>
+      <a id="approxCountDistinct(String,Double):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) Use approx_count_distinct">approxCountDistinct</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rsd">rsd: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@approxCountDistinct(columnName:String,rsd:Double):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> Use approx_count_distinct</p></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#approxCountDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
+      <a id="approxCountDistinct(e:org.apache.spark.sql.Column,rsd:Double):org.apache.spark.sql.Column"></a>
+      <a id="approxCountDistinct(Column,Double):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) Use approx_count_distinct">approxCountDistinct</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="rsd">rsd: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@approxCountDistinct(e:org.apache.spark.sql.Column,rsd:Double):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> Use approx_count_distinct</p></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#approxCountDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
+      <a id="approxCountDistinct(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="approxCountDistinct(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) Use approx_count_distinct">approxCountDistinct</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@approxCountDistinct(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> Use approx_count_distinct</p></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#approxCountDistinct" visbl="pub" data-isabs="false" fullComment="yes" group="agg_funcs">
+      <a id="approxCountDistinct(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="approxCountDistinct(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) Use approx_count_distinct">approxCountDistinct</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@approxCountDistinct(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> Use approx_count_distinct</p></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#monotonicallyIncreasingId" visbl="pub" data-isabs="false" fullComment="yes" group="normal_funcs">
       <a id="monotonicallyIncreasingId():org.apache.spark.sql.Column"></a>
       <a id="monotonicallyIncreasingId():Column"></a>
       <h4 class="signature">
@@ -5801,13 +6128,91 @@ processing time.
       <p class="shortcomment cmt">A column expression that generates monotonically increasing 64-bit integers.</p><div class="fullcomment"><div class="comment cmt"><p>A column expression that generates monotonically increasing 64-bit integers.</p><p>The generated ID is guaranteed to be monotonically increasing and unique, but not consecutive.
 The current implementation puts the partition ID in the upper 31 bits, and the record number
 within each partition in the lower 33 bits. The assumption is that the data frame has
-less than 1 billion partitions, and each partition has less than 8 billion records.</p><p>As an example, consider a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> with two partitions, each with 3 records.
-This expression would return the following IDs:
-0, 1, 2, 8589934592 (1L &lt;&lt; 33), 8589934593, 8589934594.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+less than 1 billion partitions, and each partition has less than 8 billion records.</p><p>As an example, consider a <code>DataFrame</code> with two partitions, each with 3 records.
+This expression would return the following IDs:</p><pre><span class="num">0</span>, <span class="num">1</span>, <span class="num">2</span>, <span class="num">8589934592</span> (<span class="num">1</span>L &lt;&lt; <span class="num">33</span>), <span class="num">8589934593</span>, <span class="num">8589934594.</span></pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@deprecated</span>
               
         </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Use monotonically_increasing_id()</p></dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#toDegrees" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
+      <a id="toDegrees(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="toDegrees(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) Use degrees">toDegrees</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@toDegrees(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> Use degrees</p></dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#toDegrees" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
+      <a id="toDegrees(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="toDegrees(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) Use degrees">toDegrees</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@toDegrees(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> Use degrees</p></dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#toRadians" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
+      <a id="toRadians(columnName:String):org.apache.spark.sql.Column"></a>
+      <a id="toRadians(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) Use radians">toRadians</span><span class="params">(<span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@toRadians(columnName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> Use radians</p></dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.functions#toRadians" visbl="pub" data-isabs="false" fullComment="yes" group="math_funcs">
+      <a id="toRadians(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="toRadians(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.1.0) Use radians">toRadians</span><span class="params">(<span name="e">e: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.functions$@toRadians(e:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.1.0)</i> Use radians</p></dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li></ol>
             </div>
         </div>

@@ -148,18 +148,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding#allDecoders" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="allDecoders:Array[(org.apache.spark.sql.types.DataType,Boolean)=&gt;org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder]"></a>
-      <a id="allDecoders:Array[(DataType,Boolean)⇒ColumnDecoder]"></a>
+      <a id="allDecoders:Array[(AnyRef,Long,org.apache.spark.sql.types.StructField,(AnyRef,Long)=&gt;Long,org.apache.spark.sql.types.DataType,Boolean)=&gt;org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder]"></a>
+      <a id="allDecoders:Array[(AnyRef,Long,StructField,(AnyRef,Long)⇒Long,DataType,Boolean)⇒ColumnDecoder]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">allDecoders</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[(<a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="scala.Boolean">Boolean</span>) ⇒ <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a>]</span>
+        <span class="name">allDecoders</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[(<a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Long">Long</span>, <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>, (<a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Long">Long</span>) ⇒ <span class="extype" name="scala.Long">Long</span>, <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="scala.Boolean">Boolean</span>) ⇒ <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@allDecoders:Array[(org.apache.spark.sql.types.DataType,Boolean)=&gt;org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder]" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@allDecoders:Array[(AnyRef,Long,org.apache.spark.sql.types.StructField,(AnyRef,Long)=&gt;Long,org.apache.spark.sql.types.DataType,Boolean)=&gt;org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder]" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -313,18 +313,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding#getColumnDecoder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getColumnDecoder(columnBytes:AnyRef,offset:Long,field:org.apache.spark.sql.types.StructField):org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder"></a>
-      <a id="getColumnDecoder(AnyRef,Long,StructField):ColumnDecoder"></a>
+      <a id="getColumnDecoder(columnBytes:AnyRef,offset:Long,field:org.apache.spark.sql.types.StructField,initDelta:(AnyRef,Long)=&gt;Long):org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder"></a>
+      <a id="getColumnDecoder(AnyRef,Long,StructField,(AnyRef,Long)⇒Long):ColumnDecoder"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getColumnDecoder</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="offset">offset: <span class="extype" name="scala.Long">Long</span></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span><span class="result">: <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>
+        <span class="name">getColumnDecoder</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="offset">offset: <span class="extype" name="scala.Long">Long</span></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="initDelta">initDelta: (<a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Long">Long</span>) ⇒ <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@getColumnDecoder(columnBytes:AnyRef,offset:Long,field:org.apache.spark.sql.types.StructField):org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@getColumnDecoder(columnBytes:AnyRef,offset:Long,field:org.apache.spark.sql.types.StructField,initDelta:(AnyRef,Long)=&gt;Long):org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -342,6 +342,40 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@getColumnDecoder(buffer:java.nio.ByteBuffer,field:org.apache.spark.sql.types.StructField):org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding#getColumnDecoderAndBuffer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getColumnDecoderAndBuffer(buffer:java.nio.ByteBuffer,field:org.apache.spark.sql.types.StructField,initDelta:(AnyRef,Long)=&gt;Long):(org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,AnyRef)"></a>
+      <a id="getColumnDecoderAndBuffer(ByteBuffer,StructField,(AnyRef,Long)⇒Long):(ColumnDecoder,AnyRef)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getColumnDecoderAndBuffer</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="initDelta">initDelta: (<a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Long">Long</span>) ⇒ <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: (<a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@getColumnDecoderAndBuffer(buffer:java.nio.ByteBuffer,field:org.apache.spark.sql.types.StructField,initDelta:(AnyRef,Long)=&gt;Long):(org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,AnyRef)" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding#getColumnEncoder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getColumnEncoder(dataType:org.apache.spark.sql.types.DataType,nullable:Boolean):org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder"></a>
+      <a id="getColumnEncoder(DataType,Boolean):ColumnEncoder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getColumnEncoder</span><span class="params">(<span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="nullable">nullable: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@getColumnEncoder(dataType:org.apache.spark.sql.types.DataType,nullable:Boolean):org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -525,6 +559,26 @@
                 <span class="name">@inline</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding#readIntBigEndian" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="readIntBigEndian(columnBytes:AnyRef,cursor:Long):Int"></a>
+      <a id="readIntBigEndian(AnyRef,Long):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readIntBigEndian</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="cursor">cursor: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@readIntBigEndian(columnBytes:AnyRef,cursor:Long):Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding#readLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readLong(columnBytes:AnyRef,cursor:Long):Long"></a>
       <a id="readLong(AnyRef,Long):Long"></a>
@@ -538,6 +592,26 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@readLong(columnBytes:AnyRef,cursor:Long):Long" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding#readLongBigEndian" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="readLongBigEndian(columnBytes:AnyRef,cursor:Long):Long"></a>
+      <a id="readLongBigEndian(AnyRef,Long):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readLongBigEndian</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="cursor">cursor: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@readLongBigEndian(columnBytes:AnyRef,cursor:Long):Long" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -585,6 +659,23 @@
                 <span class="name">@inline</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding#stringFromDictionaryCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="stringFromDictionaryCode(dictVar:String,bufferVar:String,indexVar:String):String"></a>
+      <a id="stringFromDictionaryCode(String,String,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringFromDictionaryCode</span><span class="params">(<span name="dictVar">dictVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="bufferVar">bufferVar: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="indexVar">indexVar: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding$@stringFromDictionaryCode(dictVar:String,bufferVar:String,indexVar:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

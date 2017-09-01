@@ -50,7 +50,7 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-A base class for user-defined aggregations, which can be used in <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> operations to take
+A base class for user-defined aggregations, which can be used in <code>Dataset</code> operations to take
 all of the elements of a group and reduce them to a single value.</p><p>For example, the following aggregator extracts an <code>int</code> from a specific class and adds them up:</p><pre><span class="kw">case</span> <span class="kw">class</span> Data(i: <span class="std">Int</span>)
 
 <span class="kw">val</span> customSummer =  <span class="kw">new</span> Aggregator[Data, <span class="std">Int</span>, <span class="std">Int</span>] {
@@ -65,12 +65,14 @@ all of the elements of a group and reduce them to a single value.</p><p>For exam
 </p></div><dl class="paramcmts block"><dt class="tparam">IN</dt><dd class="cmt"><p>The input type for the aggregation.</p></dd><dt class="tparam">BUF</dt><dd class="cmt"><p>The type of the intermediate value of the reduction.</p></dd><dt class="tparam">OUT</dt><dd class="cmt"><p>The type of the final output result.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="../execution/aggregate/TypedAverage.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedAverage">TypedAverage</a>, <a href="../execution/aggregate/TypedCount.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedCount">TypedCount</a>, <a href="../execution/aggregate/TypedSumDouble.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumDouble">TypedSumDouble</a>, <a href="../execution/aggregate/TypedSumLong.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumLong">TypedSumLong</a></div>
+            <div class="subClasses hiddenContent"><a href="../../examples/sql/UserDefinedTypedAggregation$$MyAverage$.html" class="extype" name="org.apache.spark.examples.sql.UserDefinedTypedAggregation.MyAverage">MyAverage</a>, <a href="../execution/aggregate/TypedAverage.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedAverage">TypedAverage</a>, <a href="../execution/aggregate/TypedCount.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedCount">TypedCount</a>, <a href="../execution/aggregate/TypedSumDouble.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumDouble">TypedSumDouble</a>, <a href="../execution/aggregate/TypedSumLong.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedSumLong">TypedSumLong</a></div>
           </div></div>
         
 
@@ -147,7 +149,7 @@ all of the elements of a group and reduce them to a single value.</p><p>For exam
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Specifies the <a href="../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> for the intermediate value type.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the <a href="../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> for the intermediate value type.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Specifies the <code>Encoder</code> for the intermediate value type.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the <code>Encoder</code> for the intermediate value type.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.Aggregator#finish" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="finish(reduction:BUF):OUT"></a>
       <a id="finish(BUF):OUT"></a>
@@ -198,7 +200,7 @@ all of the elements of a group and reduce them to a single value.</p><p>For exam
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Specifies the <a href="../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> for the final ouput value type.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the <a href="../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a> for the final ouput value type.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Specifies the <code>Encoder</code> for the final ouput value type.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the <code>Encoder</code> for the final ouput value type.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.expressions.Aggregator#reduce" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="reduce(b:BUF,a:IN):BUF"></a>
       <a id="reduce(BUF,IN):BUF"></a>
@@ -522,7 +524,7 @@ return it instead of constructing new object for b.</p></div><dl class="attribut
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns this <code>Aggregator</code> as a <a href="../TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a> that can be used in <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns this <code>Aggregator</code> as a <a href="../TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a> that can be used in <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
+      <p class="shortcomment cmt">Returns this <code>Aggregator</code> as a <code>TypedColumn</code> that can be used in <code>Dataset</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns this <code>Aggregator</code> as a <code>TypedColumn</code> that can be used in <code>Dataset</code>.
 operations.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>

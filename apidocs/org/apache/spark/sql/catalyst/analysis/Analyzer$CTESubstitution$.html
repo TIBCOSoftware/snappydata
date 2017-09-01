@@ -49,7 +49,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Substitute child plan with cte definitions
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Analyze cte definitions and substitute child plan with analyzed cte definitions.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -652,18 +652,18 @@
     </span>
       <p class="shortcomment cmt">Name for this rule, automatically inferred based on class name.</p><div class="fullcomment"><div class="comment cmt"><p>Name for this rule, automatically inferred based on class name.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.analysis.Analyzer.CTESubstitution#substituteCTE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="substituteCTE(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,cteRelations:Map[String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
-      <a id="substituteCTE(LogicalPlan,Map[String,LogicalPlan]):LogicalPlan"></a>
+      <a id="substituteCTE(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,cteRelations:Seq[(String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
+      <a id="substituteCTE(LogicalPlan,Seq[(String,LogicalPlan)]):LogicalPlan"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">substituteCTE</span><span class="params">(<span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="cteRelations">cteRelations: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result">: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
+        <span class="name">substituteCTE</span><span class="params">(<span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="cteRelations">cteRelations: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>)]</span>)</span><span class="result">: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.Analyzer$CTESubstitution$@substituteCTE(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,cteRelations:Map[String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.Analyzer$CTESubstitution$@substituteCTE(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,cteRelations:Seq[(String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

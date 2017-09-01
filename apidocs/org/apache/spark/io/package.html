@@ -109,13 +109,12 @@
 CompressionCodec allows the customization of choosing different compression implementations
 to be used in block storage.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
 CompressionCodec allows the customization of choosing different compression implementations
-to be used in block storage.</p><p>Note: The wire protocol for a codec is not guaranteed compatible across versions of Spark.
-      This is intended for use as an internal compression utility within a single
-      Spark application.
+to be used in block storage.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The wire protocol for a codec is not guaranteed compatible across versions of Spark.
+This is intended for use as an internal compression utility within a single Spark application.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.io.LZ4BlockInputStream" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="LZ4BlockInputStreamextendsFilterInputStream"></a>
       <a id="LZ4BlockInputStream:LZ4BlockInputStream"></a>
@@ -152,13 +151,13 @@ to be used in block storage.</p><p>Note: The wire protocol for a codec is not gu
       <p class="shortcomment cmt">:: DeveloperApi ::
 LZ4 implementation of <a href="CompressionCodec.html" class="extype" name="org.apache.spark.io.CompressionCodec">org.apache.spark.io.CompressionCodec</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
 LZ4 implementation of <a href="CompressionCodec.html" class="extype" name="org.apache.spark.io.CompressionCodec">org.apache.spark.io.CompressionCodec</a>.
-Block size can be configured by <code>spark.io.compression.lz4.blockSize</code>.</p><p>Note: The wire protocol for this codec is not guaranteed to be compatible across versions
-      of Spark. This is intended for use as an internal compression utility within a single Spark
-      application.
+Block size can be configured by <code>spark.io.compression.lz4.blockSize</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The wire protocol for this codec is not guaranteed to be compatible across versions
+of Spark. This is intended for use as an internal compression utility within a single Spark
+application.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.io.LZFCompressionCodec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LZFCompressionCodecextendsCompressionCodec"></a>
       <a id="LZFCompressionCodec:LZFCompressionCodec"></a>
@@ -177,13 +176,30 @@ Block size can be configured by <code>spark.io.compression.lz4.blockSize</code>.
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
 LZF implementation of <a href="CompressionCodec.html" class="extype" name="org.apache.spark.io.CompressionCodec">org.apache.spark.io.CompressionCodec</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-LZF implementation of <a href="CompressionCodec.html" class="extype" name="org.apache.spark.io.CompressionCodec">org.apache.spark.io.CompressionCodec</a>.</p><p>Note: The wire protocol for this codec is not guaranteed to be compatible across versions
-      of Spark. This is intended for use as an internal compression utility within a single Spark
-      application.
+LZF implementation of <a href="CompressionCodec.html" class="extype" name="org.apache.spark.io.CompressionCodec">org.apache.spark.io.CompressionCodec</a>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The wire protocol for this codec is not guaranteed to be compatible across versions
+of Spark. This is intended for use as an internal compression utility within a single Spark
+application.</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.io.NioBufferedFileInputStream" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NioBufferedFileInputStreamextendsInputStream"></a>
+      <a id="NioBufferedFileInputStream:NioBufferedFileInputStream"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NioBufferedFileInputStream.html"><span class="name">NioBufferedFileInputStream</span></a><span class="result"> extends <span class="extype" name="java.io.InputStream">InputStream</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.io.package@NioBufferedFileInputStreamextendsInputStream" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.io.SnappyCompressionCodec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SnappyCompressionCodecextendsCompressionCodec"></a>
       <a id="SnappyCompressionCodec:SnappyCompressionCodec"></a>
@@ -203,13 +219,13 @@ LZF implementation of <a href="CompressionCodec.html" class="extype" name="org.a
       <p class="shortcomment cmt">:: DeveloperApi ::
 Snappy implementation of <a href="CompressionCodec.html" class="extype" name="org.apache.spark.io.CompressionCodec">org.apache.spark.io.CompressionCodec</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
 Snappy implementation of <a href="CompressionCodec.html" class="extype" name="org.apache.spark.io.CompressionCodec">org.apache.spark.io.CompressionCodec</a>.
-Block size can be configured by <code>spark.io.compression.snappy.blockSize</code>.</p><p>Note: The wire protocol for this codec is not guaranteed to be compatible across versions
-      of Spark. This is intended for use as an internal compression utility within a single Spark
-      application.
+Block size can be configured by <code>spark.io.compression.snappy.blockSize</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The wire protocol for this codec is not guaranteed to be compatible across versions
+of Spark. This is intended for use as an internal compression utility within a single Spark
+application.</p></span></dd></dl></div>
     </li></ol>
             </div>
 

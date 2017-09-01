@@ -54,6 +54,8 @@ Exception that stopped a <a href="StreamingQuery.html" class="extype" name="org.
 that caused the failure.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="java.lang.Exception">Exception</span>, <span class="extype" name="java.lang.Throwable">Throwable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -225,22 +227,22 @@ that caused the failure.</p></div><dl class="attributes block"> <dt>Annotations<
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryException#endOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="endOffset:Option[org.apache.spark.sql.execution.streaming.Offset]"></a>
-      <a id="endOffset:Option[Offset]"></a>
+      <a id="endOffset:String"></a>
+      <a id="endOffset:String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">endOffset</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../execution/streaming/Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>]</span>
+        <span class="name">endOffset</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryException@endOffset:Option[org.apache.spark.sql.execution.streaming.Offset]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryException@endOffset:String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Ending offset (if known) of the range of data in exception occurred</p>
+      <p class="shortcomment cmt">Ending offset in json of the range of data in exception occurred</p>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -587,23 +589,6 @@ that caused the failure.</p></div><dl class="attributes block"> <dt>Annotations<
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Throwable</dd></dl></div>
-    </li><li name="org.apache.spark.sql.streaming.StreamingQueryException#query" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="query:org.apache.spark.sql.streaming.StreamingQuery"></a>
-      <a id="query:StreamingQuery"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">query</span><span class="result">: <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryException@query:org.apache.spark.sql.streaming.StreamingQuery" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Query that caused the exception</p>
     </li><li name="java.lang.Throwable#setStackTrace" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setStackTrace(x$1:Array[StackTraceElement]):Unit"></a>
       <a id="setStackTrace(Array[StackTraceElement]):Unit"></a>
@@ -622,22 +607,22 @@ that caused the failure.</p></div><dl class="attributes block"> <dt>Annotations<
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Throwable</dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamingQueryException#startOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="startOffset:Option[org.apache.spark.sql.execution.streaming.Offset]"></a>
-      <a id="startOffset:Option[Offset]"></a>
+      <a id="startOffset:String"></a>
+      <a id="startOffset:String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">startOffset</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../execution/streaming/Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>]</span>
+        <span class="name">startOffset</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryException@startOffset:Option[org.apache.spark.sql.execution.streaming.Offset]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamingQueryException@startOffset:String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Starting offset (if known) of the range of data in which exception occurred</p>
+      <p class="shortcomment cmt">Starting offset in json of the range of data in which exception occurred</p>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

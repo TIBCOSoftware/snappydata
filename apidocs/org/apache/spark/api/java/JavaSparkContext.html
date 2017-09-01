@@ -294,6 +294,28 @@ launching with ./bin/spark-submit).</p>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#addFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addFile(path:String,recursive:Boolean):Unit"></a>
+      <a id="addFile(String,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addFile</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="recursive">recursive: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.api.java.JavaSparkContext@addFile(path:String,recursive:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Add a file to be downloaded with this Spark job on every node.</p><div class="fullcomment"><div class="comment cmt"><p>Add a file to be downloaded with this Spark job on every node.
+The <code>path</code> passed can be either a local file, a file in HDFS (or other Hadoop-supported
+filesystems), or an HTTP, HTTPS or FTP URI.  To access the file in Spark jobs,
+use <code>SparkFiles.get(fileName)</code> to find its download location.</p><p>A directory can be given if the recursive option is set to true. Currently directories are only
+supported for Hadoop-supported filesystems.
+</p></div></div>
+    </li><li name="org.apache.spark.api.java.JavaSparkContext#addFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="addFile(path:String):Unit"></a>
       <a id="addFile(String):Unit"></a>
       <h4 class="signature">
@@ -391,8 +413,7 @@ record and returned in a key-value pair, where the key is the path of each file,
 the value is the content of each file.</p><p>For example, if you have the following files:</p><pre>hdfs:<span class="cmt">//a-hdfs-path/part-00000</span>
 hdfs:<span class="cmt">//a-hdfs-path/part-00001</span>
 ...
-hdfs:<span class="cmt">//a-hdfs-path/part-nnnnn</span></pre><p>Do
-<code>JavaPairRDD&lt;String, byte[]&gt; rdd = sparkContext.dataStreamFiles(&quot;hdfs://a-hdfs-path&quot;)</code>,</p><p>then <code>rdd</code> contains</p><pre>(a-hdfs-path/part-<span class="num">00000</span>, its content)
+hdfs:<span class="cmt">//a-hdfs-path/part-nnnnn</span></pre><p>Do</p><pre>JavaPairRDD&lt;<span class="std">String</span>, byte[]&gt; rdd = sparkContext.dataStreamFiles(<span class="lit">"hdfs://a-hdfs-path"</span>)</pre><p>,</p><p>then <code>rdd</code> contains</p><pre>(a-hdfs-path/part-<span class="num">00000</span>, its content)
 (a-hdfs-path/part-<span class="num">00001</span>, its content)
 ...
 (a-hdfs-path/part-nnnnn, its content)</pre></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Small files are preferred; very large files but may cause bad performance.</p></span></dd></dl></div>
@@ -419,8 +440,7 @@ record and returned in a key-value pair, where the key is the path of each file,
 the value is the content of each file.</p><p>For example, if you have the following files:</p><pre>hdfs:<span class="cmt">//a-hdfs-path/part-00000</span>
 hdfs:<span class="cmt">//a-hdfs-path/part-00001</span>
 ...
-hdfs:<span class="cmt">//a-hdfs-path/part-nnnnn</span></pre><p>Do
-<code>JavaPairRDD&lt;String, byte[]&gt; rdd = sparkContext.dataStreamFiles(&quot;hdfs://a-hdfs-path&quot;)</code>,</p><p>then <code>rdd</code> contains</p><pre>(a-hdfs-path/part-<span class="num">00000</span>, its content)
+hdfs:<span class="cmt">//a-hdfs-path/part-nnnnn</span></pre><p>Do</p><pre>JavaPairRDD&lt;<span class="std">String</span>, byte[]&gt; rdd = sparkContext.dataStreamFiles(<span class="lit">"hdfs://a-hdfs-path"</span>)</pre><p>then <code>rdd</code> contains</p><pre>(a-hdfs-path/part-<span class="num">00000</span>, its content)
 (a-hdfs-path/part-<span class="num">00001</span>, its content)
 ...
 (a-hdfs-path/part-nnnnn, its content)</pre></div><dl class="paramcmts block"><dt class="param">minPartitions</dt><dd class="cmt"><p>A suggestion value of the minimal splitting number for input data.</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Small files are preferred; very large files but may cause bad performance.</p></span></dd></dl></div>
@@ -497,7 +517,7 @@ The variable will be sent to each cluster only once.
       </a>
     </span>
       <p class="shortcomment cmt">Cancel active jobs for the specified group.</p><div class="fullcomment"><div class="comment cmt"><p>Cancel active jobs for the specified group. See
-<a href="#setJobGroup(groupId:String,description:String):Unit" class="extmbr" name="org.apache.spark.api.java.JavaSparkContext#setJobGroup">org.apache.spark.api.java.JavaSparkContext.setJobGroup</a> for more information.
+<code>org.apache.spark.api.java.JavaSparkContext.setJobGroup</code> for more information.
 </p></div></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#checkpointFile" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="checkpointFile[T](path:String):org.apache.spark.api.java.JavaRDD[T]"></a>
@@ -769,7 +789,7 @@ changed at runtime.
       </a>
     </span>
       <p class="shortcomment cmt">Get a local property set in this thread, or null if it is missing.</p><div class="fullcomment"><div class="comment cmt"><p>Get a local property set in this thread, or null if it is missing. See
-<a href="#setLocalProperty(key:String,value:String):Unit" class="extmbr" name="org.apache.spark.api.java.JavaSparkContext#setLocalProperty">org.apache.spark.api.java.JavaSparkContext.setLocalProperty</a>.
+<code>org.apache.spark.api.java.JavaSparkContext.setLocalProperty</code>.
 </p></div></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#getPersistentRDDs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getPersistentRDDs:java.util.Map[Integer,org.apache.spark.api.java.JavaRDD[_]]"></a>
@@ -788,8 +808,7 @@ changed at runtime.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a Java map of JavaRDDs that have marked themselves as persistent via cache() call.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Java map of JavaRDDs that have marked themselves as persistent via cache() call.
-Note that this does not necessarily mean the caching or computation was successful.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This does not necessarily mean the caching or computation was successful.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#getSparkHome" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getSparkHome():org.apache.spark.api.java.Optional[String]"></a>
       <a id="getSparkHome():Optional[String]"></a>
@@ -828,9 +847,9 @@ or the spark.home Java property, or the SPARK_HOME environment variable
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the Hadoop configuration used for the Hadoop code (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the Hadoop configuration used for the Hadoop code (e.g. file systems) we reuse.</p><p><b>Note:</b> As it will be reused in all Hadoop RDDs, it's better not to modify it unless you
-plan to set some global configurations for all Hadoop RDDs.
-</p></div></div>
+      <p class="shortcomment cmt">Returns the Hadoop configuration used for the Hadoop code (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the Hadoop configuration used for the Hadoop code (e.g. file systems) we reuse.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>As it will be reused in all Hadoop RDDs, it's better not to modify it unless you
+plan to set some global configurations for all Hadoop RDDs.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#hadoopFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hadoopFile[K,V,F&lt;:org.apache.hadoop.mapred.InputFormat[K,V]](path:String,inputFormatClass:Class[F],keyClass:Class[K],valueClass:Class[V]):org.apache.spark.api.java.JavaPairRDD[K,V]"></a>
       <a id="hadoopFile[K,V,F&lt;:InputFormat[K,V]](String,Class[F],Class[K],Class[V]):JavaPairRDD[K,V]"></a>
@@ -847,11 +866,12 @@ plan to set some global configurations for all Hadoop RDDs.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get an RDD for a Hadoop file with an arbitrary InputFormat</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop file with an arbitrary InputFormat</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+      <p class="shortcomment cmt">Get an RDD for a Hadoop file with an arbitrary InputFormat
+</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop file with an arbitrary InputFormat
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD will create many references to the same object.
 If you plan to directly cache Hadoop writable objects, you should first copy them using
-a <code>map</code> function.
-</p></div></div>
+a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#hadoopFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hadoopFile[K,V,F&lt;:org.apache.hadoop.mapred.InputFormat[K,V]](path:String,inputFormatClass:Class[F],keyClass:Class[K],valueClass:Class[V],minPartitions:Int):org.apache.spark.api.java.JavaPairRDD[K,V]"></a>
       <a id="hadoopFile[K,V,F&lt;:InputFormat[K,V]](String,Class[F],Class[K],Class[V],Int):JavaPairRDD[K,V]"></a>
@@ -868,11 +888,11 @@ a <code>map</code> function.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get an RDD for a Hadoop file with an arbitrary InputFormat.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop file with an arbitrary InputFormat.</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+      <p class="shortcomment cmt">Get an RDD for a Hadoop file with an arbitrary InputFormat.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop file with an arbitrary InputFormat.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD will create many references to the same object.
 If you plan to directly cache Hadoop writable objects, you should first copy them using
-a <code>map</code> function.
-</p></div></div>
+a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#hadoopRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hadoopRDD[K,V,F&lt;:org.apache.hadoop.mapred.InputFormat[K,V]](conf:org.apache.hadoop.mapred.JobConf,inputFormatClass:Class[F],keyClass:Class[K],valueClass:Class[V]):org.apache.spark.api.java.JavaPairRDD[K,V]"></a>
       <a id="hadoopRDD[K,V,F&lt;:InputFormat[K,V]](JobConf,Class[F],Class[K],Class[V]):JavaPairRDD[K,V]"></a>
@@ -895,11 +915,10 @@ other necessary info (e.g. file name for a filesystem-based dataset, table name 
 </p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>JobConf for setting up the dataset. Note: This will be put into a Broadcast.
             Therefore if you plan to reuse this conf to create multiple RDDs, you need to make
             sure you won't modify the conf. A safe approach is always creating a new conf for
-            a new RDD.</p></dd><dt class="param">inputFormatClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">keyClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">valueClass</dt><dd class="cmt"><p>Class of the values
-<b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+            a new RDD.</p></dd><dt class="param">inputFormatClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">keyClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">valueClass</dt><dd class="cmt"><p>Class of the values</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD will create many references to the same object.
 If you plan to directly cache Hadoop writable objects, you should first copy them using
-a <code>map</code> function.</p></dd></dl></div>
+a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#hadoopRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hadoopRDD[K,V,F&lt;:org.apache.hadoop.mapred.InputFormat[K,V]](conf:org.apache.hadoop.mapred.JobConf,inputFormatClass:Class[F],keyClass:Class[K],valueClass:Class[V],minPartitions:Int):org.apache.spark.api.java.JavaPairRDD[K,V]"></a>
       <a id="hadoopRDD[K,V,F&lt;:InputFormat[K,V]](JobConf,Class[F],Class[K],Class[V],Int):JavaPairRDD[K,V]"></a>
@@ -923,11 +942,10 @@ etc).
 </p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>JobConf for setting up the dataset. Note: This will be put into a Broadcast.
             Therefore if you plan to reuse this conf to create multiple RDDs, you need to make
             sure you won't modify the conf. A safe approach is always creating a new conf for
-            a new RDD.</p></dd><dt class="param">inputFormatClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">keyClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">valueClass</dt><dd class="cmt"><p>Class of the values</p></dd><dt class="param">minPartitions</dt><dd class="cmt"><p>Minimum number of Hadoop Splits to generate.
-<b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+            a new RDD.</p></dd><dt class="param">inputFormatClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">keyClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">valueClass</dt><dd class="cmt"><p>Class of the values</p></dd><dt class="param">minPartitions</dt><dd class="cmt"><p>Minimum number of Hadoop Splits to generate.</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD will create many references to the same object.
 If you plan to directly cache Hadoop writable objects, you should first copy them using
-a <code>map</code> function.</p></dd></dl></div>
+a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1048,11 +1066,11 @@ a <code>map</code> function.</p></dd></dl></div>
     </span>
       <p class="shortcomment cmt">Get an RDD for a given Hadoop file with an arbitrary new API InputFormat
 and extra configuration options to pass to the input format.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a given Hadoop file with an arbitrary new API InputFormat
-and extra configuration options to pass to the input format.</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+and extra configuration options to pass to the input format.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD will create many references to the same object.
 If you plan to directly cache Hadoop writable objects, you should first copy them using
-a <code>map</code> function.
-</p></div></div>
+a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#newAPIHadoopRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="newAPIHadoopRDD[K,V,F&lt;:org.apache.hadoop.mapreduce.InputFormat[K,V]](conf:org.apache.hadoop.conf.Configuration,fClass:Class[F],kClass:Class[K],vClass:Class[V]):org.apache.spark.api.java.JavaPairRDD[K,V]"></a>
       <a id="newAPIHadoopRDD[K,V,F&lt;:InputFormat[K,V]](Configuration,Class[F],Class[K],Class[V]):JavaPairRDD[K,V]"></a>
@@ -1075,11 +1093,10 @@ and extra configuration options to pass to the input format.
 </p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>Configuration for setting up the dataset. Note: This will be put into a Broadcast.
             Therefore if you plan to reuse this conf to create multiple RDDs, you need to make
             sure you won't modify the conf. A safe approach is always creating a new conf for
-            a new RDD.</p></dd><dt class="param">fClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">kClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">vClass</dt><dd class="cmt"><p>Class of the values
-<b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+            a new RDD.</p></dd><dt class="param">fClass</dt><dd class="cmt"><p>Class of the InputFormat</p></dd><dt class="param">kClass</dt><dd class="cmt"><p>Class of the keys</p></dd><dt class="param">vClass</dt><dd class="cmt"><p>Class of the values</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD will create many references to the same object.
 If you plan to directly cache Hadoop writable objects, you should first copy them using
-a <code>map</code> function.</p></dd></dl></div>
+a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -1295,11 +1312,11 @@ that there's very little effort required to save arbitrary objects.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get an RDD for a Hadoop SequenceFile.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop SequenceFile.</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+      <p class="shortcomment cmt">Get an RDD for a Hadoop SequenceFile.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop SequenceFile.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD will create many references to the same object.
 If you plan to directly cache Hadoop writable objects, you should first copy them using
-a <code>map</code> function.
-</p></div></div>
+a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#sequenceFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sequenceFile[K,V](path:String,keyClass:Class[K],valueClass:Class[V],minPartitions:Int):org.apache.spark.api.java.JavaPairRDD[K,V]"></a>
       <a id="sequenceFile[K,V](String,Class[K],Class[V],Int):JavaPairRDD[K,V]"></a>
@@ -1316,11 +1333,11 @@ a <code>map</code> function.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get an RDD for a Hadoop SequenceFile with given key and value types.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop SequenceFile with given key and value types.</p><p><b>Note:</b> Because Hadoop's RecordReader class re-uses the same Writable object for each
+      <p class="shortcomment cmt">Get an RDD for a Hadoop SequenceFile with given key and value types.</p><div class="fullcomment"><div class="comment cmt"><p>Get an RDD for a Hadoop SequenceFile with given key and value types.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>Because Hadoop's RecordReader class re-uses the same Writable object for each
 record, directly caching the returned RDD will create many references to the same object.
 If you plan to directly cache Hadoop writable objects, you should first copy them using
-a <code>map</code> function.
-</p></div></div>
+a <code>map</code> function.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.api.java.JavaSparkContext#setCallSite" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setCallSite(site:String):Unit"></a>
       <a id="setCallSite(String):Unit"></a>
@@ -1399,7 +1416,7 @@ different value or cleared.
 different value or cleared.</p><div class="fullcomment"><div class="comment cmt"><p>Assigns a group ID to all the jobs started by this thread until the group ID is set to a
 different value or cleared.</p><p>Often, a unit of execution in an application consists of multiple Spark actions or jobs.
 Application programmers can use this method to group all those jobs together and give a
-group description. Once set, the Spark web UI will associate such jobs with this group.</p><p>The application can also use <a href="#cancelJobGroup(groupId:String):Unit" class="extmbr" name="org.apache.spark.api.java.JavaSparkContext#cancelJobGroup">org.apache.spark.api.java.JavaSparkContext.cancelJobGroup</a>
+group description. Once set, the Spark web UI will associate such jobs with this group.</p><p>The application can also use <code>org.apache.spark.api.java.JavaSparkContext.cancelJobGroup</code>
 to cancel all running jobs in this group. For example,</p><pre><span class="cmt">// In the main thread:</span>
 sc.setJobGroup(<span class="lit">"some_job_to_cancel"</span>, <span class="lit">"some job description"</span>);
 rdd.map(...).count();

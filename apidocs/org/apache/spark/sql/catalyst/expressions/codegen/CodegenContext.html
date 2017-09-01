@@ -357,6 +357,23 @@ data types like: UTF8String, ArrayData, MapData &amp; InternalRow.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#addPartitionInitializationStatement" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addPartitionInitializationStatement(statement:String):Unit"></a>
+      <a id="addPartitionInitializationStatement(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addPartitionInitializationStatement</span><span class="params">(<span name="statement">statement: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext@addPartitionInitializationStatement(statement:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#addReferenceObj" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="addReferenceObj(name:String,obj:Any,className:String):String"></a>
       <a id="addReferenceObj(String,Any,String):String"></a>
@@ -374,6 +391,25 @@ data types like: UTF8String, ArrayData, MapData &amp; InternalRow.
       </a>
     </span>
       <p class="shortcomment cmt">Add an object to <code>references</code>, create a class member to access it.</p><div class="fullcomment"><div class="comment cmt"><p>Add an object to <code>references</code>, create a class member to access it.</p><p>Returns the name of class member.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#addReferenceObj" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addReferenceObj(obj:Any):String"></a>
+      <a id="addReferenceObj(Any):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addReferenceObj</span><span class="params">(<span name="obj">obj: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext@addReferenceObj(obj:Any):String" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Add an object to <code>references</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Add an object to <code>references</code>.</p><p>Returns the code to access it.</p><p>This is for minor objects not to store the object into field but refer it from the references
+field at the time of use because number of fields in class is limited so we should reduce it.
 </p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#addedFunctions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="addedFunctions:scala.collection.mutable.Map[String,String]"></a>
@@ -860,6 +896,23 @@ expression will be combined in the <code>expressions</code> order.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#initPartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="initPartition():String"></a>
+      <a id="initPartition():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initPartition</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext@initPartition():String" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1019,6 +1072,25 @@ As an example, (&quot;int&quot;, &quot;count&quot;, &quot;count = 0;&quot;) will
       <p class="shortcomment cmt">Generates code to do null safe execution, i.e.</p><div class="fullcomment"><div class="comment cmt"><p>Generates code to do null safe execution, i.e. only execute the code when the input is not
 null by adding null check if necessary.
 </p></div><dl class="paramcmts block"><dt class="param">nullable</dt><dd class="cmt"><p>used to decide whether we should add null check or not.</p></dd><dt class="param">isNull</dt><dd class="cmt"><p>the code to check if the input is null.</p></dd><dt class="param">execute</dt><dd class="cmt"><p>the code that should only be executed when the input is not null.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#partitionInitializationStatements" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="partitionInitializationStatements:scala.collection.mutable.ArrayBuffer[String]"></a>
+      <a id="partitionInitializationStatements:ArrayBuffer[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">partitionInitializationStatements</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext@partitionInitializationStatements:scala.collection.mutable.ArrayBuffer[String]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Code statements to initialize states that depend on the partition index.</p><div class="fullcomment"><div class="comment cmt"><p>Code statements to initialize states that depend on the partition index.
+An integer <code>partitionIndex</code> will be made available within the scope.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#primitiveTypeName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="primitiveTypeName(dt:org.apache.spark.sql.types.DataType):String"></a>
       <a id="primitiveTypeName(DataType):String"></a>
@@ -1139,6 +1211,27 @@ null by adding null check if necessary.
       </a>
     </span>
       <p class="shortcomment cmt">Returns the specialized code to set a given value in a column vector for a given <code>DataType</code>.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#splitExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="splitExpressions(expressions:Seq[String],funcName:String,arguments:Seq[(String,String)],returnType:String,makeSplitFunction:String=&gt;String,foldFunctions:Seq[String]=&gt;String):String"></a>
+      <a id="splitExpressions(Seq[String],String,Seq[(String,String)],String,(String)⇒String,(Seq[String])⇒String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">splitExpressions</span><span class="params">(<span name="expressions">expressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="funcName">funcName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="arguments">arguments: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="returnType">returnType: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;void&quot;</span></span>, <span name="makeSplitFunction">makeSplitFunction: (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">identity</span></span>, <span name="foldFunctions">foldFunctions: (<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]) ⇒ <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">_.mkString(&quot;&quot;, &quot;;\n&quot;, &quot;;&quot;)</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext@splitExpressions(expressions:Seq[String],funcName:String,arguments:Seq[(String,String)],returnType:String,makeSplitFunction:String=&gt;String,foldFunctions:Seq[String]=&gt;String):String" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Splits the generated code of expressions into multiple functions, because function has
+64kb code size limit in JVM
+</p><div class="fullcomment"><div class="comment cmt"><p>Splits the generated code of expressions into multiple functions, because function has
+64kb code size limit in JVM
+</p></div><dl class="paramcmts block"><dt class="param">expressions</dt><dd class="cmt"><p>the codes to evaluate expressions.</p></dd><dt class="param">funcName</dt><dd class="cmt"><p>the split function name base.</p></dd><dt class="param">arguments</dt><dd class="cmt"><p>the list of (type, name) of the arguments of the split function.</p></dd><dt class="param">returnType</dt><dd class="cmt"><p>the return type of the split function.</p></dd><dt class="param">makeSplitFunction</dt><dd class="cmt"><p>makes split function body, e.g. add preparation or cleanup.</p></dd><dt class="param">foldFunctions</dt><dd class="cmt"><p>folds the split function calls.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext#splitExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="splitExpressions(row:String,expressions:Seq[String]):String"></a>
       <a id="splitExpressions(String,Seq[String]):String"></a>

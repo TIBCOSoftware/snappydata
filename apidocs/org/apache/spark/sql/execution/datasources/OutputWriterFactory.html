@@ -49,14 +49,10 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>::Experimental::
-A factory that produces <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s.  A new <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriterFactory">OutputWriterFactory</a> is created on driver
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A factory that produces <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s.  A new <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriterFactory">OutputWriterFactory</a> is created on driver
 side for each write job issued when writing to a <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a>, and then gets serialized
 to executor side to create actual <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s on the fly.
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -119,30 +115,44 @@ to executor side to create actual <a href="OutputWriter.html" class="extype" nam
 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.datasources.OutputWriterFactory#newInstance" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="newInstance(path:String,bucketId:Option[Int],dataSchema:org.apache.spark.sql.types.StructType,context:org.apache.hadoop.mapreduce.TaskAttemptContext):org.apache.spark.sql.execution.datasources.OutputWriter"></a>
-      <a id="newInstance(String,Option[Int],StructType,TaskAttemptContext):OutputWriter"></a>
+              <ol><li name="org.apache.spark.sql.execution.datasources.OutputWriterFactory#getFileExtension" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="getFileExtension(context:org.apache.hadoop.mapreduce.TaskAttemptContext):String"></a>
+      <a id="getFileExtension(TaskAttemptContext):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newInstance</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="bucketId">bucketId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="dataSchema">dataSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="context">context: <span class="extype" name="org.apache.hadoop.mapreduce.TaskAttemptContext">TaskAttemptContext</span></span>)</span><span class="result">: <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a></span>
+        <span class="name">getFileExtension</span><span class="params">(<span name="context">context: <span class="extype" name="org.apache.hadoop.mapreduce.TaskAttemptContext">TaskAttemptContext</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.OutputWriterFactory@newInstance(path:String,bucketId:Option[Int],dataSchema:org.apache.spark.sql.types.StructType,context:org.apache.hadoop.mapreduce.TaskAttemptContext):org.apache.spark.sql.execution.datasources.OutputWriter" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.OutputWriterFactory@getFileExtension(context:org.apache.hadoop.mapreduce.TaskAttemptContext):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the file extension to be used when writing files out.</p>
+    </li><li name="org.apache.spark.sql.execution.datasources.OutputWriterFactory#newInstance" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="newInstance(path:String,dataSchema:org.apache.spark.sql.types.StructType,context:org.apache.hadoop.mapreduce.TaskAttemptContext):org.apache.spark.sql.execution.datasources.OutputWriter"></a>
+      <a id="newInstance(String,StructType,TaskAttemptContext):OutputWriter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newInstance</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataSchema">dataSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="context">context: <span class="extype" name="org.apache.hadoop.mapreduce.TaskAttemptContext">TaskAttemptContext</span></span>)</span><span class="result">: <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.OutputWriterFactory@newInstance(path:String,dataSchema:org.apache.spark.sql.types.StructType,context:org.apache.hadoop.mapreduce.TaskAttemptContext):org.apache.spark.sql.execution.datasources.OutputWriter" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">When writing to a <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a>, this method gets called by each task on executor side
 to instantiate new <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s.</p><div class="fullcomment"><div class="comment cmt"><p>When writing to a <a href="HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.HadoopFsRelation">HadoopFsRelation</a>, this method gets called by each task on executor side
 to instantiate new <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a>s.
-</p></div><dl class="paramcmts block"><dt class="param">path</dt><dd class="cmt"><p>Path of the file to which this <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> is supposed to write.  Note that
-       this may not point to the final output file.  For example, <code>FileOutputFormat</code> writes to
-       temporary directories and then merge written files back to the final destination.  In
-       this case, <code>path</code> points to a temporary output file under the temporary directory.</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>Schema of the rows to be written. Partition columns are not included in the
-       schema if the relation being written is partitioned.</p></dd><dt class="param">context</dt><dd class="cmt"><p>The Hadoop MapReduce task context.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">path</dt><dd class="cmt"><p>Path to write the file.</p></dd><dt class="param">dataSchema</dt><dd class="cmt"><p>Schema of the rows to be written. Partition columns are not included in the
+       schema if the relation being written is partitioned.</p></dd><dt class="param">context</dt><dd class="cmt"><p>The Hadoop MapReduce task context.</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -381,12 +391,13 @@ to instantiate new <a href="OutputWriter.html" class="extype" name="org.apache.s
       </a>
     </span>
       <p class="shortcomment cmt">Returns a new instance of <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> that will write data to the given path.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new instance of <a href="OutputWriter.html" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriter">OutputWriter</a> that will write data to the given path.
-This method gets called by each task on executor to write <span class="extype" name="InternalRow">InternalRow</span>s to
+This method gets called by each task on executor to write InternalRows to
 format-specific files. Compared to the other <code>newInstance()</code>, this is a newer API that
 passes only the path that the writer must write to. The writer must write to the exact path
 and not modify it (do not add subdirectories, extensions, etc.). All other
 file-format-specific information needed to create the writer must be passed
-through the <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriterFactory">OutputWriterFactory</a> implementation.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+through the <a href="" class="extype" name="org.apache.spark.sql.execution.datasources.OutputWriterFactory">OutputWriterFactory</a> implementation.
+</p></div></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>

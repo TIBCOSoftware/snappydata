@@ -106,16 +106,14 @@ structs, arrays and maps.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type for collections of multiple values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type for collections of multiple values.
+      <p class="shortcomment cmt">The data type for collections of multiple values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type for collections of multiple values.
 Internally these are represented as columns that contain a <code><code>scala.collection.Seq</code></code>.</p><p>Please use <span class="extype" name="DataTypes.createArrayType()">DataTypes.createArrayType()</span> to create a specific instance.</p><p>An <a href="ArrayType.html" class="extype" name="org.apache.spark.sql.types.ArrayType">ArrayType</a> object comprises two fields, <code>elementType: <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></code> and
 <code>containsNull: Boolean</code>. The field of <code>elementType</code> is used to specify the type of
 array elements. The field of <code>containsNull</code> is used to specify if the array has <code>null</code> values.
 </p></div><dl class="paramcmts block"><dt class="param">elementType</dt><dd class="cmt"><p>The data type of values.</p></dd><dt class="param">containsNull</dt><dd class="cmt"><p>Indicates if values have <code>null</code> values</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.AtomicType" visbl="prt" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="AtomicTypeextendsDataType"></a>
       <a id="AtomicType:AtomicType"></a>
@@ -150,12 +148,10 @@ array elements. The field of <code>containsNull</code> is used to specify if the
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>Array[Byte]</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>Array[Byte]</code> values.
-Please use the singleton <span class="extype" name="DataTypes.BinaryType">DataTypes.BinaryType</span>.
+      <p class="shortcomment cmt">The data type representing <code>Array[Byte]</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>Array[Byte]</code> values.
+Please use the singleton <code>DataTypes.BinaryType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.types.BooleanType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -174,13 +170,11 @@ Please use the singleton <span class="extype" name="DataTypes.BinaryType">DataTy
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>Boolean</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>Boolean</code> values. Please use the singleton <span class="extype" name="DataTypes.BooleanType">DataTypes.BooleanType</span>.
+      <p class="shortcomment cmt">The data type representing <code>Boolean</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>Boolean</code> values. Please use the singleton <code>DataTypes.BooleanType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.ByteType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ByteTypeextendsIntegralType"></a>
       <a id="ByteType:ByteType"></a>
@@ -197,13 +191,11 @@ The data type representing <code>Boolean</code> values. Please use the singleton
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>Byte</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>Byte</code> values. Please use the singleton <span class="extype" name="DataTypes.ByteType">DataTypes.ByteType</span>.
+      <p class="shortcomment cmt">The data type representing <code>Byte</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>Byte</code> values. Please use the singleton <code>DataTypes.ByteType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.CalendarIntervalType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CalendarIntervalTypeextendsDataType"></a>
       <a id="CalendarIntervalType:CalendarIntervalType"></a>
@@ -220,14 +212,47 @@ The data type representing <code>Byte</code> values. Please use the singleton <s
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing calendar time intervals.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing calendar time intervals. The calendar time interval is stored
-internally in two components: number of months the number of microseconds.</p><p>Note that calendar intervals are not comparable.</p><p>Please use the singleton <span class="extype" name="DataTypes.CalendarIntervalType">DataTypes.CalendarIntervalType</span>.
+      <p class="shortcomment cmt">The data type representing calendar time intervals.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing calendar time intervals. The calendar time interval is stored
+internally in two components: number of months the number of microseconds.</p><p>Please use the singleton <code>DataTypes.CalendarIntervalType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.5.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Calendar intervals are not comparable.</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.CharStringType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CharStringTypeextendsAtomicTypewithProductwithSerializable"></a>
+      <a id="CharStringType:CharStringType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CharStringType.html"><span class="name">CharStringType</span></a><span class="params">(<span name="defaultSize">defaultSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="baseType">baseType: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="AtomicType.html" class="extype" name="org.apache.spark.sql.types.AtomicType">AtomicType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.package@CharStringTypeextendsAtomicTypewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An internal type to represent VARCHAR() and CHAR() types in
+column definitions of &quot;CREATE TABLE&quot;.</p>
+    </li><li name="org.apache.spark.sql.types.CharType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CharTypeextendsHiveStringTypewithProductwithSerializable"></a>
+      <a id="CharType:CharType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CharType.html"><span class="name">CharType</span></a><span class="params">(<span name="length">length: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="HiveStringType.html" class="extype" name="org.apache.spark.sql.types.HiveStringType">HiveStringType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.package@CharTypeextendsHiveStringTypewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Hive char type.</p>
     </li><li name="org.apache.spark.sql.types.DataType" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="DataTypeextendsAbstractDataType"></a>
       <a id="DataType:DataType"></a>
@@ -244,13 +269,11 @@ internally in two components: number of months the number of microseconds.</p><p
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The base type of all Spark SQL data types.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The base type of all Spark SQL data types.
+      <p class="shortcomment cmt">The base type of all Spark SQL data types.</p><div class="fullcomment"><div class="comment cmt"><p>The base type of all Spark SQL data types.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.DataTypes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DataTypesextendsObject"></a>
       <a id="DataTypes:DataTypes"></a>
@@ -284,13 +307,11 @@ The base type of all Spark SQL data types.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-A date type, supporting &quot;0001-01-01&quot; through &quot;9999-12-31&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-A date type, supporting &quot;0001-01-01&quot; through &quot;9999-12-31&quot;.</p><p>Please use the singleton <span class="extype" name="DataTypes.DateType">DataTypes.DateType</span>.</p><p>Internally, this is represented as the number of days from 1970-01-01.
+      <p class="shortcomment cmt">A date type, supporting &quot;0001-01-01&quot; through &quot;9999-12-31&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>A date type, supporting &quot;0001-01-01&quot; through &quot;9999-12-31&quot;.</p><p>Please use the singleton <code>DataTypes.DateType</code>.</p><p>Internally, this is represented as the number of days from 1970-01-01.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.Decimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DecimalextendsOrdered[org.apache.spark.sql.types.Decimal]withSerializable"></a>
       <a id="Decimal:Decimal"></a>
@@ -311,7 +332,10 @@ A date type, supporting &quot;0001-01-01&quot; through &quot;9999-12-31&quot;.</
 - _precision and _scale represent the SQL precision and scale we are looking for
 - If decimalVal is set, it represents the whole decimal value
 - Otherwise, the decimal value is longVal / (10 ** _scale)
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Unstable</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.types.DecimalType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DecimalTypeextendsFractionalTypewithProductwithSerializable"></a>
       <a id="DecimalType:DecimalType"></a>
@@ -328,15 +352,13 @@ A date type, supporting &quot;0001-01-01&quot; through &quot;9999-12-31&quot;.</
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>java.math.BigDecimal</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>java.math.BigDecimal</code> values.
+      <p class="shortcomment cmt">The data type representing <code>java.math.BigDecimal</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>java.math.BigDecimal</code> values.
 A Decimal that must have fixed precision (the maximum number of digits) and scale (the number
-of digits on right side of dot).</p><p>The precision can be up to 38, scale can also be up to 38 (less or equal to precision).</p><p>The default precision and scale is (10, 0).</p><p>Please use <span class="extype" name="DataTypes.createDecimalType()">DataTypes.createDecimalType()</span> to create a specific instance.
+of digits on right side of dot).</p><p>The precision can be up to 38, scale can also be up to 38 (less or equal to precision).</p><p>The default precision and scale is (10, 0).</p><p>Please use <code>DataTypes.createDecimalType()</code> to create a specific instance.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.DoubleType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DoubleTypeextendsFractionalType"></a>
       <a id="DoubleType:DoubleType"></a>
@@ -353,13 +375,11 @@ of digits on right side of dot).</p><p>The precision can be up to 38, scale can 
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>Double</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>Double</code> values. Please use the singleton <span class="extype" name="DataTypes.DoubleType">DataTypes.DoubleType</span>.
+      <p class="shortcomment cmt">The data type representing <code>Double</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>Double</code> values. Please use the singleton <code>DataTypes.DoubleType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.FloatType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="FloatTypeextendsFractionalType"></a>
       <a id="FloatType:FloatType"></a>
@@ -376,13 +396,31 @@ The data type representing <code>Double</code> values. Please use the singleton 
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>Float</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>Float</code> values. Please use the singleton <span class="extype" name="DataTypes.FloatType">DataTypes.FloatType</span>.
+      <p class="shortcomment cmt">The data type representing <code>Float</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>Float</code> values. Please use the singleton <code>DataTypes.FloatType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.HiveStringType" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="HiveStringTypeextendsAtomicType"></a>
+      <a id="HiveStringType:HiveStringType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveStringType.html"><span class="name">HiveStringType</span></a><span class="result"> extends <a href="AtomicType.html" class="extype" name="org.apache.spark.sql.types.AtomicType">AtomicType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.package@HiveStringTypeextendsAtomicType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A hive string type for compatibility.</p><div class="fullcomment"><div class="comment cmt"><p>A hive string type for compatibility. These datatypes should only used for parsing,
+and should NOT be used anywhere else. Any instance of these data types should be
+replaced by a <a href="StringType.html" class="extype" name="org.apache.spark.sql.types.StringType">StringType</a> before analysis.
+</p></div></div>
     </li><li name="org.apache.spark.sql.types.IntegerType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="IntegerTypeextendsIntegralType"></a>
       <a id="IntegerType:IntegerType"></a>
@@ -399,13 +437,11 @@ The data type representing <code>Float</code> values. Please use the singleton <
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>Int</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>Int</code> values. Please use the singleton <span class="extype" name="DataTypes.IntegerType">DataTypes.IntegerType</span>.
+      <p class="shortcomment cmt">The data type representing <code>Int</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>Int</code> values. Please use the singleton <code>DataTypes.IntegerType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.LongType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LongTypeextendsIntegralType"></a>
       <a id="LongType:LongType"></a>
@@ -422,13 +458,11 @@ The data type representing <code>Int</code> values. Please use the singleton <sp
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>Long</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>Long</code> values. Please use the singleton <span class="extype" name="DataTypes.LongType">DataTypes.LongType</span>.
+      <p class="shortcomment cmt">The data type representing <code>Long</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>Long</code> values. Please use the singleton <code>DataTypes.LongType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.MapType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="MapTypeextendsDataTypewithProductwithSerializable"></a>
       <a id="MapType:MapType"></a>
@@ -445,11 +479,9 @@ The data type representing <code>Long</code> values. Please use the singleton <s
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type for Maps.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type for Maps. Keys in a map are not allowed to have <code>null</code> values.</p><p>Please use <span class="extype" name="DataTypes.createMapType()">DataTypes.createMapType()</span> to create a specific instance.
+      <p class="shortcomment cmt">The data type for Maps.</p><div class="fullcomment"><div class="comment cmt"><p>The data type for Maps. Keys in a map are not allowed to have <code>null</code> values.</p><p>Please use <code>DataTypes.createMapType()</code> to create a specific instance.
 </p></div><dl class="paramcmts block"><dt class="param">keyType</dt><dd class="cmt"><p>The data type of map keys.</p></dd><dt class="param">valueType</dt><dd class="cmt"><p>The data type of map values.</p></dd><dt class="param">valueContainsNull</dt><dd class="cmt"><p>Indicates if map values have <code>null</code> values.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.types.Metadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -468,14 +500,16 @@ The data type for Maps. Keys in a map are not allowed to have <code>null</code> 
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Metadata is a wrapper over Map[String, Any] that limits the value type to simple ones: Boolean,
+      <p class="shortcomment cmt">Metadata is a wrapper over Map[String, Any] that limits the value type to simple ones: Boolean,
+Long, Double, String, Metadata, Array[Boolean], Array[Long], Array[Double], Array[String], and
+Array[Metadata].</p><div class="fullcomment"><div class="comment cmt"><p>Metadata is a wrapper over Map[String, Any] that limits the value type to simple ones: Boolean,
 Long, Double, String, Metadata, Array[Boolean], Array[Long], Array[Double], Array[String], and
 Array[Metadata]. JSON is used for serialization.</p><p>The default constructor is private. User should use either <a href="MetadataBuilder.html" class="extype" name="org.apache.spark.sql.types.MetadataBuilder">MetadataBuilder</a> or
-<span class="extype" name="Metadata.fromJson()">Metadata.fromJson()</span> to create Metadata instances.
+<code>Metadata.fromJson()</code> to create Metadata instances.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.MetadataBuilder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="MetadataBuilderextendsAnyRef"></a>
       <a id="MetadataBuilder:MetadataBuilder"></a>
@@ -492,11 +526,11 @@ Array[Metadata]. JSON is used for serialization.</p><p>The default constructor i
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Builder for <a href="Metadata.html" class="extype" name="org.apache.spark.sql.types.Metadata">Metadata</a>. If there is a key collision, the latter will overwrite the former.
+      <p class="shortcomment cmt">Builder for <a href="Metadata.html" class="extype" name="org.apache.spark.sql.types.Metadata">Metadata</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Builder for <a href="Metadata.html" class="extype" name="org.apache.spark.sql.types.Metadata">Metadata</a>. If there is a key collision, the latter will overwrite the former.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.NullType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="NullTypeextendsDataType"></a>
       <a id="NullType:NullType"></a>
@@ -513,13 +547,11 @@ Array[Metadata]. JSON is used for serialization.</p><p>The default constructor i
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>NULL</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>NULL</code> values. Please use the singleton <span class="extype" name="DataTypes.NullType">DataTypes.NullType</span>.
+      <p class="shortcomment cmt">The data type representing <code>NULL</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>NULL</code> values. Please use the singleton <code>DataTypes.NullType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.NumericType" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="NumericTypeextendsAtomicType"></a>
       <a id="NumericType:NumericType"></a>
@@ -536,11 +568,30 @@ The data type representing <code>NULL</code> values. Please use the singleton <s
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-Numeric data types.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Numeric data types.
+      <p class="shortcomment cmt">Numeric data types.</p><div class="fullcomment"><div class="comment cmt"><p>Numeric data types.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.ObjectType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ObjectTypeextendsDataTypewithProductwithSerializable"></a>
+      <a id="ObjectType:ObjectType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ObjectType.html"><span class="name">ObjectType</span></a><span class="params">(<span name="cls">cls: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result"> extends <a href="DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.package@ObjectTypeextendsDataTypewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Represents a JVM object that is passing through Spark SQL expression evaluation.</p><div class="fullcomment"><div class="comment cmt"><p>Represents a JVM object that is passing through Spark SQL expression evaluation.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.types.SQLUserDefinedType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -576,13 +627,11 @@ Numeric data types.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>Short</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>Short</code> values. Please use the singleton <span class="extype" name="DataTypes.ShortType">DataTypes.ShortType</span>.
+      <p class="shortcomment cmt">The data type representing <code>Short</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>Short</code> values. Please use the singleton <code>DataTypes.ShortType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.StringType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StringTypeextendsAtomicType"></a>
       <a id="StringType:StringType"></a>
@@ -599,13 +648,11 @@ The data type representing <code>Short</code> values. Please use the singleton <
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>String</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>String</code> values. Please use the singleton <span class="extype" name="DataTypes.StringType">DataTypes.StringType</span>.
+      <p class="shortcomment cmt">The data type representing <code>String</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>String</code> values. Please use the singleton <code>DataTypes.StringType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.StructField" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StructFieldextendsProductwithSerializable"></a>
       <a id="StructField:StructField"></a>
@@ -623,7 +670,10 @@ The data type representing <code>String</code> values. Please use the singleton 
       </a>
     </span>
       <p class="shortcomment cmt">A field inside a StructType.</p><div class="fullcomment"><div class="comment cmt"><p>A field inside a StructType.</p></div><dl class="paramcmts block"><dt class="param">name</dt><dd class="cmt"><p>The name of this field.</p></dd><dt class="param">dataType</dt><dd class="cmt"><p>The data type of this field.</p></dd><dt class="param">nullable</dt><dd class="cmt"><p>Indicates if values of this field can be <code>null</code> values.</p></dd><dt class="param">metadata</dt><dd class="cmt"><p>The metadata of this field. The metadata should be preserved during
-                transformation if the content of the column is not modified, e.g, in selection.</p></dd></dl></div>
+                transformation if the content of the column is not modified, e.g, in selection.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.StructType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StructTypeextendsDataTypewithSeq[org.apache.spark.sql.types.StructField]withProductwithSerializable"></a>
       <a id="StructType:StructType"></a>
@@ -640,9 +690,7 @@ The data type representing <code>String</code> values. Please use the singleton 
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-A <a href="StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object can be constructed by</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-A <a href="StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object can be constructed by</p><pre>StructType(fields: <span class="std">Seq</span>[StructField])</pre><p>For a <a href="StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object, one or multiple <a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>s can be extracted by names.
+      <p class="shortcomment cmt">A <a href="StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object can be constructed by</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object can be constructed by</p><pre>StructType(fields: <span class="std">Seq</span>[StructField])</pre><p>For a <a href="StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object, one or multiple <a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>s can be extracted by names.
 If multiple <a href="StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>s are extracted, a <a href="StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> object will be returned.
 If a provided name does not have a matching field, it will be ignored. For the case
 of extracting a single StructField, a <code>null</code> will be returned.
@@ -689,9 +737,9 @@ Example:</p><pre><span class="kw">import</span> org.apache.spark.sql._
 <span class="cmt">// Create a Row with the schema defined by struct</span>
 <span class="kw">val</span> row = Row(Row(<span class="num">1</span>, <span class="num">2</span>, <span class="kw">true</span>))
 <span class="cmt">// row: Row = [[1,2,true]]</span></pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.TimestampType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="TimestampTypeextendsAtomicType"></a>
       <a id="TimestampType:TimestampType"></a>
@@ -708,14 +756,29 @@ Example:</p><pre><span class="kw">import</span> org.apache.spark.sql._
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::
-The data type representing <code>java.sql.Timestamp</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-The data type representing <code>java.sql.Timestamp</code> values.
-Please use the singleton <span class="extype" name="DataTypes.TimestampType">DataTypes.TimestampType</span>.
+      <p class="shortcomment cmt">The data type representing <code>java.sql.Timestamp</code> values.</p><div class="fullcomment"><div class="comment cmt"><p>The data type representing <code>java.sql.Timestamp</code> values.
+Please use the singleton <code>DataTypes.TimestampType</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.VarcharType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VarcharTypeextendsHiveStringTypewithProductwithSerializable"></a>
+      <a id="VarcharType:VarcharType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="VarcharType.html"><span class="name">VarcharType</span></a><span class="params">(<span name="length">length: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="HiveStringType.html" class="extype" name="org.apache.spark.sql.types.HiveStringType">HiveStringType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.package@VarcharTypeextendsHiveStringTypewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Hive varchar type.</p>
     </li></ol>
             </div>
 
@@ -741,7 +804,7 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
     </span>
       <p class="shortcomment cmt">An <span class="extype" name="AbstractDataType">AbstractDataType</span> that matches any concrete data types.</p><div class="fullcomment"><div class="comment cmt"><p>An <span class="extype" name="AbstractDataType">AbstractDataType</span> that matches any concrete data types.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
-    </li><li name="org.apache.spark.sql.types.ArrayType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.types.ArrayType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ArrayType"></a>
       <a id="ArrayType:ArrayType"></a>
       <h4 class="signature">
@@ -757,8 +820,12 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.BinaryType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Companion object for ArrayType.</p><div class="fullcomment"><div class="comment cmt"><p>Companion object for ArrayType.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.BinaryType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="BinaryType"></a>
       <a id="BinaryType:BinaryType"></a>
       <h4 class="signature">
@@ -774,8 +841,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.BooleanType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.BooleanType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="BooleanType"></a>
       <a id="BooleanType:BooleanType"></a>
       <h4 class="signature">
@@ -791,8 +861,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.ByteType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.ByteType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ByteType"></a>
       <a id="ByteType:ByteType"></a>
       <h4 class="signature">
@@ -808,8 +881,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.CalendarIntervalType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.CalendarIntervalType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CalendarIntervalType"></a>
       <a id="CalendarIntervalType:CalendarIntervalType"></a>
       <h4 class="signature">
@@ -825,8 +901,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.DataType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.DataType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DataType"></a>
       <a id="DataType:DataType"></a>
       <h4 class="signature">
@@ -842,8 +921,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.DateType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.DateType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DateType"></a>
       <a id="DateType:DateType"></a>
       <h4 class="signature">
@@ -859,8 +941,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.Decimal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.Decimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="Decimal"></a>
       <a id="Decimal:Decimal"></a>
       <h4 class="signature">
@@ -876,8 +961,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.DecimalType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Unstable</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.DecimalType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DecimalType"></a>
       <a id="DecimalType:DecimalType"></a>
       <h4 class="signature">
@@ -893,8 +981,12 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Extra factory methods and pattern matchers for Decimals</p>
-    </li><li name="org.apache.spark.sql.types.DoubleType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Extra factory methods and pattern matchers for Decimals.</p><div class="fullcomment"><div class="comment cmt"><p>Extra factory methods and pattern matchers for Decimals.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.DoubleType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DoubleType"></a>
       <a id="DoubleType:DoubleType"></a>
       <h4 class="signature">
@@ -910,8 +1002,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.FloatType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.FloatType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="FloatType"></a>
       <a id="FloatType:FloatType"></a>
       <h4 class="signature">
@@ -927,8 +1022,49 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types#HIVE_TYPE_STRING" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="HIVE_TYPE_STRING:String"></a>
+      <a id="HIVE_TYPE_STRING:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">HIVE_TYPE_STRING</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.package@HIVE_TYPE_STRING:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Metadata key used to store the raw hive type string in the metadata of StructField.</p><div class="fullcomment"><div class="comment cmt"><p>Metadata key used to store the raw hive type string in the metadata of StructField. This
+is relevant for datatypes that do not have a direct Spark SQL counterpart, such as CHAR and
+VARCHAR. We need to preserve the original type in order to invoke the correct object
+inspector in Hive.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.types.HiveStringType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveStringType"></a>
+      <a id="HiveStringType:HiveStringType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveStringType$.html"><span class="name">HiveStringType</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.package@HiveStringType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
       
-    </li><li name="org.apache.spark.sql.types.IntegerType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.types.IntegerType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="IntegerType"></a>
       <a id="IntegerType:IntegerType"></a>
       <h4 class="signature">
@@ -944,8 +1080,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.LongType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.LongType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LongType"></a>
       <a id="LongType:LongType"></a>
       <h4 class="signature">
@@ -961,8 +1100,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.MapType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.MapType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="MapType"></a>
       <a id="MapType:MapType"></a>
       <h4 class="signature">
@@ -978,8 +1120,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.Metadata" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.Metadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="Metadata"></a>
       <a id="Metadata:Metadata"></a>
       <h4 class="signature">
@@ -995,8 +1140,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.NullType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.NullType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="NullType"></a>
       <a id="NullType:NullType"></a>
       <h4 class="signature">
@@ -1012,8 +1160,31 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.ShortType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.ObjectType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ObjectType"></a>
+      <a id="ObjectType:ObjectType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ObjectType$.html"><span class="name">ObjectType</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.types.AbstractDataType">AbstractDataType</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.types.package@ObjectType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.ShortType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ShortType"></a>
       <a id="ShortType:ShortType"></a>
       <h4 class="signature">
@@ -1029,8 +1200,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.StringType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.StringType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StringType"></a>
       <a id="StringType:StringType"></a>
       <h4 class="signature">
@@ -1046,8 +1220,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.StructType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.StructType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StructType"></a>
       <a id="StructType:StructType"></a>
       <h4 class="signature">
@@ -1063,8 +1240,11 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="org.apache.spark.sql.types.TimestampType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.types.TimestampType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="TimestampType"></a>
       <a id="TimestampType:TimestampType"></a>
       <h4 class="signature">
@@ -1080,7 +1260,10 @@ Please use the singleton <span class="extype" name="DataTypes.TimestampType">Dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.types.TypeUtilities" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TypeUtilities"></a>
       <a id="TypeUtilities:TypeUtilities"></a>

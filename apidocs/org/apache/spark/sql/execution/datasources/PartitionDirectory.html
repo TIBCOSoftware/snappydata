@@ -28,12 +28,10 @@
         </head>
         <body class="type">
       <div id="definition">
-        <a href="PartitionDirectory$.html" title="See companion object"><img alt="Class/Object" src="../../../../../../lib/class_to_object_big.png" /></a>
+        <img alt="Class" src="../../../../../../lib/class_big.png" />
         <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">datasources</a></p>
-        <h1><a href="PartitionDirectory$.html" title="See companion object">PartitionDirectory</a></h1><h3><span class="morelinks"><div>
-            Related Docs:
-            <a href="PartitionDirectory$.html" title="See companion object">object PartitionDirectory</a>
-            | <a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">package datasources</a>
+        <h1>PartitionDirectory</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql.execution.datasources">package datasources</a>
           </div></span></h3><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitionDirectory" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
@@ -47,12 +45,12 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">PartitionDirectory</span><span class="params">(<span name="values">values: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="path">path: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">PartitionDirectory</span><span class="params">(<span name="values">values: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="files">files: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.hadoop.fs.FileStatus">FileStatus</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Holds a directory in a partitioned collection of files as well as as the partition values
-in the form of a Row.  Before scanning, the files at <code>path</code> need to be enumerated.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A collection of data files from a partitioned relation, along with the partition values in the
+form of an <span class="extype" name="InternalRow">InternalRow</span>.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -93,7 +91,7 @@ in the form of a Row.  Before scanning, the files at <code>path</code> need to b
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.datasources.PartitionDirectory#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(values:org.apache.spark.sql.catalyst.InternalRow,path:org.apache.hadoop.fs.Path):org.apache.spark.sql.execution.datasources.PartitionDirectory"></a>
+      <a id="&lt;init&gt;(values:org.apache.spark.sql.catalyst.InternalRow,files:Seq[org.apache.hadoop.fs.FileStatus]):org.apache.spark.sql.execution.datasources.PartitionDirectory"></a>
       <a id="&lt;init&gt;:PartitionDirectory"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -101,10 +99,10 @@ in the form of a Row.  Before scanning, the files at <code>path</code> need to b
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">PartitionDirectory</span><span class="params">(<span name="values">values: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="path">path: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>)</span>
+        <span class="name">PartitionDirectory</span><span class="params">(<span name="values">values: <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="files">files: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.hadoop.fs.FileStatus">FileStatus</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitionDirectory@&lt;init&gt;(values:org.apache.spark.sql.catalyst.InternalRow,path:org.apache.hadoop.fs.Path):org.apache.spark.sql.execution.datasources.PartitionDirectory" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitionDirectory@&lt;init&gt;(values:org.apache.spark.sql.catalyst.InternalRow,files:Seq[org.apache.hadoop.fs.FileStatus]):org.apache.spark.sql.execution.datasources.PartitionDirectory" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -226,6 +224,23 @@ in the form of a Row.  Before scanning, the files at <code>path</code> need to b
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.PartitionDirectory#files" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="files:Seq[org.apache.hadoop.fs.FileStatus]"></a>
+      <a id="files:Seq[FileStatus]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">files</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.hadoop.fs.FileStatus">FileStatus</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitionDirectory@files:Seq[org.apache.hadoop.fs.FileStatus]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -334,23 +349,6 @@ in the form of a Row.  Before scanning, the files at <code>path</code> need to b
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.datasources.PartitionDirectory#path" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="path:org.apache.hadoop.fs.Path"></a>
-      <a id="path:Path"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">path</span><span class="result">: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.datasources.PartitionDirectory@path:org.apache.hadoop.fs.Path" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

@@ -55,9 +55,9 @@ Updater for L1 regularized problems.
 Uses a step-size decreasing with the square root of the number of iterations.</p><p>Instead of subgradient of the regularizer, the proximal operator for the
 L1 regularization is applied after the gradient step. This is known to
 result in better sparsity of the intermediate solution.</p><p>The corresponding proximal operator for the L1 norm is the soft-thresholding
-function. That is, each weight component is shrunk towards 0 by shrinkageVal.</p><p>If w &gt;  shrinkageVal, set weight component to w-shrinkageVal.
-If w &lt; -shrinkageVal, set weight component to w+shrinkageVal.
-If -shrinkageVal &lt; w &lt; shrinkageVal, set weight component to 0.</p><p>Equivalently, set weight component to signum(w) * max(0.0, abs(w) - shrinkageVal)
+function. That is, each weight component is shrunk towards 0 by shrinkageVal.</p><p>If w is greater than shrinkageVal, set weight component to w-shrinkageVal.
+If w is less than -shrinkageVal, set weight component to w+shrinkageVal.
+If w is (-shrinkageVal, shrinkageVal), set weight component to 0.</p><p>Equivalently, set weight component to signum(w) * max(0.0, abs(w) - shrinkageVal)
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               

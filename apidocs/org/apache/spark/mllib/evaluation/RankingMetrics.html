@@ -51,7 +51,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Evaluator for ranking algorithms.</p><p>Java users should use <a href="RankingMetrics$.html#of[E,T&lt;:Iterable[E]](predictionAndLabels:org.apache.spark.api.java.JavaRDD[(T,T)]):org.apache.spark.mllib.evaluation.RankingMetrics[E]" class="extmbr" name="org.apache.spark.mllib.evaluation.RankingMetrics#of">RankingMetrics$.of</a> to create a <a href="" class="extype" name="org.apache.spark.mllib.evaluation.RankingMetrics">RankingMetrics</a> instance.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Evaluator for ranking algorithms.</p><p>Java users should use <code>RankingMetrics$.of</code> to create a <a href="" class="extype" name="org.apache.spark.mllib.evaluation.RankingMetrics">RankingMetrics</a> instance.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -710,9 +710,9 @@ a log warning.</p><p>See the following paper for detail:</p><p>IR evaluation met
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Compute the average precision of all the queries, truncated at ranking position k.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the average precision of all the queries, truncated at ranking position k.</p><p>If for a query, the ranking algorithm returns n (n &lt; k) results, the precision value will be
-computed as #(relevant items retrieved) / k. This formula also applies when the size of the
-ground truth set is less than k.</p><p>If a query has an empty ground truth set, zero will be used as precision together with
+      <p class="shortcomment cmt">Compute the average precision of all the queries, truncated at ranking position k.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the average precision of all the queries, truncated at ranking position k.</p><p>If for a query, the ranking algorithm returns n (n is less than k) results, the precision
+value will be computed as #(relevant items retrieved) / k. This formula also applies when
+the size of the ground truth set is less than k.</p><p>If a query has an empty ground truth set, zero will be used as precision together with
 a log warning.</p><p>See the following paper for detail:</p><p>IR evaluation methods for retrieving highly relevant documents. K. Jarvelin and J. Kekalainen
 </p></div><dl class="paramcmts block"><dt class="param">k</dt><dd class="cmt"><p>the position to compute the truncated precision, must be positive</p></dd><dt>returns</dt><dd class="cmt"><p>the average precision at the first k ranking positions</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>

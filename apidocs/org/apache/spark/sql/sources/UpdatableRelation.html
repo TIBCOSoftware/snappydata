@@ -45,7 +45,7 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">UpdatableRelation</span><span class="result"> extends <a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a></span>
+        <span class="name">UpdatableRelation</span><span class="result"> extends <a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a> with <a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></span>
       </span>
       </h4>
       
@@ -54,7 +54,7 @@
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a>, <a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>, <a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
             <div class="subClasses hiddenContent"><a href="../row/JDBCMutableRelation.html" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a>, <a href="../execution/row/RowFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatRelation">RowFormatRelation</a></div>
@@ -75,7 +75,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.sources.UpdatableRelation"><span>UpdatableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.SingleRowInsertableRelation"><span>SingleRowInsertableRelation</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.sources.UpdatableRelation"><span>UpdatableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.MutableRelation"><span>MutableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.DestroyRelation"><span>DestroyRelation</span></li><li class="in" name="org.apache.spark.sql.sources.SingleRowInsertableRelation"><span>SingleRowInsertableRelation</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -98,7 +98,26 @@
 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="org.apache.spark.sql.sources.SingleRowInsertableRelation#executeUpdate" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.sources.DestroyRelation#destroy" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="destroy(ifExists:Boolean):Unit"></a>
+      <a id="destroy(Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">destroy</span><span class="params">(<span name="ifExists">ifExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@destroy(ifExists:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Destroy and cleanup this relation.</p><div class="fullcomment"><div class="comment cmt"><p>Destroy and cleanup this relation. It may include, but not limited to,
+dropping the external table that this relation represents.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.SingleRowInsertableRelation#executeUpdate" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="executeUpdate(sql:String):Int"></a>
       <a id="executeUpdate(String):Int"></a>
       <h4 class="signature">
@@ -116,6 +135,134 @@
     </span>
       <p class="shortcomment cmt">Execute a DML SQL and return the number of rows affected.</p><div class="fullcomment"><div class="comment cmt"><p>Execute a DML SQL and return the number of rows affected.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.MutableRelation#getDeletePlan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getDeletePlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan,keyColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getDeletePlan(LogicalRelation,SparkPlan,Seq[Attribute]):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDeletePlan</span><span class="params">(<span name="relation">relation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="keyColumns">keyColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@getDeletePlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan,keyColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get a spark plan to delete rows the relation.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan to delete rows the relation. The result of SparkPlan
+execution should be a count of number of updated rows.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.MutableRelation#getKeyColumns" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getKeyColumns:Seq[String]"></a>
+      <a id="getKeyColumns:Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getKeyColumns</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@getKeyColumns:Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the &quot;key&quot; columns for the table that need to be projected out by
+UPDATE and DELETE operations for affecting the selected rows.</p><div class="fullcomment"><div class="comment cmt"><p>Get the &quot;key&quot; columns for the table that need to be projected out by
+UPDATE and DELETE operations for affecting the selected rows.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.MutableRelation#getUpdatePlan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getUpdatePlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan,updateColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],updateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],keyColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getUpdatePlan(LogicalRelation,SparkPlan,Seq[Attribute],Seq[Expression],Seq[Attribute]):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getUpdatePlan</span><span class="params">(<span name="relation">relation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="updateColumns">updateColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="updateExpressions">updateExpressions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="keyColumns">keyColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result">: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@getUpdatePlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan,updateColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],updateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],keyColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get a spark plan to update rows in the relation.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan to update rows in the relation. The result of SparkPlan
+execution should be a count of number of updated rows.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.MutableRelation#partitionColumns" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="partitionColumns:Seq[String]"></a>
+      <a id="partitionColumns:Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">partitionColumns</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@partitionColumns:Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get the partitioning columns for the table, if any.</p><div class="fullcomment"><div class="comment cmt"><p>Get the partitioning columns for the table, if any.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.MutableRelation#table" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="table:String"></a>
+      <a id="table:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">table</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@table:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Name of this mutable table as stored in catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Name of this mutable table as stored in catalog.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.DestroyRelation#tableExists" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="tableExists:Boolean"></a>
+      <a id="tableExists:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableExists</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@tableExists:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return true if table already existed when the relation object was created.</p><div class="fullcomment"><div class="comment cmt"><p>Return true if table already existed when the relation object was created.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.DestroyRelation#truncate" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="truncate():Unit"></a>
+      <a id="truncate():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">truncate</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@truncate():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Truncate the table represented by this relation.</p><div class="fullcomment"><div class="comment cmt"><p>Truncate the table represented by this relation.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.UpdatableRelation#update" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="update(filterExpr:String,newColumnValues:org.apache.spark.sql.Row,updateColumns:Seq[String]):Int"></a>
       <a id="update(String,Row,Seq[String]):Int"></a>
@@ -493,6 +640,24 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.MutableRelation#withKeyColumns" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withKeyColumns(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,keyColumns:Seq[String]):org.apache.spark.sql.execution.datasources.LogicalRelation"></a>
+      <a id="withKeyColumns(LogicalRelation,Seq[String]):LogicalRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withKeyColumns</span><span class="params">(<span name="relation">relation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="keyColumns">keyColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.UpdatableRelation@withKeyColumns(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,keyColumns:Seq[String]):org.apache.spark.sql.execution.datasources.LogicalRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">If required inject the key columns in the original relation.</p><div class="fullcomment"><div class="comment cmt"><p>If required inject the key columns in the original relation.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -502,7 +667,11 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">
+        <div class="parent" name="org.apache.spark.sql.sources.MutableRelation">
+              <h3>Inherited from <a href="MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.sources.DestroyRelation">
+              <h3>Inherited from <a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">
               <h3>Inherited from <a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>

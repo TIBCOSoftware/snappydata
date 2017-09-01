@@ -122,7 +122,41 @@ object that will be filled in using other available strategies.</p><p>TODO: RIGH
 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="org.apache.spark.sql.catalyst.planning.QueryPlanner#strategies" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.catalyst.planning.QueryPlanner#collectPlaceholders" visbl="prt" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="collectPlaceholders(plan:PhysicalPlan):Seq[(PhysicalPlan,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)]"></a>
+      <a id="collectPlaceholders(PhysicalPlan):Seq[(PhysicalPlan,LogicalPlan)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collectPlaceholders</span><span class="params">(<span name="plan">plan: <span class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner.PhysicalPlan">PhysicalPlan</span></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner.PhysicalPlan">PhysicalPlan</span>, <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.QueryPlanner@collectPlaceholders(plan:PhysicalPlan):Seq[(PhysicalPlan,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Collects placeholders marked as <span class="extype" name="planLater">planLater</span> by strategy and its <span class="extype" name="LogicalPlan">LogicalPlan</span>s</p><div class="fullcomment"><div class="comment cmt"><p>Collects placeholders marked as <span class="extype" name="planLater">planLater</span> by strategy and its <span class="extype" name="LogicalPlan">LogicalPlan</span>s</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.planning.QueryPlanner#prunePlans" visbl="prt" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="prunePlans(plans:Iterator[PhysicalPlan]):Iterator[PhysicalPlan]"></a>
+      <a id="prunePlans(Iterator[PhysicalPlan]):Iterator[PhysicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">prunePlans</span><span class="params">(<span name="plans">plans: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner.PhysicalPlan">PhysicalPlan</span>]</span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner.PhysicalPlan">PhysicalPlan</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.QueryPlanner@prunePlans(plans:Iterator[PhysicalPlan]):Iterator[PhysicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Prunes bad plans to prevent combinatorial explosion.</p><div class="fullcomment"><div class="comment cmt"><p>Prunes bad plans to prevent combinatorial explosion.</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.planning.QueryPlanner#strategies" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="strategies:Seq[org.apache.spark.sql.catalyst.planning.GenericStrategy[PhysicalPlan]]"></a>
       <a id="strategies:Seq[GenericStrategy[PhysicalPlan]]"></a>
       <h4 class="signature">

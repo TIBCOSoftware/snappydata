@@ -82,9 +82,11 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: Experimental ::</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::</p><p>Manager for <a href="QueryExecutionListener.html" class="extype" name="org.apache.spark.sql.util.QueryExecutionListener">QueryExecutionListener</a>. See <a href="../SQLContext.html#listenerManager:org.apache.spark.sql.util.ExecutionListenerManager" class="extmbr" name="org.apache.spark.sql.SQLContext#listenerManager">org.apache.spark.sql.SQLContext.listenerManager</a>.
+      <p class="shortcomment cmt">:: Experimental ::</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::</p><p>Manager for <a href="QueryExecutionListener.html" class="extype" name="org.apache.spark.sql.util.QueryExecutionListener">QueryExecutionListener</a>. See <code>org.apache.spark.sql.SQLContext.listenerManager</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.util.QueryExecutionListener" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
@@ -105,12 +107,14 @@
     </span>
       <p class="shortcomment cmt">:: Experimental ::
 The interface of query execution listener that can be used to analyze execution metrics.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-The interface of query execution listener that can be used to analyze execution metrics.</p><p>Note that implementations should guarantee thread-safety as they can be invoked by
-multiple different threads.
+The interface of query execution listener that can be used to analyze execution metrics.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Implementations should guarantee thread-safety as they can be invoked by
+multiple different threads.</p></span></dd></dl></div>
     </li></ol>
             </div>
 

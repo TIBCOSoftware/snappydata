@@ -49,10 +49,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A single file that should be read, along with partition column values that
-need to be prepended to each row.  The reading should start at the first
-valid record found after <code>start</code>.
-</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A part (i.e. &quot;block&quot;) of a single file that should be read, along with partition column values
+that need to be prepended to each row.
+</p></div><dl class="paramcmts block"><dt class="param">partitionValues</dt><dd class="cmt"><p>value of partition columns to be prepended to each row.</p></dd><dt class="param">filePath</dt><dd class="cmt"><p>path of the file to read</p></dd><dt class="param">start</dt><dd class="cmt"><p>the beginning offset (in bytes) of the block.</p></dd><dt class="param">length</dt><dd class="cmt"><p>number of bytes to read.</p></dd><dt class="param">locations</dt><dd class="cmt"><p>locality information (list of nodes that have the data).</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -91,7 +90,7 @@ valid record found after <code>start</code>.
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="org.apache.spark.sql.execution.datasources.PartitionedFile#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.datasources.PartitionedFile#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="&lt;init&gt;(partitionValues:org.apache.spark.sql.catalyst.InternalRow,filePath:String,start:Long,length:Long,locations:Array[String]):org.apache.spark.sql.execution.datasources.PartitionedFile"></a>
       <a id="&lt;init&gt;:PartitionedFile"></a>
       <h4 class="signature">
@@ -107,7 +106,7 @@ valid record found after <code>start</code>.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">partitionValues</dt><dd class="cmt"><p>value of partition columns to be prepended to each row.</p></dd><dt class="param">filePath</dt><dd class="cmt"><p>path of the file to read</p></dd><dt class="param">start</dt><dd class="cmt"><p>the beginning offset (in bytes) of the block.</p></dd><dt class="param">length</dt><dd class="cmt"><p>number of bytes to read.</p></dd><dt class="param">locations</dt><dd class="cmt"><p>locality information (list of nodes that have the data).</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -241,7 +240,7 @@ valid record found after <code>start</code>.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">path of the file to read</p>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -315,7 +314,7 @@ valid record found after <code>start</code>.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">number of bytes to read.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.PartitionedFile#locations" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="locations:Array[String]"></a>
       <a id="locations:Array[String]"></a>
@@ -332,7 +331,7 @@ valid record found after <code>start</code>.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">locality information (list of nodes that have the data).</p>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -400,7 +399,7 @@ valid record found after <code>start</code>.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">value of partition columns to be prepended to each row.</p>
     </li><li name="org.apache.spark.sql.execution.datasources.PartitionedFile#start" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="start:Long"></a>
       <a id="start:Long"></a>
@@ -417,7 +416,7 @@ valid record found after <code>start</code>.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">the beginning offset (in bytes) of the block.</p>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

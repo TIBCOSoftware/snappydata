@@ -50,8 +50,11 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Interface used to load a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from external storage systems (e.g. file systems,
-key-value stores, etc). Use <a href="SparkSession.html#read:org.apache.spark.sql.DataFrameReader" class="extmbr" name="org.apache.spark.sql.SparkSession#read">SparkSession.read</a> to access this.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
+key-value stores, etc). Use <code>SparkSession.read</code> to access this.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.4.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -203,13 +206,13 @@ key-value stores, etc). Use <a href="SparkSession.html#read:org.apache.spark.sql
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a CSV file and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a CSV file and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>This function will go through the input once to determine the input schema if <code>inferSchema</code>
+      <p class="shortcomment cmt">Loads a CSV file and returns the result as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a CSV file and returns the result as a <code>DataFrame</code>.</p><p>This function will go through the input once to determine the input schema if <code>inferSchema</code>
 is enabled. To avoid going through the entire data once, disable <code>inferSchema</code> option or
 specify the schema explicitly using <span class="extype" name="schema">schema</span>.</p><p>You can set the following CSV-specific options to deal with CSV files:</p><ul><li><code>sep</code> (default <code>,</code>): sets the single character as a separator for each
 field and value.</li><li><code>encoding</code> (default <code>UTF-8</code>): decodes the CSV files by the given encoding
 type.</li><li><code>quote</code> (default <code>&quot;</code>): sets the single character used for escaping quoted values where
 the separator can be part of the value. If you would like to turn off quotations, you need to
-set not <code>null</code> but an empty string. This behaviour is different form
+set not <code>null</code> but an empty string. This behaviour is different from
 <code>com.databricks.spark.csv</code>.</li><li><code>escape</code> (default <code>\</code>): sets the single character used for escaping quotes inside
 an already quoted value.</li><li><code>comment</code> (default empty string): sets the single character used for skipping lines
 beginning with this character. By default, it is disabled.</li><li><code>header</code> (default <code>false</code>): uses the first line as names of columns.</li><li><code>inferSchema</code> (default <code>false</code>): infers the input schema automatically from data. It
@@ -222,10 +225,9 @@ value.</li><li><code>dateFormat</code> (default <code>yyyy-MM-dd</code>): sets t
 Custom date formats follow the formats at <code>java.text.SimpleDateFormat</code>. This applies to
 date type.</li><li><code>timestampFormat</code> (default <code>yyyy-MM-dd'T'HH:mm:ss.SSSZZ</code>): sets the string that
 indicates a timestamp format. Custom date formats follow the formats at
-<code>java.text.SimpleDateFormat</code>. This applies to timestamp type.
-<code>java.sql.Timestamp.valueOf()</code> and <code>java.sql.Date.valueOf()</code> or ISO 8601 format.</li><li><code>maxColumns</code> (default <code>20480</code>): defines a hard limit of how many columns
-a record can have.</li><li><code>maxCharsPerColumn</code> (default <code>1000000</code>): defines the maximum number of characters allowed
-for any given value being read.</li><li><code>maxMalformedLogPerPartition</code> (default <code>10</code>): sets the maximum number of malformed rows
+<code>java.text.SimpleDateFormat</code>. This applies to timestamp type.</li><li><code>maxColumns</code> (default <code>20480</code>): defines a hard limit of how many columns
+a record can have.</li><li><code>maxCharsPerColumn</code> (default <code>-1</code>): defines the maximum number of characters allowed
+for any given value being read. By default, it is -1 meaning unlimited length</li><li><code>maxMalformedLogPerPartition</code> (default <code>10</code>): sets the maximum number of malformed rows
 Spark will log for each partition. Malformed records beyond this number will be ignored.</li><li><code>mode</code> (default <code>PERMISSIVE</code>): allows a mode for dealing with corrupt records
    during parsing.</li><li><code>PERMISSIVE</code> : sets other fields to <code>null</code> when it meets a corrupted record. When
       a schema is set by user, it sets <code>null</code> for extra fields.</li><li><code>DROPMALFORMED</code> : ignores the whole corrupted records.</li><li><code>FAILFAST</code> : throws an exception when it meets corrupted records.</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -248,7 +250,7 @@ Spark will log for each partition. Malformed records beyond this number will be 
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a CSV file and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a CSV file and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>. See the documentation on the
+      <p class="shortcomment cmt">Loads a CSV file and returns the result as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a CSV file and returns the result as a <code>DataFrame</code>. See the documentation on the
 other overloaded <code>csv()</code> method for more details.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -461,11 +463,11 @@ other overloaded <code>csv()</code> method for more details.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Construct a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> representing the database table accessible via JDBC URL
-url named table using connection properties.</p><div class="fullcomment"><div class="comment cmt"><p>Construct a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> representing the database table accessible via JDBC URL
+      <p class="shortcomment cmt">Construct a <code>DataFrame</code> representing the database table accessible via JDBC URL
+url named table using connection properties.</p><div class="fullcomment"><div class="comment cmt"><p>Construct a <code>DataFrame</code> representing the database table accessible via JDBC URL
 url named table using connection properties. The <code>predicates</code> parameter gives a list
 expressions suitable for inclusion in WHERE clauses; each one defines one partition
-of the <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>Don't create too many partitions in parallel on a large cluster; otherwise Spark might crash
+of the <code>DataFrame</code>.</p><p>Don't create too many partitions in parallel on a large cluster; otherwise Spark might crash
 your external database systems.
 </p></div><dl class="paramcmts block"><dt class="param">url</dt><dd class="cmt"><p>JDBC database url of the form <code>jdbc:subprotocol:subname</code></p></dd><dt class="param">table</dt><dd class="cmt"><p>Name of the table in the external database.</p></dd><dt class="param">predicates</dt><dd class="cmt"><p>Condition in the where clause for each partition.</p></dd><dt class="param">connectionProperties</dt><dd class="cmt"><p>JDBC database connection arguments, a list of arbitrary string
                             tag/value. Normally at least a &quot;user&quot; and &quot;password&quot; property
@@ -487,14 +489,15 @@ your external database systems.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Construct a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> representing the database table accessible via JDBC URL
-url named table.</p><div class="fullcomment"><div class="comment cmt"><p>Construct a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> representing the database table accessible via JDBC URL
+      <p class="shortcomment cmt">Construct a <code>DataFrame</code> representing the database table accessible via JDBC URL
+url named table.</p><div class="fullcomment"><div class="comment cmt"><p>Construct a <code>DataFrame</code> representing the database table accessible via JDBC URL
 url named table. Partitions of the table will be retrieved in parallel based on the parameters
 passed to this function.</p><p>Don't create too many partitions in parallel on a large cluster; otherwise Spark might crash
 your external database systems.
 </p></div><dl class="paramcmts block"><dt class="param">url</dt><dd class="cmt"><p>JDBC database url of the form <code>jdbc:subprotocol:subname</code>.</p></dd><dt class="param">table</dt><dd class="cmt"><p>Name of the table in the external database.</p></dd><dt class="param">columnName</dt><dd class="cmt"><p>the name of a column of integral type that will be used for partitioning.</p></dd><dt class="param">lowerBound</dt><dd class="cmt"><p>the minimum value of <code>columnName</code> used to decide partition stride.</p></dd><dt class="param">upperBound</dt><dd class="cmt"><p>the maximum value of <code>columnName</code> used to decide partition stride.</p></dd><dt class="param">numPartitions</dt><dd class="cmt"><p>the number of partitions. This, along with <code>lowerBound</code> (inclusive),
                      <code>upperBound</code> (exclusive), form partition strides for generated WHERE
-                     clause expressions used to split the column <code>columnName</code> evenly.</p></dd><dt class="param">connectionProperties</dt><dd class="cmt"><p>JDBC database connection arguments, a list of arbitrary string
+                     clause expressions used to split the column <code>columnName</code> evenly. When
+                     the input is less than 1, the number is set to 1.</p></dd><dt class="param">connectionProperties</dt><dd class="cmt"><p>JDBC database connection arguments, a list of arbitrary string
                             tag/value. Normally at least a &quot;user&quot; and &quot;password&quot; property
                             should be included. &quot;fetchsize&quot; can be used to control the
                             number of rows per fetch.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
@@ -514,8 +517,8 @@ your external database systems.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Construct a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> representing the database table accessible via JDBC URL
-url named table and connection properties.</p><div class="fullcomment"><div class="comment cmt"><p>Construct a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> representing the database table accessible via JDBC URL
+      <p class="shortcomment cmt">Construct a <code>DataFrame</code> representing the database table accessible via JDBC URL
+url named table and connection properties.</p><div class="fullcomment"><div class="comment cmt"><p>Construct a <code>DataFrame</code> representing the database table accessible via JDBC URL
 url named table and connection properties.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader#json" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -534,9 +537,9 @@ url named table and connection properties.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads an <code>RDD[String]</code> storing JSON objects (one object per record) and
-returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads an <code>RDD[String]</code> storing JSON objects (one object per record) and
-returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>Unless the schema is specified using <span class="extype" name="schema">schema</span> function, this function goes through the
+      <p class="shortcomment cmt">Loads an <code>RDD[String]</code> storing JSON objects (<a href="http://jsonlines.org/">JSON Lines
+text format or newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</a></p><div class="fullcomment"><div class="comment cmt"><p>Loads an <code>RDD[String]</code> storing JSON objects (<a href="http://jsonlines.org/">JSON Lines
+text format or newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</p><p>Unless the schema is specified using <span class="extype" name="schema">schema</span> function, this function goes through the
 input once to determine the input schema.
 </p></div><dl class="paramcmts block"><dt class="param">jsonRDD</dt><dd class="cmt"><p>input RDD with one JSON object per record</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader#json" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -555,9 +558,11 @@ input once to determine the input schema.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a <code>JavaRDD[String]</code> storing JSON objects (one object per record) and
-returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a <code>JavaRDD[String]</code> storing JSON objects (one object per record) and
-returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>Unless the schema is specified using <span class="extype" name="schema">schema</span> function, this function goes through the
+      <p class="shortcomment cmt">Loads a <code>JavaRDD[String]</code> storing JSON objects (<a href="http://jsonlines.org/">JSON
+Lines text format or newline-delimited JSON</a>) and returns the result as
+a <code>DataFrame</code>.</a></p><div class="fullcomment"><div class="comment cmt"><p>Loads a <code>JavaRDD[String]</code> storing JSON objects (<a href="http://jsonlines.org/">JSON
+Lines text format or newline-delimited JSON</a>) and returns the result as
+a <code>DataFrame</code>.</p><p>Unless the schema is specified using <span class="extype" name="schema">schema</span> function, this function goes through the
 input once to determine the input schema.
 </p></div><dl class="paramcmts block"><dt class="param">jsonRDD</dt><dd class="cmt"><p>input RDD with one JSON object per record</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader#json" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -576,7 +581,9 @@ input once to determine the input schema.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a JSON file (one object per line) and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file (one object per line) and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>This function goes through the input once to determine the input schema. If you know the
+      <p class="shortcomment cmt">Loads a JSON file (<a href="http://jsonlines.org/">JSON Lines text format or
+newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</a></p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file (<a href="http://jsonlines.org/">JSON Lines text format or
+newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</p><p>This function goes through the input once to determine the input schema. If you know the
 schema in advance, use the version that specifies the schema to avoid the extra scan.</p><p>You can set the following JSON-specific options to deal with non-standard JSON files:</p><ul><li><code>primitivesAsString</code> (default <code>false</code>): infers all primitive values as a string type</li><li><code>prefersDecimal</code> (default <code>false</code>): infers all floating-point values as a decimal
 type. If the values do not fit in decimal, then it infers them as doubles.</li><li><code>allowComments</code> (default <code>false</code>): ignores Java/C++ style comment in JSON records</li><li><code>allowUnquotedFieldNames</code> (default <code>false</code>): allows unquoted JSON field names</li><li><code>allowSingleQuotes</code> (default <code>true</code>): allows single quotes in addition to double quotes</li><li><code>allowNumericLeadingZeros</code> (default <code>false</code>): allows leading zeros in numbers
 (e.g. 00012)</li><li><code>allowBackslashEscapingAnyCharacter</code> (default <code>false</code>): allows accepting quoting of all
@@ -589,8 +596,7 @@ created by <code>PERMISSIVE</code> mode. This overrides <code>spark.sql.columnNa
 Custom date formats follow the formats at <code>java.text.SimpleDateFormat</code>. This applies to
 date type.</li><li><code>timestampFormat</code> (default <code>yyyy-MM-dd'T'HH:mm:ss.SSSZZ</code>): sets the string that
 indicates a timestamp format. Custom date formats follow the formats at
-<code>java.text.SimpleDateFormat</code>. This applies to timestamp type.
-</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+<code>java.text.SimpleDateFormat</code>. This applies to timestamp type.</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
@@ -610,7 +616,9 @@ indicates a timestamp format. Custom date formats follow the formats at
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a JSON file (one object per line) and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file (one object per line) and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+      <p class="shortcomment cmt">Loads a JSON file (<a href="http://jsonlines.org/">JSON Lines text format or
+newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</a></p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file (<a href="http://jsonlines.org/">JSON Lines text format or
+newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.
 See the documentation on the overloaded <code>json()</code> method with varargs for more details.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader#load" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -629,7 +637,7 @@ See the documentation on the overloaded <code>json()</code> method with varargs 
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads input in as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data sources that support multiple paths.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data sources that support multiple paths.
+      <p class="shortcomment cmt">Loads input in as a <code>DataFrame</code>, for data sources that support multiple paths.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <code>DataFrame</code>, for data sources that support multiple paths.
 Only works if the source is a HadoopFsRelationProvider.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
@@ -651,7 +659,7 @@ Only works if the source is a HadoopFsRelationProvider.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads input in as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data sources that require a path (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data sources that require a path (e.g. data backed by
+      <p class="shortcomment cmt">Loads input in as a <code>DataFrame</code>, for data sources that require a path (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <code>DataFrame</code>, for data sources that require a path (e.g. data backed by
 a local or distributed file system).
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader#load" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -670,7 +678,7 @@ a local or distributed file system).
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads input in as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data sources that don't require a path (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>, for data sources that don't require a path (e.g. external
+      <p class="shortcomment cmt">Loads input in as a <code>DataFrame</code>, for data sources that don't require a path (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Loads input in as a <code>DataFrame</code>, for data sources that don't require a path (e.g. external
 key-value stores).
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -1052,7 +1060,7 @@ key-value stores).
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads an ORC file and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads an ORC file and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+      <p class="shortcomment cmt">Loads an ORC file and returns the result as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads an ORC file and returns the result as a <code>DataFrame</code>.
 </p></div><dl class="paramcmts block"><dt class="param">paths</dt><dd class="cmt"><p>input paths</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
               
@@ -1073,7 +1081,7 @@ key-value stores).
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads an ORC file and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads an ORC file and returns the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+      <p class="shortcomment cmt">Loads an ORC file and returns the result as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads an ORC file and returns the result as a <code>DataFrame</code>.
 </p></div><dl class="paramcmts block"><dt class="param">path</dt><dd class="cmt"><p>input path</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>Currently, this method can only be used after enabling Hive support.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader#parquet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="parquet(paths:String*):org.apache.spark.sql.DataFrame"></a>
@@ -1091,7 +1099,7 @@ key-value stores).
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a Parquet file, returning the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a Parquet file, returning the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><p>You can set the following Parquet-specific option(s) for reading Parquet files:</p><ul><li><code>mergeSchema</code> (default is the value specified in <code>spark.sql.parquet.mergeSchema</code>): sets
+      <p class="shortcomment cmt">Loads a Parquet file, returning the result as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a Parquet file, returning the result as a <code>DataFrame</code>.</p><p>You can set the following Parquet-specific option(s) for reading Parquet files:</p><ul><li><code>mergeSchema</code> (default is the value specified in <code>spark.sql.parquet.mergeSchema</code>): sets
 whether we should merge schemas collected from all Parquet part-files. This will override
 <code>spark.sql.parquet.mergeSchema</code>.
 </li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
@@ -1114,7 +1122,7 @@ whether we should merge schemas collected from all Parquet part-files. This will
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a Parquet file, returning the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a Parquet file, returning the result as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>. See the documentation
+      <p class="shortcomment cmt">Loads a Parquet file, returning the result as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a Parquet file, returning the result as a <code>DataFrame</code>. See the documentation
 on the other overloaded <code>parquet()</code> method for more details.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader#schema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -1170,7 +1178,7 @@ skip the schema inference step, and thus speed up data loading.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the specified table as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the specified table as a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>.
+      <p class="shortcomment cmt">Returns the specified table as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the specified table as a <code>DataFrame</code>.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameReader#text" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="text(paths:String*):org.apache.spark.sql.DataFrame"></a>
@@ -1188,8 +1196,8 @@ skip the schema inference step, and thus speed up data loading.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads text files and returns a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
-&quot;value&quot;, and followed by partitioned columns if there are any.</p><div class="fullcomment"><div class="comment cmt"><p>Loads text files and returns a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
+      <p class="shortcomment cmt">Loads text files and returns a <code>DataFrame</code> whose schema starts with a string column named
+&quot;value&quot;, and followed by partitioned columns if there are any.</p><div class="fullcomment"><div class="comment cmt"><p>Loads text files and returns a <code>DataFrame</code> whose schema starts with a string column named
 &quot;value&quot;, and followed by partitioned columns if there are any.</p><p>Each line in the text files is a new row in the resulting DataFrame. For example:</p><pre><span class="cmt">// Scala:</span>
 spark.read.text(<span class="lit">"/path/to/spark/README.md"</span>)
 
@@ -1214,8 +1222,8 @@ spark.read().text(<span class="lit">"/path/to/spark/README.md"</span>)</pre></di
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads text files and returns a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
-&quot;value&quot;, and followed by partitioned columns if there are any.</p><div class="fullcomment"><div class="comment cmt"><p>Loads text files and returns a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> whose schema starts with a string column named
+      <p class="shortcomment cmt">Loads text files and returns a <code>DataFrame</code> whose schema starts with a string column named
+&quot;value&quot;, and followed by partitioned columns if there are any.</p><div class="fullcomment"><div class="comment cmt"><p>Loads text files and returns a <code>DataFrame</code> whose schema starts with a string column named
 &quot;value&quot;, and followed by partitioned columns if there are any. See the documentation on
 the other overloaded <code>text()</code> method for more details.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>

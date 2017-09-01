@@ -49,7 +49,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Represents a numeric vector, whose index type is Int and value type is Double.</p><p>Note: Users should not implement this interface.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Represents a numeric vector, whose index type is Int and value type is Double.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../sql/types/SQLUserDefinedType.html" class="extype" name="org.apache.spark.sql.types.SQLUserDefinedType">SQLUserDefinedType</a></span><span class="args">()</span>
               
@@ -58,7 +58,7 @@
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl><div class="toggleContainer block">
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Users should not implement this interface.</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -197,14 +197,14 @@ This does NOT copy the data; it copies references.
       </a>
     </span>
       <p class="shortcomment cmt">Number of active entries.</p><div class="fullcomment"><div class="comment cmt"><p>Number of active entries.  An &quot;active entry&quot; is an element which is explicitly stored,
-regardless of its value.  Note that inactive entries have value 0.
+regardless of its value.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.4.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Inactive entries have value 0.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.linalg.Vector#numNonzeros" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="numNonzeros:Int"></a>
       <a id="numNonzeros:Int"></a>
@@ -583,7 +583,7 @@ regardless of its value.  Note that inactive entries have value 0.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a hash code value for the vector.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a hash code value for the vector. The hash code is based on its size and its first 128
-nonzero entries, using a hash algorithm similar to <span class="extype" name="java.util.Arrays.hashCode">java.util.Arrays.hashCode</span>.
+nonzero entries, using a hash algorithm similar to <code>java.util.Arrays.hashCode</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.linalg.Vector">Vector</a> → AnyRef → Any</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>

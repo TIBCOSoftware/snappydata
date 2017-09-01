@@ -234,7 +234,9 @@ Summary of <a href="GeneralizedLinearRegression.html" class="extype" name="org.a
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Standard error of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>Standard error of estimated coefficients and intercept.</p><p>If <a href="GeneralizedLinearRegression.html#fitIntercept:org.apache.spark.ml.param.BooleanParam" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegression#fitIntercept">GeneralizedLinearRegression.fitIntercept</a> is set to true,
+      <p class="shortcomment cmt">Standard error of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>Standard error of estimated coefficients and intercept.
+This value is only available when the underlying <code>WeightedLeastSquares</code>
+using the &quot;normal&quot; solver.</p><p>If <code>GeneralizedLinearRegression.fitIntercept</code> is set to true,
 then the last element returned corresponds to the intercept.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -442,9 +444,9 @@ sum of the squares of the Pearson residuals) divided by the residual degrees of 
       </a>
     </span>
       <p class="shortcomment cmt">Private copy of model to ensure Params are not modified outside this class.</p><div class="fullcomment"><div class="comment cmt"><p>Private copy of model to ensure Params are not modified outside this class.
-Coefficients is not a deep copy, but that is acceptable.</p><p>NOTE: <a href="GeneralizedLinearRegressionSummary.html#predictionCol:String" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary#predictionCol">predictionCol</a> must be set correctly before the value of <a href="GeneralizedLinearRegressionSummary.html#model:org.apache.spark.ml.regression.GeneralizedLinearRegressionModel" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary#model">model</a> is set,
-      and <a href="GeneralizedLinearRegressionSummary.html#model:org.apache.spark.ml.regression.GeneralizedLinearRegressionModel" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary#model">model</a> must be set before <a href="GeneralizedLinearRegressionSummary.html#predictions:org.apache.spark.sql.DataFrame" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary#predictions">predictions</a> is set!
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="GeneralizedLinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary">GeneralizedLinearRegressionSummary</a></dd></dl></div>
+Coefficients is not a deep copy, but that is acceptable.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="GeneralizedLinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary">GeneralizedLinearRegressionSummary</a></dd><dt>Note</dt><dd><span class="cmt"><p><a href="GeneralizedLinearRegressionSummary.html#predictionCol:String" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary#predictionCol">predictionCol</a> must be set correctly before the value of <a href="GeneralizedLinearRegressionSummary.html#model:org.apache.spark.ml.regression.GeneralizedLinearRegressionModel" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary#model">model</a> is set,
+and <a href="GeneralizedLinearRegressionSummary.html#model:org.apache.spark.ml.regression.GeneralizedLinearRegressionModel" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary#model">model</a> must be set before <a href="GeneralizedLinearRegressionSummary.html#predictions:org.apache.spark.sql.DataFrame" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary#predictions">predictions</a> is set!</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -559,7 +561,9 @@ Coefficients is not a deep copy, but that is acceptable.</p><p>NOTE: <a href="Ge
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Two-sided p-value of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>Two-sided p-value of estimated coefficients and intercept.</p><p>If <a href="GeneralizedLinearRegression.html#fitIntercept:org.apache.spark.ml.param.BooleanParam" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegression#fitIntercept">GeneralizedLinearRegression.fitIntercept</a> is set to true,
+      <p class="shortcomment cmt">Two-sided p-value of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>Two-sided p-value of estimated coefficients and intercept.
+This value is only available when the underlying <code>WeightedLeastSquares</code>
+using the &quot;normal&quot; solver.</p><p>If <code>GeneralizedLinearRegression.fitIntercept</code> is set to true,
 then the last element returned corresponds to the intercept.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -609,7 +613,8 @@ This is set to a new column name if the original model's <code>predictionCol</co
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Predictions output by the model's <code>transform</code> method.</p><div class="fullcomment"><div class="comment cmt"><p>Predictions output by the model's <code>transform</code> method.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="GeneralizedLinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary">GeneralizedLinearRegressionSummary</a></dd><dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Predictions output by the model's <code>transform</code> method.</p><div class="fullcomment"><div class="comment cmt"><p>Predictions output by the model's <code>transform</code> method.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="GeneralizedLinearRegressionSummary.html" class="extype" name="org.apache.spark.ml.regression.GeneralizedLinearRegressionSummary">GeneralizedLinearRegressionSummary</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;2.0.0&quot;</span>
@@ -790,7 +795,9 @@ This is set to a new column name if the original model's <code>predictionCol</co
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">T-statistic of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>T-statistic of estimated coefficients and intercept.</p><p>If <a href="GeneralizedLinearRegression.html#fitIntercept:org.apache.spark.ml.param.BooleanParam" class="extmbr" name="org.apache.spark.ml.regression.GeneralizedLinearRegression#fitIntercept">GeneralizedLinearRegression.fitIntercept</a> is set to true,
+      <p class="shortcomment cmt">T-statistic of estimated coefficients and intercept.</p><div class="fullcomment"><div class="comment cmt"><p>T-statistic of estimated coefficients and intercept.
+This value is only available when the underlying <code>WeightedLeastSquares</code>
+using the &quot;normal&quot; solver.</p><p>If <code>GeneralizedLinearRegression.fitIntercept</code> is set to true,
 then the last element returned corresponds to the intercept.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>

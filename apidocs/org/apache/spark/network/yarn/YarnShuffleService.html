@@ -421,6 +421,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractService → Service</dd></dl></div>
+    </li><li name="org.apache.spark.network.yarn.YarnShuffleService#getRecoveryPath" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getRecoveryPath(fileName:String):org.apache.hadoop.fs.Path"></a>
+      <a id="getRecoveryPath(String):Path"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getRecoveryPath</span><span class="params">(<span name="fileName">fileName: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.network.yarn.YarnShuffleService@getRecoveryPath(fileName:String):org.apache.hadoop.fs.Path" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="package.html" class="extype" name="org.apache.spark.network.yarn">org.apache.spark.network.yarn</a>] </dd></dl></div>
     </li><li name="org.apache.hadoop.yarn.server.api.AuxiliaryService#getRecoveryPath" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getRecoveryPath():org.apache.hadoop.fs.Path"></a>
       <a id="getRecoveryPath():Path"></a>
@@ -506,6 +523,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractService → Service</dd></dl></div>
+    </li><li name="org.apache.spark.network.yarn.YarnShuffleService#initRecoveryDb" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initRecoveryDb(dbFileName:String):java.io.File"></a>
+      <a id="initRecoveryDb(String):File"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initRecoveryDb</span><span class="params">(<span name="dbFileName">dbFileName: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="java.io.File">File</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.network.yarn.YarnShuffleService@initRecoveryDb(dbFileName:String):java.io.File" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="package.html" class="extype" name="org.apache.spark.network.yarn">org.apache.spark.network.yarn</a>] </dd></dl></div>
     </li><li name="org.apache.spark.network.yarn.YarnShuffleService#initializeApplication" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeApplication(context:org.apache.hadoop.yarn.server.api.ApplicationInitializationContext):Unit"></a>
       <a id="initializeApplication(ApplicationInitializationContext):Unit"></a>
@@ -767,8 +801,8 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../hadoop/service.html" class="extype" name="org.apache.hadoop.service">org.apache.hadoop.service</a>] </dd><dt>Definition Classes</dt><dd>AbstractService</dd></dl></div>
-    </li><li name="org.apache.hadoop.yarn.server.api.AuxiliaryService#setRecoveryPath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setRecoveryPath(x$1:org.apache.hadoop.fs.Path):Unit"></a>
+    </li><li name="org.apache.spark.network.yarn.YarnShuffleService#setRecoveryPath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setRecoveryPath(recoveryPath:org.apache.hadoop.fs.Path):Unit"></a>
       <a id="setRecoveryPath(Path):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -776,14 +810,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setRecoveryPath</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setRecoveryPath</span><span class="params">(<span name="recoveryPath">recoveryPath: <span class="extype" name="org.apache.hadoop.fs.Path">Path</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.network.yarn.YarnShuffleService@setRecoveryPath(x$1:org.apache.hadoop.fs.Path):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.network.yarn.YarnShuffleService@setRecoveryPath(recoveryPath:org.apache.hadoop.fs.Path):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AuxiliaryService</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.network.yarn.YarnShuffleService">YarnShuffleService</a> → AuxiliaryService</dd></dl></div>
     </li><li name="org.apache.hadoop.service.AbstractService#start" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="start():Unit"></a>
       <a id="start():Unit"></a>

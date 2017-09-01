@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">RelationInfo</span><span class="params">(<span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>, <span name="partitioningCols">partitioningCols: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="indexCols">indexCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="pkCols">pkCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="partitions">partitions: <span class="extype" name="scala.Array">Array</span>[<a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="embdClusterRelDestroyVersion">embdClusterRelDestroyVersion: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">RelationInfo</span><span class="params">(<span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="partitioningCols">partitioningCols: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="indexCols">indexCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="pkCols">pkCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="partitions">partitions: <span class="extype" name="scala.Array">Array</span>[<a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="embdClusterRelDestroyVersion">embdClusterRelDestroyVersion: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.hive.RelationInfo#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(numBuckets:Int,partitioningCols:Seq[String],indexCols:Array[String],pkCols:Array[String],partitions:Array[org.apache.spark.Partition],embdClusterRelDestroyVersion:Int):org.apache.spark.sql.hive.RelationInfo"></a>
+      <a id="&lt;init&gt;(numBuckets:Int,isPartitioned:Boolean,partitioningCols:Seq[String],indexCols:Array[String],pkCols:Array[String],partitions:Array[org.apache.spark.Partition],embdClusterRelDestroyVersion:Int):org.apache.spark.sql.hive.RelationInfo"></a>
       <a id="&lt;init&gt;:RelationInfo"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">RelationInfo</span><span class="params">(<span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>, <span name="partitioningCols">partitioningCols: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="indexCols">indexCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="pkCols">pkCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="partitions">partitions: <span class="extype" name="scala.Array">Array</span>[<a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="embdClusterRelDestroyVersion">embdClusterRelDestroyVersion: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span>
+        <span class="name">RelationInfo</span><span class="params">(<span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="partitioningCols">partitioningCols: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Seq.empty</span></span>, <span name="indexCols">indexCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="pkCols">pkCols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="partitions">partitions: <span class="extype" name="scala.Array">Array</span>[<a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="embdClusterRelDestroyVersion">embdClusterRelDestroyVersion: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.RelationInfo@&lt;init&gt;(numBuckets:Int,partitioningCols:Seq[String],indexCols:Array[String],pkCols:Array[String],partitions:Array[org.apache.spark.Partition],embdClusterRelDestroyVersion:Int):org.apache.spark.sql.hive.RelationInfo" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.RelationInfo@&lt;init&gt;(numBuckets:Int,isPartitioned:Boolean,partitioningCols:Seq[String],indexCols:Array[String],pkCols:Array[String],partitions:Array[org.apache.spark.Partition],embdClusterRelDestroyVersion:Int):org.apache.spark.sql.hive.RelationInfo" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -313,6 +313,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.RelationInfo#isPartitioned" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isPartitioned:Boolean"></a>
+      <a id="isPartitioned:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isPartitioned</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.RelationInfo@isPartitioned:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>

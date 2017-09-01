@@ -53,7 +53,8 @@
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: DeveloperApi ::
 Class used to solve an optimization problem using Limited-memory BFGS.
-Reference: <a href="http://en.wikipedia.org/wiki/Limited-memory_BFGS" target="_blank">http://en.wikipedia.org/wiki/Limited-memory_BFGS</a></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+Reference: <a href="http://en.wikipedia.org/wiki/Limited-memory_BFGS">
+Wikipedia on Limited-memory BFGS</a></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl><div class="toggleContainer block">
@@ -719,8 +720,7 @@ to be used for L-BFGS.</p>
       <p class="shortcomment cmt">Set the number of corrections used in the LBFGS update.</p><div class="fullcomment"><div class="comment cmt"><p>Set the number of corrections used in the LBFGS update. Default 10.
 Values of numCorrections less than 3 are not recommended; large values
 of numCorrections will result in excessive computing time.
-3 &lt; numCorrections &lt; 10 is recommended.
-Restriction: numCorrections &gt; 0
+numCorrections must be positive, and values from 4 to 9 are generally recommended.
 </p></div></div>
     </li><li name="org.apache.spark.mllib.optimization.LBFGS#setNumIterations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setNumIterations(iters:Int):LBFGS.this.type"></a>

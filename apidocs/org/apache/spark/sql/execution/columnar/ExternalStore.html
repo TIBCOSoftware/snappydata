@@ -164,18 +164,52 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#storeColumnBatch" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="storeColumnBatch(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,partitionId:Int,batchId:Option[String],maxDeltaRows:Int):Unit"></a>
-      <a id="storeColumnBatch(String,ColumnBatch,Int,Option[String],Int):Unit"></a>
+      <a id="storeColumnBatch(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,partitionId:Int,batchId:Long,maxDeltaRows:Int,conn:Option[java.sql.Connection]):Unit"></a>
+      <a id="storeColumnBatch(String,ColumnBatch,Int,Long,Int,Option[Connection]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">storeColumnBatch</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="batch">batch: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="maxDeltaRows">maxDeltaRows: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">storeColumnBatch</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="batch">batch: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>, <span name="maxDeltaRows">maxDeltaRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@storeColumnBatch(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,partitionId:Int,batchId:Option[String],maxDeltaRows:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@storeColumnBatch(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,partitionId:Int,batchId:Long,maxDeltaRows:Int,conn:Option[java.sql.Connection]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#storeDelete" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="storeDelete(tableName:String,buffer:java.nio.ByteBuffer,statsData:Array[Byte],partitionId:Int,batchId:Long,conn:Option[java.sql.Connection]):Unit"></a>
+      <a id="storeDelete(String,ByteBuffer,Array[Byte],Int,Long,Option[Connection]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">storeDelete</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>, <span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@storeDelete(tableName:String,buffer:java.nio.ByteBuffer,statsData:Array[Byte],partitionId:Int,batchId:Long,conn:Option[java.sql.Connection]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#tableName" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="tableName:String"></a>
+      <a id="tableName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@tableName:String" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -277,18 +311,18 @@
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#columnPrefix" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="columnPrefix:String(&quot;Col_&quot;)"></a>
-      <a id="columnPrefix:String(&quot;Col_&quot;)"></a>
+      <a id="columnPrefix:String(&quot;COL_&quot;)"></a>
+      <a id="columnPrefix:String(&quot;COL_&quot;)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">columnPrefix</span><span class="result">: String(&quot;Col_&quot;)</span>
+        <span class="name">columnPrefix</span><span class="result">: String(&quot;COL_&quot;)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@columnPrefix:String(&quot;Col_&quot;)" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@columnPrefix:String(&quot;COL_&quot;)" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -487,18 +521,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#tryExecute" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tryExecute[T](tableName:String,f:java.sql.Connection=&gt;T,closeOnSuccess:Boolean,onExecutor:Boolean)(implicitevidence$1:scala.reflect.ClassTag[T],implicitc:Option[java.sql.Connection]):T"></a>
-      <a id="tryExecute[T](String,(Connection)⇒T,Boolean,Boolean)(ClassTag[T],Option[Connection]):T"></a>
+      <a id="tryExecute[T](tableName:String,closeOnSuccessOrFailure:Boolean,onExecutor:Boolean)(f:java.sql.Connection=&gt;T)(implicitc:Option[java.sql.Connection]):T"></a>
+      <a id="tryExecute[T](String,Boolean,Boolean)((Connection)⇒T)(Option[Connection]):T"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">tryExecute</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="f">f: (<span class="extype" name="java.sql.Connection">Connection</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span></span>, <span name="closeOnSuccess">closeOnSuccess: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span>]</span>, <span name="c">c: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span></span>
+        <span class="name">tryExecute</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="closeOnSuccessOrFailure">closeOnSuccessOrFailure: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="java.sql.Connection">Connection</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="c">c: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore.tryExecute.T">T</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@tryExecute[T](tableName:String,f:java.sql.Connection=&gt;T,closeOnSuccess:Boolean,onExecutor:Boolean)(implicitevidence$1:scala.reflect.ClassTag[T],implicitc:Option[java.sql.Connection]):T" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@tryExecute[T](tableName:String,closeOnSuccessOrFailure:Boolean,onExecutor:Boolean)(f:java.sql.Connection=&gt;T)(implicitc:Option[java.sql.Connection]):T" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

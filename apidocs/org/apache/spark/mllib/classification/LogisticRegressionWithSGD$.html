@@ -52,7 +52,6 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Top-level methods for calling Logistic Regression using Stochastic Gradient Descent.
-NOTE: Labels used in Logistic Regression should be {0, 1}
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -61,7 +60,7 @@ NOTE: Labels used in Logistic Regression should be {0, 1}
               
                 <span class="name">@deprecated</span>
               
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Use ml.classification.LogisticRegression or LogisticRegressionWithLBFGS</p></dd></dl><div class="toggleContainer block">
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Use ml.classification.LogisticRegression or LogisticRegressionWithLBFGS</p></dd><dt>Note</dt><dd><span class="cmt"><p>Labels used in Logistic Regression should be {0, 1}</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -409,14 +408,13 @@ NOTE: Labels used in Logistic Regression should be {0, 1}
       <p class="shortcomment cmt">Train a logistic regression model given an RDD of (label, features) pairs.</p><div class="fullcomment"><div class="comment cmt"><p>Train a logistic regression model given an RDD of (label, features) pairs. We run a fixed
 number of iterations of gradient descent using a step size of 1.0. We use the entire data set
 to update the gradient in each iteration.
-NOTE: Labels used in Logistic Regression should be {0, 1}
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>RDD of (label, array of features) pairs.</p></dd><dt class="param">numIterations</dt><dd class="cmt"><p>Number of iterations of gradient descent to run.</p></dd><dt>returns</dt><dd class="cmt"><p>a LogisticRegressionModel which has the weights and offset from training.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Labels used in Logistic Regression should be {0, 1}</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.classification.LogisticRegressionWithSGD#train" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="train(input:org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint],numIterations:Int,stepSize:Double):org.apache.spark.mllib.classification.LogisticRegressionModel"></a>
       <a id="train(RDD[LabeledPoint],Int,Double):LogisticRegressionModel"></a>
@@ -436,14 +434,13 @@ NOTE: Labels used in Logistic Regression should be {0, 1}
       <p class="shortcomment cmt">Train a logistic regression model given an RDD of (label, features) pairs.</p><div class="fullcomment"><div class="comment cmt"><p>Train a logistic regression model given an RDD of (label, features) pairs. We run a fixed
 number of iterations of gradient descent using the specified step size. We use the entire data
 set to update the gradient in each iteration.
-NOTE: Labels used in Logistic Regression should be {0, 1}
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>RDD of (label, array of features) pairs.</p></dd><dt class="param">numIterations</dt><dd class="cmt"><p>Number of iterations of gradient descent to run.</p></dd><dt class="param">stepSize</dt><dd class="cmt"><p>Step size to be used for each iteration of Gradient Descent.</p></dd><dt>returns</dt><dd class="cmt"><p>a LogisticRegressionModel which has the weights and offset from training.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Labels used in Logistic Regression should be {0, 1}</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.classification.LogisticRegressionWithSGD#train" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="train(input:org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint],numIterations:Int,stepSize:Double,miniBatchFraction:Double):org.apache.spark.mllib.classification.LogisticRegressionModel"></a>
       <a id="train(RDD[LabeledPoint],Int,Double,Double):LogisticRegressionModel"></a>
@@ -463,14 +460,13 @@ NOTE: Labels used in Logistic Regression should be {0, 1}
       <p class="shortcomment cmt">Train a logistic regression model given an RDD of (label, features) pairs.</p><div class="fullcomment"><div class="comment cmt"><p>Train a logistic regression model given an RDD of (label, features) pairs. We run a fixed
 number of iterations of gradient descent using the specified step size. Each iteration uses
 <code>miniBatchFraction</code> fraction of the data to calculate the gradient.
-NOTE: Labels used in Logistic Regression should be {0, 1}
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>RDD of (label, array of features) pairs.</p></dd><dt class="param">numIterations</dt><dd class="cmt"><p>Number of iterations of gradient descent to run.</p></dd><dt class="param">stepSize</dt><dd class="cmt"><p>Step size to be used for each iteration of gradient descent.</p></dd><dt class="param">miniBatchFraction</dt><dd class="cmt"><p>Fraction of data to be used per iteration.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Labels used in Logistic Regression should be {0, 1}</p></span></dd></dl></div>
     </li><li name="org.apache.spark.mllib.classification.LogisticRegressionWithSGD#train" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="train(input:org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint],numIterations:Int,stepSize:Double,miniBatchFraction:Double,initialWeights:org.apache.spark.mllib.linalg.Vector):org.apache.spark.mllib.classification.LogisticRegressionModel"></a>
       <a id="train(RDD[LabeledPoint],Int,Double,Double,Vector):LogisticRegressionModel"></a>
@@ -491,7 +487,6 @@ NOTE: Labels used in Logistic Regression should be {0, 1}
 number of iterations of gradient descent using the specified step size. Each iteration uses
 <code>miniBatchFraction</code> fraction of the data to calculate the gradient. The weights used in
 gradient descent are initialized using the initial weights provided.
-NOTE: Labels used in Logistic Regression should be {0, 1}
 </p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>RDD of (label, array of features) pairs.</p></dd><dt class="param">numIterations</dt><dd class="cmt"><p>Number of iterations of gradient descent to run.</p></dd><dt class="param">stepSize</dt><dd class="cmt"><p>Step size to be used for each iteration of gradient descent.</p></dd><dt class="param">miniBatchFraction</dt><dd class="cmt"><p>Fraction of data to be used per iteration.</p></dd><dt class="param">initialWeights</dt><dd class="cmt"><p>Initial set of weights to be used. Array should be equal in size to
        the number of features in the data.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -499,7 +494,7 @@ NOTE: Labels used in Logistic Regression should be {0, 1}
       <span class="symbol">&quot;1.0.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Labels used in Logistic Regression should be {0, 1}</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

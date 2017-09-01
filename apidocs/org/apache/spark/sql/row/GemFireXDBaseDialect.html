@@ -441,6 +441,32 @@ ever merged we can remove this method here.</p></div><dl class="paramcmts block"
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.GemFireXDBaseDialect">GemFireXDBaseDialect</a> → <a href="../sources/JdbcExtendedDialect.html" class="extype" name="org.apache.spark.sql.sources.JdbcExtendedDialect">JdbcExtendedDialect</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.jdbc.JdbcDialect#getSchemaQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getSchemaQuery(table:String):String"></a>
+      <a id="getSchemaQuery(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSchemaQuery</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.GemFireXDBaseDialect@getSchemaQuery(table:String):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The SQL query that should be used to discover the schema of a table.</p><div class="fullcomment"><div class="comment cmt"><p>The SQL query that should be used to discover the schema of a table. It only needs to
+ensure that the result set has the same schema as the table, such as by calling
+&quot;SELECT * ...&quot;. Dialects can override this method to return a query that works best in a
+particular database.</p></div><dl class="paramcmts block"><dt class="param">table</dt><dd class="cmt"><p>The name of the table.</p></dd><dt>returns</dt><dd class="cmt"><p>The SQL query to use for discovering the schema.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.1.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.row.GemFireXDBaseDialect#getTableExistsQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getTableExistsQuery(table:String):String"></a>
       <a id="getTableExistsQuery(String):String"></a>
@@ -510,6 +536,27 @@ override this method to return a query that works best in a particular database.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.GemFireXDBaseDialect">GemFireXDBaseDialect</a> → <a href="../sources/JdbcExtendedDialect.html" class="extype" name="org.apache.spark.sql.sources.JdbcExtendedDialect">JdbcExtendedDialect</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.jdbc.JdbcDialect#isCascadingTruncateTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isCascadingTruncateTable():Option[Boolean]"></a>
+      <a id="isCascadingTruncateTable():Option[Boolean]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isCascadingTruncateTable</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.GemFireXDBaseDialect@isCascadingTruncateTable():Option[Boolean]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return Some[true] iff <code>TRUNCATE TABLE</code> causes cascading default.</p><div class="fullcomment"><div class="comment cmt"><p>Return Some[true] iff <code>TRUNCATE TABLE</code> causes cascading default.
+Some[true] : TRUNCATE TABLE causes cascading.
+Some[false] : TRUNCATE TABLE does not cause cascading.
+None: The behavior of TRUNCATE TABLE is unknown (default).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>

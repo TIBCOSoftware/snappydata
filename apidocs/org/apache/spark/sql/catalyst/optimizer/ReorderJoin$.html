@@ -203,6 +203,24 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
 - <code>canEvaluate(EqualTo(a,c), R)</code> returns <code>false</code>
 - <code>canEvaluate(Literal(1), R)</code> returns <code>true</code> as literals CAN be evaluated on any plan
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.PredicateHelper#canEvaluateWithinJoin" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean"></a>
+      <a id="canEvaluateWithinJoin(Expression):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEvaluateWithinJoin</span><span class="params">(<span name="expr">expr: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.ReorderJoin$@canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns true iff <code>expr</code> could be evaluated as a condition within join.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true iff <code>expr</code> could be evaluated as a condition within join.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -227,23 +245,23 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.ReorderJoin#createOrderedJoin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="createOrderedJoin(input:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan],conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
-      <a id="createOrderedJoin(Seq[LogicalPlan],Seq[Expression]):LogicalPlan"></a>
+      <a id="createOrderedJoin(input:Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.catalyst.plans.InnerLike)],conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
+      <a id="createOrderedJoin(Seq[(LogicalPlan,InnerLike)],Seq[Expression]):LogicalPlan"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createOrderedJoin</span><span class="params">(<span name="input">input: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>, <span name="conditions">conditions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
+        <span class="name">createOrderedJoin</span><span class="params">(<span name="input">input: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="../plans/InnerLike.html" class="extype" name="org.apache.spark.sql.catalyst.plans.InnerLike">InnerLike</a>)]</span>, <span name="conditions">conditions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.ReorderJoin$@createOrderedJoin(input:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan],conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.ReorderJoin$@createOrderedJoin(input:Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.catalyst.plans.InnerLike)],conditions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Join a list of plans together and push down the conditions into them.</p><div class="fullcomment"><div class="comment cmt"><p>Join a list of plans together and push down the conditions into them.</p><p>The joined plan are picked from left to right, prefer those has at least one join condition.
-</p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>a list of LogicalPlans to join.</p></dd><dt class="param">conditions</dt><dd class="cmt"><p>a list of condition for join.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+</p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>a list of LogicalPlans to inner join and the type of inner join.</p></dd><dt class="param">conditions</dt><dd class="cmt"><p>a list of condition for join.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@tailrec</span><span class="args">()</span>
               
         </dd></dl></div>

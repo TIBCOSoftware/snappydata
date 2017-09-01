@@ -57,8 +57,8 @@
       <span class="symbol">&quot;1.3.0&quot;</span>
     </span>)</span>
               
-        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Latent_Dirichlet_allocation" target="_blank">Latent Dirichlet allocation
-      (Wikipedia)</a></p></span></dd></dl><div class="toggleContainer block">
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Latent_Dirichlet_allocation">
+Latent Dirichlet allocation (Wikipedia)</a></p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -563,15 +563,15 @@ distributions over topics (&quot;theta&quot;).</p><p>This method assumes the Dir
     </span>
       <p class="shortcomment cmt">Concentration parameter (commonly named &quot;beta&quot; or &quot;eta&quot;) for the prior placed on topics'
 distributions over terms.</p><div class="fullcomment"><div class="comment cmt"><p>Concentration parameter (commonly named &quot;beta&quot; or &quot;eta&quot;) for the prior placed on topics'
-distributions over terms.</p><p>This is the parameter to a symmetric Dirichlet distribution.</p><p>Note: The topics' distributions over terms are called &quot;beta&quot; in the original LDA paper
-by Blei et al., but are called &quot;phi&quot; in many later papers such as Asuncion et al., 2009.
+distributions over terms.</p><p>This is the parameter to a symmetric Dirichlet distribution.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.3.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The topics' distributions over terms are called &quot;beta&quot; in the original LDA paper
+by Blei et al., but are called &quot;phi&quot; in many later papers such as Asuncion et al., 2009.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -945,8 +945,8 @@ by Blei et al., but are called &quot;phi&quot; in many later papers such as Asun
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Java-friendly version of <span class="extype" name="run()">run()</span>
-</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <span class="extype" name="run()">run()</span>
+      <p class="shortcomment cmt">Java-friendly version of <code>run()</code>
+</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <code>run()</code>
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -974,7 +974,7 @@ by Blei et al., but are called &quot;phi&quot; in many later papers such as Asun
 </p></div><dl class="paramcmts block"><dt class="param">documents</dt><dd class="cmt"><p>RDD of documents, which are term (word) count vectors paired with IDs.
                   The term count vectors are &quot;bags of words&quot; with a fixed-size vocabulary
                   (where the vocabulary size is the length of the vector).
-                  Document IDs must be unique and &gt;= 0.</p></dd><dt>returns</dt><dd class="cmt"><p>Inferred LDA model</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                  Document IDs must be unique and greater than or equal to 0.</p></dd><dt>returns</dt><dd class="cmt"><p>Inferred LDA model</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.3.0&quot;</span>
@@ -997,8 +997,8 @@ by Blei et al., but are called &quot;phi&quot; in many later papers such as Asun
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Alias for <span class="extype" name="setDocConcentration()">setDocConcentration()</span>
-</p><div class="fullcomment"><div class="comment cmt"><p>Alias for <span class="extype" name="setDocConcentration()">setDocConcentration()</span>
+      <p class="shortcomment cmt">Alias for <code>setDocConcentration()</code>
+</p><div class="fullcomment"><div class="comment cmt"><p>Alias for <code>setDocConcentration()</code>
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1022,8 +1022,8 @@ by Blei et al., but are called &quot;phi&quot; in many later papers such as Asun
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Alias for <span class="extype" name="setDocConcentration()">setDocConcentration()</span>
-</p><div class="fullcomment"><div class="comment cmt"><p>Alias for <span class="extype" name="setDocConcentration()">setDocConcentration()</span>
+      <p class="shortcomment cmt">Alias for <code>setDocConcentration()</code>
+</p><div class="fullcomment"><div class="comment cmt"><p>Alias for <code>setDocConcentration()</code>
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1047,8 +1047,8 @@ by Blei et al., but are called &quot;phi&quot; in many later papers such as Asun
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Alias for <span class="extype" name="setTopicConcentration()">setTopicConcentration()</span>
-</p><div class="fullcomment"><div class="comment cmt"><p>Alias for <span class="extype" name="setTopicConcentration()">setTopicConcentration()</span>
+      <p class="shortcomment cmt">Alias for <code>setTopicConcentration()</code>
+</p><div class="fullcomment"><div class="comment cmt"><p>Alias for <code>setTopicConcentration()</code>
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1072,11 +1072,11 @@ by Blei et al., but are called &quot;phi&quot; in many later papers such as Asun
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Parameter for set checkpoint interval (&gt;= 1) or disable checkpoint (-1).</p><div class="fullcomment"><div class="comment cmt"><p>Parameter for set checkpoint interval (&gt;= 1) or disable checkpoint (-1). E.g. 10 means that
-the cache will get checkpointed every 10 iterations. Checkpointing helps with recovery
-(when nodes fail). It also helps with eliminating temporary shuffle files on disk, which can be
-important when LDA is run for many iterations. If the checkpoint directory is not set in
-<a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">org.apache.spark.SparkContext</a>, this setting is ignored. (default = 10)
+      <p class="shortcomment cmt">Parameter for set checkpoint interval (greater than or equal to 1) or disable checkpoint (-1).</p><div class="fullcomment"><div class="comment cmt"><p>Parameter for set checkpoint interval (greater than or equal to 1) or disable checkpoint (-1).
+E.g. 10 means that the cache will get checkpointed every 10 iterations. Checkpointing helps
+with recovery (when nodes fail). It also helps with eliminating temporary shuffle files on
+disk, which can be important when LDA is run for many iterations. If the checkpoint directory
+is not set in <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">org.apache.spark.SparkContext</a>, this setting is ignored. (default = 10)
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1129,11 +1129,11 @@ distributions over topics (&quot;theta&quot;).</p><div class="fullcomment"><div 
 distributions over topics (&quot;theta&quot;).</p><p>This is the parameter to a Dirichlet distribution, where larger values mean more smoothing
 (more regularization).</p><p>If set to a singleton vector Vector(-1), then docConcentration is set automatically. If set to
 singleton vector Vector(t) where t != -1, then t is replicated to a vector of length k during
-<span class="extype" name="LDAOptimizer.initialize()">LDAOptimizer.initialize()</span>. Otherwise, the <span class="extype" name="docConcentration">docConcentration</span> vector must be length k.
+<code>LDAOptimizer.initialize()</code>. Otherwise, the <span class="extype" name="docConcentration">docConcentration</span> vector must be length k.
 (default = Vector(-1) = automatic)</p><p>Optimizer-specific parameter settings:</p><ul><li>EM<ul><li>Currently only supports symmetric distributions, so all values in the vector should be
-      the same.</li><li>Values should be &gt; 1.0</li><li>default = uniformly (50 / k) + 1, where 50/k is common in LDA libraries and +1 follows
-      from Asuncion et al. (2009), who recommend a +1 adjustment for EM.</li></ul></li><li>Online<ul><li>Values should be &gt;= 0</li><li>default = uniformly (1.0 / k), following the implementation from
-      <a href="https://github.com/Blei-Lab/onlineldavb" target="_blank">https://github.com/Blei-Lab/onlineldavb</a>.
+      the same.</li><li>Values should be greater than 1.0</li><li>default = uniformly (50 / k) + 1, where 50/k is common in LDA libraries and +1 follows
+      from Asuncion et al. (2009), who recommend a +1 adjustment for EM.</li></ul></li><li>Online<ul><li>Values should be greater than or equal to 0</li><li>default = uniformly (1.0 / k), following the implementation from
+      <a href="https://github.com/Blei-Lab/onlineldavb">here</a>.
 </li></ul></li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
@@ -1284,18 +1284,20 @@ Currently &quot;em&quot;, &quot;online&quot; are supported.
     </span>
       <p class="shortcomment cmt">Concentration parameter (commonly named &quot;beta&quot; or &quot;eta&quot;) for the prior placed on topics'
 distributions over terms.</p><div class="fullcomment"><div class="comment cmt"><p>Concentration parameter (commonly named &quot;beta&quot; or &quot;eta&quot;) for the prior placed on topics'
-distributions over terms.</p><p>This is the parameter to a symmetric Dirichlet distribution.</p><p>Note: The topics' distributions over terms are called &quot;beta&quot; in the original LDA paper
-by Blei et al., but are called &quot;phi&quot; in many later papers such as Asuncion et al., 2009.</p><p>If set to -1, then topicConcentration is set automatically.
- (default = -1 = automatic)</p><p>Optimizer-specific parameter settings:</p><ul><li>EM<ul><li>Value should be &gt; 1.0</li><li>default = 0.1 + 1, where 0.1 gives a small amount of smoothing and +1 follows
-      Asuncion et al. (2009), who recommend a +1 adjustment for EM.</li></ul></li><li>Online<ul><li>Value should be &gt;= 0</li><li>default = (1.0 / k), following the implementation from
-      <a href="https://github.com/Blei-Lab/onlineldavb" target="_blank">https://github.com/Blei-Lab/onlineldavb</a>.
-</li></ul></li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+distributions over terms.</p><p>This is the parameter to a symmetric Dirichlet distribution.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.3.0&quot;</span>
     </span>)</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The topics' distributions over terms are called &quot;beta&quot; in the original LDA paper
+by Blei et al., but are called &quot;phi&quot; in many later papers such as Asuncion et al., 2009.
+If set to -1, then topicConcentration is set automatically.
+ (default = -1 = automatic)
+Optimizer-specific parameter settings:</p><ul><li>EM<ul><li>Value should be greater than 1.0</li><li>default = 0.1 + 1, where 0.1 gives a small amount of smoothing and +1 follows
+      Asuncion et al. (2009), who recommend a +1 adjustment for EM.</li></ul></li><li>Online<ul><li>Value should be greater than or equal to 0</li><li>default = (1.0 / k), following the implementation from
+      <a href="https://github.com/Blei-Lab/onlineldavb">here</a>.</li></ul></li></ul></span></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

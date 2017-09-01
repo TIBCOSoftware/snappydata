@@ -353,8 +353,8 @@ memory, otherwise saving it on a file will require recomputation.
     </span>
       <p class="shortcomment cmt">An RDD containing the edges and their associated attributes.</p><div class="fullcomment"><div class="comment cmt"><p>An RDD containing the edges and their associated attributes.  The entries in the RDD contain
 just the source id and target id along with the edge data.
-</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>an RDD containing the edges in this graph</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.graphx.impl.GraphImpl">GraphImpl</a> → <a href="../Graph.html" class="extype" name="org.apache.spark.graphx.Graph">Graph</a></dd><dt>See also</dt><dd><span class="cmt"><p><a href="../Graph.html#triplets:org.apache.spark.rdd.RDD[org.apache.spark.graphx.EdgeTriplet[VD,ED]]" class="extmbr" name="org.apache.spark.graphx.Graph#triplets">Graph#triplets</a> to get an RDD which contains all the edges
-along with their vertex data.</p></span><span class="cmt"><p><a href="../Edge.html" class="extype" name="org.apache.spark.graphx.Edge">Edge</a> for the edge type.</p></span></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>an RDD containing the edges in this graph</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.graphx.impl.GraphImpl">GraphImpl</a> → <a href="../Graph.html" class="extype" name="org.apache.spark.graphx.Graph">Graph</a></dd><dt>See also</dt><dd><span class="cmt"><p><code>Graph#triplets</code> to get an RDD which contains all the edges
+along with their vertex data.</p></span><span class="cmt"><p><code>Edge</code> for the edge type.</p></span></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -963,7 +963,7 @@ satisfy the predicates</p></dd></dl><dl class="attributes block"> <dt>Definition
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Return a RDD that brings edges together with their source and destination vertices.</p><div class="fullcomment"><div class="comment cmt"><p>Return a RDD that brings edges together with their source and destination vertices.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>an RDD containing edge triplets</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.graphx.impl.GraphImpl">GraphImpl</a> → <a href="../Graph.html" class="extype" name="org.apache.spark.graphx.Graph">Graph</a></dd></dl></div>
+      <p class="shortcomment cmt">Return an RDD that brings edges together with their source and destination vertices.</p><div class="fullcomment"><div class="comment cmt"><p>Return an RDD that brings edges together with their source and destination vertices.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>an RDD containing edge triplets</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.graphx.impl.GraphImpl">GraphImpl</a> → <a href="../Graph.html" class="extype" name="org.apache.spark.graphx.Graph">Graph</a></dd></dl></div>
     </li><li name="org.apache.spark.graphx.impl.GraphImpl#unpersist" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="unpersist(blocking:Boolean):org.apache.spark.graphx.Graph[VD,ED]"></a>
       <a id="unpersist(Boolean):Graph[VD,ED]"></a>

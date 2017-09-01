@@ -108,14 +108,14 @@ lower level <span class="extype" name="org.apache.spark.scheduler.TaskScheduler"
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
 Information about an <a href="../Accumulable.html" class="extype" name="org.apache.spark.Accumulable">org.apache.spark.Accumulable</a> modified during a task or stage.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Information about an <a href="../Accumulable.html" class="extype" name="org.apache.spark.Accumulable">org.apache.spark.Accumulable</a> modified during a task or stage.</p><p>Note: once this is JSON serialized the types of <code>update</code> and <code>value</code> will be lost and be
-cast to strings. This is because the user can define an accumulator of any type and it will
-be difficult to preserve the type in consumers of the event log. This does not apply to
-internal accumulators that represent task level metrics.
+Information about an <a href="../Accumulable.html" class="extype" name="org.apache.spark.Accumulable">org.apache.spark.Accumulable</a> modified during a task or stage.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl></div>
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Once this is JSON serialized the types of <code>update</code> and <code>value</code> will be lost and be
+cast to strings. This is because the user can define an accumulator of any type and it will
+be difficult to preserve the type in consumers of the event log. This does not apply to
+internal accumulators that represent task level metrics.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.scheduler.InputFormatInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="InputFormatInfoextendsLogging"></a>
       <a id="InputFormatInfo:InputFormatInfo"></a>

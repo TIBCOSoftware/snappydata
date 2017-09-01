@@ -109,7 +109,7 @@ set of keys which produce its unique name.</p><p>If your BlockId should be seria
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
 This class represent an unique identifier for a BlockManager.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-This class represent an unique identifier for a BlockManager.</p><p>The first 2 constructors of this class is made private to ensure that BlockManagerId objects
+This class represent an unique identifier for a BlockManager.</p><p>The first 2 constructors of this class are made private to ensure that BlockManagerId objects
 can be created only using the apply method in the companion object. This allows de-duplication
 of ID objects. Also, constructor parameters are private to ensure that parameters cannot be
 modified from outside this class.
@@ -134,6 +134,33 @@ modified from outside this class.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.storage.BlockReplicationPolicy" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="BlockReplicationPolicyextendsAnyRef"></a>
+      <a id="BlockReplicationPolicy:BlockReplicationPolicy"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="BlockReplicationPolicy.html"><span class="name">BlockReplicationPolicy</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.storage.package@BlockReplicationPolicyextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">::DeveloperApi::
+BlockReplicationPrioritization provides logic for prioritizing a sequence of peers for
+replicating blocks.</p><div class="fullcomment"><div class="comment cmt"><p>::DeveloperApi::
+BlockReplicationPrioritization provides logic for prioritizing a sequence of peers for
+replicating blocks. BlockManager will replicate to each peer returned in order until the
+desired replication order is reached. If a replication fails, prioritize() will be called
+again to get a fresh prioritization.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.storage.BlockStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="BlockStatusextendsProductwithSerializable"></a>
       <a id="BlockStatus:BlockStatus"></a>
@@ -197,6 +224,52 @@ Stores information about a block status in a block manager.
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.storage.DefaultTopologyMapper" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DefaultTopologyMapperextendsTopologyMapperwithLogging"></a>
+      <a id="DefaultTopologyMapper:DefaultTopologyMapper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DefaultTopologyMapper.html"><span class="name">DefaultTopologyMapper</span></a><span class="result"> extends <a href="TopologyMapper.html" class="extype" name="org.apache.spark.storage.TopologyMapper">TopologyMapper</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.storage.package@DefaultTopologyMapperextendsTopologyMapperwithLogging" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A TopologyMapper that assumes all nodes are in the same rack
+</p><div class="fullcomment"><div class="comment cmt"><p>A TopologyMapper that assumes all nodes are in the same rack
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.storage.FileBasedTopologyMapper" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FileBasedTopologyMapperextendsTopologyMapperwithLogging"></a>
+      <a id="FileBasedTopologyMapper:FileBasedTopologyMapper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileBasedTopologyMapper.html"><span class="name">FileBasedTopologyMapper</span></a><span class="result"> extends <a href="TopologyMapper.html" class="extype" name="org.apache.spark.storage.TopologyMapper">TopologyMapper</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.storage.package@FileBasedTopologyMapperextendsTopologyMapperwithLogging" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A simple file based topology mapper.</p><div class="fullcomment"><div class="comment cmt"><p>A simple file based topology mapper. This expects topology information provided as a
+<span class="extype" name="java.util.Properties">java.util.Properties</span> file. The name of the file is obtained from SparkConf property
+<code>spark.storage.replication.topologyFile</code>. To use this topology mapper, set the
+<code>spark.storage.replication.topologyMapper</code> property to
+<a href="FileBasedTopologyMapper.html" class="extype" name="org.apache.spark.storage.FileBasedTopologyMapper">org.apache.spark.storage.FileBasedTopologyMapper</a></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.storage.RDDBlockId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="RDDBlockIdextendsBlockIdwithKryoSerializablewithProductwithSerializable"></a>
       <a id="RDDBlockId:RDDBlockId"></a>
@@ -230,6 +303,26 @@ Stores information about a block status in a block manager.
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.storage.package@RDDInfoextendsOrdered[org.apache.spark.storage.RDDInfo]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.storage.RandomBlockReplicationPolicy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RandomBlockReplicationPolicyextendsBlockReplicationPolicywithLogging"></a>
+      <a id="RandomBlockReplicationPolicy:RandomBlockReplicationPolicy"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RandomBlockReplicationPolicy.html"><span class="name">RandomBlockReplicationPolicy</span></a><span class="result"> extends <a href="BlockReplicationPolicy.html" class="extype" name="org.apache.spark.storage.BlockReplicationPolicy">BlockReplicationPolicy</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.storage.package@RandomBlockReplicationPolicyextendsBlockReplicationPolicywithLogging" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -429,6 +522,28 @@ A SparkListener that maintains executor storage status.</p><p>This class is thre
       </a>
     </span>
       
+    </li><li name="org.apache.spark.storage.TopologyMapper" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="TopologyMapperextendsAnyRef"></a>
+      <a id="TopologyMapper:TopologyMapper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TopologyMapper.html"><span class="name">TopologyMapper</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.storage.package@TopologyMapperextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">::DeveloperApi::
+TopologyMapper provides topology information for a given host</p><div class="fullcomment"><div class="comment cmt"><p>::DeveloperApi::
+TopologyMapper provides topology information for a given host</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li></ol>
             </div>
 

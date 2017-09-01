@@ -50,14 +50,16 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: DeveloperApi ::
-Registry of dialects that apply to every new jdbc <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">org.apache.spark.sql.DataFrame</a>.</p><p>If multiple matching dialects are registered then all matching ones will be
+Registry of dialects that apply to every new jdbc <code>org.apache.spark.sql.DataFrame</code>.</p><p>If multiple matching dialects are registered then all matching ones will be
 tried in reverse order. A user-added dialect will thus be applied first,
-overwriting the defaults.</p><p>Note that all new dialects are applied to new jdbc DataFrames only. Make
-sure to register your dialects first.
+overwriting the defaults.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
-        </dd></dl><div class="toggleContainer block">
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>All new dialects are applied to new jdbc DataFrames only. Make
+sure to register your dialects first.</p></span></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -250,6 +252,23 @@ sure to register your dialects first.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.jdbc.JdbcDialects#get" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="get(url:String):org.apache.spark.sql.jdbc.JdbcDialect"></a>
+      <a id="get(String):JdbcDialect"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">get</span><span class="params">(<span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.jdbc.JdbcDialects$@get(url:String):org.apache.spark.sql.jdbc.JdbcDialect" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Fetch the JdbcDialect class corresponding to a given database url.</p>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -368,7 +387,7 @@ sure to register your dialects first.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Register a dialect for use on all new matching jdbc <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">org.apache.spark.sql.DataFrame</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Register a dialect for use on all new matching jdbc <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">org.apache.spark.sql.DataFrame</a>.
+      <p class="shortcomment cmt">Register a dialect for use on all new matching jdbc <code>org.apache.spark.sql.DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Register a dialect for use on all new matching jdbc <code>org.apache.spark.sql.DataFrame</code>.
 Reading an existing dialect will cause a move-to-front.
 </p></div><dl class="paramcmts block"><dt class="param">dialect</dt><dd class="cmt"><p>The new dialect.</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">

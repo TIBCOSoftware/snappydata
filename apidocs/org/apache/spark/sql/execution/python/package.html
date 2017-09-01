@@ -83,9 +83,19 @@
       </a>
     </span>
       <p class="shortcomment cmt">A physical plan that evaluates a <a href="PythonUDF.html" class="extype" name="org.apache.spark.sql.execution.python.PythonUDF">PythonUDF</a>, one partition of tuples at a time.</p><div class="fullcomment"><div class="comment cmt"><p>A physical plan that evaluates a <a href="PythonUDF.html" class="extype" name="org.apache.spark.sql.execution.python.PythonUDF">PythonUDF</a>, one partition of tuples at a time.</p><p>Python evaluation works by sending the necessary (projected) input data via a socket to an
-external Python process, and combine the result from the Python process with the original row.</p><p>For each row we send to Python, we also put it in a queue. For each output row from Python,
+external Python process, and combine the result from the Python process with the original row.</p><p>For each row we send to Python, we also put it in a queue first. For each output row from Python,
 we drain the queue to find the original input row. Note that if the Python process is way too
-slow, this could lead to the queue growing unbounded and eventually run out of memory.
+slow, this could lead to the queue growing unbounded and spill into disk when run out of memory.</p><p>Here is a diagram to show how this works:</p><p>           Downstream (for parent)
+            /      \
+           /     socket  (output of UDF)
+          /         \
+       RowQueue    Python
+          \         /
+           \     socket  (input of UDF)
+            \     /
+         upstream (from child)</p><p>The rows sent to and received from Python are packed into batches (100 rows) and serialized,
+there should be always some rows buffered in the socket or Python process, so the pulling from
+RowQueue ALWAYS happened after pushing into it.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.python.PythonUDF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PythonUDFextendsExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable"></a>

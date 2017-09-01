@@ -148,7 +148,24 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply[T,U](func:T=&gt;U,child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)(implicitevidence$8:org.apache.spark.sql.Encoder[T],implicitevidence$9:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.catalyst.plans.logical.AppendColumns"></a>
+      <a id="apply[T,U](func:T=&gt;U,inputAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)(implicitevidence$11:org.apache.spark.sql.Encoder[T],implicitevidence$12:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.catalyst.plans.logical.AppendColumns"></a>
+      <a id="apply[T,U]((T)⇒U,Seq[Attribute],LogicalPlan)(Encoder[T],Encoder[U]):AppendColumns"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="func">func: (<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns.apply.T">T</span>) ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns.apply.U">U</span></span>, <span name="inputAttributes">inputAttributes: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="../../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns.apply.T">T</span>]</span>, <span name="arg1">arg1: <a href="../../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns.apply.U">U</span>]</span>)</span><span class="result">: <a href="AppendColumns.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns">AppendColumns</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.AppendColumns$@apply[T,U](func:T=&gt;U,inputAttributes:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)(implicitevidence$11:org.apache.spark.sql.Encoder[T],implicitevidence$12:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.catalyst.plans.logical.AppendColumns" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="apply[T,U](func:T=&gt;U,child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)(implicitevidence$9:org.apache.spark.sql.Encoder[T],implicitevidence$10:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.catalyst.plans.logical.AppendColumns"></a>
       <a id="apply[T,U]((T)⇒U,LogicalPlan)(Encoder[T],Encoder[U]):AppendColumns"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -159,7 +176,7 @@
         <span class="name">apply</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="func">func: (<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns.apply.T">T</span>) ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns.apply.U">U</span></span>, <span name="child">child: <a href="LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="../../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns.apply.T">T</span>]</span>, <span name="arg1">arg1: <a href="../../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns.apply.U">U</span>]</span>)</span><span class="result">: <a href="AppendColumns.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.AppendColumns">AppendColumns</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.AppendColumns$@apply[T,U](func:T=&gt;U,child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)(implicitevidence$8:org.apache.spark.sql.Encoder[T],implicitevidence$9:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.catalyst.plans.logical.AppendColumns" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.logical.AppendColumns$@apply[T,U](func:T=&gt;U,child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan)(implicitevidence$9:org.apache.spark.sql.Encoder[T],implicitevidence$10:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.catalyst.plans.logical.AppendColumns" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

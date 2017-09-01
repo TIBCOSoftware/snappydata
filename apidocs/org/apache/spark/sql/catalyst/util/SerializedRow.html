@@ -425,18 +425,18 @@ its data in an internal byte array.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a> → <a href="../expressions/SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.util.SerializedRowData#getBaseObject" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getBaseObject:Any"></a>
-      <a id="getBaseObject:Any"></a>
+      <a id="getBaseObject:AnyRef"></a>
+      <a id="getBaseObject:AnyRef"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getBaseObject</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+        <span class="name">getBaseObject</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@getBaseObject:Any" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@getBaseObject:AnyRef" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1021,6 +1021,161 @@ its data in an internal byte array.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setBoolean" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setBoolean(i:Int,value:Boolean):Unit"></a>
+      <a id="setBoolean(Int,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setBoolean</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setBoolean(i:Int,value:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setByte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setByte(i:Int,value:Byte):Unit"></a>
+      <a id="setByte(Int,Byte):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setByte</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Byte">Byte</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setByte(i:Int,value:Byte):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setDecimal(i:Int,value:org.apache.spark.sql.types.Decimal,precision:Int):Unit"></a>
+      <a id="setDecimal(Int,Decimal,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setDecimal</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <a href="../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setDecimal(i:Int,value:org.apache.spark.sql.types.Decimal,precision:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Update the decimal column at <code>i</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Update the decimal column at <code>i</code>.</p><p>Note: In order to support update decimal with precision &gt; 18 in UnsafeRow,
+CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, null, precision).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setDouble(i:Int,value:Double):Unit"></a>
+      <a id="setDouble(Int,Double):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setDouble</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setDouble(i:Int,value:Double):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setFloat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setFloat(i:Int,value:Float):Unit"></a>
+      <a id="setFloat(Int,Float):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setFloat</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Float">Float</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setFloat(i:Int,value:Float):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setInt(i:Int,value:Int):Unit"></a>
+      <a id="setInt(Int,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setInt</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setInt(i:Int,value:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setLong(i:Int,value:Long):Unit"></a>
+      <a id="setLong(Int,Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setLong</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setLong(i:Int,value:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedRow#setNullAt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setNullAt(i:Int):Unit"></a>
+      <a id="setNullAt(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setNullAt</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setNullAt(i:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRow">SerializedRow</a> → <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.InternalRow#setShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setShort(i:Int,value:Short):Unit"></a>
+      <a id="setShort(Int,Short):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setShort</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Short">Short</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@setShort(i:Int,value:Short):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.util.SerializedRowData#sizeInBytes" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sizeInBytes:Int"></a>
       <a id="sizeInBytes:Int"></a>
@@ -1129,6 +1284,23 @@ be retained when copying etc.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedRow#update" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="update(i:Int,value:Any):Unit"></a>
+      <a id="update(Int,Any):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">update</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedRow@update(i:Int,value:Any):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRow">SerializedRow</a> → <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

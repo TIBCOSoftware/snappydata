@@ -49,10 +49,9 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-Functionality for working with missing data in <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a>s.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Functionality for working with missing data in <code>DataFrame</code>s.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+                <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.1</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -206,8 +205,8 @@ Functionality for working with missing data in <a href="package.html#DataFrame=o
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing less than
-<code>minNonNulls</code> non-null and non-NaN values in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing less than
+      <p class="shortcomment cmt">(Scala-specific) Returns a new <code>DataFrame</code> that drops rows containing less than
+<code>minNonNulls</code> non-null and non-NaN values in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <code>DataFrame</code> that drops rows containing less than
 <code>minNonNulls</code> non-null and non-NaN values in the specified columns.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#drop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -226,8 +225,8 @@ Functionality for working with missing data in <a href="package.html#DataFrame=o
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing
-less than <code>minNonNulls</code> non-null and non-NaN values in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that drops rows containing
+less than <code>minNonNulls</code> non-null and non-NaN values in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that drops rows containing
 less than <code>minNonNulls</code> non-null and non-NaN values in the specified columns.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#drop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -246,8 +245,8 @@ less than <code>minNonNulls</code> non-null and non-NaN values in the specified 
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing
-less than <code>minNonNulls</code> non-null and non-NaN values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that drops rows containing
+less than <code>minNonNulls</code> non-null and non-NaN values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that drops rows containing
 less than <code>minNonNulls</code> non-null and non-NaN values.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#drop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -266,8 +265,8 @@ less than <code>minNonNulls</code> non-null and non-NaN values.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing null or NaN values
-in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing null or NaN values
+      <p class="shortcomment cmt">(Scala-specific) Returns a new <code>DataFrame</code> that drops rows containing null or NaN values
+in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <code>DataFrame</code> that drops rows containing null or NaN values
 in the specified columns.</p><p>If <code>how</code> is &quot;any&quot;, then drop rows containing any null or NaN values in the specified columns.
 If <code>how</code> is &quot;all&quot;, then drop rows only if every specified column is null or NaN for that row.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
@@ -287,8 +286,8 @@ If <code>how</code> is &quot;all&quot;, then drop rows only if every specified c
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing null or NaN values
-in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing null or NaN values
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that drops rows containing null or NaN values
+in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that drops rows containing null or NaN values
 in the specified columns.</p><p>If <code>how</code> is &quot;any&quot;, then drop rows containing any null or NaN values in the specified columns.
 If <code>how</code> is &quot;all&quot;, then drop rows only if every specified column is null or NaN for that row.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
@@ -308,8 +307,8 @@ If <code>how</code> is &quot;all&quot;, then drop rows only if every specified c
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing any null or NaN values
-in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing any null or NaN values
+      <p class="shortcomment cmt">(Scala-specific) Returns a new <code>DataFrame</code> that drops rows containing any null or NaN values
+in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <code>DataFrame</code> that drops rows containing any null or NaN values
 in the specified columns.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#drop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -328,8 +327,8 @@ in the specified columns.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing any null or NaN values
-in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing any null or NaN values
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that drops rows containing any null or NaN values
+in the specified columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that drops rows containing any null or NaN values
 in the specified columns.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#drop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -348,7 +347,7 @@ in the specified columns.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing null or NaN values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing null or NaN values.</p><p>If <code>how</code> is &quot;any&quot;, then drop rows containing any null or NaN values.
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that drops rows containing null or NaN values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that drops rows containing null or NaN values.</p><p>If <code>how</code> is &quot;any&quot;, then drop rows containing any null or NaN values.
 If <code>how</code> is &quot;all&quot;, then drop rows only if every column is null or NaN for that row.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#drop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -367,7 +366,7 @@ If <code>how</code> is &quot;all&quot;, then drop rows only if every column is n
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing any null or NaN values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that drops rows containing any null or NaN values.
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that drops rows containing any null or NaN values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that drops rows containing any null or NaN values.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
@@ -419,7 +418,7 @@ If <code>how</code> is &quot;all&quot;, then drop rows only if every column is n
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values.</p><p>The key of the map is the column name, and the value of the map is the replacement value.
+      <p class="shortcomment cmt">(Scala-specific) Returns a new <code>DataFrame</code> that replaces null values.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <code>DataFrame</code> that replaces null values.</p><p>The key of the map is the column name, and the value of the map is the replacement value.
 The value must be of the following type: <code>Int</code>, <code>Long</code>, <code>Float</code>, <code>Double</code>, <code>String</code>, <code>Boolean</code>.
 Replacement values are cast to the column data type.</p><p>For example, the following replaces null values in column &quot;A&quot; with string &quot;unknown&quot;, and
 null values in column &quot;B&quot; with numeric value 1.0.</p><pre>df.na.fill(<span class="std">Map</span>(
@@ -442,7 +441,7 @@ null values in column &quot;B&quot; with numeric value 1.0.</p><pre>df.na.fill(<
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values.</p><p>The key of the map is the column name, and the value of the map is the replacement value.
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that replaces null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that replaces null values.</p><p>The key of the map is the column name, and the value of the map is the replacement value.
 The value must be of the following type:
 <code>Integer</code>, <code>Long</code>, <code>Float</code>, <code>Double</code>, <code>String</code>, <code>Boolean</code>.
 Replacement values are cast to the column data type.</p><p>For example, the following replaces null values in column &quot;A&quot; with string &quot;unknown&quot;, and
@@ -464,8 +463,8 @@ df.na.fill(ImmutableMap.of(<span class="lit">"A"</span>, <span class="lit">"unkn
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values in
-specified string columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values in
+      <p class="shortcomment cmt">(Scala-specific) Returns a new <code>DataFrame</code> that replaces null values in
+specified string columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <code>DataFrame</code> that replaces null values in
 specified string columns. If a specified column is not a string column, it is ignored.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#fill" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -484,7 +483,7 @@ specified string columns. If a specified column is not a string column, it is ig
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values in specified string columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values in specified string columns.
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that replaces null values in specified string columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that replaces null values in specified string columns.
 If a specified column is not a string column, it is ignored.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#fill" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -503,10 +502,30 @@ If a specified column is not a string column, it is ignored.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null or NaN values in specified
-numeric columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null or NaN values in specified
+      <p class="shortcomment cmt">(Scala-specific) Returns a new <code>DataFrame</code> that replaces null or NaN values in specified
+numeric columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <code>DataFrame</code> that replaces null or NaN values in specified
 numeric columns. If a specified column is not a numeric column, it is ignored.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.DataFrameNaFunctions#fill" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fill(value:Long,cols:Seq[String]):org.apache.spark.sql.DataFrame"></a>
+      <a id="fill(Long,Seq[String]):DataFrame"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fill</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Long">Long</span></span>, <span name="cols">cols: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.DataFrameNaFunctions@fill(value:Long,cols:Seq[String]):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Scala-specific) Returns a new <code>DataFrame</code> that replaces null or NaN values in specified
+numeric columns.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Returns a new <code>DataFrame</code> that replaces null or NaN values in specified
+numeric columns. If a specified column is not a numeric column, it is ignored.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#fill" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="fill(value:Double,cols:Array[String]):org.apache.spark.sql.DataFrame"></a>
       <a id="fill(Double,Array[String]):DataFrame"></a>
@@ -523,9 +542,28 @@ numeric columns. If a specified column is not a numeric column, it is ignored.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null or NaN values in specified numeric columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null or NaN values in specified numeric columns.
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that replaces null or NaN values in specified numeric columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that replaces null or NaN values in specified numeric columns.
 If a specified column is not a numeric column, it is ignored.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.DataFrameNaFunctions#fill" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fill(value:Long,cols:Array[String]):org.apache.spark.sql.DataFrame"></a>
+      <a id="fill(Long,Array[String]):DataFrame"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fill</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Long">Long</span></span>, <span name="cols">cols: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.DataFrameNaFunctions@fill(value:Long,cols:Array[String]):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that replaces null or NaN values in specified numeric columns.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that replaces null or NaN values in specified numeric columns.
+If a specified column is not a numeric column, it is ignored.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#fill" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="fill(value:String):org.apache.spark.sql.DataFrame"></a>
       <a id="fill(String):DataFrame"></a>
@@ -542,7 +580,7 @@ If a specified column is not a numeric column, it is ignored.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values in string columns with <code>value</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null values in string columns with <code>value</code>.
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that replaces null values in string columns with <code>value</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that replaces null values in string columns with <code>value</code>.
 </p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DataFrameNaFunctions#fill" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="fill(value:Double):org.apache.spark.sql.DataFrame"></a>
@@ -560,8 +598,25 @@ If a specified column is not a numeric column, it is ignored.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null or NaN values in numeric columns with <code>value</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a> that replaces null or NaN values in numeric columns with <code>value</code>.
-</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that replaces null or NaN values in numeric columns with <code>value</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that replaces null or NaN values in numeric columns with <code>value</code>.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.1</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.DataFrameNaFunctions#fill" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fill(value:Long):org.apache.spark.sql.DataFrame"></a>
+      <a id="fill(Long):DataFrame"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fill</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.DataFrameNaFunctions@fill(value:Long):org.apache.spark.sql.DataFrame" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a new <code>DataFrame</code> that replaces null or NaN values in numeric columns with <code>value</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <code>DataFrame</code> that replaces null or NaN values in numeric columns with <code>value</code>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.1</p></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>

@@ -82,9 +82,9 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"><code>libsvm</code> package implements Spark SQL data source API for loading LIBSVM data as <span class="extype" name="DataFrame">DataFrame</span>.</p><div class="fullcomment"><div class="comment cmt"><p><code>libsvm</code> package implements Spark SQL data source API for loading LIBSVM data as <span class="extype" name="DataFrame">DataFrame</span>.
-The loaded <span class="extype" name="DataFrame">DataFrame</span> has two columns: <code>label</code> containing labels stored as doubles and
-<code>features</code> containing feature vectors stored as <span class="extype" name="Vector">Vector</span>s.</p><p>To use LIBSVM data source, you need to set &quot;libsvm&quot; as the format in <span class="extype" name="DataFrameReader">DataFrameReader</span> and
+      <p class="shortcomment cmt"><code>libsvm</code> package implements Spark SQL data source API for loading LIBSVM data as <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p><code>libsvm</code> package implements Spark SQL data source API for loading LIBSVM data as <code>DataFrame</code>.
+The loaded <code>DataFrame</code> has two columns: <code>label</code> containing labels stored as doubles and
+<code>features</code> containing feature vectors stored as <code>Vector</code>s.</p><p>To use LIBSVM data source, you need to set &quot;libsvm&quot; as the format in <code>DataFrameReader</code> and
 optionally specify options, for example:</p><pre><span class="cmt">// Scala</span>
 <span class="kw">val</span> df = spark.read.format(<span class="lit">"libsvm"</span>)
   .option(<span class="lit">"numFeatures"</span>, <span class="lit">"780"</span>)
@@ -98,9 +98,9 @@ Dataset&lt;Row&gt; df = spark.read().format(<span class="lit">"libsvm"</span>)
    cost of one additional pass.
    This is also useful when the dataset is already split into multiple files and you want to load
    them separately, because some features may not present in certain files, which leads to
-   inconsistent feature dimensions.</li><li>&quot;vectorType&quot;: feature vector type, &quot;sparse&quot; (default) or &quot;dense&quot;.</li></ul><p>Note that this class is public for documentation purpose. Please don't use this class directly.
-Rather, use the data source API as illustrated above.
-</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/" target="_blank">LIBSVM datasets</a></p></span></dd></dl></div>
+   inconsistent feature dimensions.</li><li>&quot;vectorType&quot;: feature vector type, &quot;sparse&quot; (default) or &quot;dense&quot;.
+</li></ul></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This class is public for documentation purpose. Please don't use this class directly.
+Rather, use the data source API as illustrated above.</p></span></dd><dt>See also</dt><dd><span class="cmt"><p><a href="https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/">LIBSVM datasets</a></p></span></dd></dl></div>
     </li></ol>
             </div>
 

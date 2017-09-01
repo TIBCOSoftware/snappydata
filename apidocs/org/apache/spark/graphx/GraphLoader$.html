@@ -205,7 +205,7 @@
       <p class="shortcomment cmt">Loads a graph from an edge list formatted file where each line contains two integers: a source
 id and a target id.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a graph from an edge list formatted file where each line contains two integers: a source
 id and a target id. Skips lines that begin with <code>#</code>.</p><p>If desired the edges can be automatically oriented in the positive
-direction (source Id &lt; target Id) by setting <code>canonicalOrientation</code> to
+direction (source Id is less than target Id) by setting <code>canonicalOrientation</code> to
 true.
 </p></div><dl class="paramcmts block"><dt class="param">sc</dt><dd class="cmt"><p>SparkContext</p></dd><dt class="param">path</dt><dd class="cmt"><p>the path to the file (e.g., /home/data/file or hdfs://file)</p></dd><dt class="param">canonicalOrientation</dt><dd class="cmt"><p>whether to orient edges in the positive
        direction</p></dd><dt class="param">numEdgePartitions</dt><dd class="cmt"><p>the number of partitions for the edge RDD

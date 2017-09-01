@@ -45,12 +45,14 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">OptimizeIn</span><span class="params">(<span name="conf">conf: <a href="../CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">OptimizeIn</span><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Replaces <span class="extype" name="In">(value, seq[Literal])</span> with optimized version<span class="extype" name="InSet">(value, HashSet[Literal])</span>
-which is much faster
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Optimize IN predicates:
+1. Removes literal repetitions.
+2. Replaces <span class="extype" name="In">(value, seq[Literal])</span> with optimized version
+   <span class="extype" name="InSet">(value, HashSet[Literal])</span> which is much faster.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -99,7 +101,7 @@ which is much faster
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">OptimizeIn</span><span class="params">(<span name="conf">conf: <a href="../CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span>
+        <span class="name">OptimizeIn</span><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.OptimizeIn@&lt;init&gt;(conf:org.apache.spark.sql.catalyst.CatalystConf):org.apache.spark.sql.catalyst.optimizer.OptimizeIn" title="Permalink" target="_top">
@@ -233,7 +235,7 @@ which is much faster
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">conf</span><span class="result">: <a href="../CatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>
+        <span class="name">conf</span><span class="result">: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.OptimizeIn@conf:org.apache.spark.sql.catalyst.CatalystConf" title="Permalink" target="_top">

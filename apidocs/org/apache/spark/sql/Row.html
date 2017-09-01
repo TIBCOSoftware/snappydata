@@ -53,7 +53,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Represents one row of output from a relational operator.  Allows both generic access by ordinal,
 which will incur boxing overhead for primitives, as well as native primitive access.</p><p>It is invalid to use the native primitive interface to retrieve a value that is null, instead a
-user must check <code>isNullAt</code> before attempting to retrieve a value that might be null.</p><p>To create a new Row, use <span class="extype" name="RowFactory.create()">RowFactory.create()</span> in Java or <span class="extype" name="Row.apply()">Row.apply()</span> in Scala.</p><p>A <a href="" class="extype" name="org.apache.spark.sql.Row">Row</a> object can be constructed by providing field values. Example:</p><pre><span class="kw">import</span> org.apache.spark.sql._
+user must check <code>isNullAt</code> before attempting to retrieve a value that might be null.</p><p>To create a new Row, use <code>RowFactory.create()</code> in Java or <code>Row.apply()</code> in Scala.</p><p>A <a href="" class="extype" name="org.apache.spark.sql.Row">Row</a> object can be constructed by providing field values. Example:</p><pre><span class="kw">import</span> org.apache.spark.sql._
 
 <span class="cmt">// Create a Row from values.</span>
 Row(value1, value2, value3, ...)
@@ -79,7 +79,10 @@ An example of native primitive access:</p><pre><span class="cmt">// using the ro
 <span class="kw">val</span> pairs = sql(<span class="lit">"SELECT key, value FROM src"</span>).rdd.map {
   <span class="kw">case</span> Row(key: <span class="std">Int</span>, value: <span class="std">String</span>) <span class="kw">=&gt;</span>
     key -&gt; value
-}</pre></div><div class="toggleContainer block">
+}</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -775,9 +778,9 @@ Throws an exception if the type mismatches or if the value is null.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns a Map(name -&gt; value) for the requested fieldNames
+      <p class="shortcomment cmt">Returns a Map consisting of names and values for the requested fieldNames
 For primitive types if value is null it returns 'zero value' specific for primitive
-ie.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Map(name -&gt; value) for the requested fieldNames
+ie.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Map consisting of names and values for the requested fieldNames
 For primitive types if value is null it returns 'zero value' specific for primitive
 ie. 0 for Int - use isNullAt to ensure that value is not null
 </p></div><dl class="attributes block"> <dt>Exceptions thrown</dt><dd><span class="cmt"><p><span class="extype" name="ClassCastException"><code>ClassCastException</code></span> when data type does not match.</p></span><span class="cmt"><p><span class="extype" name="IllegalArgumentException"><code>IllegalArgumentException</code></span> when fieldName do not exist.</p></span><span class="cmt"><p><span class="extype" name="UnsupportedOperationException"><code>UnsupportedOperationException</code></span> when schema is not defined.</p></span></dd></dl></div>

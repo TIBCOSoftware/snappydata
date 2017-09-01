@@ -51,15 +51,12 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
-Model fitted by KMeans.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Model fitted by KMeans.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
     </span>)</span>
-              
-                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
@@ -880,7 +877,7 @@ initial cluster centers, or &quot;k-means||&quot; to use a parallel variant of k
       </a>
     </span>
       <p class="shortcomment cmt">Param for the number of steps for the k-means|| initialization mode.</p><div class="fullcomment"><div class="comment cmt"><p>Param for the number of steps for the k-means|| initialization mode. This is an advanced
-setting -- the default of 5 is almost always enough. Must be &gt; 0. Default: 5.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>KMeansParams</dd><dt>Annotations</dt><dd>
+setting -- the default of 2 is almost always enough. Must be &gt; 0. Default: 2.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>KMeansParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
@@ -1022,7 +1019,9 @@ setting -- the default of 5 is almost always enough. Must be &gt; 0. Default: 5.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The number of clusters to create (k).</p><div class="fullcomment"><div class="comment cmt"><p>The number of clusters to create (k). Must be &gt; 1. Default: 2.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>KMeansParams</dd><dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">The number of clusters to create (k).</p><div class="fullcomment"><div class="comment cmt"><p>The number of clusters to create (k). Must be &gt; 1. Note that it is possible for fewer than
+k clusters to be returned, for example, if there are fewer than k distinct points to cluster.
+Default: 2.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>KMeansParams</dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
       
       <span class="symbol">&quot;1.5.0&quot;</span>
@@ -1318,9 +1317,9 @@ setting -- the default of 5 is almost always enough. Must be &gt; 0. Default: 5.
       </a>
     </span>
       <p class="shortcomment cmt">Returns all params sorted by their names.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all params sorted by their names. The default implementation uses Java reflection to
-list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.</p><p>Note: Developer should not use this method in constructor because we cannot guarantee that
-this variable gets initialized before other params.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd></dl></div>
+list all public methods that have no arguments and return <a href="../param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Note</dt><dd><span class="cmt"><p>Developer should not use this method in constructor because we cannot guarantee that
+this variable gets initialized before other params.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.Model#parent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="parent:org.apache.spark.ml.Estimator[M]"></a>
       <a id="parent:Estimator[KMeansModel]"></a>
@@ -1337,9 +1336,7 @@ this variable gets initialized before other params.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">The parent estimator that produced this model.</p><div class="fullcomment"><div class="comment cmt"><p>The parent estimator that produced this model.
-Note: For ensembles' component Models, this value can be null.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a></dd></dl></div>
+      <p class="shortcomment cmt">The parent estimator that produced this model.</p><div class="fullcomment"><div class="comment cmt"><p>The parent estimator that produced this model.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a></dd><dt>Note</dt><dd><span class="cmt"><p>For ensembles' component Models, this value can be null.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.ml.param.shared.HasPredictionCol#predictionCol" visbl="pub" data-isabs="false" fullComment="yes" group="param">
       <a id="predictionCol:org.apache.spark.ml.param.Param[String]"></a>
       <a id="predictionCol:Param[String]"></a>
@@ -1636,7 +1633,7 @@ thrown if <code>trainingSummary == None</code>.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Param for the convergence tolerance for iterative algorithms.</p><div class="fullcomment"><div class="comment cmt"><p>Param for the convergence tolerance for iterative algorithms.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasTol</dd></dl></div>
+      <p class="shortcomment cmt">Param for the convergence tolerance for iterative algorithms (&gt;= 0).</p><div class="fullcomment"><div class="comment cmt"><p>Param for the convergence tolerance for iterative algorithms (&gt;= 0).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasTol</dd></dl></div>
     </li><li name="org.apache.spark.ml.clustering.KMeansModel#transform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transform(dataset:org.apache.spark.sql.Dataset[_]):org.apache.spark.sql.DataFrame"></a>
       <a id="transform(Dataset[_]):DataFrame"></a>
@@ -1725,7 +1722,9 @@ thrown if <code>trainingSummary == None</code>.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>Typical implementation should first conduct verification on schema change and parameter
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Check transform validity and derive the output schema from the input schema.</p><p>We check validity for interactions between parameters during <code>transformSchema</code> and
+raise an exception if any parameter value is invalid. Parameter value checks which
+do not depend on other parameters are handled by <code>Param.validate()</code>.</p><p>Typical implementation should first conduct verification on schema change and parameter
 validity, including complex parameter interaction checks.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.ml.clustering.KMeansModel">KMeansModel</a> → <a href="../PipelineStage.html" class="extype" name="org.apache.spark.ml.PipelineStage">PipelineStage</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@Since</span><span class="args">(<span>
@@ -1895,34 +1894,7 @@ An option to save <a href="#summary:org.apache.spark.ml.clustering.KMeansSummary
 
         
 
-        <div id="values" class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="org.apache.spark.ml.param.Params#validateParams" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="validateParams():Unit"></a>
-      <a id="validateParams():Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 2.0.0) Will be removed in 2.1.0. Checks should be merged into transformSchema.">validateParams</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.ml.clustering.KMeansModel@validateParams():Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Validates parameter values stored internally.</p><div class="fullcomment"><div class="comment cmt"><p>Validates parameter values stored internally.
-Raise an exception if any parameter value is invalid.</p><p>This only needs to check for interactions between parameters.
-Parameter value checks which do not depend on other parameters are handled by
-<code>Param.validate()</code>. This method does not handle input/output column parameters;
-those are checked during schema validation.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Will be removed in 2.1.0. Checks should be merged into transformSchema.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">
