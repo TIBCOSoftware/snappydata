@@ -664,14 +664,14 @@ class SnappyUnifiedMemoryManager private[memory](
     val keys = memoryForObject.keySet().asScala
     val clearList = keys.filter(key => {
       if (key._2 eq memoryMode) {
-        val numBytes = memoryForObject.get(key)
+        val numBytes = memoryForObject.getLong(key)
         super.releaseStorageMemory(numBytes, memoryMode)
         val offHeap = memoryMode eq MemoryMode.OFF_HEAP
         wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
         true
       } else false
     })
-    clearList.foreach(key => memoryForObject.remove(key))
+    clearList.foreach(key => memoryForObject.removeLong(key))
   }
 
   // Recovery is a special case. If any of the storage pool has reached 90% of
