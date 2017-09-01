@@ -1,7 +1,5 @@
 # DROP INDEX
 
-Drops the specified index.
-
 ``` pre
 DROP INDEX [ IF EXISTS ] [schema-name.]index-name
 ```

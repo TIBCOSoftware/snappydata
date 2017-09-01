@@ -1,4 +1,5 @@
 # Overview
+
 This guide provides information related to the migration of systems running SnappyData 0.8 to SnappyData 0.9. We assume that you have SnappyData 0.8 already installed, and you are migrating to the latest version of SnappyData.
 
 Before you begin migrating, ensure that you understand the new features and any specific requirements for that release. For more information see, [migrating from SnappyData version 0.8 to version 0.9](migration-0.8-0.9.md)
@@ -12,5 +13,3 @@ Before you begin migrating, ensure that you understand the new features and any 
 3. Re-install SnappyData: After you have stopped the cluster, [install SnappyData 0.9](../install.md).
 
 4. Reconfigure your cluster.
-
-

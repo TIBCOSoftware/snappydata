@@ -1,94 +1,124 @@
-# Overview
+# Designing your Database and Schema
+
 The following topics are covered in this section:
 
-* [Using Column vs Row Table](#column-row)
-* [Using Partitioned vs Replicated Row Table](#partition-replicate)
-* [Applying Partitioning Scheme](#partition-scheme)
-* [Using Redundancy](#redundancy)
-* [Overflow Configuration](#overflow)
+* [Design Principles of Scalable, Partition-Aware Databases](#design-schema)
 
-<a id="column-row"></a>
-## Using Column vs Row Table
+* [Identify Entity Groups and Partitioning Keys](#entity_groups)
 
-A columnar table data is stored in a sequence of columns, whereas, in a row table it stores table records in a sequence of rows.
+* [Adapting a Database Schema](#adapting_existing_schema)
 
-<a id="column-table"></a>
-### Using Column Tables
+<a id="design-schema"></a>
+# Design Principles of Scalable, Partition-Aware Databases
 
-**Analytical Queries**: A column table has distinct advantages for OLAP queries and therefore large tables involved in such queries are recommended to be created as columnar tables. These tables are rarely mutated (deleted/updated).
-For a given query on a column table, only the required columns are read (since only the required subset columns are to be scanned), which gives a better scan performance. Thus, aggregation queries execute faster on a column table compared  to a  row table.
+The key design goal for achieving linear scaling is to use a partitioning strategy that allows most data access (queries) to be pruned to a single partition. This avoids expensive locking operations across multiple partitions during query execution.
 
-**Compression of Data**: Another advantage that the column table offers is it allows highly efficient compression of data which reduces the total storage footprint for large tables.
+In a highly concurrent system that has thousands of connections, multiple queries are generally spread uniformly across the entire data set (and therefore across all partitions). Therefore, increasing the number of data stores enables linear scalability. Given sufficient network performance, additional connections can be supported without degrading the response time for queries.
 
-Column tables are not suitable for OLTP scenarios. In this case, row tables are recommended.
+The general strategy for designing a SnappyData database is to identify the tables to partition or replicate in the SnappyData cluster, and then to determine the correct partitioning key(s) for partitioned tables. This usually requires an iterative process to produce the optimal design:
 
-<a id="row-table"></a>
-### Using Row Tables
+1. Read [Identify Entity Groups and Partitioning Keys](#entity_groups) and [Replicate Dimension Tables](optimizing_query_latency.md#partition-replicate) to understand the basic rules for defining partitioned or replicated tables.
 
-**OLTP Queries**: Row tables are designed to return the entire row efficiently and are suited for OLTP scenarios when the tables are required to be mutated frequently (when the table rows need to be updated/deleted based on some conditions). In these cases, row tables offer distinct advantages over the column tables.
+2. Evaluate your data access patterns to define those entity groups that are candidates for partitioning. Focus your efforts on commonly-joined entities. Colocating commonly joined tables will improve the performance of join queries by avoiding shuffle of data when the join is on partitioning keys.
 
-**Point queries**: Row tables are also suitable for point queries (for example, queries that select only a few records based on certain where clause conditions). 
+3. Identify all of the tables in the entity groups.
 
-**Small Dimension Tables**: Row tables are also suitable to create small dimension tables as these can be created as replicated tables (table data replicated on all data servers).
+4. Identify the “partitioning key” for each partitioned table. The partitioning key is the column or set of columns that are common across a set of related tables. Look for parent-child relationships in the joined tables.
 
-**Create Index**: Row tables also allow the creation of an index on certain columns of the table which improves  performance.
+5. Identify all of the tables that are candidates for replication. You can replicate table data for high availability, or to colocate table data that is necessary to execute joins.
 
-!!! Note
-	In the current release of SnappyData, updates and deletes are not supported on column tables. This feature will be added in a future release.
+<a id="entity_groups"></a>
+## Identify Entity Groups and Partitioning Keys
 
-<a id="partition-replicate"></a>
-## Using Partitioned vs Replicated Row Table
+In relational database terms, an entity group corresponds to rows that are related to one another through foreign key relationships. Members of an entity group are typically related by parent-child relationships and can be managed in a single partition. To design a SnappyData database for data partitioning, begin by identifying “entity groups” and their associated partitioning keys.
 
-In SnappyData, row tables can be either partitioned across all servers or replicated on every server. For row tables, large fact tables should be partitioned whereas, dimension tables can be replicated.
+For example:
 
-The SnappyData architecture encourages you to denormalize “dimension” tables into fact tables when possible, and then replicate remaining dimension tables to all datastores in the distributed system.
+* In a customer order management system, most transactions operate on data related to a single customer at a time. Queries frequently join a customer’s billing information with their orders and shipping information. For this type of application, you partition related tables using the customer identity. Any customer row along with their “order” and “shipping” rows forms a single entity group that has the customer ID as the entity group identity (the partitioning key). You would partition related tables using the customer identity, which would enable you to scale the system linearly by adding more members to support additional customers.
 
-Most databases follow the [star schema](http://en.wikipedia.org/wiki/Star_schema) design pattern where large “fact” tables store key information about the events in a system or a business process. For example, a fact table would store rows for events like product sales or bank transactions. Each fact table generally has foreign key relationships to multiple “dimension” tables, which describe further aspects of each row in the fact table.
+* In a system that manages a product catalog (product categories, product specifications, customer reviews, rebates, related products, and so forth) most data access focuses on a single product at a time. In this type of system, you would partition data on the product key and add members as needed to manage additional products.
 
-When designing a database schema for SnappyData, the main goal with a typical star schema database is to partition the entities in fact tables. Slow-changing dimension tables should then be replicated on each data store that hosts a partitioned fact table. In this way, a join between the fact table and any number of its dimension tables can be executed concurrently on each partition, without requiring multiple network hops to other members in the distributed system.
+* In an online auction application, you may need to stream incoming auction bids to hundreds of clients with very low latency. To do so, you would manage selected “hot” auctions on a single partition, so that they receive sufficient processing power. As the processing demand increases, you would add more partitions and route the application logic that matches bids to clients to the data store itself.
 
-<a id="partition-scheme"></a>
-## Applying Partitioning Scheme
+* In a financial trading engine that constantly matches bid prices to asking prices for thousands of securities, you would partition data using the ID of the security. To ensure low-latency execution when a security’s market data changes, you would colocate all of the related reference data with the matching algorithm.
 
-<a id="collocated-joins"></a>
-**Collocated Joins**</br>
-Collocating frequently joined partitioned tables is the best practice to improve the performance of join queries. When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's  local data. 
+!!! Note:
+	[Sharding](http://en.wikipedia.org/wiki/Shard_(database_architecture)) is a database partitioning strategy where groups of table rows are stored on separate database servers and potentially different instances of the same schema, creating groups of data that can be accessed independently. SnappyData does encourage applications to use sharding techniques.
+    
+By identifying entity groups and using those groups as the basis for SnappyData partitioning and colocation, you can realize these benefits:
 
-If the two tables are not collocated, partitions with same column values for the two tables can be on different nodes thus requiring the data to be shuffled between nodes causing the query performance to degrade.
+* **Rebalancing**: SnappyData rebalances the data automatically by making sure that related rows are migrated together and without any integrity loss. This enables you to add capacity as needed.
 
-For an example on collocated joins, refer to [How to collocate tables for doing a collocated join](../howto.md#how-to-perform-a-collocated-join).
+* **Parallel scatter-gather**: Queries that cannot be pruned to a single partition are automatically executed in parallel on data stores. 
 
-<a id="buckets"></a>
-**Buckets**</br>
-The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
-Unit of data movement is a bucket, and buckets of collocated tables move together. When a new server joins, the  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
-There is also a system procedure [call sys.rebalance_all_buckets()](../reference/inbuilt_system_procedures/rebalance-all-buckets.md#sysrebalance_all_buckets) that can be used to trigger rebalance.
-For more information on BUCKETS, refer to [BUCKETS](capacity_planning.md#buckets).
+* **Subqueries on remote partitions**: Even when a query is pruned to a single partition, the query can execute subqueries that operate on data that is stored on remote partitions.
 
-<a id="dimension"></a>
-**Criteria for Column Partitioning**</br>
-SnappyData partition is mainly for distributed and collocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query are executed concurrently.</br>
-If only a single partition is active and is used largely by queries (especially concurrent queries) it means a significant bottleneck where only a single partition is active all the time, while others are idle. This serializes execution into a single thread handling that partition. Therefore, it is not recommended to use DATE/TIMESTAMP as partitioning.
+<a id="adapting_existing_schema"></a>
+## Adapting a Database Schema
 
-<a id="redundancy"></a>
-## Using Redundancy
+If you have an existing database design that you want to deploy to SnappyData, translate the entity-relationship model into a physical design that is optimized for SnappyData design principles.
 
-REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md) specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the SnappyData members fails or shuts down. 
+## Guidelines for Adapting a Database to SnappyData
+This example shows tables from the Microsoft [Northwind Traders sample database](http://msdn.microsoft.com/en-us/library/aa276825(SQL.80).aspx).
 
-A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table data. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage.
+In order to adapt this schema for use in SnappyData, follow the basic steps outlined in [Design Principles of Scalable, Partition-Aware Databases](#design-schema):
 
-For an example of the REDUNDANCY clause refer to [Tables in SnappyData](../programming_guide.md#tables-in-snappydata).
+1. Determine the entity groups.
 
-<a id="overflow"></a>
-## Overflow Configuration
+	Entity groups are generally course-grained entities that have children, grand children, and so forth, and they are commonly used in queries. This example chooses these entity groups:
 
-In SnappyData, column tables by default overflow to disk.  For row tables, the use EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria.  
+    | Entity Group | Description |
+    |--------|--------|
+    |Customer|This group uses the customer identity along with orders and order details as the children|
+    |Product|This group uses product d etails along with the associated supplier information|
 
-This allows table data to be either evicted or destroyed based on the current memory consumption of the server. Use the `OVERFLOW` clause to specify the action to be taken upon the eviction event. 
+2. Identify the tables in each entity group.
+	Identify the tables that belong to each entity group. In this example, entity groups use the following tables.
 
-For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.
+    | Entity Group |Tables |
+    |--------|--------|
+    |Customer|Customers </br>Orders</br>Shippers</br>Order Details|
+    |Product|Product</br>Suppliers</br>Category|
 
-Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) link to understand how to configure OVERFLOW and EVICTION_BY clauses.
+3. Define the partitioning key for each group.</br>
+	In this example, the partitioning keys are:
 
-!!! Note: 
-	The default action for OVERFLOW is to destroy the evicted rows.
+    | Entity Group |Partitioning key |
+    |--------|--------|
+    |Customer|CustomerID|
+    |Product|ProductID|
+
+    This example uses customerID as the partitioning key for the Customer group. The customer row and all associated orders will be colocated into a single partition. To explicitly colocate Orders with its parent customer row, use the `colocate with` clause in the create table statement:
+		
+		create table orders (<column definitions>) 
+		using column options ('partition_by' customerID, 
+		'colocate_with' customers);
+
+    In this way, SnappyData supports any queries that join any the Customers and Orders tables. This join query would be distributed to all partitions and executed in parallel, with the results streamed back to the client:
+
+	    select * from customer c , orders o where c.customerID = o.customerID;
+
+    A query such as this would be pruned to the single partition that stores “customer100” and executed only on that SnappyData member:
+
+	    select * from customer c, orders o where c.customerID = o.customerID  and c.customerID = 'customer100';
+
+    The optimization provided when queries are highly selective comes from engaging the query processor and indexing on a single member rather than on all partitions. With all customer data managed in memory, query response times are very fast. </br>
+    Finally, consider a case where an application needs to access customer order data for several customers:
+
+        select * from customer c, orders o 
+        where c.customerID = o.customerID and c.customerID IN ('cust1', 'cust2', 'cust3');
+    
+    Here, SnappyData prunes the query execution to only those partitions that host ‘cust1’, 'cust2’, and 'cust3’. The union of the results is then returned to the caller.
+    Note that the selection of customerID as the partitioning key means that the OrderDetails and Shippers tables cannot be partitioned and colocated with Customers and Orders (because OrderDetails and Shippers do not contain the customerID value for partitioning). 
+
+4. Identify replicated tables.</br>
+	If we assume that the number of categories and suppliers rarely changes, those tables can be replicated in the SnappyData cluster (replicated to all of the SnappyData members that host the entity group). If we assume that the Products table does change often and can be relatively large in size, then partitioning is a better strategy for that table.
+	So for the product entity group, table Products is partitioned by ProductID, and the Suppliers and Categories tables are replicated to all of the members where Products is partitioned.
+	Applications can now join Products, Suppliers and categories. For example:
+
+        select * from Products p , Suppliers s, Categories c 
+		where c.categoryID = p.categoryID and p.supplierID = s.supplierID 
+		and p.productID IN ('someProductKey1', ' someProductKey2', ' someProductKey3');
+    
+
+	In the above query, SnappyData prunes the query execution to only those partitions that host 'someProductKey1’, ’ someProductKey2’, and ’ someProductKey3.’

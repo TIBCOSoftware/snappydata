@@ -1,7 +1,5 @@
 # DROP TABLE
 
-Removes the specified table.
-
 ``` pre
 DROP TABLE [ IF EXISTS ] [schema-name.]table-name
 ```
