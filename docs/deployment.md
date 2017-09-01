@@ -63,7 +63,7 @@ libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0-rc1"
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
 If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 ```bash
-./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.0-rc1-s_2.11"
+./bin/spark-shell --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 
 
@@ -145,7 +145,7 @@ You can either start SnappyData members using the `_snappy_start_all_` script or
 ***_In the Local mode_***
 ```bash
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.0-rc1-s_2.11"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 !!! Note: 
 	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. The value of this property is a combination of locator host and JDBC client port on which the locator listens for connections (default is 1527).
@@ -163,11 +163,11 @@ $scala > val snSession = new SnappySession(spark.sparkContext)
 **Cluster mode**
 
 ```bash
-./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.0-rc1-s_2.11"
+./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 **Client mode**
 ```bash
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.0-rc1-s_2.11"
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 
 
