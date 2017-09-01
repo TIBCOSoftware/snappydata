@@ -76,6 +76,8 @@
             
                 <li class="toctree-l3"><a href="#getting-started-in-5-minutes-or-less">Getting Started in 5 Minutes or Less</a></li>
                 
+                    <li><a class="toctree-l4" href="#before-you-begin">Before you begin</a></li>
+                
                     <li><a class="toctree-l4" href="#getting-started-with-your-spark-distribution">Getting Started with your Spark Distribution</a></li>
                 
                     <li><a class="toctree-l4" href="#getting-started-by-installing-snappydata-on-premise">Getting Started by Installing SnappyData On-Premise</a></li>
@@ -1082,6 +1084,8 @@
                 <h1 id="getting-started-in-5-minutes-or-less">Getting Started in 5 Minutes or Less</h1>
 <p>Welcome to the Getting Started section! <br>
 Multiple options are provided for getting started with SnappyData. </p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You must first <a href="../install/">download and extract</a> the SnappyData product distribution, navigate to the SnappyData product root directory and <a href="../howto/#howto-startcluster">start the cluster</a>.</p>
 <p>Depending on your preference you can try any of the following options:</p>
 <ul>
 <li>
@@ -1120,7 +1124,7 @@ Multiple options are provided for getting started with SnappyData. </p>
 <pre><code class="bash">$ cd &lt;Spark_Install_dir&gt;
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1-s_2.11&quot;
+$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
 </code></pre>
 
 <p>This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
@@ -1352,7 +1356,7 @@ Millions of rows are loaded into a cached Spark DataFrame, run some analytic que
 <p><strong>If you are using your own Spark installation(2.0.0, 2.0.1 or 2.0.2):</strong></p>
 <pre><code class="bash"># Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1-s_2.11&quot; --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot; --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
 </code></pre>
 
 <p><strong>If you have downloaded SnappyData</strong>:</p>

@@ -1128,7 +1128,7 @@ If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds <c
 <td>Initially, the amount of memory that is available for storage pool is 50% of the total workable memory. This can however grow up to <code>eviction-heap-percentage</code> (default 81%). On reaching this threshold it starts evicting table data as per the eviction clause that was specified when creating the table.</td>
 </tr>
 <tr>
-<td><code>spark.memory.fraction</code>s</td>
+<td><code>spark.memory.fraction</code></td>
 <td>0.92</td>
 <td>Total workable memory for execution and storage. This fraction is applied after removing reserved memory (100 minus <code>critical-heap-percentage</code>). This gives a cushion before the system reaches a critical state. It is recommended that you do not change this setting.</td>
 </tr>
@@ -1151,11 +1151,11 @@ If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds <c
 </ul>
 <p><img alt="Heap-Size" src="../../Images/heap_size.png" /></p>
 <p><strong>Example</strong>: Configuration for memory (typically configured in <strong>conf/leads</strong> or <strong>conf/servers</strong>) </p>
-<pre><code>-heap-size = 20g -critical-heap-percentage=90 -eviction-heap-percentage=81
+<pre><code class="scala">-heap-size = 20g -critical-heap-percentage=90 -eviction-heap-percentage=81
 </code></pre>
 
 <p><strong>Example</strong>: Depicts how SnappyData derives different memory region sizes</p>
-<pre><code>Reserved_Heap_Memory =&gt; 20g * (1 - 0.9) = 2g ( 0.9 being derived from critical_heap_percentage)
+<pre><code class="scala">Reserved_Heap_Memory =&gt; 20g * (1 - 0.9) = 2g ( 0.9 being derived from critical_heap_percentage)
 Heap_Memory_Fraction =&gt; (20g - Reserved_Memory) *(0.92) = 16.5 ( 0.92 being derived from spark.memory.fraction)
 Heap_Storage_Pool_Size =&gt; 16.5 * (0.5) = 8.25 ( 0.5 being derived from spark.memory.storageFractio)
 Heap_Execution_Pool_Size =&gt; 16.5 * (0.5) = 8.25
@@ -1183,11 +1183,11 @@ Heap_Max_Storage_pool_Size =&gt; 16.5 * 0.81 = 13.4 ( 0.81 derived from eviction
 <p>Similar to heap pools, off-heap pools are also divided between off-heap storage pool and off-heap execution pool. The rules of borrowing memory from each other also remains same.</p>
 <p><img alt="Off-Heap" src="../../Images/off_heap_size.png" /></p>
 <p><strong>Example</strong>: Off-heap configuration: </p>
-<pre><code>-heap-size = 4g -memory-size=16g -critical-heap-percentage=90 -eviction-heap-percentage=81
+<pre><code class="scala">-heap-size = 4g -memory-size=16g -critical-heap-percentage=90 -eviction-heap-percentage=81
 </code></pre>
 
 <p><strong>Example</strong>: How SnappyData derives different memory region sizes.</p>
-<pre><code>Reserved_Memory ( Heap Memory) =&gt; 4g * (1 - 0.9) = 400m ( 0.9 being derived from critical_heap_percentage)
+<pre><code class="scala">Reserved_Memory ( Heap Memory) =&gt; 4g * (1 - 0.9) = 400m ( 0.9 being derived from critical_heap_percentage)
 Memory_Fraction ( Heap Memory) =&gt; (4g - Reserved_Memory) *(0.92) = 3.3g
 Heap Storage_Pool_Size =&gt; 3.3 * (0.5) = 1.65
 Heap Execution_Pool_Size =&gt; 3.3 * (0.5) = 1.65

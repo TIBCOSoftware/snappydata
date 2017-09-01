@@ -1135,7 +1135,7 @@ libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11
 
 <p><strong>Example</strong>: <strong>Launch Apache Spark shell and provide SnappyData dependency as a Spark package</strong>:
 If you already have Spark2.0 installed in your local machine you can directly use <code>--packages</code> option to download the SnappyData binaries.</p>
-<pre><code class="bash">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1-s_2.11&quot;
+<pre><code class="bash">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
 </code></pre>
 
 <p><a id="embeddedmode"></a></p>
@@ -1215,7 +1215,7 @@ You can either start SnappyData members using the <code>_snappy_start_all_</code
 <p><strong>Step 2: Launch the Apache Spark program</strong></p>
 <p><strong><em><em>In the Local mode</em></em></strong></p>
 <pre><code class="bash">
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1-s_2.11&quot;
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
 </code></pre>
 
 <div class="admonition note">
@@ -1236,11 +1236,11 @@ $scala &gt; val snSession = new SnappySession(spark.sparkContext)
 
 <p><strong><em><em>Using External Cluster Manager</em></em></strong></p>
 <p><strong>Cluster mode</strong></p>
-<pre><code class="bash">./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1-s_2.11&quot;
+<pre><code class="bash">./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
 </code></pre>
 
 <p><strong>Client mode</strong></p>
-<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1-s_2.11&quot;
+<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
 </code></pre>
 
 <p>The code example for writing a Smart Connector application program is located in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample</a></p>

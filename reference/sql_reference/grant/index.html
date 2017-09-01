@@ -1134,13 +1134,15 @@
 TRIGGER | UPDATE [ column-list ]
 </code></pre>
 
-<p>Use the ALTER privilege to grant permission to the <a href="ref-alter-table.html#reference_12F6A629A0BD46DCBDB0175D9EA946F2" class="xref noPageCitation" title="Use the ALTER TABLE statement to add columns and constraints to an existing table, remove them from a table, or modify other table features such as AsyncEventListener implementations and gateway sender configurations.">ALTER TABLE</a> command on the specified table.</p>
-<p>Use the DELETE privilege type to grant permission to delete rows from the specified table.</p>
-<p>Use the INSERT privilege type to grant permission to insert rows into the specified table.</p>
-<p>Use the REFERENCES privilege type to grant permission to create a foreign key reference to the specified table. If a column list is specified with the REFERENCES privilege, the permission is valid on only the foreign key reference to the specified columns.</p>
-<p>Use the SELECT privilege type to grant permission to perform SELECT statements on a table or view. If a column list is specified with the SELECT privilege, the permission is valid on only those columns. If no column list is specified, then the privilege is valid on all of the columns in the table.</p>
-<p>Use the TRIGGER privilege type to grant permission to create a trigger on the specified table.</p>
-<p>Use the UPDATE privilege type to grant permission to use the UPDATE statement on the specified table. If a column list is specified, the permission applies only to the specified columns. To update a row using a statement that includes a WHERE clause, you must have SELECT permission on the columns in the row that you want to update.</p>
+<p>Use the <a href="../alter-table/">ALTER</a> privilege to grant permission to the command on the specified table.</p>
+<p>Use the <a href="../delete/">DELETE</a> privilege type to grant permission to delete rows from the specified table.</p>
+<p>Use the <a href="../insert/">INSERT</a> privilege type to grant permission to insert rows into the specified table.</p>
+<!--Use the REFERENCES privilege type to grant permission to create a foreign key reference to the specified table. If a column list is specified with the REFERENCES privilege, the permission is valid on only the foreign key reference to the specified columns.-->
+
+<p>Use the <a href="../select/">SELECT</a> privilege type to grant permission to perform SELECT statements on a table or view. If a column list is specified with the SELECT privilege, the permission is valid on only those columns. If no column list is specified, then the privilege is valid on all of the columns in the table.</p>
+<!--Use the TRIGGER privilege type to grant permission to create a trigger on the specified table.-->
+
+<p>Use the <a href="../update/">UPDATE</a> privilege type to grant permission to use the UPDATE statement on the specified table. If a column list is specified, the permission applies only to the specified columns. To update a row using a statement that includes a WHERE clause, you must have <a href="../select/">SELECT</a> permission on the columns in the row that you want to update.</p>
 <p><a id="column-list"></a></p>
 <h2 id="column-list">column-list</h2>
 <pre><code class="pre">( column-identifier {, column-identifier }* )
@@ -1174,9 +1176,11 @@ TRIGGER | UPDATE [ column-list ]
 <pre><code class="pre">GRANT SELECT ON TABLE test.sample to PUBLIC;
 </code></pre>
 
-<p>To grant the EXECUTE privilege on procedure"p" to the authorization ID "richard:"</p>
-<pre><code class="pre">GRANT EXECUTE ON PROCEDURE p TO richard;
-</code></pre>
+<!--To grant the EXECUTE privilege on procedure"p" to the authorization ID "richard:"
+
+wzxhzdk:12
+
+-->
               
             </div>
           </div>

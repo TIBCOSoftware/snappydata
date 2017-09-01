@@ -1124,7 +1124,7 @@
 </ul>
 <p><strong>Example</strong>: </p>
 <p>In the below example, we are launching the locator in secure mode, which communicates with the LDAP server at localhost listening on port 389.</p>
-<pre><code>localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/  \
+<pre><code class="scala">localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/  \
           -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com \
           -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com \
           -J-Dgemfirexd.auth-ldap-search-pw=user123
@@ -1151,7 +1151,7 @@ There are a few different ways to connect to a secure cluster using either JDBC 
 <h3 id="using-jdbc-thin-client">Using JDBC (Thin) Client</h3>
 <p>When using the JDBC client, provide the user credentials using connection properties 'user' and 'password'.</p>
 <p><strong>Example: JDBC Client</strong></p>
-<pre><code>val props = new Properties()
+<pre><code class="scala">val props = new Properties()
 props.setProperty(&quot;user&quot;, username);
 props.setProperty(&quot;password&quot;, password);
 
@@ -1160,12 +1160,12 @@ val conn = DriverManager.getConnection(url, props)
 </code></pre>
 
 <p><strong>Example: Snappy shell</strong></p>
-<pre><code>connect client 'localhost:1527;user=user1;password=user123';
+<pre><code class="scala">connect client 'localhost:1527;user=user1;password=user123';
 </code></pre>
 
 <h3 id="using-odbc-driver">Using ODBC Driver</h3>
 <p>You can also connect to the SnappyData Cluster using SnappyData ODBC Driver using the following command:</p>
-<pre><code>Driver=SnappyData ODBC Driver;server=&lt;ServerHost&gt;;port=&lt;ServerPort&gt;;user=&lt;userName&gt;;password=&lt;password&gt;
+<pre><code class="scala">Driver=SnappyData ODBC Driver;server=&lt;ServerHost&gt;;port=&lt;ServerPort&gt;;user=&lt;userName&gt;;password=&lt;password&gt;
 </code></pre>
 
 <p>For more information refer to, <a href="../../howto/#how-to-connect-using-odbc-driver">How to Connect using ODBC Driver</a>.</p>
@@ -1173,7 +1173,7 @@ val conn = DriverManager.getConnection(url, props)
 <p>In Smart Connector mode, provide the user credentials as Spark configuration properties named <code>spark.snappydata.store.user</code> and <code>spark.snappydata.store.password</code>.</p>
 <p><strong>Example</strong></br> 
 In the below example, these properties are set in the <code>SparkConf</code> which is used to create <code>SnappyContext</code> in your job.</p>
-<pre><code>val conf = new SparkConf()
+<pre><code class="scala">val conf = new SparkConf()
     .setAppName(&quot;My Spark Application with SnappyData&quot;)
     .setMaster(s&quot;spark://$hostName:7077&quot;)
     .set(&quot;spark.executor.cores&quot;, TestUtils.defaultCores.toString)
@@ -1188,7 +1188,7 @@ val snc = SnappyContext(sc)
 
 <p><strong>Example</strong></br> 
 The below example demonstrates how to connect to the cluster via Spark shell using the <code>--conf</code> option to specify the properties.</p>
-<pre><code>$ bin/spark-shell  
+<pre><code class="scala">$ bin/spark-shell  
     --master local[*] 
     --conf spark.snappydata.connection=localhost:1527 
     --conf spark.snappydata.store.user=user1
@@ -1199,19 +1199,19 @@ The below example demonstrates how to connect to the cluster via Spark shell usi
 Alternatively, you can specify the user credentials in the Spark conf file. </br> Spark reads these properties when you lauch the spark-shell or invoke spark-submit. 
 To do so, specify the user credentials in the <strong>spark-defaults.conf</strong> file, located in the <strong>conf</strong> directory.</p>
 <p>In this file, you can specify:</p>
-<pre><code class="bash">spark.snappydata.store.user     &lt;username&gt;
+<pre><code class="scala">spark.snappydata.store.user     &lt;username&gt;
 spark.snappydata.store.password &lt;password&gt;
 </code></pre>
 
 <h3 id="using-snappy-jobs">Using Snappy Jobs</h3>
 <p>When submitting Snappy jobs, using <code>snappy-job.sh</code>, provide user credentials through a configuration file using the option <code>--passfile</code>. </p>
 <p>For example, a sample configuration file is provided below: </p>
-<pre><code>$ cat /home/user1/snappy/job.config 
+<pre><code class="scala">$ cat /home/user1/snappy/job.config 
 -u user1:password
 </code></pre>
 
 <p>In the below example, the above configuration file is passed when submitting a job.</p>
-<pre><code>$ bin/snappy-job.sh submit  \
+<pre><code class="scala">$ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
@@ -1254,22 +1254,22 @@ spark.snappydata.store.password &lt;password&gt;
 <h3 id="ldap-groups-in-snappydata-authorization">LDAP Groups in SnappyData Authorization</h3>
 <p>SnappyData extends the SQL GRANT statement to support LDAP Group names as Grantees.</p>
 <p>Here is an example SQL to grant privileges to individual users:</p>
-<pre><code>GRANT SELECT ON TABLE t TO sam,bob;
+<pre><code class="scala">GRANT SELECT ON TABLE t TO sam,bob;
 </code></pre>
 
 <p>You can also grant privileges to LDAP groups using the following syntax:</p>
-<pre><code>GRANT SELECT ON Table t TO ldapGroup:&lt;groupName&gt;, bob;
+<pre><code class="scala">GRANT SELECT ON Table t TO ldapGroup:&lt;groupName&gt;, bob;
 GRANT INSERT ON Table t TO ldapGroup:&lt;groupName&gt;, bob;
 </code></pre>
 
 <p>SnappyData fetches the current list of members for the LDAP Group and grants each member privileges individually (stored in SnappyData). </br>
 Similarly, when a REVOKE SQL statement is executed SnappyData removes the privileges individually for all members that make up a group. To support changes to Group membership within the LDAP Server, there is an additional System procedure to refresh the privileges recorded in SnappyData.</p>
-<pre><code>CALL SYS.REFRESH_LDAP_GROUP('&lt;GROUP NAME&gt;');
+<pre><code class="scala">CALL SYS.REFRESH_LDAP_GROUP('&lt;GROUP NAME&gt;');
 </code></pre>
 
 <p>This step has to be performed manually by admin when relevant LDAP groups change on the server.</p>
 <p>To optimize searching for groups in the LDAP server the following optional properties can be specified. These are similar to the current ones used for authentication: <code>gemfirexd.auth-ldap-search-base</code> and <code>gemfirexd.auth-ldap-search-filter</code>. The support for LDAP groups requires using LDAP as also the authentication mechanism.</p>
-<pre><code>gemfirexd.group-ldap-search-base
+<pre><code class="scala">gemfirexd.group-ldap-search-base
 // base to identify objects of type group
 gemfirexd.group-ldap-search-filter
 // any additional search filter for groups
@@ -1280,13 +1280,13 @@ gemfirexd.group-ldap-member-attributes
 <p>If no <code>gemfirexd.group-ldap-search-base</code> property has been provided then the one used for authentication gemfirexd.auth-ldap-search-base is used. </br>
 If no search filter is specified then SnappyData uses the standard objectClass groupOfMembers (rfc2307) or groupOfNames with attribute as member, or objectClass groupOfUniqueMembers with attribute as uniqueMember.
 To be precise, the default search filter is:</p>
-<pre><code>(&amp;(|(objectClass=group)(objectClass=groupOfNames)(objectClass=groupOfMembers)
+<pre><code class="scala">(&amp;(|(objectClass=group)(objectClass=groupOfNames)(objectClass=groupOfMembers)
   (objectClass=groupOfUniqueNames))(|(cn=%GROUP%)(name=%GROUP%)))
 </code></pre>
 
 <p>The token "%GROUP%" is replaced by the actual group name in the search pattern. A custom search filter should use the same as a placeholder, for the group name. The default member attribute list is member, uniqueMember. The LDAP group resolution is recursive, meaning a group can refer to another group (see example below). There is no detection for broken LDAP group definitions having a cycle of group references and such a situation leads to a failure in GRANT or REFRESH_LDAP_GROUP with StackOverflowError.</p>
 <p>An LDAP group entry can look like below:</p>
-<pre><code>dn: cn=group1,ou=group,dc=example,dc=com
+<pre><code class="scala">dn: cn=group1,ou=group,dc=example,dc=com
 objectClass: groupOfNames
 cn: group1
 gidNumber: 1001
@@ -1320,13 +1320,13 @@ member: cn=group11,ou=group,dc=example,dc=com
 <h3 id="handling-case-sensitivity-and-special-characters-in-user-names">Handling Case Sensitivity and Special Characters in User Names</h3>
 <p>If an external authentication system is used, SnappyData does not convert a user's name to an authorization identifier until after authentication has occurred (but before the user is authorized). For example, with an example user named Fred:</p>
 <p>Within the user authentication system, Fred might be known as FRed. If the external user authentication service is case-sensitive, Fred must always be typed as:</p>
-<pre><code>connect client 'localhost:1527;user=FRed;password=flintstone';
+<pre><code class="scala">connect client 'localhost:1527;user=FRed;password=flintstone';
 </code></pre>
 
 <p>Within the SnappyData user authorization system, Fred becomes a case-insensitive authorization identifier. Here, FRed is known as FRED.</p>
 <p>Also consider a second example, where Fred has a slightly different name within the user authentication system:</p>
 <p>Within the user authentication system, Fred is known as Fred. You must now put double quotes around the username, because it is not a valid SQL92Identifier. SnappyData removes the double quotes when passing the name to the external authentication system.</p>
-<pre><code>connect client 'localhost:1527;user=&quot;Fred!&quot;;password=flintstone';
+<pre><code class="scala">connect client 'localhost:1527;user=&quot;Fred!&quot;;password=flintstone';
 </code></pre>
 
 <p>Within the SnappyData user authorization system, Fred now becomes a case-sensitive authorization identifier. In this case, Fred is known as Fred.</p>
