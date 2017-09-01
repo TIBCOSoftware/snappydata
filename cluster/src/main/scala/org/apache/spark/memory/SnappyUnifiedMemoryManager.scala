@@ -170,7 +170,7 @@ class SnappyUnifiedMemoryManager private[memory](
     * Clears the internal map
     */
   override def clear(): Unit = {
-    memoryForObject.clear()
+    if (_memoryForObjectMap ne null) _memoryForObjectMap.clear()
   }
 
   val threadsWaitingForStorage = new AtomicInteger()
