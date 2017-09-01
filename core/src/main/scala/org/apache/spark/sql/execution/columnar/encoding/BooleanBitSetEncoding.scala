@@ -21,7 +21,6 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
 import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
-import org.apache.spark.unsafe.bitset.BitSetMethods
 
 trait BooleanBitSetEncoding extends ColumnEncoding {
 
