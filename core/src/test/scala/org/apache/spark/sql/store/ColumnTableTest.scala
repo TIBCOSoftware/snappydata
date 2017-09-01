@@ -896,7 +896,10 @@ class ColumnTableTest
     dataDF.write.insertInto(tableName)
     assert(snc.sql(s"select * from $tableName").collect().length == 5)
 
-    val conn = DriverManager.getConnection("jdbc:snappydata:;query-routing=false")
+    // set internal-connection=true to allow query on column table when
+    // query routing is disabled
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata:;query-routing=false;internal-connection=true")
     val stmt = conn.createStatement()
     var rs = stmt.executeQuery(s"select count (*) from $tableName")
     assert(rs.next())
