@@ -113,8 +113,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     ctx.INPUT_ROW = null
     ctx.currentVars = input
     val keysInput = ctx.generateExpressions(keyColumns.map(
-      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
-        u, child.output))), doSubexpressionElimination = true)
+      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(u, child.output))))
     ctx.currentVars = null
 
     val keyVars = keysInput.takeRight(3)
