@@ -66,7 +66,8 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
   }
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
-      withHeader: Boolean, allocator: BufferAllocator): Long = initialize(initSize)
+      withHeader: Boolean, allocator: BufferAllocator,
+      minBufferSize: Int = -1): Long = initialize(initSize)
 
   override def writeInt(cursor: Long, value: Int): Long = {
     if (cursor >= deletedPositions.length) {
