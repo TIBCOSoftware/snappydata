@@ -432,7 +432,7 @@ object ColumnUpdateDeleteTests extends Assertions {
         barrier.await()
         res = snappy.sql(
           s"delete from updateTable where (id % $step) = ${step - i - 1}").collect()
-        assert(res.map(_.getLong(0)).sum >= 0)
+        assert(res.map(_.getLong(0)).sum === numElements / step)
       } catch {
         case t: Throwable =>
           exceptions += Thread.currentThread() -> t
