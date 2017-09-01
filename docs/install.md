@@ -29,14 +29,18 @@ SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premi
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
 ### Download SnappyData
-Download the latest version of SnappyData from the [SnappyData Release](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
-The packages are available in compressed files (.zip and .tar format). On this page, you can also view details of features and enhancements introduced in specific releases.
+Download the latest version of SnappyData: 
 
-* **SnappyData 0.9 download link**
-[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-bin.zip)
+* [Download SnappyData 1.0 RC Open Source Version](https://github.com/SnappyDataInc/snappydata/releases/):</br>
+ This page lists the latest and previous releases of SnappyData. The packages are available in compressed files (.zip and .tar format). You can also view details of features and enhancements introduced in specific releases.
 
-* **SnappyData 0.9 (user-provided Hadoop) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.zip)
+	* **SnappyData 1.0.0-RC1 Release download link**
+[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0-rc1/snappydata-1.0.0-rc1-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0-rc1/snappydata-1.0.0-rc1-bin.zip)
+
+	* **SnappyData 1.0.0-RC1 Release (user-provided Hadoop) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0-rc1/snappydata-1.0.0-rc1-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0-rc1/snappydata-1.0.0-rc1-without-hadoop-bin.zip)
+
+* [Download SnappyData 1.0 RC Enterprise Version](http://www.snappydata.io/download): </br> Users can download the Enterprise version for evaluation after registering on the SnappyData website.
 
 <a id="singlehost"></a>
 ### Single Host Installation
@@ -44,8 +48,8 @@ This is the simplest form of deployment and can be used for testing and POCs.
 
 Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory.
 ```bash
-$ tar -xzf snappydata-0.9-bin.tar.gz
-$ cd snappydata-0.9-bin/
+$ tar -xzf snappydata-<version-number>bin.tar.gz
+$ cd snappydata-<version-number>-bin/
 ```
 Start a basic cluster with one data node, one lead, and one locator
 ```
@@ -71,8 +75,8 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 2. Extract the downloaded archive file and go to SnappyData home directory.
 
-		$ tar -xzf snappydata-0.9-bin.tar.gz
-		$ cd snappydata-0.9-bin/
+		$ tar -xzf snappydata-<version-number>-bin.tar.gz
+		$ cd snappydata-<version-number>.-bin/
 
 3. Configure the cluster as described in [How to Configure SnappyData cluster](configuring_cluster/configuring_cluster.md).
 
@@ -427,7 +431,7 @@ Quickstart to build all components of SnappyData:
 
 **Latest release branch**
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.9 --recursive
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-<release-version> --recursive
 > cd snappydata
 > ./gradlew product
 ```
@@ -445,7 +449,7 @@ If you want to build only the top-level SnappyData project but pull in jars for 
 
 **Latest release branch**
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.9
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-<release-version>
 > cd snappydata
 > ./gradlew product
 ```

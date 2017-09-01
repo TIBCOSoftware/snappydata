@@ -1,7 +1,7 @@
 # Instruction for Migrating from SnappyData 0.8-0.9
 
 !!! Note
-	Upgrade of on-disk data files is not supported for this release. This document only contains instructions for users migrating from SnappyData 0.8 to SnappyData 0.9. After you have re-configured your cluster (point 4 below), you must reload your data into SnappyData tables.
+	Upgrade of on-disk data files is not supported for this release. This document only contains instructions for users migrating from SnappyData 0.8 to SnappyData 0.9. After you have re-configured your cluster, you must reload your data into SnappyData tables.
 
 ## Memory Management: Heap and Off-Heap 
 SnappyData can now be configured to use both off-heap and on-heap storage. The `memory-size` and `heap-size`  properties control the off-heap and on-heap sizes of the SnappyData server process. 
@@ -31,7 +31,15 @@ In the previous releases (0.8 and earlier), tables were stored in memory by defa
 From this release onwards, all tables persist to disk by default and can be explicitly turned OFF for pure memory-only tables by specifying the `persistence` option as `none`.
 
 ## Changes to Properties
-In this release, changes have been made to the properties ([memory management](#memory-properties) and [new](#new-properties)/[deleted](#deleted-properties) properties). Make sure that you familiarise yourself with changes before you re-configure your cluster.
+In this release, the following changes have been made to the properties 
+* [Memory management](#memory-properties) 
+
+* [New Properties](#new-properties)
+
+* [Deleted Properties](#deleted-properties). 
+
+Make sure that you familiarise yourself with changes before you re-configure your cluster.
+
 <a id="new-properties"></a>
 ### New Property
 

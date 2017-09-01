@@ -23,7 +23,7 @@
 |thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: path to key store file </br>`keystore-type`: the type of key-store (default "JKS") </br>`keystore-password`: password for the key store file</br>`keymanager-type`: the type of key manager factory </br>`truststore`: path to trust store file</br>`truststore-type`: the type of trust-store (default "JKS")</br>`truststore-password`: password for the trust store file </br>`trustmanager-type`: the type of trust manager factory </br> |Server|
 |spark.driver.maxResultSize|Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M, or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead.|Lead|
 |spark.executor.cores|The number of cores to use on each server. |Lead|
-|spark.network.timeout|The default timeout for all network interactions while running queries. |Lead|
+|spark.network.timeout|The default timeout for all network interactions while running queries.|Lead|
 |spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|Lead|
 
 <a id="sql-properties"></a>
@@ -48,7 +48,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 | Property | Description|
 |--------|--------|
-|snappydata.column.batchSize |The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that will be used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the `create table` DDL.|
+|snappydata.column.batchSize |The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the `create table` DDL.|
 |snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`|
 |snappydata.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`. Default value is 100 MB.|
 |snappydata.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (with b/k/m/g/t/p suffixes for unit) and not the output size. Set this only if there are queries that can return very large number of rows in aggregation results. Default value is set to 0b which means, no limit is set on the size, so the optimized hash aggregation is always used.|
@@ -74,9 +74,9 @@ This sets the property for the snappy SQL shell's session.
 
 | Properties | Description |
 |--------|--------|
-|snappydata.flushReservoirThreshold|Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. Default value is 10,000.</br> This property must be set in the *conf/servers* and *conf/leads* file. |
+|snappydata.flushReservoirThreshold|Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. Default value is 10,000.</br> This property must be set in the *conf/servers* and *conf/leads* file.|
 |spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. Default value is 100. </br>This property must be set in the *conf/leads* file.|
 |spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. Default value is 0.2. </br>This property can be set as connection property in the Snappy SQL shell.|
-|spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> Default value is 0.95. </br>This property can be set as connection property in the Snappy SQL shell|
-|sparksql.aqp.behavior|The action to be taken if the error computed goes oustide the error tolerance limit. Default value is `DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell|
+|spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> Default value is 0.95. </br>This property can be set as connection property in the Snappy SQL shell.|
+|sparksql.aqp.behavior|The action to be taken if the error computed goes oustide the error tolerance limit. Default value is `DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell.|
 

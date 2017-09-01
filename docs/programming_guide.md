@@ -811,7 +811,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 !!! Note:
    	* By default, both row and column tables are persistent.
 
-   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9. Although it does work, it is recommended to use `PERSISTENCE` instead.
+   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9 <!--DO NOT CHANGE RELEASE NO. -->. Although it does work, it is recommended to use `PERSISTENCE` instead.
 
    * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](reference/sql_reference/create-diskstore.md).
 

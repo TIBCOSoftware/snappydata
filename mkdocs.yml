@@ -13,29 +13,59 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install: install.md
+# - System Requirements: additional_files/system_requirements.md
 - 'Migration Guide': 'migration/migration.md'
 - 'Migration Guide':
     - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
+#    - 'Migrating from Version 0.9 to Version 1.0.0-RC1 Release': 'migration/migration-0.9-01_rc.md'
 - How Tos: howto.md
 - Architecture: architecture.md
 - 'Configuring the Cluster': 'configuration.md'
 - 'Configuring the Cluster':
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
+    - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'SnappyData Properties': 'configuring_cluster/property_description.md'
 - Programming Guide: programming_guide.md
 - Affinity Modes: deployment.md
-- 'Best practices': 'best_practices.md'
-- 'Best practices':
-    - 'Setting up your Cluster ': 'best_practices/capacity_planning.md'
-    - 'Designing your Database and Schema': 'best_practices/design_schema.md'
+- 'Best Practices': 'best_practices.md'
+- 'Best Practices':
+    - 'Setting up your Cluster': 'best_practices/setup_cluster.md'
+#    - 'Setting up your Cluster':    
+#        - 'Concurrency and Management of Cores' : 'best_practices/setting_up_cluster/core_management.md'
+#        - 'Memory Management: Heap and Off-Heap' : 'best_practices/setting_up_cluster/heap_off_heap.md'
+#        - 'HA Considerations' : 'best_practices/setting_up_cluster/ha_consideration.md'
+#        - 'Important Settings' : 'best_practices/setting_up_cluster/important_setting.md'
+#        - 'Operating System Settings' : 'best_practices/setting_up_cluster/operating_system_setting.md'
+#        - 'Table Memory Requirements' : 'best_practices/setting_up_cluster/table_memory_req.md'
+#        - 'JVM Settings for SnappyData Smart Connector mode and Local mode' : 'best_practices/setting_up_cluster/jvm_setting.md'
+    - 'HA Considerations': 'best_practices/ha_considerations.md'    
+    - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
+    - 'Memory Management': 'best_practices/memory_management.md'      
+    - 'Designing your Database and Schema': 'best_practices/design_schema.md'  
+    - 'Important Settings': 'best_practices/important_settings.md'
+#    - 'Optimizing Query Latency: Partitioning and Replication Strategies':    
+#        - 'Using Column vs Row Table' : 'best_practices/design_schema/column_vs_row_table.md'
+#        - 'Using Partitioned vs Replicated Row Table' : 'best_practices/design_schema/partitioned_vs_replicated_row.md'
+#        - 'Applying Partitioning Scheme' : 'best_practices/design_schema/partitioning_scheme.md'
+#        - 'Using Redundancy' : 'best_practices/design_schema/using_redundancy.md'
+#        - 'Overflow Configuration' : 'best_practices/design_schema/overflow_configuration.md'
+#        - 'Design Principles of Scalable, Partition-Aware Databases': 'best_practices/design_schema/partition_aware_database_design.md'
+#        - 'Identify Entity Groups and Partitioning Keys': 'best_practices/design_schema/entity_groups.md'
+#        - 'Adapting a Database Schema': 'best_practices/design_schema/adapting_existing_schema.md'
+#        - 'Dealing with Many-to-Many Relationships': 'best_practices/design_schema/many_to_many.md'
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
-- 'Monitoring - SnappyData Pulse': 'monitoring/monitoring.md'
+- 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
+- 'Managing and Monitoring':
+    - 'SnappyData Pulse': 'monitoring/monitoring.md'
+    - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
 # -- Topic - Reference Guide
+- 'Security': 'security/security.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
+        - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
         - 'CREATE Statements': 'reference/sql_reference/create-statements.md'
         - 'CREATE Statements':
             - 'CREATE DISKSTORE': 'reference/sql_reference/create-diskstore.md'
@@ -54,24 +84,29 @@ pages:
             - 'DROP FUNCTION': 'reference/sql_reference/drop-function.md'
             - 'DROP INDEX': 'reference/sql_reference/drop-index.md'
             - 'DROP TABLE': 'reference/sql_reference/drop-table.md'
+        - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
+        - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'SELECT': 'reference/sql_reference/select.md'
+        - 'SET ISOLATION': 'reference/sql_reference/set-isolation.md'
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
-    - 'Built-in System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
-    - 'Built-in System Procedures': 
+    - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
+    - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
 #        - 'SET_EVICTION_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_eviction_heap_percentage.md'
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
+        - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
         - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
         - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'    
+        - 'SYSTABLES': 'reference/system_tables/systables.md'    
     - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
     - 'Command Line Utilities':
         - 'backup': 'reference/command_line_utilities/store-backup.md'
@@ -83,6 +118,8 @@ pages:
         - 'version': 'reference/command_line_utilities/store-version.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
     - 'Snappy-SQL Shell Interactive Commands':
+        - 'autocommit': 'reference/interactive_commands/autocommit.md'
+        - 'commit': 'reference/interactive_commands/commit.md'
         - 'connect client': 'reference/interactive_commands/connect_client.md'
         - 'connect': 'reference/interactive_commands/connect.md'
         - 'describe': 'reference/interactive_commands/describe.md'
@@ -90,6 +127,7 @@ pages:
         - 'elapsedtime': 'reference/interactive_commands/elapsedtime.md'
         - 'exit': 'reference/interactive_commands/exit.md'
         - 'MaximumDisplayWidth': 'reference/interactive_commands/maximumdisplaywidth.md'
+        - 'rollback': 'reference/interactive_commands/rollback.md'
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
@@ -140,11 +178,24 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Documentation': 'apidocsintro.md'
+#    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
+    - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
-- Additional Information: additional_docs.md
+- 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
+- 'Troubleshooting Common Problems':
+    - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
+    - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
+    - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
+    - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
+#    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
+- Additional Information: additional_files/additional_docs.md
 #- About:
-#   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
+- Open Source/ Enterprise Components: additional_files/open_source_components.md
+- 'License Model': 'additional_files/license_model.md'
+- 'Release Notes': 'release_notes/release_notes_1.0-rc.md'
+#- 'Release Notes': 
+    #- 'Known Issues': 'release_notes/known_issues.md'
 - Contact and Support: techsupport.md
 - License: LICENSE.md
 
@@ -160,8 +211,9 @@ extra_css:
     - 'css/images.css'
     - 'css/style.css'
     - 'extra.css'
-
+    
 markdown_extensions:
     - admonition:
-
+   
+    
 copyright: Copyright &copy; 2017 SnappyData Inc.

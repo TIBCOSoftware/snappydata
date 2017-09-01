@@ -74,7 +74,7 @@ It may take 30 seconds or more to bootstrap the entire cluster on your local mac
 
 **Sample Output**: The sample output for `snappy-start-all.sh` is displayed as:
 
-```
+```bash
 Starting SnappyData Locator using peer discovery on: localhost[10334]
 Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
 Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log
@@ -91,6 +91,7 @@ SnappyData Leader pid: 9699 status: running
   Distributed system now has 3 members.
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
+
 ### Start SnappyData Cluster on Multiple Hosts
 
 To start the cluster on multiple hosts:
@@ -127,7 +128,7 @@ You can check the SnappyData UI by opening `http://<leadHostname>:5050` in your 
 ## How to Shut Down a SnappyData Cluster
 You can shut down the cluster using the `sbin/snappy-stop-all.sh` command:
 
-```
+```bash
 $ sbin/snappy-stop-all.sh
 The SnappyData Leader has stopped.
 The SnappyData Server has stopped.
@@ -145,7 +146,7 @@ A Spark program that runs inside a SnappyData cluster is implemented as a Snappy
 A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>
 Any of the Spark APIs can be invoked by a SnappyJob.
 
-```
+```scala
 class CreatePartitionedRowTable extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute Snappy jobs. **/
   def runSnappyJob(sc: SnappySession, jobConfig: Config): Any
@@ -163,20 +164,20 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 
 **Example: Maven dependency**:
 
-```
+```scala
 <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>0.9</version>
+    <version>1.0.0-RC1</version>
 </dependency>
 ```
 
 **Example: SBT dependency**:
 
-```
+```scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.9"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0-RC1"
 ```
 
 **Running the Job**: 
@@ -186,7 +187,7 @@ For example, to run the job implemented in [CreatePartitionedRowTable.scala](htt
 Here **quickstart.jar** contains the program and is bundled in the product distribution.<br/>
 For example, the command submits the job and runs it as:
 
-```
+```scala
  # first cd to your SnappyData product dir
  $ cd $SNAPPY_HOME
  $ bin/snappy-job.sh submit
@@ -199,7 +200,7 @@ In the above comand, **--lead** option specifies the host name of the lead node 
 
 **Output**: It returns output similar to:
 
-```
+```scala
 {
   "status": "STARTED",
   "result": {
@@ -211,7 +212,7 @@ In the above comand, **--lead** option specifies the host name of the lead node 
 
 **Check Status**: You can check the status of the job using the Job ID listed above:
 
-```
+```scala
 bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 ```
 
@@ -232,7 +233,7 @@ The code example for this mode is in [SmartConnectorExample.scala](https://githu
 
 The code below shows how to initialize a SparkSession. Here the property `snappydata.connection` instructs the connector to acquire cluster connectivity and catalog metadata and registers it locally in the Spark cluster. Its value is consists of  locator host and JDBC client port on which the locator listens for connections (default 1527).
 
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName("SmartConnectorExample")
@@ -243,13 +244,12 @@ The code below shows how to initialize a SparkSession. Here the property `snappy
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
-
 ```
 
 **Create Table and Run Queries**: 
 You can now create tables and run queries in SnappyData store using your Apache Spark program
 
-```
+```scala
     // reading an already created SnappyStore table SNAPPY_COL_TABLE
     val colTable = snSession.table("SNAPPY_COL_TABLE")
     colTable.show(10)
@@ -273,7 +273,7 @@ You can now create tables and run queries in SnappyData store using your Apache 
 **Connect to a SnappyData Cluster**: 
 Use the `snappy-sql` and `connect client` command on the Snappy SQL Shell
 
-```
+```scala
 $ bin/snappy-sql
 snappy> connect client '<locatorHostName>:1527';
 ```
@@ -282,7 +282,7 @@ Where `<locatorHostName>` is the host name of the node on which the locator is s
 
 **Execute SQL queries**: Once connected you can execute SQL queries using `snappy-sql`
 
-```
+```scala
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
 
 snappy> INSERT INTO APP.PARTSUPP VALUES(100, 1, 5000, 100);
@@ -296,12 +296,12 @@ PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST
 200        |2          |50         |10.00            
 
 2 rows selected
-
 ```
 
 **View the members of cluster**: 
 Use the `show members` command
-```
+
+```scala
 snappy> show members;
 ID                            |HOST                          |KIND                          |STATUS              |NETSERVERS                    |SERVERGROUPS                  
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -310,12 +310,12 @@ ID                            |HOST                          |KIND              
 localhost(21262)<v0>:22770    |localhost                     |locator(normal)               |RUNNING             |localhost/127.0.0.1[1527]     |                              
 
 3 rows selected
-
 ```
 
 **View the list tables in a schema**: 
 Use `show tables in <schema>` command
-```
+
+```scala
 snappy> show tables in app;
 TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE|REMARKS             
 -----------------------------------------------------------------------------------
@@ -341,7 +341,7 @@ The code snippet below shows how to create a replicated row table using API.
 
 **Get a SnappySession**
 
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateReplicatedRowTable")
@@ -354,7 +354,7 @@ The code snippet below shows how to create a replicated row table using API.
 **Create the Table using API**:
 First, define the table schema and then create the table using createTable API
 
-```
+```scala
     val schema = StructType(Array(StructField("S_SUPPKEY", IntegerType, false),
       StructField("S_NAME", StringType, false),
       StructField("S_ADDRESS", StringType, false),
@@ -374,7 +374,7 @@ First, define the table schema and then create the table using createTable API
 
 **Creating a Row table using SQL**:
 The same table can be created using SQL as shown below:
-```
+```scala
     // First drop the table if it exists
     snSession.sql("DROP TABLE IF EXISTS SUPPLIER")
     // Create a row table using SQL
@@ -397,36 +397,43 @@ For example:
 
 **To insert data in the SUPPLIER table:** 
 
-```	
+```scala	
 	snSession.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
     snSession.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
     snSession.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
     snSession.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
 ```
+
 **To print the contents of the SUPPLIER table:** 
 
-```    
+```scala    
     var tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 ```
+
 **To update the table account balance for SUPPLIER4:** 
 
-```    
+```scala    
     snSession.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
 ```
+
 **To print contents of the SUPPLIER table after update** 
 
-```
+```scala
     tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 ```
+
 **To delete the records for SUPPLIER2 and SUPPLIER3** 
-```
+
+```scala
     snSession.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
+
 ```
+
 **To print the contents of the SUPPLIER table after delete**
 
-```    
+```scala    
     tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 ```
@@ -446,7 +453,7 @@ The code snippet below shows how to create a column table using DataFrame API.
 
 **Get a SnappySession**:
 
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateColumnTable")
@@ -455,9 +462,10 @@ The code snippet below shows how to create a column table using DataFrame API.
 
     val snSession = new SnappySession(spark.sparkContext)
 ```
+
 **Define the table schema**
 
-```
+```scala
 val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
       StructField("C_NAME", StringType, false),
       StructField("C_ADDRESS", StringType, false),
@@ -471,7 +479,7 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
 
 **Create the table and load data from CSV**
 
-```
+```scala
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
     val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
@@ -487,7 +495,8 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
 ### Create a Column Table using SQL
 
 The same table can be created using SQL as shown below:
-```
+
+```scala
     snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
@@ -523,8 +532,7 @@ For instance, you can use 'create external table <tablename> using <any Data Sou
 
 You can either explicitly define the schema or infer the schema and the column data types. To infer the column names, we need the CSV header to specify the names. In this example we don't have the names, so we explicitly define the schema. 
 
-
-```
+```scala
     // Get a SnappySession in a local cluster
     val spark: SparkSession = SparkSession
         .builder
@@ -537,7 +545,7 @@ You can either explicitly define the schema or infer the schema and the column d
 
 We explicitly define the table definition first ....
 
-```
+```scala
     snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
@@ -552,7 +560,7 @@ We explicitly define the table definition first ....
 
 **Load data in the CUSTOMER table from a CSV file by using Data Sources API**
 
-```
+```scala
     val tableSchema = snSession.table("CUSTOMER").schema
     val customerDF = snSession.read.schema(schema = tableSchema).csv(s"$dataFolder/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
@@ -562,7 +570,7 @@ The Spark SQL programming guide provides a full description of the Data Sources 
 
 **Example - Load from Parquet files**
 
-```
+```scala
 val customerDF = snSession.read.parquet(s"$dataDir/customer_parquet")
 customerDF.write.insertInto("CUSTOMER")
 ```
@@ -570,7 +578,8 @@ customerDF.write.insertInto("CUSTOMER")
 **Inferring schema from data file**
 
 A schema for the table can be inferred from the data file. Data is first introspected to learn the schema (column names and types) without requring this input from the user. The example below illustrates reading a parquet data source and creates a new columnar table in SnappyData. The schema is automatically defined when the Parquet data files are read. 
-```
+
+```scala
     val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
@@ -580,7 +589,7 @@ A schema for the table can be inferred from the data file. Data is first introsp
 
 In the code snippet below a schema is inferred from a CSV file. Column names are derived from the header in the file.
 
-```
+```scala
     val customer_csv_DF = snSession.read.option("header", "true")
         .option("inferSchema", "true").csv("quickstart/src/main/resources/customer_with_headers.csv")
 
@@ -625,7 +634,8 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 ### Example - Loading CSV Files from HDFS using API
 
 The example below demonstrates how you can read CSV files from HDFS using an API:
-```
+
+```scala
 val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv'")
 
 // drop table if exist
@@ -638,25 +648,38 @@ dataDF.write.saveAsTable("CUSTOMER")
 ### Example - Loading and Enriching CSV Data from HDFS 
 
 The example below demonstrates how you can load and enrich CSV Data from HDFS:
-```
-val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv'")
+```scala
+val dataDF = snappy.read.option("header", "true")
+    .csv("../examples/src/main/resources/customer_with_headers.csv")
 
-// drop table if exist and create it with only required fields 
-snc.sql("drop table if exists CUSTOMER")
-snc.sql("create table CUSTOMER(C_CUSTKEY INTEGER NOT NULL, C_NAME VARCHAR(25) NOT NULL, C_ADDRESS VARCHAR(40) NOT NULL, C_NATIONKEY INTEGER NOT NULL, C_PHONE VARCHAR(15) NOT NULL, C_ACCTBAL DECIMAL(15,2) NOT NULL, C_MKTSEGMENT VARCHAR(10) NOT NULL, C_COMMENT VARCHAR(117) NOT NULL) using column options()")
+// drop table if exist and create it with only required fields
+snappy.sql("drop table if exists CUSTOMER")
+snappy.sql("create table CUSTOMER(C_CUSTKEY INTEGER NOT NULL" +
+    ", C_NAME VARCHAR(25) NOT NULL," +
+    " C_ADDRESS VARCHAR(40) NOT NULL," +
+    " C_NATIONKEY INTEGER NOT NULL," +
+    " C_PHONE VARCHAR(15) NOT NULL," +
+    " C_ACCTBAL DECIMAL(15,2) NOT NULL," +
+    " C_MKTSEGMENT VARCHAR(10) NOT NULL," +
+    " C_COMMENT VARCHAR(117) NOT NULL) using column options()")
 
-import snc.implicits._
 // Project and transform data from df and load it in table.
-dataDF.select($"INCIDNTNUM",$"DAYOFWEEK".substr(1,3).alias("DAYOFWEEK"),$"X",$"Y").write.mode(SaveMode.Overwrite).saveAsTable("CUSTOMER")
-
-//Here X and Y are latitude and longitude columns in raw data frame
+import snappy.implicits._
+dataDF.select($"C_CUSTKEY",
+  $"C_NAME",
+  $"C_ADDRESS",
+  $"C_NATIONKEY",
+  $"C_PHONE",
+  $"C_ACCTBAL" + 100,
+  $"C_MKTSEGMENT",
+  $"C_COMMENT".substr(1, 5).alias("SHORT_COMMENT")).write.insertInto("CUSTOMER")
 ```
 
 ### Example - Loading from Hive
 As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with **enableHiveSupport** set to **true**). 
 Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a SnappySession to store it in a SnappyData Table. 
 
-```
+```scala
 val ds = spark.table("hiveTable")
 val rdd = ds.rdd
 val session = new SnappySession(sparkContext)
@@ -729,7 +752,7 @@ The example below demonstrates how you can load data from a NoSQL store:
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->
 
-```
+```scala
 
 val df = snc.read.format("org.apache.spark.sql.cassandra").options(Map( "table" -> "CUSTOMER", "keyspace" -> "test")) .load
 df.write.format("column").mode(SaveMode.Append).saveAsTable("CUSTOMER")
@@ -749,7 +772,7 @@ For example, in the code snippet below, the ORDERS table is colocated with the C
 
 **Get a SnappySession**:
 
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName("ColocatedJoinExample")
@@ -761,7 +784,7 @@ For example, in the code snippet below, the ORDERS table is colocated with the C
 
 **Create Table Customer:**
 
-```
+```scala
     snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
@@ -775,7 +798,7 @@ For example, in the code snippet below, the ORDERS table is colocated with the C
 ```
 **Create Table Orders:**
 
-```
+```scala
     snSession.sql("CREATE TABLE ORDERS  ( " +
         "O_ORDERKEY       INTEGER NOT NULL," +
         "O_CUSTKEY        INTEGER NOT NULL," +
@@ -792,7 +815,7 @@ For example, in the code snippet below, the ORDERS table is colocated with the C
 
 **Perform a Colocate join:** 
 
-```
+```scala
     // Selecting orders for all customers
     val result = snSession.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
         "O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY").collect()
@@ -812,7 +835,8 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 **Connect to a SnappyData cluster using JDBC on default client port**
 
 The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at [JDBCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala)
-```
+
+```scala
 val url: String = s"jdbc:snappydata://localhost:1527/"
 val conn1 = DriverManager.getConnection(url)
 
@@ -856,7 +880,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Get a SnappySession**:
 
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName("WorkingWithJson")
@@ -868,7 +892,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Create a DataFrame from the JSON file**:
 
-```
+```scala
     val some_people_path = s"quickstart/src/main/resources/some_people.json"
     // Read a JSON file using Spark API
     val people = snSession.read.json(some_people_path)
@@ -877,7 +901,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Create a SnappyData table and insert the JSON data in it using the DataFrame**:
 
-```
+```scala
     //Drop the table if it exists
     snSession.dropTable("people", ifExists = true)
 
@@ -894,7 +918,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Append more data from a second JSON file**:
 
-```
+```scala
     // Append more people to the column table
     val more_people_path = s"quickstart/src/main/resources/more_people.json"
 
@@ -909,7 +933,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 ```
 
 **Execute queries and return the results**
-```
+```scala
     // Query it like any other table
     val nameAndAddress = snSession.sql("SELECT " +
         "name, " +
@@ -1001,7 +1025,7 @@ Code example for streaming is in [StreamingExample.scala](https://github.com/Sna
 
 **First get a SnappySession and a SnappyStreamingContext**: 
 Here SnappyStreamingContext is initialized in a batch duration of one second.
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName(getClass.getSimpleName)
@@ -1014,7 +1038,7 @@ Here SnappyStreamingContext is initialized in a batch duration of one second.
 The example starts an embedded Kafka instance on which a few messages are published. SnappyData processes these message and updates a table based on the stream data.
 
 The SQL below shows how to declare a stream table using SQL. The rowConverter attribute specifies a class used to return Row objects from the received stream messages.
-```
+```scala
     snsc.sql(
       "create stream table adImpressionStream (" +
           " time_stamp timestamp," +
@@ -1032,7 +1056,7 @@ The SQL below shows how to declare a stream table using SQL. The rowConverter at
 
 RowsConverter decodes a stream message consisting of comma separated fields and forms a Row object from it.
 
-```
+```scala
 class RowsConverter extends StreamToRowsConverter with Serializable {
   override def toRows(message: Any): Seq[Row] = {
     val log = message.asInstanceOf[String]
@@ -1052,20 +1076,20 @@ class RowsConverter extends StreamToRowsConverter with Serializable {
 
 **To create a row table that is updated based on the streaming data**:
 
-```
+```scala
 snsc.sql("create table publisher_bid_counts(publisher string, bidCount int) using row")
 ```
 
 **To declare a continuous query that is executed on the streaming data**: This query returns a number of bids per publisher in one batch.
 
-```
+```scala
     val resultStream: SchemaDStream = snsc.registerCQ("select publisher, count(bid) as bidCount from " +
         "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
 ```
 
 **To process that the result of above continuous query to update the row table publisher_bid_counts**:
 
-```
+```scala
     // this conf is used to get a JDBC connection
     val conf = new ConnectionConfBuilder(snsc.snappySession).build()
 
@@ -1096,7 +1120,7 @@ snsc.sql("create table publisher_bid_counts(publisher string, bidCount int) usin
 
 **To display the total bids by each publisher by querying publisher_bid_counts table**:
 
-```
+```scala
 snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
 
 ```
@@ -1111,7 +1135,7 @@ For more information on  SDE, refer to [SDE documentation](aqp.md).
 The complete code example for SDE is in [SynopsisDataExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
 
 **Get a SnappySession**:
-```
+```scala
     val spark: SparkSession = SparkSession
         .builder
         .appName("SynopsisDataExample")
@@ -1123,7 +1147,7 @@ The complete code example for SDE is in [SynopsisDataExample.scala](https://gith
 
 **The base column table(AIRLINE) is created from temporary parquet table as follows**:
 
-```
+```scala
     // Create temporary staging table to load parquet data
     snSession.sql("CREATE EXTERNAL TABLE STAGING_AIRLINE " +
         "USING parquet OPTIONS(path " + s"'${dataFolder}/airlineParquetData')")
@@ -1142,7 +1166,7 @@ The complete code example for SDE is in [SynopsisDataExample.scala](https://gith
 Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For more information on Synopsis Data Engine, refer to the [SDE documentation](aqp.md#working-with-stratified-samples).
 
 
-```
+```scala
 
     snSession.sql("CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS" +
         "(qcs 'UniqueCarrier, Year_, Month_', fraction '0.03')  " +
@@ -1157,7 +1181,7 @@ Attribute 'qcs' in the statement below specifies the columns used for stratifica
 **Execute queries that return approximate results using sample tables**:
 The query below returns airlines by number of flights in descending order. The 'with error 0.20' clause in the query below signals query engine to execute the query on the sample table instead of the base table and maximum 20% error is allowed.
 
-```
+```scala
     var result = snSession.sql("select  count(*) flightRecCount, description AirlineName, " +
         "UniqueCarrier carrierCode ,Year_ from airline , airlineref where " +
         "airline.UniqueCarrier = airlineref.code group by " +
@@ -1168,7 +1192,7 @@ The query below returns airlines by number of flights in descending order. The '
 
 **Join the sample table with a reference table**:
 You can join the sample table with a reference table to execute queries. For example a reference table (AIRLINEREF) is created as follows from a parquet data file.
-```
+```scala
     // create temporary staging table to load parquet data
     snSession.sql("CREATE EXTERNAL TABLE STAGING_AIRLINEREF USING " +
         "parquet OPTIONS(path " + s"'${dataFolder}/airportcodeParquetData')")
@@ -1177,7 +1201,7 @@ You can join the sample table with a reference table to execute queries. For exa
 ```
 **Join the sample table and reference table to find out which airlines arrive on schedule**:
 
-```
+```scala
     result = snSession.sql("select AVG(ArrDelay) arrivalDelay, " +
         "relative_error(arrivalDelay) rel_err, description AirlineName, " +
         "UniqueCarrier carrier from airline, airlineref " +
@@ -1197,7 +1221,7 @@ Developers can write programs in Python to use SnappyData features.
 
 **First create a SnappySession**:
 
-```
+```scala
  from pyspark.sql.snappy import SnappySession
  from pyspark import SparkContext, SparkConf
 
@@ -1208,7 +1232,7 @@ Developers can write programs in Python to use SnappyData features.
 
 **Create table using SnappySession**:
 
-```
+```scala
     # Creating partitioned table PARTSUPP using SQL
     snappy.sql("DROP TABLE IF EXISTS PARTSUPP")
     # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
@@ -1224,7 +1248,7 @@ Developers can write programs in Python to use SnappyData features.
 
 **Inserting data in table using INSERT query**:
 
-```
+```scala
     snappy.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
     snappy.sql("INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)")
     snappy.sql("INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)")
@@ -1235,7 +1259,7 @@ Developers can write programs in Python to use SnappyData features.
 
 **Update the data using SQL**:
 
-```
+```scala
     # Update the available quantity for PARTKEY 100
     snappy.sql("UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100")
     # Printing the contents of the PARTSUPP table after update
@@ -1243,7 +1267,7 @@ Developers can write programs in Python to use SnappyData features.
 ```    
 
 **Delete records from the table**:
-```
+```scala
     # Delete the records for PARTKEY 400
     snappy.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
     # Printing the contents of the PARTSUPP table after delete
@@ -1253,7 +1277,7 @@ Developers can write programs in Python to use SnappyData features.
 **Create table using API**:
 This same table can be created by using createTable API. First create a schema and then create the table, and then mutate the table data using API:
 
-```
+```scala
     # drop the table if it exists
     snappy.dropTable('PARTSUPP', True)
 
