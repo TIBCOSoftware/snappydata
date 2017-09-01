@@ -139,18 +139,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = realEncoder.writeNulls(columnBytes, cursor, numWords)
 
-  /**
-   * Initialize this ColumnDeltaEncoder.
-   *
-   * @param dataType   DataType of the field to be written
-   * @param nullable   True if the field can have nulls else false
-   * @param initSize   initial number of columns to accomodate in the delta
-   * @param withHeader ignored
-   * @param allocator  the [[BufferAllocator]] to use for the data
-   * @return initial position of the cursor that caller must use to write
-   */
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
-      withHeader: Boolean, allocator: BufferAllocator): Long = {
+      withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int = -1): Long = {
     if (initSize < 4 || (initSize < ColumnDelta.INIT_SIZE && hierarchyDepth > 0)) {
       throw new IllegalStateException(
         s"Batch size = $initSize too small for hierarchy depth = $hierarchyDepth")
@@ -162,7 +152,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     positionsArray = new Array[Long](initSize << 1)
     realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
     val cursor = realEncoder.initialize(dataType, nullable,
-      initSize, withHeader, allocator)
+      initSize, withHeader, allocator, minBufferSize)
     dataOffset = cursor - realEncoder.columnBeginPosition
     cursor
   }
@@ -304,7 +294,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       i += 1
     }
     // pad to nearest word boundary before writing encoded data
-    cursor + (((deltaCursor - cursor + 7) >> 3) << 3)
+    ((deltaCursor + 7) >> 3) << 3
   }
 
   private[this] var tmpNumPositions: Int = _
@@ -333,7 +323,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // to be useful for even range filters.
     // Also during delta merges, can merge dictionaries separately then rewrite only indexes.
 
-    dataType = field.dataType
+    dataType = Utils.getSQLDataType(field.dataType)
     setAllocator(GemFireCacheImpl.getCurrentBufferAllocator)
 
     // Simple two-way merge with duplicate elimination. If current delta has small number
@@ -361,9 +351,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var positionCursor2 = 0L
     val existingValueSize = existingValue.remaining()
 
-    realEncoder = ColumnEncoding.getColumnEncoder(dataType,
-      field.nullable && (decoder1.hasNulls || decoder2.hasNulls))
-    realEncoder.setAllocator(allocator)
+    val nullable = field.nullable && (decoder1.hasNulls || decoder2.hasNulls)
+    realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
     // Set the source of encoder with an upper limit for bytes that also avoids
     // checking buffer limit when writing position integers.
     // realEncoder will contain the intermediate and final merged and encoded delta.
@@ -371,12 +360,11 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // so one copy of the encoded bytes has to be made. An alternative could be
     // to do one traversal to determine duplicates and get final size but that
     // would be overall slower than making one extra flat byte array copy.
-    realEncoder.setSource(allocator.allocateForStorage(ColumnEncoding.checkBufferSize(
-      newValueSize + existingValueSize)), releaseOld = false)
+    var cursor = realEncoder.initialize(dataType, nullable, ColumnDelta.INIT_SIZE,
+      withHeader = false, allocator, newValueSize + existingValueSize)
 
     val writer = DeltaWriter(dataType)
-    // merge and write the sorted positions and corresponding values;
-    var cursor = realEncoder.columnBeginPosition
+    // merge and write the sorted positions and corresponding values
     // the positions are written to this encoder if the end result is a delta
     if (existingIsDelta) {
       positionIndex = 0

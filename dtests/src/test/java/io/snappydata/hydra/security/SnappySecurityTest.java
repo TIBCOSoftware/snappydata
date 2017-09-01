@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -57,20 +57,23 @@ public class SnappySecurityTest extends SnappyTest {
     String queryStr1 = "CREATE TABLE " + user + "Table(r1 Integer, r2 Integer) USING COLUMN";
     String queryStr2 = "insert into " + user + "Table VALUES(1,1)";
     String queryStr3 = "DROP TABLE IF EXISTS  " + user + "Table";
-    conn.createStatement().execute(queryStr3);
-    conn.createStatement().execute(queryStr1);
-    conn.createStatement().executeUpdate(queryStr2);
-    verifyTableData(conn,user);
 
+    conn.createStatement().execute(queryStr3);
+    Log.getLogWriter().info("Dropped " + user+"Table successfully");
+    conn.createStatement().execute(queryStr1);
+    Log.getLogWriter().info("Created " + user+"Table successfully");
+    conn.createStatement().executeUpdate(queryStr2);
+    Log.getLogWriter().info("Inserted into " + user+"Table successfully");
+    verifyTableData(conn,user);
+    closeConnection(conn);
   }
 
   public static void verifyTableData(Connection conn,String user) throws SQLException {
     String queryStr = "SELECT count(*) from  " + user + "Table";
     ResultSet rs = conn.createStatement().executeQuery(queryStr);
     while (rs.next()) {
-      Log.getLogWriter().info("Query executed successfully and query result is ::" + rs.getInt(1));
+      Log.getLogWriter().info("Query executed successfully on table " +user+ "Table and query result is ::" + rs.getInt(1));
     }
-
   }
 
   public static void grantRevokeOps(Boolean isGrant, Boolean isRevoke, Boolean isPublic) {
@@ -152,12 +155,9 @@ public class SnappySecurityTest extends SnappyTest {
         String[] splitData = line.split(";");
         Log.getLogWriter().info("splitData length is " + splitData.length);
         for (int i = 0; i < splitData.length; i++) {
-          Log.getLogWriter().info("SP1");
-          if (!(splitData[i] == null) || !(splitData[i].length() == 0)) {
-            Log.getLogWriter().info("SP2");
+            if (!(splitData[i] == null) || !(splitData[i].length() == 0)) {
             String qry = splitData[i].replace("user2", schemaOwner);
-            Log.getLogWriter().info("SP3");
-              queries.add(qry);
+            queries.add(qry);
           }
         }
       }

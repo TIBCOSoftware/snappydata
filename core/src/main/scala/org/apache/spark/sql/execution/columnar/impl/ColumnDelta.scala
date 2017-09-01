@@ -26,8 +26,7 @@ import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSeq, BindReferences}
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
@@ -146,17 +145,6 @@ object ColumnDelta {
     StructField(mutableKeyNames(2), IntegerType, nullable = false)
   )
   def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
-
-  def bindKeyColumns(keyColumns: Seq[Attribute], ctx: CodegenContext,
-      input: Seq[ExprCode], output: AttributeSeq): (ExprCode, ExprCode, ExprCode) = {
-    ctx.INPUT_ROW = null
-    ctx.currentVars = input
-    val ordinalId = BindReferences.bindReference(keyColumns.head, output).genCode(ctx)
-    val batchId = BindReferences.bindReference(keyColumns(1), output).genCode(ctx)
-    val bucketId = BindReferences.bindReference(keyColumns(2), output).genCode(ctx)
-    ctx.currentVars = null
-    (ordinalId, batchId, bucketId)
-  }
 
   def deltaHierarchyDepth(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) % MAX_DEPTH

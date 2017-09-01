@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -45,7 +45,7 @@ import org.apache.spark.{Logging, SparkContext}
  * Difference being we take a connection to underlying GemXD store.
  * TODO We need to investigate if we can phase out this class and use HiveUtils directly.
  */
-class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
+private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
 
   /** The version of hive used internally by Spark SQL. */
   private val hiveExecutionVersion = HiveUtils.hiveExecutionVersion
@@ -125,10 +125,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
    * The version of the Hive client that is used here must match the
    * meta-store that is configured in the hive-site.xml file.
    */
-  @transient
-  protected[sql] var client: HiveClient = newClientWithLogSetting()
-
-
   private def newClientWithLogSetting(): HiveClient = {
     val currentLevel = ClientSharedUtils.converToJavaLogLevel(LogManager.getRootLogger.getLevel)
     try {
@@ -156,7 +152,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     }
   }
 
-  private def newClient(): HiveClient = synchronized {
+  private def newClient(): HiveClient = {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
     // We instantiate a HiveConf here to read in the hive-site.xml file and
@@ -291,5 +287,12 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       case ExternalClusterMode(_, _) =>
         (null, null)
     }
+  }
+}
+
+object HiveClientUtil {
+
+  def newClient(sparkContext: SparkContext): HiveClient = synchronized {
+    new HiveClientUtil(sparkContext).newClientWithLogSetting()
   }
 }

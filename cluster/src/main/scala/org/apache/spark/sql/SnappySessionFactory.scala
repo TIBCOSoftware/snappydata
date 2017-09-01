@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -43,12 +43,20 @@ object SnappySessionFactory {
   private[this] val snappySession =
     new SnappySession(LeadImpl.getInitializingSparkContext)
 
-  def updateCredentials(snc: SnappySession, jobConfig: Config): Config = {
+  def updateCredentials(snc: SnappySession, jobConfig: Config, fromStreamCtx: Boolean = false): Config
+  = {
     if (Misc.isSecurityEnabled) {
       try {
         // Pass job credentials to snappy session
         val username = jobConfig.getString("snappydata.user")
         val password = jobConfig.getString("snappydata.password")
+        if (fromStreamCtx) {
+          val old = snc.sqlContext.getConf(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
+          if (!old.isEmpty && !old.equalsIgnoreCase(username)) {
+            throw new UnsupportedOperationException("Cannot submit a streaming job using an " +
+                "existing streaming context and a different username, when cluster is secure.")
+          }
+        }
         snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, username)
         snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, password)
         // Clear admin user/password from jobConfig before passing it to user job.
@@ -94,7 +102,7 @@ trait SnappySQLJob extends SparkJobBase {
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession],
-      SnappySessionFactory.cleanJobConfig(config)))
+      SnappySessionFactory.updateCredentials(sc.asInstanceOf[SnappySession], config)))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {

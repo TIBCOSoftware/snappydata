@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -21,17 +21,17 @@
 
 usage=$'Usage: 
        # Create a new context using the provided context factory
-       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>] [--passfile <netrc-file-path-with-credentials>]
+       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>] [--passfile <config-file-path-with-credentials>]
        # Submit a job, optionally with a provided context or create a streaming-context and use it with the job
-       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>] [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>] [--passfile <netrc-file-path-with-credentials>] [--batch-interval <Stream batch interval in millis>]
+       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>] [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>] [--passfile <config-file-path-with-credentials>] [--batch-interval <Stream batch interval in millis>]
        # Get status of the job with the given job-id
-       snappy-job.sh status --job-id <job-id> [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]
+       snappy-job.sh status --job-id <job-id> [--lead <hostname:port>] [--passfile <config-file-path-with-credentials>]
        # Stop a job with the given job-id
-       snappy-job.sh stop --job-id <job-id> [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]
+       snappy-job.sh stop --job-id <job-id> [--lead <hostname:port>] [--passfile <config-file-path-with-credentials>]
        # List all the current contexts
-       snappy-job.sh listcontexts [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]
+       snappy-job.sh listcontexts [--lead <hostname:port>] [--passfile <config-file-path-with-credentials>]
        # Stop a context with the given name
-       snappy-job.sh stopcontext <context-name> [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]'
+       snappy-job.sh stopcontext <context-name> [--lead <hostname:port>] [--passfile <config-file-path-with-credentials>]'
 
 function showUsage {
   echo "ERROR: incorrect argument specified: " "$@"
@@ -125,7 +125,7 @@ while (( "$#" )); do
       shift
       passwordfile="${1:-$TOK_EMPTY}"
       if [[ ! -e $passwordfile ]]; then
-        echo "The netrc file $passwordfile not found."
+        echo "The config file $passwordfile not found."
         exit 1
       fi
       securePart=" --config ${passwordfile}"

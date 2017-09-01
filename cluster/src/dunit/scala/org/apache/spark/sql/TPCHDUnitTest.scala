@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,8 +22,8 @@ import java.sql.PreparedStatement
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 import io.snappydata.benchmark.snappy.TPCH_Snappy
-import io.snappydata.benchmark.snappy.tpch.{QueryExecutor, TPCH_Queries}
-import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
+import io.snappydata.benchmark.snappy.tpch.QueryExecutor
+import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
@@ -163,9 +163,9 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
         Array[String], Array[String], String)] = new ListBuffer()
 
     queries.foreach(f = qNum => {
-      var queryToBeExecuted1 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
-      var queryToBeExecuted2 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
-      var queryToBeExecuted3 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
+      var queryToBeExecuted1 = removeLimitClause(TPCH_Queries.getQuery(qNum, true, true))
+      var queryToBeExecuted2 = removeLimitClause(TPCH_Queries.getQuery(qNum, true, true))
+      var queryToBeExecuted3 = removeLimitClause(TPCH_Queries.getQuery(qNum, true, true))
       if (!qNum.equals("15")) {
         val df = snc.sqlUncached(queryToBeExecuted1)
         val res = df.collect()

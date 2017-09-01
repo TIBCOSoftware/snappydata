@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,9 +25,9 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.internal.shared.BufferAllocator
-import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
+import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.pivotal.gemfirexd.internal.engine.Misc
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
 
@@ -60,10 +60,11 @@ class SnappyUnifiedMemoryManager private[memory](
       SnappyUnifiedMemoryManager.DEFAULT_STORAGE_FRACTION)).toLong,
     numCores) with StoreUnifiedManager {
 
-  private val managerId = if (!tempManager) "RuntimeManager" else "BootTimeManager"
+  private val managerId = if (!tempManager) "RuntimeMemoryManager" else "BootTimeMemoryManager"
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
       conf.getDouble("spark.memory.storageMaxFraction", 0.95)).toLong
+
 
   /**
    * An estimate of the maximum result size handled by a single partition.
@@ -88,10 +89,12 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionFraction(conf)
 
-  private val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
+  private[memory] val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
+
+  private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
   @volatile private[memory] var _memoryForObjectMap:
     Object2LongOpenHashMap[(String, MemoryMode)] = _
@@ -121,6 +124,7 @@ class SnappyUnifiedMemoryManager private[memory](
               // TODO: SW: if above fails then this should throw exception
               // and _memoryForObjectMap made null again?
             }
+            setMemoryManagerStats(bootTimeManager.wrapperStats.stats)
             logInfo(s"Total Memory used while booting = " +
                 bootTimeManager.storageMemoryUsed)
             bootTimeMap.clear()
@@ -328,6 +332,7 @@ class SnappyUnifiedMemoryManager private[memory](
     logDebug(s"Acquiring $managerId $memoryMode memory for $taskAttemptId = $numBytes")
     assertInvariants()
     assert(numBytes >= 0)
+    val offHeap = memoryMode eq MemoryMode.OFF_HEAP
     val (executionPool, storagePool, storageRegionSize, maxMemory,
     minEviction) = memoryMode match {
       case MemoryMode.ON_HEAP => (
@@ -352,7 +357,6 @@ class SnappyUnifiedMemoryManager private[memory](
       * and caches a large block between the attempts. This is called once per attempt.
       */
     def maybeGrowExecutionPool(extraMemoryNeeded: Long): Unit = {
-      val offHeap = memoryMode eq MemoryMode.OFF_HEAP
       if (extraMemoryNeeded > 0) {
 
         if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
@@ -383,13 +387,19 @@ class SnappyUnifiedMemoryManager private[memory](
           } else {
             0L
           }
+          if (bytesEvictedFromStore == 0L){
+            wrapperStats.incNumFailedEvictionRequest(offHeap)
+          }
           if(storagePool.poolSize - (spaceToReclaim + bytesEvictedFromStore)
             >= storagePool.memoryUsed){
             // Some eviction might have increased the storage memory used which will
             // case some requirement failing
             // while decreasing pool size.
-            storagePool.decrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
-            executionPool.incrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
+            val totalReclaimable = spaceToReclaim + bytesEvictedFromStore
+            storagePool.decrementPoolSize(totalReclaimable)
+            wrapperStats.decStoragePoolSize(offHeap, totalReclaimable)
+            executionPool.incrementPoolSize(totalReclaimable)
+            wrapperStats.incExecutionPoolSize(offHeap, totalReclaimable)
           }
 
         }
@@ -413,8 +423,20 @@ class SnappyUnifiedMemoryManager private[memory](
       maxMemory - math.min(storagePool.memoryUsed, storageRegionSize)
     }
 
-    executionPool.acquireMemory(
+    val acquiredNumBytes = executionPool.acquireMemory(
       numBytes, taskAttemptId, maybeGrowExecutionPool, computeMaxExecutionPoolSize)
+    wrapperStats.incExecutionMemoryUsed(offHeap, acquiredNumBytes)
+    acquiredNumBytes
+  }
+
+
+  override def releaseExecutionMemory(
+      numBytes: Long,
+      taskAttemptId: Long,
+      memoryMode: MemoryMode): Unit = synchronized {
+    super.releaseExecutionMemory(numBytes, taskAttemptId, memoryMode)
+    val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+    wrapperStats.decExecutionMemoryUsed(offHeap, numBytes)
   }
 
   override def acquireStorageMemory(
@@ -432,7 +454,15 @@ class SnappyUnifiedMemoryManager private[memory](
       shouldEvict: Boolean): Boolean = {
     threadsWaitingForStorage.incrementAndGet()
     try {
-      askStoragePool_(objectName, blockId, numBytes, memoryMode, shouldEvict)
+      val success =
+        askStoragePool_(objectName, blockId, numBytes, memoryMode, shouldEvict)
+      val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+      if (success) {
+        wrapperStats.incStorageMemoryUsed(offHeap, numBytes)
+      } else {
+        wrapperStats.incNumFailedStorageRequest(offHeap)
+      }
+      success
     } finally {
       threadsWaitingForStorage.decrementAndGet()
     }
@@ -502,7 +532,9 @@ class SnappyUnifiedMemoryManager private[memory](
           }
         if (actualBorrowedMemory > 0) {
           executionPool.decrementPoolSize(actualBorrowedMemory)
+          wrapperStats.decExecutionPoolSize(offHeap, actualBorrowedMemory)
           storagePool.incrementPoolSize(actualBorrowedMemory)
+          wrapperStats.incStoragePoolSize(offHeap, actualBorrowedMemory)
         }
       }
       // First let spark try to free some memory
@@ -547,6 +579,9 @@ class SnappyUnifiedMemoryManager private[memory](
           couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         }
         if (!couldEvictSomeData) {
+          if (doEvict) {
+            wrapperStats.incNumFailedEvictionRequest(offHeap)
+          }
           logWarning(s"Could not allocate memory for $blockId of " +
             s"$objectName size=$numBytes. Memory pool size " + storagePool.memoryUsed)
         } else {
@@ -595,6 +630,8 @@ class SnappyUnifiedMemoryManager private[memory](
     logDebug(s"releasing $managerId memory for $objectName = $numBytes")
     val key = objectName -> memoryMode
     super.releaseStorageMemory(numBytes, memoryMode)
+    val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+    wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
     if (memoryForObject.containsKey(key)) {
       if (memoryForObject.addTo(key, -numBytes) == numBytes) {
         memoryForObject.removeLong(key)
@@ -615,6 +652,8 @@ class SnappyUnifiedMemoryManager private[memory](
     logDebug(s"Dropping $managerId memory for $name = $numBytes (registered=$bytesToBeFreed)")
     if (numBytes > 0) {
       super.releaseStorageMemory(numBytes, memoryMode)
+      val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+      wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
       memoryForObject.removeLong(key)
     }
     bytesToBeFreed
@@ -622,11 +661,17 @@ class SnappyUnifiedMemoryManager private[memory](
 
   // Test Hook. Not to be used anywhere else
   private[memory] def dropAllObjects(memoryMode: MemoryMode): Unit = synchronized {
-    val allValues = memoryForObject.values().iterator()
-    while (allValues.hasNext) {
-      super.releaseStorageMemory(allValues.nextLong(), memoryMode)
-    }
-    memoryForObject.clear()
+    val keys = memoryForObject.keySet().asScala
+    val clearList = keys.filter(key => {
+      if (key._2 eq memoryMode) {
+        val numBytes = memoryForObject.getLong(key)
+        super.releaseStorageMemory(numBytes, memoryMode)
+        val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+        wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
+        true
+      } else false
+    })
+    clearList.foreach(key => memoryForObject.removeLong(key))
   }
 
   // Recovery is a special case. If any of the storage pool has reached 90% of
@@ -634,6 +679,24 @@ class SnappyUnifiedMemoryManager private[memory](
   override def shouldStopRecovery(): Boolean = synchronized {
     (offHeapStorageMemoryPool.memoryUsed > (maxOffHeapStorageSize * 0.90) ) ||
         (onHeapStorageMemoryPool.memoryUsed > (maxHeapStorageSize * 0.90))
+  }
+
+  override def initMemoryStats(stats: MemoryManagerStats): Unit = {
+    stats.incMaxStorageSize(true, maxOffHeapStorageSize)
+    stats.incMaxStorageSize(false, maxHeapStorageSize)
+    stats.incStoragePoolSize(true, offHeapStorageMemoryPool.poolSize)
+    stats.incStoragePoolSize(false, onHeapStorageRegionSize)
+    stats.incStorageMemoryUsed(true, offHeapStorageMemoryPool.memoryUsed)
+    stats.incStorageMemoryUsed(false, onHeapStorageMemoryPool.memoryUsed)
+    stats.incExecutionPoolSize(true, offHeapExecutionMemoryPool.poolSize)
+    stats.incExecutionPoolSize(false, onHeapExecutionMemoryPool.poolSize)
+    stats.incExecutionMemoryUsed(true, offHeapExecutionMemoryPool.memoryUsed)
+    stats.incExecutionMemoryUsed(false, onHeapExecutionMemoryPool.memoryUsed)
+    setMemoryManagerStats(stats)
+  }
+
+  private def setMemoryManagerStats(stats: MemoryManagerStats): Unit = {
+    wrapperStats.setMemoryManagerStats(stats)
   }
 }
 
@@ -764,7 +827,6 @@ object SnappyUnifiedMemoryManager extends Logging {
     val memoryFraction = conf.getDouble("spark.memory.fraction", 0.97)
     (usableMemory * memoryFraction).toLong
   }
-
 }
 
 // Test listeners. Should not be used in production code.

@@ -146,9 +146,13 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     ctx.INPUT_ROW = null
     ctx.currentVars = input
     val allExpressions = updateExpressions ++ keyColumns
-    val updateInput = ctx.generateExpressions(allExpressions.map(
-      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
-        u, child.output))), doSubexpressionElimination = true)
+    val boundUpdateExpr = allExpressions.map(
+      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(u, child.output)))
+    val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(boundUpdateExpr)
+    val effectiveCodes = subExprs.codes.mkString("\n")
+    val updateInput = ctx.withSubExprEliminationExprs(subExprs.states) {
+      boundUpdateExpr.map(_.genCode(ctx))
+    }
     ctx.currentVars = null
 
     val keyVars = updateInput.takeRight(3)
@@ -228,7 +232,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       """.stripMargin)
 
     s"""
-       |$updateVarsCode
+       |$effectiveCodes$updateVarsCode
        |if ($batchIdVar != $invalidUUID) {
        |  // finish and apply update if the next column batch ID is seen
        |  if ($batchIdVar != $lastColumnBatchId) {

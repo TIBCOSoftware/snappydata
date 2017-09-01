@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -187,7 +187,7 @@ class SnappySession(@transient private val sc: SparkContext,
   private[sql] final def prepareSQL(sqlText: String): LogicalPlan = {
     val logical = sessionState.sqlParser.parsePlan(sqlText)
     SparkSession.setActiveSession(this)
-    sessionState.analyzer.execute(logical)
+    sessionState.analyzerPrepare.execute(logical)
   }
 
   private[sql] final def executeSQL(sqlText: String): DataFrame = {

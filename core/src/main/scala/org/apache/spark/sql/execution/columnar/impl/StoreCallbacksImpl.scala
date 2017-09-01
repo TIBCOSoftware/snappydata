@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import java.util.Collections
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -273,8 +274,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def acquireStorageMemory(objectName: String, numBytes: Long,
       buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
     val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
-    MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
-      MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
+    if (numBytes > 0) {
+      return MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
+        MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
+    } else if (numBytes < 0) {
+      MemoryManagerCallback.memoryManager.releaseStorageMemoryForObject(
+        objectName, -numBytes, mode)
+    }
+    true
   }
 
   override def releaseStorageMemory(objectName: String, numBytes: Long,
@@ -320,6 +327,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def shouldStopRecovery(): Boolean =
     MemoryManagerCallback.memoryManager.shouldStopRecovery()
+
+  override def initMemoryStats(stats: MemoryManagerStats): Unit =
+    MemoryManagerCallback.memoryManager.initMemoryStats(stats)
 }
 
 trait StoreCallback extends Serializable {

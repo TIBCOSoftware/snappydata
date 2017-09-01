@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -755,7 +755,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     try (Stream<String> lines = Files.lines(Paths.get(csvFilePath + File.separator + csvFileName))) {
       row = lines.skip(insertCounter).findFirst().get();
     } catch (IOException io) {
-      throw new TestException("File not found at specified location.");
+      throw new TestException("File not found at specified location " +
+          (csvFilePath + File.separator + csvFileName));
     }
     return row;
   }

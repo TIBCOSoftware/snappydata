@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,7 +21,6 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
 import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
-import org.apache.spark.unsafe.bitset.BitSetMethods
 
 trait BooleanBitSetEncoding extends ColumnEncoding {
 
@@ -82,9 +81,9 @@ trait BooleanBitSetEncoderBase
   }
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
-      withHeader: Boolean, allocator: BufferAllocator): Long = {
+      withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int = -1): Long = {
     byteCursor = super.initialize(dataType, nullable, initSize,
-      withHeader, allocator)
+      withHeader, allocator, minBufferSize)
     dataOffset = byteCursor - columnBeginPosition
     currentWord = 0L
     // returns the OR mask to use for currentWord

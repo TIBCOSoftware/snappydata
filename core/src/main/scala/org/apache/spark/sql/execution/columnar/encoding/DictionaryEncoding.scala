@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -175,6 +175,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   private final var longMap: ObjectHashSet[LongIndexKey] = _
   private final var longArray: TLongArrayList = _
   private final var isIntMap: Boolean = _
+  private final var writeHeader: Boolean = true
 
   @transient private final var isShortDictionary: Boolean = _
 
@@ -197,20 +198,19 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     case _ => dataType.defaultSize // accommodate values without expansion
   }
 
-  protected def initializeIndexBytes(initSize: Int,
+  protected def initializeIndexBytes(initSize: Int, minSize: Int,
       releaseOld: Boolean): Unit = {
     if (!releaseOld || (columnData eq null)) {
       // 2 byte indexes for short dictionary while 4 bytes for big dictionary
       val numBytes = if (isShortDictionary) initSize << 1L else initSize << 2L
-      setSource(allocator.allocate(numBytes, ColumnEncoding.BUFFER_OWNER),
-        releaseOld)
+      setSource(allocator.allocate(math.max(numBytes, minSize),
+        ColumnEncoding.BUFFER_OWNER), releaseOld)
     }
   }
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
-      withHeader: Boolean, allocator: BufferAllocator): Long = {
-    assert(withHeader, "DictionaryEncoding not supported without header")
-
+      withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int): Long = {
+    writeHeader = withHeader
     setAllocator(allocator)
     dataType match {
       case StringType =>
@@ -233,11 +233,11 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         longArray = new TLongArrayList(mapSize)
         isIntMap = t.isInstanceOf[IntegerType]
     }
-    initializeLimits()
+    if (withHeader) initializeLimits()
     initializeNulls(initSize)
     // start with the short dictionary having 2 byte indexes
     isShortDictionary = true
-    initializeIndexBytes(initSize, releaseOld = true)
+    initializeIndexBytes(initSize, minBufferSize, releaseOld = true)
     // return the cursor for index bytes
     columnBeginPosition
   }
@@ -294,7 +294,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val oldIndexBytes = columnBytes
     var oldCursor = columnBeginPosition
     // force new columnData creation since need to copy in different format
-    initializeIndexBytes(newNumIndexes, releaseOld = false)
+    initializeIndexBytes(newNumIndexes, minSize = -1, releaseOld = false)
     var cursor = columnBeginPosition
     // copy over short indexes from previous index bytes
     var i = 0
@@ -431,12 +431,14 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val columnBytes = storageAllocator.baseObject(columnData)
     val baseOffset = storageAllocator.baseOffset(columnData)
     var cursor = baseOffset
-    // typeId
-    ColumnEncoding.writeInt(columnBytes, cursor, typeId)
-    cursor += 4
-    // number of nulls
-    ColumnEncoding.writeInt(columnBytes, cursor, numNullBytes)
-    cursor += 4
+    if (writeHeader) {
+      // typeId
+      ColumnEncoding.writeInt(columnBytes, cursor, typeId)
+      cursor += 4
+      // number of nulls
+      ColumnEncoding.writeInt(columnBytes, cursor, numNullBytes)
+      cursor += 4
+    }
     // write the null bytes
     cursor = writeNulls(columnBytes, cursor, numNullWords)
 

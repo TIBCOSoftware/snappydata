@@ -21,8 +21,6 @@ import java.io.{DataInput, DataOutput}
 import java.nio.{ByteBuffer, ByteOrder}
 import java.util.concurrent.locks.LockSupport
 
-import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.cache.{DiskAccessException, EntryDestroyedException, EntryOperation, Region, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
@@ -33,7 +31,7 @@ import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, ClientSharedUtils, HeapBufferAllocator, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
-import com.pivotal.gemfirexd.internal.engine.store.RegionKey
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
@@ -77,15 +75,16 @@ object ColumnFormatEntry extends Logging {
 final class ColumnFormatKey(private[columnar] var uuid: Long,
     private[columnar] var partitionId: Int,
     private[columnar] var columnIndex: Int)
-    extends GfxdDataSerializable with ColumnBatchKey with RegionKey with Serializable {
+    extends GfxdDataSerializable with ColumnBatchKey with RegionKey
+        with Serializable with Logging {
 
   // to be used only by deserialization
   def this() = this(-1L, -1, -1)
 
   override def getNumColumnsInTable(columnTableName: String): Int = {
     val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
-    Misc.getMemStore.getAllContainers.asScala.find(_.getQualifiedTableName
-        .equalsIgnoreCase(bufferTable)).get.getNumColumns - 1
+    val bufferRegion = Misc.getRegionForTable(bufferTable, true)
+    bufferRegion.getUserAttribute.asInstanceOf[GemFireContainer].getNumColumns - 1
   }
 
   override def getColumnBatchRowCount(itr: PREntriesIterator[_],

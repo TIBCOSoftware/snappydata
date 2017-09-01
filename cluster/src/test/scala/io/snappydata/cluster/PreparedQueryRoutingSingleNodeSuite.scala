@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -456,6 +456,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     // println("network server started")
     PreparedQueryRoutingSingleNodeSuite.updateDeleteOnColumnTable(snc, serverHostPort)
   }
+
+  test("SNAP-1981: Equality on string columns") {
+    val serverHostPort = TestUtil.startNetServer()
+    // println("network server started")
+    PreparedQueryRoutingSingleNodeSuite.equalityOnStringColumn(snc, serverHostPort)
+  }
 }
 
 object PreparedQueryRoutingSingleNodeSuite{
@@ -498,7 +504,6 @@ object PreparedQueryRoutingSingleNodeSuite{
       println(s"$qry row($index) $i $j $s ")
       // scalastyle:on println
       index += 1
-
       assert(results.contains(i))
     }
 
@@ -524,7 +529,6 @@ object PreparedQueryRoutingSingleNodeSuite{
     var prepStatement3: java.sql.PreparedStatement = null
     var prepStatement4: java.sql.PreparedStatement = null
     var prepStatement5: java.sql.PreparedStatement = null
-    val s = conn.createStatement()
     try {
       prepStatement0 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
           s" from $tableName1" +
@@ -581,12 +585,52 @@ object PreparedQueryRoutingSingleNodeSuite{
         Array(4000, 5000, 5000), cacheMapSize + 1)
       // Thread.sleep(1000000)
     } finally {
+      def close(prepStatement: java.sql.PreparedStatement) =
+        if (prepStatement != null) prepStatement.close()
+      close(prepStatement0)
+      close(prepStatement1)
+      close(prepStatement2)
+      close(prepStatement3)
+      close(prepStatement4)
+      close(prepStatement5)
+      conn.close()
+    }
+  }
+
+  def update_delete_query2(tableName1: String, cacheMapSize: Int, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement0: java.sql.PreparedStatement = null
+    var prepStatement1: java.sql.PreparedStatement = null
+    val s = conn.createStatement()
+    try {
+      prepStatement0 =
+          conn.prepareStatement(s"update $tableName1 set ol_1_str_id = ? where ol_1_int2_id = ? ")
+      prepStatement0.setString(1, "7777")
+      prepStatement0.setInt(2, 500)
+      val update1 = prepStatement0.executeUpdate
+      assert(update1 == 1, update1)
+
+      prepStatement1 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
+          s" from $tableName1" +
+          " where ol_1_str_id like ?")
+      prepStatement1.setString(1, "7777")
+      verifyResults("update_delete_query2-select1", prepStatement1.executeQuery, Array(4000),
+        cacheMapSize)
+
+      prepStatement0.setString(1, "8888")
+      prepStatement0.setInt(2, 501)
+      val update2 = prepStatement0.executeUpdate
+      assert(update2 == 1, update2)
+
+      prepStatement1.setString(1, "8888")
+      verifyResults("update_delete_query2-select1", prepStatement1.executeQuery, Array(5000),
+        cacheMapSize)
+      // Thread.sleep(1000000)
+    } finally {
       if (prepStatement0 != null) prepStatement0.close()
       if (prepStatement1 != null) prepStatement1.close()
-      if (prepStatement2 != null) prepStatement2.close()
-      if (prepStatement3 != null) prepStatement3.close()
-      if (prepStatement4 != null) prepStatement4.close()
-      if (prepStatement5 != null) prepStatement4.close()
       s.close()
       conn.close()
     }
@@ -613,6 +657,95 @@ object PreparedQueryRoutingSingleNodeSuite{
       insertRows(tableName2, 1000, serverHostPort)
       update_delete_query1(tableName1, 1, serverHostPort)
       update_delete_query1(tableName2, 3, serverHostPort)
+      update_delete_query2(tableName1, 4, serverHostPort)
+      update_delete_query2(tableName2, 4, serverHostPort)
+    } finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
+  def equalityOnStringColumn_query1(tableName1: String, cacheMapSize: Int,
+      serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement0: java.sql.PreparedStatement = null
+    var prepStatement1: java.sql.PreparedStatement = null
+    var prepStatement2: java.sql.PreparedStatement = null
+    try {
+      prepStatement0 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
+          s" from $tableName1" +
+          s" where ol_1_str_id = ? or ol_1_str_id = ? or ol_1_str_id like ? ")
+      prepStatement0.setString(1, "1")
+      prepStatement0.setString(2, "2")
+      prepStatement0.setString(3, "99%")
+      verifyResults("equalityOnStringColumn_query1-select0", prepStatement0.executeQuery,
+        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize - 1)
+
+      prepStatement0.setString(1, "3")
+      prepStatement0.setString(2, "4")
+      prepStatement0.setString(3, "94%")
+      verifyResults("equalityOnStringColumn_query1-select1", prepStatement0.executeQuery,
+        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize - 1)
+
+      prepStatement1 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
+          s" from $tableName1" +
+          s" where ol_1_str_id = ? or ol_1_str_id = ? or ol_1_str_id like ?" +
+          s" limit 20")
+      prepStatement1.setString(1, "1")
+      prepStatement1.setString(2, "2")
+      prepStatement1.setString(3, "99%")
+      verifyResults("equalityOnStringColumn_query2-select0", prepStatement1.executeQuery,
+        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize - 1)
+
+      prepStatement1.setString(1, "3")
+      prepStatement1.setString(2, "4")
+      prepStatement1.setString(3, "94%")
+      verifyResults("equalityOnStringColumn_query2-select1", prepStatement1.executeQuery,
+        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize - 1)
+
+      prepStatement2 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
+          s" from $tableName1" +
+          s" where ol_1_str_id = ? or ol_1_str_id = ?")
+      prepStatement2.setString(1, "5")
+      prepStatement2.setString(2, "6")
+      verifyResults("equalityOnStringColumn_query3-select0", prepStatement2.executeQuery,
+        Array(5, 6), cacheMapSize)
+
+      prepStatement2.setString(1, "7")
+      prepStatement2.setString(2, "8")
+      verifyResults("equalityOnStringColumn_query3-select1", prepStatement2.executeQuery,
+        Array(7, 8), cacheMapSize)
+    } finally {
+      def close(prepStatement: java.sql.PreparedStatement) =
+        if (prepStatement != null) prepStatement.close()
+      close(prepStatement0)
+      close(prepStatement1)
+      close(prepStatement2)
+      conn.close()
+    }
+  }
+
+  def equalityOnStringColumn(snc: SnappyContext, serverHostPort: String): Unit = {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    try {
+      val tableName1 = "order_line_1_col_eq"
+      val tableName2 = "order_line_2_row_eq"
+      snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+          "options( partition_by 'ol_1_int2_id', buckets '2'," +
+          " COLUMN_BATCH_SIZE '100')")
+
+      snc.sql(s"create table $tableName2 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
+          "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+      insertRows(tableName1, 1000, serverHostPort)
+      insertRows(tableName2, 1000, serverHostPort)
+      equalityOnStringColumn_query1(tableName1, 1, serverHostPort)
+      equalityOnStringColumn_query1(tableName2, 2, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }

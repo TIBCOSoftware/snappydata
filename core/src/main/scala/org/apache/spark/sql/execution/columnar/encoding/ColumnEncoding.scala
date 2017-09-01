@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -273,8 +273,24 @@ trait ColumnEncoder extends ColumnEncoding {
    * @param allocator  the [[BufferAllocator]] to use for the data
    * @return initial position of the cursor that caller must use to write
    */
-  def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
+  final def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
+    initialize(dataType, nullable, initSize, withHeader, allocator, minBufferSize = -1)
+  }
+
+  /**
+   * Initialize this ColumnEncoder.
+   *
+   * @param dataType   DataType of the field to be written
+   * @param nullable   True if the field is nullable, false otherwise
+   * @param initSize   Initial estimated number of elements to be written
+   * @param withHeader True if header is to be written to data (typeId etc)
+   * @param allocator  the [[BufferAllocator]] to use for the data
+   * @param minBufferSize the minimum size of initial buffer to use (ignored if <= 0)
+   * @return initial position of the cursor that caller must use to write
+   */
+  def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
+      withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int): Long = {
     setAllocator(allocator)
     val defSize = defaultSize(dataType)
 
@@ -302,7 +318,7 @@ trait ColumnEncoder extends ColumnEncoding {
       } else {
         initByteSize = initSizeInBytes(dataType, initSize, defSize) + baseSize
       }
-      setSource(allocator.allocate(checkBufferSize(initByteSize),
+      setSource(allocator.allocate(checkBufferSize(math.max(initByteSize, minBufferSize)),
         ColumnEncoding.BUFFER_OWNER), releaseOld = true)
     } else {
       // for primitive types optimistically trim to exact size

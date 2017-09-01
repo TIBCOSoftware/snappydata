@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,7 +31,8 @@ abstract class SnappyStreamingJob extends SparkJobBase {
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyStreamingContext],
-      SnappySessionFactory.cleanJobConfig(config)))
+      SnappySessionFactory.updateCredentials(sc.asInstanceOf[SnappyStreamingContext]
+          .snappySession, config, fromStreamCtx = true)))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
@@ -42,7 +43,8 @@ abstract class SnappyStreamingJob extends SparkJobBase {
         appName = this.getClass.getCanonicalName,
         classLoader = Thread.currentThread().getContextClassLoader)
 
-      runSnappyJob(snc, SnappySessionFactory.cleanJobConfig(jobConfig))
+      runSnappyJob(snc, SnappySessionFactory.updateCredentials(snc.snappySession, jobConfig,
+        fromStreamCtx = true))
     } finally {
     }
   }

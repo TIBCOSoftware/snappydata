@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -506,7 +506,9 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState(updatedDecoderClass, updatedDecoder, "")
 
       var deletedInit = ""
-      if (index == 0) {
+      // add deleted column check if there is at least one column to scan
+      // (else it is taken care of by deletedCount being reduced from batch size)
+      if (rsIndex == 0) {
         val incrementDeletedBatchCount = if (deletedBatchCount eq null) ""
         else s"\nif ($deletedDecoder != null) $deletedBatchCount.${metricAdd("1")};"
         deletedInit =

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,7 +30,8 @@ import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfig
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, ResolveInlineTables, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
@@ -69,21 +70,51 @@ class SnappySessionState(snappySession: SnappySession)
 
   private[sql] var disableStoreOptimizations : Boolean = false
 
+  // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
+  // Rest all rules, even if redundant, are same as analyzer for maintainability reason
+  lazy val analyzerPrepare: Analyzer = new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Resolution") =>
+        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
+          case PromoteStrings => false
+          case _ => true
+        }): _*)
+      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+    }
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules = getExtendedCheckRules
+  }
+
+  def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
+    new PreprocessTableInsertOrPut(conf) ::
+        new FindDataSourceTable(snappySession) ::
+        DataSourceAnalysis(conf) ::
+        ResolveRelationsExtended ::
+        AnalyzeMutableOperations(snappySession, analyzer) ::
+        ResolveQueryHints(snappySession) ::
+        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
+            Nil else Nil)
+
+  def getExtendedCheckRules: Seq[LogicalPlan => Unit] =
+    Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      new PreprocessTableInsertOrPut(conf) ::
-          new FindDataSourceTable(snappySession) ::
-          DataSourceAnalysis(conf) ::
-          ResolveRelationsExtended ::
-          AnalyzeMutableOperations(snappySession, this) ::
-          ResolveQueryHints(snappySession) ::
-          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
+      getExtendedResolutionRules(this)
 
-    override val extendedCheckRules = Seq(
-      datasources.PreWriteCheck(conf, catalog),
-      PrePutCheck)
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
+
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
       implicit val ss = snappySession
