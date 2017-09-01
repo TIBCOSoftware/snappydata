@@ -86,7 +86,7 @@ object ExecutorInitiator extends Logging {
 
     // Test hook. Not to be used in other situations
     def waitForExecutor(retry: Boolean = true): Unit = testLock.synchronized {
-      testLock.wait (30000)
+      testLock.wait(30000)
     }
 
     def getRetryFlag: Boolean = lock.synchronized {

@@ -53,14 +53,14 @@ import org.apache.spark.{Logging, SparkConf}
 class SnappyUnifiedMemoryManager private[memory](
     conf: SparkConf,
     override val maxHeapMemory: Long,
-    numCores: Int, val tempManager: Boolean)
+    numCores: Int, val bootManager: Boolean)
   extends UnifiedMemoryManager(SnappyUnifiedMemoryManager.setMemorySize(conf),
     maxHeapMemory,
     (maxHeapMemory * conf.getDouble("spark.memory.storageFraction",
       SnappyUnifiedMemoryManager.DEFAULT_STORAGE_FRACTION)).toLong,
     numCores) with StoreUnifiedManager {
 
-  private val managerId = if (!tempManager) "RuntimeMemoryManager" else "BootTimeMemoryManager"
+  private val managerId = if (!bootManager) "RuntimeMemoryManager" else "BootTimeMemoryManager"
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
       conf.getDouble("spark.memory.storageMaxFraction", 0.95)).toLong
@@ -107,7 +107,7 @@ class SnappyUnifiedMemoryManager private[memory](
         _memoryForObjectMap = new Object2LongOpenHashMap[(String, MemoryMode)]()
         _memoryForObjectMap.defaultReturnValue(0L)
         // transfer the memory map from tempMemoryManager on first use
-        if (!tempManager) {
+        if (!bootManager) {
           logInfo(s"Allocating boot time memory to $managerId ")
 
           val bootTimeManager = MemoryManagerCallback.bootMemoryManager
@@ -136,7 +136,6 @@ class SnappyUnifiedMemoryManager private[memory](
     } else memoryMap
   }
 
-
   /**
     * This method will be called if executor is going to be restarted.
     * When executor is coming up all accounting from store will be done in
@@ -147,7 +146,7 @@ class SnappyUnifiedMemoryManager private[memory](
     * to run time manager.
     */
   override def close(): Unit = {
-    assert(!tempManager)
+    assert(!bootManager)
     // First reset the memory manager in callback. Hence all request will
     // go to Boot Manager
     MemoryManagerCallback.resetMemoryManager()
@@ -159,12 +158,19 @@ class SnappyUnifiedMemoryManager private[memory](
       memoryForObject.object2LongEntrySet().iterator().asScala foreach { entry =>
         val (objectName, memoryMode) = entry.getKey
         if (!objectName.equals(SPARK_CACHE) &&
-            !objectName.equals(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
+            !objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
           bootManager.memoryForObject.addTo(objectName -> memoryMode, entry.getLongValue)
         }
       }
-      memoryForObject.clear()
+      clear()
     }
+  }
+
+  /**
+    * Clears the internal map
+    */
+  override def clear(): Unit = {
+    memoryForObject.clear()
   }
 
   val threadsWaitingForStorage = new AtomicInteger()
@@ -182,7 +188,7 @@ class SnappyUnifiedMemoryManager private[memory](
   def this(conf: SparkConf, numCores: Int) = {
     this(conf,
       SnappyUnifiedMemoryManager.getMaxMemory(conf),
-      numCores, tempManager = false)
+      numCores, bootManager = false)
   }
 
   logMemoryConfiguration()
@@ -570,7 +576,7 @@ class SnappyUnifiedMemoryManager private[memory](
         }
       }
       // First let spark try to free some memory
-      val enoughMemory = if (tempManager) {
+      val enoughMemory = if (bootManager) {
         // For temp manager no eviction , hence numBytes to free is passed as 0
         storagePool.acquireMemory(blockId, numBytes, numBytesToFree = 0)
       } else {
@@ -730,6 +736,7 @@ class SnappyUnifiedMemoryManager private[memory](
   private def setMemoryManagerStats(stats: MemoryManagerStats): Unit = {
     wrapperStats.setMemoryManagerStats(stats)
   }
+
 }
 
 object SnappyUnifiedMemoryManager extends Logging {

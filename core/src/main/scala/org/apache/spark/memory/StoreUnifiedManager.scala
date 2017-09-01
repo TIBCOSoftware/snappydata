@@ -71,6 +71,14 @@ trait StoreUnifiedManager {
   def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit
 
+  /**
+    * Clears the internal map
+    */
+  def clear
+
+  /**
+    * Closes the memory manager.
+    */
   def close
 }
 
@@ -133,6 +141,11 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
   override def initMemoryStats(stats: MemoryManagerStats): Unit = {}
 
   override def close: Unit = {}
+
+  /**
+    * Clears the internal map
+    */
+  override def clear: Unit = {}
 }
 
 object MemoryManagerCallback extends Logging {
@@ -143,7 +156,7 @@ object MemoryManagerCallback extends Logging {
   val ummClass = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
 
   // This memory manager will be used while GemXD is booting up and SparkEnv is not ready.
-  private[memory] lazy val bootMemoryManager = {
+  lazy val bootMemoryManager = {
     try {
       val conf = new SparkConf()
       Utils.classForName(ummClass)
@@ -162,8 +175,9 @@ object MemoryManagerCallback extends Logging {
 
   private lazy val defaultManager: StoreUnifiedManager = new DefaultMemoryManager
 
-  // Is called from UMM.close()
+  // Is called from cache.close() && session.close() & umm.close
   def resetMemoryManager(): Unit = synchronized {
+    bootMemoryManager.clear
     snappyUnifiedManager = null
   }
 
