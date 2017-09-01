@@ -82,7 +82,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     session.conf.unset(Property.ColumnBatchSize.name)
   }
 
-  ignore("SNAP-1985: update delete on string type") {
+  test("SNAP-1985: update delete on string type") {
     val tableName1 = "order_line_1_col_str"
     val tableName2 = "order_line_2_ud_str"
 
