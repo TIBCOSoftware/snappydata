@@ -55,19 +55,19 @@ ALTER | DELETE | INSERT | REFERENCES [column-list] | SELECT [column-list] |
 TRIGGER | UPDATE [ column-list ]
 ```
 
-Use the ALTER privilege to grant permission to the <a href="ref-alter-table.html#reference_12F6A629A0BD46DCBDB0175D9EA946F2" class="xref noPageCitation" title="Use the ALTER TABLE statement to add columns and constraints to an existing table, remove them from a table, or modify other table features such as AsyncEventListener implementations and gateway sender configurations.">ALTER TABLE</a> command on the specified table.
+Use the [ALTER](alter-table.md) privilege to grant permission to the command on the specified table.
 
-Use the DELETE privilege type to grant permission to delete rows from the specified table.
+Use the [DELETE](delete.md) privilege type to grant permission to delete rows from the specified table.
 
-Use the INSERT privilege type to grant permission to insert rows into the specified table.
+Use the [INSERT](insert.md) privilege type to grant permission to insert rows into the specified table.
 
-Use the REFERENCES privilege type to grant permission to create a foreign key reference to the specified table. If a column list is specified with the REFERENCES privilege, the permission is valid on only the foreign key reference to the specified columns.
+<!--Use the REFERENCES privilege type to grant permission to create a foreign key reference to the specified table. If a column list is specified with the REFERENCES privilege, the permission is valid on only the foreign key reference to the specified columns.-->
 
-Use the SELECT privilege type to grant permission to perform SELECT statements on a table or view. If a column list is specified with the SELECT privilege, the permission is valid on only those columns. If no column list is specified, then the privilege is valid on all of the columns in the table.
+Use the [SELECT](select.md) privilege type to grant permission to perform SELECT statements on a table or view. If a column list is specified with the SELECT privilege, the permission is valid on only those columns. If no column list is specified, then the privilege is valid on all of the columns in the table.
 
-Use the TRIGGER privilege type to grant permission to create a trigger on the specified table.
+<!--Use the TRIGGER privilege type to grant permission to create a trigger on the specified table.-->
 
-Use the UPDATE privilege type to grant permission to use the UPDATE statement on the specified table. If a column list is specified, the permission applies only to the specified columns. To update a row using a statement that includes a WHERE clause, you must have SELECT permission on the columns in the row that you want to update.
+Use the [UPDATE](update.md) privilege type to grant permission to use the UPDATE statement on the specified table. If a column list is specified, the permission applies only to the specified columns. To update a row using a statement that includes a WHERE clause, you must have [SELECT](select.md) permission on the columns in the row that you want to update.
 
 <a id="column-list"></a>
 
@@ -121,8 +121,9 @@ To grant the SELECT privilege on table "test.sample" to all users:
 GRANT SELECT ON TABLE test.sample to PUBLIC;
 ```
 
-To grant the EXECUTE privilege on procedure"p" to the authorization ID "richard:"
+<!--To grant the EXECUTE privilege on procedure"p" to the authorization ID "richard:"
 
 ``` pre
 GRANT EXECUTE ON PROCEDURE p TO richard;
-```
+``` 
+-->

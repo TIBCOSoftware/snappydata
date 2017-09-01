@@ -40,7 +40,7 @@ To enable LDAP authentication, set the following authentication properties in th
 **Example**: 
 
 In the below example, we are launching the locator in secure mode, which communicates with the LDAP server at localhost listening on port 389.
-```
+```scala
 localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/  \
           -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com \
           -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com \
@@ -73,7 +73,7 @@ There are a few different ways to connect to a secure cluster using either JDBC 
 When using the JDBC client, provide the user credentials using connection properties 'user' and 'password'.
 
 **Example: JDBC Client**
-```
+```scala
 val props = new Properties()
 props.setProperty("user", username);
 props.setProperty("password", password);
@@ -84,7 +84,7 @@ val conn = DriverManager.getConnection(url, props)
 
 **Example: Snappy shell**
 
-```
+```scala
 connect client 'localhost:1527;user=user1;password=user123';
 ```
 
@@ -92,7 +92,7 @@ connect client 'localhost:1527;user=user1;password=user123';
 
 You can also connect to the SnappyData Cluster using SnappyData ODBC Driver using the following command:
 
-```
+```scala
 Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 ```
 
@@ -105,7 +105,7 @@ In Smart Connector mode, provide the user credentials as Spark configuration pro
 **Example**</br> 
 In the below example, these properties are set in the `SparkConf` which is used to create `SnappyContext` in your job.
 
-```
+```scala
 val conf = new SparkConf()
     .setAppName("My Spark Application with SnappyData")
     .setMaster(s"spark://$hostName:7077")
@@ -122,7 +122,7 @@ val snc = SnappyContext(sc)
 **Example**</br> 
 The below example demonstrates how to connect to the cluster via Spark shell using the `--conf` option to specify the properties.
 
-```
+```scala
 $ bin/spark-shell  
     --master local[*] 
     --conf spark.snappydata.connection=localhost:1527 
@@ -135,7 +135,7 @@ Alternatively, you can specify the user credentials in the Spark conf file. </br
 To do so, specify the user credentials in the **spark-defaults.conf** file, located in the **conf** directory.
 
 In this file, you can specify:
-``` bash
+``` scala
 spark.snappydata.store.user     <username>
 spark.snappydata.store.password <password>
 ```
@@ -146,13 +146,13 @@ When submitting Snappy jobs, using `snappy-job.sh`, provide user credentials thr
 
 For example, a sample configuration file is provided below: 
 
-```
+```scala
 $ cat /home/user1/snappy/job.config 
 -u user1:password
 ```
 
 In the below example, the above configuration file is passed when submitting a job.
-```
+```scala
 $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
@@ -187,13 +187,13 @@ The [GRANT](../reference/sql_reference/grant.md) statement is used to grant spec
 SnappyData extends the SQL GRANT statement to support LDAP Group names as Grantees.
 
 Here is an example SQL to grant privileges to individual users:
-```
+```scala
 GRANT SELECT ON TABLE t TO sam,bob;
 ```
 
 You can also grant privileges to LDAP groups using the following syntax:
 
-```
+```scala
 GRANT SELECT ON Table t TO ldapGroup:<groupName>, bob;
 GRANT INSERT ON Table t TO ldapGroup:<groupName>, bob;
 ```
@@ -201,7 +201,7 @@ GRANT INSERT ON Table t TO ldapGroup:<groupName>, bob;
 SnappyData fetches the current list of members for the LDAP Group and grants each member privileges individually (stored in SnappyData). </br>
 Similarly, when a REVOKE SQL statement is executed SnappyData removes the privileges individually for all members that make up a group. To support changes to Group membership within the LDAP Server, there is an additional System procedure to refresh the privileges recorded in SnappyData.
 
-```
+```scala
 CALL SYS.REFRESH_LDAP_GROUP('<GROUP NAME>');
 ```
 
@@ -209,7 +209,7 @@ This step has to be performed manually by admin when relevant LDAP groups change
 
 To optimize searching for groups in the LDAP server the following optional properties can be specified. These are similar to the current ones used for authentication: `gemfirexd.auth-ldap-search-base` and `gemfirexd.auth-ldap-search-filter`. The support for LDAP groups requires using LDAP as also the authentication mechanism.
 
-```
+```scala
 gemfirexd.group-ldap-search-base
 // base to identify objects of type group
 gemfirexd.group-ldap-search-filter
@@ -222,7 +222,7 @@ If no `gemfirexd.group-ldap-search-base` property has been provided then the one
 If no search filter is specified then SnappyData uses the standard objectClass groupOfMembers (rfc2307) or groupOfNames with attribute as member, or objectClass groupOfUniqueMembers with attribute as uniqueMember.
 To be precise, the default search filter is:
 
-```
+```scala
 (&(|(objectClass=group)(objectClass=groupOfNames)(objectClass=groupOfMembers)
   (objectClass=groupOfUniqueNames))(|(cn=%GROUP%)(name=%GROUP%)))
 ```
@@ -231,7 +231,7 @@ The token "%GROUP%" is replaced by the actual group name in the search pattern. 
 
 An LDAP group entry can look like below:
 
-```
+```scala
 dn: cn=group1,ou=group,dc=example,dc=com
 objectClass: groupOfNames
 cn: group1
@@ -268,7 +268,7 @@ All user names must be valid authorization identifiers even if user authenticati
 If an external authentication system is used, SnappyData does not convert a user's name to an authorization identifier until after authentication has occurred (but before the user is authorized). For example, with an example user named Fred:
 
 Within the user authentication system, Fred might be known as FRed. If the external user authentication service is case-sensitive, Fred must always be typed as:
-```
+```scala
 connect client 'localhost:1527;user=FRed;password=flintstone';
 ```
 Within the SnappyData user authorization system, Fred becomes a case-insensitive authorization identifier. Here, FRed is known as FRED.
@@ -277,7 +277,7 @@ Also consider a second example, where Fred has a slightly different name within 
 
 Within the user authentication system, Fred is known as Fred. You must now put double quotes around the username, because it is not a valid SQL92Identifier. SnappyData removes the double quotes when passing the name to the external authentication system.
 
-```
+```scala
 connect client 'localhost:1527;user="Fred!";password=flintstone';
 ```
 

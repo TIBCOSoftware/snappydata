@@ -37,7 +37,7 @@ You can set the following configuration parameters to control the pools:
 |`spark.memory.storageFraction`|50|Fraction of workable memory allocated for storage pool and the remaining memory is allocated to the execution pool. It is recommended that you do not change this setting.|
 |`critical-heap-percentage`|90| The heap percent beyond which the system considers itself in a critical state. This is to safeguard the system from crashing due to an OutOfMemoryException. Beyond this point, SnappyData starts canceling all jobs and queries and a LowMemoryException is reported.</br> This means (100 minus `critical-heap-percent`) memory is not allocated to any pool and is unused.|
 |`eviction-heap-percentage`|81|Initially, the amount of memory that is available for storage pool is 50% of the total workable memory. This can however grow up to `eviction-heap-percentage` (default 81%). On reaching this threshold it starts evicting table data as per the eviction clause that was specified when creating the table.|
-|`spark.memory.fraction`s|0.92|Total workable memory for execution and storage. This fraction is applied after removing reserved memory (100 minus `critical-heap-percentage`). This gives a cushion before the system reaches a critical state. It is recommended that you do not change this setting.
+|`spark.memory.fraction`|0.92|Total workable memory for execution and storage. This fraction is applied after removing reserved memory (100 minus `critical-heap-percentage`). This gives a cushion before the system reaches a critical state. It is recommended that you do not change this setting.
 
 At the start, each of the two pools is assigned a portion of the available memory. This is driven by `spark.memory.storageFraction` property (default 50%). However, SnappyData allows each pool to "balloon" into the other if capacity is available subject to following rules:
 
@@ -52,13 +52,13 @@ At the start, each of the two pools is assigned a portion of the available memor
 ![Heap-Size](../Images/heap_size.png)
 
 **Example**: Configuration for memory (typically configured in **conf/leads** or **conf/servers**) 
-```
+```scala
 -heap-size = 20g -critical-heap-percentage=90 -eviction-heap-percentage=81
 ```
 
 **Example**: Depicts how SnappyData derives different memory region sizes
 
-```
+```scala
 Reserved_Heap_Memory => 20g * (1 - 0.9) = 2g ( 0.9 being derived from critical_heap_percentage)
 Heap_Memory_Fraction => (20g - Reserved_Memory) *(0.92) = 16.5 ( 0.92 being derived from spark.memory.fraction)
 Heap_Storage_Pool_Size => 16.5 * (0.5) = 8.25 ( 0.5 being derived from spark.memory.storageFractio)
@@ -79,13 +79,13 @@ Similar to heap pools, off-heap pools are also divided between off-heap storage 
 
 **Example**: Off-heap configuration: 
 
-```
+```scala
 -heap-size = 4g -memory-size=16g -critical-heap-percentage=90 -eviction-heap-percentage=81
 ```
 
 **Example**: How SnappyData derives different memory region sizes.
 
-```
+```scala
 Reserved_Memory ( Heap Memory) => 4g * (1 - 0.9) = 400m ( 0.9 being derived from critical_heap_percentage)
 Memory_Fraction ( Heap Memory) => (4g - Reserved_Memory) *(0.92) = 3.3g
 Heap Storage_Pool_Size => 3.3 * (0.5) = 1.65

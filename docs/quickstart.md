@@ -3,6 +3,10 @@
 Welcome to the Getting Started section! <br>
 Multiple options are provided for getting started with SnappyData. 
 
+## Before you begin
+
+You must first [download and extract](install.md) the SnappyData product distribution, navigate to the SnappyData product root directory and [start the cluster](howto.md#howto-startcluster).
+
 Depending on your preference you can try any of the following options:
 
 * [Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
@@ -24,6 +28,8 @@ This section contains instructions and examples using which, you can try out Sna
 
 !!! Note: 
 	Support for Microsoft Azure will be provided in future releases.
+
+
 
 <a id="getting-started-with-your-spark-distribution"></a>
 ## Getting Started with your Spark Distribution
