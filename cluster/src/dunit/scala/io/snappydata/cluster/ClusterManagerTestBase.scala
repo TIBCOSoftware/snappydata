@@ -57,8 +57,8 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("security-log-level",
     System.getProperty("securityLogLevel", "config"))
   // Easier to switch ON traces. thats why added this.
-  // bootProps.setProperty("gemfirexd.debug.true",
-  //   "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
+//   bootProps.setProperty("gemfirexd.debug.true",
+//     "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores",
     TestUtils.defaultCores.toString)
@@ -188,12 +188,15 @@ abstract class ClusterManagerTestBase(s: String)
   }
 
   def getANetConnection(netPort: Int,
-      useGemXDURL: Boolean = false): Connection = {
+      useGemXDURL: Boolean = false,
+      disableQueryRouting: Boolean = false): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
       url = "jdbc:gemfirexd:thrift://localhost:" + netPort + "/"
+    } else if (disableQueryRouting) {
+      url = "jdbc:snappydata://localhost:" + netPort + "/route-query=false"
     } else {
       url = "jdbc:snappydata://localhost:" + netPort + "/"
     }

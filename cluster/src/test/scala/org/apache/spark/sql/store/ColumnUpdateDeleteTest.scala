@@ -17,6 +17,8 @@
 
 package org.apache.spark.sql.store
 
+import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.cluster.PreparedQueryRoutingSingleNodeSuite
 import io.snappydata.{ColumnUpdateDeleteTests, Property}
 
 import org.apache.spark.SparkConf
@@ -78,5 +80,29 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     session.conf.set(Property.ColumnBatchSize.name, "100k")
     runAllTypesTest(session)
     session.conf.unset(Property.ColumnBatchSize.name)
+  }
+
+  ignore("SNAP-1985: update delete on string type") {
+    val tableName1 = "order_line_1_col_str"
+    val tableName2 = "order_line_2_ud_str"
+
+    snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+        "options( partition_by 'ol_1_int2_id', buckets '2'," +
+        " COLUMN_BATCH_SIZE '100')")
+    snc.sql(s"create table $tableName2 (ol_1_int_id  integer," +
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
+        "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+    // println("network server started")
+    val serverHostPort = TestUtil.startNetServer()
+    PreparedQueryRoutingSingleNodeSuite.insertRows(tableName1, 1000, serverHostPort)
+    PreparedQueryRoutingSingleNodeSuite.insertRows(tableName2, 1000, serverHostPort)
+
+    snc.sql(s"update $tableName2 set ol_1_str_id = '7777_a_1' where ol_1_int2_id = 500 ")
+    snc.sql(s"update $tableName2 set ol_1_str_id = '7777_b_2' where ol_1_int2_id = 500 ")
+
+    snc.sql(s"update $tableName1 set ol_1_str_id = '7777_a_1' where ol_1_int2_id = 500 ")
+    snc.sql(s"update $tableName1 set ol_1_str_id = '7777_b_2' where ol_1_int2_id = 500 ")
   }
 }

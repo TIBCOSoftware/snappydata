@@ -187,7 +187,7 @@ class SnappySession(@transient private val sc: SparkContext,
   private[sql] final def prepareSQL(sqlText: String): LogicalPlan = {
     val logical = sessionState.sqlParser.parsePlan(sqlText)
     SparkSession.setActiveSession(this)
-    sessionState.analyzer.execute(logical)
+    sessionState.analyzerPrepare.execute(logical)
   }
 
   private[sql] final def executeSQL(sqlText: String): DataFrame = {
