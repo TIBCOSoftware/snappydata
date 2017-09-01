@@ -84,7 +84,7 @@ trait BooleanBitSetEncoderBase
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int = -1): Long = {
     byteCursor = super.initialize(dataType, nullable, initSize,
-      withHeader, allocator)
+      withHeader, allocator, minBufferSize)
     dataOffset = byteCursor - columnBeginPosition
     currentWord = 0L
     // returns the OR mask to use for currentWord
