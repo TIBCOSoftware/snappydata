@@ -139,16 +139,6 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = realEncoder.writeNulls(columnBytes, cursor, numWords)
 
-  /**
-   * Initialize this ColumnDeltaEncoder.
-   *
-   * @param dataType   DataType of the field to be written
-   * @param nullable   True if the field can have nulls else false
-   * @param initSize   initial number of columns to accomodate in the delta
-   * @param withHeader ignored
-   * @param allocator  the [[BufferAllocator]] to use for the data
-   * @return initial position of the cursor that caller must use to write
-   */
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int = -1): Long = {
     if (initSize < 4 || (initSize < ColumnDelta.INIT_SIZE && hierarchyDepth > 0)) {
@@ -162,7 +152,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     positionsArray = new Array[Long](initSize << 1)
     realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
     val cursor = realEncoder.initialize(dataType, nullable,
-      initSize, withHeader, allocator)
+      initSize, withHeader, allocator, minBufferSize)
     dataOffset = cursor - realEncoder.columnBeginPosition
     cursor
   }
@@ -304,7 +294,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       i += 1
     }
     // pad to nearest word boundary before writing encoded data
-    cursor + (((deltaCursor - cursor + 7) >> 3) << 3)
+    ((deltaCursor + 7) >> 3) << 3
   }
 
   private[this] var tmpNumPositions: Int = _
@@ -333,7 +323,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // to be useful for even range filters.
     // Also during delta merges, can merge dictionaries separately then rewrite only indexes.
 
-    dataType = field.dataType
+    dataType = Utils.getSQLDataType(field.dataType)
     setAllocator(GemFireCacheImpl.getCurrentBufferAllocator)
 
     // Simple two-way merge with duplicate elimination. If current delta has small number

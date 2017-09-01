@@ -506,7 +506,9 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState(updatedDecoderClass, updatedDecoder, "")
 
       var deletedInit = ""
-      if (index == 0) {
+      // add deleted column check if there is at least one column to scan
+      // (else it is taken care of by deletedCount being reduced from batch size)
+      if (rsIndex == 0) {
         val incrementDeletedBatchCount = if (deletedBatchCount eq null) ""
         else s"\nif ($deletedDecoder != null) $deletedBatchCount.${metricAdd("1")};"
         deletedInit =

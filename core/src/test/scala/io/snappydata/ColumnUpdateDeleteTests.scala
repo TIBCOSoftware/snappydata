@@ -17,6 +17,12 @@
 
 package io.snappydata
 
+import java.util.concurrent.{CyclicBarrier, Executors}
+
+import scala.collection.concurrent.TrieMap
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+
 import org.scalatest.Assertions
 
 import org.apache.spark.sql.SnappySession
@@ -342,6 +348,109 @@ object ColumnUpdateDeleteTests extends Assertions {
     assert(result.length === numElements - 1)
 
     session.sql("drop table customers")
+    session.conf.unset(Property.ColumnBatchSize.name)
+  }
+
+  def testConcurrentOps(session: SnappySession): Unit = {
+    // reduced size to ensure both column table and row buffer have data
+    session.conf.set(Property.ColumnBatchSize.name, "10k")
+
+    val numElements = 100000
+    val concurrency = 8
+    // each thread will update/delete after these many rows
+    val step = 10
+
+    session.sql("drop table if exists updateTable")
+    session.sql("drop table if exists checkTable1")
+    session.sql("drop table if exists checkTable2")
+    session.sql("drop table if exists checkTable3")
+
+    session.sql("create table updateTable (id int, addr string, status boolean) " +
+        "using column options(buckets '5')")
+    session.sql("create table checkTable1 (id int, addr string, status boolean) " +
+        "using column options(buckets '3')")
+    session.sql("create table checkTable2 (id int, addr string, status boolean) " +
+        "using column options(buckets '7')")
+
+    session.range(numElements).selectExpr("id", "concat('addr', cast(id as string))",
+      "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
+
+    // expected results after updates in this table
+    val idUpdate = s"id + ($numElements / 2)"
+    val idSet = s"case when (id % $step) < $concurrency then id + ($numElements / 2) else id end"
+    val addrSet = s"case when (id % $step) < $concurrency " +
+        s"then concat('addrUpd', cast(($idUpdate) as string)) " +
+        s"else concat('addr', cast(id as string)) end"
+    session.range(numElements).selectExpr(idSet, addrSet,
+      "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable1")
+
+    // expected results after updates and deletes in this table
+    session.table("checkTable1").filter(s"(id % $step) < ${step - concurrency}")
+        .write.insertInto("checkTable2")
+
+    val exceptions = new TrieMap[Thread, Throwable]
+    val executionContext = ExecutionContext.fromExecutorService(
+      Executors.newFixedThreadPool(concurrency + 2))
+
+    // concurrent updates to different rows but same batches
+    val barrier = new CyclicBarrier(concurrency)
+    var tasks = Array.tabulate(concurrency)(i => Future {
+      try {
+        val snappy = new SnappySession(session.sparkContext)
+        var res = snappy.sql("select count(*) from updateTable").collect()
+        assert(res(0).getLong(0) === numElements)
+
+        barrier.await()
+        res = snappy.sql(s"update updateTable set id = $idUpdate, " +
+            s"addr = concat('addrUpd', cast(($idUpdate) as string)) " +
+            s"where (id % $step) = $i").collect()
+        assert(res.map(_.getLong(0)).sum > 0)
+      } catch {
+        case t: Throwable =>
+          exceptions += Thread.currentThread() -> t
+          throw t
+      }
+    }(executionContext))
+    tasks.foreach(Await.ready(_, Duration.Inf))
+
+    assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
+
+    session.table("updateTable").show()
+    session.table("checkTable1").show()
+
+    var res = session.sql(
+      "select * from updateTable EXCEPT select * from checkTable1").collect()
+    assert(res.length === 0)
+
+    // concurrent deletes
+    tasks = Array.tabulate(concurrency)(i => Future {
+      try {
+        val snappy = new SnappySession(session.sparkContext)
+        var res = snappy.sql("select count(*) from updateTable").collect()
+        assert(res(0).getLong(0) === numElements)
+
+        barrier.await()
+        res = snappy.sql(
+          s"delete from updateTable where (id % $step) = ${step - i - 1}").collect()
+        assert(res.map(_.getLong(0)).sum > 0)
+      } catch {
+        case t: Throwable =>
+          exceptions += Thread.currentThread() -> t
+          throw t
+      }
+    }(executionContext))
+    tasks.foreach(Await.ready(_, Duration.Inf))
+
+    assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
+
+    res = session.sql(
+      "select * from updateTable EXCEPT select * from checkTable2").collect()
+    assert(res.length === 0)
+
+    // cleanup
+    session.sql("drop table updateTable")
+    session.sql("drop table checkTable1")
+    session.sql("drop table checkTable2")
     session.conf.unset(Property.ColumnBatchSize.name)
   }
 }
