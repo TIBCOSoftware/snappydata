@@ -111,7 +111,7 @@ object Constant {
    * Limit the maximum number of rows in a column batch (applied before
    * [[Property.ColumnBatchSize]] property).
    */
-  val MAX_ROWS_IN_BATCH = 250000
+  val MAX_ROWS_IN_BATCH = 200000
 
   val DEFAULT_SERIALIZER = "org.apache.spark.serializer.PooledKryoSerializer"
 
