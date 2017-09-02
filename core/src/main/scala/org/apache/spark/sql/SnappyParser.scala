@@ -391,9 +391,6 @@ class SnappyParser(session: SnappySession)
               if (not.asInstanceOf[Option[Boolean]].isEmpty) IsNull(e)
               else IsNotNull(e)) |
         NOT ~ invertibleExpression ~> Not |
-        (RLIKE | REGEXP) ~ termExpression ~> RLike |
-        NOT ~ (RLIKE | REGEXP) ~ termExpression ~>
-            ((e1: Expression, e2: Expression) => Not(RLike(e1, e2))) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
   }
@@ -407,12 +404,25 @@ class SnappyParser(session: SnappySession)
       Expression :: HNil] = rule {
     IN ~ '(' ~ ws ~ (termExpression * commaSep) ~ ')' ~ ws ~>
         ((e: Expression, es: Any) => In(e, es.asInstanceOf[Seq[Expression]])) |
-    LIKE ~ termExpression ~> Like |
+    LIKE ~ termExpression ~>
+        ((e1: Expression, e2: Expression) => e2 match {
+          case pl: ParamLiteral if !pl.value.isInstanceOf[Row] =>
+            removeParamLiteralFromContext(pl)
+            Like(e1, Literal.create(pl.value, pl.dataType))
+          case _ => Like(e1, e2)
+        }) |
     BETWEEN ~ termExpression ~ AND ~ termExpression ~>
         ((e: Expression, el: Expression, eu: Expression) =>
           And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))) |
     IN ~ '(' ~ ws ~ query ~ ')' ~ ws ~> ((e1: Expression
-        , plan: LogicalPlan) => In(e1, Seq(ListQuery(plan))))
+        , plan: LogicalPlan) => In(e1, Seq(ListQuery(plan)))) |
+    (RLIKE | REGEXP) ~ termExpression ~>
+        ((e1: Expression, e2: Expression) => e2 match {
+          case pl: ParamLiteral if !pl.value.isInstanceOf[Row] =>
+            removeParamLiteralFromContext(pl)
+            RLike(e1, Literal.create(pl.value, pl.dataType))
+          case _ => RLike(e1, e2)
+        })
   }
 
   protected final def termExpression: Rule1[Expression] = rule {
