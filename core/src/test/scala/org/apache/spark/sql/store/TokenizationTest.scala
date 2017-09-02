@@ -161,8 +161,8 @@ class TokenizationTest
     createSimpleTableWithAStringColumnAndPoupulateData(100, "tab_str", true)
     res = snc.sql(s"select * from tab_str where b = 'aa12bb' and b like 'aa1%'").collect()
     assert(res.length == 1)
-    // This should not be tokenized and so cachemap size should be 0
-    assert( cacheMap.size() == 0)
+    // this is converted to Literal by parser so plan is cached
+    assert(cacheMap.size() == 1)
 
     // An n-tile query ... but this is not affecting Tokenization as ntile is
     // not in where clause but in from clause only.
