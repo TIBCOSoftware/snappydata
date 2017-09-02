@@ -22,6 +22,7 @@ import java.util.UUID
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
@@ -179,9 +180,15 @@ object StringBenchmark {
     val first = target.getByte(0)
     var i = 0
     while (i <= source.numBytes - target.numBytes) {
-      if (source.getByte(i) == first && source.matchAt(target, i)) return true
+      if (source.getByte(i) == first && matchAt(source, target, i)) return true
       i += 1
     }
     false
+  }
+
+  private def matchAt(source: UTF8String, target: UTF8String, pos: Int): Boolean = {
+    if (target.numBytes + pos > source.numBytes || pos < 0) return false
+    ByteArrayMethods.arrayEquals(source.getBaseObject, source.getBaseOffset + pos,
+      target.getBaseObject, target.getBaseOffset, target.numBytes)
   }
 }
