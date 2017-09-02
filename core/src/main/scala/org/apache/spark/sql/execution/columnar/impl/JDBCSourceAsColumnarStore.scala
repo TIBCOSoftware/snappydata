@@ -19,6 +19,11 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
 
+import scala.annotation.meta.param
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
+import scala.util.control.NonFatal
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
@@ -29,6 +34,7 @@ import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SparkConnectorRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -44,12 +50,7 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.util.TaskCompletionListener
-import org.apache.spark.util.random.XORShiftRandom
 import org.apache.spark.{Logging, Partition, TaskContext}
-
-import scala.annotation.meta.param
-import scala.collection.mutable.ArrayBuffer
-import scala.util.control.NonFatal
 
 /**
  * Column Store implementation for GemFireXD.
@@ -59,8 +60,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     extends ExternalStore with KryoSerializable with Logging {
 
   self =>
-
-  @transient protected lazy val rand = new XORShiftRandom
 
   override final def tableName: String = _tableName
 
@@ -539,17 +538,27 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         val region = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
         region match {
           case pr: PartitionedRegion =>
-            if (partitionId == -1) {
-              val primaryBucketIds = pr.getDataStore.
-                  getAllLocalPrimaryBucketIdArray
-              // TODO: do load-balancing among partitions instead
-              // of random selection
-              val numPrimaries = primaryBucketIds.size()
-              // if no local primary bucket, then select some other
-              if (numPrimaries > 0) {
-                primaryBucketIds.getQuick(rand.nextInt(numPrimaries))
+            if (partitionId == -1) pr.synchronized {
+              val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketRegions
+              // if no local primary bucket, then select a random bucket
+              if (primaryBuckets.isEmpty) {
+                Random.nextInt(pr.getTotalNumberOfBuckets)
               } else {
-                rand.nextInt(pr.getTotalNumberOfBuckets)
+                // select the bucket with smallest size at this point
+                val iterator = primaryBuckets.iterator()
+                assert(iterator.hasNext)
+                var smallestBucket = iterator.next()
+                var minBucketSize = smallestBucket.getRegionSize
+                while (iterator.hasNext) {
+                  val bucket = iterator.next()
+                  val bucketSize = bucket.getRegionSize
+                  if (bucketSize < minBucketSize ||
+                      (bucketSize == minBucketSize && Random.nextBoolean())) {
+                    minBucketSize = bucketSize
+                    smallestBucket = bucket
+                  }
+                }
+                smallestBucket.getId
               }
             } else {
               partitionId
@@ -558,7 +567,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         }
       // TODO: SW: for split mode, get connection to one of the
       // local servers and a bucket ID for only one of those
-      case _ => if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
+      case _ => if (partitionId < 0) Random.nextInt(numPartitions) else partitionId
     }
   }
 }
