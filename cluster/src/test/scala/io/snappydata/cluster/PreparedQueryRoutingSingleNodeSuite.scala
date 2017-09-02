@@ -91,7 +91,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(4, 300)
       prepStatement.setString(5, "%0")
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry-1", prepStatement.executeQuery,
-        Array(100, 200, 300), 0)
+        Array(100, 200, 300), 1)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 600)
@@ -99,7 +99,15 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(4, 800)
       prepStatement.setString(5, "%0")
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry-2", prepStatement.executeQuery,
-        Array(600, 700, 800), 0)
+        Array(600, 700, 800), 1)
+
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 600)
+      prepStatement.setInt(3, 700)
+      prepStatement.setInt(4, 800)
+      prepStatement.setString(5, "%0%")
+      PreparedQueryRoutingSingleNodeSuite.verifyResults("qry-2.2", prepStatement.executeQuery,
+        Array(600, 700, 800), 2)
 
       val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -113,13 +121,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement1.setInt(2, 100)
       prepStatement1.setInt(3, 200)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry1-1", prepStatement1.executeQuery,
-        Array(100, 200, 300), 1)
+        Array(100, 200, 300), 3)
 
       prepStatement1.setInt(1, 500)
       prepStatement1.setInt(2, 100)
       prepStatement1.setInt(3, 400)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry1-2", prepStatement1.executeQuery,
-        Array(100, 400, 300), 1)
+        Array(100, 400, 300), 3)
 
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -132,13 +140,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement2.setInt(2, 600)
       prepStatement2.setInt(3, 700)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry2-1", prepStatement2.executeQuery,
-        Array(600, 700, 800), 1)
+        Array(600, 700, 800), 3)
 
       prepStatement2.setInt(1, 900)
       prepStatement2.setInt(2, 400)
       prepStatement2.setInt(3, 500)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry2-2", prepStatement2.executeQuery,
-        Array(400, 500, 800), 1)
+        Array(400, 500, 800), 3)
 
       val qry3 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -153,14 +161,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement3.setInt(3, 200)
       prepStatement3.setInt(4, 300)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry3-1", prepStatement3.executeQuery,
-        Array(100, 200, 300), 1)
+        Array(100, 200, 300), 3)
 
       prepStatement3.setInt(1, 900)
       prepStatement3.setInt(2, 600)
       prepStatement3.setInt(3, 700)
       prepStatement3.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry3-2", prepStatement3.executeQuery,
-        Array(600, 700, 800), 1)
+        Array(600, 700, 800), 3)
 
       val qry4 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -175,14 +183,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement4.setInt(3, 200)
       prepStatement4.setInt(4, 300)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry4-1", prepStatement4.executeQuery,
-        Array(100, 200, 300), 2)
+        Array(100, 200, 300), 4)
 
       prepStatement4.setInt(1, 900)
       prepStatement4.setInt(2, 600)
       prepStatement4.setInt(3, 700)
       prepStatement4.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry4-2", prepStatement4.executeQuery,
-        Array(600, 700, 800), 2)
+        Array(600, 700, 800), 4)
 
       val qry5 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -197,14 +205,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement5.setInt(3, 200)
       prepStatement5.setInt(4, 300)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry5-1", prepStatement5.executeQuery,
-        Array(100, 200, 300), 3)
+        Array(100, 200, 300), 5)
 
       prepStatement5.setDouble(1, 900.01)
       prepStatement5.setInt(2, 600)
       prepStatement5.setInt(3, 700)
       prepStatement5.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry5-2", prepStatement5.executeQuery,
-        Array(600, 700, 800), 3)
+        Array(600, 700, 800), 5)
 
       // Thread.sleep(1000000)
     } finally {
@@ -617,7 +625,7 @@ object PreparedQueryRoutingSingleNodeSuite{
           " where ol_1_str_id like ?")
       prepStatement1.setString(1, "7777")
       verifyResults("update_delete_query2-select1", prepStatement1.executeQuery, Array(4000),
-        cacheMapSize)
+        cacheMapSize + 1)
 
       prepStatement0.setString(1, "8888")
       prepStatement0.setInt(2, 501)
@@ -626,7 +634,7 @@ object PreparedQueryRoutingSingleNodeSuite{
 
       prepStatement1.setString(1, "8888")
       verifyResults("update_delete_query2-select1", prepStatement1.executeQuery, Array(5000),
-        cacheMapSize)
+        cacheMapSize + 2)
       // Thread.sleep(1000000)
     } finally {
       if (prepStatement0 != null) prepStatement0.close()
@@ -658,7 +666,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       update_delete_query1(tableName1, 1, serverHostPort)
       update_delete_query1(tableName2, 3, serverHostPort)
       update_delete_query2(tableName1, 4, serverHostPort)
-      update_delete_query2(tableName2, 4, serverHostPort)
+      update_delete_query2(tableName2, 6, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
@@ -680,13 +688,13 @@ object PreparedQueryRoutingSingleNodeSuite{
       prepStatement0.setString(2, "2")
       prepStatement0.setString(3, "99%")
       verifyResults("equalityOnStringColumn_query1-select0", prepStatement0.executeQuery,
-        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize - 1)
+        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize)
 
       prepStatement0.setString(1, "3")
       prepStatement0.setString(2, "4")
       prepStatement0.setString(3, "94%")
       verifyResults("equalityOnStringColumn_query1-select1", prepStatement0.executeQuery,
-        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize - 1)
+        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize + 1)
 
       prepStatement1 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
           s" from $tableName1" +
@@ -696,13 +704,13 @@ object PreparedQueryRoutingSingleNodeSuite{
       prepStatement1.setString(2, "2")
       prepStatement1.setString(3, "99%")
       verifyResults("equalityOnStringColumn_query2-select0", prepStatement1.executeQuery,
-        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize - 1)
+        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize + 2)
 
       prepStatement1.setString(1, "3")
       prepStatement1.setString(2, "4")
       prepStatement1.setString(3, "94%")
       verifyResults("equalityOnStringColumn_query2-select1", prepStatement1.executeQuery,
-        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize - 1)
+        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize + 3)
 
       prepStatement2 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
           s" from $tableName1" +
@@ -710,12 +718,12 @@ object PreparedQueryRoutingSingleNodeSuite{
       prepStatement2.setString(1, "5")
       prepStatement2.setString(2, "6")
       verifyResults("equalityOnStringColumn_query3-select0", prepStatement2.executeQuery,
-        Array(5, 6), cacheMapSize)
+        Array(5, 6), cacheMapSize + 4)
 
       prepStatement2.setString(1, "7")
       prepStatement2.setString(2, "8")
       verifyResults("equalityOnStringColumn_query3-select1", prepStatement2.executeQuery,
-        Array(7, 8), cacheMapSize)
+        Array(7, 8), cacheMapSize + 4)
     } finally {
       def close(prepStatement: java.sql.PreparedStatement) =
         if (prepStatement != null) prepStatement.close()
@@ -745,7 +753,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
       equalityOnStringColumn_query1(tableName1, 1, serverHostPort)
-      equalityOnStringColumn_query1(tableName2, 2, serverHostPort)
+      equalityOnStringColumn_query1(tableName2, 6, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
