@@ -111,7 +111,7 @@ object Constant {
    * Limit the maximum number of rows in a column batch (applied before
    * [[Property.ColumnBatchSize]] property).
    */
-  val MAX_ROWS_IN_BATCH = 500000
+  val MAX_ROWS_IN_BATCH = 200000
 
   val DEFAULT_SERIALIZER = "org.apache.spark.serializer.PooledKryoSerializer"
 
@@ -261,6 +261,13 @@ object Property extends Enumeration {
         "that can return very large number of rows in aggregation results. " +
         "Default value is 0b meaning no limit on the size so the optimized " +
         "hash aggregation is always used.", Some("0"))
+
+  val ForceLinkPartitionsToBuckets: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}linkPartitionsToBuckets",
+    "Property to treat each bucket as separate partition in column/row table scans. " +
+        "When unset or set to false, SnappyData will try to create only " +
+        "as many partitions as executor cores clubbing multiple buckets " +
+        "into each partition when possible.", Some(false), Constant.SPARK_PREFIX)
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",

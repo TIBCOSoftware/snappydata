@@ -36,8 +36,6 @@
 
 package org.apache.spark.sql.execution.benchmark
 
-import java.util.UUID
-
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import io.snappydata.SnappyFunSuite
 
@@ -47,10 +45,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Benchmark
-import org.apache.spark.util.random.XORShiftRandom
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
@@ -86,57 +81,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private lazy val sparkSession = new SparkSession(sc)
   private lazy val snappySession = snc.snappySession
 
-
-  private def runUTF8StringCompareTo(numElements: Int, numDistinct: Int,
-      numIters: Int = 20, preSorted: Boolean = false): Unit = {
-    val rnd = new XORShiftRandom
-
-    def randomSuffix: String = {
-      (1 to rnd.nextInt(6)).map(_ => rnd.nextInt(10)).mkString("")
-    }
-
-    val randData = Array.fill(numDistinct)(s"${UUID.randomUUID().toString}-$randomSuffix")
-    val sdata = Array.fill(numElements)(randData(rnd.nextInt(numDistinct)))
-    val data = sdata.map(UTF8String.fromString)
-
-    if (preSorted) java.util.Arrays.sort(data, null)
-    var cdata: Array[UTF8String] = null
-    var cdata2: Array[UTF8String] = null
-
-    def displayNumber(num: Int): String = {
-      if (num % 1000000 == 0) s"${num / 1000000}M"
-      else if (num % 1000 == 0) s"${num / 1000}K"
-      else num.toString
-    }
-
-    val benchmark = new Benchmark(s"Sort${if (preSorted) "(pre-sorted)" else ""} " +
-        s"num=${displayNumber(numElements)} distinct=${displayNumber(numDistinct)}", numElements)
-
-    addCaseWithCleanup(benchmark, "Spark", numIters, () => Unit,
-      doGC, () => Unit, () => cdata = data.clone()) { _ =>
-      java.util.Arrays.sort(cdata, new java.util.Comparator[UTF8String] {
-        override def compare(o1: UTF8String, o2: UTF8String): Int = {
-          ColumnCacheBenchmark.sparkCompare(o1, o2)
-        }
-      })
-    }
-    addCaseWithCleanup(benchmark, "Snappy", numIters, () => Unit,
-      doGC, () => Unit, () => cdata2 = data.clone()) { _ =>
-      java.util.Arrays.sort(cdata2, null)
-    }
-
-    benchmark.run()
-
-    // compare the results
-    assert(cdata.toSeq === cdata2.toSeq)
-  }
-
-  ignore("UTF8String optimized compareTo") {
-    runUTF8StringCompareTo(1000000, 1000)
-    runUTF8StringCompareTo(1000000, 1000000)
-    runUTF8StringCompareTo(1000000, 1000, preSorted = true)
-    runUTF8StringCompareTo(1000000, 1000000, preSorted = true)
-  }
 
   ignore("cache with randomized keys - insert") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
@@ -212,6 +156,16 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           testDF2.write.insertInto("test")
         }
         if (snappy) {
+          snappySession.sql("set snappydata.linkPartitionsToBuckets=true")
+          val results = snappySession.sql("select count(*), spark_partition_id() " +
+              "from test group by spark_partition_id()").collect().toSeq
+          snappySession.sql("set snappydata.linkPartitionsToBuckets=false")
+          val counts = results.map(_.getLong(0))
+          // expect the counts to not vary by more than 800k (max 200k per batch)
+          val min = counts.min
+          val max = counts.max
+          assert(max - min <= 800000, "Unexpectedly large data skew: " +
+              results.map(r => s"${r.getInt(1)}=${r.getLong(0)}").mkString(","))
           ColumnCacheBenchmark.collect(snappySession.sql(query), expectedAnswer2)
         } else {
           ColumnCacheBenchmark.collect(sparkSession.sql(query), expectedAnswer)
@@ -333,18 +287,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 }
 
 object ColumnCacheBenchmark {
-
-  def sparkCompare(o1: UTF8String, o2: UTF8String): Int = {
-    val len = Math.min(o1.numBytes(), o2.numBytes())
-    var i = 0
-    while (i < len) {
-      val res = (Platform.getByte(o1.getBaseObject, o1.getBaseOffset + i) & 0xFF) -
-        (Platform.getByte(o2.getBaseObject, o2.getBaseOffset + i) & 0xFF)
-      if (res != 0) return res
-      i += 1
-    }
-    o1.numBytes() - o2.numBytes()
-  }
 
   /**
    * Collect a [[Dataset[Row]] and check whether the collected result matches
