@@ -17,11 +17,15 @@
 
 package org.apache.spark.sql.execution.benchmark
 
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import io.snappydata.SnappyFunSuite
+import scala.io.Source
 
-import org.apache.spark.unsafe.Platform
+import io.snappydata.SnappyFunSuite
+import it.unimi.dsi.fastutil.longs.LongArrayList
+
+import org.apache.spark.unsafe.{Native, Platform}
 import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Benchmark
@@ -31,6 +35,27 @@ import org.apache.spark.util.random.XORShiftRandom
  * Comparisons for UTF8String optimizations.
  */
 class StringBenchmark extends SnappyFunSuite {
+
+  private val allocatedMemoryList: LongArrayList = new LongArrayList
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    if (allocatedMemoryList.size() > 0) {
+      val iter = allocatedMemoryList.iterator()
+      while (iter.hasNext) {
+        Platform.freeMemory(iter.nextLong())
+      }
+    }
+  }
+
+  private def toUTF8String(s: String): UTF8String = {
+    val b = s.getBytes(StandardCharsets.UTF_8)
+    val numBytes = b.length
+    val ub = Platform.allocateMemory(numBytes)
+    allocatedMemoryList.add(ub)
+    Platform.copyMemory(b, Platform.BYTE_ARRAY_OFFSET, null, ub, numBytes)
+    UTF8String.fromAddress(null, ub, numBytes)
+  }
 
   private def doGC(): Unit = {
     System.gc()
@@ -91,20 +116,23 @@ class StringBenchmark extends SnappyFunSuite {
   }
 
   ignore("UTF8String optimized contains") {
-    val numElements = 1000000
+    val customerFile = getClass.getResource("/customer.csv").getPath
+    val numLoads = 1500
     val numIters = 10
-    val rnd = new XORShiftRandom
 
-    def randomSuffix: String = {
-      (1 to rnd.nextInt(30)).map(_ => rnd.nextInt(10)).mkString("")
-    }
-
-    val randData = Array.fill(numElements)(
-      s"${UUID.randomUUID().toString}-${UUID.randomUUID().toString}-$randomSuffix")
-    val data = randData.map(UTF8String.fromString)
-    val search = "0123456789"
-    val searchStr = UTF8String.fromString(search)
+    val sdata = (1 to numLoads).flatMap(_ => Source.fromFile(customerFile).getLines()).toArray
+    val numElements = sdata.length
+    val data = sdata.map(toUTF8String)
+    val search = "71,HOUSEHOLD"
+    val expectedMatches = 3 * numLoads
+    val searchStr = toUTF8String(search)
     val pattern = java.util.regex.Pattern.compile(search)
+
+    if (Native.isLoaded) {
+      // scalastyle:off
+      println("Using native JNI calls")
+      // scalastyle:on
+    }
 
     val benchmark = new Benchmark("compare contains", numElements)
 
@@ -117,6 +145,7 @@ class StringBenchmark extends SnappyFunSuite {
         }
         i += 1
       }
+      assert(matched === expectedMatches)
     }
     benchmark.addCase("UTF8String (opt)", numIters) { _ =>
       var i = 0
@@ -127,26 +156,29 @@ class StringBenchmark extends SnappyFunSuite {
         }
         i += 1
       }
+      assert(matched === expectedMatches)
     }
     benchmark.addCase("String", numIters) { _ =>
       var i = 0
       var matched = 0
       while (i < numElements) {
-        if (randData(i).contains(search)) {
+        if (sdata(i).contains(search)) {
           matched += 1
         }
         i += 1
       }
+      assert(matched === expectedMatches)
     }
     benchmark.addCase("Regex", numIters) { _ =>
       var i = 0
       var matched = 0
       while (i < numElements) {
-        if (pattern.matcher(randData(i)).find(0)) {
+        if (pattern.matcher(sdata(i)).find(0)) {
           matched += 1
         }
         i += 1
       }
+      assert(matched === expectedMatches)
     }
 
     benchmark.run()
