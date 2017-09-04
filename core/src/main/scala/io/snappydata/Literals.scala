@@ -264,7 +264,7 @@ object Property extends Enumeration {
 
   val ForceLinkPartitionsToBuckets: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}linkPartitionsToBuckets",
-    "Property to always create one bucket per partition in column/row table scans. " +
+    "Property to treat each bucket as separate partition in column/row table scans. " +
         "When unset or set to false, SnappyData will try to create only " +
         "as many partitions as executor cores clubbing multiple buckets " +
         "into each partition when possible.", Some(false), Constant.SPARK_PREFIX)
