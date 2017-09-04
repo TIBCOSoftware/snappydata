@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -66,9 +67,14 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val session = SnappySessionPerConnection
       .getSnappySessionForConnection(ctx.getConnId)
 
+  if (ctx.getUserName != null && !ctx.getUserName.isEmpty) {
+    session.conf.set(Attribute.USERNAME_ATTR, ctx.getUserName)
+    session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
+  }
+
   session.setSchema(schema)
 
-  session.setPreparedQuery(false, pvs)
+  session.setPreparedQuery(preparePhase = false, pvs)
 
   private[this] val df = session.sql(sql)
 
@@ -137,7 +143,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // prepare SnappyResultHolder with all data and create new one
             SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
             msg.sendResult(srh)
-            srh = new SnappyResultHolder(this)
+            srh = new SnappyResultHolder(this, msg.isUpdateOrDelete)
           } else {
             // throttle sending if target node is CRITICAL_UP
             val targetMember = msg.getSender

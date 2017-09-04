@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -32,6 +32,7 @@ function usage {
   echo "       [ -v|--verbose ]"
   echo "       [ -s starttimestamp|--start=starttimestamp ]"
   echo "       [ -e endtimestamp|--end=endtimestamp ]"
+  echo "       [ -x debugtarfile|--extract=debugtarfile ]"
   echo
   echo "       Timestamp format: ${timestamp_format}"
   echo
@@ -53,6 +54,11 @@ while [ "$1" != "" ]; do
       shift ;;
     --conf=*|--config=*)
       CONF_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+    -x)
+      TAR_FILE="$2"
+      shift ;;
+    --extract=*|--xtract=*)
+      TAR_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
     -o)
       OUTPUT_DIR="$2"
       shift ;;
@@ -92,6 +98,14 @@ num_regex='^[0-9]+$'
 
 # Check configurations and assign defaults
 function check_configs {
+
+  if [ -n "${TAR_FILE}" ]; then
+    if [ ! -f "${TAR_FILE}" ]; then
+      echo "Debug Tar file ${TAR_FILE} does not exist"
+      exit 1
+    fi
+  fi
+
   if [ -z "${CONF_FILE}" ]; then
     CONF_FILE="${SPARK_HOME}/conf/debug.conf.template"
   fi
@@ -131,6 +145,7 @@ function check_configs {
     echo SCRIPT_DIR = "${SCRIPT_DIR}"
     echo SPARK_HOME = "${SPARK_HOME}"
     echo OUTPUT_DIR = "${OUTPUT_DIR}"
+    echo TAR_FILE = "${TAR_FILE}"
   fi
 
   if [ -z "${START_TIME}" ]; then
@@ -169,20 +184,26 @@ function check_configs {
 
 collector_host=`hostname`
 
+function extract {
+    debugtarzip="$1"
+    xtractdir=`dirname ${debugtarzip}`
+    tarname=`basename ${debugtarzip}`
+    cd $xtractdir
+    tar -xf $tarname
+    for zf in `find . -name '*.gz'`; do
+      ( cd "`dirname "$zf"`" && gunzip "`basename "$zf"`" )
+    done
+    echo "extracted in ${xtractdir}"
+}
+
 function collect_data {
   host="$1"
   wd="$2"
-  srv_num="$3"
-  top_level_out_dir="$4"
 
   if [ "${VERBOSE}" = "1" ]; then
     echo "Collecting data for process running on ${host} with working_dir ${wd}"
   fi
 
-  # make a sub directory for this host and pid
-  out_dir="${top_level_out_dir}/${host}-${srv_num}"
-
-  mkdir -p $out_dir 
   if [ "${VERBOSE}" = "1" ]; then
     echo "Args Being passed for host ${host}"
     echo "arg1 working directory = ${wd}" 
@@ -190,10 +211,9 @@ function collect_data {
     echo "arg3 interval_dumps = ${INTERVAL_BETWEEN_DUMPS}" 
     echo "arg4 get_everything = ${GET_EVERYTHING}" 
     echo "arg5 collector_host = ${collector_host}" 
-    echo "arg6 out dir = ${out_dir}"
-    echo "arg7 verbose = ${VERBOSE}"
-    echo "arg8 start epoch = ${START_EPOCH}"
-    echo "arg9 end epoch = ${END_EPOCH}"
+    echo "arg6 verbose = ${VERBOSE}"
+    echo "arg7 start epoch = ${START_EPOCH}"
+    echo "arg8 end epoch = ${END_EPOCH}"
   fi
 
   if [ "${DUMP_STACK}" != "1" ]; then
@@ -201,8 +221,9 @@ function collect_data {
     INTERVAL_BETWEEN_DUMPS=0
   fi
 
+  # Create the outdir with the same name on each remote and collect everything there.
   typeset -f | ssh $host "$(cat);collect_on_remote \"${wd}\" \"${NO_OF_STACK_DUMPS}\" \\
-      \"${INTERVAL_BETWEEN_DUMPS}\" \"${GET_EVERYTHING}\" \"${collector_host}\" \"${out_dir}\" \\
+      \"${INTERVAL_BETWEEN_DUMPS}\" \"${GET_EVERYTHING}\" \"${collector_host}\" \\
       \"${VERBOSE}\" \"${START_EPOCH}\" \"${END_EPOCH}\""
 }
 
@@ -212,17 +233,25 @@ function collect_on_remote {
   int_stack_dumps="$3"
   get_all="$4"
   collector_host="$5"
-  collector_dir="$6"
-  verbose="$7"
-  start_epoch="$8"
-  end_epoch="$9"
+  verbose="$6"
+  start_epoch="$7"
+  end_epoch="$8"
 
-  tmp_dir="$(mktemp -d "$data_dir/data.XXXX")"
-  retval=$?
-  if [ ! -d ${tmp_dir} ]; then
-    echo "FAILED TO CREATE tmp dir on ${host} at ${data_dir} with errno ${retval}"
-    exit 1
-  fi
+  # Create a .tmpcda dir if not exists else empty it
+  tmp_dir="$data_dir/.tmpcda"
+  if [ -d ${tmp_dir} ]; then
+    rm -rf ${tmp_dir}/*
+  else
+    mkdir -p $tmp_dir
+    retval=$?
+    if [ ! -d ${tmp_dir} ]; then
+      echo "FAILED TO CREATE tmp dir on ${host} at ${data_dir} with errno ${retval}"
+      exit 1
+    fi
+    if [ "${verbose}" = "1" ]; then
+      echo "created dir ${tmp_dir} on remote host"
+    fi
+  fi  
 
   # first get the pid. The latest log file with the header will have the pid
   host=`hostname`
@@ -396,30 +425,41 @@ function collect_on_remote {
   for f in "${files[@]}"
   do
     if [ "${verbose}" = "1" ]; then
-      echo "copying file ${f} in dir ${tmp_dir}"
+      echo "copying file ${f} in dir ${tmp_dir}/"
     fi
     cp $f "${tmp_dir}/"
+    returnval=$?
+    if [ "${verbose}" = "1" ]; then
+      echo "copied and returnval=${returnval}"
+    fi
+  done
+
+  # gzip all the files so that rsync is fast
+  cd "${tmp_dir}"
+  for i in `ls`
+  do
+    if [ "${verbose}" = "1" ]; then
+      echo "zipping ${i}"
+    fi
+    gzip $i
+    if [ "${verbose}" = "1" ]; then
+      echo "zipp of ${i} done"
+    fi
   done
 
   if [ "${verbose}" = "1" ]; then
-    echo "FILES=${files[@]} will be rsynced to ${collector_host}:$collector_dir}"
-  fi
-
-  cd "${tmp_dir}/.."
-  if [ "${verbose}" = "1" ]; then
-    tar cvzf "${tmp_dir}.tar.gz" $(basename $tmp_dir) && \
-      rsync -av "${tmp_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
-        rm -f "${tmp_dir}.tar.gz" && rm -rf "${tmp_dir}"
-  else
-    tar czf "${tmp_dir}.tar.gz" $(basename $tmp_dir) && \
-      rsync -a "${tmp_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
-        rm -f "${tmp_dir}.tar.gz" && rm -rf "${tmp_dir}"
+    echo "FILES=${files[@]} zipped and copied to ${collector_host}:$tmp_dir}"
   fi
 }
 
 check_configs
 # Assuming each line in the members info file has the following format
 # host pid cwd
+
+if [ -n "${TAR_FILE}" ]; then
+  ( extract "${TAR_FILE}" )
+  exit 0
+fi
 
 # Make output directory
 TS=`date +%m.%d.%H.%M.%S`
@@ -429,18 +469,18 @@ else
   out_dir="${OUTPUT_DIR}/debug_data_${TS}"
 fi
 
-mkdir -p $out_dir
-
 if [ "${VERBOSE}" = "1" ]; then
   echo "Top Level output dir = ${out_dir}"
 fi
+
+mkdir -p $out_dir
 
 # get the uniq lines from the members file
 tmp_members_file="$(mktemp /tmp/debug_mem.XXXX)"
 
 sort $MEMBERS_FILE | uniq >  $tmp_members_file
 
-serv_num=1
+all_pids=()
 while  read -r line || [[ -n "$line" ]]; do
   if [ "${VERBOSE}" = "1" ]; then
     echo "Line read from file: $line"
@@ -451,8 +491,30 @@ while  read -r line || [[ -n "$line" ]]; do
     echo "host: $host pid: $pid and cwd: $cwd"
   fi
 
-  ( collect_data $host $cwd $serv_num $out_dir )
-  serv_num=`expr $serv_num + 1`
+  collect_data $host $cwd &
+  all_pids+=($!) 
+done < $tmp_members_file
+
+# wait for all the collection to end on respective hosts
+# Then rsync 1 by 1
+for p in "${all_pids[@]}"
+do
+  if [ "${VERBOSE}" = "1" ]; then
+    echo "Waiting for pid ${p}"
+  fi
+  wait $p 2> /dev/null
+done
+
+while  read -r line || [[ -n "$line" ]]; do
+  read host cwd <<< $line
+  basenamedir=`basename $cwd`
+  hostout_dir="${out_dir}/${host}-${basenamedir}"
+  mkdir "${hostout_dir}"
+  if [ "${VERBOSE}" = "1" ]; then
+    rsync -av --remove-source-files "${host}:${cwd}/.tmpcda/*"  "${hostout_dir}"/
+  else
+    rsync -a --remove-source-files "${host}:${cwd}/.tmpcda/*"  "${hostout_dir}"/
+  fi
 done < $tmp_members_file
 
 rm -rf $tmp_members_file

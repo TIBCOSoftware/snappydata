@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -37,11 +37,14 @@ object TPCH_Memsql_Query {
      var isResultCollection : Boolean = args(3).toBoolean
      var warmup : Integer = args(4).toInt
      var runsForAverage : Integer = args(5).toInt
+     var isDynamic : Boolean = args(6).toBoolean
 
      stmt.execute("USE " + dbName)
 
-     for(query <- queries)
-       query match {
+     for(query <- queries) {
+       TPCH_Memsql.execute(query, isResultCollection, stmt, warmup, runsForAverage, isDynamic)
+     }
+       /*query match {
          case "1" =>   TPCH_Memsql.execute("q1", isResultCollection, stmt, warmup, runsForAverage)
          case "2" =>   TPCH_Memsql.execute("q2", isResultCollection, stmt, warmup, runsForAverage)
          case "3"=>   TPCH_Memsql.execute("q3", isResultCollection, stmt, warmup, runsForAverage)
@@ -65,7 +68,7 @@ object TPCH_Memsql_Query {
          case "21" =>   TPCH_Memsql.execute("q21", isResultCollection, stmt, warmup, runsForAverage)
          case "22" =>   TPCH_Memsql.execute("q22", isResultCollection, stmt, warmup, runsForAverage)
            println("---------------------------------------------------------------------------------")
-       }
+       }*/
 
      stmt.close();
      TPCH_Memsql.close()

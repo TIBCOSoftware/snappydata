@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,22 +19,25 @@ package org.apache.spark.sql
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.sql.{CallableStatement, Connection, SQLException}
 
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.impl.SparkShellRDDHelper
+import io.snappydata.Constant
+import io.snappydata.impl.SparkConnectorRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
+
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.{Logging, Partition}
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
 
-  private var conn: Connection = null
-  private var connectionURL: String = null
+  private var conn: Connection = _
+  private var connectionURL: String = _
   private val createSnappyTblString = "call sys.CREATE_SNAPPY_TABLE(?, ?, ?, ?, ?, ?, ?)"
   private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
@@ -42,6 +45,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?, ?, ?)"
   private val createUDFString = "call sys.CREATE_SNAPPY_UDF(?, ?, ?, ?)"
   private val dropUDFString = "call sys.DROP_SNAPPY_UDF(?, ?)"
+  private val alterTableStmtString = "call sys.ALTER_SNAPPY_TABLE(?, ?, ?, ?, ?)"
   private var getMetaDataStmt: CallableStatement = _
   private var createSnappyTblStmt: CallableStatement = _
   private var dropSnappyTblStmt: CallableStatement = _
@@ -49,6 +53,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private var dropSnappyIdxStmt: CallableStatement = _
   private var createUDFStmt: CallableStatement = _
   private var dropUDFStmt: CallableStatement = _
+  private var alterTableStmt: CallableStatement = _
 
   clusterMode match {
     case ThinClientConnectorMode(_, url) =>
@@ -58,7 +63,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def initializeConnection(): Unit = {
-    val jdbcOptions = new JDBCOptions(connectionURL + ";route-query=false;", "",
+    val jdbcOptions = new JDBCOptions(connectionURL + getSecurePart + ";route-query=false;", "",
       Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     createSnappyTblStmt = conn.prepareCall(createSnappyTblString)
@@ -68,6 +73,20 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     getMetaDataStmt = conn.prepareCall(getMetaDataStmtString)
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
+    alterTableStmt = conn.prepareCall(alterTableStmtString)
+  }
+
+  private def getSecurePart: String = {
+    var securePart = ""
+    val user = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
+        .USERNAME_ATTR, "")
+    if (!user.isEmpty) {
+      val pass = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
+          .PASSWORD_ATTR, "")
+      securePart = s";user=$user;password=$pass"
+      logInfo(s"Using $user credentials to securely connect to snappydata cluster")
+    }
+    securePart
   }
 
   private def runStmtWithExceptionHandling[T](function: => T): T = {
@@ -128,6 +147,23 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
     SnappyStoreHiveCatalog.registerRelationDestroy()
     SnappySession.clearAllCache()
+  }
+
+  def alterTable(tableIdent: QualifiedTableName,
+                 isAddColumn: Boolean, column: StructField): Unit = {
+    runStmtWithExceptionHandling(executeAlterTableStmt(tableIdent, isAddColumn, column))
+    SnappySession.clearAllCache()
+  }
+
+  private def executeAlterTableStmt(tableIdent: QualifiedTableName,
+                                    isAddColumn: Boolean,
+                                    column: StructField): Unit = {
+    alterTableStmt.setString(1, tableIdent.table)
+    alterTableStmt.setBoolean(2, isAddColumn)
+    alterTableStmt.setString(3, column.name)
+    alterTableStmt.setString(4, column.dataType.simpleString)
+    alterTableStmt.setBoolean(5, column.nullable)
+    alterTableStmt.execute()
   }
 
   private def executeDropTableStmt(tableIdent: QualifiedTableName,
@@ -201,21 +237,22 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       if (bucketCount > 0) {
         val partitionCols = getMetaDataStmt.getString(4).split(":")
         val bucketToServerMappingStr = getMetaDataStmt.getString(6)
-        val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
-        val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, pkCols,
-          partitions, embdClusterRelDestroyVersion))
+        val allNetUrls = SparkConnectorRDDHelper.setBucketToServerMappingInfo(
+          bucketToServerMappingStr)
+        val partitions = SparkConnectorRDDHelper.getPartitions(allNetUrls)
+        (t, RelationInfo(bucketCount, isPartitioned = true, partitionCols.toSeq,
+          indexCols, pkCols, partitions, embdClusterRelDestroyVersion))
       } else {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
-        val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
-        val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(1, Seq.empty[String], indexCols, pkCols,
+        val allNetUrls = SparkConnectorRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
+        val partitions = SparkConnectorRDDHelper.getPartitions(allNetUrls)
+        (t, RelationInfo(1, isPartitioned = false, Seq.empty[String], indexCols, pkCols,
           partitions, embdClusterRelDestroyVersion))
       }
     } else {
       // external tables (with source as csv, parquet etc.)
-      (t, new RelationInfo(1, Seq.empty[String], Array.empty[String], Array.empty[String],
-        Array.empty[Partition], embdClusterRelDestroyVersion))
+      (t, RelationInfo(1, isPartitioned = false, Seq.empty[String], Array.empty[String],
+        Array.empty[String], Array.empty[Partition], embdClusterRelDestroyVersion))
     }
   }
 

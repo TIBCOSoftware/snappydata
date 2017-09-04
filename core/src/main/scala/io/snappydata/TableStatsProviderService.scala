@@ -20,6 +20,7 @@ package io.snappydata
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.util.control.Breaks._
 
 import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
@@ -47,6 +48,25 @@ trait TableStatsProviderService extends Logging {
     }
   }
 
+  var memberStatsUpdater: Option[Thread] = None
+
+  protected def getMemberStatsUpdater: Thread = synchronized {
+
+    if (memberStatsUpdater.isEmpty ||
+        memberStatsUpdater.get.getState == Thread.State.TERMINATED) {
+      memberStatsUpdater = {
+        val th = new Thread(new Runnable() {
+          def run() {
+            // update membersInfo
+            fillAggregatedMemberStatsOnDemand()
+          }
+        })
+        Option(th)
+      }
+    }
+    memberStatsUpdater.get
+  }
+
   @volatile protected var doRun: Boolean = false
   @volatile private var running: Boolean = false
 
@@ -62,8 +82,11 @@ trait TableStatsProviderService extends Logging {
           val (tableStats, indexStats) = getAggregatedStatsOnDemand
           tableSizeInfo = tableStats
           indexesInfo = indexStats // populating indexes stats
+
+          // Commenting this call to avoid periodic refresh of members stats
           // get members details
-          fillAggregatedMemberStatsOnDemand()
+          // fillAggregatedMemberStatsOnDemand()
+
         } finally {
           running = false
           notifyAll()
@@ -99,8 +122,55 @@ trait TableStatsProviderService extends Logging {
   }
 
   def getMembersStatsOnDemand: mutable.Map[String, mutable.Map[String, Any]] = {
-    fillAggregatedMemberStatsOnDemand()
-    membersInfo
+    // fillAggregatedMemberStatsOnDemand()
+    // membersInfo
+
+    var infoToBeReturned: mutable.Map[String, mutable.Map[String, Any]] =
+      TrieMap.empty[String, mutable.Map[String, Any]]
+    val prevMembersInfo = membersInfo.synchronized{membersInfo}
+    val waitTime: Int = 500
+
+    // get member stats updater thread
+    val msUpdater = getMemberStatsUpdater
+    if (!msUpdater.isAlive) {
+      // start updater thread to update members stats
+      msUpdater.start()
+    }
+
+    val endTimeMillis = System.currentTimeMillis() + 5000
+    if (msUpdater.isAlive) {
+      breakable {
+        while (msUpdater.isAlive) {
+          if (System.currentTimeMillis() > endTimeMillis) {
+            logWarning("Obtaining updated Members Statistics is taking longer than expected time..")
+            // infoToBeReturned = prevMembersInfo
+            break
+          }
+          try {
+            // Wait
+            logDebug("Obtaining updated Members Statistics in progress.." +
+                "Waiting for " + waitTime + " ms")
+            Thread.sleep(waitTime)
+          } catch {
+            case e: InterruptedException => logWarning("InterruptedException", e)
+          }
+        }
+      }
+
+      if (msUpdater.getState == Thread.State.TERMINATED) {
+        // Thread is terminated so assigning updated member info
+        infoToBeReturned = membersInfo
+      } else {
+        // Thread is still running so assigning last updated member info
+        logWarning("Setting last updated member statistics snapshot..")
+        infoToBeReturned = prevMembersInfo
+      }
+    } else {
+      // Thread is terminated so assigning updated member info
+      infoToBeReturned = membersInfo
+    }
+
+    infoToBeReturned
   }
 
   def stop(): Unit = {
@@ -113,7 +183,8 @@ trait TableStatsProviderService extends Logging {
   }
 
   def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
-    // TODO: [SachinK] This code is commented to avoid forced refresh of stats on every call (as indexesInfo could be empty).
+    // TODO: [SachinK] This code is commented to avoid forced refresh of stats
+    // on every call (as indexesInfo could be empty).
     /*
     val indexStats = this.indexesInfo
     if (indexStats.isEmpty) {
@@ -125,7 +196,8 @@ trait TableStatsProviderService extends Logging {
   }
 
   def getTableSizeStats: Map[String, SnappyRegionStats] = {
-    // TODO: [SachinK] Below conditional check can be commented to avoid forced refresh of stats on every call (tableSizeInfo could be empty).
+    // TODO: [SachinK] Below conditional check can be commented to avoid
+    // forced refresh of stats on every call (tableSizeInfo could be empty).
     val tableSizes = this.tableSizeInfo
     if (tableSizes.isEmpty) {
       // force run
@@ -148,7 +220,7 @@ trait TableStatsProviderService extends Logging {
       Map[String, SnappyIndexStats]) = {
     val snc = this.snc
     if (snc == null) return (Map.empty, Map.empty)
-    val (tableStats, indexStats) = getStatsFromAllServers
+    val (tableStats, indexStats) = getStatsFromAllServers()
 
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     val aggregatedStatsIndex = scala.collection.mutable.Map[String, SnappyIndexStats]()
@@ -181,5 +253,6 @@ trait TableStatsProviderService extends Logging {
   }
   */
 
-  def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats])
+  def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
+      Seq[SnappyIndexStats])
 }

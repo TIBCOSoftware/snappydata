@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -109,6 +109,9 @@ dependencies {
   }
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
+  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+    testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
+  }
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
@@ -139,7 +142,6 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
 
 compileJava.dependsOn createVersionPropertiesFile
 
-
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
   classifier = 'javadoc'
   from scaladoc
@@ -153,7 +155,6 @@ if (rootProject.hasProperty('enablePublish')) {
 testClasses.doLast {
   copyTestsCommonResources(buildDir)
 }
-
 
 def copyDirs(def srcDir, def destDir) {
   mkdir(destDir)
@@ -175,6 +176,5 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn test, scalaTest, dunitTest
+check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion
-

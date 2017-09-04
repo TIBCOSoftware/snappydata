@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -29,27 +29,35 @@ import org.apache.spark.unsafe.types.UTF8String
 
 trait DictionaryEncoding extends ColumnEncoding {
 
-  override def typeId: Int = 2
-
-  val BIG_DICTIONARY_TYPE_ID = 3
-
   override final def supports(dataType: DataType): Boolean = dataType match {
     case StringType | IntegerType | DateType | LongType | TimestampType => true
     case _ => false
   }
 }
 
-final class DictionaryDecoder
-    extends DictionaryDecoderBase with NotNullDecoder
+final class DictionaryDecoder(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
+    fromUnfinishedEncoder: ColumnEncoder = null)
+    extends DictionaryDecoderBase(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with NotNullDecoder
 
-final class DictionaryDecoderNullable
-    extends DictionaryDecoderBase with NullableDecoder
+final class DictionaryDecoderNullable(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
+    fromUnfinishedEncoder: ColumnEncoder = null)
+    extends DictionaryDecoderBase(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with NullableDecoder
 
-final class BigDictionaryDecoder
-    extends BigDictionaryDecoderBase with NotNullDecoder
+final class BigDictionaryDecoder(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
+    fromUnfinishedEncoder: ColumnEncoder = null)
+    extends BigDictionaryDecoderBase(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with NotNullDecoder
 
-final class BigDictionaryDecoderNullable
-    extends BigDictionaryDecoderBase with NullableDecoder
+final class BigDictionaryDecoderNullable(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
+    fromUnfinishedEncoder: ColumnEncoder = null)
+    extends BigDictionaryDecoderBase(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with NullableDecoder
 
 final class DictionaryEncoder
     extends NotNullEncoder with DictionaryEncoderBase
@@ -57,12 +65,16 @@ final class DictionaryEncoder
 final class DictionaryEncoderNullable
     extends NullableEncoder with DictionaryEncoderBase
 
-abstract class DictionaryDecoderBase
-    extends ColumnDecoder with DictionaryEncoding {
+abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
+    extends ColumnDecoder(columnDataRef, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with DictionaryEncoding {
 
-  protected[this] final var stringDictionary: Array[UTF8String] = _
+  protected[this] final var stringDictionary: StringDictionary = _
   protected[this] final var intDictionary: Array[Int] = _
   protected[this] final var longDictionary: Array[Long] = _
+
+  override def typeId: Int = ColumnEncoding.DICTIONARY_TYPE_ID
 
   /**
    * Initialization will fill in the dictionaries as written by the
@@ -73,23 +85,22 @@ abstract class DictionaryDecoderBase
    * which needs to be moved to [[ByteBufferHashMap]] once DictionaryEncoder
    * adds support for long/integer dictionary encoding.
    */
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = {
-    var position = cursor
-    val numElements = ColumnEncoding.readInt(columnBytes, position)
+  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
+      dataType: DataType): Long = {
+    val numElements = ColumnEncoding.readInt(columnBytes, cursor)
     // last index in the dictionary is for null element
     val dictionaryLen = if (hasNulls) numElements + 1 else numElements
+    initializeDictionary(columnBytes, cursor + 4, numElements, dictionaryLen, dataType)
+  }
+
+  private[encoding] def initializeDictionary(columnBytes: AnyRef, cursor: Long,
+      numElements: Int, dictionaryLen: Int, dataType: DataType): Long = {
+    var position = cursor
     var index = 0
-    position += 4
-    Utils.getSQLDataType(field.dataType) match {
+    Utils.getSQLDataType(dataType) match {
       case StringType =>
-        stringDictionary = new Array[UTF8String](dictionaryLen)
-        while (index < numElements) {
-          val s = ColumnEncoding.readUTF8String(columnBytes, position)
-          stringDictionary(index) = s
-          position += (4 + s.numBytes())
-          index += 1
-        }
+        stringDictionary = new StringDictionary(cursor, numElements)
+        position = stringDictionary.initialize(columnBytes)
       case IntegerType | DateType =>
         intDictionary = new Array[Int](dictionaryLen)
         while (index < numElements) {
@@ -105,76 +116,48 @@ abstract class DictionaryDecoderBase
           index += 1
         }
       case _ => throw new UnsupportedOperationException(
-        s"DictionaryEncoding not supported for ${field.dataType}")
+        s"DictionaryEncoding not supported for $dataType")
     }
-    position - 2 // move cursor back so that first next call increments it
+    position
   }
 
-  override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
-    cursor + 2
+  // TODO: PERF: optimize for local index access case by filling
+  // in the dictionary array lazily on access
+  override def readUTF8String(columnBytes: AnyRef, nonNullPosition: Int): UTF8String =
+  stringDictionary.getString(columnBytes,
+    ColumnEncoding.readShort(columnBytes, baseCursor + (nonNullPosition << 1)))
 
-  override def readUTF8String(columnBytes: AnyRef,
-      cursor: Long): UTF8String =
-    stringDictionary(ColumnEncoding.readShort(columnBytes, cursor))
+  override final def getStringDictionary: StringDictionary = stringDictionary
 
-  override final def getStringDictionary: Array[UTF8String] =
-    stringDictionary
+  override def readDictionaryIndex(columnBytes: AnyRef, nonNullPosition: Int): Int =
+    ColumnEncoding.readShort(columnBytes, baseCursor + (nonNullPosition << 1))
 
-  override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
-    if (ColumnEncoding.littleEndian) {
-      Platform.getShort(columnBytes, cursor)
-    } else {
-      java.lang.Short.reverseBytes(Platform.getShort(columnBytes, cursor))
-    }
+  override def readInt(columnBytes: AnyRef, nonNullPosition: Int): Int =
+    intDictionary(ColumnEncoding.readShort(columnBytes, baseCursor + (nonNullPosition << 1)))
 
-  override def nextInt(columnBytes: AnyRef, cursor: Long): Long =
-    cursor + 2
-
-  override def readInt(columnBytes: AnyRef, cursor: Long): Int =
-    intDictionary(ColumnEncoding.readShort(columnBytes, cursor))
-
-  override def nextLong(columnBytes: AnyRef, cursor: Long): Long =
-    cursor + 2
-
-  override def readLong(columnBytes: AnyRef, cursor: Long): Long =
-    longDictionary(ColumnEncoding.readShort(columnBytes, cursor))
+  override def readLong(columnBytes: AnyRef, nonNullPosition: Int): Long =
+    longDictionary(ColumnEncoding.readShort(columnBytes, baseCursor + (nonNullPosition << 1)))
 }
 
-abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
+abstract class BigDictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
+    extends DictionaryDecoderBase(columnDataRef, startCursor, field,
+      initDelta, fromUnfinishedEncoder) {
 
-  override def typeId: Int = BIG_DICTIONARY_TYPE_ID
+  override def typeId: Int = ColumnEncoding.BIG_DICTIONARY_TYPE_ID
 
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = {
-    // move cursor further back for 4 byte integer index reads
-    super.initializeCursor(columnBytes, cursor, field) - 2
-  }
+  override final def readUTF8String(columnBytes: AnyRef, nonNullPosition: Int): UTF8String =
+    stringDictionary.getString(columnBytes,
+      ColumnEncoding.readInt(columnBytes, baseCursor + (nonNullPosition << 2)))
 
-  override final def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
-    cursor + 4
+  override def readDictionaryIndex(columnBytes: AnyRef, nonNullPosition: Int): Int =
+    ColumnEncoding.readInt(columnBytes, baseCursor + (nonNullPosition << 2))
 
-  override final def readUTF8String(columnBytes: AnyRef,
-      cursor: Long): UTF8String =
-    stringDictionary(ColumnEncoding.readInt(columnBytes, cursor))
+  override final def readInt(columnBytes: AnyRef, nonNullPosition: Int): Int =
+    intDictionary(ColumnEncoding.readInt(columnBytes, baseCursor + (nonNullPosition << 2)))
 
-  override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
-    if (ColumnEncoding.littleEndian) {
-      Platform.getInt(columnBytes, cursor)
-    } else {
-      java.lang.Integer.reverseBytes(Platform.getInt(columnBytes, cursor))
-    }
-
-  override final def nextInt(columnBytes: AnyRef, cursor: Long): Long =
-    cursor + 4
-
-  override final def readInt(columnBytes: AnyRef, cursor: Long): Int =
-    intDictionary(ColumnEncoding.readInt(columnBytes, cursor))
-
-  override final def nextLong(columnBytes: AnyRef, cursor: Long): Long =
-    cursor + 4
-
-  override final def readLong(columnBytes: AnyRef, cursor: Long): Long =
-    longDictionary(ColumnEncoding.readInt(columnBytes, cursor))
+  override final def readLong(columnBytes: AnyRef, nonNullPosition: Int): Long =
+    longDictionary(ColumnEncoding.readInt(columnBytes, baseCursor + (nonNullPosition << 2)))
 }
 
 trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
@@ -187,23 +170,25 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
    * Strings are added using [[ByteBufferHashMap.addDictionaryString]]
    * method which returns the index of the string in the dictionary.
    */
-  private[this] final var stringMap: ByteBufferHashMap = _
+  private final var stringMap: ByteBufferHashMap = _
 
-  private[this] final var longMap: ObjectHashSet[LongIndexKey] = _
-  private[this] final var longArray: TLongArrayList = _
-  private[this] final var isIntMap: Boolean = _
+  private final var longMap: ObjectHashSet[LongIndexKey] = _
+  private final var longArray: TLongArrayList = _
+  private final var isIntMap: Boolean = _
+  private final var writeHeader: Boolean = true
 
-  @transient private[this] final var isShortDictionary: Boolean = _
+  @transient private final var isShortDictionary: Boolean = _
 
-  override def typeId: Int = if (isShortDictionary) 2 else BIG_DICTIONARY_TYPE_ID
+  override def typeId: Int = if (isShortDictionary) ColumnEncoding.DICTIONARY_TYPE_ID
+  else ColumnEncoding.BIG_DICTIONARY_TYPE_ID
 
   override def sizeInBytes(cursor: Long): Long = {
     if (stringMap ne null) {
       cursor - columnBeginPosition + stringMap.valueDataSize
     } else if (isIntMap) {
-      cursor - columnBeginPosition + (longArray.size() << 2)
+      cursor - columnBeginPosition + (longArray.size << 2)
     } else {
-      cursor - columnBeginPosition + (longArray.size() << 4)
+      cursor - columnBeginPosition + (longArray.size << 4)
     }
   }
 
@@ -213,22 +198,21 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     case _ => dataType.defaultSize // accommodate values without expansion
   }
 
-  protected def initializeIndexBytes(initSize: Int,
+  protected def initializeIndexBytes(initSize: Int, minSize: Int,
       releaseOld: Boolean): Unit = {
     if (!releaseOld || (columnData eq null)) {
       // 2 byte indexes for short dictionary while 4 bytes for big dictionary
       val numBytes = if (isShortDictionary) initSize << 1L else initSize << 2L
-      setSource(allocator.allocate(numBytes, ColumnEncoding.BUFFER_OWNER),
-        releaseOld)
+      setSource(allocator.allocate(math.max(numBytes, minSize),
+        ColumnEncoding.BUFFER_OWNER), releaseOld)
     }
   }
 
-  override def initialize(field: StructField, initSize: Int,
-      withHeader: Boolean, allocator: BufferAllocator): Long = {
-    assert(withHeader, "DictionaryEncoding not supported without header")
-
+  override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
+      withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int): Long = {
+    writeHeader = withHeader
     setAllocator(allocator)
-    Utils.getSQLDataType(field.dataType) match {
+    dataType match {
       case StringType =>
         if (stringMap eq null) {
           // assume some level of compression with dictionary encoding
@@ -249,13 +233,57 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         longArray = new TLongArrayList(mapSize)
         isIntMap = t.isInstanceOf[IntegerType]
     }
-    initializeLimits()
+    if (withHeader) initializeLimits()
     initializeNulls(initSize)
     // start with the short dictionary having 2 byte indexes
     isShortDictionary = true
-    initializeIndexBytes(initSize, releaseOld = true)
+    initializeIndexBytes(initSize, minBufferSize, releaseOld = true)
     // return the cursor for index bytes
     columnBeginPosition
+  }
+
+  override def writeInternals(columnBytes: AnyRef, cursor: Long): Long = {
+    var numDictionaryElements: Int = 0
+    val dictionarySize = if (stringMap ne null) {
+      numDictionaryElements = stringMap.size
+      stringMap.valueDataSize
+    } else {
+      numDictionaryElements = longArray.size
+      if (isIntMap) numDictionaryElements << 2
+      else numDictionaryElements << 4
+    }
+    // write dictionary and position cursor at start of index bytes
+    writeDictionary(columnBytes, cursor, numDictionaryElements, dictionarySize)
+  }
+
+  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder = {
+    // can depend on nullCount here because there is no additional space
+    // pre-allocated for storing nulls by dictionary encoder
+    if (nullCount > 0) {
+      if (isShortDictionary) {
+        new DictionaryDecoderNullable(null, 0L, null, fromUnfinishedEncoder = this)
+      } else new BigDictionaryDecoderNullable(null, 0L, null, fromUnfinishedEncoder = this)
+    } else {
+      if (isShortDictionary) new DictionaryDecoder(null, 0L, null, fromUnfinishedEncoder = this)
+      else new BigDictionaryDecoder(null, 0L, null, fromUnfinishedEncoder = this)
+    }
+  }
+
+  override private[encoding] def initializeDecoderBeforeFinish(decoder: ColumnDecoder): Long = {
+    initializeNullsBeforeFinish(decoder)
+    // TODO: only supported for strings; use ByteBufferHashMap for longArray too
+    // when long/int dictionary support is added
+    if (stringMap ne null) {
+      // TODO: SW: release of buffers?
+      val dictionaryData = stringMap.valueData
+      val dictionaryDecoder = decoder.asInstanceOf[DictionaryDecoderBase]
+      val dictionaryLen = stringMap.size
+      dictionaryDecoder.initializeDictionary(dictionaryData.baseObject,
+        dictionaryData.baseOffset, dictionaryLen, dictionaryLen, StringType)
+      // base cursor will start at the index cursor since dictionary is separate
+      columnBeginPosition
+    } else throw new UnsupportedOperationException(
+      "decoder on unfinished data for long/int dictionary")
   }
 
   protected final def switchToBigDictionary(numUsedIndexes: Int,
@@ -266,7 +294,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val oldIndexBytes = columnBytes
     var oldCursor = columnBeginPosition
     // force new columnData creation since need to copy in different format
-    initializeIndexBytes(newNumIndexes, releaseOld = false)
+    initializeIndexBytes(newNumIndexes, minSize = -1, releaseOld = false)
     var cursor = columnBeginPosition
     // copy over short indexes from previous index bytes
     var i = 0
@@ -302,8 +330,9 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override final def writeUTF8String(cursor: Long, value: UTF8String): Long = {
     var position = cursor
+    val str = if (value ne null) value else UTF8String.EMPTY_UTF8
     // add or get from dictionary
-    var index = stringMap.addDictionaryString(value)
+    var index = stringMap.addDictionaryString(str)
     // update stats only if new key was added
     if (index < 0) {
       updateStringStats(value)
@@ -331,7 +360,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // update stats only if new key was added
     var index = key.index
     if (index == -1) {
-      index = longArray.size()
+      index = longArray.size
       key.index = index
       if (index == Short.MaxValue && isShortDictionary) {
         val numUsedIndexes = ((position - columnBeginPosition) >> 1).toInt
@@ -346,52 +375,23 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     writeIndex(position, index)
   }
 
-  override def finish(indexCursor: Long): ByteBuffer = {
-    val numIndexBytes = (indexCursor - this.columnBeginPosition).toInt
-    var numElements: Int = 0
-    val dictionarySize = if (stringMap ne null) {
-      numElements = stringMap.size
-      stringMap.valueDataSize
-    } else {
-      numElements = longArray.size
-      if (isIntMap) numElements << 2
-      else numElements << 4
-    }
-    // create the final data array of exact size that is known at this point
-    val numNullWords = getNumNullWords
-    val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
-    val storageAllocator = this.storageAllocator
-    val columnData = storageAllocator.allocateForStorage(ColumnEncoding
-        // typeId + number of nulls
-        .checkBufferSize(8L + (numNullWords << 3L) + dataSize))
-    val columnBytes = storageAllocator.baseObject(columnData)
-    val baseOffset = storageAllocator.baseOffset(columnData)
-    var cursor = baseOffset
-    // typeId
-    ColumnEncoding.writeInt(columnBytes, cursor, typeId)
-    cursor += 4
-    // number of nulls
-    ColumnEncoding.writeInt(columnBytes, cursor, numNullWords)
-    cursor += 4
-    // write the null bytes
-    cursor = writeNulls(columnBytes, cursor, numNullWords)
-
-    // write the dictionary and then the indexes
-
+  private def writeDictionary(columnBytes: AnyRef, startCursor: Long,
+      numDictionaryElements: Int, dictionarySize: Long): Long = {
+    var cursor = startCursor
     // write the size of dictionary
-    ColumnEncoding.writeInt(columnBytes, cursor, numElements)
+    ColumnEncoding.writeInt(columnBytes, cursor, numDictionaryElements)
     cursor += 4
     // write the dictionary elements
     if (stringMap ne null) {
       // dictionary is already in serialized form
-      if (numElements > 0) {
+      if (numDictionaryElements > 0) {
         Platform.copyMemory(stringMap.valueData.baseObject,
           stringMap.valueData.baseOffset, columnBytes, cursor, dictionarySize)
         cursor += dictionarySize
       }
     } else if (isIntMap) {
       var index = 0
-      while (index < numElements) {
+      while (index < numDictionaryElements) {
         val l = longArray.getQuick(index)
         ColumnEncoding.writeInt(columnBytes, cursor, l.toInt)
         cursor += 4
@@ -399,13 +399,52 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       }
     } else {
       var index = 0
-      while (index < numElements) {
+      while (index < numDictionaryElements) {
         val l = longArray.getQuick(index)
         ColumnEncoding.writeLong(columnBytes, cursor, l)
         cursor += 8
         index += 1
       }
     }
+    cursor
+  }
+
+  override def finish(indexCursor: Long): ByteBuffer = {
+    val numIndexBytes = (indexCursor - this.columnBeginPosition).toInt
+    var numDictionaryElements: Int = 0
+    val dictionarySize = if (stringMap ne null) {
+      numDictionaryElements = stringMap.size
+      stringMap.valueDataSize
+    } else {
+      numDictionaryElements = longArray.size
+      if (isIntMap) numDictionaryElements << 2
+      else numDictionaryElements << 4
+    }
+    // create the final data array of exact size that is known at this point
+    val numNullWords = getNumNullWords
+    val numNullBytes = numNullWords << 3
+    val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
+    val storageAllocator = this.storageAllocator
+    val columnData = storageAllocator.allocateForStorage(ColumnEncoding
+        // typeId + number of nulls
+        .checkBufferSize(8L + numNullBytes + dataSize))
+    val columnBytes = storageAllocator.baseObject(columnData)
+    val baseOffset = storageAllocator.baseOffset(columnData)
+    var cursor = baseOffset
+    if (writeHeader) {
+      // typeId
+      ColumnEncoding.writeInt(columnBytes, cursor, typeId)
+      cursor += 4
+      // number of nulls
+      ColumnEncoding.writeInt(columnBytes, cursor, numNullBytes)
+      cursor += 4
+    }
+    // write the null bytes
+    cursor = writeNulls(columnBytes, cursor, numNullWords)
+
+    // write the dictionary and then the indexes
+
+    cursor = writeDictionary(columnBytes, cursor, numDictionaryElements, dictionarySize)
     // lastly copy the index bytes
     columnData.position((cursor - baseOffset).toInt)
     copyTo(columnData, srcOffset = 0, numIndexBytes)
@@ -417,6 +456,15 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     columnData
   }
 
+  override def encodedSize(indexCursor: Long, dataBeginPosition: Long): Long = {
+    val numIndexBytes = indexCursor - dataBeginPosition
+    val dictionarySize =
+      if (stringMap ne null) stringMap.valueDataSize
+      else if (isIntMap) longArray.size << 2
+      else longArray.size << 4
+    4L /* dictionary size */ + dictionarySize + numIndexBytes
+  }
+
   override def close(): Unit = {
     super.close()
     if ((stringMap ne null) && (stringMap.keyData ne null)) {
@@ -426,6 +474,59 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     longMap = null
     longArray = null
   }
+}
+
+final class StringDictionary(baseCursor: Long, positions: Array[Int],
+    strings: Array[UTF8String], numElements: Int) {
+
+  def this(cursor: Long, numElements: Int) = {
+    // for medium/large dictionaries, create objects on the fly rather than store
+    // in dictionary to avoid GC issues with long-lived objects (SNAP-1877)
+    this(cursor, if (numElements > 1000) new Array[Int](numElements + 1) else null,
+      if (numElements <= 1000) new Array[UTF8String](numElements + 1) else null, numElements)
+  }
+
+  def initialize(columnBytes: AnyRef): Long = {
+    var intPos = 0
+    var index = 0
+    if (strings ne null) {
+      var cursor = baseCursor
+      while (index < numElements) {
+        val size = ColumnEncoding.readInt(columnBytes, cursor)
+        strings(index) = UTF8String.fromAddress(columnBytes, cursor + 4, size)
+        cursor += size + 4
+        index += 1
+      }
+      cursor
+    } else {
+      val cursor = baseCursor
+      while (index < numElements) {
+        positions(index) = intPos + 4
+        val size = ColumnEncoding.readInt(columnBytes, cursor + intPos)
+        intPos += size + 4
+        index += 1
+      }
+      cursor + intPos
+    }
+  }
+
+  @inline def getString(columnBytes: AnyRef, index: Int): UTF8String = {
+    // create objects on the fly rather than store in dictionary to avoid
+    // GC issues with long-lived objects (SNAP-1877)
+    if (strings ne null) {
+      strings(index)
+    } else {
+      val dictionaryPosition = positions(index)
+      // last uninitialized cursor indicates null value
+      if (dictionaryPosition != 0) {
+        val cursor = baseCursor + dictionaryPosition
+        val size = ColumnEncoding.readInt(columnBytes, cursor - 4)
+        UTF8String.fromAddress(columnBytes, cursor, size)
+      } else null
+    }
+  }
+
+  def size(): Int = numElements
 }
 
 private final class LongIndexKey(_l: Long, var index: Int)

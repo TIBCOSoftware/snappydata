@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,9 +16,10 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.nio.ByteBuffer
 import java.sql.Connection
 
-import scala.reflect.ClassTag
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -29,8 +30,15 @@ trait ExternalStore extends Serializable {
 
   final val columnPrefix = "COL_"
 
+  def tableName: String
+
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit
+      partitionId: Int, batchId: Long, maxDeltaRows: Int,
+      conn: Option[Connection]): Unit
+
+  def storeDelete(tableName: String, buffer: ByteBuffer,
+      statsData: Array[Byte], partitionId: Int, batchId: Long,
+      conn: Option[Connection]): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
       prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any]
@@ -42,24 +50,23 @@ trait ExternalStore extends Serializable {
 
   def connProperties: ConnectionProperties
 
-  def tryExecute[T: ClassTag](tableName: String,
-      f: Connection => T,
-      closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+  def tryExecute[T](tableName: String, closeOnSuccessOrFailure: Boolean = true,
+      onExecutor: Boolean = false)(f: Connection => T)
       (implicit c: Option[Connection] = None): T = {
-    var isClosed = false
+    var success = false
     val conn = c.getOrElse(getConnection(tableName, onExecutor))
     try {
-      f(conn)
-    } catch {
-      case t: Throwable =>
-        conn.rollback()
-        conn.close()
-        isClosed = true
-        throw t
+      val ret = f(conn)
+      success = true
+      ret
     } finally {
-      if (closeOnSuccess && !isClosed) {
-        conn.commit()
-        conn.close()
+      if (closeOnSuccessOrFailure && !conn.isInstanceOf[EmbedConnection] && !conn.isClosed) {
+        try {
+          if (success) conn.commit()
+          else conn.rollback()
+        } finally {
+          conn.close()
+        }
       }
     }
   }
@@ -77,21 +84,29 @@ trait ConnectedExternalStore extends ExternalStore {
   }
 
   def commitAndClose(isSuccess: Boolean): Unit = {
-    if (!connectedInstance.isClosed && isSuccess) {
-      connectedInstance.commit()
+    // ideally shouldn't check for isClosed.it means some bug!
+    val conn = connectedInstance
+    if (!conn.isInstanceOf[EmbedConnection] && !conn.isClosed) {
+      try {
+        if (isSuccess) {
+          conn.commit()
+        } else {
+          conn.rollback()
+        }
+      } finally {
+        conn.close()
+      }
     }
-    connectedInstance.close()
   }
 
-  override def tryExecute[T: ClassTag](tableName: String,
-      f: Connection => T,
+  override def tryExecute[T](tableName: String,
       closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+      (f: Connection => T)
       (implicit c: Option[Connection]): T = {
     assert(!connectedInstance.isClosed)
-    val ret = super.tryExecute(tableName, f,
-      closeOnSuccess = false /* responsibility of the user to close later */ ,
-      onExecutor)(
-      implicitly, Some(connectedInstance))
+    val ret = super.tryExecute(tableName,
+      closeOnSuccessOrFailure = false /* responsibility of the user to close later */ ,
+      onExecutor)(f)(Some(connectedInstance))
 
     if (dependentAction.isDefined) {
       assert(!connectedInstance.isClosed)

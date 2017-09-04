@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -40,6 +40,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
     startSparkJob()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testTableCreationWithHA(): Unit = {
@@ -62,30 +63,37 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     verifyTableData(snc , tableName)
     dropTable(snc, tableName)
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
     startSparkJob2()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableProjectionQuery(): Unit = {
     startSparkJob3()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableWithPartition(): Unit = {
     startSparkJob4()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAPI(): Unit = {
     startSparkJob5()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndSingleInsertAPI(): Unit = {
     startSparkJob6()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndInsertCLOB(): Unit = {
     startSparkJob7()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
 
@@ -117,7 +125,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         columnBatchTableName(tableName).toUpperCase
     val getPRMessageCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
-        Int.box(Misc.getRegionForTable(columnTableRegionName, true).
+        Int.box(Misc.getRegionForTable("APP." + columnTableRegionName, true).
             asInstanceOf[PartitionedRegion].getPrStats.getPartitionMessagesSent)
       }
     }
@@ -167,7 +175,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // we don't expect any increase in put distribution stats
     val getPRMessageCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
-        Int.box(Misc.getRegionForTable(columnTableRegionName, true).
+        Int.box(Misc.getRegionForTable("APP." + columnTableRegionName, true).
             asInstanceOf[PartitionedRegion].getPrStats.getPartitionMessagesSent)
       }
     }
@@ -209,7 +217,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val getTotalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
         val pr: PartitionedRegion =
-          Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
+          Misc.getRegionForTable("APP." + tName, true).asInstanceOf[PartitionedRegion]
         var buckets = Set.empty[Integer]
         0 to (pr.getTotalNumberOfBuckets - 1) foreach { x =>
           buckets = buckets + x
@@ -229,7 +237,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val getLocalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
         val pr: PartitionedRegion =
-          Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
+          Misc.getRegionForTable("APP." + tName, true).asInstanceOf[PartitionedRegion]
         val iter = pr.getAppropriateLocalEntriesIterator(
           pr.getDataStore.getAllLocalBucketIds, false, false, true, pr, false)
         var count = 0
@@ -255,6 +263,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1008, s"Unexpected elements ${r.length}, expected=1008")
 
     snc.dropTable(tableName, ifExists = true)
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
     getLogWriter.info("Successful")
   }
 
@@ -315,7 +324,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableName.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
         columnBatchTableName(tableName).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
@@ -359,6 +368,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
     val shadowRegion = Misc.getRegionForTable(
+      "APP." +
       ColumnFormatRelation.columnBatchTableName(tableNameWithPartition).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
@@ -412,6 +422,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
     val shadowRegion = Misc.getRegionForTable(
+      "APP." +
       ColumnFormatRelation.columnBatchTableName(tableNameWithPartition).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
@@ -461,6 +472,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
     val shadowRegion = Misc.getRegionForTable(
+      "APP." +
       ColumnFormatRelation.columnBatchTableName(tableNameWithPartition).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
@@ -514,6 +526,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).
         asInstanceOf[PartitionedRegion]
     val shadowRegion = Misc.getRegionForTable(
+      "APP." +
       ColumnFormatRelation.columnBatchTableName("COLUMNTABLE4").toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
@@ -573,7 +586,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).
         asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
         columnBatchTableName("COLUMNTABLE4").toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
@@ -649,6 +662,29 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(snc.sql("select count(*) from t1").count() > 0)
     FileUtils.deleteDirectory(new File(tempPath))
   }
+
+
+
+  def testSNAP1878(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    snc.sql(s"create table t1 (c1 integer,c2 string)")
+    snc.sql(s"insert into t1 values(1,'test1')")
+    snc.sql(s"insert into t1 values(2,'test2')")
+    snc.sql(s"insert into t1 values(3,'test3')")
+    val df=snc.sql("select * from t1")
+    df.show
+    val tempPath = "/tmp/" + System.currentTimeMillis()
+
+    assert(df.count()==3)
+    df.write.option("header","true").csv(tempPath)
+    snc.createExternalTable("TEST_EXTERNAL","csv",Map("path" -> tempPath,"header" -> "true"))
+    val dataDF=snc.sql("select * from TEST_EXTERNAL")
+    assert(dataDF.count==3)
+    snc.sql("drop table if exists TEST_EXTERNAL")
+    FileUtils.deleteDirectory(new File(tempPath))
+  }
+
 
 }
 

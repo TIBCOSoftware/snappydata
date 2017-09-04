@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,24 +23,30 @@ import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
-
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
+import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
+import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
+import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
-
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
+import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
+import spray.routing.authentication.UserPass
+
+import scala.concurrent.Future
 
 class LeadImpl extends ServerImpl with Lead
     with ProtocolOverrides with Logging {
@@ -159,6 +165,14 @@ class LeadImpl extends ServerImpl with Lead
             throw e;
         }
       }
+
+      // The auth service is not yet initialized at this point.
+      // So simply check the auth-provider property value.
+      if (Misc.checkAuthProvider(bootProperties.asScala.asJava)) {
+        logInfo("Enabling user authentication for SnappyData Pulse")
+        SparkCallbacks.setAuthenticatorForJettyServer()
+      }
+
       sparkContext = new SparkContext(conf)
 
       checkAndStartZeppelinInterpreter(bootProperties)
@@ -180,14 +194,21 @@ class LeadImpl extends ServerImpl with Lead
     val conf = sc.getConf // this will get you a cloned copy
     initStartupArgs(conf, sc)
 
+    val password = conf.getOption(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
+    if (password.isDefined) conf.remove(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
     logInfo("cluster configuration after overriding certain properties \n"
         + conf.toDebugString)
+    if (password.isDefined) conf.set(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR,
+      password.get)
 
     val confProps = conf.getAll
     val storeProps = ServiceUtils.getStoreProperties(confProps)
+    checkAuthProvider(storeProps)
 
+    val pass = storeProps.remove(Attribute.PASSWORD_ATTR)
     logInfo("passing store properties as " + storeProps)
-    super.start(storeProps, false)
+    if (pass != null) storeProps.setProperty(Attribute.PASSWORD_ATTR, pass.asInstanceOf[String])
+    super.start(storeProps, ignoreIfStarted = false)
 
     status() match {
       case State.RUNNING =>
@@ -206,7 +227,7 @@ class LeadImpl extends ServerImpl with Lead
               // cleanup before throwing exception
               internalStop(bootProperties)
               throw new SparkException("Primary Lead node (Spark Driver) is " +
-                  "already running in the system. You may use split cluster " +
+                  "already running in the system. You may use smart connector " +
                   "mode to connect to SnappyData cluster.")
             }
             serverstatus = State.STANDBY
@@ -230,6 +251,32 @@ class LeadImpl extends ServerImpl with Lead
         }
       case _ =>
         logWarning(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
+    }
+  }
+
+  /**
+    * @inheritdoc
+    */
+  override def notifyRunning() {
+    logDebug("Accepting RUNNING notification")
+    serverstatus = State.RUNNING
+    // status file for CacheServerLauncher is updated in the LeadImpl.internalStart
+    // via callback of  notifyStatusChange
+  }
+
+  private def checkAuthProvider(props: Properties): Unit = {
+    doCheck(props.getProperty(Attribute.AUTH_PROVIDER))
+    doCheck(props.getProperty(Attribute.SERVER_AUTH_PROVIDER))
+
+    def doCheck(authP: String): Unit = {
+      if (authP != null && !"LDAP".equalsIgnoreCase(authP)) {
+        throw new UnsupportedOperationException(
+          "LDAP is the only supported auth-provider currently.")
+      }
+      if (authP != null && !SnappySession.isEnterpriseEdition) {
+        throw new UnsupportedOperationException("Security feature is available in SnappyData " +
+            "Enterprise Edition.")
+      }
     }
   }
 
@@ -355,6 +402,7 @@ class LeadImpl extends ServerImpl with Lead
         case c => Array(c)
       }
 
+      configureAuthenticatorForSJS()
       JobServer.start(confFile, getConfig, createActorSystem)
     }
 
@@ -368,6 +416,46 @@ class LeadImpl extends ServerImpl with Lead
     LeadImpl.clearInitializingSparkContext()
   }
 
+  def configureAuthenticatorForSJS(): Unit = {
+    if (Misc.isSecurityEnabled) {
+      logInfo("Configuring authenticator for Snappy Job users.")
+      SnappyAuthenticator.auth = new SnappyAuthenticator {
+
+        import scala.concurrent.ExecutionContext.Implicits.global
+
+        override def authenticate(userPass: Option[UserPass]): Future[Option[AuthInfo]] = {
+          Future { checkCredentials(userPass) }
+        }
+
+        def checkCredentials(userPass: Option[UserPass]): Option[AuthInfo] = {
+          userPass match {
+            case Some(u) =>
+              try {
+                val props = new Properties()
+                props.setProperty(Attribute.USERNAME_ATTR, u.user)
+                props.setProperty(Attribute.PASSWORD_ATTR, u.pass)
+                val result = FabricDatabase.getAuthenticationServiceBase.authenticate(Misc
+                    .getMemStoreBooting.getDatabaseName, props)
+                if (result != null) {
+                  val msg = s"ACCESS DENIED, user [${u.user}]. $result"
+                  if (GemFireXDUtils.TraceAuthentication) {
+                    SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
+                  }
+                  logInfo(msg)
+                  None
+                } else {
+                  Option(new AuthInfo(User(u.user, u.pass)))
+                }
+              } catch {
+                case t: Throwable => logWarning(s"Failed to authenticate the snappy job. $t")
+                  None
+              }
+            case None => None
+          }
+        }
+      }
+    }
+  }
 
   def getConfig(args: Array[String]): Config = {
 

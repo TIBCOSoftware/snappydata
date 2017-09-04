@@ -10,7 +10,6 @@ INITTASK    taskClass   = util.StopStartVMs  taskMethod = StopStart_initTask
 TASK       taskClass   = io.snappydata.hydra.cluster.SnappyStartUpTest taskMethod  = HydraTask_clusterRestartWithRandomOrderForServerStartUp
            maxThreads = 1
            startInterval = 60
-           //weight = 40
            threadGroups = snappyThreads
            maxTimesToRun = ${snappyStoreHosts}
            ;
@@ -19,10 +18,4 @@ CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = re
            threadGroups = snappyThreads;
 
 CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyStartUpTest taskMethod  = randomizeServerConfigData
-           threadGroups = snappyThreads;
-
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
-           threadGroups = snappyThreads;
-
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSnappyCluster
            threadGroups = snappyThreads;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,7 +32,7 @@ public class SnapshotIsolationDMLOpsBB extends Blackboard {
    */
   public static synchronized SnapshotIsolationDMLOpsBB getBB() {
     if (bbInstance == null)
-      synchronized (SnapshotIsolationBB.class) {
+      synchronized (SnapshotIsolationDMLOpsBB.class) {
         if (bbInstance == null)
           bbInstance = new SnapshotIsolationDMLOpsBB(SNAPSHOT_DML_BB_NAME, SNAPSHOT_DML_BB_TYPE);
       }

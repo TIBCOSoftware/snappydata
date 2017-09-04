@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,9 +24,7 @@ import scala.reflect.ClassTag
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
-
 import io.snappydata.collection.ObjectHashSet
-
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -39,7 +37,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
-import org.apache.spark.{Dependency, Partition, ShuffleDependency, TaskContext}
+import org.apache.spark._
 
 /**
  * :: DeveloperApi ::
@@ -183,17 +181,42 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
+  private def findShuffleDependencies(rdd: RDD[_]): Seq[Dependency[_]] = {
+    rdd.dependencies.flatMap {
+      case s: ShuffleDependency[_, _, _] => if (s.rdd ne rdd) {
+        s +: findShuffleDependencies(s.rdd)
+      } else s :: Nil
+      case d => findShuffleDependencies(d.rdd)
+    }
+  }
+
   private lazy val (streamSideRDDs, buildSideRDDs) = {
     val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
     val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
-    if (replicatedTableJoin) (streamRDDs, buildRDDs)
+    if (replicatedTableJoin) {
+      val streamRDD = streamRDDs.head
+      val numParts = streamRDD.getNumPartitions
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
+      val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
+        streamRDD.preferredLocations(streamRDD.partitions(i))
+      }
+      val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
+        // add the build-side shuffle dependecies to first stream-side RDD
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+          preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
+          streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
+            rdd.sparkContext, rdd, preferredLocations))
+      } else {
+        streamRDDs
+      }
+      (streamPlanRDDs, buildRDDs)
+    }
     else {
       // wrap in DelegateRDD for shuffle dependencies and preferred locations
 
       // Get the build side shuffle dependencies.
-      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(_.dependencies
-          .filter(_.isInstanceOf[ShuffleDependency[_, _, _]]))
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
       val hasStreamSideShuffle = streamRDDs.exists(_.dependencies
           .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
       // treat as a zip of all stream side RDDs and build side RDDs and
@@ -398,7 +421,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val entryVar = ctx.freshName("entry")
     val localValueVar = ctx.freshName("value")
     val checkNullObj = joinType match {
-      case LeftOuter | RightOuter | FullOuter => true
+      case LeftOuter | RightOuter | FullOuter | LeftAnti => true
       case _ => false
     }
     val (initCode, keyValueVars, nullMaskVars) = mapAccessor.getColumnVars(
@@ -433,9 +456,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
   override def batchConsume(ctx: CodegenContext,
       plan: SparkPlan, input: Seq[ExprCode]): String = {
+    if (!canConsume(plan)) return ""
     // create an empty method to populate the dictionary array
     // which will be actually filled with code in consume if the dictionary
-    // optimization is possible using the incoming ExprCodeEx
+    // optimization is possible using the incoming DictionaryCode
     val className = mapAccessor.getClassName
     // this array will be used at batch level for grouping if possible
     dictionaryArrayTerm = ctx.freshName("dictionaryArray")
