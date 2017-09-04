@@ -202,41 +202,10 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   // Test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
-    // perform some operation thru spark-shell
-    val jars = Files.newDirectoryStream(Paths.get(s"$snappyProductDir/../distributions/"),
-      "snappydata-core*.jar")
-    val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
-    // SparkSqlTestCode.txt file contains the commands executed on spark-shell
-    val scriptFile: String = getClass.getResource("/SparkSqlTestCode.txt").getPath
-    val sparkShellCommand = productDir + "/bin/spark-shell  --master local[3]" +
-        s" --conf spark.snappydata.connection=localhost:$locatorClientPort" +
-        s" --conf spark.snappydata.store.user=$jdbcUser1" +
-        s" --conf spark.snappydata.store.password=$jdbcUser1" +
-        s" --jars $snappyDataCoreJar" +
-        s" -i $scriptFile"
-
-    val cwd = new java.io.File("spark-shell-out")
-    FileUtils.deleteQuietly(cwd)
-    cwd.mkdirs()
-    logInfo(s"about to invoke spark-shell with command: $sparkShellCommand in $cwd")
-
-    Process(sparkShellCommand, cwd).!!
-    FileUtils.deleteQuietly(cwd)
-
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    val conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
-    val stmt = conn.createStatement()
-
-    // accessing tables created thru spark-shell
-    val rs1 = stmt.executeQuery("select count(*) from coltable")
-    rs1.next()
-    assert(rs1.getInt(1) == 5)
-
-    val rs2 = stmt.executeQuery("select count(*) from rowtable")
-    rs2.next()
-    assert(rs2.getInt(1) == 5)
+    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, locatorClientPort, props)
   }
 
   def testPreparedStatements(): Unit = {
