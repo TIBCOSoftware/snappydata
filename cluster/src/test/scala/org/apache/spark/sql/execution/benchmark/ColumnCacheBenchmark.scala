@@ -156,6 +156,14 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           testDF2.write.insertInto("test")
         }
         if (snappy) {
+          snappySession.sql("set snappydata.linkPartitionsToBuckets=true")
+          val counts = snappySession.sql("select count(*), spark_partition_id() " +
+              "from test group by spark_partition_id()").collect().toSeq.map(_.getLong(0))
+          snappySession.sql("set snappydata.linkPartitionsToBuckets=false")
+          // expect the counts to not vary by more than 800k (max 200k per batch)
+          val min = counts.min
+          val max = counts.max
+          assert(max - min <= 800000, s"Unexpectedly large data skew: $counts")
           ColumnCacheBenchmark.collect(snappySession.sql(query), expectedAnswer2)
         } else {
           ColumnCacheBenchmark.collect(sparkSession.sql(query), expectedAnswer)
