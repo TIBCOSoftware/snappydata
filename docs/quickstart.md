@@ -22,7 +22,7 @@ This section contains instructions and examples using which, you can try out Sna
 
 * [Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
 
-* [Benchmark to compare SnappyData to Spark performance](#start_benchmark)
+* [SnappyData Performance: 16x-20x faster than Apache Spark](#start_benchmark)
 
 * [Using SQL](#getting-started-using-sql)
 
@@ -260,9 +260,11 @@ scala>  snappy.dropTable("rowTable", ifExists = true)
 scala>  snappy.dropTable("colTable", ifExists = true)
 ```
 <a id="start_benchmark"></a>
-## Benchmark to Compare SnappyData to Spark Performance
-Here you are walked through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
+## SnappyData Performance: 16x-20x faster than Apache Spark
+Here you are walked through a simple benchmark to compare SnappyData to Spark 2.1 performance.
 Millions of rows are loaded into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
+
+A simple analytic query that scans a 100 million-row column table shows SnappyData outperforming Apache Spark by 16-20X when both products have all the data in memory.
 
 !!! Note: 
 	It is recommended that you should have at least 4GB of RAM reserved for this test. 
