@@ -88,7 +88,7 @@
                 
                     <li><a class="toctree-l4" href="#using-spark-scala-apis">Using Spark Scala APIs</a></li>
                 
-                    <li><a class="toctree-l4" href="#benchmark-to-compare-snappydata-to-spark-performance">Benchmark to Compare SnappyData to Spark Performance</a></li>
+                    <li><a class="toctree-l4" href="#snappydata-performance-16x-20x-faster-than-apache-spark">SnappyData Performance: 16x-20x faster than Apache Spark</a></li>
                 
                     <li><a class="toctree-l4" href="#using-sql">Using SQL</a></li>
                 
@@ -1107,7 +1107,7 @@ Multiple options are provided for getting started with SnappyData. </p>
 <p><a href="#getting-started-using-spark-scala-apis">Using Spark Scala APIs</a></p>
 </li>
 <li>
-<p><a href="#start_benchmark">Benchmark to compare SnappyData to Spark performance</a></p>
+<p><a href="#start_benchmark">SnappyData Performance: 16x-20x faster than Apache Spark</a></p>
 </li>
 <li>
 <p><a href="#getting-started-using-sql">Using SQL</a></p>
@@ -1345,9 +1345,10 @@ scala&gt;  snappy.dropTable(&quot;colTable&quot;, ifExists = true)
 </code></pre>
 
 <p><a id="start_benchmark"></a></p>
-<h2 id="benchmark-to-compare-snappydata-to-spark-performance">Benchmark to Compare SnappyData to Spark Performance</h2>
-<p>Here you are walked through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
+<h2 id="snappydata-performance-16x-20x-faster-than-apache-spark">SnappyData Performance: 16x-20x faster than Apache Spark</h2>
+<p>Here you are walked through a simple benchmark to compare SnappyData to Spark 2.1 performance.
 Millions of rows are loaded into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. </p>
+<p>A simple analytic query that scans a 100 million-row column table shows SnappyData outperforming Apache Spark by 16-20X when both products have all the data in memory.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>It is recommended that you should have at least 4GB of RAM reserved for this test. </p>
