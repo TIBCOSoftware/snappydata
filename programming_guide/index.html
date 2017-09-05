@@ -1706,7 +1706,7 @@ results4.foreach(println)
 </code></pre>
 
 <h4 id="python_1">Python</h4>
-<pre><code>from pyspark.streaming.snappy.context import SnappyStreamingContext
+<pre><code class="python">from pyspark.streaming.snappy.context import SnappyStreamingContext
 from pyspark.sql.types import *
 
 def  rddList(start, end):
@@ -1752,14 +1752,14 @@ snsc.sql(&quot;select count(*) from streamingExample&quot;).show()
 USING row | column
 OPTIONS (
 COLOCATE_WITH 'table_name',  // Default none
-PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table
+PARTITION_BY 'PRIMARY KEY' | 'column name', // If not specified it will be a replicated table
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY '1' ,
-EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
+EVICTION_BY 'LRUMEMSIZE 200' | 'LRUCOUNT 200' | 'LRUHEAPPERCENT',
 OVERFLOW 'true',
-PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
+PERSISTENCE  'ASYNCHRONOUS' | 'ASYNC' | 'SYNCHRONOUS' | 'SYNC' | 'NONE',
 DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
-EXPIRE ‘TIMETOLIVE_in_seconds',
+EXPIRE 'TIMETOLIVE_in_seconds',
 COLUMN_BATCH_SIZE '32000000',
 COLUMN_MAX_DELTA_ROWS '10000',
 )
@@ -1770,7 +1770,7 @@ DROP TABLE [IF EXISTS] table_name
 
 <p>Refer to the <a href="../howto/">How-Tos</a> section for more information on partitioning and colocating data and <a href="../reference/sql_reference/create-table/">CREATE TABLE</a> for information on creating a row/column table.</p>
 <p>You can also define complex types (Map, Array and StructType) as columns for column tables.</p>
-<pre><code class="scala">snappy.sql(&quot;CREATE TABLE tableName (
+<pre><code>snappy.sql(&quot;CREATE TABLE tableName (
 col1 INT , 
 col2 Array&lt;Decimal&gt;, 
 col3 Map&lt;Timestamp, Struct&lt;x: Int, y: String, z: Decimal(10,5)&gt;&gt;, 
@@ -1788,15 +1788,16 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 <pre><code>val snappy: SnappySession = new SnappySession(spark.sparkContext)
 </code></pre>
 <p>Create a SnappyStore table using Spark APIs</p>
-<pre><code>val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
-case class Data(col1: Int, col2: Int, col3: Int)
-val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-val rdd = sparkContext.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
-val dataDF = snappy.createDataFrame(rdd)
-snappy.createTable("column_table", "column", dataDF.schema, props)
-//or create a row format table
-snappy.createTable("row_table", "row", dataDF.schema, props)
+<pre><code class="scala">    val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
+    case class Data(col1: Int, col2: Int, col3: Int)
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sparkContext.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
+    val dataDF = snappy.createDataFrame(rdd)
+    snappy.createTable(&quot;column_table&quot;, &quot;column&quot;, dataDF.schema, props)
+    //or create a row format table
+    snappy.createTable(&quot;row_table&quot;, &quot;row&quot;, dataDF.schema, props)
 </code></pre>
+
 <p><strong>Drop a SnappyStore table using Spark APIs</strong>:</p>
 <pre><code>snappy.dropTable(tableName, ifExists = true)
 </code></pre>
@@ -1805,30 +1806,30 @@ snappy.createTable("row_table", "row", dataDF.schema, props)
 <p>The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. </p>
 <ul>
 <li>
-<p>COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.</p>
+<p><b>COLOCATE_WITH:</b> The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.</p>
 </li>
 <li>
-<p>PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for the column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.</p>
+<p><b>PARTITION_BY:</b> Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for the column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.</p>
 </li>
 <li>
-<p>BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.</p>
+<p><b>BUCKETS:</b>  The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.</p>
 </li>
 <li>
-<p>REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.</p>
+<p><b>REDUNDANCY:</b>  Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.</p>
 </li>
 <li>
-<p>EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table, based on different criteria. </br>For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause. </p>
+<p><b>EVICTION_BY:</b>  Use the EVICTION_BY clause to evict rows automatically from the in-memory table, based on different criteria. </br>For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables, no such defaults are set. Row tables allow all the eviction settings.</p>
 </div>
 </li>
 <li>
-<p>OVERFLOW: If it is set to <strong>false</strong> the evicted rows are destroyed. If set to <strong>true</strong> it overflows to a local SnappyStore disk store.
+<p><b>OVERFLOW:</b>  If it is set to <strong>false</strong> the evicted rows are destroyed. If set to <strong>true</strong> it overflows to a local SnappyStore disk store.
     When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).</p>
 </li>
 <li>
-<p>PERSISTENCE: When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
+<p><b>PERSISTENCE:</b>  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
 </li>
 </ul>
 <div class="admonition note">
@@ -1844,16 +1845,16 @@ snappy.createTable("row_table", "row", dataDF.schema, props)
 </div>
 <ul>
 <li>
-<p>DISKSTORE: The disk directory where you want to persist the table data. For more information, <a href="../reference/sql_reference/create-diskstore/">refer to this document</a>.</p>
+<p><b>DISKSTORE:</b>  The disk directory where you want to persist the table data. For more information, <a href="../reference/sql_reference/create-diskstore/">refer to this document</a>.</p>
 </li>
 <li>
-<p>EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.</p>
+<p><b>EXPIRE:</b>  You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.</p>
 </li>
 <li>
-<p>COLUMN_BATCH_SIZE: The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)</p>
+<p><b>COLUMN_BATCH_SIZE:</b>  The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)</p>
 </li>
 <li>
-<p>COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by <code>COLUMN_BATCH_SIZE</code> (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br> </p>
+<p><b>COLUMN_MAX_DELTA_ROWS:</b>  The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by <code>COLUMN_BATCH_SIZE</code> (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The following corresponding SQLConf properties for <code>COLUMN_BATCH_SIZE</code> and <code>COLUMN_MAX_DELTA_ROWS</code> are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): </p>
@@ -1941,12 +1942,12 @@ SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String dat
 
 **Create a table with columns of CHAR and VARCHAR datatype using SQL**:
 
-wzxhzdk:43
+wzxhzdk:44
 
 
 **Create a table with columns of CHAR and VARCHAR datatype using API**:
 
-wzxhzdk:44
+wzxhzdk:45
 
 
 
@@ -1960,26 +1961,26 @@ To ensure optimal performance for SELECT queries executed over JDBC connection (
 Using the system property `spark-string-as-clob` when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
 
 
-wzxhzdk:45
+wzxhzdk:46
 
 
 Defining the column(s) itself as CLOB, either using SQL or API. In the example below, column 'Col2' is defined as CLOB.
 
 
-wzxhzdk:46
-
-
 wzxhzdk:47
+
+
+wzxhzdk:48
 
 
 Using the query-hint `columnsAsClob in the SELECT query.
 
 
-wzxhzdk:48
+wzxhzdk:49
 
 The usage of `*` above causes all the STRING columns in the table to be rendered as CLOB. You can also provide comma-separated specific column name(s) instead of `*` above so that data of only those column(s) is returned as CLOB.
 
-wzxhzdk:49
+wzxhzdk:50
 
 -->
 

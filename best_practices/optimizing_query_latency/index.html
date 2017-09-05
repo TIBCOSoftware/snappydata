@@ -1084,11 +1084,21 @@
                 <h1 id="optimizing-query-latency-partitioning-and-replication-strategies">Optimizing Query Latency: Partitioning and Replication Strategies</h1>
 <p>The following topics are covered in this section:</p>
 <ul>
-<li><a href="#column-row">Using Column vs Row Table</a></li>
-<li><a href="#partition-replicate">Using Partitioned vs Replicated Row Table</a></li>
-<li><a href="#partition-scheme">Applying Partitioning Scheme</a></li>
-<li><a href="#redundancy">Using Redundancy</a></li>
-<li><a href="#overflow">Overflow Configuration</a></li>
+<li>
+<p><a href="#column-row">Using Column vs Row Table</a></p>
+</li>
+<li>
+<p><a href="#partition-replicate">Using Partitioned vs Replicated Row Table</a></p>
+</li>
+<li>
+<p><a href="#partition-scheme">Applying Partitioning Scheme</a></p>
+</li>
+<li>
+<p><a href="#redundancy">Using Redundancy</a></p>
+</li>
+<li>
+<p><a href="#overflow">Overflow Configuration</a></p>
+</li>
 </ul>
 <p><a id="column-row"></a></p>
 <h2 id="using-column-vs-row-table">Using Column vs Row Table</h2>
@@ -1113,20 +1123,20 @@ For a given query on a column table, only the required columns are read (since o
 <p>When designing a database schema for SnappyData, the main goal with a typical star schema database is to partition the entities in fact tables. Slow-changing dimension tables should then be replicated on each data store that hosts a partitioned fact table. In this way, a join between the fact table and any number of its dimension tables can be executed concurrently on each partition, without requiring multiple network hops to other members in the distributed system.</p>
 <p><a id="partition-scheme"></a></p>
 <h2 id="applying-partitioning-scheme">Applying Partitioning Scheme</h2>
-<p><a id="collocated-joins"></a>
-<strong>Collocated Joins</strong></br>
-Collocating frequently joined partitioned tables is the best practice to improve the performance of join queries. When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's  local data. </p>
-<p>If the two tables are not collocated, partitions with same column values for the two tables can be on different nodes thus requiring the data to be shuffled between nodes causing the query performance to degrade.</p>
-<p>For an example on collocated joins, refer to <a href="../../howto/#how-to-perform-a-collocated-join">How to collocate tables for doing a collocated join</a>.</p>
+<p><a id="colocated-joins"></a>
+<strong>Colocated Joins</strong></br>
+Colocating frequently joined partitioned tables is the best practice to improve the performance of join queries. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's  local data. </p>
+<p>If the two tables are not colocated, partitions with same column values for the two tables can be on different nodes thus requiring the data to be shuffled between nodes causing the query performance to degrade.</p>
+<p>For an example on colocated joins, refer to <a href="../../howto/#how-to-perform-a-colocated-join">How to colocate tables for doing a colocated join</a>.</p>
 <p><a id="buckets"></a>
 <strong>Buckets</strong></br>
 The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
-Unit of data movement is a bucket, and buckets of collocated tables move together. When a new server joins, the  <a href="../../configuring_cluster/property_description/#rebalance">-rebalance</a> option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY&gt;0 has been specified). </br>
+Unit of data movement is a bucket, and buckets of colocated tables move together. When a new server joins, the  <a href="../../configuring_cluster/property_description/#rebalance">-rebalance</a> option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY&gt;0 has been specified). </br>
 There is also a system procedure <a href="../../reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets">call sys.rebalance_all_buckets()</a> that can be used to trigger rebalance.
 For more information on BUCKETS, refer to <a href="../setup_cluster/#buckets">BUCKETS</a>.</p>
 <p><a id="dimension"></a>
 <strong>Criteria for Column Partitioning</strong></br>
-SnappyData partition is mainly for distributed and collocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query is executed concurrently.</br>
+SnappyData partition is mainly for distributed and colocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query is executed concurrently.</br>
 If only a single partition is active and is used largely by queries (especially concurrent queries) it means a significant bottleneck where only a single partition is active all the time, while others are idle. This serializes execution into a single thread handling that partition. Therefore, it is not recommended to use DATE/TIMESTAMP as partitioning.</p>
 <p><a id="redundancy"></a></p>
 <h2 id="using-redundancy">Using Redundancy</h2>

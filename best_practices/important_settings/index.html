@@ -1105,13 +1105,10 @@
 </ul>
 <p><a id="buckets"></a></p>
 <h2 id="buckets">buckets</h2>
-<p>A bucket is a unit of partitioning for SnappyData tables. The data is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, the buckets are moved around for rebalancing. </p>
-<p>The number of buckets should be set according to the table size. By default, there are 113 buckets for a table. 
-If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. 
-Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently.
-Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.</p>
-<p>For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.  </p>
-<p>This attribute is set when creating a table. Refer to <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> for examples.</p>
+<p>A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.</p>
+<p>By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.</p>
+<p>If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently. Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.</p>
+<p>For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data. This attribute is set when <a href="../../reference/sql_reference/create-table/">creating a table</a>.</p>
 <p><a id="member-timeout"></a></p>
 <h2 id="member-timeout">member-timeout</h2>
 <p>The default <a href="../../configuring_cluster/property_description/#member-timeout">member-timeout</a> in SnappyData cluster is 30 seconds. The default <code>spark.network.timeout</code> is 120 seconds and <code>spark.executor.heartbeatInterval</code> is 10 seconds as noted in the <a href="https://spark.apache.org/docs/latest/configuration.html">Spark documents</a>. </br> 

@@ -1154,7 +1154,7 @@ Topics in this section refer to source code examples that are shipped with the p
 <p><a href="#howto-external-source">How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)</a></p>
 </li>
 <li>
-<p><a href="#howto-collacatedJoin">How to Perform a Colocated Join</a></p>
+<p><a href="#howto-colacatedJoin">How to Perform a Colocated Join</a></p>
 </li>
 <li>
 <p><a href="#howto-jdbc">How to Connect using JDBC Driver</a></p>
@@ -1760,13 +1760,13 @@ df.write.format(&quot;column&quot;).mode(SaveMode.Append).saveAsTable(&quot;CUST
 snc.sql(&quot;select * from CUSTOMER&quot;).show
 </code></pre>
 
-<p><a id="howto-collacatedJoin"></a></p>
+<p><a id="howto-colacatedJoin"></a></p>
 <h2 id="how-to-perform-a-colocated-join">How to Perform a Colocated Join</h2>
 <p>When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Colocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
 When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.</p>
 <p><strong>Code Example: ORDERS table is colocated with CUSTOMER table</strong></p>
 <p>A partitioned table can be colocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
-For example, in the code snippet below, the ORDERS table is colocated with the CUSTOMER table. The complete source for this example can be found in the file <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala">CollocatedJoinExample.scala</a></p>
+For example, in the code snippet below, the ORDERS table is colocated with the CUSTOMER table. The complete source for this example can be found in the file <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala">ColocatedJoinExample.scala</a></p>
 <p><strong>Get a SnappySession</strong>:</p>
 <pre><code class="scala">    val spark: SparkSession = SparkSession
         .builder
