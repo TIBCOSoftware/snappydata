@@ -381,7 +381,7 @@ private[sql] final case class ColumnTableScan(
     val rsDecoderClass = classOf[ResultSetDecoder].getName
     val rsWithNullClass = classOf[ResultSetWithNull].getName
     val rowDecoderClass = classOf[UnsafeRowDecoder].getName
-    val deletedDecoderClass = classOf[DeletedColumnDecoder].getName
+    val deletedDecoderClass = classOf[ColumnDeleteDecoder].getName
     val batch = ctx.freshName("batch")
     val numBatchRows = s"${batch}NumRows"
     val batchIndex = s"${batch}Index"
@@ -580,6 +580,7 @@ private[sql] final case class ColumnTableScan(
           case 2 =>
             bucketIdTerm = ctx.freshName("bucketId")
             ExprCode("", "false", bucketIdTerm)
+          case 3 => ExprCode("", "false", numBatchRows)
           case _ => throw new IllegalStateException(s"Unexpected internal attribute $attr")
         }
       case (attr, index) => rsIndex += 1; columnsInputMapper(attr, index, rsIndex)
@@ -707,7 +708,7 @@ private[sql] final case class ColumnTableScan(
         // ordinalId is the last column in the row buffer table (exclude virtual columns)
         s"""
            |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(
-           |    ${if (embedded) relationSchema.length - 2 else output.length - 2}) : $batchOrdinal;
+           |    ${if (embedded) relationSchema.length - 3 else output.length - 3}) : $batchOrdinal;
         """.stripMargin)
     else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,

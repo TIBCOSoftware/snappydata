@@ -549,7 +549,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                 // for heap buffer, round off to nearest 8k to avoid tiny
                 // size changes from effecting the minimum selection else
                 // round off to 32 for off-heap where memory bytes has only
-                // the entry+key overhead (but overflow bytes has data too)
+                // the entry+key overhead (but overflow bytes have data too)
                 val shift = if (GemFireCacheImpl.hasNewOffHeap) 5 else 13
                 assert(iterator.hasNext)
                 var smallestBucket = iterator.next()
