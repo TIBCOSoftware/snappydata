@@ -137,12 +137,14 @@ object ColumnDelta {
   val mutableKeyNames: Seq[String] = Seq(
     mutableKeyNamePrefix + "ROW_ORDINAL",
     mutableKeyNamePrefix + "BATCH_ID",
-    mutableKeyNamePrefix + "BUCKET_ORDINAL"
+    mutableKeyNamePrefix + "BUCKET_ORDINAL",
+    mutableKeyNamePrefix + "BATCH_NUMROWS"
   )
   val mutableKeyFields: Seq[StructField] = Seq(
     StructField(mutableKeyNames.head, LongType, nullable = false),
     StructField(mutableKeyNames(1), LongType, nullable = false),
-    StructField(mutableKeyNames(2), IntegerType, nullable = false)
+    StructField(mutableKeyNames(2), IntegerType, nullable = false),
+    StructField(mutableKeyNames(3), IntegerType, nullable = false)
   )
   def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
