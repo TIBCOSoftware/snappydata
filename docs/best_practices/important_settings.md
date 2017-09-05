@@ -17,16 +17,13 @@ Resource allocation is important for the execution of any job. If not configured
 <a id="buckets"></a>
 ## buckets
 
-A bucket is a unit of partitioning for SnappyData tables. The data is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, the buckets are moved around for rebalancing. 
+A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
 
-The number of buckets should be set according to the table size. By default, there are 113 buckets for a table. 
-If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. 
-Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently.
-Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.
+By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
 
-For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.  
+If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently. Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.
 
-This attribute is set when creating a table. Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) for examples.
+For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data. This attribute is set when [creating a table](../reference/sql_reference/create-table.md).
 
 <a id="member-timeout"></a>
 ## member-timeout

@@ -37,7 +37,7 @@ The following topics are covered in this section:
 
 * [How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)](#howto-external-source)
 
-* [How to Perform a Colocated Join](#howto-collacatedJoin)
+* [How to Perform a Colocated Join](#howto-colacatedJoin)
 
 * [How to Connect using JDBC Driver](#howto-jdbc)
 
@@ -759,7 +759,7 @@ df.write.format("column").mode(SaveMode.Append).saveAsTable("CUSTOMER")
 snc.sql("select * from CUSTOMER").show
 ```
 
-<a id="howto-collacatedJoin"></a>
+<a id="howto-colacatedJoin"></a>
 ## How to Perform a Colocated Join
 
 When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Colocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
@@ -768,7 +768,7 @@ When colocated tables are joined on the partitioning columns, the join happens l
 **Code Example: ORDERS table is colocated with CUSTOMER table**
 
 A partitioned table can be colocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
-For example, in the code snippet below, the ORDERS table is colocated with the CUSTOMER table. The complete source for this example can be found in the file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
+For example, in the code snippet below, the ORDERS table is colocated with the CUSTOMER table. The complete source for this example can be found in the file [ColocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
 
 **Get a SnappySession**:
 
