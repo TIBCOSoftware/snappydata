@@ -678,7 +678,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 ```
 
 #### Python
-```
+```python
 from pyspark.streaming.snappy.context import SnappyStreamingContext
 from pyspark.sql.types import *
 
@@ -731,14 +731,14 @@ CREATE TABLE [IF NOT EXISTS] table_name
 USING row | column
 OPTIONS (
 COLOCATE_WITH 'table_name',  // Default none
-PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table
+PARTITION_BY 'PRIMARY KEY' | 'column name', // If not specified it will be a replicated table
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY '1' ,
-EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
+EVICTION_BY 'LRUMEMSIZE 200' | 'LRUCOUNT 200' | 'LRUHEAPPERCENT',
 OVERFLOW 'true',
-PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
+PERSISTENCE  'ASYNCHRONOUS' | 'ASYNC' | 'SYNCHRONOUS' | 'SYNC' | 'NONE',
 DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
-EXPIRE ‘TIMETOLIVE_in_seconds',
+EXPIRE 'TIMETOLIVE_in_seconds',
 COLUMN_BATCH_SIZE '32000000',
 COLUMN_MAX_DELTA_ROWS '10000',
 )
@@ -751,7 +751,7 @@ Refer to the [How-Tos](howto.md) section for more information on partitioning an
 
 You can also define complex types (Map, Array and StructType) as columns for column tables.
 
-```scala
+```
 snappy.sql("CREATE TABLE tableName (
 col1 INT , 
 col2 Array<Decimal>, 
@@ -773,6 +773,7 @@ To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://
 
 Create a SnappyStore table using Spark APIs
 
+```scala
     val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
     case class Data(col1: Int, col2: Int, col3: Int)
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -781,7 +782,7 @@ Create a SnappyStore table using Spark APIs
     snappy.createTable("column_table", "column", dataDF.schema, props)
     //or create a row format table
     snappy.createTable("row_table", "row", dataDF.schema, props)
-
+```
 **Drop a SnappyStore table using Spark APIs**:
 
     snappy.dropTable(tableName, ifExists = true)
@@ -790,36 +791,36 @@ Create a SnappyStore table using Spark APIs
 #### DDL extensions to SnappyStore Tables
 The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
 
-   * COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
+   * <b>COLOCATE_WITH:</b> The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
 
-   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for the column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
+   * <b>PARTITION_BY:</b> Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for the column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
-   * BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
+   * <b>BUCKETS:</b>  The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
 
-   * REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
+   * <b>REDUNDANCY:</b>  Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
-   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table, based on different criteria. </br>For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause. 
+   * <b>EVICTION_BY:</b>  Use the EVICTION_BY clause to evict rows automatically from the in-memory table, based on different criteria. </br>For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause.
 
 	!!! Note:
  		For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables, no such defaults are set. Row tables allow all the eviction settings.
 
-   * OVERFLOW: If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
+   * <b>OVERFLOW:</b>  If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
 	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
 
-   * PERSISTENCE: When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   * <b>PERSISTENCE:</b>  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
    	
 !!! Note:
    	* By default, both row and column tables are persistent.
 
    	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9 <!--DO NOT CHANGE RELEASE NO. -->. Although it does work, it is recommended to use `PERSISTENCE` instead.
 
-   * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](reference/sql_reference/create-diskstore.md).
+   * <b>DISKSTORE:</b>  The disk directory where you want to persist the table data. For more information, [refer to this document](reference/sql_reference/create-diskstore.md).
 
-   * EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
+   * <b>EXPIRE:</b>  You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
 
-   * COLUMN_BATCH_SIZE: The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
+   * <b>COLUMN_BATCH_SIZE:</b>  The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
 
-   * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br> 
+   * <b>COLUMN_MAX_DELTA_ROWS:</b>  The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br>
 	 
     !!! Note: 
         The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): 
