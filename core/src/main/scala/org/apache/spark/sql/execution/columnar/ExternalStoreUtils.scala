@@ -60,7 +60,7 @@ object ExternalStoreUtils {
       case Some(local: LocalSchedulerBackend) =>
         // apply a max limit of 64 in local mode since there is not much
         // scaling to be had beyond that on most processors
-        val result = math.min(64, local.totalCores << 1).toString
+        val result = math.min(64, math.max(local.totalCores << 1, 8)).toString
         // use same number of partitions for sample table in local mode
         (result, result)
       case _ => ("128", "64")
