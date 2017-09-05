@@ -118,7 +118,7 @@ class StringBenchmark extends SnappyFunSuite {
   ignore("UTF8String optimized contains") {
     val customerFile = getClass.getResource("/customer.csv").getPath
     val numLoads = 1500
-    val numIters = 10
+    val numIters = 20
 
     val sdata = (1 to numLoads).flatMap(_ => Source.fromFile(customerFile).getLines()).toArray
     val numElements = sdata.length
