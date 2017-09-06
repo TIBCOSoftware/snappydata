@@ -9,7 +9,7 @@ queries="1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22-21"
 #spark Properties spefied in lead
 #spark-executor-cores has nothing to do with CPU cores available.
 #sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
-sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g"
+sparkProperties="--driver-memory 2g --conf spark.executor.memory=3g"
 
 #Spark Sql properties are specified while executing query
 #spark.sql.shuffle.partitions=${shufflePartitions},spark.sql.inMemoryColumnarStorage.compressed=${inMemoryColumnarStorageCompressed}
@@ -17,15 +17,31 @@ sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g"
 sparkSqlProperties="\"\""
 
 #location of checkout
-SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
+#SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
+SnappyData=/home/kishor/SNAPPY/CHECKOUT/spark-2.1.1-bin-hadoop2.7
 #SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata-0.7-bin
 
+#Whether to repartition dataframe
+rePartition=true
+
+#number of buckets for order and lineitem tables
+buckets_Order_Lineitem=113
+
+#number of buckets for Customer, Part and PartSupplier tables
+buckets_Cust_Part_PartSupp=113
+
+#Are Nation, Region, Supplier tables column tables?
+IsSupplierColumnTable=false
+
+#number of buckets for Nation, Region, Supplier
+buckets_Supplier=113
+
 #Loading from parquet or csv file
-Parquet=true
+Parquet=false
 
 #From how many files data should be loaded in table
 #NumberOfLoadStages=10
-NumberOfLoadStages=1
+NumberOfLoadStages=10
 
 #Machine Setup
 master=pnq-kbachhav
@@ -33,10 +49,10 @@ slaves=(pnq-kbachhav)
 client=pnq-kbachhav
 
 #represent whether query should use dynamic paramters or static
-IsDynamic=false
+IsDynamic=true
 
 #Whether to collect results.For performance testing this should be false.
-ResultCollection=true
+ResultCollection=false
 
 #warmUpIterations
 WarmupRuns=2
@@ -44,11 +60,11 @@ WarmupRuns=2
 AverageRuns=3
 
 # location of jar which has TPCH related class files
-TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.8-tests.jar
+TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.9-tests.jar
 
 #Size of the TPCH data. Do not chage format
-#dataSize=1GB_Stages
-dataSize=1GB
+dataSize=1GB_Stages
+#dataSize=1GB
 
 #Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
 dataDir=/home/kishor/SNAPPY/DATA/TPCH/$dataSize
