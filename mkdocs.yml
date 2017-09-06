@@ -125,7 +125,7 @@ pages:
 #        - 'socket-lease-time': 'reference/configuration_parameters/socket-lease-time.md'
 #        - 'snappydata.datadictionary.allow-startup-errors': 'reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md'
 #        - 'snappydata.default-startup-recovery-delay': 'reference/configuration_parameters/snappydata.default-startup-recovery-delay.md'
-#        - 'gfxd.history': 'reference/configuration_parameters/gfxd.history.md'
+#        - 'snappy.history': 'reference/configuration_parameters/snappy.history.md'
 #        - 'snappydata.max-lock-wait': 'reference/configuration_parameters/snappydata.max-lock-wait.md'
 #        - 'gemfirexd.properties': 'reference/configuration_parameters/gemfirexd.properties.md'
 #        - 'snappydata.query-cancellation-interval': 'reference/configuration_parameters/snappydata.query-cancellation-interval.md'

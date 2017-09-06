@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -501,7 +501,8 @@ object NWTestUtil {
         case "Q43" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q43, "Q43",
           tableType, pw, sqlContext)
         /* case "Q44" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q44, "Q44",
-          tableType, pw, sqlContext) */  // LeftSemiJoinHash
+          tableType, pw, sqlContext) */
+        // LeftSemiJoinHash
         /* case "Q45" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q45, "Q45",
           tableType, pw, sqlContext) */
         /* case "Q46" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q46, "Q46",
@@ -541,95 +542,166 @@ object NWTestUtil {
     }
   }
 
-  def createAndLoadPartitionedTables(snc: SnappyContext): Unit = {
+  def createAndLoadPartitionedTables(snc: SnappyContext,
+                                     createLargeOrdertable: Boolean = false): Unit = {
 
-    snc.sql(NWQueries.regions_table)
-    NWQueries.regions(snc).write.insertInto("regions")
+    if (createLargeOrdertable) {
+      snc.sql(NWQueries.large_orders_table +
+          " using row options (partition_by 'OrderId', buckets '13', " +
+          "redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow  'true')")
+      snc.sql(NWQueries.large_order_details_table +
+          " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+          "redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.products_table +
+          " using row options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1'" +
+          " , PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.categories_table)
+    } else {
+      snc.sql(NWQueries.regions_table)
+      snc.sql(NWQueries.categories_table)
+      snc.sql(NWQueries.shippers_table)
+      snc.sql(NWQueries.employees_table + " using row options(partition_by 'PostalCode,Region'," +
+          "  buckets '19', redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', " +
+          "overflow 'true')")
+      snc.sql(NWQueries.customers_table +
+          " using row options( partition_by 'PostalCode,Region', buckets '19', colocate_with " +
+          "'employees', redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', " +
+          "overflow 'true')")
+      snc.sql(NWQueries.orders_table +
+          " using row options (partition_by 'OrderId', buckets '13', " +
+          "redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.order_details_table +
+          " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+          "redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
 
-    snc.sql(NWQueries.categories_table)
-    NWQueries.categories(snc).write.insertInto("categories")
+      snc.sql(NWQueries.products_table +
+          " using row options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy " +
+          "'1', " +
+          " PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
 
-    snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers(snc).write.insertInto("shippers")
+      snc.sql(NWQueries.suppliers_table +
+          " USING row options (PARTITION_BY 'SupplierID', buckets '123',redundancy '1', " +
+          "PERSISTENT " +
+          "'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.territories_table +
+          " using row options (partition_by 'TerritoryID', buckets '3', redundancy '1', " +
+          "PERSISTENT " +
+          "'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
 
-    snc.sql(NWQueries.employees_table + " using row options(partition_by 'PostalCode,Region', " +
-        "buckets '19', redundancy '1')")
-    NWQueries.employees(snc).write.insertInto("employees")
+      snc.sql(NWQueries.employee_territories_table +
+          " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1', PERSISTENT " +
+          "'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+    }
+    if (createLargeOrdertable) {
+      NWQueries.orders(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("orders")
+      NWQueries.order_details(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("order_details")
+      NWQueries.categories(snc).write.insertInto("categories")
+      NWQueries.products(snc).write.insertInto("products")
 
-    snc.sql(NWQueries.customers_table +
-        " using row options( partition_by 'PostalCode,Region', buckets '19', colocate_with " +
-        "'employees', redundancy '1')")
-    NWQueries.customers(snc).write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13', " +
-        "redundancy '1')")
-    NWQueries.orders(snc).write.insertInto("orders")
+    } else {
+      NWQueries.regions(snc).write.insertInto("regions")
 
-    snc.sql(NWQueries.order_details_table +
-        " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
-        "redundancy '1')")
-    NWQueries.order_details(snc).write.insertInto("order_details")
+      NWQueries.categories(snc).write.insertInto("categories")
 
-    snc.sql(NWQueries.products_table +
-        " using row options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
-    NWQueries.products(snc).write.insertInto("products")
+      NWQueries.shippers(snc).write.insertInto("shippers")
 
-    snc.sql(NWQueries.suppliers_table +
-        " USING row options (PARTITION_BY 'SupplierID', buckets '123',redundancy '1')")
-    NWQueries.suppliers(snc).write.insertInto("suppliers")
+      NWQueries.employees(snc).write.insertInto("employees")
 
-    snc.sql(NWQueries.territories_table +
-        " using row options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
-    NWQueries.territories(snc).write.insertInto("territories")
+      NWQueries.customers(snc).write.insertInto("customers")
+      NWQueries.orders(snc).write.insertInto("orders")
+      NWQueries.order_details(snc).write.insertInto("order_details")
+      NWQueries.products(snc).write.insertInto("products")
 
-    snc.sql(NWQueries.employee_territories_table +
-        " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
-    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
+      NWQueries.suppliers(snc).write.insertInto("suppliers")
 
+      NWQueries.territories(snc).write.insertInto("territories")
+
+      NWQueries.employee_territories(snc).write.insertInto("employee_territories")
+    }
   }
 
-  def createAndLoadColumnTables(snc: SnappyContext): Unit = {
-    snc.sql(NWQueries.regions_table)
-    NWQueries.regions(snc).write.insertInto("regions")
+  def ingestMoreData(snc: SnappyContext, numTimes: Int): Unit = {
+    for (i <- 1 to numTimes) {
+      NWQueries.orders(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("orders")
+      NWQueries.order_details(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("order_details")
+    }
+  }
 
-    snc.sql(NWQueries.categories_table)
-    NWQueries.categories(snc).write.insertInto("categories")
+  val bigcomment: String = "'bigcommentstart" + ("a" * 500) + "bigcommentend'"
 
-    snc.sql(NWQueries.shippers_table)
-    NWQueries.shippers(snc).write.insertInto("shippers")
+  def createAndLoadColumnTables(snc: SnappyContext,
+                                createLargeOrdertable: Boolean = false): Unit = {
 
-    snc.sql(NWQueries.employees_table + " using column options(partition_by 'City,Country', " +
-        "redundancy '1')")
-    NWQueries.employees(snc).write.insertInto("employees")
+    if (createLargeOrdertable) {
+      snc.sql(NWQueries.large_orders_table +
+          " using column options (partition_by 'OrderId', buckets " +
+          "'13', redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.large_order_details_table +
+          " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+          "redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.products_table +
+          " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy " +
+          "'1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.categories_table)
+    } else {
+      snc.sql(NWQueries.regions_table)
+      snc.sql(NWQueries.categories_table)
+      snc.sql(NWQueries.shippers_table)
+      snc.sql(NWQueries.employees_table + " using column options(partition_by 'City,Country', " +
+          "redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.customers_table + " using column options(partition_by 'City,Country', " +
+          "COLOCATE_WITH 'employees', redundancy '1', PERSISTENT 'sync', EVICTION_BY " +
+          "'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets " +
+          "'13', redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.order_details_table +
+          " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+          "redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.products_table +
+          " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy " +
+          "'1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.suppliers_table +
+          " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1',  " +
+          "PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.territories_table +
+          " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1', " +
+          "PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+      snc.sql(NWQueries.employee_territories_table +
+          " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1', PERSISTENT " +
+          "'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
+    }
+    if (createLargeOrdertable) {
+      NWQueries.orders(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("orders")
+      NWQueries.order_details(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("order_details")
+      NWQueries.categories(snc).write.insertInto("categories")
+      NWQueries.products(snc).write.insertInto("products")
+    } else {
+      NWQueries.orders(snc).write.insertInto("orders")
+      NWQueries.order_details(snc).write.insertInto("order_details")
+      NWQueries.regions(snc).write.insertInto("regions")
 
-    snc.sql(NWQueries.customers_table + " using column options(partition_by 'City,Country', " +
-        "COLOCATE_WITH 'employees', redundancy '1')")
-    NWQueries.customers(snc).write.insertInto("customers")
+      NWQueries.categories(snc).write.insertInto("categories")
 
-    snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets " +
-        "'13', redundancy '1')")
-    NWQueries.orders(snc).write.insertInto("orders")
+      NWQueries.shippers(snc).write.insertInto("shippers")
 
-    snc.sql(NWQueries.order_details_table +
-        " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
-        "redundancy '1')")
-    NWQueries.order_details(snc).write.insertInto("order_details")
+      NWQueries.employees(snc).write.insertInto("employees")
 
-    snc.sql(NWQueries.products_table +
-        " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
-    NWQueries.products(snc).write.insertInto("products")
+      NWQueries.customers(snc).write.insertInto("customers")
+      NWQueries.products(snc).write.insertInto("products")
 
-    snc.sql(NWQueries.suppliers_table +
-        " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
-    NWQueries.suppliers(snc).write.insertInto("suppliers")
+      NWQueries.suppliers(snc).write.insertInto("suppliers")
 
-    snc.sql(NWQueries.territories_table +
-        " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
-    NWQueries.territories(snc).write.insertInto("territories")
+      NWQueries.territories(snc).write.insertInto("territories")
 
-    snc.sql(NWQueries.employee_territories_table +
-        " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
-    NWQueries.employee_territories(snc).write.insertInto("employee_territories")
+      NWQueries.employee_territories(snc).write.insertInto("employee_territories")
+    }
   }
 
   def createAndLoadColocatedTables(snc: SnappyContext): Unit = {

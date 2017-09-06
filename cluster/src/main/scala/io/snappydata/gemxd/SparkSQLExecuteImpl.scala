@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,14 +18,13 @@ package io.snappydata.gemxd
 
 import java.io.{CharArrayWriter, DataOutput}
 
-import com.pivotal.gemfirexd.Attribute
-
 import scala.collection.JavaConverters._
 
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -75,7 +74,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setSchema(schema)
 
-  session.setPreparedQuery(false, pvs)
+  session.setPreparedQuery(preparePhase = false, pvs)
 
   private[this] val df = session.sql(sql)
 

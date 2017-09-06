@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,13 +16,13 @@
  */
 package io.snappydata.gemxd
 
-import java.io.{InputStream, PrintWriter, PrintStream}
+import java.io.{InputStream, PrintStream, PrintWriter}
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
-import com.gemstone.gemfire.internal.{ClassPathLoader, SharedLibrary, GemFireVersion}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.NativeCalls
+import com.gemstone.gemfire.internal.{ClassPathLoader, GemFireVersion, SharedLibrary}
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 
@@ -40,34 +40,38 @@ object SnappyDataVersion {
 
   private val isNativeLibLoaded: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
-    val isNativeLibLoaded = if (NativeCalls.getInstance.loadNativeLibrary) SharedLibrary.register("gemfirexd") else false
-    val instance: GemFireVersion = GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
+    val isNativeLibLoaded = if (NativeCalls.getInstance.loadNativeLibrary) {
+      SharedLibrary.register("gemfirexd")
+    } else false
+    val instance: GemFireVersion = GemFireVersion.getInstance(classOf[SnappyDataVersion],
+      SNAPPYDATA_VERSION_PROPERTIES)
     if (isNativeLibLoaded) {
       // try to load _getNativeVersion by reflection
       try {
         val m = classOf[GemFireXDVersion].getDeclaredMethod("_getNativeVersion")
         instance.setNativeVersion(m.invoke(null).asInstanceOf[String])
       } catch {
-        case e: Exception => // ignore
+        case _: Exception => // ignore
       }
-    }
-    else {
+    } else {
       instance.setNativeVersion("gemfirexd " + instance.getNativeVersion)
     }
     isNativeLibLoaded
   }
 
-  def loadProperties {
+  def loadProperties(): Unit = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
   }
 
-  def print(ps: PrintStream) = {
+  // scalastyle:off println
+  def print(ps: PrintStream): Unit = {
     val pw: PrintWriter = new PrintWriter(ps)
 
     // platform version
-    loadProperties
-    pw.println("SnappyData Platform Version " + GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
+    loadProperties()
+    pw.println("SnappyData Platform Version " + GemFireVersion.getProductVersion +
+        " " + GemFireVersion.getProductReleaseStage)
 
     // rowstore version
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
@@ -82,15 +86,15 @@ object SnappyDataVersion {
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
-    if (Option(is) != None) {
+    if (is ne null) {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
       pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " " +
           GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
     }
-    pw.flush
+    pw.flush()
   }
 
-  def print(ps: PrintStream, printSourceInfo: Boolean) = {
+  def print(ps: PrintStream, printSourceInfo: Boolean): Unit = {
     if (!isNativeLibLoaded) {
       System.err.println("Native library not loaded")
     }
@@ -108,23 +112,25 @@ object SnappyDataVersion {
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
-    if (Option(is) != None) {
+    if (is ne null) {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
       pw.println(GemFireVersion.getProductName)
       GemFireVersion.print(pw, printSourceInfo)
     }
 
-    pw.flush
+    pw.flush()
   }
 
-  def createVersionFile {
-    loadProperties
-    GemFireVersion.createVersionFile
+  // scalastyle:on println
+
+  def createVersionFile(): Unit = {
+    loadProperties()
+    GemFireVersion.createVersionFile()
   }
 
-  def getSnappyDataProductVersion: HashMap[String, String] = {
+  def getSnappyDataProductVersion: mutable.HashMap[String, String] = {
     GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
-    val versionDetails = HashMap.empty[String, String]
+    val versionDetails = mutable.HashMap.empty[String, String]
     versionDetails.put("productName", GemFireVersion.getProductName)
     versionDetails.put("productVersion", GemFireVersion.getProductVersion)
     versionDetails.put("buildId", GemFireVersion.getBuildId)

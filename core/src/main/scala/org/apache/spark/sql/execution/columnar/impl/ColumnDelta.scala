@@ -26,10 +26,9 @@ import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSeq, BindReferences}
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
-import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
 /**
  * Encapsulates a delta for update to be applied to column table and also
@@ -138,34 +137,32 @@ object ColumnDelta {
   val mutableKeyNames: Seq[String] = Seq(
     mutableKeyNamePrefix + "ROW_ORDINAL",
     mutableKeyNamePrefix + "BATCH_ID",
-    mutableKeyNamePrefix + "BUCKET_ORDINAL"
+    mutableKeyNamePrefix + "BUCKET_ORDINAL",
+    mutableKeyNamePrefix + "BATCH_NUMROWS"
   )
   val mutableKeyFields: Seq[StructField] = Seq(
     StructField(mutableKeyNames.head, LongType, nullable = false),
-    StructField(mutableKeyNames(1), StringType, nullable = true),
-    StructField(mutableKeyNames(2), IntegerType, nullable = false)
+    StructField(mutableKeyNames(1), LongType, nullable = false),
+    StructField(mutableKeyNames(2), IntegerType, nullable = false),
+    StructField(mutableKeyNames(3), IntegerType, nullable = false)
   )
   def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
-
-  def bindKeyColumns(keyColumns: Seq[Attribute], ctx: CodegenContext,
-      input: Seq[ExprCode], output: AttributeSeq): (ExprCode, ExprCode, ExprCode) = {
-    ctx.INPUT_ROW = null
-    ctx.currentVars = input
-    val ordinalId = BindReferences.bindReference(keyColumns.head, output).genCode(ctx)
-    val batchId = BindReferences.bindReference(keyColumns(1), output).genCode(ctx)
-    val bucketId = BindReferences.bindReference(keyColumns(2), output).genCode(ctx)
-    ctx.currentVars = null
-    (ordinalId, batchId, bucketId)
-  }
 
   def deltaHierarchyDepth(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) % MAX_DEPTH
   } else -1
 
+  /**
+   * Returns 0 based table column index (while that stored in region is 1 based).
+   */
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH
   } else deltaColumnIndex
 
+  /**
+   * Returns the delta column index as store in region key given the 0 based
+   * table column index (table column index stored in region key is 1 based).
+   */
   def deltaColumnIndex(tableColumnIndex: Int, hierarchyDepth: Int): Int =
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1 - hierarchyDepth
 }

@@ -2,7 +2,7 @@
 
 usage="Usage: replace-txt.sh < -d|--dir srcfolder > < -t|--text text > < -r|--replace replacement text > [ -e|--extension file_extension ]"
 
-file_extensions=(.scala .java)
+file_extensions=(.scala .java .sh .gradle .h .cpp .py .xml .thrift .tmpl)
 
 while [[ $# > 1 ]]
 do
@@ -53,7 +53,9 @@ for ext in "${file_extensions[@]}"
 do
   echo
   echo EXTENSION = ${ext}
-  for f in `find ${SOURCEPATH} -name *${ext}`
+  echo "---------------------------------------"
+  sleep 5
+  for f in `find ${SOURCEPATH} -name "*${ext}"`
   do
     TEXT_EXISTS=`grep -n "${TEXT}" ${f}`
     #echo SNAPPY_PATTERN = ${SNAPPY_PATTERN}

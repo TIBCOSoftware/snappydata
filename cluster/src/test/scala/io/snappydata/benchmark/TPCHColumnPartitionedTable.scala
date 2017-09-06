@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -164,7 +164,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if (!isSnappy) {
-      unionOrderDF.createOrReplaceTempView("ORDERS")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionOrderDF.repartition(buckets.toInt,
+          unionOrderDF("o_orderkey"))
+        rePartitionedDF.createOrReplaceTempView("ORDERS")
+      } else {
+        unionOrderDF.createOrReplaceTempView("ORDERS")
+      }
       sqlContext.cacheTable("ORDERS")
       sqlContext.table("ORDERS").count()
     }
@@ -243,7 +249,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if(!isSnappy){
-      unionLineItemDF.createOrReplaceTempView("LINEITEM")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionLineItemDF.repartition(buckets.toInt,
+          unionLineItemDF("l_orderkey"))
+        rePartitionedDF.createOrReplaceTempView("LINEITEM")
+        } else {
+          unionLineItemDF.createOrReplaceTempView("LINEITEM")
+        }
       sqlContext.cacheTable("LINEITEM")
       sqlContext.table("LINEITEM").count()
     }
@@ -324,7 +336,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if(!isSnappy){
-      unionCustomerDF.createOrReplaceTempView("CUSTOMER")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionCustomerDF.repartition(buckets.toInt,
+          unionCustomerDF("c_custkey"))
+        rePartitionedDF.createOrReplaceTempView("CUSTOMER")
+      } else {
+        unionCustomerDF.createOrReplaceTempView("CUSTOMER")
+      }
       sqlContext.cacheTable("CUSTOMER")
       sqlContext.table("CUSTOMER").count()
     }
@@ -379,7 +397,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if(!isSnappy){
-      unionPartDF.createOrReplaceTempView("PART")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionPartDF.repartition(buckets.toInt,
+          unionPartDF("p_partkey"))
+        rePartitionedDF.createOrReplaceTempView("PART")
+      } else {
+        unionPartDF.createOrReplaceTempView("PART")
+      }
       sqlContext.cacheTable("PART")
       sqlContext.table("PART").count()
     }
@@ -434,7 +458,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if (!isSnappy) {
-      unionPartSuppDF.createOrReplaceTempView("PARTSUPP")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionPartSuppDF.repartition(buckets.toInt,
+          unionPartSuppDF("ps_partkey"))
+        rePartitionedDF.createOrReplaceTempView("PARTSUPP")
+      } else {
+        unionPartSuppDF.createOrReplaceTempView("PARTSUPP")
+      }
       sqlContext.cacheTable("PARTSUPP")
       sqlContext.table("PARTSUPP").count()
     }
@@ -568,7 +598,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if (!isSnappy) {
-      unionSuppDF.createOrReplaceTempView("SUPPLIER")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionSuppDF.repartition(buckets.toInt,
+          unionSuppDF("S_SUPPKEY"))
+        rePartitionedDF.createOrReplaceTempView("SUPPLIER")
+      } else {
+        unionSuppDF.createOrReplaceTempView("SUPPLIER")
+      }
       sqlContext.cacheTable("SUPPLIER")
       sqlContext.table("SUPPLIER").count()
     }

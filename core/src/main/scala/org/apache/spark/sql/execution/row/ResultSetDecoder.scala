@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,7 +30,7 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  * generated code can be used for both row buffer and column data access.
  */
 final class ResultSetDecoder(rs: ResultSetWithNull, columnPosition: Int)
-    extends ColumnDecoder {
+    extends ColumnDecoder(null, 0L, null) {
 
   private[this] val defaultCal = ClientSharedData.getDefaultCleanCalendar
 
@@ -42,67 +42,37 @@ final class ResultSetDecoder(rs: ResultSetWithNull, columnPosition: Int)
   override protected[sql] def hasNulls: Boolean = true
 
   override protected[sql] def initializeNulls(columnBytes: AnyRef,
-      cursor: Long, field: StructField): Long = 0L
+      startCursor: Long, field: StructField): Long = 0L
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = 0L
+      dataType: DataType): Long = 0L
 
-  override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L
+  override def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int =
+    if (rs.isNull(columnPosition)) -num - 1 else 0
 
-  override def nextByte(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextShort(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextInt(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextLong(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextFloat(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextDouble(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextDecimal(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextInterval(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextBinary(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextArray(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextMap(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextStruct(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def isNull(columnBytes: AnyRef, ordinal: Int): Boolean =
-    rs.isNull(columnPosition)
-
-  override def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
+  override def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean =
     rs.getBoolean(columnPosition)
 
-  override def readByte(columnBytes: AnyRef, cursor: Long): Byte =
+  override def readByte(columnBytes: AnyRef, nonNullPosition: Int): Byte =
     rs.getByte(columnPosition)
 
-  override def readShort(columnBytes: AnyRef, cursor: Long): Short =
+  override def readShort(columnBytes: AnyRef, nonNullPosition: Int): Short =
     rs.getShort(columnPosition)
 
-  override def readInt(columnBytes: AnyRef, cursor: Long): Int =
+  override def readInt(columnBytes: AnyRef, nonNullPosition: Int): Int =
     rs.getInt(columnPosition)
 
-  override def readLong(columnBytes: AnyRef, cursor: Long): Long =
+  override def readLong(columnBytes: AnyRef, nonNullPosition: Int): Long =
     rs.getLong(columnPosition)
 
-  override def readFloat(columnBytes: AnyRef, cursor: Long): Float =
+  override def readFloat(columnBytes: AnyRef, nonNullPosition: Int): Float =
     rs.getFloat(columnPosition)
 
-  override def readDouble(columnBytes: AnyRef, cursor: Long): Double =
+  override def readDouble(columnBytes: AnyRef, nonNullPosition: Int): Double =
     rs.getDouble(columnPosition)
 
   override def readLongDecimal(columnBytes: AnyRef, precision: Int,
-      scale: Int, cursor: Long): Decimal = {
+      scale: Int, nonNullPosition: Int): Decimal = {
     val dec = rs.getBigDecimal(columnPosition)
     if (dec != null) {
       Decimal.apply(dec, precision, scale)
@@ -112,33 +82,34 @@ final class ResultSetDecoder(rs: ResultSetWithNull, columnPosition: Int)
   }
 
   override def readDecimal(columnBytes: AnyRef, precision: Int, scale: Int,
-      cursor: Long): Decimal = readLongDecimal(columnBytes, precision, scale, cursor)
+      nonNullPosition: Int): Decimal =
+    readLongDecimal(columnBytes, precision, scale, nonNullPosition)
 
-  override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
+  override def readUTF8String(columnBytes: AnyRef, nonNullPosition: Int): UTF8String =
     UTF8String.fromString(rs.getString(columnPosition))
 
-  override def readDate(columnBytes: AnyRef, cursor: Long): Int = {
+  override def readDate(columnBytes: AnyRef, nonNullPosition: Int): Int = {
     defaultCal.clear()
     val date = rs.getDate(columnPosition, defaultCal)
     if (date ne null) DateTimeUtils.fromJavaDate(date) else -1
   }
 
-  override def readTimestamp(columnBytes: AnyRef, cursor: Long): Long = {
+  override def readTimestamp(columnBytes: AnyRef, nonNullPosition: Int): Long = {
     defaultCal.clear()
     val timestamp = rs.getTimestamp(columnPosition, defaultCal)
     if (timestamp ne null) DateTimeUtils.fromJavaTimestamp(timestamp) else -1L
   }
 
-  override def readBinary(columnBytes: AnyRef, cursor: Long): Array[Byte] =
+  override def readBinary(columnBytes: AnyRef, nonNullPosition: Int): Array[Byte] =
     rs.getBytes(columnPosition)
 
   override def readInterval(columnBytes: AnyRef,
-      cursor: Long): CalendarInterval = {
+      nonNullPosition: Int): CalendarInterval = {
     val micros = rs.getLong(columnPosition)
     if (rs.wasNull()) null else new CalendarInterval(0, micros)
   }
 
-  override def readArray(columnBytes: AnyRef, cursor: Long): SerializedArray = {
+  override def readArray(columnBytes: AnyRef, nonNullPosition: Int): SerializedArray = {
     val b = rs.getBytes(columnPosition)
     if (b != null) {
       val result = new SerializedArray(8) // includes size
@@ -147,7 +118,7 @@ final class ResultSetDecoder(rs: ResultSetWithNull, columnPosition: Int)
     } else null
   }
 
-  override def readMap(columnBytes: AnyRef, cursor: Long): SerializedMap = {
+  override def readMap(columnBytes: AnyRef, nonNullPosition: Int): SerializedMap = {
     val b = rs.getBytes(columnPosition)
     if (b != null) {
       val result = new SerializedMap
@@ -157,7 +128,7 @@ final class ResultSetDecoder(rs: ResultSetWithNull, columnPosition: Int)
   }
 
   override def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long): SerializedRow = {
+      nonNullPosition: Int): SerializedRow = {
     val b = rs.getBytes(columnPosition)
     if (b != null) {
       val result = new SerializedRow(4, numFields) // includes size

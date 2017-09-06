@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -50,6 +50,11 @@ object SparkApp {
     val warmUpIterations = args(7).toInt
     val actualRuns = args(8).toInt
     val threadNumber = args(9).toInt
+    val rePartition = args(10).toBoolean
+    val isSupplierColumn = args(11).toBoolean
+    val buckets_Supplier = args(12)
+    var buckets_Order_Lineitem = args(13)
+    val buckets_Cust_Part_PartSupp = args(14)
 
 
     var loadPerfFileStream: FileOutputStream = new FileOutputStream(
@@ -62,18 +67,23 @@ object SparkApp {
 
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(sc.sqlContext, tpchDataPath, false,
+      if (rePartition) buckets_Order_Lineitem else "0",
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulateLineItemTable(sc.sqlContext, tpchDataPath, false,
+      if (rePartition) buckets_Order_Lineitem else "0",
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(sc.sqlContext, tpchDataPath, false,
+      if (rePartition) buckets_Cust_Part_PartSupp else "0",
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulatePartTable(sc.sqlContext, tpchDataPath, false,
+      if (rePartition) buckets_Cust_Part_PartSupp else "0",
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(sc.sqlContext, tpchDataPath, false,
+      if (rePartition) buckets_Cust_Part_PartSupp else "0",
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
       isParquet = isParquet)
 
@@ -81,8 +91,15 @@ object SparkApp {
       false, loadPerfPrintStream)
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, sc.sqlContext, tpchDataPath,
       false, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, sc.sqlContext, tpchDataPath,
-      false, loadPerfPrintStream, numberOfLoadStages)
+    if (isSupplierColumn) {
+      TPCHColumnPartitionedTable.createAndPopulateSupplierTable(sc.sqlContext, tpchDataPath, false,
+        if (rePartition) buckets_Supplier else "0",
+        loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+        isParquet = isParquet)
+    } else {
+      TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, sc.sqlContext,
+        tpchDataPath, false, loadPerfPrintStream, numberOfLoadStages)
+    }
 
     for(prop <- sparkSqlProps) {
       // scalastyle:off println

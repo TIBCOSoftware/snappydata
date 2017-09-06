@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,7 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 // TODO: SW: change this to use SerializedRow/Array/Map (for sampler reservoir)
 final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
-    extends ColumnDecoder {
+    extends ColumnDecoder(null, 0L, null) {
 
   override def typeId: Int = -2
 
@@ -35,93 +35,63 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
   override protected[sql] def hasNulls: Boolean = true
 
   override protected[sql] def initializeNulls(columnBytes: AnyRef,
-      cursor: Long, field: StructField): Long = 0L
+      startCursor: Long, field: StructField): Long = 0L
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = 0L
+      dataType: DataType): Long = 0L
 
-  override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextByte(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextShort(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextInt(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextLong(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextFloat(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextDouble(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextDecimal(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextInterval(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextBinary(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextArray(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextMap(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def nextStruct(columnBytes: AnyRef, cursor: Long): Long = 0L
-
-  override def isNull(columnBytes: AnyRef, ordinal: Int): Boolean =
-    holder.row.isNullAt(columnIndex)
+  override def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int =
+    if (holder.row.isNullAt(columnIndex)) -num - 1 else 0
 
   override def isNullAt(columnBytes: AnyRef, ordinal: Int): Boolean =
     holder.row.isNullAt(columnIndex)
 
-  override def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
+  override def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean =
     holder.row.getBoolean(columnIndex)
 
-  override def readByte(columnBytes: AnyRef, cursor: Long): Byte =
+  override def readByte(columnBytes: AnyRef, nonNullPosition: Int): Byte =
     holder.row.getByte(columnIndex)
 
-  override def readShort(columnBytes: AnyRef, cursor: Long): Short =
+  override def readShort(columnBytes: AnyRef, nonNullPosition: Int): Short =
     holder.row.getShort(columnIndex)
 
-  override def readInt(columnBytes: AnyRef, cursor: Long): Int =
+  override def readInt(columnBytes: AnyRef, nonNullPosition: Int): Int =
     holder.row.getInt(columnIndex)
 
-  override def readLong(columnBytes: AnyRef, cursor: Long): Long =
+  override def readLong(columnBytes: AnyRef, nonNullPosition: Int): Long =
     holder.row.getLong(columnIndex)
 
-  override def readFloat(columnBytes: AnyRef, cursor: Long): Float =
+  override def readFloat(columnBytes: AnyRef, nonNullPosition: Int): Float =
     holder.row.getFloat(columnIndex)
 
-  override def readDouble(columnBytes: AnyRef, cursor: Long): Double =
+  override def readDouble(columnBytes: AnyRef, nonNullPosition: Int): Double =
     holder.row.getDouble(columnIndex)
 
   override def readLongDecimal(columnBytes: AnyRef, precision: Int, scale: Int,
-      cursor: Long): Decimal =
+      nonNullPosition: Int): Decimal =
     holder.row.getDecimal(columnIndex, precision, scale)
 
   override def readDecimal(columnBytes: AnyRef, precision: Int, scale: Int,
-      cursor: Long): Decimal =
+      nonNullPosition: Int): Decimal =
     holder.row.getDecimal(columnIndex, precision, scale)
 
-  override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
+  override def readUTF8String(columnBytes: AnyRef, nonNullPosition: Int): UTF8String =
     holder.row.getUTF8String(columnIndex)
 
-  override def readBinary(columnBytes: AnyRef, cursor: Long): Array[Byte] =
+  override def readBinary(columnBytes: AnyRef, nonNullPosition: Int): Array[Byte] =
     holder.row.getBinary(columnIndex)
 
-  override def readInterval(columnBytes: AnyRef, cursor: Long): CalendarInterval =
+  override def readInterval(columnBytes: AnyRef, nonNullPosition: Int): CalendarInterval =
     holder.row.getInterval(columnIndex)
 
-  override def readArray(columnBytes: AnyRef, cursor: Long): ArrayData =
+  override def readArray(columnBytes: AnyRef, nonNullPosition: Int): ArrayData =
     holder.row.getArray(columnIndex)
 
-  override def readMap(columnBytes: AnyRef, cursor: Long): MapData =
+  override def readMap(columnBytes: AnyRef, nonNullPosition: Int): MapData =
     holder.row.getMap(columnIndex)
 
   override def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long): InternalRow =
+      nonNullPosition: Int): InternalRow =
     holder.row.getStruct(columnIndex, numFields)
 }
 

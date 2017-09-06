@@ -18,7 +18,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -110,7 +110,7 @@ public class DUnitLauncher {
   public static final String DUNIT_DIR = "dunit";
   public static final String LOG_LEVEL = System.getProperty("logLevel", "config");
   public static final String SECURITY_LOG_LEVEL = System.getProperty(
-      "securityLogLevel", LOG_LEVEL);
+      "securityLogLevel", "config");
   public static final String WORKSPACE_DIR_PARAM = "WORKSPACE_DIR";
   public static final boolean LOCATOR_LOG_TO_DISK = Boolean.getBoolean("locatorLogToDisk");
 

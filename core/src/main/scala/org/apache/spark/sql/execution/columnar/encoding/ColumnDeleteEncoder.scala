@@ -54,39 +54,34 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long, numWords: Int): Long =
     throw new UnsupportedOperationException(s"writeNulls for $toString")
 
-  override protected def initializeNullsBeforeFinish(decoder: ColumnDecoder): Long =
-    throw new UnsupportedOperationException(s"initializeNullsBeforeFinish for $toString")
-
-  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder =
-    throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
-
   override def writeIsNull(ordinal: Int): Unit =
     throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
 
   private var deletedPositions: Array[Int] = _
 
-  def initialize(initSize: Int): Long = {
-    deletedPositions = new Array[Int](math.max(initSize << 2, 16))
+  def initialize(initSize: Int): Int = {
+    deletedPositions = new Array[Int]((initSize << 2) + 16)
     // cursor indicates index into deletedPositions array
-    0L
+    0
   }
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
-      withHeader: Boolean, allocator: BufferAllocator): Long = initialize(initSize)
+      withHeader: Boolean, allocator: BufferAllocator,
+      minBufferSize: Int = -1): Long = initialize(initSize)
 
-  override def writeInt(cursor: Long, value: Int): Long = {
-    if (cursor >= deletedPositions.length) {
+  def writeInt(position: Int, value: Int): Int = {
+    if (position >= deletedPositions.length) {
       deletedPositions = java.util.Arrays.copyOf(deletedPositions,
         (deletedPositions.length * 3) >> 1)
     }
-    deletedPositions(cursor.toInt) = value
-    cursor + 1
+    deletedPositions(position) = value
+    position + 1
   }
 
-  private def createFinalBuffer(numPositions: Long): ByteBuffer = {
+  private def createFinalBuffer(numPositions: Int, numBaseRows: Int): ByteBuffer = {
     val allocator = storageAllocator
     // add a header of 4 bytes for future use (e.g. format change)
-    val bufferSize = (numPositions << 2) + 8
+    val bufferSize = (numPositions << 2) + 12
     val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize(bufferSize))
     val bufferBytes = allocator.baseObject(buffer)
     var bufferCursor = allocator.baseOffset(buffer)
@@ -94,8 +89,11 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
     // header for future use
     ColumnEncoding.writeInt(bufferBytes, bufferCursor, 0)
     bufferCursor += 4
+    // write the number of base rows to compact the buffer if required
+    ColumnEncoding.writeInt(bufferBytes, bufferCursor, numBaseRows)
+    bufferCursor += 4
     // number of deletes
-    ColumnEncoding.writeInt(bufferBytes, bufferCursor, numPositions.toInt)
+    ColumnEncoding.writeInt(bufferBytes, bufferCursor, numPositions)
     bufferCursor += 4
     if (ColumnEncoding.littleEndian) {
       // bulk copy if platform endian-ness matches the final format
@@ -114,13 +112,16 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
 
   def merge(newValue: ByteBuffer, existingValue: ByteBuffer): ByteBuffer = {
     deletedPositions = new Array[Int](16)
-    var position = 0L
+    var position = 0
 
     val allocator1 = ColumnEncoding.getAllocator(newValue)
     val columnBytes1 = allocator1.baseObject(newValue)
     var cursor1 = allocator1.baseOffset(newValue) + newValue.position()
     val endOffset1 = cursor1 + newValue.remaining()
-    // skip 8 byte header (4 byte + number of elements)
+    // skip four byte header
+    cursor1 += 4
+    val numBaseRows = ColumnEncoding.readInt(columnBytes1, cursor1)
+    // skip number of elements
     cursor1 += 8
     var position1 = ColumnEncoding.readInt(columnBytes1, cursor1)
 
@@ -128,8 +129,8 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
     val columnBytes2 = allocator2.baseObject(existingValue)
     var cursor2 = allocator2.baseOffset(existingValue) + existingValue.position()
     val endOffset2 = cursor2 + existingValue.remaining()
-    // skip 8 byte header (4 byte + number of elements)
-    cursor2 += 8
+    // skip 12 byte header (4 byte + number of base rows + number of elements)
+    cursor2 += 12
     var position2 = ColumnEncoding.readInt(columnBytes2, cursor2)
 
     // Simple two-way merge of deleted positions with duplicate elimination.
@@ -175,10 +176,15 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
       cursor2 += 4
     }
 
-    createFinalBuffer(position)
+    createFinalBuffer(position, numBaseRows)
   }
 
   override def finish(cursor: Long): ByteBuffer = {
+    throw new UnsupportedOperationException(
+      "ColumnDeleteEncoder.finish(cursor) not expected to be called")
+  }
+
+  def finish(numPositions: Int, numBaseRows: Int): ByteBuffer = {
     // sort the deleted positions and create the final storage buffer
 
     // Spark's RadixSort is the fastest for larger sizes >= 1000. It requires
@@ -186,9 +192,9 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
     // The more common case is sorting of small number of elements where the
     // JDK's standard Arrays.sort is the fastest among those tested
     // (Fastutil's radixSort, quickSort, mergeSort, and Spark's RadixSort)
-    if (cursor > 1) java.util.Arrays.sort(deletedPositions, 0, cursor.toInt)
+    if (numPositions > 1) java.util.Arrays.sort(deletedPositions, 0, numPositions)
 
-    createFinalBuffer(cursor)
+    createFinalBuffer(numPositions, numBaseRows)
   }
 }
 

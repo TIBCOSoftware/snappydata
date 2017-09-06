@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,26 +26,23 @@ import scala.collection.JavaConverters._
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
 import io.snappydata.cluster.ExecutorInitiator
-import io.snappydata.gemxd.SnappyDataVersion
 import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{SparkCallbacks, Logging, SparkConf, SparkContext, SparkException}
+import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
@@ -197,15 +194,21 @@ class LeadImpl extends ServerImpl with Lead
     val conf = sc.getConf // this will get you a cloned copy
     initStartupArgs(conf, sc)
 
+    val password = conf.getOption(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
+    if (password.isDefined) conf.remove(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
     logInfo("cluster configuration after overriding certain properties \n"
         + conf.toDebugString)
+    if (password.isDefined) conf.set(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR,
+      password.get)
 
     val confProps = conf.getAll
     val storeProps = ServiceUtils.getStoreProperties(confProps)
     checkAuthProvider(storeProps)
 
+    val pass = storeProps.remove(Attribute.PASSWORD_ATTR)
     logInfo("passing store properties as " + storeProps)
-    super.start(storeProps, false)
+    if (pass != null) storeProps.setProperty(Attribute.PASSWORD_ATTR, pass.asInstanceOf[String])
+    super.start(storeProps, ignoreIfStarted = false)
 
     status() match {
       case State.RUNNING =>
@@ -270,17 +273,11 @@ class LeadImpl extends ServerImpl with Lead
         throw new UnsupportedOperationException(
           "LDAP is the only supported auth-provider currently.")
       }
-      if (authP != null && !isEnterpriseEdition()) {
+      if (authP != null && !SnappySession.isEnterpriseEdition) {
         throw new UnsupportedOperationException("Security feature is available in SnappyData " +
             "Enterprise Edition.")
       }
     }
-  }
-
-  private def isEnterpriseEdition(): Boolean = {
-    GemFireVersion.getInstance(classOf[SnappyDataVersion],
-      SharedUtils.GFXD_VERSION_PROPERTIES)
-    GemFireVersion.isEnterpriseEdition
   }
 
   @throws[SQLException]
@@ -432,7 +429,7 @@ class LeadImpl extends ServerImpl with Lead
 
         def checkCredentials(userPass: Option[UserPass]): Option[AuthInfo] = {
           userPass match {
-            case Some(u) => {
+            case Some(u) =>
               try {
                 val props = new Properties()
                 props.setProperty(Attribute.USERNAME_ATTR, u.user)
@@ -447,13 +444,12 @@ class LeadImpl extends ServerImpl with Lead
                   logInfo(msg)
                   None
                 } else {
-                  Option(new AuthInfo(new User(u.user, u.pass)))
+                  Option(new AuthInfo(User(u.user, u.pass)))
                 }
               } catch {
                 case t: Throwable => logWarning(s"Failed to authenticate the snappy job. $t")
                   None
               }
-            }
             case None => None
           }
         }

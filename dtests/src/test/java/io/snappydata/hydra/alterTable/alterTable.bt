@@ -8,6 +8,7 @@ io/snappydata/hydra/alterTable/nwAlterTablesTestUsingSnappyJob.conf
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
+  createLargeOrderTable = false
 
 io/snappydata/hydra/alterTable/nwAlterPartitionedRowTablesTestUsingSnappyShell.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1

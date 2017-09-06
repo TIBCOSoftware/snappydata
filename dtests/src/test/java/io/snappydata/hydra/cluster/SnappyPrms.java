@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -467,6 +467,27 @@ public class SnappyPrms extends BasePrms {
    * (Boolean) parameter to have dynamic APP_PROPS, other than setting using taskTab.
    */
   public static Long hasDynamicAppProps;
+
+  /**
+   * (Boolean) parameter to enable security for snappyJob,by default it is false.
+   */
+  public static Long isSecurity;
+
+  /**
+   * (String) User credentials that will be used when submittimg a snappyJob to a secure cluster
+   */
+  public static Long credentialFile;
+
+  public static String getCredentialFile() {
+    Long key = credentialFile;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+
+  public static boolean isSecurityOn() {
+    Long key = isSecurity;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
 
   public static int getRetryCountForJob() {
     Long key = numTimesToRetry;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -42,14 +42,14 @@ class TokenizationTest
   val all_typetable = "my_table3"
 
   override def beforeAll(): Unit = {
-    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
     super.beforeAll()
   }
 
   override def afterAll(): Unit = {
-    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
     super.afterAll()
@@ -161,8 +161,8 @@ class TokenizationTest
     createSimpleTableWithAStringColumnAndPoupulateData(100, "tab_str", true)
     res = snc.sql(s"select * from tab_str where b = 'aa12bb' and b like 'aa1%'").collect()
     assert(res.length == 1)
-    // This should not be tokenized and so cachemap size should be 0
-    assert( cacheMap.size() == 0)
+    // this is converted to Literal by parser so plan is cached
+    assert(cacheMap.size() == 1)
 
     // An n-tile query ... but this is not affecting Tokenization as ntile is
     // not in where clause but in from clause only.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -42,7 +42,7 @@ import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
 
-final class SparkShellRDDHelper {
+final class SparkConnectorRDDHelper {
 
   var useLocatorURL: Boolean = false
 
@@ -64,13 +64,13 @@ final class SparkShellRDDHelper {
       schemaWithIndex.filter(_._1.name.equalsIgnoreCase(col)).last._2 + 1
     })
     val fetchColString = (fetchCols.flatMap { col =>
-      val deltaCol = ColumnDelta.deltaColumnIndex(col, 0)
+      val deltaCol = ColumnDelta.deltaColumnIndex(col - 1 /* zero based */, 0)
       (col +: (deltaCol until (deltaCol - ColumnDelta.MAX_DEPTH, -1))).map(
         i => s"(select data, columnIndex from $resolvedTableName where " +
             s"partitionId = $partitionId and uuid = ? and columnIndex = $i)")
-    } :+ s"select data, columnIndex from $resolvedTableName where " +
+    } :+ s"(select data, columnIndex from $resolvedTableName where " +
         s"partitionId = $partitionId and uuid = ? and columnIndex = " +
-        s"${ColumnFormatEntry.DELETE_MASK_COL_INDEX}").mkString(" union all ")
+        s"${ColumnFormatEntry.DELETE_MASK_COL_INDEX})").mkString(" union all ")
     // fetch stats query and fetch columns query
     (s"select data, uuid from $resolvedTableName where columnIndex = " +
         s"${ColumnFormatEntry.STATROW_COL_INDEX}", fetchColString)
@@ -106,7 +106,7 @@ final class SparkShellRDDHelper {
 //      }
     }
 
-    val txId = SparkShellRDDHelper.snapshotTxIdForRead.get()
+    val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get()
     if (!txId.equals("null")) {
       statement.execute(
         s"call sys.USE_SNAPSHOT_TXID('$txId')")
@@ -120,7 +120,7 @@ final class SparkShellRDDHelper {
       split: Partition): Connection = {
     val urlsOfNetServerHost = split.asInstanceOf[
         ExecutorMultiBucketLocalShellPartition].hostList
-    useLocatorURL = SparkShellRDDHelper.useLocatorUrl(urlsOfNetServerHost)
+    useLocatorURL = SparkConnectorRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
 
@@ -158,7 +158,7 @@ final class SparkShellRDDHelper {
   }
 }
 
-object SparkShellRDDHelper {
+object SparkConnectorRDDHelper {
 
   var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
   var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]

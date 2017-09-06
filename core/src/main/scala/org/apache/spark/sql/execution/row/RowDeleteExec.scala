@@ -48,8 +48,7 @@ case class RowDeleteExec(child: SparkPlan, resolvedName: String,
     ctx.currentVars = input
     // bind the key columns
     val stmtInput = ctx.generateExpressions(keyColumns.map(
-      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
-        u, child.output))), doSubexpressionElimination = true)
+      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(u, child.output))))
     ctx.currentVars = null
 
     val stmtSchema = StructType.fromAttributes(keyColumns)
