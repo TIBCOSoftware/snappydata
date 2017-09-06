@@ -471,31 +471,26 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     PreparedQueryRoutingSingleNodeSuite.equalityOnStringColumn(snc, serverHostPort)
   }
 
-  test("SNAP-1994 Test round function") {
+  test("SNAP-1994 Test functions and expressions") {
     snc.sql(s"Drop Table if exists double_tab")
     snc.sql(s"Create Table double_tab (a INT, d Double) " +
         "using column options()")
     snc.sql(s"insert into double_tab values(1, 1.111111), (2, 2.222222), (3, 3.33333)")
     val cacheMap = SnappySession.getPlanCache.asMap()
     assert( cacheMap.size() == 0)
-    var res = snc.sql(s"select * from double_tab where round(d, 2) < round(3.3333, 2)").collect()
-    assert(res.length === 2)
-    res = snc.sql(s"select * from double_tab where round(d, 3) < round(3.3333, 3)").collect()
-    assert(res.length === 2)
-    assert(cacheMap.size() == 2)
-
     val serverHostPort = TestUtil.startNetServer()
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
     var prepStatement0: java.sql.PreparedStatement = null
+    var prepStatement1: java.sql.PreparedStatement = null
     try {
       prepStatement0 = conn.prepareStatement(s"select * from double_tab" +
           s" where round(d, 2) < round(?, 2)")
       prepStatement0.setDouble(1, 3.3333)
-      val update1 = prepStatement0.executeQuery()
+      var update = prepStatement0.executeQuery()
       var index = 0
-      while (update1.next()) {
-        val i = update1.getInt(1)
-        val j = update1.getBigDecimal(2)
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
         // scalastyle:off println
         println(s"1-row($index) $i $j")
         // scalastyle:on println
@@ -505,13 +500,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       println(s"1-Number of rows read " + index)
       // scalastyle:on println
       assert(index == 2)
+      assert(cacheMap.size() == 1)
 
       prepStatement0.setDouble(1, 4.3333)
-      val update2 = prepStatement0.executeQuery()
+      update = prepStatement0.executeQuery()
       index = 0
-      while (update2.next()) {
-        val i = update2.getInt(1)
-        val j = update2.getBigDecimal(2)
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
         // scalastyle:off println
         println(s"2-row($index) $i $j")
         // scalastyle:on println
@@ -521,6 +517,44 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       println(s"2-Number of rows read " + index)
       // scalastyle:on println
       assert(index == 3)
+      assert(cacheMap.size() == 1)
+
+      prepStatement1 = conn.prepareStatement(s"select a + ?, d from double_tab")
+      prepStatement1.setInt(1, 2)
+      update = prepStatement1.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"3-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i > 2 && i < 6)
+      }
+      // scalastyle:off println
+      println(s"3-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 3)
+      assert(cacheMap.size() == 2)
+
+      prepStatement1.setInt(1, 3)
+      update = prepStatement1.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"4-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i > 3 && i < 7)
+      }
+      // scalastyle:off println
+      println(s"4-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 3)
+      assert(cacheMap.size() == 2)
 
     } finally {
       def close(prepStatement: java.sql.PreparedStatement): Unit =
