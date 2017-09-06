@@ -487,6 +487,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     try {
       prepStatement0 = conn.prepareStatement(s"select * from double_tab" +
           s" where round(d, 2) < round(?, 2)")
+      assert(cacheMap.size() == 0)
       prepStatement0.setDouble(1, 3.3333)
       var update = prepStatement0.executeQuery()
       var index = 0
@@ -497,6 +498,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         println(s"1-row($index) $i $j")
         // scalastyle:on println
         index += 1
+        assert(i == 1 || i == 2)
       }
       // scalastyle:off println
       println(s"1-Number of rows read " + index)
@@ -514,6 +516,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         println(s"2-row($index) $i $j")
         // scalastyle:on println
         index += 1
+        assert(i == 1 || i == 2 || i == 3)
       }
       // scalastyle:off println
       println(s"2-Number of rows read " + index)
@@ -522,6 +525,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(cacheMap.size() == 1)
 
       prepStatement1 = conn.prepareStatement(s"select a + ?, d from double_tab")
+      assert(cacheMap.size() == 1)
       prepStatement1.setInt(1, 2)
       update = prepStatement1.executeQuery()
       index = 0
@@ -560,6 +564,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
       prepStatement2 = conn.prepareStatement(s"select a," +
           s" nvl(d, ?) from double_tab where UPPER(s) = ?")
+      assert(cacheMap.size() == 2)
       prepStatement2.setDouble(1, 1)
       prepStatement2.setString(2, "1A")
       update = prepStatement2.executeQuery()
