@@ -473,15 +473,17 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
   test("SNAP-1994 Test functions and expressions") {
     snc.sql(s"Drop Table if exists double_tab")
-    snc.sql(s"Create Table double_tab (a INT, d Double) " +
+    snc.sql(s"Create Table double_tab (a INT, d Double, s String) " +
         "using column options()")
-    snc.sql(s"insert into double_tab values(1, 1.111111), (2, 2.222222), (3, 3.33333)")
+    snc.sql(s"insert into double_tab values(1, 1.111111, '1a'), (2, 2.222222, '2b')," +
+        s" (3, 3.33333, '3c')")
     val cacheMap = SnappySession.getPlanCache.asMap()
     assert( cacheMap.size() == 0)
     val serverHostPort = TestUtil.startNetServer()
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
     var prepStatement0: java.sql.PreparedStatement = null
     var prepStatement1: java.sql.PreparedStatement = null
+    var prepStatement2: java.sql.PreparedStatement = null
     try {
       prepStatement0 = conn.prepareStatement(s"select * from double_tab" +
           s" where round(d, 2) < round(?, 2)")
@@ -556,10 +558,52 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(index == 3)
       assert(cacheMap.size() == 2)
 
+      prepStatement2 = conn.prepareStatement(s"select a," +
+          s" nvl(d, ?) from double_tab where UPPER(s) = ?")
+      prepStatement2.setDouble(1, 1)
+      prepStatement2.setString(2, "1A")
+      update = prepStatement2.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getString(2)
+        // scalastyle:off println
+        println(s"5-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1)
+      }
+      // scalastyle:off println
+      println(s"5-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 1)
+      assert(cacheMap.size() == 3)
+
+      prepStatement2.setDouble(1, 1)
+      prepStatement2.setString(2, "2B")
+      update = prepStatement2.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getString(2)
+        // scalastyle:off println
+        println(s"5-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 2)
+      }
+      // scalastyle:off println
+      println(s"5-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 1)
+      assert(cacheMap.size() == 3)
+
     } finally {
       def close(prepStatement: java.sql.PreparedStatement): Unit =
         if (prepStatement != null) prepStatement.close()
       close(prepStatement0)
+      close(prepStatement1)
+      close(prepStatement2)
       conn.close()
     }
   }
