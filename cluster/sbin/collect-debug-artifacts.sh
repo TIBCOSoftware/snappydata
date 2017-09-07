@@ -104,6 +104,8 @@ function check_configs {
       echo "Debug Tar file ${TAR_FILE} does not exist"
       exit 1
     fi
+    # no need of further configuration checks for extraction
+    return
   fi
 
   if [ -z "${CONF_FILE}" ]; then

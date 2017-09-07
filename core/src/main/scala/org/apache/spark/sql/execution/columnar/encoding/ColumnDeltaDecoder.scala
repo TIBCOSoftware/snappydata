@@ -42,15 +42,15 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
   private var positionOrdinal: Int = _
 
   private def initialize(columnBytes: AnyRef, cursor: Long): Long = {
-    // read the positions
-    val numPositions = ColumnEncoding.readInt(columnBytes, cursor)
+    // read the positions (skip the number of base rows)
+    val numPositions = ColumnEncoding.readInt(columnBytes, cursor + 4)
 
     // initialize the start and end of mutated positions
-    positionCursor = cursor + 4
-    positionEndCursor = positionCursor + (numPositions << 2)
+    positionCursor = cursor + 8
 
     // round to nearest word to get data start position
-    ((positionEndCursor + 7) >> 3) << 3
+    positionEndCursor = ((positionCursor + (numPositions << 2) + 7) >> 3) << 3
+    positionEndCursor
   }
 
   private[encoding] def moveToNextPosition(): Int = {

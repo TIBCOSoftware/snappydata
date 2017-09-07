@@ -273,7 +273,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   }
 
   private def writeHeader(columnBytes: AnyRef, cursor: Long, numNullWords: Int,
-      positions: Array[Long], startIndex: Int, endIndex: Int): Long = {
+      numBaseRows: Int, positions: Array[Long], startIndex: Int, endIndex: Int): Long = {
     var deltaCursor = cursor
     // typeId
     ColumnEncoding.writeInt(columnBytes, deltaCursor, typeId)
@@ -283,6 +283,11 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     deltaCursor += 4
     // write the null bytes
     deltaCursor = writeNulls(columnBytes, deltaCursor, numNullWords)
+
+    // write the number of base column rows to help in merging and creating
+    // next hierarchy deltas if required
+    ColumnEncoding.writeInt(columnBytes, deltaCursor, numBaseRows)
+    deltaCursor += 4
 
     // write the positions next
     ColumnEncoding.writeInt(columnBytes, deltaCursor, endIndex - startIndex)
@@ -297,13 +302,16 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     ((deltaCursor + 7) >> 3) << 3
   }
 
+  private[this] var tmpNumBaseRows: Int = _
   private[this] var tmpNumPositions: Int = _
   private[this] var tmpPositionCursor: Long = _
 
   private def initializeDecoder(columnBytes: AnyRef, cursor: Long): Long = {
+    // read the number of base rows
+    tmpNumBaseRows = ColumnEncoding.readInt(columnBytes, cursor)
     // read the positions
-    tmpNumPositions = ColumnEncoding.readInt(columnBytes, cursor)
-    tmpPositionCursor = cursor + 4
+    tmpNumPositions = ColumnEncoding.readInt(columnBytes, cursor + 4)
+    tmpPositionCursor = cursor + 8
     val positionEndCursor = tmpPositionCursor + (tmpNumPositions << 2)
     // round to nearest word to get data start position
     ((positionEndCursor + 7) >> 3) << 3
@@ -336,6 +344,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // new delta is on the "left" while the previous delta in the table is on "right"
     val (decoder1, columnBytes1) = ColumnEncoding.getColumnDecoderAndBuffer(
       newValue, field, initializeDecoder)
+    val numBaseRows = tmpNumBaseRows
     val numPositions1 = tmpNumPositions
     var positionCursor1 = tmpPositionCursor
     val newValueSize = newValue.remaining()
@@ -478,7 +487,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
     val numElements = encoderOrdinal + 1
     val positionsSize = if (existingIsDelta) {
-      4 /* numPositions */ + (numElements << 2)
+      4 /* numBaseRows */ + 4 /* numPositions */ + (numElements << 2)
     } else 0
     var buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
         // round positions to nearest word as done by writeHeader; for the non-delta case,
@@ -490,7 +499,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val columnBytes = allocator.baseObject(buffer)
     cursor = allocator.baseOffset(buffer)
     // write the header including positions
-    cursor = writeHeader(columnBytes, cursor, numNullWords, positionsArray, 0, numElements)
+    cursor = writeHeader(columnBytes, cursor, numNullWords, numBaseRows,
+      positionsArray, 0, numElements)
 
     // write any internal structures (e.g. dictionary)
     cursor = writeInternals(columnBytes, cursor)
@@ -507,6 +517,11 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   }
 
   override def finish(encoderCursor: Long): ByteBuffer = {
+    throw new UnsupportedOperationException(
+      "ColumnDeltaEncoder.finish(cursor) not expected to be called")
+  }
+
+  def finish(encoderCursor: Long, numBaseRows: Int): ByteBuffer = {
     val writer = DeltaWriter(dataType)
     // TODO: PERF: this implementation can potentially be changed to use code
     // generation to embed the DeltaWriter code assuming it can have a good
@@ -532,13 +547,14 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
         (numNullWords << 3) /* header */ +
         // round positions to nearest word as done by writeHeader
-        4 /* numPositions */ + (numDeltas << 2) + 7) >> 3) << 3) +
+        4 /* numBaseRows */ + 4 /* numPositions */ + (numDeltas << 2) + 7) >> 3) << 3) +
         realEncoder.encodedSize(encoderCursor, realEncoder.columnBeginPosition + dataOffset)))
     realEncoder.setSource(buffer, releaseOld = false)
     val columnBytes = allocator.baseObject(buffer)
     var cursor = allocator.baseOffset(buffer)
     // write the header including positions
-    cursor = writeHeader(columnBytes, cursor, numNullWords, positionsArray, startIndex, endIndex)
+    cursor = writeHeader(columnBytes, cursor, numNullWords, numBaseRows,
+      positionsArray, startIndex, endIndex)
 
     // write any internal structures (e.g. dictionary)
     cursor = realEncoder.writeInternals(columnBytes, cursor)
