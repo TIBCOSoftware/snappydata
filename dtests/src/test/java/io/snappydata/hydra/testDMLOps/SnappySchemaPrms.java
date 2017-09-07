@@ -17,6 +17,7 @@
 
 package io.snappydata.hydra.testDMLOps;
 
+import java.util.ArrayList;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -50,6 +51,8 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long insertStmts;
 
+  public static Long insertStmtsNonDMLTables;
+
   public static Long updateStmts;
 
   public static Long deleteStmts;
@@ -61,6 +64,11 @@ public class SnappySchemaPrms extends SnappyPrms {
   public static Long deleteTables;
 
   public static Long isHATest;
+
+  /* boolean : For fast data loading, slipt the data files and load them parallely*/
+  public static Long loadDataInParts;
+
+  public static Long numPartsForDataFiles;
 
   public static String[] getTableNames() {
     Long key = tablesList;
@@ -157,14 +165,35 @@ public class SnappySchemaPrms extends SnappyPrms {
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
-  public static String[] getInsertStmts(){
+  public static ArrayList<String> getInsertStmts(){
     Long key = insertStmts;
     Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
-    String[] strArr = new String[selectStmt.size()];
+    ArrayList<String> strArr = new ArrayList<String>();
     for (int i = 0; i < selectStmt.size(); i++) {
-      strArr[i] = (String)selectStmt.elementAt(i);
+      strArr.add(((String)selectStmt.elementAt(i)));
     }
     return strArr;
+  }
+
+  public static ArrayList<String> getInsertStmtsForNonDMLTables(){
+    Long key = insertStmtsNonDMLTables;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    ArrayList<String> strArr = new ArrayList<String>();
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr.add((String)selectStmt.elementAt(i));
+    }
+    return strArr;
+  }
+
+
+  public static boolean getLoadDataInParts(){
+    Long key = loadDataInParts;
+    return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
+  }
+
+  public static int getNumPartsForDataFiles(){
+    Long key = numPartsForDataFiles;
+    return TestConfig.tasktab().intAt(key, TestConfig.tab().intAt(key, 1));
   }
 
   public static String[] getUpdateStmts(){

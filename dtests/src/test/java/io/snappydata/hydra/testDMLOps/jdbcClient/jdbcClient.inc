@@ -19,7 +19,7 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_createSnappyTables
 	threadGroups = snappyThreads;
 
-INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_initializeTablesMetaData
+INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_saveTableMetaDataToBB
 	threadGroups = snappyThreads;
 
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_initializeDMLThreads
@@ -30,12 +30,12 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 	threadGroups = snappyThreads;
 
 //task for verifying the populated data.
-INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_verifyResults
+INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_verifyResultsInitTask
   threadGroups = snappyThreads;
 
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 hydra.Prms-totalTaskTimeSec           = 600;
-hydra.Prms-maxResultWaitSec           = 300;
+hydra.Prms-maxResultWaitSec           = 1200;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-testUniqueKeys = true;
 
