@@ -1593,8 +1593,9 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="working-with-stratified-samples">Working with Stratified Samples</h2>
-<h3 id="create-sample-tables">Create Sample Tables</h3>
+                <h1 id="working-with-stratified-samples">Working with Stratified Samples</h1>
+<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
+<h2 id="create-sample-tables">Create Sample Tables</h2>
 <p>You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS. </p>
 <p>Here is an SQL based example to create a sample on tables locally available in the SnappyData cluster. </p>
 <pre><code>CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 
@@ -1640,7 +1641,7 @@ strataReservoirSize '50', baseTable 'baseTableName')
 </li>
 </ul>
 </div>
-<h3 id="qcs-query-column-set-and-sample-selection">QCS (Query Column Set) and Sample Selection</h3>
+<h2 id="qcs-query-column-set-and-sample-selection">QCS (Query Column Set) and Sample Selection</h2>
 <p>For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). </p>
 <p>QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like <code>hour (pickup_datetime)</code>.</p>
 <p>The parameter <em>fraction</em> represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes, you can get pretty accurate answers with a very small fraction. With most data sets that follow a normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. SDE always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 

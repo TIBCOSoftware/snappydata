@@ -1592,7 +1592,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="using-jdbc-with-snappydata">Using JDBC with SnappyData</h2>
+                <h1 id="using-jdbc-with-snappydata">Using JDBC with SnappyData</h1>
 <p>SnappyData is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. </p>
 <pre><code class="java">
 // 1527 is the default port a Locator or Server uses to listen for thin client connections
@@ -1605,7 +1605,7 @@ Connection c = DriverManager.getConnection (&quot;jdbc:snappydata://locatorHostN
 <p class="admonition-title">Note</p>
 <p>If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</p>
 </div>
-<h2 id="multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</h2>
+<h1 id="multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</h1>
 <p>SnappyData provides support for Apache Thrift protocol which enables users to access the cluster from other languages that are not supported directly by SnappyData.
 Thrift allows efficient and reliable communication across programming languages like Java, Python, PHP, Ruby, Elixir, Perl and other languages. For more information on Thrift, refer to the <a href="https://thrift.apache.org/">Apache Thrift documentation</a>.</p>
 <p>The JDBC driver for SnappyData that uses the <code>jdbc:snappydata://</code> URL schema, now uses Thrift for underlying protocol. The older URL scheme for RowStore <code>jdbc:gemfirexd://</code> continues to use the deprecated DRDA protocol.</p>

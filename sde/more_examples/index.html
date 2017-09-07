@@ -1597,8 +1597,9 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="more-examples">More Examples</h2>
-<h4 id="example-1">Example 1</h4>
+                <h1 id="more-examples">More Examples</h1>
+<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
+<h2 id="example-1">Example 1</h2>
 <p>Create a sample table with qcs 'medallion' </p>
 <pre><code>CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI 
   OPTIONS (buckets '7', qcs 'medallion', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
@@ -1619,7 +1620,7 @@
   upper_bound(&quot;avgTripDist&quot;)).withError(.6, .90, &quot;do_nothing&quot;).sort(col(&quot;medallion&quot;).desc).limit(100)
 </code></pre>
 
-<h4 id="example-2">Example 2</h4>
+<h2 id="example-2">Example 2</h2>
 <p>Create additional sample table with qcs 'hack_license' </p>
 <pre><code>CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
 (buckets '7', qcs 'hack_license', fraction '0.01', strataReservoirSize '50') AS (SELECT * FROM NYCTAXI);
@@ -1634,7 +1635,7 @@
 <pre><code>snc.table(basetable).groupBy(&quot;hack_license&quot;).count().withError(.6,.90,&quot;do_nothing&quot;).sort(col(&quot;count&quot;).desc).limit(10)
 </code></pre>
 
-<h4 id="example-3">Example 3</h4>
+<h2 id="example-3">Example 3</h2>
 <p>Create a sample table using function "hour(pickup_datetime) as QCS</p>
 <pre><code>Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 </code></pre>
@@ -1647,7 +1648,7 @@
 <pre><code>snc.table(basetable).groupBy(hour(col(&quot;pickup_datetime&quot;))).agg(Map(&quot;trip_time_in_secs&quot; -&gt; &quot;sum&quot;)).withError(0.6,0.90,&quot;do_nothing&quot;).limit(10)
 </code></pre>
 
-<h4 id="example-4">Example 4</h4>
+<h2 id="example-4">Example 4</h2>
 <p>If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.</p>
 <pre><code>Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 </code></pre>

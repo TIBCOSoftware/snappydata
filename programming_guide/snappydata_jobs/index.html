@@ -1596,7 +1596,7 @@
             <div class="section">
               
                 <p><a id="snappydata-jobs"></a></p>
-<h2 id="snappydata-jobs">SnappyData Jobs</h2>
+<h1 id="snappydata-jobs">SnappyData Jobs</h1>
 <p>To create a job that can be submitted through the job server, the job must implement the <strong>SnappySQLJob</strong> or <strong>SnappyStreamingJob</strong> trait. Your job is displayed as:</p>
 <p><strong>Scala</strong></p>
 <pre><code class="scala">class SnappySampleJob implements SnappySQLJob {
@@ -1656,7 +1656,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 </ul>
 <p>See <a href="https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples">examples</a> for Spark and Spark streaming jobs. </p>
 <p>SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SQLContext per incoming SQL connection. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.</p>
-<h3 id="submitting-jobs">Submitting Jobs</h3>
+<h2 id="submitting-jobs">Submitting Jobs</h2>
 <p>The following command submits <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala">CreateAndLoadAirlineDataJob</a>. This job creates DataFrames from parquet files, loads the data from DataFrame into column tables and row tables, and creates sample table on column table in its <code>runJob</code> method.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1720,7 +1720,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 </code></pre>
 
 <p>The status of this job can be queried in the same manner as shown above. The result of the job returns a file path that has the query results.</p>
-<h4 id="jar-dependencies-for-jobs">Jar Dependencies for Jobs</h4>
+<h3 id="jar-dependencies-for-jobs">Jar Dependencies for Jobs</h3>
 <p>For Jobs, users need to include <strong><a href="http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1">snappydata-cluster_2.11:1.0.0-rc1</a></strong> to their project dependencies. In case the user project already includes dependency on Apache Spark and does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.</p>
 <p>For example, gradle can be configured as:</p>
 <pre><code>compile('io.snappydata:snappydata-cluster_2.11:1.0.0-rc1') {
@@ -1739,7 +1739,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
     }
 </code></pre>
 
-<h3 id="running-python-applications">Running Python Applications</h3>
+<h2 id="running-python-applications">Running Python Applications</h2>
 <p>Python users can submit a Python application using <code>spark-submit</code> in the SnappyData Connector mode. Run the following command to submit a Python application:</p>
 <pre><code class="scala">bin/spark-submit \
     --master local[*]  \
@@ -1748,7 +1748,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 </code></pre>
 
 <p><code>snappydata.connection</code> property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.</p>
-<h3 id="streaming-jobs">Streaming Jobs</h3>
+<h2 id="streaming-jobs">Streaming Jobs</h2>
 <p>An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying <code>--stream</code> as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
 Alternatively, you can specify the name of an existing/pre-created streaming context as <code>--context &lt;context-name&gt;</code> with the <code>submit</code> command.</p>
 <p>For example, <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala">TwitterPopularTagsJob</a> can be submitted as follows. 

@@ -519,22 +519,13 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#create-udf-function">Create UDF Function</a></li>
+                <li class="toctree-l3"><a href="#create-user-defined-function">Create User Defined Function</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#use-the-udf">Use the UDF</a></li>
+                    <li><a class="toctree-l4" href="#use-udf">Use UDF</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#drop-the-function">Drop the Function</a></li>
+                    <li><a class="toctree-l4" href="#create-user-defined-aggregate-functions">Create User Defined Aggregate Functions</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#modify-an-existing-udf">Modify an Existing UDF</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#create-user-defined-aggregate-functions">Create User Defined Aggregate Functions</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#known-limitation">Known Limitation</a></li>
+                    <li><a class="toctree-l4" href="#known-limitation">Known Limitation</a></li>
                 
             
             </ul>
@@ -1605,7 +1596,7 @@
             <div class="section">
               
                 <p><a id= create_udf> </a></p>
-<h4 id="create-udf-function">Create UDF Function</h4>
+<h1 id="create-user-defined-function">Create User Defined Function</h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Place the jars used for creating persistent UDFs in a shared location (NFS, HDFS etc.) if you are configuring multiple leads for high availability. The same jar is used for DDL replay while the standby lead becomes the active lead.</p>
@@ -1679,7 +1670,7 @@ The framework always returns the Java types to the UDFs. So, if you are writing 
 </tr>
 </tbody>
 </table>
-<h4 id="use-the-udf"><strong>Use the UDF</strong></h4>
+<h2 id="use-udf">Use UDF</h2>
 <pre><code class="scala">select strnglen(string_column) from &lt;table&gt;
 </code></pre>
 
@@ -1695,7 +1686,7 @@ The framework always returns the Java types to the UDFs. So, if you are writing 
 <h4 id="modify-an-existing-udf"><strong>Modify an Existing UDF</strong></h4>
 <p>1) Drop the existing UDF</p>
 <p>2) Modify the UDF code and <a href="#create_udf">create a new UDF</a>. You can create the UDF with the same name as that of the dropped UDF.</p>
-<h3 id="create-user-defined-aggregate-functions">Create User Defined Aggregate Functions</h3>
+<h2 id="create-user-defined-aggregate-functions">Create User Defined Aggregate Functions</h2>
 <p>SnappyData uses the same interface as that of Spark to define a User Defined Aggregate Function  <code>org.apache.spark.sql.expressions.UserDefinedAggregateFunction</code>. For more information refer to this <a href="https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html">document</a>.</p>
 <h2 id="known-limitation">Known Limitation</h2>
 <p>In the current version of the product, setting schema over a JDBC connection (using the <code>set schema</code> command) or SnappySession (using <code>SnappySession.setSchema</code> API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default <code>APP</code> schema. 

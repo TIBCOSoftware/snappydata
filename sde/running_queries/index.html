@@ -652,7 +652,7 @@
                 
                     <li><a class="toctree-l4" href="#using-the-spark-dataframe-api">Using the Spark DataFrame API</a></li>
                 
-                    <li><a class="toctree-l4" href="#supporting-bi-tools-or-existing-apps">Supporting BI tools or existing Apps</a></li>
+                    <li><a class="toctree-l4" href="#supporting-bi-tools-or-existing-apps">Supporting BI Tools or Existing Apps</a></li>
                 
             
             </ul>
@@ -1593,7 +1593,8 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="running-queries">Running Queries</h2>
+                <h1 id="running-queries">Running Queries</h1>
+<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <p>Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. </p>
 <p>Here is the syntax:</p>
 <blockquote>
@@ -1622,7 +1623,7 @@ SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by 
 // If the error for any row is greater than 10% omit the answer. i.e. the row is omitted. 
 </code></pre>
 
-<h4 id="using-the-spark-dataframe-api">Using the Spark DataFrame API</h4>
+<h2 id="using-the-spark-dataframe-api">Using the Spark DataFrame API</h2>
 <p>The Spark DataFrame API is extended with support for approximate queries. Here is 'withError' API on DataFrames.</p>
 <pre><code>def withError(error: Double,
 confidence: Double = Constant.DEFAULT_CONFIDENCE,
@@ -1634,7 +1635,7 @@ behavior: String = &quot;DO_NOTHING&quot;): DataFrame
 snc.table(baseTable).agg(Map(&quot;ArrDelay&quot; -&gt; &quot;sum&quot;)).orderBy( desc(&quot;Month_&quot;)).withError(0.10, 0.95, 'local_omit’) 
 </code></pre>
 
-<h3 id="supporting-bi-tools-or-existing-apps">Supporting BI tools or existing Apps</h3>
+<h2 id="supporting-bi-tools-or-existing-apps">Supporting BI Tools or Existing Apps</h2>
 <p>To allow BI tools and existing Apps that say might be generating SQL, SDE also supports specifying these options through your SQL connection or using the Snappy SQLContext. </p>
 <pre><code>snContext.sql(s&quot;spark.sql.aqp.error=$error&quot;)
 snContext.sql(s&quot;spark.sql.aqp.confidence=$confidence&quot;)

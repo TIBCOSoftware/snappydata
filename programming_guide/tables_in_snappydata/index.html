@@ -1592,14 +1592,14 @@
             <div class="section">
               
                 <p><a id="markdown_link_row_and_column_tables"></a></p>
-<h2 id="tables-in-snappydata">Tables in SnappyData</h2>
-<h3 id="row-and-column-tables">Row and Column Tables</h3>
+<h1 id="tables-in-snappydata">Tables in SnappyData</h1>
+<h2 id="row-and-column-tables">Row and Column Tables</h2>
 <p>Column tables organize and manage data in memory in a compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.</p>
 <p><img alt="Column Table" src="../../Images/column_table.png" /></p>
 <p>Row tables, unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location is determined by a hash function and hence is fast for point lookups or updates.
 <img alt="Column Table" src="../../Images/row_table.png" /></p>
 <p>Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.</p>
-<h4 id="ddl-and-dml-syntax-for-tables">DDL and DML Syntax for Tables</h4>
+<h3 id="ddl-and-dml-syntax-for-tables">DDL and DML Syntax for Tables</h3>
 <pre><code class="scala">CREATE TABLE [IF NOT EXISTS] table_name
    (
   COLUMN_DEFINITION
@@ -1638,7 +1638,7 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 <p class="admonition-title">Note</p>
 <p>Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.</p>
 </div>
-<h4 id="spark-api-for-managing-tables">Spark API for Managing Tables</h4>
+<h3 id="spark-api-for-managing-tables">Spark API for Managing Tables</h3>
 <p><strong>Get a reference to <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a>:</strong></p>
 <pre><code>val snappy: SnappySession = new SnappySession(spark.sparkContext)
 </code></pre>
@@ -1657,7 +1657,7 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 <pre><code>snappy.dropTable(tableName, ifExists = true)
 </code></pre>
 <p><a id="ddl"></a></p>
-<h4 id="ddl-extensions-to-snappystore-tables">DDL extensions to SnappyStore Tables</h4>
+<h3 id="ddl-extensions-to-snappystore-tables">DDL extensions to SnappyStore Tables</h3>
 <p>The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. </p>
 <ul>
 <li>
@@ -1725,7 +1725,7 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 </li>
 </ul>
 <p>Refer to the <a href="../../sql_reference/">SQL Reference Guide</a> for information on the extensions.</p>
-<h4 id="restrictions-on-column-tables">Restrictions on Column Tables</h4>
+<h3 id="restrictions-on-column-tables">Restrictions on Column Tables</h3>
 <ul>
 <li>
 <p>Column tables cannot specify any primary key, unique key constraints</p>
@@ -1743,7 +1743,7 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 <p>READ_COMMITTED and REPEATABLE_READ isolation levels are not supported for column tables.</p>
 </li>
 </ul>
-<h4 id="dml-operations-on-tables">DML Operations on Tables</h4>
+<h3 id="dml-operations-on-tables">DML Operations on Tables</h3>
 <pre><code class="scala">INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
@@ -1753,7 +1753,7 @@ DELETE FROM tablename1 [WHERE expression]
 TRUNCATE TABLE tablename1;
 </code></pre>
 
-<h4 id="api-extensions-provided-in-snappycontext">API Extensions Provided in SnappyContext</h4>
+<h3 id="api-extensions-provided-in-snappycontext">API Extensions Provided in SnappyContext</h3>
 <p>Several APIs have been added in <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a> to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.</p>
 <pre><code class="scala">//  Applicable for both row and column tables
 def insert(tableName: String, rows: Row*): Int .
@@ -1792,7 +1792,7 @@ snappy.update(tableName, &quot;ITEMREF = 3&quot; , Row(99) , &quot;ITEMREF&quot;
 </code></pre>
 
 <!--
-#### String/CHAR/VARCHAR Data Types
+### String/CHAR/VARCHAR Data Types
 SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either CHAR or VARCHAR type, if your column data fits in maximum CHAR size (254) or VARCHAR size (32768), respectively. For larger column data size, String type should be used as product stores its data in CLOB format internally.
 
 **Create a table with columns of CHAR and VARCHAR datatype using SQL**:
@@ -1839,12 +1839,12 @@ The usage of `*` above causes all the STRING columns in the table to be rendered
 
 -->
 
-<h4 id="row-buffers-for-column-tables">Row Buffers for Column Tables</h4>
+<h3 id="row-buffers-for-column-tables">Row Buffers for Column Tables</h3>
 <p>Generally, the column table is used for analytical purpose. To this end, most of the operations (read or write) on it are bulk operations. Taking advantage of this fact the rows are compressed column wise and stored.</p>
 <p>In SnappyData, the column table consists of two components, delta row buffer and column store. SnappyData tries to support individual insert of a single row, as it is stored in a delta row buffer which is write optimized and highly available.</p>
 <p>Once the size of buffer reaches the COLUMN_BATCH_SIZE set by the user, the delta row buffer is compressed column wise and stored in the column store.
 Any query on column table also takes into account the row cached buffer. By doing this, it ensures that the query does not miss any data.</p>
-<h4 id="sql-reference-to-the-syntax">SQL Reference to the Syntax</h4>
+<h3 id="sql-reference-to-the-syntax">SQL Reference to the Syntax</h3>
 <p>Refer to the <a href="../../sql_reference/">SQL Reference Guide</a> for information on the syntax.</p>
               
             </div>

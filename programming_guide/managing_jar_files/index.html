@@ -1595,9 +1595,9 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="managing-jar-files">Managing JAR Files</h2>
+                <h1 id="managing-jar-files">Managing JAR Files</h1>
 <p>SnappyData provides system procedures that you can use to install and manage JAR files from a client connection. These can be used to install your custom code (for example code shared across multiple jobs) in SnappyData cluster.</p>
-<h3 id="installing-a-jar">Installing a JAR</h3>
+<h2 id="installing-a-jar">Installing a JAR</h2>
 <p>Related jobs may require some common libraries. These libraries can be made available to jobs by installing them. Use the SQLJ.INSTALL_JAR procedure to install a JAR file as mentioned below:</p>
 <p><strong>Syntax:</strong></p>
 <pre><code class="scala">SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
@@ -1618,7 +1618,7 @@
 <pre><code class="scala">snappy&gt; call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
 </code></pre>
 
-<h3 id="replacing-a-jar">Replacing a JAR</h3>
+<h2 id="replacing-a-jar">Replacing a JAR</h2>
 <p>Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file</p>
 <p><strong>Syntax:</strong></p>
 <pre><code class="scala">SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
@@ -1636,7 +1636,7 @@
 <pre><code class="scala">CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
 </code></pre>
 
-<h3 id="removing-a-jar">Removing a JAR</h3>
+<h2 id="removing-a-jar">Removing a JAR</h2>
 <p>Use SQLJ.REMOVE_JAR  procedure to remove a JAR file</p>
 <p><strong>Syntax:</strong></p>
 <pre><code class="scala">SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)

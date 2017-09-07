@@ -1595,11 +1595,11 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="building-snappydata-applications-using-spark-api">Building SnappyData Applications using Spark API</h2>
-<h3 id="snappysession-usage">SnappySession Usage</h3>
-<h4 id="create-columnar-tables-using-api">Create Columnar Tables using API</h4>
+                <h1 id="building-snappydata-applications-using-spark-api">Building SnappyData Applications using Spark API</h1>
+<h2 id="snappysession-usage">SnappySession Usage</h2>
+<h3 id="create-columnar-tables-using-api">Create Columnar Tables using API</h3>
 <p>Other than <code>create</code> and <code>drop</code> table, rest are all based on the Spark SQL Data Source APIs.</p>
-<h4 id="scala">Scala</h4>
+<h3 id="scala">Scala</h3>
 <pre><code class="scala"> val props = Map(&quot;BUCKETS&quot; -&gt; &quot;2&quot;)// Number of partitions to use in the SnappyStore
 
  case class Data(COL1: Int, COL2: Int, COL3: Int)
@@ -1623,7 +1623,7 @@
  results.foreach(r =&gt; println(r))
 </code></pre>
 
-<h4 id="java">Java</h4>
+<h3 id="java">Java</h3>
 <pre><code class="Java"> Map&lt;String, String&gt; props1 = new HashMap&lt;&gt;();
  props1.put(&quot;buckets&quot;, &quot;11&quot;);
 
@@ -1659,7 +1659,7 @@
  }
 </code></pre>
 
-<h4 id="python">Python</h4>
+<h3 id="python">Python</h3>
 <pre><code class="Python">from pyspark.sql.types import *
 
 data = [(1,2,3),(7,8,9),(9,2,3),(4,2,3),(5,6,7)]
@@ -1686,7 +1686,7 @@ results1.select(&quot;col1&quot;, &quot;col2&quot;, &quot;col3&quot;). show()
 
 <p>The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster is expanded) a bucket is the smallest unit that can be moved around. 
 For more details about the properties ('props1' map in above example) and <code>createTable</code> API refer to the documentation for <a href="#tables-in-snappydata">row and column tables</a>.</p>
-<h3 id="create-row-tables-using-api-update-the-contents-of-row-table">Create Row Tables using API, Update the Contents of Row Table</h3>
+<h2 id="create-row-tables-using-api-update-the-contents-of-row-table">Create Row Tables using API, Update the Contents of Row Table</h2>
 <pre><code class="scala">// create a row format table called ROW_TABLE
 snappy.dropTable(&quot;ROW_TABLE&quot;, ifExists = true)
 // &quot;row&quot; is the table format
@@ -1717,9 +1717,9 @@ println(&quot;contents of row table are after setting col1 = 100 are:&quot;)
 results4.foreach(println)
 </code></pre>
 
-<h3 id="snappystreamingcontext-usage">SnappyStreamingContext Usage</h3>
+<h2 id="snappystreamingcontext-usage">SnappyStreamingContext Usage</h2>
 <p>SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.</p>
-<h4 id="scala_1">Scala</h4>
+<h3 id="scala_1">Scala</h3>
 <pre><code class="scala"> import org.apache.spark.sql._
  import org.apache.spark.streaming._
  import scala.collection.mutable
@@ -1752,7 +1752,7 @@ results4.foreach(println)
  snsc.sql(&quot;select count(*) from streamingExample&quot;).show
 </code></pre>
 
-<h4 id="java_1">Java</h4>
+<h3 id="java_1">Java</h3>
 <pre><code class="java"> StructType schema = new StructType(new StructField[]{
      new StructField(&quot;id&quot;, DataTypes.IntegerType, false, Metadata.empty()),
      new StructField(&quot;text&quot;, DataTypes.StringType, false, Metadata.empty())
@@ -1791,7 +1791,7 @@ results4.foreach(println)
  jsnsc.sql(&quot;select count(*) from streamingExample&quot;).show();
 </code></pre>
 
-<h4 id="python_1">Python</h4>
+<h3 id="python_1">Python</h3>
 <pre><code class="python">from pyspark.streaming.snappy.context import SnappyStreamingContext
 from pyspark.sql.types import *
 

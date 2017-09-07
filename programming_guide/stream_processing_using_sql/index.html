@@ -528,8 +528,7 @@
                 
                     <li><a class="toctree-l4" href="#dynamic-ad-hoc-continuous-queries">Dynamic (ad-hoc) Continuous Queries</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</a></li>
+                    <li><a class="toctree-l4" href="#user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</a></li>
                 
                     <li><a class="toctree-l4" href="#create-user-defined-function">Create User Defined Function</a></li>
                 
@@ -1608,10 +1607,10 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="stream-processing-using-sql">Stream Processing using SQL</h2>
+                <h1 id="stream-processing-using-sql">Stream Processing using SQL</h1>
 <p>SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
 Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streaming-programming-guide.html">Spark streaming</a> from the Spark Streaming guide. </p>
-<h3 id="spark-streaming-overview">Spark Streaming Overview</h3>
+<h2 id="spark-streaming-overview">Spark Streaming Overview</h2>
 <p>Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like <strong>map</strong>, <strong>reduce</strong>, <strong>join</strong> and <strong>window</strong>.</p>
 <p>Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's <a href="http://spark.apache.org/docs/latest/mllib-guide.html">machine learning</a> and <a href="http://spark.apache.org/docs/latest/graphx-programming-guide.html">graph processing</a> algorithms on data streams.</p>
 <p><img alt="Spark Streaming architecture" src="http://spark.apache.org/docs/latest/img/streaming-arch.png" /></p>
@@ -1619,7 +1618,7 @@ Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streami
 <p><img alt="Spark Streaming data flow" src="http://spark.apache.org/docs/latest/img/streaming-flow.png" /></p>
 <p>Spark Streaming provides a high-level abstraction called <em>discretized stream</em> or <em>DStream</em>, which represents a continuous stream of data. DStreams can be created either from input data streams from sources such as Kafka, Flume, and Kinesis, or by applying high-level operations on other DStreams. Internally, a DStream is represented as a sequence of <a href="https://spark.apache.org/docs/1.6.0/api/java/org/apache/spark/rdd/RDD.html">RDDs</a>. </p>
 <p>Additional details on the Spark Streaming concepts and programming is covered <a href="http://spark.apache.org/docs/latest/streaming-programming-guide.html">here</a>.</p>
-<h3 id="snappydata-streaming-extensions-over-spark">SnappyData Streaming Extensions over Spark</h3>
+<h2 id="snappydata-streaming-extensions-over-spark">SnappyData Streaming Extensions over Spark</h2>
 <p>The following enhancements over Spark Streaming are provided: </p>
 <ol>
 <li>
@@ -1638,7 +1637,7 @@ Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streami
 <p><strong>Approximate stream analytics</strong>: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.</p>
 </li>
 </ol>
-<h3 id="working-with-stream-tables">Working with Stream Tables</h3>
+<h2 id="working-with-stream-tables">Working with Stream Tables</h2>
 <p>SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.</p>
 <pre><code class="scala">// DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
@@ -1696,7 +1695,7 @@ STREAMING STOP
 </code></pre>
 
 <p>The streamTable created in the above example can be accessed from snappy-sql and can be queried using ad-hoc SQL queries.</p>
-<h3 id="stream-sql-through-snappy-sql">Stream SQL through snappy-sql</h3>
+<h2 id="stream-sql-through-snappy-sql">Stream SQL through snappy-sql</h2>
 <p>Start a SnappyData cluster and connect through snappy-sql :</p>
 <pre><code class="scala">//create a connection
 snappy&gt; connect client 'localhost:1527';
@@ -1722,10 +1721,10 @@ snappy&gt; drop table streamTable;
 snappy&gt; streaming stop;
 </code></pre>
 
-<h3 id="schemadstream">SchemaDStream</h3>
+<h2 id="schemadstream">SchemaDStream</h2>
 <p>SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL queries on DStreams. It is similar to SchemaRDD, which offers similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provides foreachDataFrame API. SchemaDStream can be registered as a table.
 Some of these ideas (especially naming our abstractions) were borrowed from <a href="https://github.com/Intel-bigdata/spark-streamingsql">Intel's Streaming SQL project</a>.</p>
-<h3 id="registering-continuous-queries">Registering Continuous Queries</h3>
+<h2 id="registering-continuous-queries">Registering Continuous Queries</h2>
 <pre><code class="scala">//You can join two stream tables and produce a result stream.
 val resultStream = snsc.registerCQ(&quot;SELECT s1.id, s1.text FROM stream1 window (duration
     '2' seconds, slide '2' seconds) s1 JOIN stream2 s2 ON s1.id = s2.id&quot;)
@@ -1734,7 +1733,7 @@ val resultStream = snsc.registerCQ(&quot;SELECT s1.id, s1.text FROM stream1 wind
 dStream.foreachDataFrame(_.write.insertInto(&quot;yourTableName&quot;))
 </code></pre>
 
-<h3 id="dynamic-ad-hoc-continuous-queries">Dynamic (ad-hoc) Continuous Queries</h3>
+<h2 id="dynamic-ad-hoc-continuous-queries">Dynamic (ad-hoc) Continuous Queries</h2>
 <p>Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a> has started.</p>
 <h2 id="user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</h2>
 <p>Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
@@ -1743,10 +1742,10 @@ The definition of the functions is stored in a persistent catalog, which enables
 <p class="admonition-title">Note</p>
 <p>Support for UDF is available from SnappyData version 0.8 and future versions.</p>
 </div>
-<h3 id="create-user-defined-function">Create User Defined Function</h3>
+<h2 id="create-user-defined-function">Create User Defined Function</h2>
 <p>You can simply extend any one of the interfaces in the package <strong>org.apache.spark.sql.api.java</strong>. 
 These interfaces can be included in your client application by adding <strong>snappy-spark-sql_2.11-2.0.3-2.jar</strong> to your classpath.</p>
-<h4 id="define-a-udf-class"><strong>Define a UDF class</strong></h4>
+<h3 id="define-a-udf-class">Define a UDF class</h3>
 <p>The number of the interfaces (UDF1 to UDF22) signifies the number of parameters a UDF can take.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

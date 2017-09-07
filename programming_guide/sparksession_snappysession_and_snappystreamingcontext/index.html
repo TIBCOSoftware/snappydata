@@ -1596,8 +1596,8 @@
             <div class="section">
               
                 <p><a id="snappysession"></a></p>
-<h2 id="sparksession-snappysession-and-snappystreamingcontext">SparkSession, SnappySession and SnappyStreamingContext</h2>
-<h3 id="create-a-sparksession">Create a SparkSession</h3>
+<h1 id="sparksession-snappysession-and-snappystreamingcontext">SparkSession, SnappySession and SnappyStreamingContext</h1>
+<h2 id="create-a-sparksession">Create a SparkSession</h2>
 <p><a href="https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/SparkContext.html">Spark Context</a> is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster and can be used to create RDDs, accumulators and broadcast variables on that cluster.</p>
 <p><a href="https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/sql/SparkSession.html">Spark Session</a> is the entry point to programming Spark with the Dataset and DataFrame API.
 In environments that this has been created up front (e.g. REPL, notebooks), use the builder to get an existing session:</p>
@@ -1613,7 +1613,7 @@ In environments that this has been created up front (e.g. REPL, notebooks), use 
      .getOrCreate()   
 </code></pre>
 
-<h3 id="create-a-snappysession">Create a SnappySession</h3>
+<h2 id="create-a-snappysession">Create a SnappySession</h2>
 <p><a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a> is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's <a href="http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.sql.SparkSession">SparkSession</a> to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.</p>
 <p>To create a SnappySession:</p>
 <p><strong>Scala</strong></p>
@@ -1646,7 +1646,7 @@ In environments that this has been created up front (e.g. REPL, notebooks), use 
  snappy = SnappySession(sc)
 </code></pre>
 
-<h3 id="create-a-snappystreamingcontext">Create a SnappyStreamingContext</h3>
+<h2 id="create-a-snappystreamingcontext">Create a SnappyStreamingContext</h2>
 <p><a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a> is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
 <a href="http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext">Streaming Context</a>.</p>
 <p>To create a SnappyStreamingContext:</p>

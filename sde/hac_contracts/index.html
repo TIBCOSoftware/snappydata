@@ -1595,31 +1595,32 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="high-level-accuracy-contracts-hac">High-level Accuracy Contracts (HAC)</h2>
+                <h1 id="high-level-accuracy-contracts-hac">High-level Accuracy Contracts (HAC)</h1>
+<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <p>SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.</p>
 <p>When an error constraint is not met, the action to be taken is defined in the behavior clause. </p>
-<h3 id="behavior-clause">Behavior Clause</h3>
+<h2 id="behavior-clause">Behavior Clause</h2>
 <p>Synopsis Data Engine has HAC support using the following behavior clause. </p>
-<h4 id="do_nothing"><code>&lt;do_nothing&gt;</code></h4>
+<h3 id="do_nothing"><code>&lt;do_nothing&gt;</code></h3>
 <p>The SDE engine returns the estimate as is. </p>
 <p><img alt="DO NOTHING" src="../../Images/aqp_donothing.png" /></p>
-<h4 id="local_omit"><code>&lt;local_omit&gt;</code></h4>
+<h3 id="local_omit"><code>&lt;local_omit&gt;</code></h3>
 <p>For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
 <img alt="LOCAL OMIT" src="../../Images/aqp_localomit.png" /></p>
-<h4 id="strict"><code>&lt;strict&gt;</code></h4>
+<h3 id="strict"><code>&lt;strict&gt;</code></h3>
 <p>If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
 <img alt="Strict" src="../../Images/aqp_strict.png" /></p>
-<h4 id="run_on_full_table"><code>&lt;run_on_full_table&gt;</code></h4>
+<h3 id="run_on_full_table"><code>&lt;run_on_full_table&gt;</code></h3>
 <p>If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.</p>
 <p><img alt="RUN OF FULL TABLE" src="../../Images/aqp_runonfulltable.png" /></p>
-<h4 id="partial_run_on_base_table"><code>&lt;partial_run_on_base_table&gt;</code></h4>
+<h3 id="partial_run_on_base_table"><code>&lt;partial_run_on_base_table&gt;</code></h3>
 <p>If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
 <img alt="PARTIAL RUN ON BASE TABLE" src="../../Images/aqp_partialrunonbasetable.png" /></p>
 <p>In the following example, any one of the above behavior clause can be applied. </p>
 <pre><code>SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error &lt;fraction&gt; [CONFIDENCE &lt;fraction&gt;] [BEHAVIOR &lt;behavior&gt;]
 </code></pre>
 
-<h3 id="error-functions">Error Functions</h3>
+<h2 id="error-functions">Error Functions</h2>
 <p>In addition to this, SnappyData supports error functions that can be specified in the query projection. These error functions are supported for the SUM, AVG and COUNT aggregates in the projection. </p>
 <p>The following four methods are available to be used in query projection when running approximate queries:</p>
 <ul>
@@ -1655,7 +1656,7 @@ For example, if you have a data frame for the airline table, then the below quer
 <pre><code>snc.table(basetable).groupBy(&quot;Year_&quot;).agg( avg(&quot;ArrDelay&quot;).alias(&quot;arrivalDelay), relative_error(&quot;arrivalDelay&quot;), absolute_error(&quot;arrivalDelay&quot;), col(&quot;Year_&quot;)).withError(0.10, .95).sort(col(&quot;Year_&quot;).asc) 
 </code></pre>
 
-<h3 id="reserved-keywords">Reserved Keywords</h3>
+<h2 id="reserved-keywords">Reserved Keywords</h2>
 <p>Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword <code>sample_</code> is reserved for SnappyData.</p>
 <p>If the aggregate function is aliased in the query as <code>sample_&lt;any string&gt;</code>, then what you get is true answers on the sample table, and not the estimates of the base table.</p>
 <p><code>select count() rowCount, count() as sample_count from airline with error 0.1</code></p>
