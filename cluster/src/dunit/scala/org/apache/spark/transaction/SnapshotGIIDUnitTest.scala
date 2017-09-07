@@ -18,6 +18,8 @@ package org.apache.spark.transaction
 
 import java.util.Properties
 
+import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.SerializableRunnable
 
@@ -30,7 +32,7 @@ class SnapshotGIIDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def testColumnTableGII(): Unit = {
 
     val snc = SnappyContext(sc)
-    val tableName = "TestTable"
+    val tableName = "app.test_table"
     createTable(snc, tableName, Map("BUCKETS" -> "1", "REDUNDANCY" -> "2"))
 
     var props = bootProps.clone().asInstanceOf[java.util.Properties]
@@ -48,6 +50,7 @@ class SnapshotGIIDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.insertInto(tableName)
     vm1.invoke(restartServer(props))
+    vm1.invoke(waitForRegionInit(tableName))
     dataDF.write.insertInto(tableName)
     val numRows = snc.sql(s"select * from $tableName").collect().length
     assert(numRows == 150)
@@ -61,6 +64,22 @@ class SnapshotGIIDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
+  }
+
+  @throws[Exception]
+  protected def waitForRegionInit(tableName: String): SerializableRunnable = {
+    new SerializableRunnable() {
+      def run() {
+        val regionName = Misc.getRegionPath(tableName).toUpperCase
+        while (!Misc.initialDDLReplayDone()) Thread.sleep(100)
+        val cache = GemFireCacheImpl.getInstance
+        val pr = cache.getRegion(regionName).asInstanceOf[PartitionedRegion]
+        while (!pr.getRegionAdvisor.areBucketsInitialized) Thread.sleep(100)
+        while (!pr.getRegionAdvisor.getBucket(0).isInstanceOf[BucketRegion]) Thread.sleep(100)
+        val lr = pr.getRegionAdvisor.getBucket(0).asInstanceOf[LocalRegion]
+        lr.waitOnInitialization()
+      }
+    }
   }
 
 }
