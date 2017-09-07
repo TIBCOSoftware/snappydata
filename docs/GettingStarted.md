@@ -2,7 +2,7 @@
 SnappyData fuses Apache Spark with an in-memory database to deliver a compute+data engine capable of stream processing, transactions, interactive analytics and prediction in a single cluster.
 
 !!! Attention:
-	This document assumes that you have familiarity with Apache Spark and its concepts. If you are new to Spark, refer to the [Spark documentation](https://spark.apache.org/docs/2.1.0/) to learn more about using Spark.
+	This document assumes that you have familiarity with Apache Spark and its concepts. If you are new to Spark, refer to the [Spark documentation](https://spark.apache.org/docs/2.1.1/) to learn more about using Spark.
 
 ## The Challenge with Spark and Remote Data Sources
 Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and can access disparate data sources in a highly parallelized manner for its distributed computations. Typically, data is fetched lazily as a result of SQL query or a Dataset (RDD) getting materialized. This can be quite inefficient and expensive since most workload require the data set to be repeatedly processed. Caching within Spark is immutable and requires the application to periodically refresh the data set, let alone having to bear the burden of duplicating the dataset.

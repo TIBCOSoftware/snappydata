@@ -6,6 +6,14 @@ Before you begin migrating, ensure that you understand the new features and any 
 
 For more information see,
 
+
+<!--
+
+* [Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.5](upgrade_gemfirexd_standalone.md)
+
+* [Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.5](upgrade_sqlfire_standalone.md)
+-->
+
 * [Migrating from SnappyData version 0.8 to version 0.9](migration-0.8-0.9.md)
 
 <!--* [Migrating from SnappyData version 0.9 to version 0.9](migration-0.9-01_rc.md)-->

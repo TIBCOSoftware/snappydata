@@ -17,11 +17,12 @@ For instance, when all cores are available, if a large loading job is scheduled 
 
 ## Using Smart Connector for Expanding Capacity of the Cluster
 
-One of the instances, when SnappyData Smart connector mode is useful, is when the computations is separate from the data. This allows  you to increase the computational capacity without adding more servers to the SnappyData cluster. Thus, more executors can be provisioned for a Smart Connector application than the number of SnappyData servers. <br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the SnappyData cluster.
+One of the instances, when [SnappyData Smart connector mode](../affinity_modes/connector_mode.md) is useful, is when the computations is separate from the data. This allows  you to increase the computational capacity without adding more servers to the SnappyData cluster. Thus, more executors can be provisioned for a Smart Connector application than the number of SnappyData servers. 
+<br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the SnappyData cluster. See, [How to Access SnappyData store from an Existing Spark Installation using Smart Connector](../howto/spark_installation_using_smart_connector.md).
 
 ## Computing the Number of Cores for a Job
 
-Executing queries or code in SnappyData results in the creation of one or more Spark jobs. Each Spark job has multiple tasks. The number of tasks is determined by the number of partitions of the underlying data.
+Executing queries or code in SnappyData results in the creation of one or more Spark jobs. Each Spark job has multiple tasks. The number of tasks is determined by the number of partitions of the underlying data.</br>
 Concurrency in SnappyData is tightly bound with the capacity of the cluster, which means, the number of cores available in the cluster determines the number of concurrent tasks that can be run.
 
 The default setting is **CORES = 2 X number of cores on a machine**.
@@ -46,14 +47,19 @@ When you add more servers to SnappyData, the processing capacity of the system i
 
 ### Configuring the scheduler pools for concurrency
 SnappyData out of the box comes configured with two execution pools:
+
 * Default pool: This is the pool that is used for all requests
+
 * Low-latency pool: This pool is automatically used when SnappyData determines a request to be “low latency”, that is, the queries that are partition pruned to two or fewer partitions. </br>
+
 Two cores are statically assigned to the low latency pool. Also, the low latency pool has weight twice that of the default pool. Thus, if there are 30 cores available to an executor for a query that has 30 partitions, only 28 would be assigned to it and two cores would be reserved to not starve the low latency queries. When the system has both low latency and normal queries, 20 cores are used for the low latency queries as it has got higher priority (weight=2).</br>
+
 Applications can explicitly configure the use of this pool using a SQL command `set snappydata.scheduler.pool=lowlatency`. This can also be set on a Spark SnappySession instance or using the config files in <product>/conf directory. 
 
 New pools can be added and properties of the existing pools can be configured by modifying the conf/fairscheduler.xml file. We do not recommend changing the pool names (`default` and `lowlatency`).
 
 ### Using a partitioning strategy to increasing concurrency
+
 The best way to increasing concurrency is to design your schema such that you minimize the need to run your queries across many partitions. The common strategy is to understand your application patterns and choose a partitioning strategy such that queries often target a specific partition. Such queries will be pruned to a single node and SnappyData automatically optimises such queries to use a single task. 
 For more information see, [How to design your schema](design_schema.md).
 

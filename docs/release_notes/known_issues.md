@@ -25,6 +25,8 @@ The following key issues have been registered as bugs in the SnappyData bug trac
 1. User may either create a new SnappySession in such scenarios </br>OR </br> 
 2. Invalidate the cache on the Smart Connector mode, for example by calling </br>  `snappy.sessionCatalog.invalidateAll()`</td>
 </tr>
+</table>
+<!--
 <tr class="even">
 <td>SNAP-1753</td>
 <td>TPCH Q19 execution performance degraded in 0.9</td>
@@ -61,7 +63,7 @@ select
 </code></pre>
 </td>
 </tr>
-</table>
+-->
 
 <!-- 
 Format for new rows
