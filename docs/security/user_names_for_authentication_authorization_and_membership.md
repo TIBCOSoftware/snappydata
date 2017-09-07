@@ -2,14 +2,14 @@
 
 <ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
-### User Names are Converted to Authorization Identifiers
+## User Names are Converted to Authorization Identifiers
 User names in the SnappyData system are known as authorization identifiers. The authorization identifier is a string that represents the name of the user if one was provided in the connection request. 
 
 After the authorization identifier is passed to the SnappyData system, it becomes an SQL92Identifier. SQL92Identifier is a kind of identifier that represents a database object such as a table or column. A SQL92Identifier is case-insensitive (it is converted to all caps) unless it is delimited with double quotes. A SQL92Identifier is limited to 128 characters and has other limitations.
 
 All user names must be valid authorization identifiers even if user authentication is turned off, and even if all users are allowed access to all databases.
 
-### Handling Case Sensitivity and Special Characters in User Names
+## Handling Case Sensitivity and Special Characters in User Names
 If an external authentication system is used, SnappyData does not convert a user's name to an authorization identifier until after authentication has occurred (but before the user is authorized). For example, with an example user named Fred:
 
 Within the user authentication system, Fred might be known as FRed. If the external user authentication service is case-sensitive, Fred must always be typed as:

@@ -1,5 +1,4 @@
-
-## Using the Spark Shell and spark-submit
+# Using the Spark Shell and spark-submit
 
 SnappyData, out-of-the-box, colocates Spark executors and the SnappyData store for efficient data intensive computations. 
 You, however, may need to isolate the computational cluster for other reasons. For instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly.

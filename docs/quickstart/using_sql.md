@@ -1,5 +1,5 @@
 <a id="getting-started-using-sql"></a> 
-## Using SQL
+# Using SQL
 
 SQL using Spark SQL-invoked using the Session API is illustrated. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](../howto.md#howto-snappyShell) section.
 
@@ -56,7 +56,7 @@ scala> :q //Quit the Spark Shell
 
 Now that you have seen the basic working of SnappyData tables, let us run the [benchmark](#start_benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
 
-#### More Information
+## More Information
 
 For more examples of the common operations, you can refer to the [How-tos](../howto.md) section. 
 

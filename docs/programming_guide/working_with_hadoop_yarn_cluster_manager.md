@@ -1,4 +1,4 @@
-## Working with Hadoop YARN Cluster Manager 
+# Working with Hadoop YARN Cluster Manager 
 
 We assume that Apache Hadoop and YARN are already installed, and you want to bring in SnappyData cluster to work with YARN.
 
@@ -9,7 +9,7 @@ HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
 ```
-### Launching spark-shell with Yarn - 
+## Launching spark-shell with Yarn - 
 
 Start a SnappyData default cluster using the `./sbin/snappy-start-all.sh` command
 
@@ -22,7 +22,7 @@ If you want to run SnappyData quickstart example using YARN, do the following.
 !!!Note:
 	YARN is mentioned as a master url.
     
-### Submitting spark-jobs using YARN
+## Submitting spark-jobs using YARN
 1. Create the required tables in SnappyData cluster
 
     ```

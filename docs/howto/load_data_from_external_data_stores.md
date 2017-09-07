@@ -1,9 +1,9 @@
 <a id="howto-external-source"></a>
-## How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) 
+# How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) 
 
 SnappyData comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API.
 
-### Example - Loading data from CSV file using SQL
+## Example - Loading data from CSV file using SQL
 
 ```scala
 -- Create an external table based on CSV file
@@ -18,7 +18,7 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 	Similarly, you can create an external table for all data sources and use SQL "insert into" query to load data. For more information on creating external tables refer to, [CREATE EXTERNAL TABLE](../reference/sql_reference/create-external-table/)
 
 
-### Example - Loading CSV Files from HDFS using API
+## Example - Loading CSV Files from HDFS using API
 
 The example below demonstrates how you can read CSV files from HDFS using an API:
 
@@ -32,7 +32,7 @@ snc.sql("drop table if exists CUSTOMER")
 dataDF.write.saveAsTable("CUSTOMER")
 ```
 
-### Example - Loading and Enriching CSV Data from HDFS 
+## Example - Loading and Enriching CSV Data from HDFS 
 
 The example below demonstrates how you can load and enrich CSV Data from HDFS:
 ```scala
@@ -62,7 +62,7 @@ dataDF.select($"C_CUSTKEY",
   $"C_COMMENT".substr(1, 5).alias("SHORT_COMMENT")).write.insertInto("CUSTOMER")
 ```
 
-### Example - Loading from Hive
+## Example - Loading from Hive
 As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with **enableHiveSupport** set to **true**). 
 Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a SnappySession to store it in a SnappyData Table. 
 
@@ -74,7 +74,7 @@ val df = session.createDataFrame(rdd, ds.schema)
 df.write.format("column").saveAsTable("columnTable")
 ```
 
-### Importing Data using JDBC from a relational DB
+## Importing Data using JDBC from a relational DB
 
 !!! Note:
 	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
@@ -129,7 +129,7 @@ You can also use plain SQL to access any external RDB using external tables. Cre
 Refer to the [Spark SQL JDBC source access for how to parallelize access when dealing with large data sets](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases).
 
 
-### Loading Data from NoSQL store (Cassandra)
+## Loading Data from NoSQL store (Cassandra)
 
 The example below demonstrates how you can load data from a NoSQL store:
 

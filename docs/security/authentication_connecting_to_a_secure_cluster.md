@@ -5,7 +5,7 @@
 Authentication is the process of verifying someone's identity. When a user tries to log in, that request is forwarded to the specified LDAP directory to verify if the credentials are correct.
 There are a few different ways to connect to a secure cluster using either JDBC (Thin) Client, Smart Connector Mode and Snappy Jobs. Accessing a secure cluster requires users to provide their user credentials.
 
-### Using JDBC (Thin) Client
+## Using JDBC (Thin) Client
 
 When using the JDBC client, provide the user credentials using connection properties 'user' and 'password'.
 
@@ -25,7 +25,7 @@ val conn = DriverManager.getConnection(url, props)
 connect client 'localhost:1527;user=user1;password=user123';
 ```
 
-### Using ODBC Driver
+## Using ODBC Driver
 
 You can also connect to the SnappyData Cluster using SnappyData ODBC Driver using the following command:
 
@@ -35,7 +35,7 @@ Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userNa
 
 For more information refer to, [How to Connect using ODBC Driver](../howto.md#how-to-connect-using-odbc-driver).
 
-### Using Smart Connector Mode 
+## Using Smart Connector Mode 
 
 In Smart Connector mode, provide the user credentials as Spark configuration properties named `spark.snappydata.store.user` and `spark.snappydata.store.password`.
 
@@ -77,7 +77,7 @@ spark.snappydata.store.user     <username>
 spark.snappydata.store.password <password>
 ```
 
-### Using Snappy Jobs
+## Using Snappy Jobs
 
 When submitting Snappy jobs, using `snappy-job.sh`, provide user credentials through a configuration file using the option `--passfile`. 
 

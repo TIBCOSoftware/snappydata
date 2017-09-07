@@ -1,5 +1,5 @@
 <a id="howto-jdbc"></a>
-## How to Connect using JDBC Driver
+# How to Connect using JDBC Driver
 
 You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.
 

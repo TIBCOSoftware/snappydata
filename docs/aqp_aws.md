@@ -10,11 +10,13 @@ In this document, the features provided by SnappyData for analyzing your data is
 
 Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
+The following topics are covered in this section:
+
 * [Key Components](isight/key_components.md)
 
 * [Quick Start Steps](isight/quick_start_steps.md)
 
-*	[The Technology Powering iSight Cloud](isight/the_technology_powering_isight_cloud.md)
+* [The Technology Powering iSight Cloud](isight/the_technology_powering_isight_cloud.md)
 
 
 

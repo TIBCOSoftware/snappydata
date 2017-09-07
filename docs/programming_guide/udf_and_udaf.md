@@ -1,6 +1,5 @@
-
 <a id= create_udf> </a>
-#### Create UDF Function
+# Create User Defined Function
 
 !!! Note:
 	Place the jars used for creating persistent UDFs in a shared location (NFS, HDFS etc.) if you are configuring multiple leads for high availability. The same jar is used for DDL replay while the standby lead becomes the active lead.
@@ -39,7 +38,7 @@ You can write a JAVA or SCALA class to write a UDF implementation.
 |SHORT|java.lang.Short|
 |BYTE|java.lang.Byte|
 
-#### **Use the UDF**
+## Use UDF
 
 ```scala
 select strnglen(string_column) from <table>
@@ -67,7 +66,7 @@ DROP FUNCTION IF EXISTS app.strnglen
  2) Modify the UDF code and [create a new UDF](#create_udf). You can create the UDF with the same name as that of the dropped UDF.
 
 
-### Create User Defined Aggregate Functions
+## Create User Defined Aggregate Functions
 
 SnappyData uses the same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
 

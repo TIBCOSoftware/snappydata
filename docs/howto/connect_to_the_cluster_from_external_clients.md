@@ -1,5 +1,5 @@
 <a id="howto-external-client"></a>
-## How to Connect to the Cluster from an External Network
+# How to Connect to the Cluster from an External Network
 
 You can also connect to the SnappyData cluster from a different network as a client (DbVisualizer, SQuirreL SQL etc.). </br>For example, to connect to a cluster on AWS from your local machine set the following properties in the *conf/locators* and *conf/servers* files:
 

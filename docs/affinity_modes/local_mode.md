@@ -1,5 +1,5 @@
 <a id="localmode"></a>
-## Local Mode
+# Local Mode
 
 In this mode, you can execute all the components (client application, executors, and data store) locally in the application's JVM. It is the simplest way to start testing and using SnappyData, as you do not require a cluster, and the  executor threads are launched locally for processing.
 

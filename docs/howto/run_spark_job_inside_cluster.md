@@ -1,5 +1,5 @@
 <a id="howto-job"></a>
-## How to Run Spark Code inside the Cluster
+# How to Run Spark Code inside the Cluster
 A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.
 
 **Implementing a Job**: 

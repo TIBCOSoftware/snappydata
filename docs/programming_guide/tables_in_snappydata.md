@@ -1,7 +1,6 @@
 <a id="markdown_link_row_and_column_tables"></a>
-
-## Tables in SnappyData
-### Row and Column Tables
+# Tables in SnappyData
+## Row and Column Tables
 Column tables organize and manage data in memory in a compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 
 ![Column Table](../Images/column_table.png)
@@ -11,7 +10,7 @@ Row tables, unlike column tables, are laid out one row at a time in contiguous m
 
 Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.
 
-#### DDL and DML Syntax for Tables
+### DDL and DML Syntax for Tables
 ```scala
 CREATE TABLE [IF NOT EXISTS] table_name
    (
@@ -54,7 +53,7 @@ To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://
 !!! Note 
 	Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 
-#### Spark API for Managing Tables
+### Spark API for Managing Tables
 
 **Get a reference to [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession):**
 
@@ -77,7 +76,7 @@ Create a SnappyStore table using Spark APIs
     snappy.dropTable(tableName, ifExists = true)
     
 <a id="ddl"></a>
-#### DDL extensions to SnappyStore Tables
+### DDL extensions to SnappyStore Tables
 The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
 
    * <b>COLOCATE_WITH:</b> The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
@@ -121,7 +120,7 @@ The below mentioned DDL extensions are required to configure a table based on us
    Refer to the [SQL Reference Guide](../sql_reference.md) for information on the extensions.
 
 
-#### Restrictions on Column Tables
+### Restrictions on Column Tables
 
 * Column tables cannot specify any primary key, unique key constraints
 
@@ -134,7 +133,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 * READ_COMMITTED and REPEATABLE_READ isolation levels are not supported for column tables.
 
 
-#### DML Operations on Tables
+### DML Operations on Tables
 
 ```scala
 INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
@@ -146,7 +145,7 @@ DELETE FROM tablename1 [WHERE expression]
 TRUNCATE TABLE tablename1;
 ```
 
-#### API Extensions Provided in SnappyContext
+### API Extensions Provided in SnappyContext
 Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
 
 ```scala
@@ -193,7 +192,7 @@ snappy.delete(tableName, "ITEMREF = 3")
 ```
 
 <!--
-#### String/CHAR/VARCHAR Data Types
+### String/CHAR/VARCHAR Data Types
 SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either CHAR or VARCHAR type, if your column data fits in maximum CHAR size (254) or VARCHAR size (32768), respectively. For larger column data size, String type should be used as product stores its data in CLOB format internally.
 
 **Create a table with columns of CHAR and VARCHAR datatype using SQL**:
@@ -264,7 +263,7 @@ The usage of `*` above causes all the STRING columns in the table to be rendered
 SELECT * FROM tableName --+ columnsAsClob(Col3,Col4)
 ```
 -->
-#### Row Buffers for Column Tables
+### Row Buffers for Column Tables
 
 Generally, the column table is used for analytical purpose. To this end, most of the operations (read or write) on it are bulk operations. Taking advantage of this fact the rows are compressed column wise and stored.
 
@@ -273,7 +272,7 @@ In SnappyData, the column table consists of two components, delta row buffer and
 Once the size of buffer reaches the COLUMN_BATCH_SIZE set by the user, the delta row buffer is compressed column wise and stored in the column store.
 Any query on column table also takes into account the row cached buffer. By doing this, it ensures that the query does not miss any data.
 
-#### SQL Reference to the Syntax
+### SQL Reference to the Syntax
 
 Refer to the [SQL Reference Guide](../sql_reference.md) for information on the syntax.
 

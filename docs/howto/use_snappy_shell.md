@@ -1,6 +1,5 @@
-
 <a id="howto-snappyShell"></a>
-## How to Use Snappy SQL shell (snappy-sql)
+# How to Use Snappy SQL shell (snappy-sql)
 `snappy-sql` can be used to execute SQL on SnappyData cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster**: 

@@ -1,6 +1,6 @@
 <a id="howto-startcluster"></a>
-## How to Start a SnappyData Cluster
-### Start SnappyData Cluster on a Single Machine
+# How to Start a SnappyData Cluster
+## Start SnappyData Cluster on a Single Machine
 
 If you have [downloaded and extracted](../install.md#install-on-premise) the SnappyData product distribution, navigate to the SnappyData product root directory.
 
@@ -32,7 +32,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-### Start SnappyData Cluster on Multiple Hosts
+## Start SnappyData Cluster on Multiple Hosts
 
 To start the cluster on multiple hosts:
 

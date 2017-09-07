@@ -1,11 +1,9 @@
-
-
-## Stream Processing using SQL
+# Stream Processing using SQL
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
 Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/latest/streaming-programming-guide.html) from the Spark Streaming guide. 
 
 
-### Spark Streaming Overview
+## Spark Streaming Overview
 
 Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like **map**, **reduce**, **join** and **window**.
 
@@ -21,7 +19,7 @@ Internally, it works as follows. Spark Streaming receives live input data stream
 
 Additional details on the Spark Streaming concepts and programming is covered [here](http://spark.apache.org/docs/latest/streaming-programming-guide.html).
 
-### SnappyData Streaming Extensions over Spark
+## SnappyData Streaming Extensions over Spark
 The following enhancements over Spark Streaming are provided: 
 
 1. __Manage Streams declaratively__: Similar to SQL Tables, Streams can be defined declaratively from any SQL client and managed as Tables in the persistent system catalog of SnappyStore. The declarative language follows the SQL language and provides access to any of the Spark Streaming streaming adapters such as Kafka or file input streams. Raw tuples arriving can be transformed into a proper structure through pluggable transformers providing the desired flexibility for custom filtering or type conversions. 
@@ -34,7 +32,7 @@ The following enhancements over Spark Streaming are provided:
 
 5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
 
-### Working with Stream Tables
+## Working with Stream Tables
 SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
 
 ```scala
@@ -95,7 +93,7 @@ For example to create a stream table using kafka source :
 ```
 The streamTable created in the above example can be accessed from snappy-sql and can be queried using ad-hoc SQL queries.
 
-### Stream SQL through snappy-sql
+## Stream SQL through snappy-sql
 Start a SnappyData cluster and connect through snappy-sql :
 
 ```scala
@@ -123,11 +121,11 @@ snappy> drop table streamTable;
 snappy> streaming stop;
 ```
 
-### SchemaDStream
+## SchemaDStream
 SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL queries on DStreams. It is similar to SchemaRDD, which offers similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provides foreachDataFrame API. SchemaDStream can be registered as a table.
 Some of these ideas (especially naming our abstractions) were borrowed from [Intel's Streaming SQL project](https://github.com/Intel-bigdata/spark-streamingsql).
 
-### Registering Continuous Queries
+## Registering Continuous Queries
 ```scala
 //You can join two stream tables and produce a result stream.
 val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (duration
@@ -137,7 +135,7 @@ val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (d
 dStream.foreachDataFrame(_.write.insertInto("yourTableName"))
 ```
 
-### Dynamic (ad-hoc) Continuous Queries
+## Dynamic (ad-hoc) Continuous Queries
 Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.
 
 ## User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)
@@ -147,12 +145,12 @@ The definition of the functions is stored in a persistent catalog, which enables
 !!! Note: 
 	Support for UDF is available from SnappyData version 0.8 and future versions.
 
-### Create User Defined Function
+## Create User Defined Function
 
 You can simply extend any one of the interfaces in the package **org.apache.spark.sql.api.java**. 
 These interfaces can be included in your client application by adding **snappy-spark-sql_2.11-2.0.3-2.jar** to your classpath.
 
-#### **Define a UDF class**
+### Define a UDF class
 
 The number of the interfaces (UDF1 to UDF22) signifies the number of parameters a UDF can take.
 

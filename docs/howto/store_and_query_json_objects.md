@@ -1,5 +1,5 @@
 <a id="howto-JSON"></a>
-## How to Store and Query JSON Objects
+# How to Store and Query JSON Objects
 
 You can insert JSON data in SnappyData tables and execute queries on the tables.
 

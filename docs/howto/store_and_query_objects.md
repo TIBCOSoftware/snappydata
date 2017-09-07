@@ -1,5 +1,5 @@
 <a id="howto-objects"></a>
-## How to Store and Query Objects
+# How to Store and Query Objects
 
 You can use domain object to load data into SnappyData tables and select the data by executing queries against the table.
 

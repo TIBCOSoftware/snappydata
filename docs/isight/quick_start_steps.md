@@ -1,4 +1,4 @@
-## Quick Start Steps
+# Quick Start Steps
 
 To understand the product follow these easy steps that can get you started quickly:
 
@@ -23,12 +23,12 @@ To understand the product follow these easy steps that can get you started quick
 This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using a script.
 
 <a id="DeployingClusterCloudFormation"></a>
-### Deploying SnappyData Cloud Cluster with iSight CloudBuilder
+## Deploying SnappyData Cloud Cluster with iSight CloudBuilder
 Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.
 
 [![Cloudbuilder](../Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
 
-#### Prerequisites
+### Prerequisites
 Before you begin:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources with CloudFormation
@@ -44,7 +44,7 @@ It is recommended that you select an instance type with higher processing power 
 
 This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started! 
 
-#### Configuring and Launching the SnappyData Cloud Cluster
+### Configuring and Launching the SnappyData Cloud Cluster
 
 Launch the iSight CloudBuilder from [http://www.snappydata.io/cloudbuilder](http://www.snappydata.io/cloudbuilder). 
 
@@ -125,14 +125,14 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 <a id="DeployingClusterScript"></a>
-### Deploying SnappyData Cloud Cluster on AWS using Scripts
+## Deploying SnappyData Cloud Cluster on AWS using Scripts
 
 SnappyData provides a script that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2).
 
 Download the script from the latest [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases).
 The package is available in compressed files (**snappydata-ec2-`<version>`.tar.gz**). Extract the contents to a location on your computer.
 
-#### Prerequisites
+### Prerequisites
 Before you begin, do the following:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources.
@@ -151,7 +151,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 
 * Ensure Python v 2.7 or later is installed on your local computer.
 
-#### Launching SnappyData Cluster
+### Launching SnappyData Cluster
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where the **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
@@ -253,10 +253,10 @@ To use an interpreter, add the associated interpreter directive with the format,
         * 	Each paragraph has its own SnappyData context. When you set a property on one paragraph, the property is applicable only to that paragraph and not to other paragraphs in the notebook.
 
 
-### SQL Interpreter
+## SQL Interpreter
 The `%snappydata.sql` code specifies the default SQL interpreter. This interpreter is used to execute SQL queries on SnappyData cluster.
 
-#### Multi-Line Statements
+### Multi-Line Statements
 Multi-line statements ,as well as multiple statements on the same line, are also supported as long as they are separated by a semicolon. However, only the result of the last query is displayed.
 
 SnappyData provides a list of connection-specific SQL properties that can be applied to the paragraph that is executed. 
@@ -268,7 +268,7 @@ In the following example, `spark.sql.shuffle.partitions` allows you to specify t
 set spark.sql.shuffle.partitions=6; 
 select medallion,avg(trip_distance) as avgTripDist from nyctaxi group by medallion order by medallion desc limit 100 with error
 ```
-#### SnappyData Directives in Apache Zeppelin
+### SnappyData Directives in Apache Zeppelin
 You can execute approximate queries on SnappyData cluster by using the `%sql show-instant-results-first` directive. 
 In this case, the query is first executed on the sample table and the approximate result is displayed, after which the query is run on the base table. Once the query is complete, the approximate result is replaced with the actual result.
 
@@ -283,7 +283,7 @@ select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howMa
 !!! Note: 
 	This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.
 
-### Scala Interpreter
+## Scala Interpreter
 The `%snappydata.spark` code specifies the default Scala interpreter. This interpreter is used to write Scala code in the paragraph.
 SnappyContext is injected in this interpreter and can be accessed using variable **snc**.
 
@@ -336,7 +336,7 @@ It also displays data information for various tables created in the cluster on d
 -->
 The Apache Spark Console displays useful information about SnappyData. This includes a list of scheduler stages and tasks, summary of tables and memory usage.
 
-### Accessing the Console
+## Accessing the Console
 To access the Apache Spark console from the Apache Zeppelin notebook: 
 
 1. Click on the **Spark UI** <!--or **Pulse** -->link provided in the paragraph.

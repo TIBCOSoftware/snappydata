@@ -1,5 +1,5 @@
 <a id="getting-started-by-installing-snappydata-on-premise"></a>
-## Getting Started by Installing SnappyData On-Premise
+# Getting Started by Installing SnappyData On-Premise
 Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
 ```bash

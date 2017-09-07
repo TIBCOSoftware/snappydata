@@ -1,7 +1,7 @@
 <a id="howto-zeppelin"></a>
-## How to Use Apache Zeppelin with SnappyData
+# How to Use Apache Zeppelin with SnappyData
 
-### Step 1: Download, Install and Configure SnappyData
+## Step 1: Download, Install and Configure SnappyData
 1. [Download and Install SnappyData](../install.md#download-snappydata) </br>
  The table below lists the version of the SnappyData Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Release.
 	
@@ -34,7 +34,7 @@
 
 10. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
 
-### Step 2: Configure SnappyData for Apache Zeppelin
+## Step 2: Configure SnappyData for Apache Zeppelin
 
 1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.
 

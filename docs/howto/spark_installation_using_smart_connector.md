@@ -1,5 +1,5 @@
 <a id="howto-splitmode"></a>
-## How to Access SnappyData store from an Existing Spark Installation using Smart Connector
+# How to Access SnappyData store from an Existing Spark Installation using Smart Connector
 
 SnappyData comes with a Smart Connector that enables Spark applications to work with the SnappyData cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.0.x). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is no different than how Spark applications today work with stores like Cassandra, Redis, etc.
 

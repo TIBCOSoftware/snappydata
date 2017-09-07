@@ -1,5 +1,5 @@
 <a id="howto-row"></a>
-## How to Create Row Tables and Run Queries
+# How to Create Row Tables and Run Queries
 
 Each record in a Row table is managed in contiguous memory, and therefore, optimized for selective queries (For example. key based point lookup ) or updates. 
 A row table can either be replicated to all nodes or partitioned across nodes. It can be created by using DataFrame API or using SQL.
@@ -9,7 +9,7 @@ Refer to the [Row and column tables](../programming_guide.md#ddl) documentation 
 Full source code, for example, to create and perform operations on replicated and partitioned row table can be found in [CreateReplicatedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateReplicatedRowTable.scala) and [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala)
 
 
-### Create a Row Table using DataFrame API:
+## Create a Row Table using DataFrame API:
 
 The code snippet below shows how to create a replicated row table using API.
 

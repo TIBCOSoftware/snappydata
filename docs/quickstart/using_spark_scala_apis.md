@@ -1,5 +1,5 @@
 <a id="getting-started-using-spark-scala-apis"></a>
-## Using Spark Scala APIs
+# Using Spark Scala APIs
 
 **Create a SnappySession**: A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.
 

@@ -7,6 +7,8 @@ and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guid
 In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. 
 Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but it can also be reliably managed on disk.
 
+The following topics are covered in this section:
+
 * [SparkSession, SnappySession and SnappyStreamingContext](programming_guide/sparksession_snappysession_and_snappystreamingcontext.md)
 
 * [SnappyData Jobs](programming_guide/snappydata_jobs.md)

@@ -1,5 +1,5 @@
 <a id="embeddedmode"></a>
-## Embedded SnappyData Store Mode
+# Embedded SnappyData Store Mode
 In this mode, the Spark computations and in-memory data store run colocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real-time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources.
 Spark executors are dynamically launched when the first Spark Job arrives.
 

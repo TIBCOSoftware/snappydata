@@ -1,5 +1,5 @@
 <a id="howto-colacatedJoin"></a>
-## How to Perform a Colocated Join
+# How to Perform a Colocated Join
 
 When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Colocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
 When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.

@@ -1,11 +1,10 @@
-
 <a id="getting-started-on-aws"></a>
-## Getting Started on AWS
+# Getting Started on AWS
 
 You can quickly create a single host SnappyData cluster (i.e. one lead node, one data node and a locator in a single EC2 instance) through the AWS CloudFormation.
 
 
-### Prerequisites
+## Prerequisites
 
 Before you begin:
 
@@ -62,11 +61,11 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 9. Your cluster is now running. You can explore it using Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has already been started on the instance for you. Simply follow its link (URL) from the **Outputs** tab.<br>
 	![Public IP](../Images/cluster_links.png)
 
-For more information, refer to the [Apache Zeppelin](aqp_aws#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
+For more information, refer to the [Apache Zeppelin](../isight/quick_start_steps.md#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 
 !!! Note:
 
-    * Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the [EC2 scripts](../install.md#EC2).
+    * Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the [EC2 scripts](../install/setting_up_cluster_on_amazon_web_services.md).
 
     * To stop incurring charges for the instance, you can either terminate the instance or delete the stack after you are done playing with the cluster. However, you cannot connect to or restart an instance after you have terminated it.

@@ -1,5 +1,5 @@
 <a id="howto-column"></a>
-## How to Create Column Tables and Run Queries
+# How to Create Column Tables and Run Queries
 
 Column tables organize and manage data in a columnar form such that modern day CPUs can traverse and run computations like a sum or an average fast (as the values are available in contiguous memory).
 
@@ -7,7 +7,7 @@ Refer to the [Row and column tables](../programming_guide.md#tables-in-snappydat
 
 Full source code, for example, to create and perform operations on column table can be found in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala)
 
-### Create a Column Table using DataFrame API
+## Create a Column Table using DataFrame API
 
 The code snippet below shows how to create a column table using DataFrame API.
 
@@ -52,7 +52,7 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
     customerDF.write.insertInto("CUSTOMER")
 ```
 
-### Create a Column Table using SQL
+## Create a Column Table using SQL
 
 The same table can be created using SQL as shown below:
 

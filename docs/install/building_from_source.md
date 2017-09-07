@@ -1,6 +1,6 @@
 
 <a id="building-from-source"></a>
-## Building from Source
+# Building from Source
 Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 
 Quickstart to build all components of SnappyData:
@@ -38,7 +38,7 @@ If you want to build only the top-level SnappyData project but pull in jars for 
 ```
 
 
-### Repository Layout
+## Repository Layout
 
 - **core** - Extensions to Apache Spark that should not be dependent on SnappyData Spark additions, job server etc. It is also the bridge between _spark_ and _store_ (GemFireXD). For example, SnappyContext, row and column store, streaming additions etc.
 
@@ -63,7 +63,7 @@ If you want to build only the top-level SnappyData project but pull in jars for 
 The above aliases can serve as useful shortcuts to pull and push all projects from top-level _snappydata_ repository.
 
 
-### Building
+## Building
 
 Gradle is the build tool used for all the SnappyData projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include the addition of Gradle build scripts to allow building them independently as well as a subproject of SnappyData. The only requirement for the build is a JDK 8 installation. The Gradle wrapper script downloads all the other build dependencies as required.
 
@@ -104,7 +104,7 @@ The usual Gradle test run targets (_test_, _check_) work as expected for JUnit t
 Running individual tests within some suite works using the _--tests_ argument.
 
 
-### Setting up IntelliJ IDEA with Gradle
+## Setting up IntelliJ IDEA with Gradle
 
 Intellij IDEA is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support but has been seen to not work as well. Steps required for setting up SnappyData with all its components in IDEA are listed below.
 
@@ -140,7 +140,7 @@ To import into IntelliJ IDEA:
 
 * For JUnit tests configuration also append **/build-artifacts** to the working directory. That is, open **Run> Edit Configurations**, expand **Defaults** and select **JUnit**, the working directory should be **\$MODULE_DIR\$/build-artifacts**. Likewise, append **build-artifacts** to working directory for ScalaTest. Without this all intermediate log and other files pollute the source tree and then need to be cleaned manually.
 
-### Running a ScalaTest/JUnit
+## Running a ScalaTest/JUnit
 
 Running Scala/JUnit tests from IntelliJ IDEA is straightforward.
 

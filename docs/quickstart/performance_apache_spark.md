@@ -1,5 +1,5 @@
 <a id="start_benchmark"></a>
-## SnappyData Performance: 16x-20x faster than Apache Spark
+# SnappyData Performance: 16x-20x faster than Apache Spark
 Here you are walked through a simple benchmark to compare SnappyData to Spark 2.1 performance.
 Millions of rows are loaded into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
 
@@ -32,7 +32,7 @@ $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-di
 $ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
-### To get the Performance Numbers
+## To get the Performance Numbers
 Ensure that you are in a Spark Shell, and then follow the instruction below to get the performance numbers.
 
 **Define a function "benchmark"**, which tells us the average time to run queries after doing the initial warm-ups.

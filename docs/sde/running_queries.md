@@ -1,4 +1,6 @@
-## Running Queries
+# Running Queries
+
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. 
 
@@ -28,7 +30,7 @@ SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by 
 // tolerate a maximum error of 10% in each row in the answer with a confidence interval of 0.95.
 // If the error for any row is greater than 10% omit the answer. i.e. the row is omitted. 
 ```
-#### Using the Spark DataFrame API
+## Using the Spark DataFrame API
 
 The Spark DataFrame API is extended with support for approximate queries. Here is 'withError' API on DataFrames.
 ```
@@ -43,7 +45,7 @@ snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).with
 snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).withError(0.10, 0.95, 'local_omit’) 
 ```
 
-### Supporting BI tools or existing Apps
+## Supporting BI Tools or Existing Apps
 To allow BI tools and existing Apps that say might be generating SQL, SDE also supports specifying these options through your SQL connection or using the Snappy SQLContext. 
 
 ```

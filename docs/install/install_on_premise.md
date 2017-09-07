@@ -1,11 +1,11 @@
 <a id="install-on-premise"></a>
-## Install On-Premise
+# Install On-Premise
 SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
-### Prerequisites
+## Prerequisites
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
-### Download SnappyData
+## Download SnappyData
 
 Download the latest version of SnappyData: 
 
@@ -20,7 +20,7 @@ Download the latest version of SnappyData:
 * [Download SnappyData 1.0 RC Enterprise Version](http://www.snappydata.io/download): </br> Users can download the Enterprise version for evaluation after registering on the SnappyData website.
 
 <a id="singlehost"></a>
-### Single Host Installation
+## Single Host Installation
 This is the simplest form of deployment and can be used for testing and POCs.
 
 Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory.
@@ -34,10 +34,10 @@ Start a basic cluster with one data node, one lead, and one locator
 ```
 For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](../configuring_cluster/configuring_cluster.md).
 
-### Multi-Host Installation
+## Multi-Host Installation
 For real life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
 
-### Machines with a Shared Path
+## Machines with a Shared Path
 If all your machines can share a path over an NFS or similar protocol, then follow the steps below:
 
 #### Prerequisites
@@ -46,7 +46,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 * Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](../configuring_cluster/configuring_cluster.md#configuring-ssh-login-without-password).
 
-#### Steps to Set up the Cluster
+### Steps to Set up the Cluster
 
 1. Copy the downloaded binaries to the shared folder.
 
@@ -65,16 +65,16 @@ This creates a default folder named **work** and stores all SnappyData member's 
 
 If SSH is not supported then follow the instructions in the Machines without a Shared Path section.
 
-### Machines without a Shared Path
+## Machines without a Shared Path
 
-#### Prerequisites
+### Prerequisites
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP Address of each SnappyData member machine.
 
 * On each host machine, create a new member working directory for each SnappyData member, that you want to run the host. <br> The member working directory provides a default location for the log, persistence, and status files for each member, and is also used as the default location for locating the member's configuration files.
 <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
 
-#### To Configure the Cluster
+### To Configure the Cluster
 1. Copy and extract the downloaded binaries on each machine
 
 2. Individually configure and start each member

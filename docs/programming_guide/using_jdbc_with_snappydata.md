@@ -1,4 +1,4 @@
-## Using JDBC with SnappyData
+# Using JDBC with SnappyData
 SnappyData is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. 
 
 ```java

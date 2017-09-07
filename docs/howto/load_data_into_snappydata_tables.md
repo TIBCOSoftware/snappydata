@@ -1,5 +1,5 @@
 <a id="howto-load"></a>
-## How to Load Data into SnappyData Tables
+# How to Load Data into SnappyData Tables
 
 SnappyData relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. By integrating the loading mechanism with the Query engine (Catalyst optimizer) it is often possible to push down filters and projections all the way to the data source minimizing data transfer. Here is the list of important features:
 

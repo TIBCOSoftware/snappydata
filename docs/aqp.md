@@ -5,6 +5,7 @@
 !!!Note:
 	This is the beta version of the SDE feature which is still undergoing final testing before its official release. 
 
+The following topics are covered in this section:
 
 * [Key Concepts](sde/key_concepts.md)
 

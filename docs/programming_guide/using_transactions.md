@@ -1,6 +1,6 @@
-## Using Transactions
+# Using Transactions
 
-### Using Distributed Transaction for Row Tables
+## Using Distributed Transaction for Row Tables
 Transactions specify an isolation level that defines the degree to which one transaction must be isolated from resource or data modifications made by other transactions. The transaction isolation levels define the type of locks acquired on read operations. Only one of the isolation level options can be set at a time, and it remains set for that connection until it is explicitly changed.
 
 The following isolation levels are supported for row tables:
@@ -13,7 +13,7 @@ The following isolation levels are supported for row tables:
 
 For more information, see, [SET ISOLATION](../reference/sql_reference/set-isolation.md)
 
-### Using Snapshot Isolation for Column Tables
+## Using Snapshot Isolation for Column Tables
 
 Multi-Statement transactions are not supported on column tables. Instead, we provide snapshot isolation by default.  Snapshot ensures that all queries see the same version (snapshot), of the database, based on the state of the database at the moment in time when the query is executed. The snapshot is taken per statement for each partition, which means, the snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
 <!--Currently, only single statement snapshot isolation (that is, [autocommit](../reference/interactive_commands/autocommit.md) must be set to true) is supported.-->  

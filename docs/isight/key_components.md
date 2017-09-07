@@ -1,4 +1,4 @@
-## Key Components
+# Key Components
 This section provides a brief description of the key terms used in this document. 
 
 * **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
