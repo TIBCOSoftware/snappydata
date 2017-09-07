@@ -85,7 +85,7 @@ dependencies {
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
-    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+    testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
   } else {
     testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
   }

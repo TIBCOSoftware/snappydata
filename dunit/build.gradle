@@ -26,7 +26,7 @@ dependencies {
   compile 'commons-io:commons-io:2.5'
   compile "junit:junit:${junitVersion}"
   if (new File(rootDir, 'store/build.gradle').exists()) {
-    compile project(':snappy-store:gemfirexd-core')
+    compile project(':snappy-store:snappydata-store-core')
   } else {
     compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
   }
