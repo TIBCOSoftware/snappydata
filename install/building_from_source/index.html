@@ -1598,7 +1598,7 @@
             <div class="section">
               
                 <p><a id="building-from-source"></a></p>
-<h2 id="building-from-source">Building from Source</h2>
+<h1 id="building-from-source">Building from Source</h1>
 <p>Building SnappyData requires JDK 8 installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>).</p>
 <p>Quickstart to build all components of SnappyData:</p>
 <p><strong>Latest release branch</strong></p>
@@ -1627,7 +1627,7 @@
 &gt; ./gradlew product
 </code></pre>
 
-<h3 id="repository-layout">Repository Layout</h3>
+<h2 id="repository-layout">Repository Layout</h2>
 <ul>
 <li>
 <p><strong>core</strong> - Extensions to Apache Spark that should not be dependent on SnappyData Spark additions, job server etc. It is also the bridge between <em>spark</em> and <em>store</em> (GemFireXD). For example, SnappyContext, row and column store, streaming additions etc.</p>
@@ -1655,7 +1655,7 @@
 </code></pre>
 
 <p>The above aliases can serve as useful shortcuts to pull and push all projects from top-level <em>snappydata</em> repository.</p>
-<h3 id="building">Building</h3>
+<h2 id="building">Building</h2>
 <p>Gradle is the build tool used for all the SnappyData projects. Changes to <em>Apache Spark</em> and <em>spark-jobserver</em> forks include the addition of Gradle build scripts to allow building them independently as well as a subproject of SnappyData. The only requirement for the build is a JDK 8 installation. The Gradle wrapper script downloads all the other build dependencies as required.</p>
 <p>If a user does not want to deal with submodules and only work on SnappyData project, then can clone only the SnappyData repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from Maven central.</p>
 <p>If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The <em>spark</em> and <em>store</em> submodules can also be built and published independently.</p>
@@ -1687,7 +1687,7 @@
 </code></pre>
 
 <p>Running individual tests within some suite works using the <em>--tests</em> argument.</p>
-<h3 id="setting-up-intellij-idea-with-gradle">Setting up IntelliJ IDEA with Gradle</h3>
+<h2 id="setting-up-intellij-idea-with-gradle">Setting up IntelliJ IDEA with Gradle</h2>
 <p>Intellij IDEA is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support but has been seen to not work as well. Steps required for setting up SnappyData with all its components in IDEA are listed below.</p>
 <p>To import into IntelliJ IDEA:</p>
 <ul>
@@ -1739,7 +1739,7 @@
 <p>For JUnit tests configuration also append <strong>/build-artifacts</strong> to the working directory. That is, open <strong>Run&gt; Edit Configurations</strong>, expand <strong>Defaults</strong> and select <strong>JUnit</strong>, the working directory should be <strong>\$MODULE_DIR\$/build-artifacts</strong>. Likewise, append <strong>build-artifacts</strong> to working directory for ScalaTest. Without this all intermediate log and other files pollute the source tree and then need to be cleaned manually.</p>
 </li>
 </ul>
-<h3 id="running-a-scalatestjunit">Running a ScalaTest/JUnit</h3>
+<h2 id="running-a-scalatestjunit">Running a ScalaTest/JUnit</h2>
 <p>Running Scala/JUnit tests from IntelliJ IDEA is straightforward.</p>
 <ul>
 <li>

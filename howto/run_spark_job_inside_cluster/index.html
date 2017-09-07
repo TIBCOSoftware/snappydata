@@ -1590,7 +1590,7 @@
             <div class="section">
               
                 <p><a id="howto-job"></a></p>
-<h2 id="how-to-run-spark-code-inside-the-cluster">How to Run Spark Code inside the Cluster</h2>
+<h1 id="how-to-run-spark-code-inside-the-cluster">How to Run Spark Code inside the Cluster</h1>
 <p>A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.</p>
 <p><strong>Implementing a Job</strong>: 
 A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the <code>runSnappyJob</code> method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>

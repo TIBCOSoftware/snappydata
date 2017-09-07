@@ -1601,7 +1601,7 @@
 <p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <p>Authentication is the process of verifying someone's identity. When a user tries to log in, that request is forwarded to the specified LDAP directory to verify if the credentials are correct.
 There are a few different ways to connect to a secure cluster using either JDBC (Thin) Client, Smart Connector Mode and Snappy Jobs. Accessing a secure cluster requires users to provide their user credentials.</p>
-<h3 id="using-jdbc-thin-client">Using JDBC (Thin) Client</h3>
+<h2 id="using-jdbc-thin-client">Using JDBC (Thin) Client</h2>
 <p>When using the JDBC client, provide the user credentials using connection properties 'user' and 'password'.</p>
 <p><strong>Example: JDBC Client</strong></p>
 <pre><code class="scala">val props = new Properties()
@@ -1616,13 +1616,13 @@ val conn = DriverManager.getConnection(url, props)
 <pre><code class="scala">connect client 'localhost:1527;user=user1;password=user123';
 </code></pre>
 
-<h3 id="using-odbc-driver">Using ODBC Driver</h3>
+<h2 id="using-odbc-driver">Using ODBC Driver</h2>
 <p>You can also connect to the SnappyData Cluster using SnappyData ODBC Driver using the following command:</p>
 <pre><code class="scala">Driver=SnappyData ODBC Driver;server=&lt;ServerHost&gt;;port=&lt;ServerPort&gt;;user=&lt;userName&gt;;password=&lt;password&gt;
 </code></pre>
 
 <p>For more information refer to, <a href="../../howto/#how-to-connect-using-odbc-driver">How to Connect using ODBC Driver</a>.</p>
-<h3 id="using-smart-connector-mode">Using Smart Connector Mode</h3>
+<h2 id="using-smart-connector-mode">Using Smart Connector Mode</h2>
 <p>In Smart Connector mode, provide the user credentials as Spark configuration properties named <code>spark.snappydata.store.user</code> and <code>spark.snappydata.store.password</code>.</p>
 <p><strong>Example</strong></br> 
 In the below example, these properties are set in the <code>SparkConf</code> which is used to create <code>SnappyContext</code> in your job.</p>
@@ -1656,7 +1656,7 @@ To do so, specify the user credentials in the <strong>spark-defaults.conf</stron
 spark.snappydata.store.password &lt;password&gt;
 </code></pre>
 
-<h3 id="using-snappy-jobs">Using Snappy Jobs</h3>
+<h2 id="using-snappy-jobs">Using Snappy Jobs</h2>
 <p>When submitting Snappy jobs, using <code>snappy-job.sh</code>, provide user credentials through a configuration file using the option <code>--passfile</code>. </p>
 <p>For example, a sample configuration file is provided below: </p>
 <pre><code class="scala">$ cat /home/user1/snappy/job.config 

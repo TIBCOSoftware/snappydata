@@ -493,8 +493,7 @@
             
                 <li class="toctree-l3"><a href="#using-jdbc-with-snappydata">Using JDBC with SnappyData</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</a></li>
+                    <li><a class="toctree-l4" href="#multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</a></li>
                 
             
             </ul>
@@ -1605,7 +1604,7 @@ Connection c = DriverManager.getConnection (&quot;jdbc:snappydata://locatorHostN
 <p class="admonition-title">Note</p>
 <p>If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</p>
 </div>
-<h1 id="multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</h1>
+<h2 id="multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</h2>
 <p>SnappyData provides support for Apache Thrift protocol which enables users to access the cluster from other languages that are not supported directly by SnappyData.
 Thrift allows efficient and reliable communication across programming languages like Java, Python, PHP, Ruby, Elixir, Perl and other languages. For more information on Thrift, refer to the <a href="https://thrift.apache.org/">Apache Thrift documentation</a>.</p>
 <p>The JDBC driver for SnappyData that uses the <code>jdbc:snappydata://</code> URL schema, now uses Thrift for underlying protocol. The older URL scheme for RowStore <code>jdbc:gemfirexd://</code> continues to use the deprecated DRDA protocol.</p>

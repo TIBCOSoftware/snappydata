@@ -707,38 +707,27 @@
             
                 <li class="toctree-l3"><a href="#quick-start-steps">Quick Start Steps</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#setting-up-snappydata-cloud-cluster">Setting Up SnappyData Cloud Cluster</a></li>
+                    <li><a class="toctree-l4" href="#setting-up-snappydata-cloud-cluster">Setting Up SnappyData Cloud Cluster</a></li>
                 
                     <li><a class="toctree-l4" href="#deploying-snappydata-cloud-cluster-with-isight-cloudbuilder">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</a></li>
                 
                     <li><a class="toctree-l4" href="#deploying-snappydata-cloud-cluster-on-aws-using-scripts">Deploying SnappyData Cloud Cluster on AWS using Scripts</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#loading-data-from-aws-s3">Loading Data from AWS S3</a></li>
+                    <li><a class="toctree-l4" href="#loading-data-from-aws-s3">Loading Data from AWS S3</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#using-apache-zeppelin">Using Apache Zeppelin</a></li>
+                    <li><a class="toctree-l4" href="#using-apache-zeppelin">Using Apache Zeppelin</a></li>
                 
-                    <li><a class="toctree-l4" href="#functioning-of-the-snappydata-interpreter-and-snappydata-cluster">Functioning of the SnappyData Interpreter and SnappyData Cluster</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#using-the-interpreter">Using the Interpreter</a></li>
+                    <li><a class="toctree-l4" href="#using-the-interpreter">Using the Interpreter</a></li>
                 
                     <li><a class="toctree-l4" href="#sql-interpreter">SQL Interpreter</a></li>
                 
                     <li><a class="toctree-l4" href="#scala-interpreter">Scala Interpreter</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#using-predefined-notebooks">Using Predefined Notebooks</a></li>
+                    <li><a class="toctree-l4" href="#using-predefined-notebooks">Using Predefined Notebooks</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#creating-notebooks-try-it-yourself">Creating Notebooks - Try it Yourself!</a></li>
+                    <li><a class="toctree-l4" href="#creating-notebooks-try-it-yourself">Creating Notebooks - Try it Yourself!</a></li>
                 
-                    <li><a class="toctree-l4" href="#examples-of-queries-and-results">Examples of Queries and Results</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#monitoring-the-snappydata-cloud-cluster">Monitoring the SnappyData Cloud Cluster</a></li>
+                    <li><a class="toctree-l4" href="#monitoring-the-snappydata-cloud-cluster">Monitoring the SnappyData Cloud Cluster</a></li>
                 
                     <li><a class="toctree-l4" href="#accessing-the-console">Accessing the Console</a></li>
                 
@@ -1624,7 +1613,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="quick-start-steps">Quick Start Steps</h2>
+                <h1 id="quick-start-steps">Quick Start Steps</h1>
 <p>To understand the product follow these easy steps that can get you started quickly:</p>
 <ol>
 <li>
@@ -1660,10 +1649,10 @@
 <h2 id="setting-up-snappydata-cloud-cluster">Setting Up SnappyData Cloud Cluster</h2>
 <p>This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using a script.</p>
 <p><a id="DeployingClusterCloudFormation"></a></p>
-<h3 id="deploying-snappydata-cloud-cluster-with-isight-cloudbuilder">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</h3>
+<h2 id="deploying-snappydata-cloud-cluster-with-isight-cloudbuilder">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</h2>
 <p>Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.</p>
 <p><a href="https://www.youtube.com/watch?v=jbudjTqWsdI&amp;feature=youtu.be"><img alt="Cloudbuilder" src="../../Images/aws_cloudbuildervideo.png" /></a></p>
-<h4 id="prerequisites">Prerequisites</h4>
+<h3 id="prerequisites">Prerequisites</h3>
 <p>Before you begin:</p>
 <ul>
 <li>
@@ -1679,7 +1668,7 @@
 <p>SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.</p>
 <p>It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running four processes (locator, lead, a data server and an Apache Zeppelin server) on it.</p>
 <p>This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started! </p>
-<h4 id="configuring-and-launching-the-snappydata-cloud-cluster">Configuring and Launching the SnappyData Cloud Cluster</h4>
+<h3 id="configuring-and-launching-the-snappydata-cloud-cluster">Configuring and Launching the SnappyData Cloud Cluster</h3>
 <p>Launch the iSight CloudBuilder from <a href="http://www.snappydata.io/cloudbuilder">http://www.snappydata.io/cloudbuilder</a>. </p>
 <ol>
 <li>
@@ -1787,11 +1776,11 @@ When the cluster has started, the status of the stack changes to <strong>CREATE_
 </div>
 <p>For more information, refer to the <a href="#LoggingZeppelin">Apache Zeppelin</a> section or refer to the <a href="http://zeppelin.apache.org/">Apache Zeppelin documentation</a>.</p>
 <p><a id="DeployingClusterScript"></a></p>
-<h3 id="deploying-snappydata-cloud-cluster-on-aws-using-scripts">Deploying SnappyData Cloud Cluster on AWS using Scripts</h3>
+<h2 id="deploying-snappydata-cloud-cluster-on-aws-using-scripts">Deploying SnappyData Cloud Cluster on AWS using Scripts</h2>
 <p>SnappyData provides a script that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2).</p>
 <p>Download the script from the latest <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData Release page</a>.
 The package is available in compressed files (<strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong>). Extract the contents to a location on your computer.</p>
-<h4 id="prerequisites_1">Prerequisites</h4>
+<h3 id="prerequisites_1">Prerequisites</h3>
 <p>Before you begin, do the following:</p>
 <ul>
 <li>
@@ -1813,7 +1802,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10</code></p>
 <p>Ensure Python v 2.7 or later is installed on your local computer.</p>
 </li>
 </ul>
-<h4 id="launching-snappydata-cluster">Launching SnappyData Cluster</h4>
+<h3 id="launching-snappydata-cluster">Launching SnappyData Cluster</h3>
 <p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the <strong>aws/ec2</strong> directory where the <strong>snappy-cloud-tools</strong> <a href="https://github.com/SnappyDataInc/snappy-cloud-tools">repository</a> is cloned locally.</p>
 <p>Enter the command in the following format:</p>
 <pre><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;
@@ -1931,9 +1920,9 @@ To use an interpreter, add the associated interpreter directive with the format,
 </ul>
 </p>
 </div>
-<h3 id="sql-interpreter">SQL Interpreter</h3>
+<h2 id="sql-interpreter">SQL Interpreter</h2>
 <p>The <code>%snappydata.sql</code> code specifies the default SQL interpreter. This interpreter is used to execute SQL queries on SnappyData cluster.</p>
-<h4 id="multi-line-statements">Multi-Line Statements</h4>
+<h3 id="multi-line-statements">Multi-Line Statements</h3>
 <p>Multi-line statements ,as well as multiple statements on the same line, are also supported as long as they are separated by a semicolon. However, only the result of the last query is displayed.</p>
 <p>SnappyData provides a list of connection-specific SQL properties that can be applied to the paragraph that is executed. </p>
 <p>In the following example, <code>spark.sql.shuffle.partitions</code> allows you to specify the number of partitions to be used for this query:</p>
@@ -1942,7 +1931,7 @@ set spark.sql.shuffle.partitions=6;
 select medallion,avg(trip_distance) as avgTripDist from nyctaxi group by medallion order by medallion desc limit 100 with error
 </code></pre>
 
-<h4 id="snappydata-directives-in-apache-zeppelin">SnappyData Directives in Apache Zeppelin</h4>
+<h3 id="snappydata-directives-in-apache-zeppelin">SnappyData Directives in Apache Zeppelin</h3>
 <p>You can execute approximate queries on SnappyData cluster by using the <code>%sql show-instant-results-first</code> directive. 
 In this case, the query is first executed on the sample table and the approximate result is displayed, after which the query is run on the base table. Once the query is complete, the approximate result is replaced with the actual result.</p>
 <p>In the following example, you can see that the query is first executed on the sample table, and the time required to execute the query is displayed. 
@@ -1956,7 +1945,7 @@ select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howMa
 <p class="admonition-title">Note</p>
 <p>This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.</p>
 </div>
-<h3 id="scala-interpreter">Scala Interpreter</h3>
+<h2 id="scala-interpreter">Scala Interpreter</h2>
 <p>The <code>%snappydata.spark</code> code specifies the default Scala interpreter. This interpreter is used to write Scala code in the paragraph.
 SnappyContext is injected in this interpreter and can be accessed using variable <strong>snc</strong>.</p>
 <p><a id="predefinednotebook"></a></p>
@@ -2010,7 +1999,7 @@ It also displays data information for various tables created in the cluster on d
 -->
 
 <p>The Apache Spark Console displays useful information about SnappyData. This includes a list of scheduler stages and tasks, summary of tables and memory usage.</p>
-<h3 id="accessing-the-console">Accessing the Console</h3>
+<h2 id="accessing-the-console">Accessing the Console</h2>
 <p>To access the Apache Spark console from the Apache Zeppelin notebook: </p>
 <ol>
 <li>Click on the <strong>Spark UI</strong> <!--or **Pulse** -->link provided in the paragraph.

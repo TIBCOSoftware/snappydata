@@ -1594,11 +1594,11 @@
             <div class="section">
               
                 <p><a id="howto-column"></a></p>
-<h2 id="how-to-create-column-tables-and-run-queries">How to Create Column Tables and Run Queries</h2>
+<h1 id="how-to-create-column-tables-and-run-queries">How to Create Column Tables and Run Queries</h1>
 <p>Column tables organize and manage data in a columnar form such that modern day CPUs can traverse and run computations like a sum or an average fast (as the values are available in contiguous memory).</p>
 <p>Refer to the <a href="../../programming_guide/#tables-in-snappydata">Row and column tables</a> documentation for the complete list of attributes for column tables.</p>
 <p>Full source code, for example, to create and perform operations on column table can be found in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala">CreateColumnTable.scala</a></p>
-<h3 id="create-a-column-table-using-dataframe-api">Create a Column Table using DataFrame API</h3>
+<h2 id="create-a-column-table-using-dataframe-api">Create a Column Table using DataFrame API</h2>
 <p>The code snippet below shows how to create a column table using DataFrame API.</p>
 <p><strong>Get a SnappySession</strong>:</p>
 <pre><code class="scala">    val spark: SparkSession = SparkSession
@@ -1635,7 +1635,7 @@
     customerDF.write.insertInto(&quot;CUSTOMER&quot;)
 </code></pre>
 
-<h3 id="create-a-column-table-using-sql">Create a Column Table using SQL</h3>
+<h2 id="create-a-column-table-using-sql">Create a Column Table using SQL</h2>
 <p>The same table can be created using SQL as shown below:</p>
 <pre><code class="scala">    snSession.sql(&quot;CREATE TABLE CUSTOMER ( &quot; +
         &quot;C_CUSTKEY     INTEGER NOT NULL,&quot; +

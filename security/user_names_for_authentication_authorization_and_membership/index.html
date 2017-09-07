@@ -1595,11 +1595,11 @@
               
                 <h1 id="user-names-for-authentication-authorization-and-membership">User Names for Authentication, Authorization, and Membership <a id="user-names"></a></h1>
 <p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
-<h3 id="user-names-are-converted-to-authorization-identifiers">User Names are Converted to Authorization Identifiers</h3>
+<h2 id="user-names-are-converted-to-authorization-identifiers">User Names are Converted to Authorization Identifiers</h2>
 <p>User names in the SnappyData system are known as authorization identifiers. The authorization identifier is a string that represents the name of the user if one was provided in the connection request. </p>
 <p>After the authorization identifier is passed to the SnappyData system, it becomes an SQL92Identifier. SQL92Identifier is a kind of identifier that represents a database object such as a table or column. A SQL92Identifier is case-insensitive (it is converted to all caps) unless it is delimited with double quotes. A SQL92Identifier is limited to 128 characters and has other limitations.</p>
 <p>All user names must be valid authorization identifiers even if user authentication is turned off, and even if all users are allowed access to all databases.</p>
-<h3 id="handling-case-sensitivity-and-special-characters-in-user-names">Handling Case Sensitivity and Special Characters in User Names</h3>
+<h2 id="handling-case-sensitivity-and-special-characters-in-user-names">Handling Case Sensitivity and Special Characters in User Names</h2>
 <p>If an external authentication system is used, SnappyData does not convert a user's name to an authorization identifier until after authentication has occurred (but before the user is authorized). For example, with an example user named Fred:</p>
 <p>Within the user authentication system, Fred might be known as FRed. If the external user authentication service is case-sensitive, Fred must always be typed as:</p>
 <pre><code class="scala">connect client 'localhost:1527;user=FRed;password=flintstone';

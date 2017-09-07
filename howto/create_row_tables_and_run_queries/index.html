@@ -1592,12 +1592,12 @@
             <div class="section">
               
                 <p><a id="howto-row"></a></p>
-<h2 id="how-to-create-row-tables-and-run-queries">How to Create Row Tables and Run Queries</h2>
+<h1 id="how-to-create-row-tables-and-run-queries">How to Create Row Tables and Run Queries</h1>
 <p>Each record in a Row table is managed in contiguous memory, and therefore, optimized for selective queries (For example. key based point lookup ) or updates. 
 A row table can either be replicated to all nodes or partitioned across nodes. It can be created by using DataFrame API or using SQL.</p>
 <p>Refer to the <a href="../../programming_guide/#ddl">Row and column tables</a> documentation for complete list of attributes for row tables.</p>
 <p>Full source code, for example, to create and perform operations on replicated and partitioned row table can be found in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateReplicatedRowTable.scala">CreateReplicatedRowTable.scala</a> and <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala">CreatePartitionedRowTable.scala</a></p>
-<h3 id="create-a-row-table-using-dataframe-api">Create a Row Table using DataFrame API:</h3>
+<h2 id="create-a-row-table-using-dataframe-api">Create a Row Table using DataFrame API:</h2>
 <p>The code snippet below shows how to create a replicated row table using API.</p>
 <p><strong>Get a SnappySession</strong></p>
 <pre><code class="scala">    val spark: SparkSession = SparkSession
