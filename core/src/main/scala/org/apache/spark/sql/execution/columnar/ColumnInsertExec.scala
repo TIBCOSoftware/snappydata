@@ -120,12 +120,12 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     // add a task completion listener to close the encoders
     val contextClass = classOf[TaskContext].getName
     val listenerClass = classOf[TaskCompletionListener].getName
-    val context = ctx.freshName("taskContext")
+    val getContext = Utils.genTaskContextFunction(ctx)
+
     ctx.addMutableState("int", defaultBatchSizeTerm,
       s"""
-         |final $contextClass $context = $contextClass.get();
-         |if ($context != null) {
-         |  $context.addTaskCompletionListener(new $listenerClass() {
+         |if ($getContext() != null) {
+         |  $getContext().addTaskCompletionListener(new $listenerClass() {
          |    @Override
          |    public void onTaskCompletion($contextClass context) {
          |      if ($numInsertions >= 0) $closeEncodersFunction();
@@ -134,7 +134,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |}
       """.stripMargin)
     s"""
-       |if ($numInsertions >= 0 && $contextClass.get() == null) {
+       |if ($numInsertions >= 0 && $getContext() == null) {
        |  $closeEncodersFunction();
        |}""".stripMargin
   }

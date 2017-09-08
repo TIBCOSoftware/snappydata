@@ -25,9 +25,9 @@ import scala.io.Source
 import io.snappydata.SnappyFunSuite
 import it.unimi.dsi.fastutil.longs.LongArrayList
 
-import org.apache.spark.unsafe.{Native, Platform}
 import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.unsafe.{Native, Platform}
 import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
 
@@ -45,6 +45,7 @@ class StringBenchmark extends SnappyFunSuite {
       while (iter.hasNext) {
         Platform.freeMemory(iter.nextLong())
       }
+      allocatedMemoryList.clear()
     }
   }
 
@@ -75,10 +76,12 @@ class StringBenchmark extends SnappyFunSuite {
     val randData = Array.fill(numDistinct)(s"${UUID.randomUUID().toString}-$randomSuffix")
     val sdata = Array.fill(numElements)(randData(rnd.nextInt(numDistinct)))
     val data = sdata.map(UTF8String.fromString)
+    val udata = sdata.map(toUTF8String)
 
     if (preSorted) java.util.Arrays.sort(data, null)
     var cdata: Array[UTF8String] = null
     var cdata2: Array[UTF8String] = null
+    var cdata3: Array[UTF8String] = null
 
     def displayNumber(num: Int): String = {
       if (num % 1000000 == 0) s"${num / 1000000}M"
@@ -101,11 +104,16 @@ class StringBenchmark extends SnappyFunSuite {
       doGC, () => Unit, () => cdata2 = data.clone()) { _ =>
       java.util.Arrays.sort(cdata2, null)
     }
+    ColumnCacheBenchmark.addCaseWithCleanup(benchmark, "Snappy (off-heap)", numIters, () => Unit,
+      doGC, () => Unit, () => cdata3 = udata.clone()) { _ =>
+      java.util.Arrays.sort(cdata3, null)
+    }
 
     benchmark.run()
 
     // compare the results
     assert(cdata.toSeq === cdata2.toSeq)
+    assert(cdata.toSeq === cdata3.toSeq)
   }
 
   ignore("UTF8String optimized compareTo") {

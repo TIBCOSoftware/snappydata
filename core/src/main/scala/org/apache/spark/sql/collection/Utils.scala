@@ -45,15 +45,13 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
-import org.apache.spark.unsafe.types.UTF8String
-// import org.apache.spark.sql.execution.datasources.json.JacksonGenerator
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
@@ -69,6 +67,7 @@ object Utils {
 
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
+  private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
 
   // 1 - (1 - 0.95) / 2 = 0.975
   final val Z95Percent: Double = new NormalDistribution().
@@ -759,57 +758,22 @@ object Utils {
     row
   }
 
-  def compare(left: UTF8String, right: UTF8String): Int = {
-    val rightBase = right.getBaseObject
-    var rightOffset = right.getBaseOffset
-    val leftBase = left.getBaseObject
-    var leftOffset = left.getBaseOffset
-
-    val len = Math.min(left.numBytes, right.numBytes)
-    var endOffset = leftOffset + len
-    // for architectures that support unaligned accesses, read 8 bytes at a time
-    if (Platform.unaligned() || (((leftOffset & 0x7) == 0) && ((rightOffset & 0x7) == 0))) {
-      endOffset -= 8
-      while (leftOffset <= endOffset) {
-        // Longs should be read in big-endian format for proper comparison order
-        // of individual string bytes.
-        val ll = ColumnEncoding.readLongBigEndian(leftBase, leftOffset)
-        val rl = ColumnEncoding.readLongBigEndian(rightBase, rightOffset)
-        // In UTF-8, the byte should be unsigned, so we should compare them as unsigned long.
-        val res = ll - rl
-        // If the sign of both values is same then "res" is with correct sign.
-        // If the sign of values is different then "res" has opposite sign.
-        // The XOR operations will revert the sign bit of res if sign of values is different.
-        // After that converting to signum is "(1 + ((v >> 63) << 1))"
-        //   where (v >> 63) will flow the sign to give -1 or 0, and (1 + 2 times)
-        //   of that will give -1 or 1 respectively.
-        if (res != 0) return (1 + (((ll ^ rl ^ res) >> 63) << 1)).toInt
-        leftOffset += 8
-        rightOffset += 8
-      }
-      endOffset += 4
-      if (leftOffset <= endOffset) {
-        // In UTF-8, the byte should be unsigned, so we should compare them as unsigned int
-        // which is done by converting to unsigned longs.
-        // After that conversion to signed integer is "(1 + ((v >> 63) << 1))" as above.
-        val res = (ColumnEncoding.readIntBigEndian(leftBase, leftOffset) & 0xffffffffL) -
-            (ColumnEncoding.readIntBigEndian(rightBase, rightOffset) & 0xffffffffL)
-        if (res != 0) return (1 + ((res >> 63) << 1)).toInt
-        leftOffset += 4
-        rightOffset += 4
-      }
-      endOffset += 4
+  def genTaskContextFunction(ctx: CodegenContext): String = {
+    // use common taskContext variable so it is obtained only once for a plan
+    if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
+      val taskContextVar = ctx.freshName("taskContext")
+      val contextClass = classOf[TaskContext].getName
+      ctx.addMutableState(contextClass, taskContextVar, "")
+      ctx.addNewFunction(TASKCONTEXT_FUNCTION,
+        s"""
+           |private $contextClass $TASKCONTEXT_FUNCTION() {
+           |  final $contextClass context = $taskContextVar;
+           |  if (context != null) return context;
+           |  return ($taskContextVar = $contextClass.get());
+           |}
+        """.stripMargin)
     }
-    // finish the remaining bytes
-    while (leftOffset < endOffset) {
-      // In UTF-8, the byte should be unsigned, so we should compare them as unsigned int.
-      val res = (Platform.getByte(leftBase, leftOffset) & 0xff) -
-          (Platform.getByte(rightBase, rightOffset) & 0xff)
-      if (res != 0) return res
-      leftOffset += 1
-      rightOffset += 1
-    }
-    left.numBytes - right.numBytes
+    TASKCONTEXT_FUNCTION
   }
 }
 

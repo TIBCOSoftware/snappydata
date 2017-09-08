@@ -19,8 +19,8 @@ package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
 
-import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener}
 import org.apache.spark.sql.execution.row.RowExec
 
@@ -42,9 +42,7 @@ trait ColumnExec extends RowExec {
     val storeClass = classOf[JDBCSourceAsColumnarStore].getName
     taskListener = ctx.freshName("taskListener")
     connTerm = ctx.freshName("connection")
-
-    val contextClass = classOf[TaskContext].getName
-    val context = ctx.freshName("taskContext")
+    val getContext = Utils.genTaskContextFunction(ctx)
 
     ctx.addMutableState(listenerClass, taskListener, "")
     ctx.addMutableState(connectionClass, connTerm, "")
@@ -53,9 +51,8 @@ trait ColumnExec extends RowExec {
       s"""
          |$taskListener = new $listenerClass(($storeClass)$externalStoreTerm);
          |$connTerm = $taskListener.getConn();
-         |final $contextClass $context = $contextClass.get();
-         |if ($context != null) {
-         |   $context.addTaskCompletionListener($taskListener);
+         |if ($getContext() != null) {
+         |   $getContext().addTaskCompletionListener($taskListener);
          |}
          | """.stripMargin
     (initCode, "", "")

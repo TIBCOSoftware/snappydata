@@ -21,13 +21,17 @@ import java.util.Objects
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 
+import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.types.UTF8String
 
 // A marker interface to extend usage of Literal case matching.
 // A literal that can change across multiple query execution.
@@ -129,14 +133,44 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
       case t@(TimestampType | LongType) =>
         assert(value.isInstanceOf[Long], s"unexpected type $dataType instead of $t")
         ".longValue()"
+      case StringType =>
+        // allocate UTF8String on off-heap so that Native can be used if possible
+        assert(value.isInstanceOf[UTF8String],
+          s"unexpected type $dataType instead of UTF8String")
+
+        val getContext = Utils.genTaskContextFunction(ctx)
+        val memoryManagerClass = classOf[TaskMemoryManager].getName
+        val memoryModeClass = classOf[MemoryMode].getName
+        val consumerClass = classOf[DirectStringConsumer].getName
+        ctx.addMutableState(javaType, valueTerm,
+          s"""
+             |if (($isNull = $valueRef.value() == null)) {
+             |  $valueTerm = ${ctx.defaultValue(dataType)};
+             |} else {
+             |  $valueTerm = ($box)$valueRef.value();
+             |  if (${classOf[GemFireCacheImpl].getName}.hasNewOffHeap() &&
+             |      $getContext() != null) {
+             |    // convert to off-heap value if possible
+             |    $memoryManagerClass mm = $getContext().taskMemoryManager();
+             |    if (mm.getTungstenMemoryMode() == $memoryModeClass.OFF_HEAP) {
+             |      $consumerClass consumer = new $consumerClass(mm);
+             |      $valueTerm = consumer.copyUTF8String($valueTerm);
+             |    }
+             |  }
+             |}
+          """.stripMargin)
+        // indicate that code for valueTerm has already been generated
+        null.asInstanceOf[String]
       case _ => ""
     }
     ctx.addMutableState("boolean", isNull, "")
-    ctx.addMutableState(javaType, valueTerm,
-      s"""
-         |$isNull = $valueRef.value() == null;
-         |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
-      """.stripMargin)
+    if (unbox ne null) {
+      ctx.addMutableState(javaType, valueTerm,
+        s"""
+           |$isNull = $valueRef.value() == null;
+           |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
+        """.stripMargin)
+    }
     ev.copy(
       s"""
          |final boolean $isNullLocal = $isNull;
@@ -151,6 +185,30 @@ object ParamLiteral {
 
   def unapply(arg: ParamLiteral): Option[(Any, DataType, Int)] =
     Some((arg.value, arg.dataType, arg.pos))
+}
+
+final class DirectStringConsumer(memoryManager: TaskMemoryManager, pageSize: Int)
+    extends MemoryConsumer(memoryManager, pageSize, MemoryMode.OFF_HEAP) {
+
+  def this(memoryManager: TaskMemoryManager) = this(memoryManager, 8)
+
+  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
+
+  def copyUTF8String(s: UTF8String): UTF8String = {
+    if ((s ne null) && (s.getBaseObject ne null)) {
+      val size = s.numBytes()
+      val page = taskMemoryManager.allocatePage(Math.max(pageSize, size), this)
+      if ((page ne null) && page.size >= size) {
+        used += page.size
+        val ds = UTF8String.fromAddress(null, page.getBaseOffset, size)
+        Platform.copyMemory(s.getBaseObject, s.getBaseOffset, null, ds.getBaseOffset, size)
+        return ds
+      } else if (page ne null) {
+        taskMemoryManager.freePage(page, this)
+      }
+    }
+    s
+  }
 }
 
 case class LiteralValue(var value: Any, var dataType: DataType, var position: Int)

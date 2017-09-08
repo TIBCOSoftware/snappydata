@@ -303,6 +303,9 @@ object SnappyParserConsts {
 
   final val allKeywords: mutable.Set[String] = mutable.Set[String]()
 
+  final val optimizableLikePattern: java.util.regex.Pattern =
+    java.util.regex.Pattern.compile("%?[^_%]*[^_%\\\\]%?")
+
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
    * i.e. it is interpreted as a keyword wherever it may appear and is never
