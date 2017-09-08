@@ -5,22 +5,20 @@
 [Spark Context](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/SparkContext.html) is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster and can be used to create RDDs, accumulators and broadcast variables on that cluster.
 
 [Spark Session](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/sql/SparkSession.html) is the entry point to programming Spark with the Dataset and DataFrame API.
-In environments that this has been created up front (e.g. REPL, notebooks), use the builder to get an existing session:
-
-To create a SparkSession:
-
-```scala
-SparkSession.builder().getOrCreate()
-```
- 
-The builder can also be used to create a new session:
+SparkSession object can be created by using SparkSession.Builder used as below.
 
 ```scala
 SparkSession.builder()
      .master("local")
      .appName("Word Count")
      .config("spark.some.config.option", "some-value")
-     .getOrCreate()   
+     .getOrCreate()
+```
+
+In environments where SparkSession has been created up front (e.g. REPL, notebooks), use the builder to get an existing session:
+
+```scala
+SparkSession.builder().getOrCreate()
 ```
 
 ## Create a SnappySession
@@ -110,7 +108,7 @@ Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode 
 
 If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
 If you are in the Embedded Mode, applications typically submit jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext.
-These jobs are the primary mechanism to interact with SnappyData using the Spark API. 
+Jobs are the primary mechanism to interact with SnappyData using the Spark API in embedded mode.
 A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait.
 
 The implementation of the _runSnappyJob_ function from SnappySQLJob uses a SnappySession to interact with the SnappyData store to process and store tables.

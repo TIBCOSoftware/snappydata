@@ -2,7 +2,7 @@
 
 We assume that Apache Hadoop and YARN are already installed, and you want to bring in SnappyData cluster to work with YARN.
 
-You need to set, following classpath variables - 
+You need to set, following environment variables -
 
 ```
 HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
