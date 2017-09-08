@@ -613,6 +613,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
           + s" inner join double_tab_2 t2 on t1.a = t2.a where t1.d > ? and " +
           s" t1.a in ( select a from double_tab_2 where d < ? )")
       assert(cacheMap.size() == 3)
+      // Anyway TableStatsProviderService.aggregateStats clear stats
+      // So clearing here for better assertion in testing
+      cacheMap.clear()
       prepStatement3.setInt(1, 1)
       prepStatement3.setInt(2, 3)
       update = prepStatement3.executeQuery()
@@ -629,7 +632,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       println(s"7-Number of rows read " + index)
       // scalastyle:on println
       assert(index == 2)
-      assert(cacheMap.size() == 3)
+      assert(cacheMap.size() == 0)
 
       prepStatement3.setInt(1, 2)
       prepStatement3.setInt(2, 4)
@@ -647,7 +650,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       println(s"8-Number of rows read " + index)
       // scalastyle:on println
       assert(index == 2)
-      assert(cacheMap.size() == 3)
+      assert(cacheMap.size() == 0)
       close(prepStatement3)
 
       var prepStatement4: PreparedStatement = null
