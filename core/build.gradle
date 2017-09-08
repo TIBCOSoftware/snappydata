@@ -70,10 +70,10 @@ dependencies {
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
-    compile project(':snappy-store:gemfirexd-client')
-    compile project(':snappy-store:gemfirexd-core')
-    compile project(':snappy-store:gemfirexd-tools')
-    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+    compile project(':snappy-store:snappydata-store-client')
+    compile project(':snappy-store:snappydata-store-core')
+    compile project(':snappy-store:snappydata-store-tools')
+    testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
   } else {
     compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
     compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
@@ -168,7 +168,11 @@ task getApacheSparkDist {
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 dunitSecurityTest.dependsOn getApacheSparkDist
-check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
+check.dependsOn test, scalaTest, dunitTest
+if (rootProject.hasProperty('snappydata.enterprise')) {
+  check.dependsOn dunitSecurityTest
+}
+
 
 archivesBaseName = 'snappydata-core_' + scalaBinaryVersion
 shadowJar {
