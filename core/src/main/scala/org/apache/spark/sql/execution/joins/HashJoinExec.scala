@@ -38,6 +38,7 @@ import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
 import org.apache.spark._
+import org.apache.spark.sql.streaming.PhysicalDStreamPlan
 
 /**
  * :: DeveloperApi ::
@@ -252,7 +253,33 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
   }
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = streamSideRDDs
+  override def inputRDDs(): Seq[RDD[InternalRow]] = {
+    val isCQ = streamedPlan.find(_.isInstanceOf[PhysicalDStreamPlan]).isDefined
+    if (isCQ) {
+      val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
+      val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
+
+      val streamRDD = streamRDDs.head
+      val numParts = streamRDD.getNumPartitions
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
+      val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
+        streamRDD.preferredLocations(streamRDD.partitions(i))
+      }
+      val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
+        // add the build-side shuffle dependecies to first stream-side RDD
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+          preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
+          streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
+            rdd.sparkContext, rdd, preferredLocations))
+      } else {
+        streamRDDs
+      }
+      streamPlanRDDs
+    }
+    else {
+      streamSideRDDs
+    }
+  }
 
   override def doProduce(ctx: CodegenContext): String = {
     startProducing()
