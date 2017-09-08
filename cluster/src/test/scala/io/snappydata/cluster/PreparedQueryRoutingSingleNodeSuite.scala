@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{DriverManager, ResultSet, SQLException}
+import java.sql.{DriverManager, PreparedStatement, ResultSet, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -481,13 +481,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     assert( cacheMap.size() == 0)
     val serverHostPort = TestUtil.startNetServer()
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
-    var prepStatement0: java.sql.PreparedStatement = null
-    var prepStatement1: java.sql.PreparedStatement = null
-    var prepStatement2: java.sql.PreparedStatement = null
-    var prepStatement3: java.sql.PreparedStatement = null
-    var prepStatement4: java.sql.PreparedStatement = null
     try {
-      prepStatement0 = conn.prepareStatement(s"select * from double_tab" +
+      def close(prepStatement: java.sql.PreparedStatement): Unit = if (prepStatement != null) {
+        prepStatement.close()
+      }
+      val prepStatement0 = conn.prepareStatement(s"select * from double_tab" +
           s" where round(d, 2) < ?")
       assert(cacheMap.size() == 0)
       prepStatement0.setDouble(1, 3.33)
@@ -525,8 +523,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       // scalastyle:on println
       assert(index == 3)
       assert(cacheMap.size() == 1)
+      close(prepStatement0)
 
-      prepStatement1 = conn.prepareStatement(s"select a + ?, d from double_tab")
+      val prepStatement1 = conn.prepareStatement(s"select a + ?, d from double_tab")
       assert(cacheMap.size() == 1)
       prepStatement1.setInt(1, 2)
       update = prepStatement1.executeQuery()
@@ -563,8 +562,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       // scalastyle:on println
       assert(index == 3)
       assert(cacheMap.size() == 2)
+      close(prepStatement1)
 
-      prepStatement2 = conn.prepareStatement(s"select a," +
+      val prepStatement2 = conn.prepareStatement(s"select a," +
           s" d from double_tab where UPPER(s) = ?")
       assert(cacheMap.size() == 2)
       prepStatement2.setString(1, "1A")
@@ -602,7 +602,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       // scalastyle:on println
       assert(index == 1)
       assert(cacheMap.size() == 3)
+      close(prepStatement2)
 
+      var prepStatement3: PreparedStatement = null
       try {
         prepStatement3 = conn.prepareStatement(s"select * from double_tab" +
             s" where round(d, ?) < ?")
@@ -611,24 +613,18 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         case e: UnsupportedOperationException =>
         case e: SQLException =>
       }
+      close(prepStatement3)
 
       try {
-        prepStatement4 = conn.prepareStatement(s"select a," +
+        prepStatement3 = conn.prepareStatement(s"select a," +
             s" nvl(d, ?) from double_tab where UPPER(s) = ?")
         fail()
       } catch {
         case e: UnsupportedOperationException =>
         case e: SQLException =>
       }
-    } finally {
-      def close(prepStatement: java.sql.PreparedStatement): Unit = if (prepStatement != null) {
-          // TODO SNAP-2005 prepStatement.close()
-        }
-      close(prepStatement0)
-      close(prepStatement1)
-      close(prepStatement2)
       close(prepStatement3)
-      close(prepStatement4)
+    } finally {
       conn.close()
     }
   }
