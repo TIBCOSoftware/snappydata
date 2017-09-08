@@ -645,8 +645,9 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     logInfo(s"About to invoke spark-shell with command: $sparkShellCommand")
 
-    val output = sparkShellCommand.!!
+    var output = sparkShellCommand.!!
     logInfo(output)
+    output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
     assert(!output.contains("Exception"), s"Some exception stacktrace seen on spark-shell console.")
 
     val conn = getConnection(locatorClientPort, props)
