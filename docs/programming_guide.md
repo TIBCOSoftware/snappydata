@@ -19,6 +19,8 @@ The following topics are covered in this section:
 
 * [Using the Spark Shell and spark-submit](programming_guide/using_the_spark_shell_and_spark-submit.md)
 
+* [Working with Hadoop YARN Cluster Manager](programming_guide/working_with_hadoop_yarn_cluster_manager.md)
+
 * [Using Transactions](programming_guide/using_transactions.md)
 
 * [Using JDBC with SnappyData](programming_guide/using_jdbc_with_snappydata.md)
@@ -32,10 +34,6 @@ The following topics are covered in this section:
 * [Stream Processing using SQL](programming_guide/stream_processing_using_sql.md)
 
 * [User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)](programming_guide/udf_and_udaf.md)
-
-<!-- To add before transactions
-* [Working with Hadoop YARN cluster Manager](programming_guide/working_with_hadoop_yarn_cluster_manager.md)
--->
 
 
 

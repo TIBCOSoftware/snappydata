@@ -18,7 +18,7 @@
 
     - In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding `-classpath=/<download_location>/snappydata-zeppelin-<version_number>.jar`.
 
-4. [Start the SnappyData cluster](../howto.md#how-to-start-a-snappydata-cluster)
+4. [Start the SnappyData cluster](start_snappy_cluster.md)
 
 5. Extract the contents of the Zeppelin binary package. </br> 
 

@@ -39,6 +39,7 @@ pages:
     - 'How to Stop a SnappyData Cluster': 'howto/stop_snappy_cluster.md'
     - 'How to Run Spark Job inside the Cluster': 'howto/run_spark_job_inside_cluster.md'
     - 'How to Access SnappyData Store from existing Spark Installation using Smart Connector': 'howto/spark_installation_using_smart_connector.md'
+    - 'How to Use Snappy SQL shell (snappy-sql)': 'howto/use_snappy_shell.md'
     - 'How to Create Row Tables and Run Queries': 'howto/create_row_tables_and_run_queries.md'
     - 'How to Create Column Tables and Run Queries': 'howto/create_column_tables_and_run_queries.md'
     - 'How to Load Data into SnappyData Tables': 'howto/load_data_into_snappydata_tables.md'
@@ -53,6 +54,7 @@ pages:
     - 'How to Use Python to Create Tables and Run Queries': 'howto/use_python_to_create_tables_and_run_queries.md'
     - 'How to Connect using ODBC Driver': 'howto/connect_using_odbc_driver.md'
     - 'How to Connect to the Cluster from External Clients': 'howto/connect_to_the_cluster_from_external_clients.md'
+    - 'How to Export and Restore Table Data to HDFS': 'howto/export_hdfs.md'    
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
 - 'Architecture': 'architecture.md'
 - 'Architecture': 

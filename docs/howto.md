@@ -57,6 +57,8 @@ The following topics are covered in this section:
 
 * [How to Connect to the Cluster from External Clients](howto/connect_to_the_cluster_from_external_clients.md)<a id="howto-external-client"></a>
 
+* [How to Export and Restore Table Data to HDFS](howto/export_hdfs.md)<a id="howto-external-client"></a>
+
 * [How to Use Apache Zeppelin with SnappyData](howto/use_apache_zeppelin_with_snappydata.md)<a id="howto-zeppelin"></a>
 
 ### Known Issue
