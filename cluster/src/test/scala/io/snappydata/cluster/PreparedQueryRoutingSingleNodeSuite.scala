@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{DriverManager, PreparedStatement, ResultSet, SQLException}
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -477,6 +477,10 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         "using column options()")
     snc.sql(s"insert into double_tab values(1, 1.111111, '1a'), (2, 2.222222, '2b')," +
         s" (3, 3.33333, '3c')")
+    snc.sql(s"Create Table double_tab_2 (a INT, d Double, s String) " +
+        "using column options()")
+    snc.sql(s"insert into double_tab_2 values(1, 1.111111, '1a'), (2, 2.222222, '2b')," +
+        s" (3, 3.33333, '3c')")
     val cacheMap = SnappySession.getPlanCache.asMap()
     assert( cacheMap.size() == 0)
     val serverHostPort = TestUtil.startNetServer()
@@ -592,13 +596,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val i = update.getInt(1)
         val j = update.getString(2)
         // scalastyle:off println
-        println(s"5-row($index) $i $j")
+        println(s"6-row($index) $i $j")
         // scalastyle:on println
         index += 1
         assert(i == 2)
       }
       // scalastyle:off println
-      println(s"5-Number of rows read " + index)
+      println(s"6-Number of rows read " + index)
       // scalastyle:on println
       assert(index == 1)
       assert(cacheMap.size() == 3)
@@ -615,17 +619,178 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       }
       close(prepStatement3)
 
+      var prepStatement4: PreparedStatement = null
       try {
-        prepStatement3 = conn.prepareStatement(s"select a," +
+        prepStatement4 = conn.prepareStatement(s"select a," +
             s" nvl(d, ?) from double_tab where UPPER(s) = ?")
         fail()
       } catch {
         case e: UnsupportedOperationException =>
         case e: SQLException =>
       }
-      close(prepStatement3)
+      close(prepStatement4)
+      
+      val prepStatement5: PreparedStatement = conn.prepareStatement(s"select * from double_tab t1"
+          + s" inner join double_tab_2 t2 on t1.a = t2.a where t1.d > ? and " +
+          s" t1.a in ( select a from double_tab_2 where d < ? )")
+      assert(cacheMap.size() == 3)
+      prepStatement5.setInt(1, 1)
+      prepStatement5.setInt(2, 3)
+      update = prepStatement5.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        // scalastyle:off println
+        println(s"7-row($index) $i")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1 || i == 2)
+      }
+      // scalastyle:off println
+      println(s"7-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      assert(cacheMap.size() == 0)
+
+      prepStatement5.setInt(1, 2)
+      prepStatement5.setInt(2, 4)
+      update = prepStatement5.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        // scalastyle:off println
+        println(s"8-row($index) $i")
+        // scalastyle:on println
+        index += 1
+        assert(i == 2 || i == 3)
+      }
+      // scalastyle:off println
+      println(s"8-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      assert(cacheMap.size() == 0)
+      close(prepStatement5)
     } finally {
       conn.close()
+    }
+  }
+
+  test("Test broadcast hash joins and scalar sub-queries") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    var conn: Connection = null
+    try {
+      val ddlStr = "(YearI INT," + // NOT NULL
+          "MonthI INT," + // NOT NULL
+          "DayOfMonth INT," + // NOT NULL
+          "DayOfWeek INT," + // NOT NULL
+          "DepTime INT," +
+          "CRSDepTime INT," +
+          "ArrTime INT," +
+          "CRSArrTime INT," +
+          "UniqueCarrier VARCHAR(20)," + // NOT NULL
+          "FlightNum INT," +
+          "TailNum VARCHAR(20)," +
+          "ActualElapsedTime INT," +
+          "CRSElapsedTime INT," +
+          "AirTime INT," +
+          "ArrDelay INT," +
+          "DepDelay INT," +
+          "Origin VARCHAR(20)," +
+          "Dest VARCHAR(20)," +
+          "Distance INT," +
+          "TaxiIn INT," +
+          "TaxiOut INT," +
+          "Cancelled INT," +
+          "CancellationCode VARCHAR(20)," +
+          "Diverted INT," +
+          "CarrierDelay INT," +
+          "WeatherDelay INT," +
+          "NASDelay INT," +
+          "SecurityDelay INT," +
+          "LateAircraftDelay INT," +
+          "ArrDelaySlot INT)"
+
+      val hfile: String = getClass.getResource("/2015.parquet").getPath
+      val snContext = snc
+      snContext.sql("set spark.sql.shuffle.partitions=6")
+
+      val airlineDF = snContext.read.load(hfile)
+      val airlineparquetTable = "airlineparquetTable"
+      airlineDF.registerTempTable(airlineparquetTable)
+
+      val colTableName = "airlineColTable"
+      snc.sql(s"CREATE TABLE $colTableName $ddlStr" +
+          "USING column options()")
+
+      airlineDF.write.insertInto(colTableName)
+
+      def close(prepStatement: java.sql.PreparedStatement): Unit = if (prepStatement != null) {
+        prepStatement.close()
+      }
+      val cacheMap = SnappySession.getPlanCache.asMap()
+      val serverHostPort = TestUtil.startNetServer()
+      conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+      val prepStatement1 = conn.prepareStatement("select avg(taxiin + taxiout)avgTaxiTime," +
+          s" count( * ) numFlights, " +
+          s" dest, avg(arrDelay) arrivalDelay from $colTableName " +
+          s" where (taxiin > ? or taxiout > ?) and dest in  (select dest from $colTableName " +
+          s" group by dest having count ( * ) > ?) group by dest order " +
+          s" by avgTaxiTime desc")
+      assert(cacheMap.size() == 0)
+      prepStatement1.setInt(1, 10)
+      prepStatement1.setInt(2, 10)
+      prepStatement1.setInt(3, 10000)
+      var update = prepStatement1.executeQuery()
+      var index = 0
+      val result1 = List("ORD", "LAX", "LGA", "MIA", "JFK", "DFW", "CLT", "EWR", "MCO", "ATL",
+        "DTW", "BOS", "DEN", "CLE", "IAH", "FLL", "PHL", "PHX", "SFO", "IAD", "LAS", "RSW",
+        "BNA", "MSP", "SEA", "DCA", "MDW", "RDU", "MKE", "HNL", "SLC", "TPA", "BWI", "AUS",
+        "MCI", "STL", "MSY", "SAT", "SNA", "DAL", "PDX", "SMF", "HOU", "SAN", "OAK", "SJC")
+      while (update.next()) {
+        val s = update.getString(3)
+        // scalastyle:off println
+        // println(s"1-row($index) $s ")
+        // scalastyle:on println
+        result1.contains(s)
+        index += 1
+      }
+      // scalastyle:off println
+      println(s"1-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 46)
+      assert(cacheMap.size() == 0)
+
+      prepStatement1.setInt(1, 5)
+      prepStatement1.setInt(2, 5)
+      prepStatement1.setInt(3, 5000)
+      update = prepStatement1.executeQuery()
+      index = 0
+      val result2 = List( "ORD", "LGA", "LAX", "MIA", "JFK", "CLT", "EWR", "DFW", "SJU", "CVG",
+        "ATL", "PBI", "DTW", "BOS", "MCO", "CLE", "PHL", "IAH", "IAD", "RIC", "FLL", "DEN",
+        "SFO", "MEM", "MSP", "CMH", "JAX", "RSW", "SEA", "DCA", "PHX", "PIT", "MKE", "RDU",
+        "IND", "SLC", "BNA", "LAS", "BDL", "TUS", "TPA", "BUF", "OMA", "OKC", "AUS", "MDW",
+        "MCI", "OGG", "TUL", "MSY", "BWI", "STL", "ABQ", "SAT", "PDX", "SNA", "HNL", "SAN",
+        "SMF", "ONT", "SJC", "OAK", "HOU", "DAL", "BUR")
+      while (update.next()) {
+        val s = update.getString(3)
+        // scalastyle:off println
+        // println(s"2-row($index) $s ")
+        // scalastyle:on println
+        result2.contains(s)
+        index += 1
+      }
+      // scalastyle:off println
+      println(s"2-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 65)
+      assert(cacheMap.size() == 0)
+      close(prepStatement1)
+    }
+    finally {
+      if (conn != null) {
+        conn.close()
+      }
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
   }
 }
