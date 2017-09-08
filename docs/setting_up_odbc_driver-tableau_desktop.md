@@ -7,9 +7,9 @@
 
 Ensure that you do the following:
 
-1. [Install Visual C++ Redistributable for Visual Studio 2015](howto.md#howto-odbc-step1)
+1. [Install Visual C++ Redistributable for Visual Studio 2015](../howto/connect_using_odbc_driver.md#howto-odbc-step1)
 
-2. [Install SnappyData ODBC Driver](howto.md#howto-odbc-step2)
+2. [Install SnappyData ODBC Driver](../howto/connect_using_odbc_driver.md#howto-odbc-step2)
 
 ## Step 3: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit
 

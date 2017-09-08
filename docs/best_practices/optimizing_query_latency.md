@@ -52,23 +52,21 @@ When designing a database schema for SnappyData, the main goal with a typical st
 ## Applying Partitioning Scheme
 
 <a id="colocated-joins"></a>
-**Colocated Joins**</br>
-Colocating frequently joined partitioned tables is the best practice to improve the performance of join queries. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's  local data. 
-
-If the two tables are not colocated, partitions with same column values for the two tables can be on different nodes thus requiring the data to be shuffled between nodes causing the query performance to degrade.
-
-For an example on colocated joins, refer to [How to colocate tables for doing a colocated join](../howto.md#how-to-perform-a-colocated-join).
+### Colocated Joins
+In SQL, a JOIN clause is used to combine data from two or more tables, based on a related column between them. JOINS have traditionally been expensive in distributed systems because the data for the tables involved in the JOIN may reside on different physical nodes and the operation has to first move/shuffle the relevant data to one node and perform the operation. </br>
+SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's local data.<!-- Eliminating data shuffling improves performance significantly as can be seen in the benchmark results published for SnappyData--></br>
+For examples refer to, [How to colocate tables for doing a colocated join](../howto/perform_a_colocated_join.md).
 
 <a id="buckets"></a>
-**Buckets**</br>
+### Buckets
 The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
 Unit of data movement is a bucket, and buckets of colocated tables move together. When a new server joins, the  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
 There is also a system procedure [call sys.rebalance_all_buckets()](../reference/inbuilt_system_procedures/rebalance-all-buckets.md#sysrebalance_all_buckets) that can be used to trigger rebalance.
 For more information on BUCKETS, refer to [BUCKETS](setup_cluster.md#buckets).
 
 <a id="dimension"></a>
-**Criteria for Column Partitioning**</br>
-SnappyData partition is mainly for distributed and colocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query is executed concurrently.</br>
+### Criteria for Column Partitioning
+It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query is executed concurrently.</br>
 If only a single partition is active and is used largely by queries (especially concurrent queries) it means a significant bottleneck where only a single partition is active all the time, while others are idle. This serializes execution into a single thread handling that partition. Therefore, it is not recommended to use DATE/TIMESTAMP as partitioning.
 
 <a id="redundancy"></a>

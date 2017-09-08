@@ -1,4 +1,4 @@
-# Instruction for Migrating from SnappyData 0.8-1.0.0-RC1 Release
+# Instruction for Migrating from SnappyData 0.8-1.0.0-RC1.1 Release
 
 ## Changes to Properties
 In this release, the following changes have been made to properties:

@@ -6,9 +6,9 @@ This ensures that other transactions are prevented from modifying rows when the 
 SnappyData also supports `READ_COMMITTED` and `REPEATABLE_READ` transaction isolation levels. A detailed description of transactions semantics in SnappyData can be found in the [Using Transactions](../programming_guide/using_transactions.md) section.
 
 !!! Note:
-	* SnappyData does not support queries on column tables when autocommit is false and isolation level is set to other than **NONE**. In such a case, SnappyData will throw an error indicating that operation is not permitted. However, queries involving row tables are supported when **autocommit** is **false** and isolation level is set to other than **NONE**.
+	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to **off** (**false**). </br>Queries on column tables are supported when isolation level is set to `READ_COMMITTED` or `REPEATABLE_READ` and autocommit is set to **true**.
 
-	* Queries on column tables are supported when isolation level is set to other than NONE if autocommit is true.
+    Queries on row tables are supported when **autocommit** is set to **false** and isolation level is set to other `READ_COMMITTED` or `REPEATABLE_READ`.
 
 ## Examples
 

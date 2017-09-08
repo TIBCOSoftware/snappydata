@@ -27,14 +27,14 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>1.0.0-rc1</version>
+    <version>1.0.0-rc1.1</version>
 </dependency>
 ```
 **Example: SBT dependency**
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0-rc1"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0-rc1.1"
 
 ```
 **Create SnappySession**: To start SnappyData store you need to create a SnappySession in your program

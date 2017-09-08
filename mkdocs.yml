@@ -23,7 +23,7 @@ pages:
 - 'Download and Install': 'install.md'
 - 'Download and Install':
     - 'Install On-Premise': 'install/install_on_premise.md'
-    - Setting up Cluster on Amazon Web Services': 'install/setting_up_cluster_on_amazon_web_services.md'
+    - 'Setting up Cluster on Amazon Web Services': 'install/setting_up_cluster_on_amazon_web_services.md'
     - 'Building from Source': 'install/building_from_source.md'
 # - System Requirements: additional_files/system_requirements.md
 - 'Migration Guide': 'migration/migration.md'
@@ -72,7 +72,7 @@ pages:
     - 'Managing JAR Files': 'programming_guide/managing_jar_files.md'
     - 'Using SnappyData Shell': 'programming_guide/using_snappydata_shell.md'
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
-#    - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
+    - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using Transactions': 'programming_guide/using_transactions.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
     - 'Multiple Language Binding using Thrift Protocol': 'programming_guide/multiple_language_binding_using_thrift_protocol.md'
