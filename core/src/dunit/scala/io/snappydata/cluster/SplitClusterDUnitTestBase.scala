@@ -161,12 +161,16 @@ trait SplitClusterDUnitTestBase extends Logging {
   }
 
   def testUpdateDeleteOnColumnTables(): Unit = {
+    doTestUpdateDeleteOnColumnTables()
+  }
+
+  def doTestUpdateDeleteOnColumnTables(props: Properties = new Properties()): Unit = {
     val testObject = this.testObject
     val netPort = this.locatorClientPort
     // check update/delete in the connector mode
     vm3.invoke(new SerializableRunnable() {
       override def run(): Unit = {
-        val snc = testObject.getSnappyContextForConnector(netPort)
+        val snc = testObject.getSnappyContextForConnector(netPort, props)
         val session = snc.snappySession
         ColumnUpdateDeleteTests.testBasicUpdate(session)
         ColumnUpdateDeleteTests.testBasicDelete(session)

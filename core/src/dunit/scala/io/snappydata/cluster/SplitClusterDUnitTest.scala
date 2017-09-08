@@ -629,10 +629,10 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
       "snappydata-core*.jar")
     var securityConf = ""
-    if (props.contains(Attribute.USERNAME_ATTR)) {
+    if (props.containsKey(Attribute.USERNAME_ATTR)) {
       securityConf = s" --conf spark.snappydata.store.user=${props.getProperty(Attribute
           .USERNAME_ATTR)}" +
-          s" --conf spark.snappydata.store.password=${props.getProperty(Attribute.USERNAME_ATTR)}"
+          s" --conf spark.snappydata.store.password=${props.getProperty(Attribute.PASSWORD_ATTR)}"
     }
     val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
     // SparkSqlTestCode.txt file contains the commands executed on spark-shell
