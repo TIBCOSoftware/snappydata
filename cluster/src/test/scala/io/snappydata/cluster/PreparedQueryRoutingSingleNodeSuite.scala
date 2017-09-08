@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{DriverManager, ResultSet}
+import java.sql.{DriverManager, ResultSet, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -484,11 +484,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     var prepStatement0: java.sql.PreparedStatement = null
     var prepStatement1: java.sql.PreparedStatement = null
     var prepStatement2: java.sql.PreparedStatement = null
+    var prepStatement3: java.sql.PreparedStatement = null
+    var prepStatement4: java.sql.PreparedStatement = null
     try {
       prepStatement0 = conn.prepareStatement(s"select * from double_tab" +
-          s" where round(d, 2) < round(?, 2)")
+          s" where round(d, 2) < ?")
       assert(cacheMap.size() == 0)
-      prepStatement0.setDouble(1, 3.3333)
+      prepStatement0.setDouble(1, 3.33)
       var update = prepStatement0.executeQuery()
       var index = 0
       while (update.next()) {
@@ -563,10 +565,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(cacheMap.size() == 2)
 
       prepStatement2 = conn.prepareStatement(s"select a," +
-          s" nvl(d, ?) from double_tab where UPPER(s) = ?")
+          s" d from double_tab where UPPER(s) = ?")
       assert(cacheMap.size() == 2)
-      prepStatement2.setDouble(1, 1)
-      prepStatement2.setString(2, "1A")
+      prepStatement2.setString(1, "1A")
       update = prepStatement2.executeQuery()
       index = 0
       while (update.next()) {
@@ -584,8 +585,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(index == 1)
       assert(cacheMap.size() == 3)
 
-      prepStatement2.setDouble(1, 1)
-      prepStatement2.setString(2, "2B")
+      prepStatement2.setString(1, "2B")
       update = prepStatement2.executeQuery()
       index = 0
       while (update.next()) {
@@ -603,12 +603,32 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(index == 1)
       assert(cacheMap.size() == 3)
 
+      try {
+        prepStatement3 = conn.prepareStatement(s"select * from double_tab" +
+            s" where round(d, ?) < ?")
+        fail()
+      } catch {
+        case e: UnsupportedOperationException =>
+        case e: SQLException =>
+      }
+
+      try {
+        prepStatement4 = conn.prepareStatement(s"select a," +
+            s" nvl(d, ?) from double_tab where UPPER(s) = ?")
+        fail()
+      } catch {
+        case e: UnsupportedOperationException =>
+        case e: SQLException =>
+      }
     } finally {
-      def close(prepStatement: java.sql.PreparedStatement): Unit =
-        if (prepStatement != null) prepStatement.close()
+      def close(prepStatement: java.sql.PreparedStatement): Unit = if (prepStatement != null) {
+          // TODO SNAP-2005 prepStatement.close()
+        }
       close(prepStatement0)
       close(prepStatement1)
       close(prepStatement2)
+      close(prepStatement3)
+      close(prepStatement4)
       conn.close()
     }
   }

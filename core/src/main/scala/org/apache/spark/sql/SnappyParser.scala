@@ -176,6 +176,15 @@ class SnappyParser(session: SnappySession)
     intervalLiteral
   }
 
+  protected final def paramLiteralQuestionMarkNotAllowed(exprs: Seq[Expression]): Unit =
+    if (session.sessionState.isPreparePhase) { exprs.foreach(_ match {
+        case p: ParamLiteral if p.value.isInstanceOf[Row] =>
+          throw Utils.analysisException(s"invalid expression: For prepared statement," +
+              " ? is not allowed in sql functions")
+        case _ =>
+      })
+    }
+
   protected final def paramLiteralQuestionMark: Rule1[ParamLiteral] = rule {
     questionMark ~> (() => {
       session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
@@ -769,6 +778,7 @@ class SnappyParser(session: SnappySession)
                 }
               case None =>
             }
+            paramLiteralQuestionMarkNotAllowed(exprs)
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
               UnresolvedFunction(udfName, exprs, isDistinct = false)
             } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
@@ -811,6 +821,7 @@ class SnappyParser(session: SnappySession)
             }
           case None =>
         }
+        paramLiteralQuestionMarkNotAllowed(exprs)
         fn match {
           case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
             assert(exprs.length == 3)
