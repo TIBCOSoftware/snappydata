@@ -763,6 +763,7 @@ class SnappyParser(session: SnappySession)
             val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
             val allExprs = e.asInstanceOf[Seq[Expression]]
             var exprs = allExprs
+            if (session.sessionState.isPreparePhase) paramLiteralQuestionMarkNotAllowed(exprs)
             Constant.FOLDABLE_FUNCTIONS.get(n1) match {
               case Some(args) =>
                 exprs = allExprs.zipWithIndex.collect {
@@ -777,7 +778,6 @@ class SnappyParser(session: SnappySession)
                 }
               case None =>
             }
-            if (session.sessionState.isPreparePhase) paramLiteralQuestionMarkNotAllowed(exprs)
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
               UnresolvedFunction(udfName, exprs, isDistinct = false)
             } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
@@ -806,6 +806,7 @@ class SnappyParser(session: SnappySession)
       (fn: FunctionIdentifier, e: Any) =>
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
         var exprs = allExprs
+        if (session.sessionState.isPreparePhase) paramLiteralQuestionMarkNotAllowed(exprs)
         Constant.FOLDABLE_FUNCTIONS.get(fn.funcName) match {
           case Some(args) =>
             exprs = allExprs.zipWithIndex.collect {
@@ -820,7 +821,6 @@ class SnappyParser(session: SnappySession)
             }
           case None =>
         }
-        if (session.sessionState.isPreparePhase) paramLiteralQuestionMarkNotAllowed(exprs)
         fn match {
           case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
             assert(exprs.length == 3)

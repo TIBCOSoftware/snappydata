@@ -482,6 +482,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     snc.sql(s"insert into double_tab_2 values(1, 1.111111, '1a'), (2, 2.222222, '2b')," +
         s" (3, 3.33333, '3c')")
     val cacheMap = SnappySession.getPlanCache.asMap()
+    cacheMap.clear()
     assert( cacheMap.size() == 0)
     val serverHostPort = TestUtil.startNetServer()
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
@@ -608,35 +609,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(cacheMap.size() == 3)
       close(prepStatement2)
 
-      var prepStatement3: PreparedStatement = null
-      try {
-        prepStatement3 = conn.prepareStatement(s"select * from double_tab" +
-            s" where round(d, ?) < ?")
-        fail()
-      } catch {
-        case e: UnsupportedOperationException =>
-        case e: SQLException =>
-      }
-      close(prepStatement3)
-
-      var prepStatement4: PreparedStatement = null
-      try {
-        prepStatement4 = conn.prepareStatement(s"select a," +
-            s" nvl(d, ?) from double_tab where UPPER(s) = ?")
-        fail()
-      } catch {
-        case e: UnsupportedOperationException =>
-        case e: SQLException =>
-      }
-      close(prepStatement4)
-      
-      val prepStatement5: PreparedStatement = conn.prepareStatement(s"select * from double_tab t1"
+      val prepStatement3: PreparedStatement = conn.prepareStatement(s"select * from double_tab t1"
           + s" inner join double_tab_2 t2 on t1.a = t2.a where t1.d > ? and " +
           s" t1.a in ( select a from double_tab_2 where d < ? )")
       assert(cacheMap.size() == 3)
-      prepStatement5.setInt(1, 1)
-      prepStatement5.setInt(2, 3)
-      update = prepStatement5.executeQuery()
+      prepStatement3.setInt(1, 1)
+      prepStatement3.setInt(2, 3)
+      update = prepStatement3.executeQuery()
       index = 0
       while (update.next()) {
         val i = update.getInt(1)
@@ -650,11 +629,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       println(s"7-Number of rows read " + index)
       // scalastyle:on println
       assert(index == 2)
-      assert(cacheMap.size() == 0)
+      assert(cacheMap.size() == 3)
 
-      prepStatement5.setInt(1, 2)
-      prepStatement5.setInt(2, 4)
-      update = prepStatement5.executeQuery()
+      prepStatement3.setInt(1, 2)
+      prepStatement3.setInt(2, 4)
+      update = prepStatement3.executeQuery()
       index = 0
       while (update.next()) {
         val i = update.getInt(1)
@@ -668,7 +647,29 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       println(s"8-Number of rows read " + index)
       // scalastyle:on println
       assert(index == 2)
-      assert(cacheMap.size() == 0)
+      assert(cacheMap.size() == 3)
+      close(prepStatement3)
+
+      var prepStatement4: PreparedStatement = null
+      try {
+        prepStatement4 = conn.prepareStatement(s"select * from double_tab" +
+            s" where round(d, ?) < 2")
+        fail()
+      } catch {
+        case e: Throwable =>
+          e.getMessage.contains("For prepared statement, ? is not allowed in sql functions")
+      }
+      close(prepStatement4)
+
+      var prepStatement5: PreparedStatement = null
+      try {
+        prepStatement5 = conn.prepareStatement(s"select a," +
+            s" nvl(d, ?) from double_tab where UPPER(s) = 'AU'")
+        fail()
+      } catch {
+        case e: Throwable =>
+          e.getMessage.contains("For prepared statement, ? is not allowed in sql functions")
+      }
       close(prepStatement5)
     } finally {
       conn.close()
@@ -728,6 +729,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         prepStatement.close()
       }
       val cacheMap = SnappySession.getPlanCache.asMap()
+      cacheMap.clear()
+      assert( cacheMap.size() == 0)
       val serverHostPort = TestUtil.startNetServer()
       conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
       val prepStatement1 = conn.prepareStatement("select avg(taxiin + taxiout)avgTaxiTime," +
