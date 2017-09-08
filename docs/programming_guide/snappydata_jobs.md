@@ -1,6 +1,6 @@
 <a id="snappydata-jobs"></a>
 # SnappyData Jobs
-To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. Your job is displayed as:
+To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. The structure of a job looks as below:
  
 **Scala**
 
@@ -60,7 +60,7 @@ The [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apach
 
 See [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for Spark and Spark streaming jobs. 
 
-SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SQLContext per incoming SQL connection. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.
+SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SnappySession per job. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.
 
 ## Submitting Jobs
 The following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala). This job creates DataFrames from parquet files, loads the data from DataFrame into column tables and row tables, and creates sample table on column table in its `runJob` method.
@@ -68,7 +68,7 @@ The following command submits [CreateAndLoadAirlineDataJob](https://github.com/S
 !!! Note:
 	When submitting concurrent jobs user must ensure that the `--app-name` parameter is different for each concurrent job. If two applications with the same name are submitted concurrently, the job fails and an error is reported, as the job server maintains a map of the application names and jar files used for that application.
     
-The program is compiled into a jar file (**quickstart.jar**) and submitted to jobs server as shown below.
+The program must be compiled and bundled as a jar file and submitted to jobs server as shown below.
 
 ```scala
 $ bin/snappy-job.sh submit  \
