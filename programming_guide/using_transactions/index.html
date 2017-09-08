@@ -153,7 +153,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services'</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
         
     </li>
 
@@ -233,6 +233,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/spark_installation_using_smart_connector/">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/use_snappy_shell/">How to Use Snappy SQL shell (snappy-sql)</a>
         
     </li>
 
@@ -331,6 +338,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
 
@@ -467,6 +481,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../working_with_hadoop_yarn_cluster_manager/">Working with Hadoop YARN cluster Manager</a>
         
     </li>
 
@@ -1625,14 +1646,7 @@
 <!--Currently, only single statement snapshot isolation (that is, <a href="../reference/interactive_commands/autocommit.md">autocommit</a> must be set to true) is supported.-->  </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<ul>
-<li>
-<p>An error is reported if READ_COMMITTED or REPEATABLE_READ isolation level is set and the query is executed on a column table.</p>
-</li>
-<li>
-<p>Ensure that you set <a href="../../reference/interactive_commands/autocommit/">AUTOCOMMIT</a> to <strong>On</strong> for column tables, else an error may be reported during query execution.</p>
-</li>
-</ul>
+<p>If you set the isolation level to <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code>, queries on column table report an error if <a href="../../reference/interactive_commands/autocommit/">autocommit</a> is set to off (false). </br>Queries on column tables are supported when isolation level is set to <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code> and autocommit is set to <strong>true</strong>.</p>
 </div>
               
             </div>
@@ -1644,7 +1658,7 @@
         <a href="../using_jdbc_with_snappydata/" class="btn btn-neutral float-right" title="Using JDBC with SnappyData">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../using_the_spark_shell_and_spark-submit/" class="btn btn-neutral" title="Using the Spark Shell and spark-submit"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../working_with_hadoop_yarn_cluster_manager/" class="btn btn-neutral" title="Working with Hadoop YARN cluster Manager"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1676,7 +1690,7 @@
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../using_the_spark_shell_and_spark-submit/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../working_with_hadoop_yarn_cluster_manager/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../using_jdbc_with_snappydata/" style="color: #fcfcfc">Next &raquo;</a></span>

@@ -153,7 +153,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services'</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
         
     </li>
 
@@ -233,6 +233,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../spark_installation_using_smart_connector/">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../use_snappy_shell/">How to Use Snappy SQL shell (snappy-sql)</a>
         
     </li>
 
@@ -340,6 +347,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
 
@@ -476,6 +490,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/working_with_hadoop_yarn_cluster_manager/">Working with Hadoop YARN cluster Manager</a>
         
     </li>
 
@@ -1597,14 +1618,8 @@ This ensures that other transactions are prevented from modifying rows when the 
 <p>SnappyData also supports <code>READ_COMMITTED</code> and <code>REPEATABLE_READ</code> transaction isolation levels. A detailed description of transactions semantics in SnappyData can be found in the <a href="../../programming_guide/using_transactions/">Using Transactions</a> section.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<ul>
-<li>
-<p>SnappyData does not support queries on column tables when autocommit is false and isolation level is set to other than <strong>NONE</strong>. In such a case, SnappyData will throw an error indicating that operation is not permitted. However, queries involving row tables are supported when <strong>autocommit</strong> is <strong>false</strong> and isolation level is set to other than <strong>NONE</strong>.</p>
-</li>
-<li>
-<p>Queries on column tables are supported when isolation level is set to other than NONE if autocommit is true.</p>
-</li>
-</ul>
+<p>If you set the isolation level to <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code>, queries on column table report an error if <a href="../../reference/interactive_commands/autocommit/">autocommit</a> is set to <strong>off</strong> (<strong>false</strong>). </br>Queries on column tables are supported when isolation level is set to <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code> and autocommit is set to <strong>true</strong>.</p>
+<p>Queries on row tables are supported when <strong>autocommit</strong> is set to <strong>false</strong> and isolation level is set to other <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code>.</p>
 </div>
 <h2 id="examples">Examples</h2>
 <div class="admonition note">

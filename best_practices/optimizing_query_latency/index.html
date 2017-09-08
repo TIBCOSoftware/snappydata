@@ -153,7 +153,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services'</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
         
     </li>
 
@@ -233,6 +233,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/spark_installation_using_smart_connector/">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/use_snappy_shell/">How to Use Snappy SQL shell (snappy-sql)</a>
         
     </li>
 
@@ -331,6 +338,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
 
@@ -467,6 +481,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/working_with_hadoop_yarn_cluster_manager/">Working with Hadoop YARN cluster Manager</a>
         
     </li>
 
@@ -1643,20 +1664,20 @@ For a given query on a column table, only the required columns are read (since o
 <p>When designing a database schema for SnappyData, the main goal with a typical star schema database is to partition the entities in fact tables. Slow-changing dimension tables should then be replicated on each data store that hosts a partitioned fact table. In this way, a join between the fact table and any number of its dimension tables can be executed concurrently on each partition, without requiring multiple network hops to other members in the distributed system.</p>
 <p><a id="partition-scheme"></a></p>
 <h2 id="applying-partitioning-scheme">Applying Partitioning Scheme</h2>
-<p><a id="colocated-joins"></a>
-<strong>Colocated Joins</strong></br>
-Colocating frequently joined partitioned tables is the best practice to improve the performance of join queries. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's  local data. </p>
-<p>If the two tables are not colocated, partitions with same column values for the two tables can be on different nodes thus requiring the data to be shuffled between nodes causing the query performance to degrade.</p>
-<p>For an example on colocated joins, refer to <a href="../../howto/#how-to-perform-a-colocated-join">How to colocate tables for doing a colocated join</a>.</p>
-<p><a id="buckets"></a>
-<strong>Buckets</strong></br>
-The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
+<p><a id="colocated-joins"></a></p>
+<h3 id="colocated-joins">Colocated Joins</h3>
+<p>In SQL, a JOIN clause is used to combine data from two or more tables, based on a related column between them. JOINS have traditionally been expensive in distributed systems because the data for the tables involved in the JOIN may reside on different physical nodes and the operation has to first move/shuffle the relevant data to one node and perform the operation. </br>
+SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's local data.<!-- Eliminating data shuffling improves performance significantly as can be seen in the benchmark results published for SnappyData--></br>
+For examples refer to, <a href="../../howto/perform_a_colocated_join/">How to colocate tables for doing a colocated join</a>.</p>
+<p><a id="buckets"></a></p>
+<h3 id="buckets">Buckets</h3>
+<p>The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
 Unit of data movement is a bucket, and buckets of colocated tables move together. When a new server joins, the  <a href="../../configuring_cluster/property_description/#rebalance">-rebalance</a> option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY&gt;0 has been specified). </br>
 There is also a system procedure <a href="../../reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets">call sys.rebalance_all_buckets()</a> that can be used to trigger rebalance.
 For more information on BUCKETS, refer to <a href="../setup_cluster/#buckets">BUCKETS</a>.</p>
-<p><a id="dimension"></a>
-<strong>Criteria for Column Partitioning</strong></br>
-SnappyData partition is mainly for distributed and colocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query is executed concurrently.</br>
+<p><a id="dimension"></a></p>
+<h3 id="criteria-for-column-partitioning">Criteria for Column Partitioning</h3>
+<p>It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query is executed concurrently.</br>
 If only a single partition is active and is used largely by queries (especially concurrent queries) it means a significant bottleneck where only a single partition is active all the time, while others are idle. This serializes execution into a single thread handling that partition. Therefore, it is not recommended to use DATE/TIMESTAMP as partitioning.</p>
 <p><a id="redundancy"></a></p>
 <h2 id="using-redundancy">Using Redundancy</h2>

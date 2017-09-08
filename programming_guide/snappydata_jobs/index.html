@@ -153,7 +153,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services'</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
         
     </li>
 
@@ -233,6 +233,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/spark_installation_using_smart_connector/">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/use_snappy_shell/">How to Use Snappy SQL shell (snappy-sql)</a>
         
     </li>
 
@@ -331,6 +338,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
 
@@ -480,6 +494,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../working_with_hadoop_yarn_cluster_manager/">Working with Hadoop YARN cluster Manager</a>
         
     </li>
 
@@ -1597,7 +1618,7 @@
               
                 <p><a id="snappydata-jobs"></a></p>
 <h1 id="snappydata-jobs">SnappyData Jobs</h1>
-<p>To create a job that can be submitted through the job server, the job must implement the <strong>SnappySQLJob</strong> or <strong>SnappyStreamingJob</strong> trait. Your job is displayed as:</p>
+<p>To create a job that can be submitted through the job server, the job must implement the <strong>SnappySQLJob</strong> or <strong>SnappyStreamingJob</strong> trait. The structure of a job looks as below:</p>
 <p><strong>Scala</strong></p>
 <pre><code class="scala">class SnappySampleJob implements SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
@@ -1655,14 +1676,14 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 </li>
 </ul>
 <p>See <a href="https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples">examples</a> for Spark and Spark streaming jobs. </p>
-<p>SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SQLContext per incoming SQL connection. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.</p>
+<p>SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SnappySession per job. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.</p>
 <h2 id="submitting-jobs">Submitting Jobs</h2>
 <p>The following command submits <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala">CreateAndLoadAirlineDataJob</a>. This job creates DataFrames from parquet files, loads the data from DataFrame into column tables and row tables, and creates sample table on column table in its <code>runJob</code> method.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>When submitting concurrent jobs user must ensure that the <code>--app-name</code> parameter is different for each concurrent job. If two applications with the same name are submitted concurrently, the job fails and an error is reported, as the job server maintains a map of the application names and jar files used for that application.</p>
 </div>
-<p>The program is compiled into a jar file (<strong>quickstart.jar</strong>) and submitted to jobs server as shown below.</p>
+<p>The program must be compiled and bundled as a jar file and submitted to jobs server as shown below.</p>
 <pre><code class="scala">$ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
@@ -1721,9 +1742,9 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 
 <p>The status of this job can be queried in the same manner as shown above. The result of the job returns a file path that has the query results.</p>
 <h3 id="jar-dependencies-for-jobs">Jar Dependencies for Jobs</h3>
-<p>For Jobs, users need to include <strong><a href="http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1">snappydata-cluster_2.11:1.0.0-rc1</a></strong> to their project dependencies. In case the user project already includes dependency on Apache Spark and does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.</p>
+<p>For Jobs, users need to include <strong><a href="http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1.1">snappydata-cluster_2.11:1.0.0-rc1.1</a></strong> to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.</p>
 <p>For example, gradle can be configured as:</p>
-<pre><code>compile('io.snappydata:snappydata-cluster_2.11:1.0.0-rc1') {
+<pre><code>compile('io.snappydata:snappydata-cluster_2.11:1.0.0-rc1.1') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
