@@ -485,11 +485,13 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val deltaStart = realEncoder.columnBeginPosition
     val deltaSize = cursor - deltaStart
 
+    assert(cursor <= realEncoder.columnEndPosition)
+
     val numElements = encoderOrdinal + 1
     val positionsSize = if (existingIsDelta) {
       4 /* numBaseRows */ + 4 /* numPositions */ + (numElements << 2)
     } else 0
-    var buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
+    val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
         // round positions to nearest word as done by writeHeader; for the non-delta case,
         // positionsSize is zero so total header is already roundeed to word boundary
         (numNullWords << 3) /* header */ + positionsSize + 7) >> 3) << 3) +
@@ -505,12 +507,13 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // write any internal structures (e.g. dictionary)
     cursor = writeInternals(columnBytes, cursor)
 
+    assert(cursor + deltaSize == realEncoder.columnEndPosition)
+
     // finally copy the entire encoded data
     Platform.copyMemory(encodedBytes, deltaStart, columnBytes, cursor, deltaSize)
 
     // release the intermediate buffer
     allocator.release(encodedData)
-    buffer = realEncoder.columnData
     realEncoder.clearSource(0, releaseData = false)
 
     buffer
@@ -569,7 +572,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       i += 1
     }
     // finally flush the encoder
-    realEncoder.flushWithoutFinish(cursor)
+    assert(realEncoder.flushWithoutFinish(cursor) ==
+        allocator.baseOffset(buffer) + buffer.limit())
 
     // clear the encoder
     realEncoder.clearSource(0, releaseData = false)

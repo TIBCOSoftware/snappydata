@@ -114,6 +114,7 @@ trait BooleanBitSetEncoderBase
     }
     val currentWord = this.currentWord
     ColumnEncoding.writeLong(columnBytes, cursor, currentWord)
+    cursor += 8
     // update the statistics
     if (currentWord != 0L) {
       // there are true values
@@ -135,7 +136,7 @@ trait BooleanBitSetEncoderBase
     if (mask != ColumnEncoding.MAX_BITMASK) {
       mask << 1
     } else {
-      byteCursor = writeCurrentWord() + 8L
+      byteCursor = writeCurrentWord()
       currentWord = 0L
       1L
     }
@@ -144,7 +145,7 @@ trait BooleanBitSetEncoderBase
   override def flushWithoutFinish(mask: Long): Long = {
     if (mask != 1L) {
       // one more word required
-      byteCursor = writeCurrentWord() + 8L
+      byteCursor = writeCurrentWord()
     }
     byteCursor
   }

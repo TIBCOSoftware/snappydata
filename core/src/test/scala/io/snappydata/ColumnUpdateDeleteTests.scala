@@ -354,11 +354,7 @@ object ColumnUpdateDeleteTests extends Assertions {
   def testConcurrentOps(session: SnappySession): Unit = {
     // reduced size to ensure both column table and row buffer have data
     session.conf.set(Property.ColumnBatchSize.name, "10k")
-
-    val numElements = 100000
-    val concurrency = 8
-    // each thread will update/delete after these many rows
-    val step = 10
+    // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
 
     session.sql("drop table if exists updateTable")
     session.sql("drop table if exists checkTable1")
@@ -366,11 +362,33 @@ object ColumnUpdateDeleteTests extends Assertions {
     session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '5')")
+        "using column options(buckets '4')")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '7')")
+        "using column options(buckets '8')")
+
+
+    for (_ <- 1 to 5) {
+      testConcurrentOpsIter(session)
+
+      session.sql("truncate table updateTable")
+      session.sql("truncate table checkTable1")
+      session.sql("truncate table checkTable2")
+    }
+
+    // cleanup
+    session.sql("drop table updateTable")
+    session.sql("drop table checkTable1")
+    session.sql("drop table checkTable2")
+    session.conf.unset(Property.ColumnBatchSize.name)
+  }
+
+  def testConcurrentOpsIter(session: SnappySession): Unit = {
+    val numElements = 100000
+    val concurrency = 8
+    // each thread will update/delete after these many rows
+    val step = 10
 
     session.range(numElements).selectExpr("id", "concat('addr', cast(id as string))",
       "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
@@ -416,7 +434,6 @@ object ColumnUpdateDeleteTests extends Assertions {
     assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
 
     session.table("updateTable").show()
-    session.table("checkTable1").show()
 
     var res = session.sql(
       "select * from updateTable EXCEPT select * from checkTable1").collect()
@@ -446,11 +463,5 @@ object ColumnUpdateDeleteTests extends Assertions {
     res = session.sql(
       "select * from updateTable EXCEPT select * from checkTable2").collect()
     assert(res.length === 0)
-
-    // cleanup
-    session.sql("drop table updateTable")
-    session.sql("drop table checkTable1")
-    session.sql("drop table checkTable2")
-    session.conf.unset(Property.ColumnBatchSize.name)
   }
 }

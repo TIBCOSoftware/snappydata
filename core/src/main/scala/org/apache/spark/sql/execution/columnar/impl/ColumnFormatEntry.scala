@@ -273,19 +273,22 @@ class ColumnFormatValue extends SerializedDiskBuffer
   override final def getBufferRetain: ByteBuffer = {
     if (retain()) {
       duplicateBuffer(columnBuffer)
-    } else synchronized {
-      // check if already read from disk by another thread and still valid
-      val buffer = this.columnBuffer
-      if ((buffer ne DiskEntry.Helper.NULL_BUFFER) && retain()) {
-        return duplicateBuffer(buffer)
+    } else {
+      var diskId: DiskId = null
+      synchronized {
+        // check if already read from disk by another thread and still valid
+        val buffer = this.columnBuffer
+        if ((buffer ne DiskEntry.Helper.NULL_BUFFER) && retain()) {
+          return duplicateBuffer(buffer)
+        }
+        diskId = this.diskId
       }
 
       // try to read using DiskId
-      val diskId = this.diskId
       if (diskId ne null) {
         try {
           DiskEntry.Helper.getValueOnDisk(diskId, diskRegion) match {
-            case v: ColumnFormatValue =>
+            case v: ColumnFormatValue => synchronized {
               // transfer the buffer from the temporary ColumnFormatValue
               columnBuffer = v.columnBuffer
               // restart reference count from 1
@@ -297,6 +300,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
                   return duplicateBuffer(columnBuffer)
                 }
               }
+            }
             case null | _: Token => // return empty buffer
             case o => throw new IllegalStateException(
               s"unexpected value in column store $o")
