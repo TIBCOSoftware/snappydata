@@ -20,11 +20,11 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, ExecutionException}
 
-import scala.reflect.ClassTag
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
 import io.snappydata.collection.ObjectHashSet
+import org.apache.spark._
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -37,8 +37,8 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
-import org.apache.spark._
-import org.apache.spark.sql.streaming.PhysicalDStreamPlan
+
+import scala.reflect.ClassTag
 
 /**
  * :: DeveloperApi ::
@@ -191,7 +191,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
   }
 
-  private lazy val (streamSideRDDs, buildSideRDDs) = {
+  private var streamSideRDDs : Seq[RDD[InternalRow]] = null
+  private var buildSideRDDs : Seq[RDD[InternalRow]] = null
+
+  private def initializeRDDs() = {
     val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
     val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
@@ -211,7 +214,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       } else {
         streamRDDs
       }
-      (streamPlanRDDs, buildRDDs)
+      streamSideRDDs = streamPlanRDDs
+      buildSideRDDs = buildRDDs
     }
     else {
       // wrap in DelegateRDD for shuffle dependencies and preferred locations
@@ -248,37 +252,15 @@ case class HashJoinExec(leftKeys: Seq[Expression],
           rdd.sparkContext, rdd, preferredLocations))
       }
 
-      (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, preferredLocations)))
+      streamSideRDDs = streamPlanRDDs
+      buildSideRDDs = buildRDDs.map(rdd => new DelegateRDD[InternalRow](
+        rdd.sparkContext, rdd, preferredLocations))
     }
   }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
-    val isCQ = streamedPlan.find(_.isInstanceOf[PhysicalDStreamPlan]).isDefined
-    if (isCQ) {
-      val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
-      val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
-
-      val streamRDD = streamRDDs.head
-      val numParts = streamRDD.getNumPartitions
-      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
-      val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
-        streamRDD.preferredLocations(streamRDD.partitions(i))
-      }
-      val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
-        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
-          preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
-          streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
-      } else {
-        streamRDDs
-      }
-      streamPlanRDDs
-    }
-    else {
-      streamSideRDDs
-    }
+    initializeRDDs()
+    streamSideRDDs
   }
 
   override def doProduce(ctx: CodegenContext): String = {
@@ -297,6 +279,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
+    initializeRDDs()
     val rdds = buildSideRDDs
     val exprIds = buildPlan.output.map(_.exprId.id).toArray
     val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
