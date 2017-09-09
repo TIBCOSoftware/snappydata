@@ -493,7 +493,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     } else 0
     val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
         // round positions to nearest word as done by writeHeader; for the non-delta case,
-        // positionsSize is zero so total header is already roundeed to word boundary
+        // positionsSize is zero so total header is already rounded to word boundary
         (numNullWords << 3) /* header */ + positionsSize + 7) >> 3) << 3) +
         realEncoder.encodedSize(cursor, deltaStart)))
     realEncoder.setSource(buffer, releaseOld = false)
