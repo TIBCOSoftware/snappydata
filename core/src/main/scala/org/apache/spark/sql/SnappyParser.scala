@@ -228,7 +228,7 @@ class SnappyParser(session: SnappySession)
       case None =>
     }
 
-  protected final def paramliteral: Rule1[ParamLiteral] = rule {
+  protected final def paramLiteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
       val p = ParamLiteral(l.value, l.dataType, paramcounter)
@@ -404,17 +404,21 @@ class SnappyParser(session: SnappySession)
       val expression = if (pattern.charAt(0) == '%') {
         if (pattern.charAt(size - 1) == '%') {
           newRight = ParamLiteral(UTF8String.fromString(pattern.substring(1, size - 1)),
-            right.dataType, right.pos)
+            StringType, right.pos)
           Contains(left, newRight)
         } else {
           newRight = ParamLiteral(UTF8String.fromString(pattern.substring(1)),
-            right.dataType, right.pos)
+            StringType, right.pos)
           EndsWith(left, newRight)
         }
-      } else {
+      } else if (pattern.charAt(size - 1) == '%') {
         newRight = ParamLiteral(UTF8String.fromString(pattern.substring(0, size - 1)),
-          right.dataType, right.pos)
+          StringType, right.pos)
         StartsWith(left, newRight)
+      } else {
+        // no wildcards
+        newRight = ParamLiteral(UTF8String.fromString(pattern), StringType, right.pos)
+        EqualTo(left, newRight)
       }
       removeParamLiteralFromContext(right)
       addParamLiteralToContext(newRight)
@@ -568,8 +572,7 @@ class SnappyParser(session: SnappySession)
             s"${QueryHint.Index} cannot be applied to derived table $alias")
           WindowLogicalPlan(win._1, win._2, aliasPlan)
       }
-    } |
-    inlineTable
+    }
   }
 
   protected final def inlineTable: Rule1[LogicalPlan] = rule {
@@ -721,7 +724,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    (relationFactor ~ tableValuedFunctionExpressions.?) ~> ((lp: LogicalPlan, se: Any) => {
+    ((relationFactor | inlineTable) ~ tableValuedFunctionExpressions.?) ~>
+        ((lp: LogicalPlan, se: Any) => {
       se.asInstanceOf[Option[Seq[Expression]]] match {
         case None => lp
         case Some(exprs) =>
@@ -848,7 +852,7 @@ class SnappyParser(session: SnappySession)
           case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
     } |
-    ( ( test(tokenize) ~ paramliteral ) | literal | paramLiteralQuestionMark) |
+    ( ( test(tokenize) ~ paramLiteral ) | literal | paramLiteralQuestionMark) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
@@ -917,18 +921,22 @@ class SnappyParser(session: SnappySession)
         case Some(_) => Distinct(withProjection)
       }
       val withHaving = h match {
+        case None => withDistinct
         case Some(expr) => Filter(expr.asInstanceOf[Expression], withDistinct)
-        case _ => withDistinct
       }
       q(withHaving)
     }
   }
 
-  protected final def select1: Rule1[LogicalPlan] = rule {
-    select | ('(' ~ ws ~ select ~ ')' ~ ws) | inlineTable
+  protected final def select2: Rule1[LogicalPlan] = rule {
+    select | ('(' ~ ws ~ select ~ ')' ~ ws)
   }
 
-  protected def query: Rule1[LogicalPlan] = rule {
+  protected final def select1: Rule1[LogicalPlan] = rule {
+    select2 | inlineTable
+  }
+
+  protected final def query: Rule1[LogicalPlan] = rule {
     select1.named("select") ~ (
         UNION ~ (
             ALL ~ select1.named("select") ~>
@@ -943,15 +951,32 @@ class SnappyParser(session: SnappySession)
     ).*
   }
 
+  // TODO: remove once planner allows for null padding for different number
+  // of columns being inserted/put either with inlineTable or subselect
+  protected final def subSelectQuery: Rule1[LogicalPlan] = rule {
+    select2.named("select") ~ (
+      UNION ~ (
+        ALL ~ select2.named("select") ~>
+          ((q1: LogicalPlan, q2: LogicalPlan) => Union(q1, q2)) |
+          DISTINCT.? ~ select2.named("select") ~>
+            ((q1: LogicalPlan, q2: LogicalPlan) => Distinct(Union(q1, q2)))
+        ) |
+        INTERSECT ~ select2.named("select") ~>
+          ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
+        EXCEPT ~ select2.named("select") ~>
+          ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
+      ).*
+  }
+
   protected final def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
-    TABLE.? ~ relationFactor ~ query ~> ((o: Boolean, r: LogicalPlan,
+    TABLE.? ~ relationFactor ~ subSelectQuery ~> ((o: Boolean, r: LogicalPlan,
         s: LogicalPlan) => InsertIntoTable(r, Map.empty[String,
         Option[String]], s, OverwriteOptions(o), ifNotExists = false))
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE.? ~ relationFactor ~ query ~> PutIntoTable
+    PUT ~ INTO ~ TABLE.? ~ relationFactor ~ subSelectQuery ~> PutIntoTable
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {

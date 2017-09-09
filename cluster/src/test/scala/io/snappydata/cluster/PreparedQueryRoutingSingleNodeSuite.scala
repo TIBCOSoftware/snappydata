@@ -460,12 +460,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("update delete on column table") {
+    val snc = this.snc
     val serverHostPort = TestUtil.startNetServer()
     // println("network server started")
     PreparedQueryRoutingSingleNodeSuite.updateDeleteOnColumnTable(snc, serverHostPort)
   }
 
   test("SNAP-1981: Equality on string columns") {
+    val snc = this.snc
     val serverHostPort = TestUtil.startNetServer()
     // println("network server started")
     PreparedQueryRoutingSingleNodeSuite.equalityOnStringColumn(snc, serverHostPort)
@@ -694,7 +696,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       prepStatement0.setString(2, "4")
       prepStatement0.setString(3, "94%")
       verifyResults("equalityOnStringColumn_query1-select1", prepStatement0.executeQuery,
-        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize + 1)
+        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize)
 
       prepStatement1 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
           s" from $tableName1" +
@@ -704,13 +706,13 @@ object PreparedQueryRoutingSingleNodeSuite{
       prepStatement1.setString(2, "2")
       prepStatement1.setString(3, "99%")
       verifyResults("equalityOnStringColumn_query2-select0", prepStatement1.executeQuery,
-        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize + 2)
+        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize + 1)
 
       prepStatement1.setString(1, "3")
       prepStatement1.setString(2, "4")
       prepStatement1.setString(3, "94%")
       verifyResults("equalityOnStringColumn_query2-select1", prepStatement1.executeQuery,
-        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize + 3)
+        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize + 1)
 
       prepStatement2 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
           s" from $tableName1" +
@@ -718,12 +720,12 @@ object PreparedQueryRoutingSingleNodeSuite{
       prepStatement2.setString(1, "5")
       prepStatement2.setString(2, "6")
       verifyResults("equalityOnStringColumn_query3-select0", prepStatement2.executeQuery,
-        Array(5, 6), cacheMapSize + 4)
+        Array(5, 6), cacheMapSize + 2)
 
       prepStatement2.setString(1, "7")
       prepStatement2.setString(2, "8")
       verifyResults("equalityOnStringColumn_query3-select1", prepStatement2.executeQuery,
-        Array(7, 8), cacheMapSize + 4)
+        Array(7, 8), cacheMapSize + 2)
     } finally {
       def close(prepStatement: java.sql.PreparedStatement) =
         if (prepStatement != null) prepStatement.close()
@@ -753,7 +755,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
       equalityOnStringColumn_query1(tableName1, 1, serverHostPort)
-      equalityOnStringColumn_query1(tableName2, 6, serverHostPort)
+      equalityOnStringColumn_query1(tableName2, 4, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
