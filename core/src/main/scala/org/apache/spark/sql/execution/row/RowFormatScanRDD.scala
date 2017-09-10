@@ -39,10 +39,10 @@ import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
+import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
-import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
 import org.apache.spark.sql.sources._
-import org.apache.spark.{TaskContext, Partition}
+import org.apache.spark.{Partition, TaskContext}
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.

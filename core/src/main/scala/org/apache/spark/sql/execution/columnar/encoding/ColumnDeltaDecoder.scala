@@ -48,9 +48,9 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     // initialize the start and end of mutated positions
     positionCursor = cursor + 8
 
+    positionEndCursor = positionCursor + (numPositions << 2)
     // round to nearest word to get data start position
-    positionEndCursor = ((positionCursor + (numPositions << 2) + 7) >> 3) << 3
-    positionEndCursor
+    ((positionEndCursor + 7) >> 3) << 3
   }
 
   private[encoding] def moveToNextPosition(): Int = {
@@ -60,7 +60,7 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
       positionOrdinal += 1
       ColumnEncoding.readInt(deltaBytes, cursor)
     } else {
-      // convention used by MutableColumnDecoder to denote the end
+      // convention used by ColumnDeltaDecoder to denote the end
       // which is greater than everything so will never get selected
       Int.MaxValue
     }
