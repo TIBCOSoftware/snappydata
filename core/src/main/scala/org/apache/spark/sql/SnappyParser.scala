@@ -176,14 +176,6 @@ class SnappyParser(session: SnappySession)
     intervalLiteral
   }
 
-  protected final def paramLiteralQuestionMarkNotAllowed(exprs: Seq[Expression]): Unit =
-    exprs.foreach(_ match {
-      case p: ParamLiteral if p.value.isInstanceOf[Row] =>
-        throw Utils.analysisException(s"invalid expression: For prepared statement," +
-            " ? is not allowed in sql functions")
-      case _ =>
-    })
-  
   protected final def paramLiteralQuestionMark: Rule1[ParamLiteral] = rule {
     questionMark ~> (() => {
       session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
@@ -778,6 +770,24 @@ class SnappyParser(session: SnappySession)
           (altPart, elsePart).asInstanceOf[WhenElseType])
   }
 
+  protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
+      n1: String): Seq[Expression] = if (!session.sessionState.isPreparePhase) {
+    Constant.FOLDABLE_FUNCTIONS.get(n1) match {
+      case Some(args) =>
+        exprs.zipWithIndex.collect {
+          case (pl: ParamLiteral, index) if args.contains(index) ||
+              // all args          // all odd args
+              (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
+              // all even args
+              (args.head == -2 && (index & 0x1) == 0) =>
+            removeParamLiteralFromContext(pl)
+            Literal.create(pl.value, pl.dataType)
+          case (ex: Expression, _) => ex
+        }
+      case None => exprs
+    }
+  } else exprs
+
   protected final def primary: Rule1[Expression] = rule {
     identifier ~ (
       ('.' ~ identifier).? ~ '(' ~ ws ~ (
@@ -794,22 +804,7 @@ class SnappyParser(session: SnappySession)
             val f2 = n2.asInstanceOf[Option[String]]
             val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
             val allExprs = e.asInstanceOf[Seq[Expression]]
-            var exprs = allExprs
-            if (session.sessionState.isPreparePhase) paramLiteralQuestionMarkNotAllowed(exprs)
-            Constant.FOLDABLE_FUNCTIONS.get(n1) match {
-              case Some(args) =>
-                exprs = allExprs.zipWithIndex.collect {
-                  case (pl: ParamLiteral, index) if args.contains(index) ||
-                      // all args          // all odd args
-                      (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
-                      // all even args
-                      (args.head == -2 && (index & 0x1) == 0) =>
-                    removeParamLiteralFromContext(pl)
-                    Literal.create(pl.value, pl.dataType)
-                  case (ex: Expression, _) => ex
-                }
-              case None =>
-            }
+            val exprs = foldableFunctionsExpressionHandler(allExprs, n1)
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
               UnresolvedFunction(udfName, exprs, isDistinct = false)
             } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
@@ -837,22 +832,7 @@ class SnappyParser(session: SnappySession)
     '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
       (fn: FunctionIdentifier, e: Any) =>
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
-        var exprs = allExprs
-        if (session.sessionState.isPreparePhase) paramLiteralQuestionMarkNotAllowed(exprs)
-        Constant.FOLDABLE_FUNCTIONS.get(fn.funcName) match {
-          case Some(args) =>
-            exprs = allExprs.zipWithIndex.collect {
-              case (pl: ParamLiteral, index) if args.contains(index) ||
-                  // all args          // all odd args
-                  (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
-                  // all even args
-                  (args.head == -2 && (index & 0x1) == 0) =>
-                removeParamLiteralFromContext(pl)
-                Literal.create(pl.value, pl.dataType)
-              case (ex: Expression, _) => ex
-            }
-          case None =>
-        }
+        val exprs = foldableFunctionsExpressionHandler(allExprs, fn.funcName)
         fn match {
           case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
             assert(exprs.length == 3)
