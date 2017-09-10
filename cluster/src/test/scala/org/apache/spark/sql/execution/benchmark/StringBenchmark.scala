@@ -49,7 +49,7 @@ class StringBenchmark extends SnappyFunSuite {
     }
   }
 
-  private def toUTF8String(s: String): UTF8String = {
+  private def toDirectUTF8String(s: String): UTF8String = {
     val b = s.getBytes(StandardCharsets.UTF_8)
     val numBytes = b.length
     val ub = Platform.allocateMemory(numBytes)
@@ -76,7 +76,7 @@ class StringBenchmark extends SnappyFunSuite {
     val randData = Array.fill(numDistinct)(s"${UUID.randomUUID().toString}-$randomSuffix")
     val sdata = Array.fill(numElements)(randData(rnd.nextInt(numDistinct)))
     val data = sdata.map(UTF8String.fromString)
-    val udata = sdata.map(toUTF8String)
+    val udata = sdata.map(toDirectUTF8String)
 
     if (preSorted) java.util.Arrays.sort(data, null)
     var cdata: Array[UTF8String] = null
@@ -130,10 +130,12 @@ class StringBenchmark extends SnappyFunSuite {
 
     val sdata = (1 to numLoads).flatMap(_ => Source.fromFile(customerFile).getLines()).toArray
     val numElements = sdata.length
-    val data = sdata.map(toUTF8String)
+    val data = sdata.map(UTF8String.fromString)
+    val udata = sdata.map(toDirectUTF8String)
     val search = "71,HOUSEHOLD"
     val expectedMatches = 3 * numLoads
-    val searchStr = toUTF8String(search)
+    val searchStr = UTF8String.fromString(search)
+    val usearchStr = toDirectUTF8String(search)
     val pattern = java.util.regex.Pattern.compile(search)
 
     if (Native.isLoaded) {
@@ -155,11 +157,22 @@ class StringBenchmark extends SnappyFunSuite {
       }
       assert(matched === expectedMatches)
     }
-    benchmark.addCase("UTF8String (opt)", numIters) { _ =>
+    benchmark.addCase("UTF8String (opt heap)", numIters) { _ =>
       var i = 0
       var matched = 0
       while (i < numElements) {
         if (data(i).contains(searchStr)) {
+          matched += 1
+        }
+        i += 1
+      }
+      assert(matched === expectedMatches)
+    }
+    benchmark.addCase("UTF8String (opt off-heap)", numIters) { _ =>
+      var i = 0
+      var matched = 0
+      while (i < numElements) {
+        if (udata(i).contains(usearchStr)) {
           matched += 1
         }
         i += 1
