@@ -655,26 +655,51 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(cacheMap.size() == 0)
       close(prepStatement3)
 
-      var prepStatement4: PreparedStatement = null
-      try {
-        prepStatement4 = conn.prepareStatement(s"select * from double_tab" +
-            s" where round(d, ?) < 2")
-        fail()
-      } catch {
-        case e: Throwable =>
-          e.getMessage.contains("For prepared statement, ? is not allowed in sql functions")
+      val prepStatement4 = conn.prepareStatement(s"select * from double_tab" +
+          s" where round(d, ?) < round(?, ?)")
+      assert(cacheMap.size() == 0)
+      prepStatement4.setInt(1, 2)
+      prepStatement4.setDouble(2, 3.33)
+      prepStatement4.setInt(3, 2)
+      update = prepStatement4.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"9-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1 || i == 2)
       }
+      // scalastyle:off println
+      println(s"9-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      assert(cacheMap.size() == 1)
       close(prepStatement4)
 
-      var prepStatement5: PreparedStatement = null
-      try {
-        prepStatement5 = conn.prepareStatement(s"select a," +
-            s" nvl(d, ?) from double_tab where UPPER(s) = 'AU'")
-        fail()
-      } catch {
-        case e: Throwable =>
-          e.getMessage.contains("For prepared statement, ? is not allowed in sql functions")
+      val prepStatement5 = conn.prepareStatement(s"select a," +
+          s" nvl(d, ?) from double_tab where UPPER(s) = ?")
+      assert(cacheMap.size() == 1)
+      prepStatement5.setInt(1, 2)
+      prepStatement5.setString(2, "1A")
+      update = prepStatement5.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"10-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1)
       }
+      // scalastyle:off println
+      println(s"10-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 1)
+      assert(cacheMap.size() == 2)
       close(prepStatement5)
     } finally {
       conn.close()
