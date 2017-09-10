@@ -54,6 +54,14 @@ class NativeUTF8StringPropertyCheckSuite extends SnappyFunSuite
 
   private val allocatedMemoryList: LongArrayList = new LongArrayList
 
+  // scalastyle:off println
+  if (Native.isLoaded) {
+    println("NATIVE: using native JNI library")
+  } else {
+    println("NATIVE: failed to load native JNI library")
+  }
+  // scalastyle:on println
+
   after {
     if (allocatedMemoryList.size() > 0) {
       val iter = allocatedMemoryList.iterator()
