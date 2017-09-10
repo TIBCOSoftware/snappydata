@@ -23,6 +23,10 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 import org.scalatest.Assertions
 
 import org.apache.spark.sql.SnappySession
@@ -368,8 +372,23 @@ object ColumnUpdateDeleteTests extends Assertions {
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
         "using column options(buckets '8')")
 
+    // avoid rollover in updateTable during concurrent updates
+    val avoidRollover = new SerializableRunnable() {
+      override def run(): Unit = {
+        if (GemFireCacheImpl.getInstance ne null) {
+          val pr = Misc.getRegionForTable("APP.UPDATETABLE", false)
+              .asInstanceOf[PartitionedRegion]
+          if (pr ne null) {
+            pr.getUserAttribute.asInstanceOf[GemFireContainer].fetchHiveMetaData(true)
+            pr.setColumnBatchSizes(10000000, 10000, 1000)
+          }
+        }
+      }
+    }
+    DistributedTestBase.invokeInEveryVM(avoidRollover)
+    avoidRollover.run()
 
-    for (_ <- 1 to 5) {
+    for (_ <- 1 to 3) {
       testConcurrentOpsIter(session)
 
       session.sql("truncate table updateTable")
