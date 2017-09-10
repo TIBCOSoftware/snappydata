@@ -671,11 +671,12 @@ task product(type: Zip) {
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def targetProject = clusterProject
-  def hasAQPProject = new File(rootDir, 'aqp/build.gradle').exists()
+  def isEnterpriseProduct = new File(rootDir, 'aqp/build.gradle').exists() &&
+      rootProject.hasProperty('snappydata.enterprise')
   def hasJdbcConnectorProject = new File(rootDir,
       'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 
-  if (hasAQPProject && rootProject.hasProperty('snappydata.enterprise')) {
+  if (isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
     targetProject = project(":snappy-aqp_${scalaBinaryVersion}")
   }
@@ -772,13 +773,20 @@ task product(type: Zip) {
     if (new File(rootDir, 'store/build.gradle').exists()) {
       // copy snappy-store shared libraries for optimized JNI calls
       copy {
-        from "${project(':snappy-store:snappydata-store-core').projectDir}/lib"
+        from project(':snappy-store:snappydata-store-core').projectDir.path + '/lib'
         into "${snappyProductDir}/jars"
       }
       copy {
         from "${project(':snappy-store:snappydata-store-core').projectDir}/../quickstart"
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
+      }
+    }
+    if (isEnterpriseProduct) {
+      // copy enterprise shared libraries for optimized JNI calls
+      copy {
+        from project(":snappy-aqp_${scalaBinaryVersion}").projectDir.path + '/lib'
+        into "${snappyProductDir}/jars"
       }
     }
     copy {
