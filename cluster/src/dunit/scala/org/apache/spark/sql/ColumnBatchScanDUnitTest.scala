@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,7 +17,7 @@
 package org.apache.spark.sql
 
 
-import io.snappydata. Property
+import io.snappydata.Property
 import io.snappydata.cluster.ClusterManagerTestBase
 
 case class TestRecord(col1: Int, col2: Int, col3: Int)
@@ -201,9 +201,9 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val rowTable = "rowTable"
     val colTable = "colTable"
 
-    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "30k")
     val rdd = sc.parallelize(
-      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+      (1 to 113999).map(i => TestRecord(i, i + 1, i + 2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(rowTable, "row", dataDF.schema, props)
@@ -213,15 +213,13 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(colTable)
 
     executeTestWithOptions()
-    executeTestWithOptions(Map.empty,Map.empty+("BUCKETS" -> "17"),"","BUCKETS " +
-      "'13',PARTITION_BY 'COL1', REDUNDANCY '1'")
-
-
+    executeTestWithOptions(Map.empty, Map.empty + ("BUCKETS" -> "17"), "", "BUCKETS " +
+        "'13',PARTITION_BY 'COL1', REDUNDANCY '1'")
   }
 
-  def executeTestWithOptions(rowTableOptios: Map[String, String] = Map.empty[String,String],
-      colTableOptions: Map[String,String]= Map.empty[String,String],
-       tempRowTableOptions: String = "", tempColTableOptions: String = ""): Unit = {
+  def executeTestWithOptions(rowTableOptios: Map[String, String] = Map.empty[String, String],
+      colTableOptions: Map[String, String] = Map.empty[String, String],
+      tempRowTableOptions: String = "", tempColTableOptions: String = ""): Unit = {
 
     val snc = SnappyContext(sc)
     val rowTable = "rowTable"
@@ -230,16 +228,17 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     snc.sql("DROP TABLE IF EXISTS " + rowTable)
     snc.sql("DROP TABLE IF EXISTS " + colTable)
-    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "30k")
     val rdd = sc.parallelize(
-      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+      (1 to 113999).map(i => TestRecord(i, i + 1, i + 2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(rowTable, "row", dataDF.schema, rowTableOptios)
     dataDF.write.format("row").mode(SaveMode.Append).options(rowTableOptios).saveAsTable(rowTable)
 
     snc.createTable(colTable, "column", dataDF.schema, colTableOptions)
-    dataDF.write.format("column").mode(SaveMode.Append).options(colTableOptions).saveAsTable(colTable)
+    dataDF.write.format("column").mode(SaveMode.Append).options(colTableOptions)
+        .saveAsTable(colTable)
 
     val tempRowTableName = "testRowTable"
     val tempColTableName = "testcolTable"
@@ -261,16 +260,16 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       s"${testResults2.length}")
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
-      s"col1 ,col2 FROM " + rowTable + ")")
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
+        s"AS (SELECT col1 ,col2 FROM " + rowTable + ")")
 
     val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
     assert(testResults3.length == 113999, s"Expected row count is 113999 while actual count is " +
       s"${testResults3.length}")
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
-      "col1 ,col2 FROM " + colTable + ")")
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
+        s"AS (SELECT col1 ,col2 FROM " + colTable + ")")
 
     val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
     assert(testResults4.length == 113999, s"Expected row count is 113999 while actual count is" +
@@ -279,8 +278,9 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
-      "t1.col1 ,t1.col2 FROM " + colTable + " t1,"+ rowTable +" t2 where t1.col1=t2.col2)")
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
+        s"AS (SELECT t1.col1 ,t1.col2 FROM " + colTable + " t1," + rowTable +
+        " t2 where t1.col1=t2.col2)")
 
     // Expected count will be 113998 as first row will not match
     val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect

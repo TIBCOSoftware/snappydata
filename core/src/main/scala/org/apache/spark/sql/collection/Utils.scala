@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -45,11 +45,12 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -66,6 +67,7 @@ object Utils {
 
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
+  private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
 
   // 1 - (1 - 0.95) / 2 = 0.975
   final val Z95Percent: Double = new NormalDistribution().
@@ -98,6 +100,18 @@ object Utils {
 
   def fieldName(f: StructField): String = {
     if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
+  }
+
+  def fieldIndex(relationOutput: Seq[Attribute], columnName: String,
+      caseSensitive: Boolean): Int = {
+    // lookup as per case-sensitivity (SNAP-1714)
+    val resolver = if (caseSensitive) analysis.caseSensitiveResolution
+    else analysis.caseInsensitiveResolution
+    LocalRelation(relationOutput).resolveQuoted(columnName, resolver) match {
+      case Some(a) => relationOutput.indexWhere(_.semanticEquals(a))
+      case None => throw new IllegalArgumentException(
+        s"""Field "$columnName" does not exist in "$relationOutput".""")
+    }
   }
 
   def getAllExecutorsMemoryStatus(
@@ -344,7 +358,7 @@ object Utils {
   }
 
   final def isLoner(sc: SparkContext): Boolean =
-    sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
+    (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
   def toLowerCase(k: String): String = {
     var index = 0
@@ -490,13 +504,6 @@ object Utils {
       Iterator((name, f))
     }: _*)
   }
-
-  def getSchemaFields(schema: StructType): Map[String, StructField] = {
-    Map(schema.fields.flatMap { f =>
-      Iterator((f.name, f))
-    }: _*)
-  }
-
 
   def getFields(o: Any): Map[String, Any] = {
     val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {
@@ -749,6 +756,24 @@ object Utils {
           buffer.arrayOffset() + buffer.position(), buffer.remaining())
     }
     row
+  }
+
+  def genTaskContextFunction(ctx: CodegenContext): String = {
+    // use common taskContext variable so it is obtained only once for a plan
+    if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
+      val taskContextVar = ctx.freshName("taskContext")
+      val contextClass = classOf[TaskContext].getName
+      ctx.addMutableState(contextClass, taskContextVar, "")
+      ctx.addNewFunction(TASKCONTEXT_FUNCTION,
+        s"""
+           |private $contextClass $TASKCONTEXT_FUNCTION() {
+           |  final $contextClass context = $taskContextVar;
+           |  if (context != null) return context;
+           |  return ($taskContextVar = $contextClass.get());
+           |}
+        """.stripMargin)
+    }
+    TASKCONTEXT_FUNCTION
   }
 }
 

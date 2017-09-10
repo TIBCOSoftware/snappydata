@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,6 +47,7 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-sketch_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion
@@ -81,6 +82,7 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/core" as File
   project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/hive" as File
   project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/hive-thriftserver" as File
+  project(':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion).projectDir = "$rootDir/spark/mesos" as File
   project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion).projectDir =
       "$rootDir/spark/common/unsafe" as File
   project(':snappy-spark:snappy-spark-sketch_' + scalaBinaryVersion).projectDir =
@@ -119,14 +121,14 @@ if (new File(rootDir, 'store/build.gradle').exists()) {
   include ':snappy-store:gemfire-core'
   include ':snappy-store:gemfire-web'
   include ':snappy-store:gemfire-examples'
-  include ':snappy-store:gemfirexd-shared'
-  include ':snappy-store:gemfirexd-prebuild'
-  include ':snappy-store:gemfirexd-core'
-  include ':snappy-store:gemfirexd-client'
-  include ':snappy-store:gemfirexd-hibernate'
-  include ':snappy-store:gemfirexd-tools'
+  include ':snappy-store:snappydata-store-shared'
+  include ':snappy-store:snappydata-store-prebuild'
+  include ':snappy-store:snappydata-store-core'
+  include ':snappy-store:snappydata-store-client'
+  include ':snappy-store:snappydata-store-hibernate'
+  include ':snappy-store:snappydata-store-tools'
   include ':snappy-store:gemfire-tests'
-  include ':snappy-store:gemfirexd-tests'
+  include ':snappy-store:snappydata-store-tests'
   include ':snappy-store:snappydata-native'
 
   project(':snappy-store').projectDir = "$rootDir/store" as File
@@ -139,14 +141,14 @@ if (new File(rootDir, 'store/build.gradle').exists()) {
   project(':snappy-store:gemfire-core').projectDir = "$rootDir/store/gemfire-core" as File
   project(':snappy-store:gemfire-web').projectDir = "$rootDir/store/gemfire-web" as File
   project(':snappy-store:gemfire-examples').projectDir = "$rootDir/store/gemfire-examples" as File
-  project(':snappy-store:gemfirexd-shared').projectDir = "$rootDir/store/gemfirexd/shared" as File
-  project(':snappy-store:gemfirexd-prebuild').projectDir = "$rootDir/store/gemfirexd/prebuild" as File
-  project(':snappy-store:gemfirexd-core').projectDir = "$rootDir/store/gemfirexd/core" as File
-  project(':snappy-store:gemfirexd-client').projectDir = "$rootDir/store/gemfirexd/client" as File
-  project(':snappy-store:gemfirexd-hibernate').projectDir = "$rootDir/store/lgpl/gemfirexd-hibernate" as File
-  project(':snappy-store:gemfirexd-tools').projectDir = "$rootDir/store/gemfirexd/tools" as File
+  project(':snappy-store:snappydata-store-shared').projectDir = "$rootDir/store/gemfirexd/shared" as File
+  project(':snappy-store:snappydata-store-prebuild').projectDir = "$rootDir/store/gemfirexd/prebuild" as File
+  project(':snappy-store:snappydata-store-core').projectDir = "$rootDir/store/gemfirexd/core" as File
+  project(':snappy-store:snappydata-store-client').projectDir = "$rootDir/store/gemfirexd/client" as File
+  project(':snappy-store:snappydata-store-hibernate').projectDir = "$rootDir/store/lgpl/gemfirexd-hibernate" as File
+  project(':snappy-store:snappydata-store-tools').projectDir = "$rootDir/store/gemfirexd/tools" as File
   project(':snappy-store:gemfire-tests').projectDir = "$rootDir/store/tests/core" as File
-  project(':snappy-store:gemfirexd-tests').projectDir = "$rootDir/store/tests/sql" as File
+  project(':snappy-store:snappydata-store-tests').projectDir = "$rootDir/store/tests/sql" as File
   project(':snappy-store:snappydata-native').projectDir = "$rootDir/store/native" as File
 }
 

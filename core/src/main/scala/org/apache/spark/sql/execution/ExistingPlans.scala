@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,10 +24,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
-import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
@@ -80,23 +79,12 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   def caseSensitive: Boolean
 
-  protected def fieldIndex(relationOutput: Seq[Attribute], columnName: String): Int = {
-    // lookup as per case-sensitivity (SNAP-1714)
-    val resolver = if (caseSensitive) analysis.caseSensitiveResolution
-    else analysis.caseInsensitiveResolution
-    LocalRelation(relationOutput).resolveQuoted(columnName, resolver) match {
-      case Some(a) => relationOutput.indexWhere(_.semanticEquals(a))
-      case None => throw new IllegalArgumentException(
-        s"""Field "$columnName" does not exist in "$relationOutput".""")
-    }
-  }
-
   @transient val (metricAdd, metricValue): (String => String, String => String) =
     Utils.metricMethods
 
   // RDD cast as RDD[InternalRow] below just to satisfy interfaces like
-  // inputRDDs though its actually of ColumnBatches, CompactExecRows, etc
-  override val rdd: RDD[InternalRow] = dataRDD.asInstanceOf[RDD[InternalRow]]
+  // inputRDDs though its actually of CachedBatches, CompactExecRows, etc
+  val rdd: RDD[InternalRow] = dataRDD.asInstanceOf[RDD[InternalRow]]
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     rdd :: Nil
@@ -225,10 +213,17 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
 
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
     preAction()
-    val callSite = sqlContext.sparkContext.getCallSite()
-    CachedDataFrame.withNewExecutionId(sqlContext.sparkSession,
-      callSite.shortForm, callSite.longForm,
-      child.treeString(verbose = true), PartitionedPhysicalScan.getSparkPlanInfo(child)) {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val (queryStringShortForm, queryString, planInfo) = session.currentKey match {
+      case null =>
+        val callSite = sqlContext.sparkContext.getCallSite()
+        (callSite.shortForm, callSite.longForm,
+            PartitionedPhysicalScan.getSparkPlanInfo(child))
+      case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
+          CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key)))
+    }
+    CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+      queryString, child.treeString(verbose = true), planInfo) {
       child.executeCollect()
     }
   }
@@ -253,6 +248,8 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def numBuckets: Int
 
+  def isPartitioned: Boolean
+
   def partitionColumns: Seq[String]
 
   def connectionType: ConnectionType.Value
@@ -270,7 +267,7 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     basePartKeys: Seq[Expression],
     otherPlan: SparkPlan,
-    otherPartKeys: Seq[Expression]) extends LeafExecNode with CodegenSupport {
+    otherPartKeys: Seq[Expression]) extends SparkPlan with CodegenSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
@@ -385,6 +382,12 @@ class StratumInternalRow(val weight: Long) extends InternalRow {
 
   def get(ordinal: Int, dataType: DataType): Object =
     throw new UnsupportedOperationException("not implemented")
+
+  override def setNullAt(i: Int): Unit =
+    throw new UnsupportedOperationException("not implemented")
+
+  override def update(i: Int, value: Any): Unit =
+    throw new UnsupportedOperationException("not implemented")
 }
 
 trait BatchConsumer extends CodegenSupport {
@@ -406,22 +409,31 @@ trait BatchConsumer extends CodegenSupport {
    */
   def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String
+
+  /**
+   * Generate Java source code to do any processing before return after
+   * current row processing i.e. when shouldStop() returns true.
+   */
+  def beforeStop(ctx: CodegenContext, plan: SparkPlan,
+      input: Seq[ExprCode]): String = ""
 }
 
 /**
  * Extended information for ExprCode variable to also hold the variable having
  * dictionary reference and its index when dictionary encoding is being used.
  */
-case class DictionaryCode(private var dictionaryCode: String,
-    valueAssignCode: String, dictionary: String, dictionaryIndex: String,
-    dictionaryLen: String) {
+case class DictionaryCode(dictionary: ExprCode, bufferVar: String, dictionaryIndex: ExprCode) {
 
-  def evaluateDictionaryCode(ev: ExprCode): String = {
+  private def evaluate(ev: ExprCode): String = {
     if (ev.code.isEmpty) ""
     else {
-      val code = dictionaryCode
-      dictionaryCode = ""
+      val code = ev.code
+      ev.code = ""
       code
     }
   }
+
+  def evaluateDictionaryCode(): String = evaluate(dictionary)
+
+  def evaluateIndexCode(): String = evaluate(dictionaryIndex)
 }

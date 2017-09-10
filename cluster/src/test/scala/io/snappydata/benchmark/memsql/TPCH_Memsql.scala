@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,6 +19,8 @@ package io.snappydata.benchmark.memsql
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{ResultSet, Statement}
 
+import io.snappydata.benchmark.TPCH_Queries
+
 
 object TPCH_Memsql {
 
@@ -30,43 +32,20 @@ object TPCH_Memsql {
      avgFileStream.close()
    }
 
-   def execute(queryNumber: String, isResultCollection: Boolean, stmt: Statement, warmup:Integer, runsForAverage:Integer): Unit = {
+   def execute(queryNumber: String, isResultCollection: Boolean, stmt: Statement, warmup:Integer, runsForAverage:Integer
+       , isDynamic: Boolean): Unit = {
 
      var queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
      var queryPrintStream = new PrintStream(queryFileStream)
-
-
-     var resultFormat = queryNumber match {
-       case "q1" => getResultString1()
-       case "q2" => getResultString2()
-       case "q3" => getResultString3()
-       case "q4" => getResultString4()
-       case "q5" => getResultString5()
-       case "q6" => getResultString6()
-       case "q7" => getResultString7()
-       case "q8" => getResultString8()
-       case "q9" => getResultString9()
-       case "q10" => getResultString10()
-       case "q11" => getResultString11()
-       case "q12" => getResultString12()
-       case "q13" => getResultString13()
-       case "q14" => getResultString14()
-       case "q15" => getResultString15()
-       case "q16" => getResultString16()
-       case "q17" => getResultString17()
-       case "q18" => getResultString18()
-       case "q19" => getResultString19()
-       case "q20" => getResultString20()
-       case "q21" => getResultString21()
-       case "q22" => getResultString22()
-     }
 
      var rs: ResultSet = null
      try {
        println(s"Started executing $queryNumber")
        queryPrintStream.println(s"$queryNumber")
        if(isResultCollection){
-         rs = queryExecution(queryNumber, stmt)
+         var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, false)
+         rs = queryExecution(queryNumber, queryToBeExecuted, stmt)
+         //rs = queryExecution(queryNumber, stmt)
          //rs = stmt.executeQuery(query)
          //queryPrintStream.println(s"$resultFormat")
          val rsmd = rs.getMetaData()
@@ -82,17 +61,15 @@ object TPCH_Memsql {
          }
          println(s"NUmber of results : $count")
          println(s"$queryNumber Result Collected in file $queryNumber.out")
-         if (queryNumber.equals("q13")) {
-           stmt.execute("drop view ViewQ13")
-         }
-         if (queryNumber.equals("q15")) {
+         if (queryNumber.equals("15")) {
            stmt.execute("drop view revenue")
          }
        } else {
          var totalTime: Long = 0
          for (i <- 1 to (warmup + runsForAverage)) {
+           var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, false)
            val startTime = System.currentTimeMillis()
-           rs = queryExecution(queryNumber, stmt)
+           rs = queryExecution(queryNumber, queryToBeExecuted, stmt)
            //rs = stmt.executeQuery(query)
            while (rs.next()) {
              //just iterating over result
@@ -103,10 +80,7 @@ object TPCH_Memsql {
            if (i > warmup) {
              totalTime += iterationTime
            }
-           if (queryNumber.equals("q13")) {
-             stmt.execute("drop view ViewQ13")
-           }
-           if (queryNumber.equals("q15")) {
+           if (queryNumber.equals("15")) {
              stmt.execute("drop view revenue")
            }
          }
@@ -135,9 +109,16 @@ object TPCH_Memsql {
      rs.close()
    }
 
-   def queryExecution(queryNumber:String, stmt:Statement): ResultSet ={
+   def queryExecution(queryNumber:String, query:String, stmt:Statement): ResultSet ={
+     var queryToBeExceuted = query
+     if (queryNumber.equals("15")) {
+       stmt.execute(queryToBeExceuted)
+       queryToBeExceuted = TPCH_Queries.getQuery15
+     }
+     stmt.executeQuery(queryToBeExceuted)
 
-     val rs : ResultSet = queryNumber match {
+
+     /*val rs : ResultSet = queryNumber match {
        case "q1" => {
          stmt.executeQuery(getQuery1())
        }
@@ -207,11 +188,11 @@ object TPCH_Memsql {
          stmt.executeQuery(getQuery22())
        }
      }
-     rs
+     rs*/
 
    }
 
-   def getQuery1(): String = {
+   /*def getQuery1(): String = {
      //DELTA = 90
      " select" +
          "     l_returnflag," +
@@ -235,6 +216,7 @@ object TPCH_Memsql {
          "     l_returnflag," +
          "     l_linestatus"
    }
+
 
    def getResultString1(): String = {
      "l_returnflag l_linestatus sum_qty sum_base_price sum_disc_price sum_charge avg_qty avg_price avg_disc count_order"
@@ -317,7 +299,7 @@ object TPCH_Memsql {
          "     o_orderdate," +
          "     o_shippriority" +
          " order by" +
-         "     o_orderdate" +
+         "     l_orderkey" +
          " limit 10"
    }
 
@@ -604,7 +586,7 @@ object TPCH_Memsql {
          "         PS_PARTKEY having" +
          "         sum(PS_SUPPLYCOST * PS_AVAILQTY) > (" +
          "                 select" +
-         "                         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0001" +
+         "                         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0000001" +
          "                 from" +
          "                         PARTSUPP," +
          "                         SUPPLIER," +
@@ -1094,5 +1076,5 @@ object TPCH_Memsql {
 
    def getResultString22(): String = {
      "CNTRYCODE NUMCUST TOTACCTBAL"
-   }
+   }*/
  }

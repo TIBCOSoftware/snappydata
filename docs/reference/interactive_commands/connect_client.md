@@ -1,7 +1,5 @@
 # connect client
 
-Using the JDBC SnappyData S thin client driver, connects to a SnappyData member indicated by the *host:port* values.
-
 ## Syntax
 
 ``` pre

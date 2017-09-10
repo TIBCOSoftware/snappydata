@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,10 +16,10 @@
  */
 package io.snappydata.hydra.cluster;
 
+import java.util.Vector;
+
 import hydra.BasePrms;
 import hydra.HydraVector;
-
-import java.util.Vector;
 
 public class SnappyPrms extends BasePrms {
 
@@ -195,6 +195,18 @@ public class SnappyPrms extends BasePrms {
   public static Long isStopMode;
 
   /**
+   * (boolean) - whether to start the snappy cluster forcefully.
+   * This is required in case user wants to restart the cluster multiple times
+   */
+  public static Long forceStart;
+
+  /**
+   * (boolean) - whether to copy the config data forcefully.
+   * This is required in case of lead, locator and server member's HA in same test
+   */
+  public static Long forceCopy;
+
+  /**
    * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets
    * the gemfirexd.table-default-partitioned to false.
    */
@@ -280,6 +292,11 @@ public class SnappyPrms extends BasePrms {
    * (int) how long (milliseconds) it should wait before retrieving snappy-job status
    */
   public static Long sleepTimeSecsForJobStatus;
+
+  /**
+   * (int) how long (seconds) it should wait before retrieving server status
+   */
+  public static Long sleepTimeSecsForMemberStatus;
 
   /**
    * (int) Number of times the test should retry submitting failed job in case of lead node failover.
@@ -420,10 +437,57 @@ public class SnappyPrms extends BasePrms {
   public static Long shufflePartitions;
 
   /**
+   * (String) path for kafka directory
+   */
+  public static Long kafkaDir;
+
+  /**
+   * (String) snappy-poc jar path
+   */
+  public static Long snappyPocJarPath;
+
+  /**
+   * (String) log file name where the output of task(snappy-shell output/snappyJob/sparkApp) to
+   * be written
+   */
+  public static Long logFileName;
+
+  /**
+   * kafka topic name
+   */
+  public static Long kafkaTopic;
+
+  /**
    * (String) Memory to be used for spark executor while executing spark-submit. Defaults to
    * 1GB if not provided.
    */
   public static Long executorMemory;
+
+  /**
+   * (Boolean) parameter to have dynamic APP_PROPS, other than setting using taskTab.
+   */
+  public static Long hasDynamicAppProps;
+
+  /**
+   * (Boolean) parameter to enable security for snappyJob,by default it is false.
+   */
+  public static Long isSecurity;
+
+  /**
+   * (String) User credentials that will be used when submittimg a snappyJob to a secure cluster
+   */
+  public static Long credentialFile;
+
+  public static String getCredentialFile() {
+    Long key = credentialFile;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+
+  public static boolean isSecurityOn() {
+    Long key = isSecurity;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
 
   public static int getRetryCountForJob() {
     Long key = numTimesToRetry;
@@ -433,6 +497,11 @@ public class SnappyPrms extends BasePrms {
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
     return tasktab().intAt(key, tab().intAt(key, 120));
+  }
+
+  public static int getSleepTimeSecsForMemberStatus() {
+    Long key = sleepTimeSecsForMemberStatus;
+    return tasktab().intAt(key, tab().intAt(key, 30));
   }
 
   public static String getExecutorCores() {
@@ -748,6 +817,16 @@ public class SnappyPrms extends BasePrms {
     }
     executorMem = " --executor-memory " + heapSize;
     return executorMem;
+  }
+
+  public static boolean hasDynamicAppProps(){
+    Long key = hasDynamicAppProps;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static Vector getKafkaTopic() {
+    Long key = kafkaTopic;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
   static {

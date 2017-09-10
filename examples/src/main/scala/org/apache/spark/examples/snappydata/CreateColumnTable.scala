@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,13 +18,12 @@ package org.apache.spark.examples.snappydata
 
 import java.io.{File, PrintWriter}
 
-import scala.util.Try
-
 import com.typesafe.config.Config
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql._
 
-import org.apache.spark.sql.types.{StringType, DecimalType, IntegerType, StructField, StructType}
-import org.apache.spark.sql.{SnappyJobInvalid, SnappySession, SparkSession, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import scala.util.Try
 
 /**
  * An example that shows how to create column tables in SnappyData
@@ -113,9 +112,11 @@ object CreateColumnTable extends SnappySQLJob {
     // insert some data in it
     pw.println()
     pw.println("Loading data in CUSTOMER table from a text file with delimited columns")
-    val customerDF = snSession.read.
-        format("com.databricks.spark.csv").schema(schema = tableSchema).
-        load(s"$dataFolder/customer.csv")
+    val customerDF = snSession.read
+      .format("com.databricks.spark.csv")
+      .option("maxCharsPerColumn", "4096")
+      .schema(schema = tableSchema)
+      .load(s"$dataFolder/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 
     pw.println()
@@ -169,7 +170,8 @@ object CreateColumnTable extends SnappySQLJob {
     pw.println()
     pw.println("Loading data in CUSTOMER table from a text file with delimited columns")
     val tableSchema = snSession.table("CUSTOMER").schema
-    val customerDF = snSession.read.schema(schema = tableSchema).csv(s"$dataFolder/customer.csv")
+    val customerDF = snSession.read.schema(schema = tableSchema)
+      .option("maxCharsPerColumn", "4096").csv(s"$dataFolder/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
 
     pw.println()
@@ -214,7 +216,8 @@ object CreateColumnTable extends SnappySQLJob {
     snSession.dropTable("CUSTOMER", ifExists = true)
 
     val customer_csv_DF = snSession.read.option("header", "true")
-        .option("inferSchema", "true").csv(s"$dataFolder/customer_with_headers.csv")
+        .option("inferSchema", "true").option("maxCharsPerColumn", "4096")
+        .csv(s"$dataFolder/customer_with_headers.csv")
 
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),

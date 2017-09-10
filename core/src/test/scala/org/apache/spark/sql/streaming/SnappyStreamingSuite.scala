@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,7 +18,6 @@ package org.apache.spark.sql.streaming
 
 import java.io.File
 import java.net.InetSocketAddress
-import java.util
 import java.util.Properties
 import java.util.concurrent.TimeoutException
 
@@ -32,8 +31,7 @@ import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.commons.lang3.RandomUtils
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.DataTypes._
-import org.apache.spark.sql.types.{DataTypes, StructType}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -106,7 +104,6 @@ class SnappyStreamingSuite
   val accessToken = "43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq"
   val accessTokenSecret = "aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu"
 
-
   test("Kafka input stream") {
     val topic = "topic1"
     val sent = Map("a" -> 5, "b" -> 3, "c" -> 10)
@@ -139,6 +136,7 @@ class SnappyStreamingSuite
         sent === result
       })
     }
+
   }
 
   test("SnappyData Kafka Streaming") {
@@ -237,6 +235,59 @@ class SnappyStreamingSuite
     }
   }
 
+  test("SNAP-2003 stream to big ref table join") {
+    val topic = "snap2003Topic"
+    kafkaUtils.createTopic(topic)
+
+    val add = kafkaUtils.brokerAddress
+    ssnc.sql("create stream table directKafkaStream (" +
+      " publisher string, advertiser string)" +
+      " using directkafka_stream options(" +
+      " rowConverter 'org.apache.spark.sql.streaming.RowsConverter' ," +
+      s" kafkaParams 'metadata.broker.list->$add;auto.offset.reset->smallest'," +
+      s" topics '$topic')")
+    val snappy = snc
+    import snappy.implicits._
+    val df = snc.sparkContext.parallelize(Seq(("pub2", "adv2"), ("pub4", "adv4"),
+      ("pub6", "adv6"), ("pub8", "adv8"))).toDF("pub", "adv")
+
+    ssnc.snappyContext.dropTable("refTable", ifExists = true)
+    ssnc.snappyContext.createTable("refTable", "column", df.schema,
+      Map.empty[String, String])
+
+    df.write.insertInto("refTable")
+
+    snc.sparkContext.range(1, 1000000).map(l => (l.toString, l.toString))
+      .toDF("pub", "adv").write.insertInto("refTable")
+    val resultSet = ssnc.registerCQ("SELECT t1.advertiser, t2.pub FROM directKafkaStream window " +
+      "(duration 1 seconds, slide 1 seconds) " +
+      "t1 JOIN refTable t2 ON t1.publisher = t2.pub")
+
+    val result = new mutable.HashMap[String, String]()
+
+    resultSet.foreachDataFrame(df => {
+      df.collect().foreach(row => {
+        result.synchronized {
+          result.put(row.getString(0), row.getString(1))
+        }
+      })
+    })
+
+    ssnc.start()
+    kafkaUtils.sendMessages(topic, Map("pub1,adv1,1" -> 1, "pub2,adv2,2" -> 1))
+    Thread.sleep(1000)
+    kafkaUtils.sendMessages(topic, Map("pub3,adv3,1" -> 1, "pub4,adv4,2" -> 1))
+    Thread.sleep(1000)
+    kafkaUtils.sendMessages(topic, Map("pub5,adv5,1" -> 1, "pub6,adv6,2" -> 1))
+    Thread.sleep(1000)
+    kafkaUtils.sendMessages(topic, Map("pub7,adv7,1" -> 1, "pub8,adv8,2" -> 1))
+    eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
+      assert(result.synchronized {
+        result.size > 1
+      })
+    }
+  }
+
   test("SchemaDStream Creation") {
 
     def getRowDStream: DStream[Row] = {
@@ -258,11 +309,9 @@ class SnappyStreamingSuite
     }
 
     def getLogSchema: StructType = {
-      val publisher = createStructField("publisher", StringType, true)
-      val advertiser = createStructField("advertiser", StringType, true)
-      val fields = util.Arrays.asList(publisher, advertiser)
-      val schema = DataTypes.createStructType(fields)
-      schema
+      StructType(Seq(
+        StructField("publisher", StringType, true),
+        StructField("advertiser", StringType, true)))
     }
 
     val rowStream = ssnc.createSchemaDStream(getRowDStream, getLogSchema)
@@ -434,6 +483,7 @@ class SnappyStreamingSuite
     schemaStream2.registerAsTable("tweetStream2")
 
     schemaStream1.foreachDataFrame(df => {
+
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
           .saveAsTable("dataTable")
     })

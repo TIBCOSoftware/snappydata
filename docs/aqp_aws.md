@@ -1,4 +1,4 @@
-## Overview
+# Overview
 iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine ([SDE](aqp.md)), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
 
 iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
@@ -10,7 +10,7 @@ In this document, the features provided by SnappyData for analyzing your data is
 
 Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
-### Key Components
+## Key Components
 This section provides a brief description of the key terms used in this document. 
 
 * **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).

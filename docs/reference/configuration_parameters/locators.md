@@ -25,17 +25,17 @@ locators=hostName1[port1],name2[port2]
 ## Usage
 To start multiple locators in a cluster modify the following files: 
 
-- **conf/locators**
+- ***conf/locators***
 
         localhost -peer-discovery-address=localhost -peer-discovery-port=3241 -locators=localhost:3242
         localhost -peer-discovery-address=localhost -peer-discovery-port=3242 -locators=localhost:3241
 
-- **conf/servers**
+- ***conf/servers***
 
 	    localhost -locators=localhost:3241,localhost:3242
 
 
-- **conf/leads**
+- ***conf/leads***
 
 	    localhost -locators=localhost:3241,localhost:3242
 

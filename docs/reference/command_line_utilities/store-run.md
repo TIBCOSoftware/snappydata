@@ -30,7 +30,7 @@ This table describes options for the `snappy run` command. Default values are us
 |-extra-conn-props|</br>A semicolon-separated list of properties to use when connecting to the SnappyData distributed system.|
 |-help, --help|</br>Display the help message for this snappy command.|
 |-ignore-errors|Include this option to ignore any errors that may occur while executing statements in the file, and continue executing the remaining statements. If you omit this option, then snappy immediately terminates the script's execution if an exception occurs.|
-|-J-D&lt;property=value&gt;|Sets Java system property to the specified value.|
+|-J-D;property=value;|Sets Java system property to the specified value.|
 |-password|</br>If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, you are prompted to enter a password from the console.|
 |-path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a [run](../../reference/interactive_commands/store_command_reference.md) command.|
 |-user|If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.|

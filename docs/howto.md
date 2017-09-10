@@ -60,9 +60,10 @@ If you have [downloaded and extracted](install.md#install-on-premise) the Snappy
 
 **Start the Cluster**: Run the `sbin/snappy-start-all.sh` script to start SnappyData cluster on your single machine using default settings. This starts one lead node, one locator, and one data server.
 
-```
+```bash
 $ sbin/snappy-start-all.sh
 ```
+
 It may take 30 seconds or more to bootstrap the entire cluster on your local machine.
 
 **Sample Output**: The sample output for `snappy-start-all.sh` is displayed as:
@@ -87,7 +88,7 @@ SnappyData Leader pid: 9699 status: running
 
 **Check Status**: You can check the status of a running cluster using the following command:
 
-```
+```bash
 $ sbin/snappy-status-all.sh
 SnappyData Locator pid: 9368 status: running
 SnappyData Server pid: 9519 status: running
@@ -148,6 +149,7 @@ class CreatePartitionedRowTable extends SnappySQLJob {
 To compile your job, use the Maven/SBT dependencies for the latest released version of SnappyData.
 
 **Example: Maven dependency**:
+
 ```
 <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
 <dependency>
@@ -156,6 +158,7 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
     <version>0.9</version>
 </dependency>
 ```
+
 **Example: SBT dependency**:
 
 ```
@@ -349,9 +352,9 @@ First, define the table schema and then create the table using createTable API
     ))
 
     // props1 map specifies the properties for the table to be created
-    // "PERSISTENT" flag indicates that the table data should be persisted to
+    // "PERSISTENCE" flag indicates that the table data should be persisted to
     // disk asynchronously
-    val props1 = Map("PERSISTENT" -> "asynchronous")
+    val props1 = Map("PERSISTENCE" -> "asynchronous")
     // create a row table using createTable API
     snSession.createTable("SUPPLIER", "row", schema, props1)
 ```
@@ -362,7 +365,7 @@ The same table can be created using SQL as shown below:
     // First drop the table if it exists
     snSession.sql("DROP TABLE IF EXISTS SUPPLIER")
     // Create a row table using SQL
-    // "PERSISTENT" that the table data should be persisted to disk asynchronously
+    // "PERSISTENCE" that the table data should be persisted to disk asynchronously
     // For complete list of attributes refer the documentation
     snSession.sql(
       "CREATE TABLE SUPPLIER ( " +
@@ -373,7 +376,7 @@ The same table can be created using SQL as shown below:
           "S_PHONE STRING NOT NULL, " +
           "S_ACCTBAL DECIMAL(15, 2) NOT NULL, " +
           "S_COMMENT STRING NOT NULL " +
-          ") USING ROW OPTIONS (PERSISTENT 'asynchronous')")
+          ") USING ROW OPTIONS (PERSISTENCE 'asynchronous')")
 ```
 
 You can perform various operations such as inset data, mutate it (update/delete), select data from the table. All these operations can be done either through APIs or by using SQL queries.
@@ -1151,8 +1154,6 @@ To download and install the ODBC driver:
 
 	!!! Note: 
 		Ensure that [SnappyData version 0.8 or later is installed](http://snappydatainc.github.io/snappydata/install/) and the [SnappyData cluster is running](howto.md#howto-startCluster).
-        
-Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver and Tableau Desktop](setting_up_odbc_driver-tableau_desktop.md).  
 
 ### Connect to the SnappyData cluster 
 Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
@@ -1162,19 +1163,20 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 		Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
- Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
- When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
+ Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
+
+Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver and Tableau Desktop](setting_up_odbc_driver-tableau_desktop.md).  
 
 <a id="howto-external-client"></a>
 ## How to Connect to the Cluster from External Clients
 
 You can also connect to the SnappyData cluster from a different network as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
 
-When [starting the locator and server](configuring_cluster/configuring_cluster.md) set the following properties in the **conf/locators** and **conf/servers** files:
+When [starting the locator and server](configuring_cluster/configuring_cluster.md) set the following properties in the *conf/locators* and *conf/servers* files:
 
 * `-hostname-for-clients`: The public IP address of the locator or server. 
 
-* `-client-bind-address`: IP address of the locator or server. </br>For example, add `-J-Dgemfirexd.hostname-for-clients=192.168.20.208` </br> 
+* `-client-bind-address`: IP address of the locator or server. </br>For example, add `-hostname-for-clients=192.168.20.208` </br> 
 
 	!!! Note: 
     	By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.
@@ -1217,9 +1219,9 @@ When [starting the locator and server](configuring_cluster/configuring_cluster.m
 
 7. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
 
-8. Edit the **zeppeline-site.xml** file, and in the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`.
+8. Edit the **zeppelin-site.xml** file, and in the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`.
 
-9. Restart the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
+9. Start the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
 
 10. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
 

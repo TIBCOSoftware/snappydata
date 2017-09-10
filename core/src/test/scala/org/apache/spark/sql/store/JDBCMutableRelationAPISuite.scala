@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -65,12 +65,13 @@ class JDBCMutableRelationAPISuite
       "password" -> "app"
     )
     snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_1")
+    snc.sql("CREATE TABLE TEST_JDBC_TABLE_1(COL1 INTEGER,COL2 INTEGER,COL3 INTEGER)")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("jdbc").mode(SaveMode.Overwrite)
-        .options(props).saveAsTable("TEST_JDBC_TABLE_1")
+        .options(props).insertInto("TEST_JDBC_TABLE_1")
     val count = dataDF.count()
     assert(count === data.length)
   }
@@ -89,7 +90,8 @@ class JDBCMutableRelationAPISuite
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
-    snc.createTable("TEST_JDBC_TABLE_2", "jdbc", schemaDDL, props, allowExisting = false)
+    snc.createTable("TEST_JDBC_TABLE_2", "row", schemaDDL,
+      Map.empty[String, String], allowExisting = false)
     dataDF.write.insertInto("TEST_JDBC_TABLE_2")
     val tableDF = snc.sql("select * from TEST_JDBC_TABLE_2")
     val count = tableDF.count()

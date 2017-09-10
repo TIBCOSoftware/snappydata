@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,9 +27,9 @@ import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpress
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{InternalRow, analysis}
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
@@ -76,13 +76,10 @@ class RowFormatRelation(
   private final lazy val putStr = JdbcExtendedUtils.getInsertOrPutString(
     table, schema, putInto = true)
 
-  private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
-    tableSchema)
-
   @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
-  @transient lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
+  @transient private lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
   private[this] def indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
     clusterMode match {
@@ -136,7 +133,6 @@ class RowFormatRelation(
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
-    val isPartitioned = (numBuckets != 1)
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
@@ -174,62 +170,39 @@ class RowFormatRelation(
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
-         new RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+         RelationInfo(numBuckets, isPartitioned, partitionColumns, Array.empty[String],
            Array.empty[String], Array.empty[Partition], -1)
     }
   }
 
-  override lazy val (numBuckets, partitionColumns) = {
+  override lazy val (numBuckets, isPartitioned, partitionColumns) = {
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
-        (relInfo.numBuckets, relInfo.partitioningCols)
+        (relInfo.numBuckets, relInfo.isPartitioned, relInfo.partitioningCols)
       case _ => region match {
         case pr: PartitionedRegion =>
           val resolver = pr.getPartitionResolver
               .asInstanceOf[GfxdPartitionByExpressionResolver]
           val parColumn = resolver.getColumnNames
-          (pr.getTotalNumberOfBuckets, parColumn.toSeq)
-        case _ => (1, Seq.empty[String])
+          (pr.getTotalNumberOfBuckets, true, parColumn.toSeq)
+        case _ => (1, false, Seq.empty[String])
       }
     }
   }
 
-  override def getInsertPlan(relation: LogicalRelation,
-      child: SparkPlan): SparkPlan = {
+  override def partitionExpressions(relation: LogicalRelation): Seq[Expression] = {
     // use case-insensitive resolution since partitioning columns during
     // creation could be using the same as opposed to during insert
-    val partitionExpressions = partitionColumns.map(colName =>
+    partitionColumns.map(colName =>
       relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowDMLExec(child, putInto = false, delete = false, partitionColumns,
-      partitionExpressions, numBuckets, schema, Some(this), onExecutor = false,
-      resolvedName, connProperties)
   }
 
   override def getPutPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    // use case-insensitive resolution since partitioning columns during
-    // creation could be using the same as opposed to during put
-    val partitionExpressions = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
-          .getOrElse(throw new AnalysisException(
-            s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowDMLExec(child, putInto = true, delete = false, partitionColumns,
-      partitionExpressions, numBuckets, schema, Some(this),
-      onExecutor = false, resolvedName, connProperties)
-  }
-
-  override def getDeletePlan(relation: LogicalRelation,
-      child: SparkPlan): SparkPlan = {
-    // use case-insensitive resolution since partitioning columns during
-    // creation could be using the same as opposed to during delete
-    val partitionExpressions = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
-          .getOrElse(throw new AnalysisException(
-            s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowDMLExec(child, putInto = false, delete = true, partitionColumns,
-      partitionExpressions, numBuckets, child.schema, Some(this),
+    RowInsertExec(child, putInto = true, partitionColumns,
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, Some(this),
       onExecutor = false, resolvedName, connProperties)
   }
 
@@ -251,7 +224,7 @@ class RowFormatRelation(
     // use bulk insert using put plan for large number of rows
     if (numRows > (batchSize * 4)) {
       JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
-        table, upsert = true)
+        table, putInto = true)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
         connProperties.poolProps, connProps, connProperties.hikariCP)
@@ -370,7 +343,7 @@ final class DefaultSource extends MutableRelationProvider {
       options,
       sqlContext)
     try {
-      relation.tableSchema = relation.createTable(mode)
+      relation.createTable(mode)
 
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(

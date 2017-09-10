@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -33,7 +33,7 @@ import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
-import org.apache.spark.memory.SnappyUnifiedMemoryManager
+import org.apache.spark.memory.{SnappyUnifiedMemoryManager, StoreUnifiedManager}
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
@@ -57,6 +57,7 @@ object ExecutorInitiator extends Logging {
     @volatile var stopTask = false
     private var retryTask: Boolean = false
     private val lock = new Object()
+    private val testLock = new Object()
 
     val membershipListener = new MembershipListener {
       override def quorumLost(failures: util.Set[InternalDistributedMember],
@@ -81,6 +82,11 @@ object ExecutorInitiator extends Logging {
     def setRetryFlag(retry: Boolean = true): Unit = lock.synchronized {
       retryTask = retry
       lock.notify()
+    }
+
+    // Test hook. Not to be used in other situations
+    def waitForExecutor(retry: Boolean = true): Unit = testLock.synchronized {
+      testLock.wait(30000)
     }
 
     def getRetryFlag: Boolean = lock.synchronized {
@@ -127,7 +133,6 @@ object ExecutorInitiator extends Logging {
                 // does not lead to continous retries and the thread hogs the CPU.
                 numTries += 1
                 Thread.sleep(3000)
-                setRetryFlag(false)
               }
               // kill if an executor is already running.
               SparkCallbacks.stopExecutor(env)
@@ -151,7 +156,8 @@ object ExecutorInitiator extends Logging {
                     Utils.setDefaultSerializerAndCodec(executorConf)
 
                     val port = executorConf.getInt("spark.executor.port", 0)
-                    val props = SparkCallbacks.fetchDriverProperty(executorHost,
+                    val (ioEncryptionKey, props) =
+                      SparkCallbacks.fetchDriverProperty(memberId, executorHost,
                       executorConf, port, url)
 
                     val driverConf = new SparkConf
@@ -176,7 +182,7 @@ object ExecutorInitiator extends Logging {
                       Runtime.getRuntime.availableProcessors() * 2)
 
                     env = SparkCallbacks.createExecutorEnv(driverConf,
-                      memberId, executorHost, port, cores, isLocal = false)
+                      memberId, executorHost, port, cores, ioEncryptionKey, isLocal = false)
 
                     // This is not required with snappy
                     val userClassPath = new mutable.ListBuffer[URL]()
@@ -190,10 +196,12 @@ object ExecutorInitiator extends Logging {
                     rpcenv.setupEndpoint("Executor", executor)
                   }
                   prevDriverURL = url
+                  testLock.synchronized(testLock.notify())
                 case None =>
                   // If driver url is none, already running executor is stopped.
                   prevDriverURL = ""
               }
+              setRetryFlag(false)
             }
           } catch {
             case e@(NonFatal(_) | _: InterruptedException) =>
@@ -243,6 +251,10 @@ object ExecutorInitiator extends Logging {
 
   def restartExecutor(): Unit = {
     executorRunnable.setRetryFlag()
+  }
+
+  def waitForExecutor(): Unit = {
+    executorRunnable.waitForExecutor()
   }
 
   /**

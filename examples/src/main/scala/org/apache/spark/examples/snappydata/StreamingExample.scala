@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -131,9 +131,9 @@ object StreamingExample {
         "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
 
     // this conf is used to get a connection a JDBC connection
-    val conf = new ConnectionConfBuilder(snsc.snappySession).build()
-
+    val conf = new ConnectionConfBuilder(snsc.snappySession).build
     println()
+
     // process the stream data returned by continuous query and update publisher_bid_counts table
     resultStream.foreachDataFrame(df => {
       if (df.count() > 0L) {

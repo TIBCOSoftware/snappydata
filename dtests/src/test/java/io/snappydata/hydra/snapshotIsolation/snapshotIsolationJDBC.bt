@@ -181,3 +181,46 @@ io/snappydata/hydra/snapshotIsolation/testMultipleSnapshotJDBCClient_ColocatedTa
   redundantCopies=1  persistenceMode="sync"
   derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
+io/snappydata/hydra/snapshotIsolation/testInsertWithSelectJDBCClient_ReplicatedRowServerHA.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  numVMsToStop=1
+  persistenceMode="sync"
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+io/snappydata/hydra/snapshotIsolation/testInsertWithSelectJDBCClient_PartitionedRowServerHA.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1  persistenceMode="sync"
+  numVMsToStop=1
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+io/snappydata/hydra/snapshotIsolation/testInsertWithSelectJDBCClient_ColumnTableServerHA.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1  persistenceMode="sync"
+  numVMsToStop=1
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+io/snappydata/hydra/snapshotIsolation/testInsertWithSelectJDBCClient_ColocatedTablesServerHA.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1  persistenceMode="sync"
+  numVMsToStop=1
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+io/snappydata/hydra/snapshotIsolation/testInsertWithSelectJDBCClient_PartitionedRowWithEviction.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1  persistenceMode="sync"
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"

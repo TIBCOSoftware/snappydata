@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,19 +16,20 @@
  */
 package org.apache.spark.sql.execution.datasources
 
-import scala.collection.mutable
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters.convertToScala
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, DynamicReplacableConstant, EmptyRow, Expression, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
-import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{AnalysisException, Strategy, execution, sources}
 import org.apache.spark.unsafe.types.UTF8String
+
+import scala.collection.mutable
 
 /**
   * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
@@ -132,7 +133,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     } else {
       val pairs = mutable.ArrayBuffer.empty[(String, String)]
       if (pushedFilters.nonEmpty) {
-        pairs += (DataSourceScanExec.PUSHED_FILTERS ->
+        pairs += ("PushedFilters" ->
             pushedFilters.mkString("[", ", ", "]"))
       }
       pairs.toMap
@@ -168,10 +169,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             (requestedColumns, pushedFilters)
           )
         case baseRelation =>
-          execution.DataSourceScanExec.create(
+          RowDataSourceScanExec(
             mappedProjects,
-            rdd.asInstanceOf[RDD[InternalRow]],
-            baseRelation, metadata, relation.metastoreTableIdentifier)
+            scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
+              ._1.asInstanceOf[RDD[InternalRow]],
+            baseRelation, UnknownPartitioning(0), metadata,
+            relation.catalogTable.map(_.identifier))
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
@@ -196,10 +199,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             (requestedColumns, pushedFilters)
           )
         case baseRelation =>
-          execution.DataSourceScanExec.create(
-            requestedColumns,
-            rdd.asInstanceOf[RDD[InternalRow]],
-            baseRelation, metadata, relation.metastoreTableIdentifier)
+          RowDataSourceScanExec(
+            mappedProjects,
+            scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
+              ._1.asInstanceOf[RDD[InternalRow]],
+            baseRelation, UnknownPartitioning(0), metadata,
+            relation.catalogTable.map(_.identifier))
       }
       execution.ProjectExec(projects,
         filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,9 +24,11 @@ if (JavaVersion.current().isJava8Compatible()) {
   allprojects {
     tasks.withType(Javadoc) {
       options.addStringOption('Xdoclint:none', '-quiet')
+      /*
       if (javax.tools.ToolProvider.getSystemDocumentationTool().isSupportedOption("--allow-script-in-comments") == 0) {
         options.addBooleanOption("-allow-script-in-comments", true)
       }
+      */
     }
   }
 }
@@ -65,7 +67,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '0.9'
+  version = '1.0.0-rc1.1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -98,8 +100,8 @@ allprojects {
     productName = 'SnappyData'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.0.0'
-    snappySparkVersion = '2.0.2.5'
+    sparkVersion = '2.1.1'
+    snappySparkVersion = '2.1.1.1-rc1'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -112,7 +114,7 @@ allprojects {
     thriftVersion = '0.9.3'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.5.5'
+    snappyStoreVersion = '1.5.6-rc1.1'
     pulseVersion = '1.5.1'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -122,7 +124,7 @@ allprojects {
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.5'
+    sparkJobServerVersion = '0.6.2.6-rc1'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -203,6 +205,14 @@ task cleanDUnit << {
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
 }
+task cleanSecurityDUnit << {
+  String workingDir = "${testResultsBase}/dunit-security"
+  delete workingDir
+  file(workingDir).mkdirs()
+  // clean spark cluster directories
+  delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
+  delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+}
 task cleanAllReports << {
   String workingDir = "${testResultsBase}/combined-reports"
   delete workingDir
@@ -213,7 +223,6 @@ task cleanQuickstart << {
   delete workingDir
   file(workingDir).mkdirs()
 }
-
 
 subprojects {
   // the run task for a selected sub-project
@@ -286,6 +295,7 @@ subprojects {
 
     include '**/*.class'
     exclude '**/*DUnitTest.class'
+    exclude '**/*DUnitSecurityTest.class'
     exclude '**/*DUnitSingleTest.class'
     exclude '**/*TestBase.class'
 
@@ -305,6 +315,7 @@ subprojects {
   task dunitTest(type: Test) {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
+    dependsOn ':copyShadowJars'
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -314,16 +325,18 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
-    FileTree includeTestFiles = dunitTests
     def single = rootProject.hasProperty('dunit.single') ?
         rootProject.property('dunit.single') : null
-    int dunitFrom = rootProject.hasProperty('dunit.from') ?
+    if (single == null || single.length() == 0) {
+      def dunitTests = fileTree(dir: testClassesDir,
+          includes: ['**/*DUnitTest.class'],
+          excludes: ['**/*DUnitSecurityTest.class'])
+      FileTree includeTestFiles = dunitTests
+      int dunitFrom = rootProject.hasProperty('dunit.from') ?
           getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
-    int dunitTo = rootProject.hasProperty('dunit.to') ?
+      int dunitTo = rootProject.hasProperty('dunit.to') ?
           getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
 
-    if (single == null || single.length() == 0) {
       int begin = dunitFrom != -1 ? dunitFrom : 0
       int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
       def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
@@ -336,6 +349,7 @@ subprojects {
       include single
     }
     exclude '**/*Suite.class'
+    exclude '**/*DUnitSecurityTest.class'
 
     workingDir = "${testResultsBase}/dunit"
 
@@ -351,6 +365,65 @@ subprojects {
       String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
       def progress = new File(workingDir, 'progress.txt')
       progress << "${eol}${now} ========== STARTING DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
+    }
+  }
+
+  task dunitSecurityTest(type: Test) {
+    dependsOn ':cleanSecurityDUnit'
+    dependsOn ':product'
+    dependsOn ':copyShadowJars'
+    maxParallelForks = 1
+    minHeapSize '1536m'
+    maxHeapSize '1536m'
+
+    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
+               '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
+               '-XX:CMSInitiatingOccupancyFraction=50',
+               '-XX:+CMSClassUnloadingEnabled', '-ea']
+
+    def single = rootProject.hasProperty('dunitSecurity.single') ?
+        rootProject.property('dunitSecurity.single') : null
+    if (single == null || single.length() == 0) {
+      def dunitSecurityTests = fileTree(dir: testClassesDir,
+          includes: ['**/*DUnitSecurityTest.class'],
+          excludes: ['**/*DUnitTest.class'])
+      FileTree includeTestFiles = dunitSecurityTests
+      int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
+          getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
+      int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
+          getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
+
+      int begin = dunitFrom != -1 ? dunitFrom : 0
+      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+      if (begin != 0 || end != includeTestFiles.size()) {
+        println("Picking tests :")
+        filteredSet.each { a -> println(a) }
+      }
+      include filteredSet
+    } else {
+      include single
+    }
+    exclude '**/*Suite.class'
+    exclude '**/*DUnitTest.class'
+    if (!rootProject.hasProperty('snappydata.enterprise')) {
+      exclude '**/*DUnitSecurityTest.class'
+    }
+
+    workingDir = "${testResultsBase}/dunit-security"
+
+    binResultsDir = file("${workingDir}/binary/${project.name}")
+    reports.html.destination = file("${workingDir}/html/${project.name}")
+    reports.junitXml.destination = file(workingDir)
+
+    systemProperties 'java.net.preferIPv4Stack': 'true',
+                     'SNAPPY_HOME': snappyProductDir
+
+    doFirst {
+      String eol = System.getProperty('line.separator')
+      String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      def progress = new File(workingDir, 'progress.txt')
+      progress << "${eol}${now} ========== STARTING SECURITY DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
     }
   }
 
@@ -573,20 +646,18 @@ subprojects {
 
 task publishLocal {
   dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
-    p.name != 'gemfirexd-prebuild' &&
-    p.name != 'gemfirexd' }.collect {
+    p.name != 'snappydata-store-prebuild' && p.name != 'snappydata-store' }.collect {
       it.getTasksByName('install', false).collect { it.path }
   }
 }
 
 task publishMaven {
   dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
-    p.name != 'gemfirexd-prebuild' &&
-    p.name != 'snappy-store' && p.name != 'gemfirexd' }.collect {
+    p.name != 'snappydata-store-prebuild' && p.name != 'snappy-store' &&
+      p.name != 'snappydata-store' }.collect {
       it.getTasksByName('uploadArchives', false).collect { it.path }
   }
 }
-
 
 task generateSources {
   dependsOn ':snappy-spark:generateSources'
@@ -600,16 +671,17 @@ task product(type: Zip) {
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def targetProject = clusterProject
-  def hasAQPProject = new File(rootDir, 'aqp/build.gradle').exists()
+  def isEnterpriseProduct = new File(rootDir, 'aqp/build.gradle').exists() &&
+      rootProject.hasProperty('snappydata.enterprise')
   def hasJdbcConnectorProject = new File(rootDir,
       'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 
-  if (hasAQPProject) {
+  if (isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
     targetProject = project(":snappy-aqp_${scalaBinaryVersion}")
   }
 
-  if (hasJdbcConnectorProject) {
+  if (hasJdbcConnectorProject && rootProject.hasProperty('snappydata.enterprise')) {
     dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
   }
 
@@ -701,21 +773,19 @@ task product(type: Zip) {
     if (new File(rootDir, 'store/build.gradle').exists()) {
       // copy snappy-store shared libraries for optimized JNI calls
       copy {
-        from "${project(':snappy-store:gemfirexd-core').projectDir}/lib"
+        from project(':snappy-store:snappydata-store-core').projectDir.path + '/lib'
         into "${snappyProductDir}/jars"
       }
       copy {
-        from "${project(':snappy-store:gemfirexd-core').projectDir}/../quickstart"
+        from "${project(':snappy-store:snappydata-store-core').projectDir}/../quickstart"
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
       }
     }
-    // copy AQP jar from maven repo if project not present
-    if (!hasAQPProject) {
+    if (isEnterpriseProduct) {
+      // copy enterprise shared libraries for optimized JNI calls
       copy {
-        from examplesProject.configurations.testRuntime.filter {
-          it.getName().contains('snappy-aqp')
-        }
+        from project(":snappy-aqp_${scalaBinaryVersion}").projectDir.path + '/lib'
         into "${snappyProductDir}/jars"
       }
     }
@@ -791,10 +861,8 @@ distZip {
   }
 }
 
-// use the task below to prepare final release bits
-task distProduct {
-  dependsOn product, distTar, distZip
-  dependsOn ':snappy-store:gemfirexd-client:shadowJar'
+task copyShadowJars {
+  dependsOn ':snappy-store:snappydata-store-client:shadowJar'
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {
@@ -809,7 +877,7 @@ task distProduct {
     }
     if (new File(rootDir, 'store/build.gradle').exists()) {
       // copy the JDBC client jar separately into distributions
-      def clientProject = project(':snappy-store:gemfirexd-client')
+      def clientProject = project(':snappy-store:snappydata-store-client')
       copy {
         from clientProject.shadowJar.destinationDir
         into "${rootProject.buildDir}/distributions"
@@ -817,6 +885,12 @@ task distProduct {
       }
     }
   }
+}
+
+// use the task below to prepare final release bits
+task distProduct {
+  dependsOn product, distTar, distZip
+  dependsOn copyShadowJars
 }
 
 def copyTestsCommonResources(def bdir) {
@@ -836,7 +910,7 @@ def runScript(def execName, def workDir, def param, env = null) {
     workingDir = workDir
     args (param)
     standardOutput = stdout
-    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.3-src.zip:${snappyProductDir}/python"
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"
   }
   return "${stdout}"
 }
@@ -844,7 +918,7 @@ def runScript(def execName, def workDir, def param, env = null) {
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
-  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
     copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
   }
 }
@@ -860,22 +934,25 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task buildDtests {
-  delete "${snappyProductDir}/dtests/build-artifacts/scala-${scalaBinaryVersion}/"
-  dependsOn "snappy-dtests_${scalaBinaryVersion}:packageTests"
+  dependsOn "snappy-dtests_${scalaBinaryVersion}:buildDtests"
 }
 task checkAll {
   dependsOn ':snappy-spark:scalaStyle'
-  if (project.hasProperty('store')) {
+  if (rootProject.hasProperty('store')) {
     dependsOn ':snappy-store:check'
   }
   dependsOn ":snappy-core_${scalaBinaryVersion}:check"
-  if (project.hasProperty('spark')) {
+  if (rootProject.hasProperty('spark')) {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
-  if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (!rootProject.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()
+          && rootProject.hasProperty('snappydata.enterprise')) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
+  }
+  if (!rootProject.hasProperty('smoke.skip')) {
+    dependsOn ':buildDtests', ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
   mustRunAfter buildAll
 }
@@ -974,8 +1051,6 @@ distTar.mustRunAfter clean, cleanAll
 distZip.mustRunAfter clean, cleanAll
 distProduct.mustRunAfter clean, cleanAll
 
-
-
 task deleteDocsDir(type: Delete) {
   delete "${rootProject.buildDir}/docs"
 }
@@ -1013,7 +1088,7 @@ task docs(type: ScalaDoc) {
   }
   source = allSource
   classpath = files(docProjects.collect { project ->
-   project.sourceSets.main.compileClasspath   
+   project.sourceSets.main.compileClasspath
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
@@ -1023,17 +1098,11 @@ task publishDocs(type:Exec) {
   commandLine './publish-site.sh'
 }
 
-
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports
-  dependsOn ':snappy-spark:scalaStyle', docs
-  if (!project.hasProperty('smoke.skip')) {
-    dependsOn ":buildDtests"
-    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
-  }
+  dependsOn cleanAll, buildAll, checkAll, allReports, docs
 }
 
-if (project.hasProperty('trackBuildTime') ) {
+if (rootProject.hasProperty('trackBuildTime') ) {
   buildtimetracker {
     reporters {
       summary {
@@ -1044,3 +1113,32 @@ if (project.hasProperty('trackBuildTime') ) {
     }
   }
 }
+
+// log build output to buildOutput.log
+
+def buildOutput = new File("${rootDir}/buildOutput.log")
+
+// delete build output file if it has become large
+if (buildOutput.length() > 1000000) {
+  delete buildOutput
+}
+
+import org.gradle.logging.internal.*
+
+gradle.services.get(LoggingOutputInternal).addStandardOutputListener (new StandardOutputListener () {
+  void onOutput(CharSequence output) {
+    buildOutput << output
+  }
+})
+
+gradle.services.get(LoggingOutputInternal).addStandardErrorListener (new StandardOutputListener () {
+  void onOutput(CharSequence output) {
+    buildOutput << output
+  }
+})
+
+println()
+println('-------------------------------------------------')
+println("Starting new build on ${buildDate}")
+println('-------------------------------------------------')
+println()

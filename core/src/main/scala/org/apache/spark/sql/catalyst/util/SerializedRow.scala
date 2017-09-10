@@ -42,11 +42,10 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecializedGetters, UnsafeRow}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
+import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoding}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
-import org.apache.spark.unsafe.bitset.BitSetMethods
 import org.apache.spark.unsafe.hash.Murmur3_x86_32
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
@@ -83,6 +82,14 @@ final class SerializedRow extends InternalRow with SerializedRowData {
       Platform.BYTE_ARRAY_OFFSET, sizeInBytes)
     copy.pointTo(dataCopy, Platform.BYTE_ARRAY_OFFSET, sizeInBytes)
     copy
+  }
+
+  override def setNullAt(i: Int): Unit = {
+    throw new UnsupportedOperationException("not implemented")
+  }
+
+  override def update(i: Int, value: Any): Unit = {
+    throw new UnsupportedOperationException("not implemented")
   }
 }
 
@@ -146,7 +153,7 @@ trait SerializedRowData extends SpecializedGetters
   // Public methods
   //////////////////////////////////////////////////////////////////////////////
 
-  final def getBaseObject: Any = baseObject
+  final def getBaseObject: AnyRef = baseObject
 
   final def getBaseOffset: Long = baseOffset
 
@@ -194,7 +201,8 @@ trait SerializedRowData extends SpecializedGetters
 
   final def isNullAt(ordinal: Int): Boolean = {
     if (indexIsValid(ordinal)) {
-      BitSetMethods.isSet(baseObject, baseOffset, ordinal + (skipBytes << 3))
+      BitSet.isSet(baseObject, baseOffset, ordinal + (skipBytes << 3),
+        bitSetWidthInBytes)
     } else throw indexInvalid(ordinal)
   }
 
@@ -320,7 +328,7 @@ trait SerializedRowData extends SpecializedGetters
 
   final def anyNull: Boolean = {
     if (skipBytes == 0) {
-      BitSetMethods.anySet(baseObject, baseOffset, bitSetWidthInBytes >>> 3)
+      BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes)
     } else {
       // need to account separately for skipBytes
       var offset = baseOffset + skipBytes

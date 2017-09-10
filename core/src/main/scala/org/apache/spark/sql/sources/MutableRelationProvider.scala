@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -46,6 +46,8 @@ abstract class MutableRelationProvider
     val numPartitions = parameters.remove("numpartitions")
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+    val qualifiedTableName = catalog.newQualifiedTableName(table)
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(sqlContext.sparkSession), parameters)
 
@@ -63,13 +65,13 @@ abstract class MutableRelationProvider
         numPartitions.get.toInt)
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
-    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
+    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(qualifiedTableName.toString,
+      sqlContext.conf)
     var success = false
-    val relation = JDBCMutableRelation(connProperties,
-      tableName,
+    val relation = JDBCMutableRelation(connProperties, tableName,
       getClass.getCanonicalName, mode, schema, parts, options, sqlContext)
     try {
-      relation.tableSchema = relation.createTable(mode)
+      relation.createTable(mode)
 
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       data match {

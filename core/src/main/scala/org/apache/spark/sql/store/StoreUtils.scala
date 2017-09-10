@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,6 +15,8 @@
  * LICENSE file.
  */
 package org.apache.spark.sql.store
+
+import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
 import scala.collection.generic.Growable
@@ -95,9 +97,14 @@ object StoreUtils {
   val EMPTY_STRING = ""
   val NONE = "NONE"
 
-  val SHADOW_COLUMN_NAME = "snappydata_internal_rowid"
+  val ROWID_COLUMN_NAME = "SNAPPYDATA_INTERNAL_ROWID"
 
-  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
+  val ROWID_COLUMN_FIELD = StructField("SNAPPYDATA_INTERNAL_ROWID", LongType, nullable = false)
+
+  val ROWID_COLUMN_DEFINITION = s"$ROWID_COLUMN_NAME bigint generated always as identity"
+
+  val PRIMARY_KEY_PATTERN: Pattern = Pattern.compile("\\WPRIMARY\\s+KEY\\W",
+    Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
 
   // private property to indicate One-to-one mapping of partitions to buckets
   // which is enabled per-query using `LinkPartitionsToBuckets` rule
@@ -278,12 +285,12 @@ object StoreUtils {
     }
   }
 
-  val pkDisallowdTypes = Seq(StringType, BinaryType,
-    ArrayType, MapType, StructType)
+  val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: mutable.Map[String, String],
-      schema: StructType, context: SQLContext): String = {
+      schema: StructType, context: SQLContext): (String, Seq[StructField]) = {
     val sb = new StringBuilder()
+    val stringPKCols = new mutable.ArrayBuffer[StructField](1)
     sb.append(parameters.get(PARTITION_BY).map(v => {
       val primaryKey = {
         v match {
@@ -300,20 +307,27 @@ object StoreUtils {
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
               normalizedCols)
 
-            val b = for (field <- prunedSchema.fields)
-              yield !pkDisallowdTypes.contains(field.dataType)
-
-            val includeInPK = b.forall(identity)
+            var includeInPK = true
+            for (field <- prunedSchema.fields if includeInPK) {
+              if (pkDisallowdTypes.contains(field.dataType)) {
+                includeInPK = false
+              }
+              /* (string type handling excluded for now due to possible regression impact)
+              else if (field.dataType == StringType) {
+                stringPKCols += field
+              }
+              */
+            }
             if (includeInPK) {
-              s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
+              s"$PRIMARY_KEY ($v, $ROWID_COLUMN_NAME)"
             } else {
-              s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"
+              s"$PRIMARY_KEY ($ROWID_COLUMN_NAME)"
             }
         }
       }
       primaryKey
-    }).getOrElse(s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"))
-    sb.toString()
+    }).getOrElse(s"$PRIMARY_KEY ($ROWID_COLUMN_NAME)"))
+    (sb.toString(), stringPKCols)
   }
 
   def ddlExtensionString(parameters: mutable.Map[String, String],
@@ -336,7 +350,7 @@ object StoreUtils {
         }
         s"$GEM_PARTITION_BY $parClause "
       }).getOrElse(if (isRowTable) EMPTY_STRING
-      else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME) "))
+      else s"$GEM_PARTITION_BY COLUMN ($ROWID_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).foreach {
         case PRIMARY_KEY => throw Utils.analysisException("Column table " +
@@ -354,7 +368,7 @@ object StoreUtils {
       if (v.toBoolean) sb.append(GEM_REPLICATE).append(' ')
       else if (!parameters.contains(BUCKETS)) {
         sb.append(GEM_BUCKETS).append(' ').append(
-          ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' ')
+          ExternalStoreUtils.defaultTableBuckets).append(' ')
       })
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
@@ -374,10 +388,20 @@ object StoreUtils {
     val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
         .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
     val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
+    var overflowAdded = false
     if (!isShadowTable) {
       sb.append(parameters.remove(EVICTION_BY).map(v =>
-        if (v == NONE) EMPTY_STRING else s"$GEM_EVICTION_BY $v ")
-          .getOrElse(defaultEviction))
+        if (v == NONE) {
+          EMPTY_STRING
+        } else {
+          if (hasOverflow) {
+            overflowAdded = true
+            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+          } else {
+            s"$GEM_EVICTION_BY $v "
+          }
+        })
+        .getOrElse(defaultEviction))
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
         if (v.contains(LRUCOUNT)) {
@@ -386,12 +410,17 @@ object StoreUtils {
         } else if (v == NONE) {
           EMPTY_STRING
         } else {
-          s"$GEM_EVICTION_BY $v "
+          if (hasOverflow) {
+            overflowAdded = true
+            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+          } else {
+            s"$GEM_EVICTION_BY $v "
+          }
         }
       }).getOrElse(defaultEviction))
     }
 
-    if (hasOverflow) {
+    if (hasOverflow && !overflowAdded) {
       parameters.remove(OVERFLOW)
       sb.append(s"$GEM_OVERFLOW ")
     }

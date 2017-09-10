@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -53,7 +53,8 @@ object ToolsCallbackImpl extends ToolsCallback {
     }
   }
 
-  override def removeAddedJar(sc: SparkContext, jarName: String) = sc.removeAddedJar(jarName)
+  override def removeAddedJar(sc: SparkContext, jarName: String) : Unit =
+    sc.removeAddedJar(jarName)
 
   /**
    * Callback to spark Utils to fetch file
@@ -61,7 +62,12 @@ object ToolsCallbackImpl extends ToolsCallback {
   override def doFetchFile(
       url: String,
       targetDir: File,
-      filename: String): File ={
+      filename: String): File = {
      SnappyUtils.doFetchFile(url, targetDir, filename)
+  }
+
+  override def setSessionDependencies(sparkContext: SparkContext, appName: String,
+      classLoader: ClassLoader): Unit = {
+    SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
   }
 }

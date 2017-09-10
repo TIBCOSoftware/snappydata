@@ -1,20 +1,29 @@
-queries=1,3,4,5,6,7,10,11,12,13,14,15,16,17,20,22
+queries=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,21
 #,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,20,22
 
 aggregator=localhost
-leafs=(localhost)
-leads=localhost
+port=3306
 
 dataSize=1GB
 
-dataDir=/home/kishor/snappy/TPCH_APP/TPCH_Data/$dataSize
+#dataDir=/home/kishor/snappy/TPCH_APP/TPCH_Data/$dataSize
 
-outputLocation=/home/kishor/snappy/TPCH_APP/TPCH_OUTPUT/MEMSQL
+#outputLocation=/home/kishor/snappy/TPCH_APP/TPCH_OUTPUT/MEMSQL
 
-TPCHJar=/home/kishor/snappy/snappy-commons/snappy-cluster/build-artifacts/scala-2.10/libs/snappy-cluster_2.10-0.1.0-SNAPSHOT-tests.jar
+TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.9-tests.jar
 
-mysqlConnectorJar=/home/kishor/snappy/Memsql/mysql-connector-java-5.0.8-bin.jar
-
-memsqlLoader=/home/kishor/snappy/Memsql/memsql-loader
+mysqlConnectorJar=/home/kishor/SNAPPY/MEMSQL/mysql-connector-java-5.0.8/mysql-connector-java-5.0.8-bin.jar
 
 queryPlan=false
+
+isDynamic=false
+
+#Whether to collect results.For performance testing this should be false.
+ResultCollection=true
+
+#warmUpIterations
+WarmupRuns=2
+#Actual runs whose average will be taken and repordted as performance
+AverageRuns=3
+
+

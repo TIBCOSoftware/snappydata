@@ -28,7 +28,7 @@ In this mode, you can execute all the components (client application, executors,
  
 ![Local Mode](Images/SnappyLocalMode.png)
 
-**Example**: **Using the Local mode for developing SnappyData programs**
+**Example: Using the Local mode for developing SnappyData programs**
 
 You can use an IDE of your choice, and provide the below dependency to get SnappyData binaries:
 
@@ -135,7 +135,7 @@ When queries are executed, while the entire query planning and execution is coor
 
 * Optimized column batch inserts like in the Embedded mode with job routing to same machines as data stores if possible.
 
-**Example: Launch a Spark local mode cluster and uses Smart Connector to access SnappyData cluster**
+**Example: Launch a Spark local mode cluster and use Smart Connector to access SnappyData cluster**
 
 **Step 1: Start the SnappyData cluster**:
 You can either start SnappyData members using the `_snappy_start_all_` script or you can start them individually.
@@ -144,6 +144,7 @@ You can either start SnappyData members using the `_snappy_start_all_` script or
 # start members using the ssh scripts
 $ sbin/snappy-start-all.sh
 ```
+OR
 
 ```
 # start members individually
@@ -160,7 +161,7 @@ bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 !!! Note: 
-	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. Its value is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527).
+	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. The value of this property is a combination of locator host and JDBC client port on which the locator listens for connections (default is 1527).
  
  	* In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`.
 
