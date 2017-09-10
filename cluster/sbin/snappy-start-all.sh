@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -32,10 +32,13 @@ if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
 
-# Check for background start
-BACKGROUND=
+# Check for foreground start
+BACKGROUND=-bg
 if [ "$1" = "-bg" -o "$1" = "--background" ]; then
-  BACKGROUND="$1"
+  shift
+fi
+if [ "$1" = "-fg" -o "$1" = "--foreground" ]; then
+  BACKGROUND=""
   shift
 fi
   

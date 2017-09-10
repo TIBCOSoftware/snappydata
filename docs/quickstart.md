@@ -5,11 +5,17 @@ Multiple options are provided for getting started with SnappyData.
 Depending on your preference you can try any of the following options:
 
 * [Option 1: Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
+
 * [Option 2: Getting Started Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
+
 * [Option 3: 20X Faster than Spark 2.0.2 Caching](#start_benchmark)
+
 * [Option 4: Getting Started using SQL](#getting-started-using-sql)
+
 * [Option 5: Getting Started by Installing SnappyData On-Premise](#getting-started-by-installing-snappydata-on-premise)
+
 * [Option 6: Getting Started on AWS](#getting-started-on-aws)
+
 * [Option 7: Getting Started with Docker Image](#getting-started-with-docker-image)
 
 !!! Note: 
@@ -56,6 +62,7 @@ scala> import snappy.implicits._
 ```scala
 scala> val ds = Seq((1,"a"), (2, "b"), (3, "c")).toDS()
 ```
+
 **Define a schema for the table**:
 ```scala
 scala>  import org.apache.spark.sql.types._
@@ -406,9 +413,9 @@ $ docker run hello-world
 $  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 ```
 It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
-Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)
+Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart).
 
-For more details about SnappyData docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker)
+For more details about SnappyData docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker).
 
 #### More Information
 

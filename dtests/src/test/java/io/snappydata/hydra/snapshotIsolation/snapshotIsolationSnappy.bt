@@ -1,4 +1,24 @@
-io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert.conf
+io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_ReplicatedTable.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=3
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1  persistenceMode="sync"
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby/"
+  derbyDataLocation="/export/shared/QA_DATA/northWind_1G"
+  tableType="ReplicateRow"
+
+io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_PartitionedTable.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=3
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1  persistenceMode="sync"
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby/"
+  derbyDataLocation="/export/shared/QA_DATA/northWind_1G"
+  tableType="PartitionedRow"
+
+io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_ColumnTable.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=3
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -7,4 +27,14 @@ io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert.conf
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby/"
   derbyDataLocation="/export/shared/QA_DATA/northWind_1G"
   tableType="Column"
+
+io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_ColocatedTable.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=3
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  redundantCopies=1  persistenceMode="sync"
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby/"
+  derbyDataLocation="/export/shared/QA_DATA/northWind_1G"
+  tableType="ColocatedColumn"
 

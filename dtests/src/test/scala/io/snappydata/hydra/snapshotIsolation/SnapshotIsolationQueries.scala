@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,7 +19,8 @@ package io.snappydata.hydra.snapshotIsolation
 
 
 object SnapshotIsolationQueries {
-   val Q1: String =   "SELECT OrderID,count(1) as count FROM ORDER_DETAILS group by OrderID;"
+   val Q1: String =   "SELECT OrderID,count(1) as count FROM ORDERS group by OrderID HAVING count" +
+       "(1) > 1;"
 
   val queries = List(
     "Q1" -> Q1

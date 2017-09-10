@@ -5,7 +5,7 @@ html {
 /* Formatting for body text */
 p{
 font-size: 14px;
-font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
 }
 
 /* Formatting for headings */
@@ -13,7 +13,7 @@ font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 h1{
     color: #000000;
     font-size: 20pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; */
     background-color: #e8e9ea;
 }
 
@@ -21,34 +21,30 @@ h1{
 h2{
     color: #335183;
     font-size: 18pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
 }
 
 
 h3{
     color: #404040;
     font-size: 16pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
     border-bottom: thin double #e0e0e0;
 }
 
 h4 {
     color: #404040;
     font-size: 14pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; */
     font-style: italic;
 }
 
-/* Formatting for code snippets*/
-
+/* Formatting for code snippets
+*/
 pre code {
-  white-space: pre;
-  word-wrap: normal;
-  display: block;
-  padding: 12px;
-  background-color: #f5f6f6;
-  font-family: Monaco,Menlo,Consolas,"Courier New",monospace;
   font-size:12px;
+  overflow-x: auto
+  font-family: monospace,serif;
 }
 
 /* Formatting for inline code */
@@ -59,11 +55,12 @@ code {
     padding: 2px 5px;
 }
 
-
+/*
 pre .cs, pre .c {
     font-weight: inherit;
     font-style: inherit;
 }
+*/
 
 /* Formatting for Note 
 note-sub {

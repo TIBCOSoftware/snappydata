@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,6 +22,7 @@ import java.util.Properties
 import scala.language.postfixOps
 import scala.sys.process._
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata._
@@ -47,10 +48,17 @@ abstract class ClusterManagerTestBase(s: String)
 
   val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
-  bootProps.setProperty("log-level", "config")
+  val logLevel: String = System.getProperty("logLevel", "config")
+  bootProps.setProperty("log-level", logLevel)
+  // set DistributionManager.VERBOSE for log-level fine or higher
+  if (logLevel.startsWith("fine") || logLevel == "all") {
+    System.setProperty("DistributionManager.VERBOSE", "true")
+  }
+  bootProps.setProperty("security-log-level",
+    System.getProperty("securityLogLevel", "config"))
   // Easier to switch ON traces. thats why added this.
-  // bootProps.setProperty("gemfirexd.debug.true",
-  //   "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
+//   bootProps.setProperty("gemfirexd.debug.true",
+//     "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores",
     TestUtils.defaultCores.toString)
@@ -121,9 +129,7 @@ abstract class ClusterManagerTestBase(s: String)
     }
 
     vm0.invoke(startNode)
-    vm1.invoke(startNode)
-    vm2.invoke(startNode)
-
+    Array(vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
@@ -162,6 +168,7 @@ abstract class ClusterManagerTestBase(s: String)
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       stopNetworkServers()
     }
+    
     bootProps.clear()
   }
 
@@ -181,12 +188,15 @@ abstract class ClusterManagerTestBase(s: String)
   }
 
   def getANetConnection(netPort: Int,
-      useGemXDURL: Boolean = false): Connection = {
+      useGemXDURL: Boolean = false,
+      disableQueryRouting: Boolean = false): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
       url = "jdbc:gemfirexd:thrift://localhost:" + netPort + "/"
+    } else if (disableQueryRouting) {
+      url = "jdbc:snappydata://localhost:" + netPort + "/route-query=false"
     } else {
       url = "jdbc:snappydata://localhost:" + netPort + "/"
     }
@@ -202,6 +212,9 @@ abstract class ClusterManagerTestBase(s: String)
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
   }
+
+
+
 }
 
 /**
@@ -253,6 +266,7 @@ object ClusterManagerTestBase extends Logging {
     val snc = SnappyContext()
     if (snc != null) {
       TestUtils.dropAllTables(snc)
+      TestUtils.dropAllFunctions(snc)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
@@ -316,5 +330,17 @@ object ClusterManagerTestBase extends Logging {
     logInfo(s"Stopping spark cluster in $productDir/work")
     if (sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
+  }
+
+  def validateNoActiveSnapshotTX(): Unit = {
+    val cache = Misc.getGemFireCache
+    val txMgr = cache.getCacheTransactionManager
+    if (txMgr != null) {
+      val itr = txMgr.getHostedTransactionsInProgress.iterator()
+      while (itr.hasNext) {
+        val tx = itr.next()
+        if (tx.isSnapshot) assert(tx.isClosed, s"$tx is not closed. ")
+      }
+    }
   }
 }

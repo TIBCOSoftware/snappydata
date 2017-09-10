@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -81,6 +81,8 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
       Some(DoubleType)
     } else if (sqlType == Types.REAL && typeName.equalsIgnoreCase("real")) {
       Some(FloatType)
+    } else if (sqlType == Types.TINYINT || sqlType == Types.SMALLINT) {
+      Some(ShortType)
     } else if (sqlType == Types.VARCHAR && size > 0 &&
         typeName.equalsIgnoreCase("varchar")) {
       md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
@@ -101,8 +103,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     case StringType => Some(JdbcType("CLOB", java.sql.Types.CLOB))
     case BinaryType => Some(JdbcType("BLOB", java.sql.Types.BLOB))
     case BooleanType => Some(JdbcType("BOOLEAN", java.sql.Types.BOOLEAN))
-    case ByteType => Some(JdbcType("INTEGER", java.sql.Types.INTEGER))
-    case ShortType => Some(JdbcType("SMALLINT", java.sql.Types.SMALLINT))
+    case ByteType | ShortType => Some(JdbcType("SMALLINT", java.sql.Types.SMALLINT))
     case d: DecimalType => Some(JdbcType(s"DECIMAL(${d.precision},${d.scale})",
       java.sql.Types.DECIMAL))
     case _: ArrayType | _: MapType | _: StructType =>

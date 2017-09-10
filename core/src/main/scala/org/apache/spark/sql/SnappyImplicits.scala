@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -62,7 +62,7 @@ object snappy extends Serializable {
 
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
-      case SubqueryAlias(_, child) => unwrapSubquery(child)
+      case SubqueryAlias(_, child, _) => unwrapSubquery(child)
       case _ => plan
     }
   }

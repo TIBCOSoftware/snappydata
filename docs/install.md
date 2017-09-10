@@ -10,18 +10,17 @@ The following installation options are available:
 !!! Note:  
 	Configuring the limit for Open Files and Threads/Processes </br> On a Linux system you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:
 
-        ```
-        snappydata          hard    nofile      81920
-        snappydata          soft    nofile      8192
-        snappydata          hard    nproc       unlimited
-        snappydata          soft    nproc       524288
-        snappydata          hard    sigpending  unlimited
-        snappydata          soft    sigpending  524288
+```
+snappydata          hard    nofile      81920
+snappydata          soft    nofile      8192
+snappydata          hard    nproc       unlimited
+snappydata          soft    nproc       524288
+snappydata          hard    sigpending  unlimited
+snappydata          soft    sigpending  524288
+```
+Here `snappydata` is the user name under which the SnappyData processes are started. 
 
-        ```
-
-	Here `snappydata` is the user name under which the SnappyData processes are started. 
-
+<a id="install-on-premise"></a>
 ## Install On-Premise
 SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
@@ -36,7 +35,7 @@ The packages are available in compressed files (.zip and .tar format). On this p
 * **SnappyData 0.9 download link**
 [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-bin.zip)
 
-* **SnappyData 0.9 (hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.zip)
+* **SnappyData 0.9 (user-provided Hadoop) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.zip)
 
 <a id="singlehost"></a>
 ### Single Host Installation
@@ -112,9 +111,8 @@ $ bin/snappy locator stop -dir=/node-a/locator1
 $ bin/snappy server stop -dir=/node-b/server1
 $ bin/snappy leader stop -dir=/node-c/lead1top
 ```
-
+<a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 ## Setting up Cluster on Amazon Web Services (AWS)
-
 
 ### Using AWS Management Console
 You can launch a SnappyData cluster on Amazon EC2 instance(s) using AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
@@ -420,6 +418,7 @@ Some of the known limitations of the script are:
 
 * Support for option --user is incomplete
 
+<a id="building-from-source"></a>
 ## Building from Source
 Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 
@@ -512,7 +511,7 @@ Useful build and test targets:
                            and also full SnappyData store testsuite
 ```
 
-The default build directory is _build-artifacts/scala-2.11_ for projects. An exception is _store_ project, where the default build directory is _build-artifacts/&lt;os&gt;_ where _&lt;os&gt;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.
+The default build directory is _build-artifacts/scala-2.11_ for projects. An exception is _store_ project, where the default build directory is _build-artifacts/;os;_ where _;os;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.
 
 The usual Gradle test run targets (_test_, _check_) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (_scalaTest_) while the _check_ target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with _singleSuite_ option while running a single test within some suite works with the _--tests_ option:
 

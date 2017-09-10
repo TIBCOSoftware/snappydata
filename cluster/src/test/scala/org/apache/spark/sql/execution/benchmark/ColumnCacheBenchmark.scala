@@ -1,6 +1,22 @@
 /*
- * Adapted from https://github.com/apache/spark/pull/13899 having the below
- * license.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+/*
+ * Some initial code adapted from https://github.com/apache/spark/pull/13899 having
+ * the below license.
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,27 +33,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * Changes for SnappyData data platform.
- *
- * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
 
 package org.apache.spark.sql.execution.benchmark
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.SparkConf
@@ -50,6 +49,16 @@ import org.apache.spark.util.Benchmark
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    stopAll()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    stopAll()
+  }
+
   override protected def newSparkConf(
       addOn: SparkConf => SparkConf = null): SparkConf = {
     val cores = math.min(8, Runtime.getRuntime.availableProcessors())
@@ -57,7 +66,9 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")
     conf.set("snappydata.store.critical-heap-percentage", "95")
-    conf.set("snappydata.store.memory-size", "1200m")
+    if (SnappySession.isEnterpriseEdition) {
+      conf.set("snappydata.store.memory-size", "1200m")
+    }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
@@ -103,12 +114,19 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private def benchmarkRandomizedKeys(size: Int, queryPath: Boolean,
       numIters: Int = 10, runSparkCaching: Boolean = true): Unit = {
     val benchmark = new Benchmark("Cache random keys", size)
+    val sparkSession = this.sparkSession
+    val snappySession = this.snappySession
+    if (GemFireCacheImpl.hasNewOffHeap) {
+      logInfo("ColumnCacheBenchmark: using off-heap for performance comparison")
+    } else {
+      logInfo("ColumnCacheBenchmark: using heap for performance comparison")
+    }
     sparkSession.sql("drop table if exists test")
     snappySession.sql("drop table if exists test")
     val testDF = sparkSession.range(size)
-        .selectExpr("id", "floor(rand() * 10000) as k")
+        .selectExpr("id", "(rand() * 1000.0) as k")
     val testDF2 = snappySession.range(size)
-        .selectExpr("id", "floor(rand() * 10000) as k")
+        .selectExpr("id", "(rand() * 1000.0) as k")
     testDF.createOrReplaceTempView("test")
 
     val query = "select avg(k), avg(id) from test"
@@ -133,11 +151,21 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           sparkSession.catalog.cacheTable("test")
         } else if (snappy) {
           snappySession.sql("drop table if exists test")
-          snappySession.sql(s"create table test (id bigint not null, " +
-              s"k bigint not null) using column")
+          snappySession.sql(
+            "create table test (id bigint not null, k double not null) using column")
           testDF2.write.insertInto("test")
         }
         if (snappy) {
+          snappySession.sql("set snappydata.linkPartitionsToBuckets=true")
+          val results = snappySession.sql("select count(*), spark_partition_id() " +
+              "from test group by spark_partition_id()").collect().toSeq
+          snappySession.sql("set snappydata.linkPartitionsToBuckets=false")
+          val counts = results.map(_.getLong(0))
+          // expect the counts to not vary by more than 800k (max 200k per batch)
+          val min = counts.min
+          val max = counts.max
+          assert(max - min <= 800000, "Unexpectedly large data skew: " +
+              results.map(r => s"${r.getInt(1)}=${r.getLong(0)}").mkString(","))
           ColumnCacheBenchmark.collect(snappySession.sql(query), expectedAnswer2)
         } else {
           ColumnCacheBenchmark.collect(sparkSession.sql(query), expectedAnswer)
@@ -205,7 +233,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val num_col = 300
     val str = (1 to num_col).map(i => s" '$i' as C$i")
     val testDF = snappySession.range(size).select(str.map { expr =>
-      Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
+      Column(snappySession.sessionState.sqlParser.parseExpression(expr))
     }: _*)
 
 
@@ -246,7 +274,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val str = (1 to numCols).map(i =>
       s" (case when rand() < 0.5 then null else '$i' end) as C$i")
     val testDF = snappySession.range(size).select(str.map { expr =>
-      Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
+      Column(snappySession.sessionState.sqlParser.parseExpression(expr))
     }: _*)
 
     val sql = (1 to numCols).map(i => s"C$i STRING").mkString(",")
