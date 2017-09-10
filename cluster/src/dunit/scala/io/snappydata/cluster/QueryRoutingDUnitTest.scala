@@ -470,6 +470,8 @@ class QueryRoutingDUnitTest(val s: String)
       var schemaname = rs.getString("tableschemaname")
       assert("APP".equals(schemaname))
 
+      // just check few metadata for internal column table absence
+      checkDBAPIsForNonInclusionOfInternalColTable(conn)
       s.execute(s"CREATE TABLE $rowTable (Col1 INT, Col2 INT, Col3 INT) USING row")
       s.execute(s"select * from sys.systables where tablename='$rowTable'")
       rs = s.getResultSet
@@ -541,6 +543,35 @@ class QueryRoutingDUnitTest(val s: String)
         newConn.close()
       }
       FileUtils.deleteDirectory(dataDir)
+    }
+  }
+
+  def checkDBAPIsForNonInclusionOfInternalColTable(conn: Connection): Unit = {
+    var rs = conn.getMetaData.getTables(null, null, "%", null)
+    var ncols = rs.getMetaData.getColumnCount
+    while (rs.next()) {
+      // 3rd index the table name
+      assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+    }
+    rs.close()
+    rs = conn.getMetaData.getColumns(null, null, "%", "%")
+    ncols = rs.getMetaData.getColumnCount
+    while (rs.next()) {
+      // 3rd index the table name
+      for (i <- 1 to ncols) {
+        // 3rd index the table name
+        assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+      }
+    }
+    rs.close()
+    rs = conn.getMetaData.getTablePrivileges(null, null, "%")
+    ncols = rs.getMetaData.getColumnCount
+    while (rs.next()) {
+      // 3rd index the table name
+      for (i <- 1 to ncols) {
+        // 3rd index the table name
+        assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+      }
     }
   }
 
