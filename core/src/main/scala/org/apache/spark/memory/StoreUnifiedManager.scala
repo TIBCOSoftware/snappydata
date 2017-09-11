@@ -206,7 +206,7 @@ object MemoryManagerCallback extends Logging {
   def poolForAsyncOperation: ExecutorService = {
     val cache = Misc.getGemFireCacheNoThrow
     if ((cache ne null) && !Thread.holdsLock(memoryManager)) {
-      cache.getDistributionManager.getWaitingThreadPool
+      cache.getDistributionManager.getHighPriorityThreadPool
     } else null
   }
 
