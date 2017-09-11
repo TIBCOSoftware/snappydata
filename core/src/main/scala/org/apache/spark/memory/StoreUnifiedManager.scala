@@ -17,10 +17,12 @@
 package org.apache.spark.memory
 
 import java.nio.ByteBuffer
+import java.util.concurrent.ExecutorService
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
+import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.util.Utils
@@ -74,12 +76,12 @@ trait StoreUnifiedManager {
   /**
     * Clears the internal map
     */
-  def clear
+  def clear()
 
   /**
     * Closes the memory manager.
     */
-  def close
+  def close()
 }
 
 /**
@@ -140,12 +142,12 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
   override def initMemoryStats(stats: MemoryManagerStats): Unit = {}
 
-  override def close: Unit = {}
+  override def close(): Unit = {}
 
   /**
     * Clears the internal map
     */
-  override def clear: Unit = {}
+  override def clear(): Unit = {}
 }
 
 object MemoryManagerCallback extends Logging {
@@ -156,7 +158,7 @@ object MemoryManagerCallback extends Logging {
   val ummClass = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
 
   // This memory manager will be used while GemXD is booting up and SparkEnv is not ready.
-  lazy val bootMemoryManager = {
+  private[memory] lazy val bootMemoryManager = {
     try {
       val conf = new SparkConf()
       Utils.classForName(ummClass)
@@ -177,7 +179,7 @@ object MemoryManagerCallback extends Logging {
 
   // Is called from cache.close() && session.close() & umm.close
   def resetMemoryManager(): Unit = synchronized {
-    bootMemoryManager.clear
+    bootMemoryManager.clear()
     snappyUnifiedManager = null
   }
 
@@ -199,6 +201,13 @@ object MemoryManagerCallback extends Logging {
     val manager = snappyUnifiedManager
     if ((manager ne null) && isCluster) manager
     else getMemoryManager
+  }
+
+  def poolForAsyncOperation: ExecutorService = {
+    val cache = Misc.getGemFireCacheNoThrow
+    if ((cache ne null) && !Thread.holdsLock(memoryManager)) {
+      cache.getDistributionManager.getHighPriorityThreadPool
+    } else null
   }
 
   private def getMemoryManager: StoreUnifiedManager = synchronized {

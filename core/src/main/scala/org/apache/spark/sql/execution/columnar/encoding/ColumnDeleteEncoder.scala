@@ -229,9 +229,9 @@ final class ColumnDeleteDelta extends ColumnFormatValue with Delta {
       try {
         new ColumnFormatValue(encoder.merge(existingBuffer, columnBuffer))
       } finally {
-        oldColumnValue.release()
+        oldColumnValue.release(true)
         // release own buffer too and delta should be unusable now
-        release()
+        release(true)
       }
     }
   }
