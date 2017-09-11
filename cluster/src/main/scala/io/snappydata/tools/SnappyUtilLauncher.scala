@@ -17,6 +17,7 @@
 package io.snappydata.tools
 
 import java.io.{File, IOException}
+import java.util
 
 import com.gemstone.gemfire.internal.GemFireUtilLauncher.CommandEntry
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
@@ -42,26 +43,29 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
   SnappyDataVersion.loadProperties
 
+  // gfxd commands not applicable in snappy
+  protected var snappy_removed_commands: Set[String] = Set[String](
+    "agent", "encrypt-password", "upgrade-disk-store",
+    "modify-disk-store", "export-disk-store", "shut-down-all")
+
   protected override def getTypes: java.util.Map[String, CommandEntry] = {
-    val types = super.getTypes
+    val types: java.util.Map[String, CommandEntry] = new util.LinkedHashMap[String, CommandEntry]()
 
     types.put("server", new CommandEntry(classOf[ServerLauncher],
       LocalizedMessages.res.getTextMessage("UTIL_Server_Usage"), false))
     types.put("locator", new CommandEntry(classOf[LocatorLauncher],
       LocalizedMessages.res.getTextMessage("UTIL_Locator_Usage"), false))
-
-
     types.put("leader", new CommandEntry(classOf[LeaderLauncher],
       LocalizedMessages.res.getTextMessage("UTIL_Lead_Usage"), false))
 
     types.put(SCRIPT_NAME, new CommandEntry(classOf[ij],
       LocalizedMessages.res.getTextMessage("UTIL_SnappyShell_Usage"), false))
     val product = LocalizedMessages.res.getTextMessage("FS_PRODUCT")
-    types.put("agent", new CommandEntry(classOf[GfxdAgentLauncher],
-      LocalizedStrings.GemFireUtilLauncher_Agent_Usage.toString(Array[AnyRef](product)), false))
 
-    for (cmd <- GfxdSystemAdmin.getValidCommands) {
-      if ("version".equals(cmd)) {
+    val commands = GfxdSystemAdmin.getValidCommands
+    for (cmd <- commands) {
+      if (!"help".equals(cmd) && !cmd.contains("locator") &&
+          !snappy_removed_commands.contains(cmd)) {
         types.put(cmd, new GemFireUtilLauncher.CommandEntry(classOf[SnappySystemAdmin],
           LocalizedResource.getMessage("UTIL_" + cmd.replace('-', '_') + "_ShortDesc"), true))
       }
@@ -74,7 +78,6 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
       types.put(entry.getKey, new CommandEntry(classOf[MiscTools],
         LocalizedMessages.res.getTextMessage(entry.getValue), true))
     }
-
 
     // JarTools utilities
     val jarToolsIterator = JarTools.getValidCommands.entrySet.iterator()
