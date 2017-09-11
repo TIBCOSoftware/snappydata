@@ -81,13 +81,13 @@ dependencies {
     }
 
     if (new File(rootDir, 'store/build.gradle').exists()) {
-        testCompile project(':snappy-store:gemfirexd-client')
-        testCompile project(':snappy-store:gemfirexd-core')
-        testCompile project(':snappy-store:gemfirexd-tools')
-        testCompile project(':snappy-store:gemfirexd-tests')
+        testCompile project(':snappy-store:snappydata-store-client')
+        testCompile project(':snappy-store:snappydata-store-core')
+        testCompile project(':snappy-store:snappydata-store-tools')
+        testCompile project(':snappy-store:snappydata-store-tests')
         testCompile project(':snappy-store:gemfire-tests')
         testCompile project(':snappy-store:gemfire-core')
-        testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+        testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
     } else {
         testCompile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
         testCompile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
@@ -154,7 +154,7 @@ testClasses.doLast {
           include '**/*.inc'
           include '**/*.sql'
       }
-      into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+      into project(':snappy-store:snappydata-store-tests').sourceSets.main.output.classesDir
     }
   }
 }

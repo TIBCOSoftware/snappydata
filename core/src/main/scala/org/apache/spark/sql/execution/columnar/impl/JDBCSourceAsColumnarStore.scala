@@ -465,7 +465,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
       // noinspection RedundantDefaultArgument
       tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
-        onExecutor = true)(doInsertOrPutImpl(batch, partitionId))(conn)
+        onExecutor = true)(doRowBufferPut(batch, partitionId))(conn)
     } else {
       connectionType match {
         case ConnectionType.Embedded =>
@@ -486,7 +486,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }
   }
 
-  private def doInsertOrPutImpl(batch: ColumnBatch,
+  private def doRowBufferPut(batch: ColumnBatch,
       partitionId: Int): (Connection => Unit) = {
     (connection: Connection) => {
       val gen = CodeGeneration.compileCode(
