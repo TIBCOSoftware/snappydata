@@ -346,7 +346,9 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   private def getMinOffHeapEviction(required: Long): Long = {
-    // off-heap calculations are precise so evict exactly as much as required
+    // off-heap calculations are precise so evict exactly as much as required;
+    // bit of "padding" (1M) to account for inaccuracies in pre-allocation by
+    // putAll threads
     math.max(0, required - offHeapStorageMemoryPool.memoryFree + (1024 * 1024))
   }
 
