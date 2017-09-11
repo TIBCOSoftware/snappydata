@@ -1769,6 +1769,12 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 </code></pre>
 
 <p><code>snappydata.connection</code> property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For running ML/MLlib applications you need to install appropriate python packages if your application uses any.
+KMeans uses numpy hence you need to install numpy package before using Spark KMeans.</p>
+<p>e.g. sudo apt-get install python-numpy</p>
+</div>
 <h2 id="streaming-jobs">Streaming Jobs</h2>
 <p>An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying <code>--stream</code> as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
 Alternatively, you can specify the name of an existing/pre-created streaming context as <code>--context &lt;context-name&gt;</code> with the <code>submit</code> command.</p>
