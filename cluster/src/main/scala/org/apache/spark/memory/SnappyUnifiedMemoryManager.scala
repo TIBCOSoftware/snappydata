@@ -17,7 +17,7 @@
 package org.apache.spark.memory
 
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.{AtomicInteger}
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
@@ -346,9 +346,10 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   private def getMinOffHeapEviction(required: Long): Long = {
-    // off-heap calculations are precise so evict exactly as much as required
-    (required * math.max(1, math.min(4, threadsWaitingForStorage.get()))) -
-        offHeapStorageMemoryPool.memoryFree
+    // off-heap calculations are precise so evict exactly as much as required;
+    // bit of "padding" (1M) to account for inaccuracies in pre-allocation by
+    // putAll threads
+    math.max(0, required - offHeapStorageMemoryPool.memoryFree + (1024 * 1024))
   }
 
   /**
