@@ -161,6 +161,12 @@ bin/spark-submit \
 
 `snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.
 
+!!! Note:
+	For running ML/MLlib applications you need to install appropriate python packages if your application uses any.
+	KMeans uses numpy hence you need to install numpy package before using Spark KMeans.
+	
+	e.g. sudo apt-get install python-numpy
+
 
 ## Streaming Jobs
 
