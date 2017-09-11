@@ -326,7 +326,16 @@ class ColumnFormatValue extends SerializedDiskBuffer
     val buffer = this.columnBuffer
     if (buffer.isDirect) {
       this.columnBuffer = DiskEntry.Helper.NULL_BUFFER
-      DirectBufferAllocator.instance().release(buffer)
+      // schedule the release in background to avoid possible deadlocks
+      // (release will take UMM lock while UMM needs entry lock for eviction)
+      val cache = Misc.getGemFireCacheNoThrow
+      if (cache ne null) {
+        cache.getDistributionManager.getWaitingThreadPool.execute(new Runnable {
+          override def run(): Unit = DirectBufferAllocator.instance().release(buffer)
+        })
+      } else {
+        DirectBufferAllocator.instance().release(buffer)
+      }
     }
   }
 

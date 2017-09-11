@@ -17,7 +17,7 @@
 package org.apache.spark.memory
 
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.{AtomicInteger}
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
@@ -91,8 +91,9 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[memory] val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
 
+  private val maxHeapEviction = 1024L * 1024L * 1024L
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
-    (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
+    (maxHeapStorageSize * 0.002).toLong), maxHeapEviction)
 
   private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
@@ -339,16 +340,14 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   private def getMinHeapEviction(required: Long): Long = {
-    // evict at least 100 entries to reduce GC cycles
     val waitingThreads = threadsWaitingForStorage.get()
-    math.max(required * waitingThreads, math.min(minHeapEviction,
-      required * math.max(100L, waitingThreads + 1)))
+    math.max(required, math.min(math.max(minHeapEviction, required * waitingThreads),
+      maxHeapEviction))
   }
 
   private def getMinOffHeapEviction(required: Long): Long = {
     // off-heap calculations are precise so evict exactly as much as required
-    (required * math.max(1, math.min(4, threadsWaitingForStorage.get()))) -
-        offHeapStorageMemoryPool.memoryFree
+    math.max(0, required - offHeapStorageMemoryPool.memoryFree + (1024 * 1024))
   }
 
   /**
