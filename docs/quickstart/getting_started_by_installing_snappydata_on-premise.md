@@ -9,4 +9,5 @@ $ cd snappydata-1.0.0-rc1-bin/
 $ mkdir quickstartdatadir
 $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
 ```
-It opens a Spark Shell. All SnappyData metadata, as well as persistent data, is stored in the directory **quickstartdatadir**. Follow the steps mentioned [here](#Start_quickStart)
+
+It opens a Spark Shell. All SnappyData metadata, as well as persistent data, is stored in the directory **quickstartdatadir**. Follow the steps mentioned [here](using_spark_scala_apis.md)

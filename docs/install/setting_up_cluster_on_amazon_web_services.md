@@ -64,7 +64,7 @@ The `snappy-ec2` script enables users to quickly launch and manage SnappyData cl
 
 The `snappy-ec2` script has been derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
 
-The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a [**.tar.gz**](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
+The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a **.tar.gz** file on [the release page](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
 
 !!! Note: 
 	The EC2 script is under development. Feel free to try it out and provide your feedback.

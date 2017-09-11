@@ -19,8 +19,4 @@ Multi-Statement transactions are not supported on column tables. Instead, we pro
 <!--Currently, only single statement snapshot isolation (that is, [autocommit](../reference/interactive_commands/autocommit.md) must be set to true) is supported.-->  
 
 !!! Note:
-
-	* An error is reported if READ_COMMITTED or REPEATABLE_READ isolation level is set and the query is executed on a column table.
-
-	* Ensure that you set [AUTOCOMMIT](../reference/interactive_commands/autocommit.md) to **On** for column tables, else an error may be reported during query execution.
-
+	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to off (false). </br>Queries on column tables are supported when isolation level is set to `READ_COMMITTED` or `REPEATABLE_READ` and autocommit is set to **true**.

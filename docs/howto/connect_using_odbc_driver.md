@@ -33,7 +33,7 @@ To download and install the ODBC driver:
 4. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
 
 	!!! Note: 
-		Ensure that [SnappyData version 0.8 or later is installed](http://snappydatainc.github.io/snappydata/install/) and the [SnappyData cluster is running](../howto.md#howto-startCluster).
+		Ensure that [SnappyData version 0.8 or later is installed](http://snappydatainc.github.io/snappydata/install/) and the [SnappyData cluster is running](start_snappy_cluster.md).
 
 ## Connect to the SnappyData cluster 
 Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:

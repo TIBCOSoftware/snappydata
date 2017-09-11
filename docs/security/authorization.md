@@ -12,7 +12,7 @@ The [GRANT](../reference/sql_reference/grant.md) statement is used to grant spec
 
 	* A user requiring [INSERT](../reference/sql_reference/insert.md), [UPDATE](../reference/sql_reference/update.md) or [DELETE](../reference/sql_reference/delete.md) permissions may also require explicit [SELECT](../reference/sql_reference/select.md) permission on a table
 	
-	* Only the administrator or users with the required permissions can execute built-in procedures (like INSTALL-JAR)
+	* Only administrators can execute built-in procedures (like INSTALL-JAR)
 
 ## LDAP Groups in SnappyData Authorization
 SnappyData extends the SQL GRANT statement to support LDAP Group names as Grantees.
