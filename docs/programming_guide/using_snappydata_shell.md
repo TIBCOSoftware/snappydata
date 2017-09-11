@@ -4,13 +4,12 @@ It allows you to run interactive queries on the row and column stores, run admin
 Internally, it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 ```
 // from the SnappyData base directory  
-$ cd quickstart/scripts  
-$ ../../bin/snappy-sql
-Version 2.0-BETA
+$ bin/snappy-sql
+SnappyData version 1.0.0-rc1.1
 snappy> 
 
 //Connect to the cluster as a client  
-snappy> connect client 'localhost:1527'; //It connects to the locator.
+snappy> connect client 'localhost:1527'; //It connects to the locator which is running in localhost with client port configured as 1527.
 
 //Show active connections  
 snappy> show connections;

@@ -128,7 +128,7 @@ The status of this job can be queried in the same manner as shown above. The res
 
 ### Jar Dependencies for Jobs
 
-For Jobs, users need to include **[snappydata-cluster_2.11:1.0.0-rc1.1](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1.1)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
+For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.0-rc1.1](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1.1)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
 
 For example, gradle can be configured as:
 
@@ -150,7 +150,7 @@ compile('io.snappydata:snappydata-cluster_2.11:1.0.0-rc1.1') {
 ```
 
 ## Running Python Applications
-Python users can submit a Python application using `spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
+Python users can submit a Python application using `bin/spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
 
 ```scala
 bin/spark-submit \
@@ -160,6 +160,12 @@ bin/spark-submit \
 ```
 
 `snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.
+
+!!! Note:
+	For running ML/MLlib applications you need to install appropriate python packages if your application uses any.
+	KMeans uses numpy hence you need to install numpy package before using Spark KMeans.
+	
+	e.g. sudo apt-get install python-numpy
 
 
 ## Streaming Jobs

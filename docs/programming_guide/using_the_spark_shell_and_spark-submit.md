@@ -9,28 +9,23 @@ To run all SnappyData functionalities you need to create a [SnappySession](http:
 
 ```scala
 // from the SnappyData base directory  
-# Start the Spark shell in local mode. Pass SnappyData's locators host:clientPort as a conf parameter.
+// Start the Spark shell in local mode. Pass SnappyData's locators host:clientPort as a conf parameter.
 $ bin/spark-shell  --master local[*] --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041
 scala>
-#Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
+ // Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 scala> val airlineDF = snappy.table("airline").show
 scala> val resultset = snappy.sql("select * from airline")
-Next changed command:
-# Start the Spark standalone cluster from SnappyData base directory 
-$ sbin/start-all.sh 
-# Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
 ```
 
 Any Spark application can also use the SnappyData as store and Spark as a computational engine by providing an extra `spark.snappydata.connection` property in the conf.
 
 ```scala
-# Start the Spark standalone cluster from SnappyData base directory 
+// Start the Spark standalone cluster from SnappyData base directory
 $ sbin/start-all.sh 
-# Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
+// Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
 $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
 
-# The results can be seen on the command line.
+// The results can be seen on the command line.
 ```
 
