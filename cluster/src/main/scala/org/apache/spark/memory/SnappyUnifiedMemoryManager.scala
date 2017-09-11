@@ -91,9 +91,8 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[memory] val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
 
-  private val maxHeapEviction = 1024L * 1024L * 1024L
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
-    (maxHeapStorageSize * 0.002).toLong), maxHeapEviction)
+    (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
 
   private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
@@ -340,9 +339,10 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   private def getMinHeapEviction(required: Long): Long = {
+    // evict at least 100 entries to reduce GC cycles
     val waitingThreads = threadsWaitingForStorage.get()
-    math.max(required, math.min(math.max(minHeapEviction, required * waitingThreads),
-      maxHeapEviction))
+    math.max(required * waitingThreads, math.min(minHeapEviction,
+      required * math.max(100L, waitingThreads + 1)))
   }
 
   private def getMinOffHeapEviction(required: Long): Long = {

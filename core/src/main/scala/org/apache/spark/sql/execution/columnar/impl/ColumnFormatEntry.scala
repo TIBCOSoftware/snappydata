@@ -320,7 +320,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
 
   override final def needsRelease: Boolean = columnBuffer.isDirect
 
-  override protected def releaseBuffer(): Unit = synchronized {
+  override protected def releaseBuffer(async: Boolean): Unit = synchronized {
     // Remove the buffer at this point. Any further reads will need to be
     // done either using DiskId, or will return empty if no DiskId is available
     val buffer = this.columnBuffer
@@ -328,14 +328,16 @@ class ColumnFormatValue extends SerializedDiskBuffer
       this.columnBuffer = DiskEntry.Helper.NULL_BUFFER
       // schedule the release in background to avoid possible deadlocks
       // (release will take UMM lock while UMM needs entry lock for eviction)
-      val cache = Misc.getGemFireCacheNoThrow
-      if (cache ne null) {
-        cache.getDistributionManager.getWaitingThreadPool.execute(new Runnable {
-          override def run(): Unit = DirectBufferAllocator.instance().release(buffer)
-        })
-      } else {
-        DirectBufferAllocator.instance().release(buffer)
+      if (async) {
+        val asyncPool = MemoryManagerCallback.poolForAsyncOperation
+        if (asyncPool ne null) {
+          asyncPool.execute(new Runnable {
+            override def run(): Unit = DirectBufferAllocator.instance().release(buffer)
+          })
+          return
+        }
       }
+      DirectBufferAllocator.instance().release(buffer)
     }
   }
 
