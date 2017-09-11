@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.Collections
-import java.util.concurrent.ExecutorService
 
 import scala.collection.JavaConverters._
 
@@ -291,9 +290,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     MemoryManagerCallback.memoryManager.
         releaseStorageMemoryForObject(objectName, numBytes, mode)
   }
-
-  override def poolForAsyncOperation: ExecutorService =
-    MemoryManagerCallback.poolForAsyncOperation
 
   override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
     // off-heap will be cleared via ManagedDirectBufferAllocator

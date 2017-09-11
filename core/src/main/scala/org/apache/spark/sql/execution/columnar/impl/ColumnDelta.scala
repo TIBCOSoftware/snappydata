@@ -84,9 +84,9 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
           new ColumnFormatValue(encoder.merge(columnBuffer, existingBuffer,
             columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)))
         } finally {
-          oldColumnValue.release(true)
+          oldColumnValue.release()
           // release own buffer too and delta should be unusable now
-          release(true)
+          release()
         }
       }
     }
