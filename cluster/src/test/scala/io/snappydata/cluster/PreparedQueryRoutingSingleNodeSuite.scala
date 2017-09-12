@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet, SQLException}
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -856,8 +856,8 @@ object PreparedQueryRoutingSingleNodeSuite{
     }
   }
 
-  def verifyResults(qry: String, rs: ResultSet, results: Array[Int], cacheMapSize: Int,
-      assertResults: Boolean = true): Unit = {
+  def verifyResults(qry: String, rs: ResultSet, results: Array[Int],
+      cacheMapSize: Int): Unit = {
     val cacheMap = SnappySession.getPlanCache.asMap()
 
     var index = 0
@@ -875,7 +875,7 @@ object PreparedQueryRoutingSingleNodeSuite{
     // scalastyle:off println
     println(s"$qry Number of rows read " + index)
     // scalastyle:on println
-    if (assertResults) assert(index == results.length)
+    assert(index == results.length)
     rs.close()
 
     // scalastyle:off println
@@ -981,9 +981,8 @@ object PreparedQueryRoutingSingleNodeSuite{
           s" from $tableName1" +
           " where ol_1_str_id like ?")
       prepStatement1.setString(1, "7777")
-      // TODO: removing result check temporarily due to SNAP-2004
       verifyResults("update_delete_query2-select1", prepStatement1.executeQuery, Array(4000),
-        cacheMapSize, assertResults = false)
+        cacheMapSize)
 
       prepStatement0.setString(1, "8888")
       prepStatement0.setInt(2, 501)
@@ -991,9 +990,8 @@ object PreparedQueryRoutingSingleNodeSuite{
       assert(update2 == 1, update2)
 
       prepStatement1.setString(1, "8888")
-      // TODO: removing result check temporarily due to SNAP-2004
       verifyResults("update_delete_query2-select1", prepStatement1.executeQuery, Array(5000),
-        cacheMapSize, assertResults = false)
+        cacheMapSize)
       // Thread.sleep(1000000)
     } finally {
       if (prepStatement0 != null) prepStatement0.close()
