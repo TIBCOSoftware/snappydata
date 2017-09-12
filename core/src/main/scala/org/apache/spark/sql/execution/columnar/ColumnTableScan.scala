@@ -633,7 +633,7 @@ private[sql] final case class ColumnTableScan(
       s"""
         while (true) {
           $batchAssign
-          if ($filterFunction($unsafeRow)) {
+          if ($colInput.hasUpdatedColumns() || $filterFunction($unsafeRow)) {
             break;
           }
           if (!$colInput.hasNext()) return false;
