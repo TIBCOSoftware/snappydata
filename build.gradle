@@ -108,7 +108,7 @@ allprojects {
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
     scalatestVersion = '2.2.6'
-    jettyVersion = '9.2.16.v20160414'
+    jettyVersion = '9.2.22.v20170606'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.0'
     thriftVersion = '0.9.3'
