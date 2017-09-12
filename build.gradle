@@ -130,6 +130,7 @@ allprojects {
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
     commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
     sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
+    buildIdPrefix = System.env.USER + ' ' 
   }
 
   if (!buildRoot.isEmpty()) {
@@ -137,6 +138,9 @@ allprojects {
   } else {
     // default output directory like in sbt/maven
     buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
+  }
+  if (rootProject.hasProperty('enablePublish')) {
+    buildIdPrefix = 'SnappyData, Inc. '
   }
 
   ext {
