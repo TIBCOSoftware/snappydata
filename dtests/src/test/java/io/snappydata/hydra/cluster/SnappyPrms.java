@@ -16,6 +16,7 @@
  */
 package io.snappydata.hydra.cluster;
 
+import java.sql.Connection;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -469,6 +470,21 @@ public class SnappyPrms extends BasePrms {
   public static Long hasDynamicAppProps;
 
   /**
+   * (Boolean) parameter to enable trancations in test.
+   */
+  public static Long setTx;
+
+  /**
+   * (Boolean) parameter to set autoCommit value for transactions in test.
+   */
+  public static Long setAutoCommit;
+
+  /**
+   * (Boolean) parameter to set trancation isolation level in test.
+   */
+  public static Long txIsolationLevel;
+
+  /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
    */
   public static Long isSecurity;
@@ -819,7 +835,7 @@ public class SnappyPrms extends BasePrms {
     return executorMem;
   }
 
-  public static boolean hasDynamicAppProps(){
+  public static boolean hasDynamicAppProps() {
     Long key = hasDynamicAppProps;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
@@ -827,6 +843,27 @@ public class SnappyPrms extends BasePrms {
   public static Vector getKafkaTopic() {
     Long key = kafkaTopic;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+  }
+
+  public static boolean setTx() {
+    Long key = setTx;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static int getTxIsolationLevel() {
+    Long key = txIsolationLevel;
+    String isolationLevel = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+        "Connection.TRANSACTION_NONE"));
+    if (isolationLevel.equalsIgnoreCase("RC"))
+      return Connection.TRANSACTION_READ_COMMITTED;
+    else if (isolationLevel.equalsIgnoreCase("RR"))
+      return Connection.TRANSACTION_REPEATABLE_READ;
+    else return Connection.TRANSACTION_NONE;
+  }
+
+  public static boolean setAutoCommit() {
+    Long key = setAutoCommit;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   static {

@@ -1175,6 +1175,10 @@ public class SnappyTest implements Serializable {
       String url = "jdbc:snappydata://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
       conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+      if (SnappyPrms.setTx()) {
+        conn.setTransactionIsolation(SnappyPrms.getTxIsolationLevel());
+        conn.setAutoCommit(SnappyPrms.setAutoCommit());
+      }
     } else {
       String url = "jdbc:gemfirexd://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
