@@ -37,7 +37,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-csvFileNames =
 "products.csv"
 "suppliers.csv"
 "territories.csv"
-"employee-territories.csv"
+"employee_territories.csv"
 "employees.csv"
 "customers.csv"
 "orders.csv"
@@ -61,7 +61,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertCsvFileNames =
 "employees.csv"
 "customers.csv"
 "orders.csv"
-"order-details.csv"
+"order_details.csv"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmtsNonDMLTables =
