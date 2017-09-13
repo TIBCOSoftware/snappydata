@@ -34,11 +34,7 @@ clustermode=
 while (( "$#" )); do
   param="$1"
   case $param in
-    -bg)
-      # Check for background stop
-      BACKGROUND="$1"
-    ;;
-    --background)
+    -bg | --background)
       # Check for background stop
       BACKGROUND="$1"
     ;;

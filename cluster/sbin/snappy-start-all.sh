@@ -32,16 +32,31 @@ if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
 
-# Check for foreground start
 BACKGROUND=-bg
-if [ "$1" = "-bg" -o "$1" = "--background" ]; then
+clustermode=
+
+while (( "$#" )); do
+  param="$1"
+  case $param in
+    -bg | --background)
+      # Check for background start
+      BACKGROUND="$1"
+    ;;
+    -fg | --foreground)
+      # Check for foreground start
+      BACKGROUND=-bg
+    ;;
+    rowstore)
+      clustermode="rowstore"
+    ;;
+    *)
+      echo "Invalid option: $param"
+    ;;
+  esac
   shift
-fi
-if [ "$1" = "-fg" -o "$1" = "--foreground" ]; then
-  BACKGROUND=""
-  shift
-fi
-  
+done
+
+
 # Start Locators
 "$sbin"/snappy-locators.sh start "$@"
 
@@ -49,6 +64,6 @@ fi
 "$sbin"/snappy-servers.sh $BACKGROUND start "$@"
 
 # Start Leads
-if [ "$1" != "rowstore" ]; then
+if [ "$clustermode" != "rowstore" ]; then
   "$sbin"/snappy-leads.sh start
 fi
