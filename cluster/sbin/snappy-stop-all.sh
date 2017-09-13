@@ -28,17 +28,32 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
 
-
-# Check for background stop
 BACKGROUND=
-if [ "$1" = "-bg" -o "$1" = "--background" ]; then
-  BACKGROUND="$1"
+clustermode=
+
+while (( "$#" )); do
+  param="$1"
+  case $param in
+    -bg)
+      # Check for background stop
+      BACKGROUND="$1"
+    ;;
+    --background)
+      # Check for background stop
+      BACKGROUND="$1"
+    ;;
+    rowstore)
+      clustermode="rowstore"
+    ;;
+    *)
+      echo "Invalid option: $param"
+    ;;
+  esac
   shift
-fi
+done
 
 # Stop Leads
-leadStatus=`"$sbin"/snappy-leads.sh status`
-if ! echo $leadStatus | grep -qw "status: stopped"; then
+if [ "$clustermode" != "rowstore" ]; then
   "$sbin"/snappy-leads.sh stop
 fi
 
