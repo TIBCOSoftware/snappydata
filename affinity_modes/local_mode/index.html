@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -608,14 +615,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -629,7 +629,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1523,6 +1530,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1660,7 +1674,7 @@ libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11
 
 <p><strong>Example</strong>: <strong>Launch Apache Spark shell and provide SnappyData dependency as a Spark package</strong>:
 If you already have Spark2.0 installed in your local machine you can directly use <code>--packages</code> option to download the SnappyData binaries.</p>
-<pre><code class="bash">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
+<pre><code class="bash">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11&quot;
 </code></pre>
               
             </div>

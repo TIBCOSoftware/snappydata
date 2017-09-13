@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -612,14 +619,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -633,7 +633,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1527,6 +1534,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1748,6 +1762,7 @@
 </table>
 <p><a id="sql-properties"></a></p>
 <h2 id="sql-properties">SQL Properties</h2>
+<p>These properites can be set using a <code>SET SQL</code> command or using the configuration properties in the <em>conf/leads</em> file. The <code>SET SQL</code> command sets the property for the current SnappySession while setting it in <em>conf/leads</em> file sets the property for all SnappySession.</p>
 <p>These properites can be set in the snappy SQL shell or using the configuration properties in the <em>conf/leads</em> file.</p>
 <p>For example: Set in the snappy SQL shell</p>
 <pre><code>snappy&gt; connect client 'localhost:1527';
@@ -1784,6 +1799,10 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <tr>
 <td>snappydata.hashAggregateSize</td>
 <td>Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (with b/k/m/g/t/p suffixes for unit) and not the output size. Set this only if there are queries that can return very large number of rows in aggregation results. Default value is set to 0b which means, no limit is set on the size, so the optimized hash aggregation is always used.</td>
+</tr>
+<tr>
+<td>spark.sql.autoBroadcastJoinThreshold</td>
+<td>Configures the maximum size in bytes for a table that is broadcasted to all server nodes when performing a join.  By setting this value to <strong>-1</strong> broadcasting can be disabled.</td>
 </tr>
 </tbody>
 </table>

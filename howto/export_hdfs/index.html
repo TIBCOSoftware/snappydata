@@ -343,12 +343,19 @@
 
         
             
+    <li class="toctree-l1 ">
+        <a class="" href="../import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
     <li class="toctree-l1 current">
         <a class="current" href="./">How to Export and Restore Table Data to HDFS</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-export-and-restore-table-data-to-hdfs">How to Export and Restore Table Data to HDFS</a></li>
+                <li class="toctree-l3"><a href="#how-to-export-and-restore-table-data-using-hdfs">How to Export and Restore Table Data Using HDFS</a></li>
                 
             
             </ul>
@@ -608,14 +615,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -629,7 +629,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1523,6 +1530,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1610,11 +1624,11 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="how-to-export-and-restore-table-data-to-hdfs">How to Export and Restore Table Data to HDFS</h1>
+                <h1 id="how-to-export-and-restore-table-data-using-hdfs">How to Export and Restore Table Data Using HDFS</h1>
 <p>In SnappyData, table data is stored in memory and on disk (depending on the configuration). As SnappyData supports Spark APIs, table data can be exported to HDFS using Spark APIs. This can be used to backup your tables to HDFS. </p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>When performing a backup of your tables to HDFS, it is a good practice to export data during a period of low activity in your system. The export does not block any activities in the distributed system, but it does use file system resources on all hosts in your distributed system and can affect performance. </p>
+<p>When performing a backup of your tables to HDFS, it is a good practice to export data during a period of low activity in your system. The export does not block any activities in the distributed system, but it does use file system resources on all hosts in your distributed system and can affect performance.</p>
 </div>
 <p>For example, as shown below you can create a DataFrame for a table and save it as parquet file.</p>
 <pre><code>// created a DataFrame for table &quot;APP.CUSTOMER&quot;
@@ -1646,7 +1660,7 @@ df2.write.mode(SaveMode.Append)saveAsTable(&quot;APP.CUSTOMER&quot;)
         <a href="../use_apache_zeppelin_with_snappydata/" class="btn btn-neutral float-right" title="How to Use Apache Zeppelin with SnappyData">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../connect_to_the_cluster_from_external_clients/" class="btn btn-neutral" title="How to Connect to the Cluster from External Clients"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../import_from_hive_table/" class="btn btn-neutral" title="How to Import Data from Hive Table into Snappydata Table"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1678,7 +1692,7 @@ df2.write.mode(SaveMode.Append)saveAsTable(&quot;APP.CUSTOMER&quot;)
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../connect_to_the_cluster_from_external_clients/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../import_from_hive_table/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../use_apache_zeppelin_with_snappydata/" style="color: #fcfcfc">Next &raquo;</a></span>

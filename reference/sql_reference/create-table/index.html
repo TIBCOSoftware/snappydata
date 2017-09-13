@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -601,14 +608,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -622,7 +622,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1525,6 +1532,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1627,11 +1641,11 @@
     PARTITION_BY 'column-name', // If not specified it will be a replicated table.
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
-    EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
+    EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
+    PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
-    EXPIRE ‘time_to_live_in_seconds',
+    EXPIRE 'time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
     COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer. Only for column table.
     )
@@ -1703,7 +1717,7 @@ The optional BUCKETS attribute specifies the fixed number of "buckets" to use fo
 Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that a redundancy of '1' implies two physical copies of data. By default, REDUNDANCY is set to 0 (zero). See <a href="../../../best_practices/optimizing_query_latency/#redundancy">best practices</a> for more information.</p>
 <p><a id="eviction-by"></a>
 <code>EVICTION_BY</code></br>
-Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. See <a href="../../../best_practices/optimizing_query_latency/#overflow">best practices</a> for more information.</p>
+Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. See <a href="../../../best_practices/optimizing_query_latency/#overflow">best practices</a> for more information. The value for this parameter is set in MB.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>EVICTION_BY is not supported for replicated tables.</p>

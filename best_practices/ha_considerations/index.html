@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -600,22 +607,8 @@
 
         
             
-    <li class="toctree-l1 current">
-        <a class="current" href="./">HA Considerations</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#ha-considerations">HA Considerations</a></li>
-                
-            
-            </ul>
-        
-    </li>
-
-        
-            
     <li class="toctree-l1 ">
-        <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -629,7 +622,23 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">HA Considerations</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#ha-considerations">HA Considerations</a></li>
+                
+                    <li><a class="toctree-l4" href="#known-limitation">Known Limitation</a></li>
+                
+            
+            </ul>
         
     </li>
 
@@ -1523,6 +1532,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1616,14 +1632,16 @@
 <p>High availability options are available for all the SnappyData components. </p>
 <p><strong>Lead HA</strong> </br> 
 SnappyData supports secondary lead nodes. If the primary lead becomes unavailable, one of  the secondary lead nodes takes over immediately. 
-Setting up the secondary lead node is highly recommended because the system cannot function if the lead node is unavailable. Currently, the queries that are executing when the primary lead becomes unavailable, are not re-tried and have to be resubmitted.</p>
+Setting up the secondary lead node is highly recommended because the system cannot function if the lead node is unavailable. Currently, the queries and jobs that are executing when the primary lead becomes unavailable, are not re-tried and have to be resubmitted.</p>
 <p><strong>Locator</strong></br><br />
 SnappyData supports multiple locators in the cluster for high availability. 
-It is recommended to set up multiple locators as, if a locator becomes unavailable, the cluster continues to be available. New members can however not join the cluster.
+It is recommended to set up multiple locators (ideally two) as, if a locator becomes unavailable, the cluster continues to be available. New members can however not join the cluster.</br>
 With multiple locators, clients notice nothing and the failover recovery is completely transparent.</p>
 <p><strong>DataServer</strong></br> 
 SnappyData supports redundant copies of data for fault tolerance. A table can be configured to store redundant copies of the data.  So, if a server is unavailable, and if there is a redundant copy available on some other server, the tasks are automatically retried on those servers. This is totally transparent to the user. 
 However, the redundant copies double the memory requirements. If there are no redundant copies and a server with some data goes down, the execution of the queries fail and PartitionOfflineException is reported. The execution does not begin until that server is available again. </p>
+<h2 id="known-limitation">Known Limitation</h2>
+<p>In case of lead HA, the new primary lead node creates a new Snappy session for the JDBC clients. This means session specific properties (for example, <code>spark.sql.autoBroadcastJoinThreshold</code>, <code>snappydata.hashJoinSize</code>) need to be set again after a lead failover.</p>
               
             </div>
           </div>
@@ -1631,10 +1649,10 @@ However, the redundant copies double the memory requirements. If there are no re
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../optimizing_query_latency/" class="btn btn-neutral float-right" title="Optimizing Query Latency: Partitioning and Replication Strategies">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../important_settings/" class="btn btn-neutral float-right" title="Important Settings">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../setup_cluster/" class="btn btn-neutral" title="Setting up your Cluster"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../optimizing_query_latency/" class="btn btn-neutral" title="Optimizing Query Latency: Partitioning and Replication Strategies"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1666,10 +1684,10 @@ However, the redundant copies double the memory requirements. If there are no re
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../setup_cluster/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../optimizing_query_latency/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../optimizing_query_latency/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../important_settings/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

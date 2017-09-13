@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -601,14 +608,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -622,7 +622,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1547,6 +1554,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1688,7 +1702,7 @@
 </thead>
 <tbody>
 <tr>
-<td>-baseline</td>
+<td>baseline</td>
 <td>The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified <code>-baseline</code> directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the <code>-baseline</code> option.</td>
 </tr>
 <tr>
@@ -1696,19 +1710,19 @@
 <td>The directory in which SnappyData stores the backup content. See <a href="./#backup_directory">Specifying the Backup Directory</a>.</td>
 </tr>
 <tr>
-<td>-locators</td>
-<td>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.</td>
+<td>locators</td>
+<td>List of locators used to discover members of the distributed system. Supply all locators as comma-separated <code>host:peer-discovery-port</code> values.</td>
 </tr>
 <tr>
-<td>-bind-address</td>
+<td>bind-address</td>
 <td>The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.</td>
 </tr>
 <tr>
-<td>-prop-name</td>
+<td>prop-name</td>
 <td>Any other SnappyData distributed system property.</td>
 </tr>
 <tr>
-<td>-J-D<vmprop>=<prop-value></td>
+<td>J-D<vmprop>=<prop-value></td>
 <td>Sets Java system property to the specified value.</td>
 </tr>
 </tbody>
@@ -1793,8 +1807,8 @@ stores are not online: 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/use
 The following disk stores were backed up:
 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
     4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
-    9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
-    45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+    9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
+    45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
 Backup successful.
 </code></pre>
 
@@ -1803,8 +1817,8 @@ Backup successful.
 The following disk stores were backed up:
 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
     4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
-    9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
-    45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+    9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
+    45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
 The backup may be incomplete. The following disk stores are not online:
 </code></pre>
 
@@ -1836,7 +1850,7 @@ BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
 <p>Restore your disk stores when your members are offline and the system is down.</p>
 </li>
 <li>
-<p>Read the restore scripts to see where they the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.</p>
+<p>Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.</p>
 </li>
 <li>
 <p>Run the restore scripts. Run each script on the host where the backup originated.</p>

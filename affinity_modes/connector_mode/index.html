@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -608,14 +615,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -629,7 +629,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1523,6 +1530,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1618,7 +1632,7 @@
 <p><strong>Key Points:</strong></p>
 <ul>
 <li>
-<p>Can work with SnappyData store from a compatible Spark distribution</p>
+<p>Can work with SnappyData store from a compatible Spark distribution (2.1.1)</p>
 </li>
 <li>
 <p>Spark application executes in its own independent JVM processes</p>
@@ -1647,11 +1661,11 @@
 </ul>
 <p><strong>Example: Launch a Spark local mode cluster and use Smart Connector to access SnappyData cluster</strong></p>
 <p><strong>Step 1: Start the SnappyData cluster</strong>:
-You can either start SnappyData members using the <code>_snappy_start_all_</code> script or you can start them individually.</p>
+You can either start SnappyData members using the <code>snappy_start_all</code> script or you can start them individually.</p>
 <p><strong>Step 2: Launch the Apache Spark program</strong></p>
 <p><strong><em><em>In the Local mode</em></em></strong></p>
 <pre><code class="bash">
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11&quot;
 </code></pre>
 
 <div class="admonition note">
@@ -1670,16 +1684,16 @@ You can either start SnappyData members using the <code>_snappy_start_all_</code
 $scala &gt; val snSession = new SnappySession(spark.sparkContext)
 </code></pre>
 
+<p>The code example for writing a Smart Connector application program is located in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample</a></p>
 <p><strong><em><em>Using External Cluster Manager</em></em></strong></p>
 <p><strong>Cluster mode</strong></p>
-<pre><code class="bash">./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
+<pre><code class="bash">./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11&quot;
 </code></pre>
 
 <p><strong>Client mode</strong></p>
-<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:0.9-s_2.11&quot;
+<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11&quot;
 </code></pre>
 
-<p>The code example for writing a Smart Connector application program is located in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample</a></p>
 <p><strong><em><em>Using YARN as a Cluster Manager</em></em></strong></p>
 <p><strong>Cluster mode</strong></p>
 <pre><code>./spark-submit --master yarn  --deploy-mode cluster --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --class MainClass SampleProjectYarn.jar

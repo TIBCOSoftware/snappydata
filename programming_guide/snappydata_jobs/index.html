@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -614,14 +621,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -635,7 +635,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1529,6 +1536,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1742,7 +1756,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 
 <p>The status of this job can be queried in the same manner as shown above. The result of the job returns a file path that has the query results.</p>
 <h3 id="jar-dependencies-for-jobs">Jar Dependencies for Jobs</h3>
-<p>For Jobs, users need to include <strong><a href="http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1.1">snappydata-cluster_2.11:1.0.0-rc1.1</a></strong> to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.</p>
+<p>For writing jobs, users need to include <strong><a href="http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1.1">snappydata-cluster_2.11:1.0.0-rc1.1</a></strong> to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.</p>
 <p>For example, gradle can be configured as:</p>
 <pre><code>compile('io.snappydata:snappydata-cluster_2.11:1.0.0-rc1.1') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
@@ -1761,7 +1775,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 </code></pre>
 
 <h2 id="running-python-applications">Running Python Applications</h2>
-<p>Python users can submit a Python application using <code>spark-submit</code> in the SnappyData Connector mode. Run the following command to submit a Python application:</p>
+<p>Python users can submit a Python application using <code>bin/spark-submit</code> in the SnappyData Connector mode. Run the following command to submit a Python application:</p>
 <pre><code class="scala">bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \

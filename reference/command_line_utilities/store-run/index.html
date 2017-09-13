@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -601,14 +608,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -622,7 +622,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1529,6 +1536,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1647,51 +1661,51 @@
 </thead>
 <tbody>
 <tr>
-<td>-file</td>
+<td>file</td>
 <td></br>The local path of a SQL command file to execute, or a URL that links to the SQL command file. All commands in the specified file must be compatible with the interactive snappy SQL shell.</br>This argument is required.</td>
 </tr>
 <tr>
-<td>-auth-provider</td>
+<td>auth-provider</td>
 <td>Sets the authentication provider to use for peer-to-peer connections as well as client-server connections. Valid values are BUILTIN and LDAP. All other members of the SnappyData distributed system must use the same authentication provider and user definitions. If you omit this option, the connection uses no authentication mechanism.</td>
 </tr>
 <tr>
-<td>-client-bind-address</td>
+<td>client-bind-address</td>
 <td></br>The hostname or IP address on which a SnappyData locator listens for client connections. The default is "localhost" </br>Use this option with <code>-client-port</code> to attach to a SnappyData cluster as a thin client and perform the command.</td>
 </tr>
 <tr>
-<td>-client-port</td>
+<td>client-port</td>
 <td></br>The port on which a SnappyData locator listens for client connections. The default is 1527.</br>Use this option with <code>-client-bind-address</code> to attach to a SnappyData cluster as a thin client and perform the command.</td>
 </tr>
 <tr>
-<td>-encoding</td>
+<td>encoding</td>
 <td>The character set encoding of the SQL script file (<code>-file</code> argument). The default is UTF-8. Other possible values are: US-ASCII, ISO-8859-1, UTF-8, UTF-16BE, UTF-16LE, UTF-16. See the <a href="http://docs.oracle.com/javase/7/docs/api/java/nio/charset/Charset.html">java.nio.charset.Charset</a> reference for more information.</td>
 </tr>
 <tr>
-<td>-extra-conn-props</td>
+<td>extra-conn-props</td>
 <td></br>A semicolon-separated list of properties to use when connecting to the SnappyData distributed system.</td>
 </tr>
 <tr>
-<td>-help, --help</td>
+<td>help, --help</td>
 <td></br>Display the help message for this snappy command.</td>
 </tr>
 <tr>
-<td>-ignore-errors</td>
+<td>ignore-errors</td>
 <td>Include this option to ignore any errors that may occur while executing statements in the file, and continue executing the remaining statements. If you omit this option, then snappy immediately terminates the script's execution if an exception occurs.</td>
 </tr>
 <tr>
-<td>-J-D;property=value;</td>
+<td>J-D;property=value;</td>
 <td>Sets Java system property to the specified value.</td>
 </tr>
 <tr>
-<td>-password</td>
+<td>password</td>
 <td></br>If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, you are prompted to enter a password from the console.</td>
 </tr>
 <tr>
-<td>-path</td>
+<td>path</td>
 <td>Configures the working directory for any other SQL command files executed from within the script. The <code>-path</code> entry is prepended to any SQL script file name executed that the script executes in a <a href="../../interactive_commands/store_command_reference/">run</a> command.</td>
 </tr>
 <tr>
-<td>-user</td>
+<td>user</td>
 <td>If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.</td>
 </tr>
 </tbody>

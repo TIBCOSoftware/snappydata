@@ -1,0 +1,460 @@
+diff --git a/docs/aqp.md b/docs/aqp.md
+index ac8e367..c3b4ef7 100644
+--- a/docs/aqp.md
++++ b/docs/aqp.md
+@@ -1,4 +1,4 @@
+-# Overview of Synopsis Data Engine (SDE)#
++## Overview of Synopsis Data Engine (SDE)
+ The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time. 
+ 
+ For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or to introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. It would increase the productivity of the engineer by providing a near perfect answer that can be rendered in seconds instead of minutes (visually, it is identical to the 100% correct rendering) , while the engineer continues to slice and dice the data sets without any interruptions. 
+@@ -9,7 +9,7 @@ While in-memory analytics can be fast, it is still expensive and cumbersome to p
+ 
+ Unlike existing optimization techniques based on OLAP cubes or in-memory extracts that can consume a lot of resources and work for a priori known queries, the SnappyData Synopses data structures are designed to work for any ad-hoc query.
+ 
+-## How does it work?
++### How does it work?
+ The following diagram provides a simplified view into how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. These samples can be considered much like how a database utilizes indexes - for optimization. There can however be one difference, that is, the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample. 
+ 
+ ![SDE_Architecture](./Images/sde_architecture.png)
+@@ -96,17 +96,17 @@ Here are some general guidelines to use when creating samples:
+ 
+ * When accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
+ 
+-> #### Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
++> Note: The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
+ 
+ 
+-## Running queries
++## Running Queries
+ 
+ Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. 
+ 
+ Here is the syntax:
+ 
+-#### SELECT ... FROM .. WHERE .. GROUP BY ...
+-####    WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
++> > SELECT ... FROM .. WHERE .. GROUP BY ...<br>
++> > WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
+     
+ * **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
+ * **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
+@@ -167,7 +167,7 @@ set spark.sql.aqp.behavior=$behavior;
+ 
+ 
+ ## More Examples
+-#####Example 1: #####
++###Example 1 
+ create a sample table with qcs 'medallion'
+ 
+ ```
+@@ -192,7 +192,7 @@ snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTr
+   upper_bound("avgTripDist")).withError(.6, .90, "do_nothing").sort(col("medallion").desc).limit(100)
+ ```
+ 
+-#####Example 2: #####
++###Example 2 
+ create an additional sample table with qcs 'hack_license'
+ ```
+ CREATE SAMPLE TABLE NYCTAXI_SAMPLEHACKLICENSE ON NYCTAXI OPTIONS
+@@ -210,7 +210,7 @@ select  hack_license, count(*) count from NYCTAXI group by hack_license order by
+ snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothing").sort(col("count").desc).limit(10)
+ ```
+ 
+-#####Example 3: #####
++###Example 3 
+ Create a sample table using function "hour(pickup_datetime) as QCS.
+ ```
+ Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '7', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+@@ -226,7 +226,7 @@ select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) f
+ snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in_secs" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
+ ```
+ 
+-#####Example 4:#####
++###Example 4
+ If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
+ 
+ ```
+@@ -243,7 +243,7 @@ Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(
+ snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_distance" -> "sum")).alias("daily_trips").       filter(year(col("pickup_datetime")).equalTo(2013) and month(col("pickup_datetime")).equalTo(9)).withError(0.6,0.90,"do_nothing").sort(col("sum(trip_distance)").desc).limit(10)
+ ```
+ 
+-##Sample Selection:##
++##Sample Selection
+ 
+ Sample selection logic selects most appropriate sample, based on this relatively simple logic in the current version:
+ 
+@@ -389,7 +389,7 @@ Here is an example of a time based query on the TopK structure which returns the
+ 	
+ If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the timestamp.
+ 
+-*SQL API for creating a TopK table in SnappyData specifying timestampColumn* 
++####SQL API for creating a TopK table in SnappyData specifying timestampColumn
+ 
+ In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.
+  
+@@ -399,7 +399,7 @@ snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
+ ``` 
+ The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables
+ 
+-*Scala API for creating a TopK table* 
++####Scala API for creating a TopK table 
+ 
+ ```scala
+     val topKOptionMap = Map(
+diff --git a/docs/aqp_aws.md b/docs/aqp_aws.md
+index 5cfb101..d30e733 100644
+--- a/docs/aqp_aws.md
++++ b/docs/aqp_aws.md
+@@ -1,4 +1,4 @@
+-#Overview of SnappyData iSight-Cloud #
++##Overview
+ iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine ([SDE](aqp.md)), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
+ 
+ iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
+@@ -10,7 +10,7 @@ In this document, we describe the features provided by SnappyData for analyzing
+ 
+ Refer to the the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
+ 
+-##Key Components##
++###Key Components###
+ This section provides a brief description of the key terms used in this document. 
+ 
+ * **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that are important for SnappyData are, Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
+@@ -18,7 +18,7 @@ This section provides a brief description of the key terms used in this document
+ * **Apache Zeppelin**: Apache Zeppelin is a web-based notebook that enables interactive data analytics. It allows you to make data-driven, interactive and collaborative documents with SQL queries or directly use the Spark API to process data.
+ * **Interpreters**: A software module which is loaded into Apache Zeppelin upon startup. Interpreters allow various third party products including SnappyData to interact with Apache Zeppelin. The SnappyData interpreter gives users the ability to execute SQL queries or use the data frame API to visualize data.
+ 
+-#Quick Start Steps#
++##Quick Start Steps##
+ 
+ To understand the product follow these easy steps that can get you started quickly:
+ 
+@@ -32,16 +32,16 @@ To understand the product follow these easy steps that can get you started quick
+ 4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
+ 
+ <a id="SettingUp"></a>
+-#Setting Up SnappyData Cloud Cluster#
++##Setting Up SnappyData Cloud Cluster##
+ This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using script.
+ 
+ <a id="DeployingClusterCloudFormation"></a>
+-##Deploying SnappyData Cloud Cluster with iSight CloudBuilder##
++###Deploying SnappyData Cloud Cluster with iSight CloudBuilder##
+ Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.
+ 
+ [![Cloudbuilder](./Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
+ 
+-###Prerequisites###
++###Prerequisites##
+ Before you begin,:
+ 
+ * Ensure that you have an existing AWS account with required permissions to launch EC2 resources
+@@ -198,7 +198,8 @@ The values are:
+ ```<folder_name>``` | The folder name where the data is stored. Default value: nytaxifaredata 
+ 
+ <a id="LoggingZeppelin"></a>
+-#Using Apache Zeppelin#
++
++##Using Apache Zeppelin
+ 
+ Apache Zeppelin provides web-based notebooks for data exploration. A notebook consists of one or more paragraphs, and each paragraph consists of a section each for code and results.
+ Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example,http://`<zeppelin_host>`:`<port_number>`. The welcome page which lists existing notebooks is displayed.  
+@@ -295,7 +296,7 @@ It also displays data information for various tables created in the cluster on d
+ 
+ The Apache Spark Console displays useful information about SnappyData. This includes, a list of scheduler stages and tasks, summary of tables and memory usage.
+ 
+-####Accessing the Console####
++###Accessing the Console###
+ To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: 
+ 
+ 1. Click on the **Spark UI** or **Pulse** links provided in the paragraph. 
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73a20d2..5d67cec 100644
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -1,7 +1,6 @@
+-## Architecture overview
+ This section presents a high level overview of SnappyData’s core components, as well as our data pipeline as streams are ingested into our in-memory store and subsequently interacted with and analyzed.
+ 
+-### Core components
++## Core components
+ Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
+ 
+ ![Core components](CoreComponents.png) 
+@@ -18,7 +17,7 @@ In addition to the “exact” dataset, data can also be summarized using probab
+ 
+ To understand the data flow architecture, we first walk through a real time use case that involves stream processing, ingesting into an in-memory store and interactive analytics. 
+ 
+-### Data ingestion pipeline
++## Data ingestion pipeline
+ The data pipeline involving analytics while streams are being ingested and subsequent interactive analytics will be the pervasive architecture for real-time applications. The steps to support these tasks are depicted in Figure 2, and explained below.
+ ![Data Ingestion Pipeline](DataIngestionPipeline.png)  
+ 
+@@ -35,7 +34,7 @@ Once the SnappyData cluster is started and before any live streams can be proces
+ 6. Once ingested, the data is readily available for interactive analytics using SQL. Similar to stream analytics, SnappyData can again use Synopsis Data Engine to ensure interactive analytics on massive historical data in accordance to users’ requested accuracy.
+ 
+ 
+-### Hybrid Cluster Manager
++## Hybrid Cluster Manager
+ 
+ As shown in Figure above, spark applications run as independent processes in the cluster, coordinated by the application’s main program, called the driver program. Spark applications connect to cluster managers (e.g., YARN and Mesos) to acquire executors on nodes in the cluster. Executors are processes that run computations and store data for the running application. The driver program owns a singleton (SparkContext) object which it uses to communicate with its set of executors.
+ 
+@@ -50,16 +49,16 @@ While Spark’s approach is appropriate and geared towards compute-heavy tasks t
+ 4. Consistency — As a highly available system that offers concurrent data access, it becomes important to ensure that all applications have a consistent view of data.
+ After an overview of our cluster architecture in section 5.1, we explain how SnappyData meets each of these requirements in the subsequent sections.
+ 
+-#### SnappyData Cluster Architecture
++### SnappyData Cluster Architecture
+ A SnappyData cluster is a peer-to-peer (P2P) network comprised of three distinct types of members (see figure 4).
+ 1. Locator. Locator members provide discovery service for the cluster. They inform a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
+ 2. Lead Node. The lead node member acts as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
+ 3. Data Servers. A data server member hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.
+ 
+-#### High Concurrency in SnappyData
++### High Concurrency in SnappyData
+ Thousands of concurrent ODBC and JDBC clients can simultaneously connect to a SnappyData cluster. To support this degree of concurrency, SnappyData categorizes incoming requests from these clients into (i) low latency requests and (ii) high latency ones. For low latency operations, we completely bypass Spark’s scheduling mechanism and directly operate on the data. We route high latency operations (e.g., compute intensive queries) through Spark’s fair scheduling mechanism. This makes SnappyData a responsive system, capable of handling multiple low latency short operations as well as complex queries that iterate over large datasets simultaneously.
+ 
+-#### State Sharing in SnappyData
++### State Sharing in SnappyData
+ A SnappyData cluster is designed to be a long running clustered database. State is managed in tables that can be shared across any number of connecting applications. Data is stored in memory and replicated to at least one other node in the system. Data can be persisted to disk in shared nothing disk files for quick recovery. (See section 4 for more details on table types and redundancy.) Nodes in the cluster stay up for a long time and their lifecycle is independent of application lifetimes. SnappyData achieves this goal by decoupling its process startup and shutdown mechanisms from those used by Spark.
+ 
+ 
+diff --git a/docs/extra.css b/docs/extra.css
+index 311cda7..cf72f60 100644
+--- a/docs/extra.css
++++ b/docs/extra.css
+@@ -1,32 +1,58 @@
+ html {
+-    font-size: 90%;
++    font-size: 11pt;
++    font-style: sans-serif;
+ }
+ 
+ h1{
+     color: #000000;
+-    font-weight: 500
+-    font-style: "Tahoma", sans-serif;
++    font-size: 20pt;
++    font-style: sans-serif;
+ }
+ 
+ 
+ h2{
+-    color: #335183;
+-    font-weight: 400
+-    font-style: "Tahoma", sans-serif;
+-    background-color: #e8e9ea;
++    color: #FFFFFF;
++    font-size: 18pt;
++    font-style: sans-serif;
++    background-color: #585860;
+ }
+ 
+ 
+ h3{
+     color: #404040;
+-    font-weight: 300
+-    font-style: "Tahoma", sans-serif;
+-    border-bottom: thin double #000000;
++    font-size: 16pt;
++    font-style: sans-serif;
++    border-bottom: thin double #e0e0e0;
+ }
+ 
+-h4, h5, h6 {
++h4 {
+     color: #404040;
+-    font-weight: 300
+-    font-style: "Tahoma", sans-serif;
++    font-size: 14pt;
++    font-style: sans-serif;
++    font-style: italic;
+ }
+ 
++h5, h6, h7 {
++    color: #404040;
++    font-size: 10pt;
++    font-style: sans-serif;
++}
++
++.wy-menu-vertical li > a:before {
++    content: url("Images/arrow-20x20-collapsed.png");
++    float: left;
++}
++
++.wy-menu-vertical li.current > a::before {
++    content: url("Images/arrow-20x20-expanded.png");
++    float: left;
++}
++
++.wy-menu-vertical li > a[class="toctree-l4"]{
++  margin-left: 15px;
++}
++
++.wy-menu-vertical li > a[class="toctree-l4"]::before {
++  content: url("Images/dash-20x20-collapsed.png");
++  float: left;
++}
+diff --git a/docs/jobs.md b/docs/jobs.md
+index 97f167e..9fd0660 100644
+--- a/docs/jobs.md
++++ b/docs/jobs.md
+@@ -9,9 +9,9 @@ In Spark SQL, all tables are temporary and cannot be shared across different app
+ A [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) - integrates the SQLContext functionality with the Snappy store.
+ 
+ 
+-##### Using SnappyContext to create table and query data 
++#### Using SnappyContext to create table and query data 
+ Below are examples to create a SnappyContext from SparkContext.
+-###### Scala
++##### Scala
+ ```scala
+   val conf = new org.apache.spark.SparkConf()
+                .setAppName("ExampleTest")
+@@ -21,7 +21,7 @@ Below are examples to create a SnappyContext from SparkContext.
+   // get the SnappyContext
+   val snc = org.apache.spark.sql.SnappyContext(sc)
+ ```
+-###### Java
++##### Java
+ ```java
+   SparkConf conf = new org.apache.spark.SparkConf()
+                .setAppName("ExampleTest")
+@@ -31,7 +31,7 @@ Below are examples to create a SnappyContext from SparkContext.
+   // get the SnappyContext
+   SnappyContext snc = SnappyContext.getOrCreate(sc);
+ ```
+-###### Python
++##### Python
+ ```python
+ from pyspark.sql.snappy import SnappyContext
+ from pyspark import SparkContext, SparkConf
+@@ -43,7 +43,7 @@ snc = SnappyContext(sc)
+ ```
+ Create columnar tables using API. Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs. 
+ 
+-###### Scala
++##### Scala
+ ```scala
+   val props1 = Map("BUCKETS" -> "2")  // Number of partitions to use in the SnappyStore
+   case class Data(COL1: Int, COL2: Int, COL3: Int)
+@@ -67,7 +67,7 @@ Create columnar tables using API. Other than `create` and `drop` table, rest are
+ 
+ ```
+ 
+-###### Java
++##### Java
+ 
+ ```java
+ 
+@@ -106,7 +106,7 @@ Create columnar tables using API. Other than `create` and `drop` table, rest are
+     }
+ 
+ ```
+-###### Python
++##### Python
+ 
+ ```python
+ from pyspark.sql.types import *
+@@ -175,7 +175,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
+ 
+ Below example shows how to use the SnappyStreamingContext to apply a schema to existing DStream and then query the SchemaDStream with simple SQL. It also shows the SnappyStreamingContext ability to deal with sql queries.
+ 
+-###### Scala
++##### Scala
+ ```scala
+ import org.apache.spark.sql._
+ import org.apache.spark.streaming._
+@@ -209,7 +209,7 @@ import scala.collection.immutable.Map
+   snsc.sql("select count(*) from streamingExample").show
+ ```
+ 
+-###### Python
++##### Python
+ ```python
+ from pyspark.streaming.snappy.context import SnappyStreamingContext
+ from pyspark.sql.types import *
+@@ -246,7 +246,7 @@ snsc.sql("select count(*) from streamingExample").show()
+ 
+ To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job will look like:
+ 
+-###### Scala
++##### Scala
+ 
+ ```scala
+ class SnappySampleJob implements SnappySQLJob {
+@@ -258,7 +258,7 @@ class SnappySampleJob implements SnappySQLJob {
+ }
+ ```
+ 
+-###### Java
++##### Java
+ ```java
+ class SnappySampleJob extends SnappySQLJob {
+   /** Snappy uses this as an entry point to execute Snappy jobs. **/
+@@ -270,7 +270,7 @@ class SnappySampleJob extends SnappySQLJob {
+ 
+ ```
+ 
+-###### Scala
++##### Scala
+ ```scala
+ class SnappyStreamingSampleJob implements SnappyStreamingJob {
+   /** Snappy uses this as an entry point to execute Snappy jobs. **/
+@@ -281,7 +281,7 @@ class SnappyStreamingSampleJob implements SnappyStreamingJob {
+ }
+ ```
+ 
+-###### Java
++##### Java
+ ```java
+ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
+   /** Snappy uses this as an entry point to execute Snappy jobs. **/
+@@ -309,7 +309,7 @@ SnappySQLJob trait extends the SparkJobBase trait. It provides users the singlet
+ 
+ 
+ 
+-#### Submitting jobs
++### Submitting Jobs
+ Following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala) from the [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart.jar) and submitted to jobs server as shown below.
+ 
+ ```
+@@ -373,7 +373,7 @@ $ bin/spark-submit \
+ ```
+ 
+ 
+-#### Streaming jobs
++### Streaming Jobs
+ 
+ An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying ```--stream``` as an option to the submit command. This option will cause creation of a new SnappyStreamingContext before the job is submitted. Alternatively, user may specify the name of an existing/pre-created streaming context as ```--context <context-name>``` with the submit command.
+ 
+Submodule spark 93b80ac..d80ef1b (rewind):
+  < [SNAP-1202] Reduce serialization overheads of biggest contributors in queries (#34)
+  < [SNAP-1190] Reduce partition message overhead from driver to executor (#31)
+  < [SNAP-1194] explicit addLong/longValue methods in SQLMetrics (#33)
+  < [SNAP-1198] Use ConcurrentHashMap instead of queue for ContextCleaner.referenceBuffer (#32)
+  < [SNAP-1192] correct offsetInBytes calculation (#30)
+  < [SNAP-1185] Guard logging and time measurements (#28)
+  < Helper classes for DataSerializable implementation. (#29)
+  < [SNAP-1136] Kryo closure serialization support and optimizations (#27)
+  < [SNAPPYDATA]: Honoring JAVA_HOME variable while compiling java files instead of using system javac. This eliminates problem when system jdk is set differently from JAVA_HOME
+  < made two methods in Executor as protected to make them customizable for SnappyExecutors. (#26)
+  < bumping version to 2.0.3-1
+  < Merge remote-tracking branch 'origin/spark_2.0.2_merge' into snappy/branch-2.0
+  < Bootstrap perf (#16)
+  < [SNAP-1067] Optimizations seen in perf analysis related to SnappyData PR#381 (#11)
+  < Merge remote-tracking branch 'origin/snappy/v2.0.1' into snappy/branch-2.0
+Submodule spark-jobserver d178275..c187348 (rewind):
+  < Snap 999 (#3)
+  < adding slf4j dependencies explicitly
+Submodule store 36860ec..74c7162 (rewind):
+  < allow for flush with batchSize smaller than the hard-coded minBatchSize (currently 200)
+  < making the static boolean flag volatile
+  < Aqp 219 (#127)
+  < avoid lazy initialization of dsys/logger in GfxdReentrantReadWriteLock
+  < clear SYSTEM_HOME_PROPERY to fix failures introduced by b32783b in SnappyData
+  < Added code to send the install jar message to lead nodes as well. (#125)
+  < [SNAP-1179] Mark YEAR, HOUR, MINUTE, SECOND as non-reserved (#124)
+  < Aqp 79 (#122)
+  < clear executionEngine in CompilerContextImpl.resetContext()

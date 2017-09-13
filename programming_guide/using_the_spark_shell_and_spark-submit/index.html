@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -608,14 +615,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -629,7 +629,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1523,6 +1530,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1616,27 +1630,22 @@ You, however, may need to isolate the computational cluster for other reasons. F
 <p>To support such cases it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store the <code>spark.snappydata.connection</code> property should be provided while starting the Spark-shell. </p>
 <p>To run all SnappyData functionalities you need to create a <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a>.</p>
 <pre><code class="scala">// from the SnappyData base directory  
-# Start the Spark shell in local mode. Pass SnappyData's locators host:clientPort as a conf parameter.
+// Start the Spark shell in local mode. Pass SnappyData's locators host:clientPort as a conf parameter.
 $ bin/spark-shell  --master local[*] --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041
 scala&gt;
-#Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
+ // Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
 scala&gt; val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 scala&gt; val airlineDF = snappy.table(&quot;airline&quot;).show
 scala&gt; val resultset = snappy.sql(&quot;select * from airline&quot;)
-Next changed command:
-# Start the Spark standalone cluster from SnappyData base directory 
-$ sbin/start-all.sh 
-# Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
 </code></pre>
 
 <p>Any Spark application can also use the SnappyData as store and Spark as a computational engine by providing an extra <code>spark.snappydata.connection</code> property in the conf.</p>
-<pre><code class="scala"># Start the Spark standalone cluster from SnappyData base directory 
+<pre><code class="scala">// Start the Spark standalone cluster from SnappyData base directory
 $ sbin/start-all.sh 
-# Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
+// Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
 $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
 
-# The results can be seen on the command line.
+// The results can be seen on the command line.
 </code></pre>
               
             </div>

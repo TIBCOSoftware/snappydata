@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -614,14 +621,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../ha_considerations/">HA Considerations</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -635,7 +635,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1529,6 +1536,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1620,7 +1634,7 @@
 <h2 id="handling-low-latency-vs-analytic-jobs">Handling Low Latency vs Analytic Jobs</h2>
 <p>Unlike Spark, SnappyData can distinguish requests that are cheap (low latency) vs requests that require a lot of computational resources (high latency). This is done by a resource scheduler that can balance the needs of many contending users/threads.</p>
 <p>For instance, when a SQL client executes a ‘fetch by primary key’ query, there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and the response is directly sent to the requesting client (probably within a few milliseconds). </br>
-In the current version of the product, all query requests that filter on a primary key, a set of keys, or can directly filter using an index are executed without routing to the SnappyData scheduler. Only Row tables can have primary keys or indexes. All DML (updates, inserts, deletes) executed from a SQL client (JDBC, ODBC) are directly routed to the responsible data node (partition) and do not involve the scheduler.</p>
+In the current version of the product, all query requests that filter on a primary key, a set of keys, or can directly filter using an index are executed without routing to the SnappyData scheduler. Only Row tables can have primary keys or indexes. </p>
 <p>When the above conditions are not met, the request is routed to the ‘Lead’ node where the Spark plan is generated and ‘jobs’ are scheduled for execution. The scheduler uses a FAIR scheduling algorithm for higher concurrency, that is, all concurrent jobs are executed in a round-robin manner.</p>
 <p>Each job is made up of one or more stages and the planning phase computes the number of  parallel tasks for the stage. Tasks from scheduled jobs are then allocated to the logical cores available until all cores are allocated. 
 A round-robin algorithm picks a task from Job1, a task from Job2 and so on. If more cores are available, the second task from Job1 is picked and the cycle continues. But, there are circumstances a single job can completely consume all cores.</br>
@@ -1650,15 +1664,15 @@ If a table has 17 partitions (buckets, for the row or column tables), a scan que
 <p>SnappyData out of the box comes configured with two execution pools:</p>
 <ul>
 <li>
-<p>Default pool: This is the pool that is used for all requests</p>
+<p>Low-latency pool: This pool is automatically used when SnappyData determines a request to be “low latency”, that is, the queries that are partition pruned to two or fewer partitions. </br></p>
 </li>
 <li>
-<p>Low-latency pool: This pool is automatically used when SnappyData determines a request to be “low latency”, that is, the queries that are partition pruned to two or fewer partitions. </br></p>
+<p>Default pool: This is the pool that is used for the remaining requests.</p>
 </li>
 </ul>
 <p>Two cores are statically assigned to the low latency pool. Also, the low latency pool has weight twice that of the default pool. Thus, if there are 30 cores available to an executor for a query that has 30 partitions, only 28 would be assigned to it and two cores would be reserved to not starve the low latency queries. When the system has both low latency and normal queries, 20 cores are used for the low latency queries as it has got higher priority (weight=2).</br></p>
-<p>Applications can explicitly configure the use of this pool using a SQL command <code>set snappydata.scheduler.pool=lowlatency</code>. This can also be set on a Spark SnappySession instance or using the config files in <product>/conf directory. </p>
-<p>New pools can be added and properties of the existing pools can be configured by modifying the conf/fairscheduler.xml file. We do not recommend changing the pool names (<code>default</code> and <code>lowlatency</code>).</p>
+<p>Applications can explicitly configure to use a particular pool for the current session using a SQL configuration property, <code>snappydata.scheduler.pool</code>. For example, the <code>set snappydata.scheduler.pool=lowlatency</code> command sets the pool as low latency pool for the current session. </p>
+<p>New pools can be added and properties of the existing pools can be configured by modifying the <strong>conf/fairscheduler.xml</strong> file. We do not recommend changing the pool names (<code>default</code> and <code>lowlatency</code>).</p>
 <h3 id="using-a-partitioning-strategy-to-increasing-concurrency">Using a partitioning strategy to increasing concurrency</h3>
 <p>The best way to increasing concurrency is to design your schema such that you minimize the need to run your queries across many partitions. The common strategy is to understand your application patterns and choose a partitioning strategy such that queries often target a specific partition. Such queries will be pruned to a single node and SnappyData automatically optimises such queries to use a single task. 
 For more information see, <a href="../design_schema/">How to design your schema</a>.</p>
@@ -1669,7 +1683,7 @@ For more information see, <a href="../design_schema/">How to design your schema<
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../ha_considerations/" class="btn btn-neutral float-right" title="HA Considerations">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../design_schema/" class="btn btn-neutral float-right" title="Designing your Database and Schema">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../" class="btn btn-neutral" title="Best Practices"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -1707,7 +1721,7 @@ For more information see, <a href="../design_schema/">How to design your schema<
         <span><a href="../" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../ha_considerations/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../design_schema/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

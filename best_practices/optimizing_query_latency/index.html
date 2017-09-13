@@ -344,6 +344,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
         
     </li>
@@ -601,7 +608,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../ha_considerations/">HA Considerations</a>
+        <a class="" href="../design_schema/">Designing your Database and Schema</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../memory_management/">Memory Management</a>
         
     </li>
 
@@ -624,7 +638,7 @@
                 
                     <li><a class="toctree-l4" href="#overflow-configuration">Overflow Configuration</a></li>
                 
-                    <li><a class="toctree-l4" href="#change-not-in-queries-to-use-not-exists-if-possible">Change NOT IN queries to use NOT EXISTS if possible</a></li>
+                    <li><a class="toctree-l4" href="#known-limitation">Known Limitation</a></li>
                 
             
             </ul>
@@ -634,14 +648,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../memory_management/">Memory Management</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../ha_considerations/">HA Considerations</a>
         
     </li>
 
@@ -1535,6 +1542,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1667,7 +1681,7 @@ For a given query on a column table, only the required columns are read (since o
 <p><a id="colocated-joins"></a></p>
 <h3 id="colocated-joins">Colocated Joins</h3>
 <p>In SQL, a JOIN clause is used to combine data from two or more tables, based on a related column between them. JOINS have traditionally been expensive in distributed systems because the data for the tables involved in the JOIN may reside on different physical nodes and the operation has to first move/shuffle the relevant data to one node and perform the operation. </br>
-SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's local data.<!-- Eliminating data shuffling improves performance significantly as can be seen in the benchmark results published for SnappyData--></br>
+SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's local data. Eliminating data shuffling improves performance significantly.</br>
 For examples refer to, <a href="../../howto/perform_a_colocated_join/">How to colocate tables for doing a colocated join</a>.</p>
 <p><a id="buckets"></a></p>
 <h3 id="buckets">Buckets</h3>
@@ -1690,7 +1704,8 @@ If only a single partition is active and is used largely by queries (especially 
 <p>For example, using <code>LRUHEAPPERCENT</code> criteria allows table data to be either evicted or destroyed based on the current memory consumption of the server. Use the <code>OVERFLOW</code> clause to specify the action to be taken upon the eviction event.</p>
 <p>For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.</p>
 <p>Refer to <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> link to understand how to configure <a href="../../reference/sql_reference/create-table/#overflow">OVERFLOW</a> and <a href="../../reference/sql_reference/create-table/#eviction-by">EVICTION_BY</a> clauses.</p>
-<h2 id="change-not-in-queries-to-use-not-exists-if-possible">Change NOT IN queries to use NOT EXISTS if possible</h2>
+<h2 id="known-limitation">Known Limitation</h2>
+<h3 id="change-not-in-queries-to-use-not-exists-if-possible">Change NOT IN queries to use NOT EXISTS if possible</h3>
 <p>Currently, all <code>NOT IN</code> queries use an unoptimized plan and lead to a nested-loop-join which can take long if both sides are large (<a href="https://issues.apache.org/jira/browse/SPARK-16951">https://issues.apache.org/jira/browse/SPARK-16951</a>). Change your queries to use <code>NOT EXISTS</code> which uses an optimized anti-join plan. </p>
 <p>For example a query like:</p>
 <pre><code>select count(*) from T1 where id not in (select id from T2)
@@ -1712,10 +1727,10 @@ select count(*) from T1 where not exists (select 1 from T2 where T1.id = T2.id)
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../memory_management/" class="btn btn-neutral float-right" title="Memory Management">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../ha_considerations/" class="btn btn-neutral float-right" title="HA Considerations">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../ha_considerations/" class="btn btn-neutral" title="HA Considerations"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../memory_management/" class="btn btn-neutral" title="Memory Management"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1747,10 +1762,10 @@ select count(*) from T1 where not exists (select 1 from T2 where T1.id = T2.id)
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../ha_considerations/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../memory_management/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../memory_management/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../ha_considerations/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
