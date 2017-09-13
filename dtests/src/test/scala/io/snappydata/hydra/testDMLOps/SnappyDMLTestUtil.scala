@@ -17,6 +17,8 @@
 
 package io.snappydata.hydra.testDMLOps
 
+import java.io.{File, PrintWriter}
+
 import org.apache.spark.sql.{DataFrame, SQLContext, SnappyContext}
 
 object SnappyDMLTestUtil {
@@ -144,5 +146,64 @@ object SnappyDMLTestUtil {
 
   def employee_territories_par(sqlContext: SQLContext): DataFrame =
     sqlContext.read.load(s"${snc.getConf("parquetFileLocation")}/employee_territories")
+
+  val tableList = Map(
+    0 -> "orders",
+    1 -> "order_details",
+    2 -> "regions",
+    3 -> "categories",
+    4 -> "shippers",
+    5 -> "employees",
+    6 -> "customers",
+    7 -> "products",
+    8 -> "suppliers",
+    9 -> "territories",
+    10 -> "employee_territories")
+
+  def checkDir(parquetFileLocation: String, tableName: String): Boolean = {
+    val tableDir : File = new File(s"${parquetFileLocation}/${tableName}")
+    if (!tableDir.exists()) {
+      return true;
+    }
+    return false;
+  }
+
+  def createParquetData(snc: SnappyContext, parquetFileLocation: String, pw: PrintWriter): Any = {
+    for (q <- tableList) {
+      val tableName = tableList.get(q._1).get
+      // scalastyle:off println
+      pw.println(s"Creating parquet data for table ${tableName}")
+      if (checkDir(parquetFileLocation, tableName)) {
+        q._1 match {
+          case 0 =>
+            orders(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 1 =>
+            order_details(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 2 =>
+            regions(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 3 =>
+            categories(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 4 =>
+            shippers(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 5 =>
+            employees(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 6 =>
+            customers(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 7 =>
+            products(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 8 =>
+            suppliers(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 9 =>
+            territories(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+          case 10 =>
+            employee_territories(snc).write.parquet(s"${parquetFileLocation}/${tableName}")
+        }
+        pw.println(s"Created parquet data for table ${tableName}")
+      }
+      else {
+        pw.println(s"Parquet data already exists for ${tableName}")
+      }
+    }
+  }
 
 }

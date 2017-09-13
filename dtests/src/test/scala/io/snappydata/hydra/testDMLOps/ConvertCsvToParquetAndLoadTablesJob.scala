@@ -46,19 +46,7 @@ class ConvertCsvToParquetAndLoadTablesJob extends SnappySQLJob {
         parquetFileDir.mkdir()
       }
 
-      SnappyDMLTestUtil.orders(snc).write.parquet(s"${parquetFileLocation}/orders")
-      SnappyDMLTestUtil.order_details(snc).write.parquet(s"${parquetFileLocation}/order_details")
-      SnappyDMLTestUtil.regions(snc).write.parquet(s"${parquetFileLocation}/regions")
-      SnappyDMLTestUtil.categories(snc).write.parquet(s"${parquetFileLocation}/categories")
-      SnappyDMLTestUtil.shippers(snc).write.parquet(s"${parquetFileLocation}/shippers")
-      SnappyDMLTestUtil.employees(snc).write.parquet(s"${parquetFileLocation}/employees")
-      SnappyDMLTestUtil.customers(snc).write.parquet(s"${parquetFileLocation}/customers")
-      SnappyDMLTestUtil.products(snc).write.parquet(s"${parquetFileLocation}/products")
-      SnappyDMLTestUtil.suppliers(snc).write.parquet(s"${parquetFileLocation}/suppliers")
-      SnappyDMLTestUtil.territories(snc).write.parquet(s"${parquetFileLocation}/territories")
-      SnappyDMLTestUtil.employee_territories(snc).write.
-          parquet(s"${parquetFileLocation}/employee_territories")
-
+      SnappyDMLTestUtil.createParquetData(snc, parquetFileLocation, pw)
       snc.setConf("parquetFileLocation", parquetFileLocation)
 
       SnappyDMLTestUtil.orders_par(snc).write.insertInto("orders")
@@ -75,7 +63,7 @@ class ConvertCsvToParquetAndLoadTablesJob extends SnappySQLJob {
     }
     match {
       case Success(v) => pw.close()
-        s"See ${currDir}/LoadParquetTables.out"
+        s"See ${currDir}/LoadNWTablesUsingParquetDataJob.out"
       case Failure(e) => pw.close();
         throw e;
     }

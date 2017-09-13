@@ -31,8 +31,9 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
   io.snappydata.hydra.cluster.SnappyPrms-hasDynamicAppProps = true
   io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
   threadGroups = snappyThreads;
-	
-/* load data using batch insert
+
+/*
+// load data using batch insert
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_populateTables
 	threadGroups = snappyThreads;
 */
@@ -43,7 +44,7 @@ INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMet
 
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 hydra.Prms-totalTaskTimeSec           = 900;
-hydra.Prms-maxResultWaitSec           = 66666600;
+hydra.Prms-maxResultWaitSec           = 600;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-testUniqueKeys = true;
 
