@@ -40,11 +40,11 @@ while (( "$#" )); do
   case $param in
     -bg | --background)
       # Check for background start
-      BACKGROUND="$1"
+      BACKGROUND=-bg
     ;;
     -fg | --foreground)
       # Check for foreground start
-      BACKGROUND=-bg
+      BACKGROUND=""
     ;;
     rowstore)
       clustermode="rowstore"

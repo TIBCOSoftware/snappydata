@@ -36,7 +36,7 @@ while (( "$#" )); do
   case $param in
     -bg | --background)
       # Check for background stop
-      BACKGROUND="$1"
+      BACKGROUND="$param"
     ;;
     rowstore)
       clustermode="rowstore"
