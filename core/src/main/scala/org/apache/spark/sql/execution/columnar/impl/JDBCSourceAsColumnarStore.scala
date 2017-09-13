@@ -89,7 +89,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       doInsertOrPut(tableName, batch, batchId, partitionId, maxDeltaRows, conn)
     } else {
       val (bucketId, br, batchSize) = getPartitionID(tableName,
-        batch.buffers.foldLeft(0L)(_ + _.capacity()))
+        () => batch.buffers.foldLeft(0L)(_ + _.capacity()))
       try {
         doInsertOrPut(tableName, batch, batchId, bucketId, maxDeltaRows, conn)
       } finally br match {
@@ -545,7 +545,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   // use the same saved connection for all operation
   private def getPartitionID(tableName: String,
-      batchSizeInBytes: => Long): (Int, Option[BucketRegion], Long) = {
+      getBatchSizeInBytes: () => Long): (Int, Option[BucketRegion], Long) = {
     connectionType match {
       case ConnectionType.Embedded =>
         val region = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
@@ -576,9 +576,10 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                     minBucketSize = bucketSize
                   }
                 }
+                val batchSize = getBatchSizeInBytes()
                 // update the in-progress size of the chosen bucket
-                smallestBucket.updateInProgressSize(batchSizeInBytes)
-                (smallestBucket.getId, Some(smallestBucket), batchSizeInBytes)
+                smallestBucket.updateInProgressSize(batchSize)
+                (smallestBucket.getId, Some(smallestBucket), batchSize)
               }
             }
           case _ => (-1, None, 0L)
