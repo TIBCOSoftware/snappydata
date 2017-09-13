@@ -577,9 +577,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                   }
                 }
                 // update the in-progress size of the chosen bucket
-                val batchSize = batchSizeInBytes
-                smallestBucket.updateInProgressSize(batchSize)
-                (smallestBucket.getId, Some(smallestBucket), batchSize)
+                smallestBucket.updateInProgressSize(batchSizeInBytes)
+                (smallestBucket.getId, Some(smallestBucket), batchSizeInBytes)
               }
             }
           case _ => (-1, None, 0L)
