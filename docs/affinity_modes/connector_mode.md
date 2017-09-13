@@ -8,7 +8,7 @@ Specifically, to run on a cluster, the SparkContext can connect to several types
 
 **Key Points:**
 
-* Can work with SnappyData store from a compatible Spark distribution
+* Can work with SnappyData store from a compatible Spark distribution (2.1.1)
 
 * Spark application executes in its own independent JVM processes
 
@@ -35,14 +35,14 @@ When queries are executed, while the entire query planning and execution is coor
 **Example: Launch a Spark local mode cluster and use Smart Connector to access SnappyData cluster**
 
 **Step 1: Start the SnappyData cluster**:
-You can either start SnappyData members using the `_snappy_start_all_` script or you can start them individually.
+You can either start SnappyData members using the `snappy_start_all` script or you can start them individually.
 
 **Step 2: Launch the Apache Spark program**
 
 ***_In the Local mode_***
 ```bash
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11"
 ```
 !!! Note: 
 	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. The value of this property is a combination of locator host and JDBC client port on which the locator listens for connections (default is 1527).
@@ -55,20 +55,19 @@ This opens a Scala Shell. Create a SnappySession to interact with the SnappyData
 $scala > val snSession = new SnappySession(spark.sparkContext)
 ```
 
+The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
+
 ***_Using External Cluster Manager_***
 
 **Cluster mode**
 
 ```bash
-./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
+./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11"
 ```
 **Client mode**
 ```bash
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11"
 ```
-
-
-The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
 
 ***_Using YARN as a Cluster Manager_***

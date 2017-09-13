@@ -1,7 +1,7 @@
 <a id="getting-started-with-docker-image"></a>
 # Getting Started with Docker Image
 
-SnappyData comes with a pre-configured container with Docker. The container has binaries for SnappyData. This enables you to easily try the quick start program and more, with SnappyData.
+SnappyData comes with a pre-configured Docker image. It has binaries for SnappyData, which enables you to easily try the quick start program and more, with SnappyData.
 
 This section assumes you have already installed Docker and it is configured properly. Refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
 

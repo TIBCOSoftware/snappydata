@@ -52,7 +52,7 @@ libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0-rc1.
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
 If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 ```bash
-./bin/spark-shell --packages "SnappyDataInc:snappydata:0.9-s_2.11"
+./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11"
 ```
 
 

@@ -24,9 +24,9 @@ snappy(PEERCLIENT)> values current isolation;
 CS
 
 1 row selected
+snappy(PEERCLIENT)> AUTOCOMMIT off;
 snappy(PEERCLIENT)> insert into airlines VALUES ('AN', 'Another New Airline', 0.20, 0.07, 0.6, 1.7, 20, 10, 5);
 1 row inserted/updated/deleted
-snappy(PEERCLIENT)> AUTOCOMMIT off;
 snappy(PEERCLIENT)> select * from airlines;
 A&|AIRLINE_FULL            |BASIC_RATE            |DISTANCE_DISCOUNT     |BUSINESS_LEVEL_FACTOR |FIRSTCLASS_LEVEL_FACT&|ECONOMY_SE&|BUSINESS_S&|FIRSTCLASS&
 -----------------------------------------------------------------------------------------------------------------------------------------------------------

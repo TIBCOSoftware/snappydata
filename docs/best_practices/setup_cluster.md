@@ -4,7 +4,7 @@
 Unlike Spark, SnappyData can distinguish requests that are cheap (low latency) vs requests that require a lot of computational resources (high latency). This is done by a resource scheduler that can balance the needs of many contending users/threads.
 
 For instance, when a SQL client executes a ‘fetch by primary key’ query, there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and the response is directly sent to the requesting client (probably within a few milliseconds). </br>
-In the current version of the product, all query requests that filter on a primary key, a set of keys, or can directly filter using an index are executed without routing to the SnappyData scheduler. Only Row tables can have primary keys or indexes. All DML (updates, inserts, deletes) executed from a SQL client (JDBC, ODBC) are directly routed to the responsible data node (partition) and do not involve the scheduler.
+In the current version of the product, all query requests that filter on a primary key, a set of keys, or can directly filter using an index are executed without routing to the SnappyData scheduler. Only Row tables can have primary keys or indexes. 
 
 When the above conditions are not met, the request is routed to the ‘Lead’ node where the Spark plan is generated and ‘jobs’ are scheduled for execution. The scheduler uses a FAIR scheduling algorithm for higher concurrency, that is, all concurrent jobs are executed in a round-robin manner.
 
@@ -48,15 +48,15 @@ When you add more servers to SnappyData, the processing capacity of the system i
 ### Configuring the scheduler pools for concurrency
 SnappyData out of the box comes configured with two execution pools:
 
-* Default pool: This is the pool that is used for all requests
-
 * Low-latency pool: This pool is automatically used when SnappyData determines a request to be “low latency”, that is, the queries that are partition pruned to two or fewer partitions. </br>
+
+* Default pool: This is the pool that is used for the remaining requests.
 
 Two cores are statically assigned to the low latency pool. Also, the low latency pool has weight twice that of the default pool. Thus, if there are 30 cores available to an executor for a query that has 30 partitions, only 28 would be assigned to it and two cores would be reserved to not starve the low latency queries. When the system has both low latency and normal queries, 20 cores are used for the low latency queries as it has got higher priority (weight=2).</br>
 
-Applications can explicitly configure the use of this pool using a SQL command `set snappydata.scheduler.pool=lowlatency`. This can also be set on a Spark SnappySession instance or using the config files in <product>/conf directory. 
+Applications can explicitly configure to use a particular pool for the current session using a SQL configuration property, `snappydata.scheduler.pool`. For example, the `set snappydata.scheduler.pool=lowlatency` command sets the pool as low latency pool for the current session. 
 
-New pools can be added and properties of the existing pools can be configured by modifying the conf/fairscheduler.xml file. We do not recommend changing the pool names (`default` and `lowlatency`).
+New pools can be added and properties of the existing pools can be configured by modifying the **conf/fairscheduler.xml** file. We do not recommend changing the pool names (`default` and `lowlatency`).
 
 ### Using a partitioning strategy to increasing concurrency
 

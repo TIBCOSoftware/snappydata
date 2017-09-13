@@ -29,6 +29,8 @@ The following topics are covered in this section:
 
 * [How to Access SnappyData Store from existing Spark Installation using Smart Connector](howto/spark_installation_using_smart_connector.md)<a id="howto-splitmode"></a>
 
+* [How to Use Snappy SQL shell (snappy-sql)](howto/use_snappy_shell.md)
+
 * [How to Create Row Tables and Run Queries](howto/create_row_tables_and_run_queries.md)<a id="howto-row"></a>
 
 * [How to Create Column Tables and Run Queries](howto/create_column_tables_and_run_queries.md)<a id="howto-column"></a>
@@ -55,9 +57,11 @@ The following topics are covered in this section:
 
 * [How to Connect using ODBC Driver](howto/connect_using_odbc_driver.md)<a id="howto-odbc"></a>
 
-* [How to Connect to the Cluster from External Clients](howto/connect_to_the_cluster_from_external_clients.md)<a id="howto-external-client"></a>
+* [How to Connect to the Cluster from External Clients](howto/connect_to_the_cluster_from_external_clients.md)<a id="howto-external-client"></a><a id="howto-connect-externalclients"></a>
 
-* [How to Export and Restore Table Data to HDFS](howto/export_hdfs.md)<a id="howto-external-client"></a>
+* [How to Import Data from Hive Table into Snappydata Table](howto/import_from_hive_table.md)<a id="howto-import-hive"></a>
+
+* [How to Export and Restore Table Data to HDFS](howto/export_hdfs.md)<a id="howto-export-hdfs"></a>
 
 * [How to Use Apache Zeppelin with SnappyData](howto/use_apache_zeppelin_with_snappydata.md)<a id="howto-zeppelin"></a>
 

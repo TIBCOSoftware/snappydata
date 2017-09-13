@@ -44,7 +44,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
 
-* Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](../configuring_cluster/configuring_cluster.md#configuring-ssh-login-without-password).
+* Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md).
 
 ### Steps to Set up the Cluster
 

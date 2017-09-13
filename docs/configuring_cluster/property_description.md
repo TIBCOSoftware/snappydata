@@ -29,6 +29,8 @@
 <a id="sql-properties"></a>
 ## SQL Properties
 
+These properites can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
+
 These properites can be set in the snappy SQL shell or using the configuration properties in the *conf/leads* file.
 
 For example: Set in the snappy SQL shell
@@ -52,6 +54,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 |snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`|
 |snappydata.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`. Default value is 100 MB.|
 |snappydata.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (with b/k/m/g/t/p suffixes for unit) and not the output size. Set this only if there are queries that can return very large number of rows in aggregation results. Default value is set to 0b which means, no limit is set on the size, so the optimized hash aggregation is always used.|
+|spark.sql.autoBroadcastJoinThreshold|Configures the maximum size in bytes for a table that is broadcasted to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled. |
 
 <a id="sde-properties"></a>
 

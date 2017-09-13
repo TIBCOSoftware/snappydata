@@ -3,16 +3,26 @@
 
 SnappyData relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. By integrating the loading mechanism with the Query engine (Catalyst optimizer) it is often possible to push down filters and projections all the way to the data source minimizing data transfer. Here is the list of important features:
 
-**Support for many Sources** There is built-in support for many data sources as well as data formats. Data can be accessed from S3, file system, HDFS, Hive, RDB, etc. And the loaders have built-in support to handle CSV, Parquet, ORC, Avro, JSON, Java/Scala Objects, etc as the data formats. 
+**Support for many Sources** </br>There is built-in support for many data sources as well as data formats. Data can be accessed from S3, file system, HDFS, Hive, RDB, etc. And the loaders have built-in support to handle CSV, Parquet, ORC, Avro, JSON, Java/Scala Objects, etc as the data formats. 
 
-**Access virtually any modern data store** Virtually all major data providers have a native Spark connector that complies with the Data Sources API. For e.g. you can load data from any RDB like Amazon Redshift, Cassandra, Redis, Elastic Search, Neo4J, etc. While these connectors are not built-in, you can easily deploy these connectors as dependencies into a SnappyData cluster. All the connectors are typically registered in spark-packages.org
+**Access virtually any modern data store**</br> Virtually all major data providers have a native Spark connector that complies with the Data Sources API. For e.g. you can load data from any RDB like Amazon Redshift, Cassandra, Redis, Elastic Search, Neo4J, etc. While these connectors are not built-in, you can easily deploy these connectors as dependencies into a SnappyData cluster. All the connectors are typically registered in spark-packages.org
 
-**Avoid Schema wrangling** Spark supports schema inference. Which means, all you need to do is point to the external source in your 'create table' DDL (or Spark SQL API) and schema definition is learned by reading in the data. There is no need to explicitly define each column and type. This is extremely useful when dealing with disparate, complex and wide data sets. 
+**Avoid Schema wrangling** </br>Spark supports schema inference. Which means, all you need to do is point to the external source in your 'create table' DDL (or Spark SQL API) and schema definition is learned by reading in the data. There is no need to explicitly define each column and type. This is extremely useful when dealing with disparate, complex and wide data sets. 
 
-**Read nested, sparse data sets** When data is accessed from a source, the schema inference occurs by not just reading a header but often by reading the entire data set. For instance, when reading JSON files the structure could change from document to document. The inference engine builds up the schema as it reads each record and keeps unioning them to create a unified schema. This approach allows developers to become very productive with disparate data sets.
+**Read nested, sparse data sets**</br> When data is accessed from a source, the schema inference occurs by not just reading a header but often by reading the entire data set. For instance, when reading JSON files the structure could change from document to document. The inference engine builds up the schema as it reads each record and keeps unioning them to create a unified schema. This approach allows developers to become very productive with disparate data sets.
 
-**Load using Spark API or SQL** You can use SQL to point to any data source or use the native Spark Scala/Java API to load. 
-For instance, you can use `create external table <_tablename_> using <_any Data Source supported_> options <_options_>` ([CREATE EXTERNAL TABLE](../reference/sql_reference/create-external-table.md)) and then use it in any SQL query or DDL (For example, create table snappyTable using column as (select * from externalTable) )
+**Load using Spark API or SQL** </br> You can use SQL to point to any data source or use the native Spark Scala/Java API to load. 
+For instance, you can first [create an external table](../reference/sql_reference/create-external-table.md). 
+
+```scala
+create external table <_tablename_> using <_any_data_source_supported_> options <_options_>
+```
+
+Next, use it in any SQL query or DDL. For example,
+
+```scala
+create table snappyTable using column as (select * from externalTable)
+```
 
 
 **Example - Load from CSV**

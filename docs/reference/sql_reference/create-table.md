@@ -12,11 +12,11 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     PARTITION_BY 'column-name', // If not specified it will be a replicated table.
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
-    EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
+    EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
+    PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
-    EXPIRE ‘time_to_live_in_seconds',
+    EXPIRE 'time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
     COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer. Only for column table.
 	)
@@ -97,7 +97,7 @@ Use the REDUNDANCY clause to specify the number of redundant copies that should 
 
 <a id="eviction-by"></a>
 `EVICTION_BY`</br>
-Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. See [best practices](/best_practices/optimizing_query_latency.md#overflow) for more information.
+Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. See [best practices](/best_practices/optimizing_query_latency.md#overflow) for more information. The value for this parameter is set in MB.
 
 !!!Note:
 	EVICTION_BY is not supported for replicated tables.

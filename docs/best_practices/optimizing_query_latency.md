@@ -54,7 +54,7 @@ When designing a database schema for SnappyData, the main goal with a typical st
 <a id="colocated-joins"></a>
 ### Colocated Joins
 In SQL, a JOIN clause is used to combine data from two or more tables, based on a related column between them. JOINS have traditionally been expensive in distributed systems because the data for the tables involved in the JOIN may reside on different physical nodes and the operation has to first move/shuffle the relevant data to one node and perform the operation. </br>
-SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's local data.<!-- Eliminating data shuffling improves performance significantly as can be seen in the benchmark results published for SnappyData--></br>
+SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's local data. Eliminating data shuffling improves performance significantly.</br>
 For examples refer to, [How to colocate tables for doing a colocated join](../howto/perform_a_colocated_join.md).
 
 <a id="buckets"></a>
@@ -89,7 +89,9 @@ For persistent tables, setting this to 'true' will overflow the table evicted ro
 
 Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) link to understand how to configure [OVERFLOW](../reference/sql_reference/create-table.md#overflow) and [EVICTION_BY](../reference/sql_reference/create-table.md#eviction-by) clauses.
 
-## Change NOT IN queries to use NOT EXISTS if possible
+## Known Limitation
+
+### Change NOT IN queries to use NOT EXISTS if possible
 
 Currently, all `NOT IN` queries use an unoptimized plan and lead to a nested-loop-join which can take long if both sides are large ([https://issues.apache.org/jira/browse/SPARK-16951](https://issues.apache.org/jira/browse/SPARK-16951)). Change your queries to use `NOT EXISTS` which uses an optimized anti-join plan. 
 

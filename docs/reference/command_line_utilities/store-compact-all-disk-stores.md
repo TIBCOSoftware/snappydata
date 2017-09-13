@@ -13,9 +13,9 @@ The table describes options for snappy compact-all-disk-stores. If no multicast 
 
 |Option|Description|
 |--------|--------|
-|-locators    |</br>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
-|-bind-address    |The address to which this peer binds for receiving peer-to-peer messages. By default `gfxd` uses the hostname, or localhost if the hostname points to a local loopback address.|
-|-prop-name</br> prop-value    |Any other SnappyData distributed system property.|
+|locators    |</br>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
+|bind-address    |The address to which this peer binds for receiving peer-to-peer messages. By default `gfxd` uses the hostname, or localhost if the hostname points to a local loopback address.|
+|prop-name</br> prop-value    |Any other SnappyData distributed system property.|
 
 ## Description
 

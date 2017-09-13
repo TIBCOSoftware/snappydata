@@ -36,12 +36,12 @@ The table describes options for snappy backup.
 
 |Option|Description|
 |-|-|
-|-baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the `-baseline` option.|
+|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the `-baseline` option.|
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#backup_directory).|
-|-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
-|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
-|-prop-name|Any other SnappyData distributed system property.|
-|-J-D<vmprop>=<prop-value>|Sets Java system property to the specified value.|
+|locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated `host:peer-discovery-port` values.|
+|bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
+|prop-name|Any other SnappyData distributed system property.|
+|J-D<vmprop>=<prop-value>|Sets Java system property to the specified value.|
 
 <a id="description"></a>
 
@@ -125,8 +125,8 @@ Connecting to distributed system: -locators=localhost:10334
 The following disk stores were backed up:
 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
 	4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
-	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
-	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
+	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
 Backup successful.
 ```
 
@@ -137,8 +137,8 @@ Connecting to distributed system: -locators=localhost:10334
 The following disk stores were backed up:
 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
 	4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
-	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
-	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
+	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
 The backup may be incomplete. The following disk stores are not online:
 ```
 
@@ -175,7 +175,7 @@ The restore script (restore.sh restore.bat) copies files back to their original 
 
 1.  Restore your disk stores when your members are offline and the system is down.
 
-2.  Read the restore scripts to see where they the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.
+2.  Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.
 
 3.  Run the restore scripts. Run each script on the host where the backup originated.
 
