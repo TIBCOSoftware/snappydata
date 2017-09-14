@@ -1,4 +1,4 @@
-# backup
+# backup and restore
 Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.
 
 !!!Note:
@@ -30,15 +30,13 @@ snappy backup [-baseline=<baseline directory>] <target directory> [-J-D<vmprop>=
  [-locators=<addresses>] [-bind-address=<address>] [-<prop-name>=<prop-value>]*
 ```
 
-Alternatively, you can specify these and other distributed system properties in a gemfirexd.properties file that is available in the directory where you run the `snappy` command.
-
 The table describes options for snappy backup.
 
 |Option|Description|
 |-|-|
-|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the `-baseline` option.|
+|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/SnappyDataBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the `-baseline` option.|
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#backup_directory).|
-|locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated `host:peer-discovery-port` values.|
+|locators| List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
 |bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
 |prop-name|Any other SnappyData distributed system property.|
 |J-D<vmprop>=<prop-value>|Sets Java system property to the specified value.|
@@ -52,8 +50,6 @@ An online backup saves the following:
 -   For each member with persistent data, the backup includes disk store files for all stores containing persistent table data.
 
 -   Configuration files from the member startup.
-
--   gemfirexd.properties, with the properties the member was started with.
 
 -   A restore script, written for the member's operating system, that copies the files back to their original locations. For example, in Windows, the file is restore.bat and in Linux, it is restore.sh.
 

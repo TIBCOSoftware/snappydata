@@ -90,10 +90,12 @@ pages:
     - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'
 - 'Best Practices': 'best_practices.md'
 - 'Best Practices':
-    - 'Setting up your Cluster': 'best_practices/setup_cluster.md'
+    - 'Tuning for Concurrency and Computation': 'best_practices/setup_cluster.md'
     - 'Designing your Database and Schema': 'best_practices/design_schema.md'  
+    - 'Designing your Database and Schema':
+        - 'Designing Principles': 'best_practices/design_principles.md'  
+        - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
     - 'Memory Management': 'best_practices/memory_management.md'      
-    - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
     - 'HA Considerations': 'best_practices/ha_considerations.md'    
     - 'Important Settings': 'best_practices/important_settings.md'
 - 'Synopsis Data Engine (SDE)': 'aqp.md'
@@ -170,9 +172,9 @@ pages:
         - 'SYSTABLES': 'reference/system_tables/systables.md'    
     - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
     - 'Command Line Utilities':
-        - 'backup': 'reference/command_line_utilities/store-backup.md'
-#        - 'compact-all-disk-stores': 'reference/command_line_utilities/store-compact-all-disk-stores.md'
-#        - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
+        - 'backup and restore': 'reference/command_line_utilities/store-backup.md'
+        - 'compact-all-disk-stores': 'reference/command_line_utilities/store-compact-all-disk-stores.md'
+        - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
         - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md'
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'

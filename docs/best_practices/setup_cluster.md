@@ -15,11 +15,6 @@ For instance, when all cores are available, if a large loading job is scheduled 
 !!! Note 
 	This above scheduling logic is applicable only when queries are fully managed by SnappyData cluster. When running your application using the smart connector, each task running in the Spark cluster directly accesses the store partitions.
 
-## Using Smart Connector for Expanding Capacity of the Cluster
-
-One of the instances, when [SnappyData Smart connector mode](../affinity_modes/connector_mode.md) is useful, is when the computations is separate from the data. This allows  you to increase the computational capacity without adding more servers to the SnappyData cluster. Thus, more executors can be provisioned for a Smart Connector application than the number of SnappyData servers. 
-<br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the SnappyData cluster. See, [How to Access SnappyData store from an Existing Spark Installation using Smart Connector](../howto/spark_installation_using_smart_connector.md).
-
 ## Computing the Number of Cores for a Job
 
 Executing queries or code in SnappyData results in the creation of one or more Spark jobs. Each Spark job has multiple tasks. The number of tasks is determined by the number of partitions of the underlying data.</br>
@@ -45,7 +40,7 @@ When you add more servers to SnappyData, the processing capacity of the system i
 
 ![Concurrency](../Images/core_concurrency.png)
 
-### Configuring the scheduler pools for concurrency
+### Configuring the Scheduler Pools for Concurrency
 SnappyData out of the box comes configured with two execution pools:
 
 * Low-latency pool: This pool is automatically used when SnappyData determines a request to be “low latency”, that is, the queries that are partition pruned to two or fewer partitions. </br>
@@ -58,8 +53,15 @@ Applications can explicitly configure to use a particular pool for the current s
 
 New pools can be added and properties of the existing pools can be configured by modifying the **conf/fairscheduler.xml** file. We do not recommend changing the pool names (`default` and `lowlatency`).
 
-### Using a partitioning strategy to increasing concurrency
+### Using a Partitioning Strategy to Increase Concurrency
 
 The best way to increasing concurrency is to design your schema such that you minimize the need to run your queries across many partitions. The common strategy is to understand your application patterns and choose a partitioning strategy such that queries often target a specific partition. Such queries will be pruned to a single node and SnappyData automatically optimises such queries to use a single task. 
 For more information see, [How to design your schema](design_schema.md).
+
+## Using Smart Connector for Expanding Capacity of the Cluster
+
+One of the instances, when [SnappyData Smart connector mode](../affinity_modes/connector_mode.md) is useful, is when the computations is separate from the data. This allows  you to increase the computational capacity without adding more servers to the SnappyData cluster. Thus, more executors can be provisioned for a Smart Connector application than the number of SnappyData servers. 
+<br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the SnappyData cluster. See, [How to Access SnappyData store from an Existing Spark Installation using Smart Connector](../howto/spark_installation_using_smart_connector.md).
+
+
 

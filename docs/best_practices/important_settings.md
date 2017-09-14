@@ -1,8 +1,10 @@
 # Important Settings <a id="important-settings"></a>
 
-Resource allocation is important for the execution of any job. If not configured correctly, the job can consume entire cluster resources and cause problems like the execution fails or memory related problems. This section provides guidelines for configuring the following important settings:
+Resource allocation is important for the execution of any job. If not configured correctly, the job can consume the entire clusters resources and cause execution failure because of memory and other related problems.
 
-* [buckets](#buckets)
+This section provides guidelines for configuring the following important settings:
+
+* [Buckets](#buckets)
 
 * [member-timeout](#member-timeout)
 
@@ -15,7 +17,7 @@ Resource allocation is important for the execution of any job. If not configured
 * [SnappyData Smart Connector mode and Local mode Settings](#smartconnector-local-settings)
 
 <a id="buckets"></a>
-## buckets
+## Buckets
 
 A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
 
@@ -39,7 +41,7 @@ This attribute is set in the [configuration files](../configuring_cluster/config
 
 SnappyData writes table data on disk.  By default, the disk location that SnappyData uses is the directory specified using `-dir` option, while starting the member. 
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. </br>
-To achieve better performance, it is recommended to store temporary data on a different disk (SSD) than the table data. This can be done by setting the `spark.local.dir` parameter.
+To achieve better performance, it is recommended to store temporary data on a different disk (preferably SSD) than the table data. This can be done by setting the `spark.local.dir` parameter.
 
 This attribute is set in the [leads configuration files](../configuring_cluster/configuring_cluster.md#lead) **conf/leads**.
 
@@ -102,28 +104,3 @@ The following JVM setting is recommended for optimal perforamance:
 ```-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k```
 
 Set in the conf/locators, leads, servers
-
-<a id="table-memory"></a>
-## Table Memory Requirements
-
-SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. If the memory-size is configured (off-heap is enabled), the entire column table is stored in off-heap memory.
-
-SnappyData row tables memory requirements have to be calculated by taking into account row overheads. Row tables have different amounts of heap memory overhead per table and index entry, which depends on whether you persist table data or configure tables for overflow to disk.
-
-| TABLE IS PERSISTED?	 | OVERFLOW IS CONFIGURED?	 |APPROXIMATE HEAP OVERHEAD |
-|--------|--------|--------|
-|No|No|64 bytes|
-|Yes|No|120 bytes|
-|Yes|Yes|152 bytes|
-
-!!! Note
-	For a persistent, partitioned row table, SnappyData uses an additional 16 bytes per entry used to improve the speed of recovering data from disk. When an entry is deleted, a tombstone entry of approximately 13 bytes is created and maintained until the tombstone expires or is garbage-collected in the member that hosts the table. (When an entry is destroyed, the member temporarily retains the entry to detect possible conflicts with operations that have occurred. This retained entry is referred to as a tombstone.)
-    
-    
-| TYPE OF INDEX ENTRY | APPROXIMATE HEAP OVERHEAD |
-|--------|--------|
-|New index entry     |80 bytes|
-|First non-unique index entry|24 bytes|
-|Subsequent non-unique index entry|8 bytes to 24 bytes*|
-
-If there are more than 100 entries for a single index entry, the heap overhead per entry increases from 8 bytes to approximately 24 bytes.

@@ -59,10 +59,13 @@ For examples refer to, [How to colocate tables for doing a colocated join](../ho
 
 <a id="buckets"></a>
 ### Buckets
-The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
-Unit of data movement is a bucket, and buckets of colocated tables move together. When a new server joins, the  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
-There is also a system procedure [call sys.rebalance_all_buckets()](../reference/inbuilt_system_procedures/rebalance-all-buckets.md#sysrebalance_all_buckets) that can be used to trigger rebalance.
-For more information on BUCKETS, refer to [BUCKETS](setup_cluster.md#buckets).
+A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. For more information on BUCKETS, refer to [BUCKETS](important_settings.md#buckets).</br>
+By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
+
+When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
+
+The  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
+You can also set the system procedure [call sys.rebalance_all_buckets()](../reference/inbuilt_system_procedures/rebalance-all-buckets.md#sysrebalance_all_buckets) to trigger rebalance.
 
 <a id="dimension"></a>
 ### Criteria for Column Partitioning

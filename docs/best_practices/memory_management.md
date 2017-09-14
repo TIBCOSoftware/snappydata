@@ -3,10 +3,38 @@ Spark executors and SnappyData in-memory store share the same memory space. Snap
 
 SnappyData also monitors the JVM memory pools and avoids running into out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold, memory allocations within SnappyData fail, and a LowMemoryException error is reported. This, however, safeguards the server from crashing due to OutOfMemoryException.
 
+<a id="memory-row-table"></a>
 ## Estimating Memory Size for Column and Row Tables
 Column tables use compression by default and the amount of compression is dependent on the data itself. While we commonly see compression of 50%, it is also possible to achieve much higher compression ratios when the data has many repeated strings or text.</br>
-Row tables, on the other hand, consume more space than the original data size. There is a per row overhead in SnappyData. While this overhead varies and is dependent on the options configured on the Row table, as a simple guideline we suggest you assume 100 bytes per row as overhead. Thus, it is clear that it is not straightforward to compute the memory requirements.</br> It is recommended that you take a sample of the data set (as close as possible to your production data) and populate each of the tables. Ensure that you create the required indexes and note down the size estimates (in bytes) in the SnappyData Pulse dashboard. You can then extrapolate this number given the total number of records you anticipate to load or grow into, for the memory requirements for your table.
+Row tables, on the other hand, consume more space than the original data size. There is a per row overhead in SnappyData. While this overhead varies and is dependent on the options configured on the Row table, as a simple guideline we suggest you assume 100 bytes per row as overhead. Thus, it is clear that it is not straightforward to compute the memory requirements.</br> 
+It is recommended that you take a sample of the data set (as close as possible to your production data) and populate each of the tables. Ensure that you create the required indexes and note down the size estimates (in bytes) in the SnappyData Pulse dashboard. You can then extrapolate this number given the total number of records you anticipate to load or grow into, for the memory requirements for your table.
 
+<a id="table-memory"></a>
+## Table Memory Requirements
+
+SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. If the memory-size is configured (off-heap is enabled), the entire column table is stored in off-heap memory.
+
+SnappyData row tables memory requirements have to be calculated by taking into account row overheads. Row tables have different amounts of heap memory overhead per table and index entry, which depends on whether you persist table data or configure tables for overflow to disk.
+
+| TABLE IS PERSISTED?	 | OVERFLOW IS CONFIGURED?	 |APPROXIMATE HEAP OVERHEAD |
+|--------|--------|--------|
+|No|No|64 bytes|
+|Yes|No|120 bytes|
+|Yes|Yes|152 bytes|
+
+!!! Note
+	For a persistent, partitioned row table, SnappyData uses an additional 16 bytes per entry used to improve the speed of recovering data from disk. When an entry is deleted, a tombstone entry of approximately 13 bytes is created and maintained until the tombstone expires or is garbage-collected in the member that hosts the table. (When an entry is destroyed, the member temporarily retains the entry to detect possible conflicts with operations that have occurred. This retained entry is referred to as a tombstone.)
+    
+    
+| TYPE OF INDEX ENTRY | APPROXIMATE HEAP OVERHEAD |
+|--------|--------|
+|New index entry     |80 bytes|
+|First non-unique index entry|24 bytes|
+|Subsequent non-unique index entry|8 bytes to 24 bytes*|
+
+If there are more than 100 entries for a single index entry, the heap overhead per entry increases from 8 bytes to approximately 24 bytes.
+
+<a id="memory-execution"></a>
 ## Estimating Memory Size for Execution
 Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (for example, a UDF allocating memory), etc. Most of these allocations automatically overflow to disk. But, it is strongly recommended that you allocate at least 5GB per data server/lead node for production systems that run large scale analytic queries.
 
@@ -65,7 +93,7 @@ Heap_Storage_Pool_Size => 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.mem
 Heap_Execution_Pool_Size => 17.4 * (0.5) = 8.73
 Heap_Max_Storage_pool_Size => 17.4 * 0.81 = 14.1 ( 0.81 derived from eviction_heap_percentage)
 ```
-
+<a id="off-heap"></a>
 ## SnappyData Off-Heap Memory 
 In addition to heap memory, SnappyData can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, the off-heap setting is recommended. However, several artifacts in the product need heap memory, so some minimum heap size is also required for this.
 

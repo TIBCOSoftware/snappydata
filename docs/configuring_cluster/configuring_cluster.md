@@ -3,14 +3,14 @@
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
 
 To do so, you can copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
-These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
+These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
 <a id="locator"></a>
 ## Configuring Locators
 
 Locators provide discovery service for the cluster. Clients (e.g. JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](../architecture.md) section for more information on the core components.
 
-It is recommended to configure two locators (for HA) in production using the **conf/locators** file. You can refer to the **conf/locators.template** file for some examples. 
+It is recommended to configure two locators (for HA) in production using the **conf/locators** file located in the **<_SnappyData_home_>/conf** directory. 
 
 In this file, you can specify:
 
@@ -19,6 +19,8 @@ In this file, you can specify:
 * The startup directory where the logs and configuration files for that locator instance are located.
 
 * SnappyData specific properties that can be passed.
+
+You can refer to the **conf/locators.template** file for some examples. 
 
 ### List of Locator Properties 
 
@@ -36,8 +38,6 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-peer-discovery-address|Use this as value for port in the "host:port" value of "-locators" property |
 |-peer-discovery-port|The port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.|
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/setup_cluster.md#member-timeout) server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
-
-Create the configuration file (**locators**) for locators in the **<_SnappyData_home_>/conf** directory.
 
 <a id="locator-example"></a>
 **Example**: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:
@@ -88,7 +88,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 <a id="dataserver"></a>
 ## Configuring Data Servers
-Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the **conf/servers.template** file for some examples. 
+Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the **conf/servers.template** file for some examples. 
 
 Create the configuration file (**servers**) for data servers in the **<_SnappyData_home_>/conf** directory. 
 
@@ -155,7 +155,7 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 
 ## SnappyData Command Line Utility
 
-Instead of starting SnappyData cluster using SSH scripts, individual components can be configured, started and stopped on a system using these commands.
+Instead of starting SnappyData cluster using SSH scripts, individual components can be configured, started and stopped on a system locally using these commands.
 
 ```
 $ bin/snappy locator start  -dir=/node-a/locator1 
