@@ -16,9 +16,10 @@ Specifically, to run on a cluster, the SparkContext can connect to several types
 
 * Supports any of the Spark supported resource managers (for example, Spark Standalone Manager, YARN or Mesos)
 
-Some of the advantages of this mode are:
+**Some of the advantages of this mode are:**
 
-**Performance**: When Spark partitions store data in **column tables**, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related inefficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the SnappyData cluster are operating as independent clusters.
+Performance</br>
+When Spark partitions store data in **column tables**, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related inefficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the SnappyData cluster are operating as independent clusters.
 
 When storing to **Row tables** or when the partitioning in Spark is different than the partitioning configured on the table, data batches could be shuffled across nodes. Whenever Spark applications are writing to SnappyData tables, the data is always batched for the highest possible throughput.
 

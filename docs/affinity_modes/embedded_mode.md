@@ -3,7 +3,7 @@
 In this mode, the Spark computations and in-memory data store run colocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real-time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources.
 Spark executors are dynamically launched when the first Spark Job arrives.
 
-Some of the advantages of this mode are:
+**Some of the advantages of this mode are:**
 
 * **High performance**: All your Spark applications access the table data locally, in-process. The query engine accesses all the data locally by reference and avoids copying (which can be very expensive when working with large volumes).
 
