@@ -52,6 +52,7 @@ allprojects {
 
   repositories {
     mavenCentral()
+    maven { url 'https://dl.bintray.com/big-data/maven' }
     maven { url "https://repo.spring.io/libs-release" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url 'http://repository.snappydata.io/repository/internal' }
@@ -76,12 +77,12 @@ allprojects {
     options.compilerArgs << '-Xlint:-serial,-path,-deprecation,-unchecked,-rawtypes'
     options.compilerArgs << '-XDignore.symbol.file'
     options.fork = true
-    options.forkOptions.executable = "${System.properties['java.home']}/../bin/javac"
+    options.forkOptions.javaHome = file(System.properties['java.home'])
   }
   tasks.withType(ScalaCompile) {
     // scalaCompileOptions.optimize = true
     // scalaCompileOptions.useAnt = false
-    scalaCompileOptions.fork = false
+    // scalaCompileOptions.fork = false
     scalaCompileOptions.deprecation = false
     scalaCompileOptions.additionalParameters = [ '-feature' ]
     options.encoding = 'UTF-8'
@@ -125,6 +126,7 @@ allprojects {
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
     sparkJobServerVersion = '0.6.2.6-rc1'
+    kolobokeVersion = '1.0.0'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -187,42 +189,42 @@ def cleanIntermediateFiles(def projectName) {
     include 'BACKUPGFXD-DEFAULT-DISKSTORE**', 'locator*.dat'
   }
 }
-task cleanScalaTest << {
+task cleanScalaTest { doLast {
   String workingDir = "${testResultsBase}/scalatest"
   delete workingDir
   file(workingDir).mkdirs()
-}
-task cleanJUnit << {
+} }
+task cleanJUnit { doLast {
   String workingDir = "${testResultsBase}/junit"
   delete workingDir
   file(workingDir).mkdirs()
-}
-task cleanDUnit << {
+} }
+task cleanDUnit { doLast {
   String workingDir = "${testResultsBase}/dunit"
   delete workingDir
   file(workingDir).mkdirs()
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
-}
-task cleanSecurityDUnit << {
+} }
+task cleanSecurityDUnit { doLast {
   String workingDir = "${testResultsBase}/dunit-security"
   delete workingDir
   file(workingDir).mkdirs()
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
-}
-task cleanAllReports << {
+} }
+task cleanAllReports { doLast {
   String workingDir = "${testResultsBase}/combined-reports"
   delete workingDir
   file(workingDir).mkdirs()
-}
-task cleanQuickstart << {
+} }
+task cleanQuickstart { doLast {
   String workingDir = "${testResultsBase}/quickstart"
   delete workingDir
   file(workingDir).mkdirs()
-}
+} }
 
 subprojects {
   // the run task for a selected sub-project
@@ -499,11 +501,6 @@ subprojects {
   }
 
   configurations {
-    provided {
-      description 'a dependency that is provided externally at runtime'
-      visible true
-    }
-
     testOutput {
       extendsFrom testCompile
       description 'a dependency that exposes test artifacts'
@@ -549,27 +546,12 @@ subprojects {
     testOutput packageTests
   }
 
-  idea {
-    module {
-      scopes.PROVIDED.plus += [ configurations.provided ]
-    }
-  }
   eclipse {
     classpath {
       defaultOutputDir = file('build-artifacts/eclipse')
       downloadSources = true
-      plusConfigurations += [ configurations.provided ]
     }
   }
-
-  sourceSets {
-    main.compileClasspath += configurations.provided
-    main.runtimeClasspath -= configurations.provided
-    test.compileClasspath += configurations.provided
-    test.runtimeClasspath += configurations.provided
-  }
-
-  javadoc.classpath += configurations.provided
 
   dependencies {
     compile 'log4j:log4j:' + log4jVersion
@@ -657,11 +639,6 @@ task publishMaven {
       p.name != 'snappydata-store' }.collect {
       it.getTasksByName('uploadArchives', false).collect { it.path }
   }
-}
-
-task generateSources {
-  dependsOn ':snappy-spark:generateSources'
-  dependsOn ':snappy-store:generateSources'
 }
 
 task product(type: Zip) {
@@ -771,13 +748,31 @@ task product(type: Zip) {
       into "${snappyProductDir}/quickstart/python"
     }
     if (new File(rootDir, 'store/build.gradle').exists()) {
-      // copy snappy-store shared libraries for optimized JNI calls
-      copy {
-        from project(':snappy-store:snappydata-store-core').projectDir.path + '/lib'
-        into "${snappyProductDir}/jars"
+      // copy snappy-store shared libraries for JNI calls
+      def gemCoreProject = project(':snappy-store:gemfire-core')
+      def storeCoreProject = project(':snappy-store:snappydata-store-core')
+      if (osName.isLinux()) {
+        copy {
+          from "${gemCoreProject.projectDir}/lib"
+          into "${snappyProductDir}/jars"
+          include '*.so'
+          exclude '*_sol*.so'
+        }
+        copy {
+          from "${storeCoreProject.projectDir}/lib"
+          into "${snappyProductDir}/jars"
+          exclude '*_sol*.so'
+        }
+      }
+      if (osName.isWindows()) {
+        copy {
+          from "${gemCoreProject.projectDir}/lib"
+          into "${snappyProductDir}/jars"
+          include '*.dll'
+        }
       }
       copy {
-        from "${project(':snappy-store:snappydata-store-core').projectDir}/../quickstart"
+        from "${storeCoreProject.projectDir}/../quickstart"
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
       }
@@ -915,12 +910,17 @@ def runScript(def execName, def workDir, def param, env = null) {
   return "${stdout}"
 }
 
-task copyResourcesAll << {
+task copyResourcesAll { doLast {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
     copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
   }
+} }
+
+task generateSources {
+  dependsOn ':snappy-spark:generateSources', ':snappy-store:generateSources'
+  dependsOn copyResourcesAll
 }
 
 task cleanAll {
@@ -985,7 +985,7 @@ int getLast(includeTestFiles, pattern) {
   }
 }
 
-task packagePulse << {
+task packagePulse { doLast {
   String pulseWarName = "pulse-${pulseVersion}.war"
   String pulseDir = System.env.PULSEDIR
 
@@ -1013,9 +1013,9 @@ task packagePulse << {
   } else {
     println "Skipping Pulse due to unwritable ${pulseDir}"
   }
-}
+} }
 
-task packageVSD << {
+task packageVSD { doLast {
   String thirdparty = System.env.THIRDPARTYDIR
   String vsdDir = ''
 
@@ -1038,7 +1038,7 @@ task packageVSD << {
   } else {
     println "Skipping VSD due to unwritable ${vsdDistDir}"
   }
-}
+} }
 
 task sparkPackage {
   dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
@@ -1123,7 +1123,7 @@ if (buildOutput.length() > 1000000) {
   delete buildOutput
 }
 
-import org.gradle.logging.internal.*
+import org.gradle.internal.logging.*
 
 gradle.services.get(LoggingOutputInternal).addStandardOutputListener (new StandardOutputListener () {
   void onOutput(CharSequence output) {

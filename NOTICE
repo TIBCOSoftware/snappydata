@@ -690,8 +690,8 @@ SECTION 1: BSD-STYLE, MIT-STYLE, OR SIMILAR STYLE LICENSES
 
 SECTION 2: Apache License, V2.0
 
-   >>> fastutil-6.6.1
-   >>> hadoop-common-2.4.0
+   >>> koloboke-1.0.0
+   >>> hadoop-common-2.7.3
    >>> swagger-ui-2.0.17
 
 
@@ -861,26 +861,24 @@ Copyright (C) 2006-2009 Dustin Sallings
 Apache License, V2.0 is applicable to the following component(s).
 
 
->>> fastutil-6.6.1
+>>> koloboke-1.0.0
 
-* Copyright (C) 2002-2014 Sebastiano Vigna 
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
 
 
->>> hadoop-common-2.4.0
+>>> hadoop-common-2.7.3
 
-Licensed under the Apache License, Version 2.0 (the "License");
+  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
 

@@ -114,8 +114,7 @@ if (new File(rootDir, 'store/build.gradle').exists()) {
   // sub-projects of snappy-store
   include ':snappy-store:gemfire-jgroups'
   include ':snappy-store:gemfire-trove'
-  include ':snappy-store:gemfire-joptsimple'
-  include ':snappy-store:gemfire-json'
+  include ':snappy-store:gemfire-util'
   include ':snappy-store:gemfire-junit'
   include ':snappy-store:gemfire-shared'
   include ':snappy-store:gemfire-core'
@@ -134,8 +133,7 @@ if (new File(rootDir, 'store/build.gradle').exists()) {
   project(':snappy-store').projectDir = "$rootDir/store" as File
   project(':snappy-store:gemfire-jgroups').projectDir = "$rootDir/store/lgpl/gemfire-jgroups" as File
   project(':snappy-store:gemfire-trove').projectDir = "$rootDir/store/lgpl/gemfire-trove" as File
-  project(':snappy-store:gemfire-joptsimple').projectDir = "$rootDir/store/gemfire-joptsimple" as File
-  project(':snappy-store:gemfire-json').projectDir = "$rootDir/store/gemfire-json" as File
+  project(':snappy-store:gemfire-util').projectDir = "$rootDir/store/gemfire-util" as File
   project(':snappy-store:gemfire-junit').projectDir = "$rootDir/store/gemfire-junit" as File
   project(':snappy-store:gemfire-shared').projectDir = "$rootDir/store/gemfire-shared" as File
   project(':snappy-store:gemfire-core').projectDir = "$rootDir/store/gemfire-core" as File
