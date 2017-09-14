@@ -608,7 +608,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -621,8 +621,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -630,6 +635,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1162,7 +1177,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1644,8 +1673,9 @@
 <p>Supports any of the Spark supported resource managers (for example, Spark Standalone Manager, YARN or Mesos)</p>
 </li>
 </ul>
-<p>Some of the advantages of this mode are:</p>
-<p><strong>Performance</strong>: When Spark partitions store data in <strong>column tables</strong>, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related inefficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the SnappyData cluster are operating as independent clusters.</p>
+<p><strong>Some of the advantages of this mode are:</strong></p>
+<p>Performance</br>
+When Spark partitions store data in <strong>column tables</strong>, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related inefficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the SnappyData cluster are operating as independent clusters.</p>
 <p>When storing to <strong>Row tables</strong> or when the partitioning in Spark is different than the partitioning configured on the table, data batches could be shuffled across nodes. Whenever Spark applications are writing to SnappyData tables, the data is always batched for the highest possible throughput.</p>
 <p>When queries are executed, while the entire query planning and execution is coordinated by the Spark engine (Catalyst), the smart connector still carries out a number of optimizations, which are listed below:</p>
 <ul>
@@ -1659,6 +1689,7 @@
 <p>Optimized column batch inserts like in the Embedded mode with job routing to same machines as data stores if possible.</p>
 </li>
 </ul>
+<p><a id="example"></a></p>
 <p><strong>Example: Launch a Spark local mode cluster and use Smart Connector to access SnappyData cluster</strong></p>
 <p><strong>Step 1: Start the SnappyData cluster</strong>:
 You can either start SnappyData members using the <code>snappy_start_all</code> script or you can start them individually.</p>

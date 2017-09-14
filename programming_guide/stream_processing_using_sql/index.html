@@ -556,10 +556,6 @@
                 
                     <li><a class="toctree-l4" href="#dynamic-ad-hoc-continuous-queries">Dynamic (ad-hoc) Continuous Queries</a></li>
                 
-                    <li><a class="toctree-l4" href="#user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</a></li>
-                
-                    <li><a class="toctree-l4" href="#create-user-defined-function">Create User Defined Function</a></li>
-                
             
             </ul>
         
@@ -626,7 +622,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -639,8 +635,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -648,6 +649,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1180,7 +1191,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1770,29 +1795,6 @@ dStream.foreachDataFrame(_.write.insertInto(&quot;yourTableName&quot;))
 
 <h2 id="dynamic-ad-hoc-continuous-queries">Dynamic (ad-hoc) Continuous Queries</h2>
 <p>Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a> has started.</p>
-<h2 id="user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</h2>
-<p>Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
-The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Support for UDF is available from SnappyData version 0.8 and future versions.</p>
-</div>
-<h2 id="create-user-defined-function">Create User Defined Function</h2>
-<p>You can simply extend any one of the interfaces in the package <strong>org.apache.spark.sql.api.java</strong>. 
-These interfaces can be included in your client application by adding <strong>snappy-spark-sql_2.11-2.0.3-2.jar</strong> to your classpath.</p>
-<h3 id="define-a-udf-class">Define a UDF class</h3>
-<p>The number of the interfaces (UDF1 to UDF22) signifies the number of parameters a UDF can take.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Currently, any UDF which can take more than 22 parameters is not supported.</p>
-</div>
-<pre><code class="scala">package some.package
-import org.apache.spark.sql.api.java.UDF1
-
-class StringLengthUDF extends UDF1[String, Int] {
- override def call(t1: String): Int = t1.length
-}
-</code></pre>
               
             </div>
           </div>

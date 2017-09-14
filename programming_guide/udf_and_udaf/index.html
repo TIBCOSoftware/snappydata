@@ -547,9 +547,11 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#create-user-defined-function">Create User Defined Function</a></li>
+                <li class="toctree-l3"><a href="#user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</a></li>
                 
-                    <li><a class="toctree-l4" href="#use-udf">Use UDF</a></li>
+                    <li><a class="toctree-l4" href="#create-user-defined-function">Create User Defined Function</a></li>
+                
+                    <li><a class="toctree-l4" href="#use-a-user-defined-function">Use a User Defined Function</a></li>
                 
                     <li><a class="toctree-l4" href="#create-user-defined-aggregate-functions">Create User Defined Aggregate Functions</a></li>
                 
@@ -614,7 +616,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -627,8 +629,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -636,6 +643,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1168,7 +1185,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1630,8 +1661,32 @@
           <div role="main">
             <div class="section">
               
-                <p><a id= create_udf> </a></p>
-<h1 id="create-user-defined-function">Create User Defined Function</h1>
+                <h1 id="user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</h1>
+<p>Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
+The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Support for UDF is available from SnappyData version release 0.8 onwards.</p>
+</div>
+<h2 id="create-user-defined-function">Create User Defined Function</h2>
+<p>You can simply extend any one of the interfaces in the package <strong>org.apache.spark.sql.api.java</strong>. 
+These interfaces can be included in your client application by adding <strong>snappy-spark-sql_2.11-2.0.3-2.jar</strong> to your classpath.</p>
+<h3 id="define-a-user-defined-function-class">Define a User Defined Function class</h3>
+<p>The number of the interfaces (UDF1 to UDF22) signifies the number of parameters a UDF can take.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, any UDF which can take more than 22 parameters is not supported.</p>
+</div>
+<pre><code class="scala">package some.package
+import org.apache.spark.sql.api.java.UDF1
+
+class StringLengthUDF extends UDF1[String, Int] {
+ override def call(t1: String): Int = t1.length
+}
+</code></pre>
+
+<p><a id= create_udf> </a></p>
+<h3 id="create-a-user-defined-function">Create a User Defined Function</h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Place the jars used for creating persistent UDFs in a shared location (NFS, HDFS etc.) if you are configuring multiple leads for high availability. The same jar is used for DDL replay while the standby lead becomes the active lead.</p>
@@ -1705,12 +1760,12 @@ The framework always returns the Java types to the UDFs. So, if you are writing 
 </tr>
 </tbody>
 </table>
-<h2 id="use-udf">Use UDF</h2>
+<h2 id="use-a-user-defined-function">Use a User Defined Function</h2>
 <pre><code class="scala">select strnglen(string_column) from &lt;table&gt;
 </code></pre>
 
 <p>If you try to use a UDF on a different type of column, for example, an <strong>Int</strong> column an exception is reported.</p>
-<h4 id="drop-the-function"><strong>Drop the Function</strong></h4>
+<h4 id="drop-the-function">Drop the Function</h4>
 <pre><code class="scala">DROP FUNCTION IF EXISTS udf_name
 </code></pre>
 
@@ -1718,7 +1773,7 @@ The framework always returns the Java types to the UDFs. So, if you are writing 
 <pre><code class="scala">DROP FUNCTION IF EXISTS app.strnglen
 </code></pre>
 
-<h4 id="modify-an-existing-udf"><strong>Modify an Existing UDF</strong></h4>
+<h4 id="modify-an-existing-user-defined-function">Modify an Existing User Defined Function</h4>
 <p>1) Drop the existing UDF</p>
 <p>2) Modify the UDF code and <a href="#create_udf">create a new UDF</a>. You can create the UDF with the same name as that of the dropped UDF.</p>
 <h2 id="create-user-defined-aggregate-functions">Create User Defined Aggregate Functions</h2>

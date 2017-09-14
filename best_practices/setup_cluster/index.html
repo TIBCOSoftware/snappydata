@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Setting up your Cluster - SnappyData Documentation</title>
+  <title>Tuning for Concurrency and Computation - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -29,7 +29,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Setting up your Cluster";
+    var mkdocs_page_name = "Tuning for Concurrency and Computation";
     var mkdocs_page_input_path = "best_practices/setup_cluster.md";
     var mkdocs_page_url = "/best_practices/setup_cluster/";
   </script>
@@ -601,7 +601,7 @@
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">Setting up your Cluster</a>
+        <a class="current" href="./">Tuning for Concurrency and Computation</a>
         
             <ul>
             
@@ -609,9 +609,9 @@
                 
                     <li><a class="toctree-l4" href="#handling-low-latency-vs-analytic-jobs">Handling Low Latency vs Analytic Jobs</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-smart-connector-for-expanding-capacity-of-the-cluster">Using Smart Connector for Expanding Capacity of the Cluster</a></li>
-                
                     <li><a class="toctree-l4" href="#computing-the-number-of-cores-for-a-job">Computing the Number of Cores for a Job</a></li>
+                
+                    <li><a class="toctree-l4" href="#using-smart-connector-for-expanding-capacity-of-the-cluster">Using Smart Connector for Expanding Capacity of the Cluster</a></li>
                 
             
             </ul>
@@ -627,8 +627,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../memory_management/">Memory Management</a>
+        <a class="" href="../design_principles/">Designing Principles</a>
         
     </li>
 
@@ -636,6 +641,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../memory_management/">Memory Management</a>
         
     </li>
 
@@ -1168,7 +1183,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1614,7 +1643,7 @@
         
       
     
-    <li>Setting up your Cluster</li>
+    <li>Tuning for Concurrency and Computation</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1643,9 +1672,6 @@ For instance, when all cores are available, if a large loading job is scheduled 
 <p class="admonition-title">Note</p>
 <p>This above scheduling logic is applicable only when queries are fully managed by SnappyData cluster. When running your application using the smart connector, each task running in the Spark cluster directly accesses the store partitions.</p>
 </div>
-<h2 id="using-smart-connector-for-expanding-capacity-of-the-cluster">Using Smart Connector for Expanding Capacity of the Cluster</h2>
-<p>One of the instances, when <a href="../../affinity_modes/connector_mode/">SnappyData Smart connector mode</a> is useful, is when the computations is separate from the data. This allows  you to increase the computational capacity without adding more servers to the SnappyData cluster. Thus, more executors can be provisioned for a Smart Connector application than the number of SnappyData servers. 
-<br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the SnappyData cluster. See, <a href="../../howto/spark_installation_using_smart_connector/">How to Access SnappyData store from an Existing Spark Installation using Smart Connector</a>.</p>
 <h2 id="computing-the-number-of-cores-for-a-job">Computing the Number of Cores for a Job</h2>
 <p>Executing queries or code in SnappyData results in the creation of one or more Spark jobs. Each Spark job has multiple tasks. The number of tasks is determined by the number of partitions of the underlying data.</br>
 Concurrency in SnappyData is tightly bound with the capacity of the cluster, which means, the number of cores available in the cluster determines the number of concurrent tasks that can be run.</p>
@@ -1660,7 +1686,7 @@ If a table has 17 partitions (buckets, for the row or column tables), a scan que
 <p>Pending tasks have to wait for completion of the current tasks and are assigned to the core that is first available.</p>
 <p>When you add more servers to SnappyData, the processing capacity of the system increases in terms of available cores. Thus, more cores are available so more tasks can concurrently execute.</p>
 <p><img alt="Concurrency" src="../../Images/core_concurrency.png" /></p>
-<h3 id="configuring-the-scheduler-pools-for-concurrency">Configuring the scheduler pools for concurrency</h3>
+<h3 id="configuring-the-scheduler-pools-for-concurrency">Configuring the Scheduler Pools for Concurrency</h3>
 <p>SnappyData out of the box comes configured with two execution pools:</p>
 <ul>
 <li>
@@ -1673,9 +1699,12 @@ If a table has 17 partitions (buckets, for the row or column tables), a scan que
 <p>Two cores are statically assigned to the low latency pool. Also, the low latency pool has weight twice that of the default pool. Thus, if there are 30 cores available to an executor for a query that has 30 partitions, only 28 would be assigned to it and two cores would be reserved to not starve the low latency queries. When the system has both low latency and normal queries, 20 cores are used for the low latency queries as it has got higher priority (weight=2).</br></p>
 <p>Applications can explicitly configure to use a particular pool for the current session using a SQL configuration property, <code>snappydata.scheduler.pool</code>. For example, the <code>set snappydata.scheduler.pool=lowlatency</code> command sets the pool as low latency pool for the current session. </p>
 <p>New pools can be added and properties of the existing pools can be configured by modifying the <strong>conf/fairscheduler.xml</strong> file. We do not recommend changing the pool names (<code>default</code> and <code>lowlatency</code>).</p>
-<h3 id="using-a-partitioning-strategy-to-increasing-concurrency">Using a partitioning strategy to increasing concurrency</h3>
+<h3 id="using-a-partitioning-strategy-to-increase-concurrency">Using a Partitioning Strategy to Increase Concurrency</h3>
 <p>The best way to increasing concurrency is to design your schema such that you minimize the need to run your queries across many partitions. The common strategy is to understand your application patterns and choose a partitioning strategy such that queries often target a specific partition. Such queries will be pruned to a single node and SnappyData automatically optimises such queries to use a single task. 
 For more information see, <a href="../design_schema/">How to design your schema</a>.</p>
+<h2 id="using-smart-connector-for-expanding-capacity-of-the-cluster">Using Smart Connector for Expanding Capacity of the Cluster</h2>
+<p>One of the instances, when <a href="../../affinity_modes/connector_mode/">SnappyData Smart connector mode</a> is useful, is when the computations is separate from the data. This allows  you to increase the computational capacity without adding more servers to the SnappyData cluster. Thus, more executors can be provisioned for a Smart Connector application than the number of SnappyData servers. 
+<br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the SnappyData cluster. See, <a href="../../howto/spark_installation_using_smart_connector/">How to Access SnappyData store from an Existing Spark Installation using Smart Connector</a>.</p>
               
             </div>
           </div>

@@ -601,7 +601,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -614,8 +614,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../memory_management/">Memory Management</a>
+        <a class="" href="../design_principles/">Designing Principles</a>
         
     </li>
 
@@ -623,6 +628,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../memory_management/">Memory Management</a>
         
     </li>
 
@@ -642,7 +657,7 @@
             
                 <li class="toctree-l3"><a href="#important-settings">Important Settings </a></li>
                 
-                    <li><a class="toctree-l4" href="#buckets">buckets</a></li>
+                    <li><a class="toctree-l4" href="#buckets">Buckets</a></li>
                 
                     <li><a class="toctree-l4" href="#member-timeout">member-timeout</a></li>
                 
@@ -651,8 +666,6 @@
                     <li><a class="toctree-l4" href="#operating-system-settings">Operating System Settings</a></li>
                 
                     <li><a class="toctree-l4" href="#snappydata-smart-connector-mode-and-local-mode-settings">SnappyData Smart Connector mode and Local mode Settings</a></li>
-                
-                    <li><a class="toctree-l4" href="#table-memory-requirements">Table Memory Requirements</a></li>
                 
             
             </ul>
@@ -1174,7 +1187,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1637,10 +1664,11 @@
             <div class="section">
               
                 <h1 id="important-settings">Important Settings <a id="important-settings"></a></h1>
-<p>Resource allocation is important for the execution of any job. If not configured correctly, the job can consume entire cluster resources and cause problems like the execution fails or memory related problems. This section provides guidelines for configuring the following important settings:</p>
+<p>Resource allocation is important for the execution of any job. If not configured correctly, the job can consume the entire clusters resources and cause execution failure because of memory and other related problems.</p>
+<p>This section provides guidelines for configuring the following important settings:</p>
 <ul>
 <li>
-<p><a href="#buckets">buckets</a></p>
+<p><a href="#buckets">Buckets</a></p>
 </li>
 <li>
 <p><a href="#member-timeout">member-timeout</a></p>
@@ -1659,7 +1687,7 @@
 </li>
 </ul>
 <p><a id="buckets"></a></p>
-<h2 id="buckets">buckets</h2>
+<h2 id="buckets">Buckets</h2>
 <p>A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.</p>
 <p>By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.</p>
 <p>If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently. Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.</p>
@@ -1674,7 +1702,7 @@ However, note that this can cause spurious node failures to be reported due to G
 <h2 id="sparklocaldir">spark.local.dir</h2>
 <p>SnappyData writes table data on disk.  By default, the disk location that SnappyData uses is the directory specified using <code>-dir</code> option, while starting the member. 
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. </br>
-To achieve better performance, it is recommended to store temporary data on a different disk (SSD) than the table data. This can be done by setting the <code>spark.local.dir</code> parameter.</p>
+To achieve better performance, it is recommended to store temporary data on a different disk (preferably SSD) than the table data. This can be done by setting the <code>spark.local.dir</code> parameter.</p>
 <p>This attribute is set in the <a href="../../configuring_cluster/configuring_cluster/#lead">leads configuration files</a> <strong>conf/leads</strong>.</p>
 <p><a id="os_setting"></a></p>
 <h2 id="operating-system-settings">Operating System Settings</h2>
@@ -1724,63 +1752,6 @@ For example, if there are 32 cores for the Smart Connector application and the n
 <p>The following JVM setting is recommended for optimal perforamance:</p>
 <p><code>-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k</code></p>
 <p>Set in the conf/locators, leads, servers</p>
-<p><a id="table-memory"></a></p>
-<h2 id="table-memory-requirements">Table Memory Requirements</h2>
-<p>SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. If the memory-size is configured (off-heap is enabled), the entire column table is stored in off-heap memory.</p>
-<p>SnappyData row tables memory requirements have to be calculated by taking into account row overheads. Row tables have different amounts of heap memory overhead per table and index entry, which depends on whether you persist table data or configure tables for overflow to disk.</p>
-<table>
-<thead>
-<tr>
-<th>TABLE IS PERSISTED?</th>
-<th>OVERFLOW IS CONFIGURED?</th>
-<th>APPROXIMATE HEAP OVERHEAD</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>No</td>
-<td>No</td>
-<td>64 bytes</td>
-</tr>
-<tr>
-<td>Yes</td>
-<td>No</td>
-<td>120 bytes</td>
-</tr>
-<tr>
-<td>Yes</td>
-<td>Yes</td>
-<td>152 bytes</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For a persistent, partitioned row table, SnappyData uses an additional 16 bytes per entry used to improve the speed of recovering data from disk. When an entry is deleted, a tombstone entry of approximately 13 bytes is created and maintained until the tombstone expires or is garbage-collected in the member that hosts the table. (When an entry is destroyed, the member temporarily retains the entry to detect possible conflicts with operations that have occurred. This retained entry is referred to as a tombstone.)</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>TYPE OF INDEX ENTRY</th>
-<th>APPROXIMATE HEAP OVERHEAD</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>New index entry</td>
-<td>80 bytes</td>
-</tr>
-<tr>
-<td>First non-unique index entry</td>
-<td>24 bytes</td>
-</tr>
-<tr>
-<td>Subsequent non-unique index entry</td>
-<td>8 bytes to 24 bytes*</td>
-</tr>
-</tbody>
-</table>
-<p>If there are more than 100 entries for a single index entry, the heap overhead per entry increases from 8 bytes to approximately 24 bytes.</p>
               
             </div>
           </div>

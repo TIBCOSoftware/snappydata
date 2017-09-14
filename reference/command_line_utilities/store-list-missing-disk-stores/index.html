@@ -601,7 +601,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -614,8 +614,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -623,6 +628,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1155,7 +1170,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../store-backup/">backup</a>
+        <a class="" href="../store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1636,7 +1665,7 @@
 <p>Lists all disk stores with the most recent data for which other members are waiting.</p>
 <h2 id="syntax">Syntax</h2>
 <pre><code class="pre">snappy list-missing-disk-stores 
-  [-locators=&lt;addresses&gt;] [-bind-address=&lt;address&gt;] [-&lt;prop-name&gt;=&lt;prop-value&gt;]*
+   &lt;-locators=&lt;addresses&gt;&gt; [-bind-address=&lt;address&gt;] [-&lt;prop-name&gt;=&lt;prop-value&gt;]*
 </code></pre>
 
 <p>If no locator option is specified on the command-line, the command uses the gemfirexd.properties file (if available) to determine the distributed system to which it should connect.</p>
@@ -1651,7 +1680,7 @@
 <tbody>
 <tr>
 <td>locators</td>
-<td>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.</td>
+<td>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the <code>peer-discovery-port</code> used when starting the cluster (default 10334). This is a mandatory field.</td>
 </tr>
 <tr>
 <td>bind-address</td>
@@ -1685,7 +1714,7 @@ Connecting to distributed system: -locators=localhost:10334
         <a href="../store-revoke-missing-disk-stores/" class="btn btn-neutral float-right" title="revoke-missing-disk-store">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../store-backup/" class="btn btn-neutral" title="backup"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../store-compact-disk-store/" class="btn btn-neutral" title="compact-disk-store"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1717,7 +1746,7 @@ Connecting to distributed system: -locators=localhost:10334
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../store-backup/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../store-compact-disk-store/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../store-revoke-missing-disk-stores/" style="color: #fcfcfc">Next &raquo;</a></span>

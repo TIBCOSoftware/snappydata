@@ -601,7 +601,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -614,8 +614,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../memory_management/">Memory Management</a>
+        <a class="" href="../design_principles/">Designing Principles</a>
         
     </li>
 
@@ -642,6 +647,16 @@
                 
             
             </ul>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../memory_management/">Memory Management</a>
         
     </li>
 
@@ -1174,7 +1189,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1619,6 +1648,10 @@
           <li>Best Practices &raquo;</li>
         
       
+        
+          <li>Designing your Database and Schema &raquo;</li>
+        
+      
     
     <li>Optimizing Query Latency: Partitioning and Replication Strategies</li>
 <!--    <li class="wy-breadcrumbs-aside">
@@ -1685,10 +1718,11 @@ SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce
 For examples refer to, <a href="../../howto/perform_a_colocated_join/">How to colocate tables for doing a colocated join</a>.</p>
 <p><a id="buckets"></a></p>
 <h3 id="buckets">Buckets</h3>
-<p>The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
-Unit of data movement is a bucket, and buckets of colocated tables move together. When a new server joins, the  <a href="../../configuring_cluster/property_description/#rebalance">-rebalance</a> option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY&gt;0 has been specified). </br>
-There is also a system procedure <a href="../../reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets">call sys.rebalance_all_buckets()</a> that can be used to trigger rebalance.
-For more information on BUCKETS, refer to <a href="../setup_cluster/#buckets">BUCKETS</a>.</p>
+<p>A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. For more information on BUCKETS, refer to <a href="../important_settings/#buckets">BUCKETS</a>.</br>
+By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.</p>
+<p>When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.</p>
+<p>The  <a href="../../configuring_cluster/property_description/#rebalance">-rebalance</a> option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY&gt;0 has been specified). </br>
+You can also set the system procedure <a href="../../reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets">call sys.rebalance_all_buckets()</a> to trigger rebalance.</p>
 <p><a id="dimension"></a></p>
 <h3 id="criteria-for-column-partitioning">Criteria for Column Partitioning</h3>
 <p>It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query is executed concurrently.</br>
@@ -1727,10 +1761,10 @@ select count(*) from T1 where not exists (select 1 from T2 where T1.id = T2.id)
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../ha_considerations/" class="btn btn-neutral float-right" title="HA Considerations">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../memory_management/" class="btn btn-neutral float-right" title="Memory Management">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../memory_management/" class="btn btn-neutral" title="Memory Management"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../design_principles/" class="btn btn-neutral" title="Designing Principles"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1762,10 +1796,10 @@ select count(*) from T1 where not exists (select 1 from T2 where T1.id = T2.id)
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../memory_management/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../design_principles/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../ha_considerations/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../memory_management/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

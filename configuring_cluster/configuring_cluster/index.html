@@ -620,7 +620,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -633,8 +633,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -642,6 +647,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1174,7 +1189,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1639,11 +1668,11 @@
                 <h1 id="snappydata-configuration-files">SnappyData Configuration Files</h1>
 <p>Configuration files for locator, lead, and server should be created in the <strong>conf</strong> folder located in the SnappyData home directory with names <strong>locators</strong>, <strong>leads</strong>, and <strong>servers</strong>.</p>
 <p>To do so, you can copy the existing template files <strong>servers.template</strong>, <strong>locators.template</strong>, <strong>leads.template</strong>, and rename them to <strong>servers</strong>, <strong>locators</strong>, <strong>leads</strong>.
-These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.</p>
+These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.</p>
 <p><a id="locator"></a></p>
 <h2 id="configuring-locators">Configuring Locators</h2>
 <p>Locators provide discovery service for the cluster. Clients (e.g. JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the <a href="../../architecture/">Architecture</a> section for more information on the core components.</p>
-<p>It is recommended to configure two locators (for HA) in production using the <strong>conf/locators</strong> file. You can refer to the <strong>conf/locators.template</strong> file for some examples. </p>
+<p>It is recommended to configure two locators (for HA) in production using the <strong>conf/locators</strong> file located in the <strong>&lt;<em>SnappyData_home</em>&gt;/conf</strong> directory. </p>
 <p>In this file, you can specify:</p>
 <ul>
 <li>
@@ -1656,6 +1685,7 @@ These files contain the hostnames of the nodes (one per line) where you intend t
 <p>SnappyData specific properties that can be passed.</p>
 </li>
 </ul>
+<p>You can refer to the <strong>conf/locators.template</strong> file for some examples. </p>
 <h3 id="list-of-locator-properties">List of Locator Properties</h3>
 <p>Refer to the <a href="../property_description/">SnappyData properties</a> for the complete list of SnappyData properties.</p>
 <table>
@@ -1708,7 +1738,6 @@ These files contain the hostnames of the nodes (one per line) where you intend t
 </tr>
 </tbody>
 </table>
-<p>Create the configuration file (<strong>locators</strong>) for locators in the <strong>&lt;<em>SnappyData_home</em>&gt;/conf</strong> directory.</p>
 <p><a id="locator-example"></a>
 <strong>Example</strong>: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:</p>
 <pre><code class="scala">$ cat conf/locators
@@ -1808,7 +1837,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 <p><a id="dataserver"></a></p>
 <h2 id="configuring-data-servers">Configuring Data Servers</h2>
-<p>Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the <strong>conf/servers.template</strong> file for some examples. </p>
+<p>Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the <strong>conf/servers.template</strong> file for some examples. </p>
 <p>Create the configuration file (<strong>servers</strong>) for data servers in the <strong>&lt;<em>SnappyData_home</em>&gt;/conf</strong> directory. </p>
 <h3 id="list-of-server-properties">List of Server Properties</h3>
 <p>Refer to the <a href="../property_description/">SnappyData properties</a> for the complete list of SnappyData properties.</p>
@@ -1950,7 +1979,7 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 <p>For a set of applicable class names and default values see the file <strong>conf/log4j.properties.template</strong>, which can be used as a starting point. Consult the <a href="http://logging.apache.org/log4j/">log4j 1.2.x documentation</a> for more details on the configuration file.</p>
 </div>
 <h2 id="snappydata-command-line-utility">SnappyData Command Line Utility</h2>
-<p>Instead of starting SnappyData cluster using SSH scripts, individual components can be configured, started and stopped on a system using these commands.</p>
+<p>Instead of starting SnappyData cluster using SSH scripts, individual components can be configured, started and stopped on a system locally using these commands.</p>
 <pre><code>$ bin/snappy locator start  -dir=/node-a/locator1 
 $ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
 $ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32

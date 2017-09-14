@@ -610,7 +610,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -623,8 +623,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -632,6 +637,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1164,7 +1179,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1627,8 +1656,7 @@
             <div class="section">
               
                 <h1 id="how-to-use-transactions-isolation-levels">How to use Transactions Isolation Levels</h1>
-<p>SnappyData supports transaction isolation levels when using JDBC or ODBC connections. The default transaction level in SnappyData is set to NONE.</br> 
-This ensures that other transactions are prevented from modifying rows when the current transaction is running an operation on the same rows.</p>
+<p>SnappyData supports transaction isolation levels when using JDBC or ODBC connections. The default transaction level in SnappyData is set to NONE, which ensures that other transactions are prevented from modifying rows when the current transaction is running an operation on the same rows.</p>
 <p>SnappyData also supports <code>READ_COMMITTED</code> and <code>REPEATABLE_READ</code> transaction isolation levels. A detailed description of transactions semantics in SnappyData can be found in the <a href="../../programming_guide/using_transactions/">Using Transactions</a> section.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>backup - SnappyData Documentation</title>
+  <title>backup and restore - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../../favicon.ico">
@@ -29,7 +29,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "backup";
+    var mkdocs_page_name = "backup and restore";
     var mkdocs_page_input_path = "reference/command_line_utilities/store-backup.md";
     var mkdocs_page_url = "/reference/command_line_utilities/store-backup/";
   </script>
@@ -601,7 +601,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -614,8 +614,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -623,6 +628,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1155,11 +1170,11 @@
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">backup</a>
+        <a class="current" href="./">backup and restore</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#backup">backup</a></li>
+                <li class="toctree-l3"><a href="#backup-and-restore">backup and restore</a></li>
                 
             
                 <li class="toctree-l3"><a href="#syntax">Syntax</a></li>
@@ -1187,6 +1202,20 @@
                 
             
             </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1636,7 +1665,7 @@
         
       
     
-    <li>backup</li>
+    <li>backup and restore</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1652,7 +1681,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="backup">backup</h1>
+                <h1 id="backup-and-restore">backup and restore</h1>
 <p>Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1686,13 +1715,16 @@
 </ul>
 <p><a id="syntax"></a></p>
 <h1 id="syntax">Syntax</h1>
-<p>Use the -locator option, on the command line to connect to the SnappyData cluster.</p>
+<p>Use the <code>-locator</code> option, on the command line to connect to the SnappyData cluster.</p>
 <pre><code class="pre">snappy backup [-baseline=&lt;baseline directory&gt;] &lt;target directory&gt; [-J-D&lt;vmprop&gt;=&lt;prop-value&gt;]
- [-locators=&lt;addresses&gt;] [-bind-address=&lt;address&gt;] [-&lt;prop-name&gt;=&lt;prop-value&gt;]*
+ &lt;-locators=&lt;addresses&gt;&gt; [-bind-address=&lt;address&gt;] [-&lt;prop-name&gt;=&lt;prop-value&gt;]*
 </code></pre>
 
-<p>Alternatively, you can specify these and other distributed system properties in a gemfirexd.properties file that is available in the directory where you run the <code>snappy</code> command.</p>
-<p>The table describes options for snappy backup.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The &lt;<em>target directory</em>&gt; must be provided immediately after <code>- snappy backup [-baseline]</code> followed by the other arguments. <code>-baseline</code> is optional.</p>
+</div>
+<p>The table describes options for <code>snappy backup</code>:</p>
 <table>
 <thead>
 <tr>
@@ -1703,7 +1735,7 @@
 <tbody>
 <tr>
 <td>baseline</td>
-<td>The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified <code>-baseline</code> directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the <code>-baseline</code> option.</td>
+<td>The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/SnappyDataBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified <code>-baseline</code> directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the <code>-baseline</code> option.</td>
 </tr>
 <tr>
 <td>target-directory</td>
@@ -1711,7 +1743,7 @@
 </tr>
 <tr>
 <td>locators</td>
-<td>List of locators used to discover members of the distributed system. Supply all locators as comma-separated <code>host:peer-discovery-port</code> values.</td>
+<td>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the <code>peer-discovery-port</code> used when starting the cluster (default 10334). This is a mandatory field.</td>
 </tr>
 <tr>
 <td>bind-address</td>
@@ -1736,9 +1768,6 @@
 </li>
 <li>
 <p>Configuration files from the member startup.</p>
-</li>
-<li>
-<p>gemfirexd.properties, with the properties the member was started with.</p>
 </li>
 <li>
 <p>A restore script, written for the member's operating system, that copies the files back to their original locations. For example, in Windows, the file is restore.bat and in Linux, it is restore.sh.</p>
@@ -1864,7 +1893,7 @@ BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../store-list-missing-disk-stores/" class="btn btn-neutral float-right" title="list-missing-disk-stores">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../store-compact-all-disk-stores/" class="btn btn-neutral float-right" title="compact-all-disk-stores">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../store-launcher/" class="btn btn-neutral" title="Command Line Utilities"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -1902,7 +1931,7 @@ BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
         <span><a href="../store-launcher/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../store-list-missing-disk-stores/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../store-compact-all-disk-stores/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

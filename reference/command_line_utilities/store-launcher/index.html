@@ -601,7 +601,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -614,8 +614,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -623,6 +628,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1162,7 +1177,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../store-backup/">backup</a>
+        <a class="" href="../store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1657,8 +1686,14 @@ $ snappy
 
 <ul>
 <li>
-<p><strong><a href="../store-backup/">backup</a></strong>
+<p><strong><a href="../store-backup/">backup and restore</a></strong>
     Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.</p>
+</li>
+<li>
+<p><strong><a href="../store-compact-all-disk-stores/">compact-all-disk-stores</a></strong> Performs online compaction of SnappyData disk stores.</p>
+</li>
+<li>
+<p><strong><a href="../store-compact-disk-store/">compact-disk-store</a></strong> Performs offline compaction of a single SnappyData disk store.</p>
 </li>
 <li>
 <p><strong><a href="../store-list-missing-disk-stores/">list-missing-disk-stores</a></strong>
@@ -1684,7 +1719,7 @@ $ snappy
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../store-backup/" class="btn btn-neutral float-right" title="backup">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../store-backup/" class="btn btn-neutral float-right" title="backup and restore">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../../system_tables/systables/" class="btn btn-neutral" title="SYSTABLES"><span class="icon icon-circle-arrow-left"></span> Previous</a>

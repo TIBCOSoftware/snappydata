@@ -614,7 +614,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -627,8 +627,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -636,6 +641,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1168,7 +1183,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1678,10 +1707,13 @@
 <p>In the <strong>Select an existing key pair or create a new key pair</strong> dialog box, select a key pair.</p>
 </li>
 <li>
-<p>Click <strong>Launch</strong> to launch the instances.</p>
+<p>Click <strong>Launch</strong>. The Launch Status page is displayed.</p>
 </li>
 <li>
-<p>The dashboard which lists the instances is displayed. Click <strong>Refresh</strong> to view the updated list and the status of the instance creation.</p>
+<p>Click <strong>View Instances</strong>. The dashboard which lists the instances is displayed.</p>
+</li>
+<li>
+<p>Click <strong>Refresh</strong> to view the updated list and the status of the instance creation.</p>
 </li>
 <li>
 <p>Once the status of the instance changes to <strong>running</strong>, you have successfully created and launched the instance with the SnappyData AMI.</p>
@@ -1710,7 +1742,7 @@ Refer to the following documentation, for more information on <a href="http://do
 </div>
 </li>
 <li>
-<p>Follow the <a href="#install-on-premise">steps described here</a> to continue. </br></p>
+<p>Follow the <a href="../install_on_premise/">steps described here</a> to continue. </br></p>
 </li>
 </ol>
 <p><a id="EC2"></a></p>
@@ -1745,19 +1777,34 @@ If you already have set up the AWS Command Line Interface on your local machine,
 <h3 id="cluster-management">Cluster Management</h3>
 <h4 id="launching-snappydata-cluster">Launching SnappyData Cluster</h4>
 <p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
-<p>Enter the command in the following format.</p>
+<p><strong>Syntax</strong></p>
 <p><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;</code></p>
-<p>Here, <code>&lt;your-key-name&gt;</code> refers to the EC2 Key Pair, <code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file and <code>&lt;action&gt;</code> refers to the action to be performed (for example, launch, start, stop).</p>
+<p>Here: </p>
+<ul>
+<li>
+<p><code>&lt;your-key-name&gt;</code> refers to the EC2 Key Pair</p>
+</li>
+<li>
+<p><code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file </p>
+</li>
+<li>
+<p><code>&lt;action&gt;</code> refers to the action to be performed. You must first launch your cluster using the <code>launch</code> action. The <code>start</code> and <code>stop</code> actions can be used to manage the nodes in the cluster.</p>
+</li>
+</ul>
 <p>By default, the script starts one instance of a locator, lead, and server each.
 The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups.</p>
-<p>The  names and details of the members are automatically derived from the provided cluster name.</p>
-<p>For example, if you launch a cluster named <strong>my-cluster</strong>, the locator is available in security group named <strong>my-cluster-locator</strong> and the store/server are available in <strong>my-cluster-store</strong>.</p>
-<p>When running the script you can also specify properties like the number of stores and region.</p>
-<p>For example, using the following command, you can start a SnappyData cluster named <strong>snappydata-cluster</strong> with 2 stores (or servers) in the N. California (us-west-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.</p>
-<p>The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.</p>
-<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster
+<p>The  names and details of the members are automatically derived from the provided cluster name. When running the script you can also specify properties like the number of stores and region.</p>
+<p><strong>Example</strong></p>
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch my-cluster
 </code></pre>
 
+<p>In the above example, you are launching a SnappyData cluster named <strong>my-cluster</strong> with 2 stores (or servers). The locator is available in security group named <strong>my-cluster-locator</strong> and the store/server are available in <strong>my-cluster-store</strong>.</p>
+<p>The cluster is launched in the N. California (us-west-1) region on AWS and starts an Apache Zeppelin server on the instance where lead is running. 
+The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, the cluster is launched in the US East (N. Virginia) region on AWS. To launch the cluster in a specific region ensure that you set the region property <code>--region=</code>.</p>
+</div>
 <p>To start Apache Zeppelin on a separate instance, use <code>--with-zeppelin=non-embedded</code>.</p>
 <h4 id="specifying-properties">Specifying Properties</h4>
 <p>If you want to configure each of the locator, lead, or server with specific properties, you can do so by specifying them in files named <strong>locators</strong>, <strong>leads</strong> or <strong>servers</strong>, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to <a href="../../configuring_cluster/configuring_cluster/#configuration-files">this SnappyData documentation page</a> for example on how to write these conf files.</p>

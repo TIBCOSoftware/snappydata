@@ -612,7 +612,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -625,8 +625,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -634,6 +639,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1166,7 +1181,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1629,9 +1658,12 @@
             <div class="section">
               
                 <h1 id="working-with-hadoop-yarn-cluster-manager">Working with Hadoop YARN Cluster Manager</h1>
-<p>SnappyData as such can not managed be Yarn cluster manager. However you can start Spark cluster with Yarn cluster manager, which can interact with SnappyData cluster in connector mode.</p>
+<p>The SnappyData embedded cluster uses its own cluster manager and as such cannot be managed using the YARN cluster manager. However, you can start the Spark cluster with the YARN cluster manager, which can interact with the SnappyData cluster in the <a href="../../affinity_modes/connector_mode/">Smart Connector Mode</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>We assume that Apache Hadoop and YARN are already installed, and you want to bring in SnappyData cluster to work with YARN.</p>
-<p>You need to set, following environment variables -</p>
+</div>
+<p>You need to set the following environment variables:</p>
 <pre><code class="scala">export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
@@ -1639,7 +1671,7 @@ export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
 <h2 id="launching-spark-shell-with-yarn-">Launching spark-shell with Yarn -</h2>
 <p>Start a SnappyData default cluster using the <code>./sbin/snappy-start-all.sh</code> command</p>
-<p>If you want to run SnappyData quickstart example using YARN, do the following. </p>
+<p>To run SnappyData quickstart example using YARN, do the following:</p>
 <pre><code class="scala">./bin/spark-shell --master yarn  --conf spark.snappydata.connection=localhost:1527 --conf spark.ui.port=4041 -i $SNAPPY_HOME/quickstart/scripts/Quickstart.scala
 </code></pre>
 
@@ -1649,7 +1681,7 @@ export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
 </div>
 <h2 id="submitting-spark-jobs-using-yarn">Submitting spark-jobs using YARN</h2>
 <ol>
-<li>Create the required tables in SnappyData cluster</li>
+<li>Create the required tables in the SnappyData cluster</li>
 </ol>
 <pre><code class="scala">./bin/snappy-job.sh submit --lead localhost:8090 --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
 </code></pre>

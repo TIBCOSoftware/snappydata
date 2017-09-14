@@ -612,7 +612,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -625,8 +625,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -634,6 +639,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1166,7 +1181,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1631,6 +1660,17 @@
                 <h1 id="using-transactions">Using Transactions</h1>
 <h2 id="using-distributed-transaction-for-row-tables">Using Distributed Transaction for Row Tables</h2>
 <p>Transactions specify an isolation level that defines the degree to which one transaction must be isolated from resource or data modifications made by other transactions. The transaction isolation levels define the type of locks acquired on read operations. Only one of the isolation level options can be set at a time, and it remains set for that connection until it is explicitly changed.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>
+<p>If you set the isolation level to <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code>, queries on column table report an error if <a href="../../reference/interactive_commands/autocommit/">autocommit</a> is set to off (false). </br>Queries on column tables are supported when isolation level is set to <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code> and autocommit is set to <strong>true</strong>.</p>
+</li>
+<li>
+<p>DDL execution (for example <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> /<a href="../../reference/sql_reference/drop-table/">DROP TABLE</a>) is not allowed when <code>autocommit</code> is set to <code>false</code>  and transaction isolation level is <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code>.  DDL commands reports syntax error in such cases. DDL execution is allowed if <code>autocommit</code> is <code>true</code> for <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code> isolation levels.</p>
+</li>
+</ul>
+</div>
 <p>The following isolation levels are supported for row tables:</p>
 <table>
 <thead>
@@ -1658,10 +1698,6 @@
 <h2 id="using-snapshot-isolation-for-column-tables">Using Snapshot Isolation for Column Tables</h2>
 <p>Multi-Statement transactions are not supported on column tables. Instead, we provide snapshot isolation by default.  Snapshot ensures that all queries see the same version (snapshot), of the database, based on the state of the database at the moment in time when the query is executed. The snapshot is taken per statement for each partition, which means, the snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
 <!--Currently, only single statement snapshot isolation (that is, <a href="../reference/interactive_commands/autocommit.md">autocommit</a> must be set to true) is supported.-->  </p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you set the isolation level to <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code>, queries on column table report an error if <a href="../../reference/interactive_commands/autocommit/">autocommit</a> is set to off (false). </br>Queries on column tables are supported when isolation level is set to <code>READ_COMMITTED</code> or <code>REPEATABLE_READ</code> and autocommit is set to <strong>true</strong>.</p>
-</div>
               
             </div>
           </div>

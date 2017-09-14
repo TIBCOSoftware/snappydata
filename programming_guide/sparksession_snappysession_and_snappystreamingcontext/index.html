@@ -614,7 +614,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -627,8 +627,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -636,6 +641,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1168,7 +1183,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1721,9 +1750,6 @@ SparkSession object can be created by using SparkSession.Builder used as below.<
 If you are in the Embedded Mode, applications typically submit jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext.
 Jobs are the primary mechanism to interact with SnappyData using the Spark API in embedded mode.
 A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait.</p>
-<p>The implementation of the <em>runSnappyJob</em> function from SnappySQLJob uses a SnappySession to interact with the SnappyData store to process and store tables.
-The implementation of <em>runSnappyJob</em> from SnappyStreamingJob uses a SnappyStreamingContext to create streams and manage the streaming context.
-The jobs are submitted to the lead node of SnappyData over REST API using a utility like <em>spark-submit</em> .</p>
               
             </div>
           </div>

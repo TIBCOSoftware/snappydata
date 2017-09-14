@@ -601,7 +601,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -615,23 +615,19 @@
                 <li class="toctree-l3"><a href="#designing-your-database-and-schema">Designing your Database and Schema</a></li>
                 
             
-                <li class="toctree-l3"><a href="#design-principles-of-scalable-partition-aware-databases">Design Principles of Scalable, Partition-Aware Databases</a></li>
-                
-                    <li><a class="toctree-l4" href="#identify-entity-groups-and-partitioning-keys">Identify Entity Groups and Partitioning Keys</a></li>
-                
-                    <li><a class="toctree-l4" href="#adapting-a-database-schema">Adapting a Database Schema</a></li>
-                
-                    <li><a class="toctree-l4" href="#guidelines-for-adapting-a-database-to-snappydata">Guidelines for Adapting a Database to SnappyData</a></li>
-                
-            
             </ul>
         
     </li>
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../memory_management/">Memory Management</a>
+        <a class="" href="../design_principles/">Designing Principles</a>
         
     </li>
 
@@ -639,6 +635,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../memory_management/">Memory Management</a>
         
     </li>
 
@@ -1171,7 +1177,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1634,177 +1654,17 @@
             <div class="section">
               
                 <h1 id="designing-your-database-and-schema">Designing your Database and Schema</h1>
+<p>The key design goal for achieving linear scaling is to use a partitioning strategy that allows most data access (queries) to be pruned to a single partition. This avoids expensive locking operations across multiple partitions during query execution.</p>
+<p>In a highly concurrent system that has thousands of connections, multiple queries are generally spread uniformly across the entire data set (and therefore across all partitions). Therefore, increasing the number of data stores enables linear scalability. Given sufficient network performance, additional connections can be supported without degrading the response time for queries.</p>
 <p>The following topics are covered in this section:</p>
 <ul>
 <li>
-<p><a href="#design-schema">Design Principles of Scalable, Partition-Aware Databases</a></p>
+<p><a href="./">Design Principles of Scalable, Partition-Aware Databases</a></p>
 </li>
 <li>
-<p><a href="#entity_groups">Identify Entity Groups and Partitioning Keys</a></p>
-</li>
-<li>
-<p><a href="#adapting_existing_schema">Adapting a Database Schema</a></p>
+<p><a href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a></p>
 </li>
 </ul>
-<p><a id="design-schema"></a></p>
-<h1 id="design-principles-of-scalable-partition-aware-databases">Design Principles of Scalable, Partition-Aware Databases</h1>
-<p>The key design goal for achieving linear scaling is to use a partitioning strategy that allows most data access (queries) to be pruned to a single partition. This avoids expensive locking operations across multiple partitions during query execution.</p>
-<p>In a highly concurrent system that has thousands of connections, multiple queries are generally spread uniformly across the entire data set (and therefore across all partitions). Therefore, increasing the number of data stores enables linear scalability. Given sufficient network performance, additional connections can be supported without degrading the response time for queries.</p>
-<p>The general strategy for designing a SnappyData database is to identify the tables to partition or replicate in the SnappyData cluster, and then to determine the correct partitioning key(s) for partitioned tables. This usually requires an iterative process to produce the optimal design:</p>
-<ol>
-<li>
-<p>Read <a href="#entity_groups">Identify Entity Groups and Partitioning Keys</a> and <a href="../optimizing_query_latency/#partition-replicate">Replicate Dimension Tables</a> to understand the basic rules for defining partitioned or replicated tables.</p>
-</li>
-<li>
-<p>Evaluate your data access patterns to define those entity groups that are candidates for partitioning. Focus your efforts on commonly-joined entities. Colocating commonly joined tables will improve the performance of join queries by avoiding shuffle of data when the join is on partitioning keys.</p>
-</li>
-<li>
-<p>Identify all of the tables in the entity groups.</p>
-</li>
-<li>
-<p>Identify the “partitioning key” for each partitioned table. The partitioning key is the column or set of columns that are common across a set of related tables. Look for parent-child relationships in the joined tables.</p>
-</li>
-<li>
-<p>Identify all of the tables that are candidates for replication. You can replicate table data for high availability, or to colocate table data that is necessary to execute joins.</p>
-</li>
-</ol>
-<p><a id="entity_groups"></a></p>
-<h2 id="identify-entity-groups-and-partitioning-keys">Identify Entity Groups and Partitioning Keys</h2>
-<p>In relational database terms, an entity group corresponds to rows that are related to one another through foreign key relationships. Members of an entity group are typically related by parent-child relationships and can be managed in a single partition. To design a SnappyData database for data partitioning, begin by identifying “entity groups” and their associated partitioning keys.</p>
-<p>For example:</p>
-<ul>
-<li>
-<p>In a customer order management system, most transactions operate on data related to a single customer at a time. Queries frequently join a customer’s billing information with their orders and shipping information. For this type of application, you partition related tables using the customer identity. Any customer row along with their “order” and “shipping” rows forms a single entity group that has the customer ID as the entity group identity (the partitioning key). You would partition related tables using the customer identity, which would enable you to scale the system linearly by adding more members to support additional customers.</p>
-</li>
-<li>
-<p>In a system that manages a product catalog (product categories, product specifications, customer reviews, rebates, related products, and so forth) most data access focuses on a single product at a time. In this type of system, you would partition data on the product key and add members as needed to manage additional products.</p>
-</li>
-<li>
-<p>In an online auction application, you may need to stream incoming auction bids to hundreds of clients with very low latency. To do so, you would manage selected “hot” auctions on a single partition, so that they receive sufficient processing power. As the processing demand increases, you would add more partitions and route the application logic that matches bids to clients to the data store itself.</p>
-</li>
-<li>
-<p>In a financial trading engine that constantly matches bid prices to asking prices for thousands of securities, you would partition data using the ID of the security. To ensure low-latency execution when a security’s market data changes, you would colocate all of the related reference data with the matching algorithm.</p>
-</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><a href="http://en.wikipedia.org/wiki/Shard_(database_architecture)">Sharding</a> is a database partitioning strategy where groups of table rows are stored on separate database servers and potentially different instances of the same schema, creating groups of data that can be accessed independently. SnappyData does encourage applications to use sharding techniques.</p>
-</div>
-<p>By identifying entity groups and using those groups as the basis for SnappyData partitioning and colocation, you can realize these benefits:</p>
-<ul>
-<li>
-<p><strong>Rebalancing</strong>: SnappyData rebalances the data automatically by making sure that related rows are migrated together and without any integrity loss. This enables you to add capacity as needed.</p>
-</li>
-<li>
-<p><strong>Parallel scatter-gather</strong>: Queries that cannot be pruned to a single partition are automatically executed in parallel on data stores. </p>
-</li>
-<li>
-<p><strong>Subqueries on remote partitions</strong>: Even when a query is pruned to a single partition, the query can execute subqueries that operate on data that is stored on remote partitions.</p>
-</li>
-</ul>
-<p><a id="adapting_existing_schema"></a></p>
-<h2 id="adapting-a-database-schema">Adapting a Database Schema</h2>
-<p>If you have an existing database design that you want to deploy to SnappyData, translate the entity-relationship model into a physical design that is optimized for SnappyData design principles.</p>
-<h2 id="guidelines-for-adapting-a-database-to-snappydata">Guidelines for Adapting a Database to SnappyData</h2>
-<p>This example shows tables from the Microsoft <a href="http://msdn.microsoft.com/en-us/library/aa276825(SQL.80).aspx">Northwind Traders sample database</a>.</p>
-<p>In order to adapt this schema for use in SnappyData, follow the basic steps outlined in <a href="#design-schema">Design Principles of Scalable, Partition-Aware Databases</a>:</p>
-<ol>
-<li>
-<p>Determine the entity groups.</p>
-<p>Entity groups are generally course-grained entities that have children, grand children, and so forth, and they are commonly used in queries. This example chooses these entity groups:</p>
-<table>
-<thead>
-<tr>
-<th>Entity Group</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Customer</td>
-<td>This group uses the customer identity along with orders and order details as the children</td>
-</tr>
-<tr>
-<td>Product</td>
-<td>This group uses product d etails along with the associated supplier information</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>Identify the tables in each entity group.
-    Identify the tables that belong to each entity group. In this example, entity groups use the following tables.</p>
-<table>
-<thead>
-<tr>
-<th>Entity Group</th>
-<th>Tables</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Customer</td>
-<td>Customers </br>Orders</br>Shippers</br>Order Details</td>
-</tr>
-<tr>
-<td>Product</td>
-<td>Product</br>Suppliers</br>Category</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>Define the partitioning key for each group.</br>
-    In this example, the partitioning keys are:</p>
-<table>
-<thead>
-<tr>
-<th>Entity Group</th>
-<th>Partitioning key</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Customer</td>
-<td>CustomerID</td>
-</tr>
-<tr>
-<td>Product</td>
-<td>ProductID</td>
-</tr>
-</tbody>
-</table>
-<p>This example uses customerID as the partitioning key for the Customer group. The customer row and all associated orders will be colocated into a single partition. To explicitly colocate Orders with its parent customer row, use the <code>colocate with</code> clause in the create table statement:</p>
-<pre><code>create table orders (&lt;column definitions&gt;) 
-using column options ('partition_by' customerID, 
-'colocate_with' customers);
-</code></pre>
-<p>In this way, SnappyData supports any queries that join any the Customers and Orders tables. This join query would be distributed to all partitions and executed in parallel, with the results streamed back to the client:</p>
-<pre><code>select * from customer c , orders o where c.customerID = o.customerID;
-</code></pre>
-<p>A query such as this would be pruned to the single partition that stores “customer100” and executed only on that SnappyData member:</p>
-<pre><code>select * from customer c, orders o where c.customerID = o.customerID  and c.customerID = 'customer100';
-</code></pre>
-<p>The optimization provided when queries are highly selective comes from engaging the query processor and indexing on a single member rather than on all partitions. With all customer data managed in memory, query response times are very fast. </br>
-Finally, consider a case where an application needs to access customer order data for several customers:</p>
-<pre><code>select * from customer c, orders o 
-where c.customerID = o.customerID and c.customerID IN ('cust1', 'cust2', 'cust3');
-</code></pre>
-<p>Here, SnappyData prunes the query execution to only those partitions that host ‘cust1’, 'cust2’, and 'cust3’. The union of the results is then returned to the caller.
-Note that the selection of customerID as the partitioning key means that the OrderDetails and Shippers tables cannot be partitioned and colocated with Customers and Orders (because OrderDetails and Shippers do not contain the customerID value for partitioning). </p>
-</li>
-<li>
-<p>Identify replicated tables.</br>
-    If we assume that the number of categories and suppliers rarely changes, those tables can be replicated in the SnappyData cluster (replicated to all of the SnappyData members that host the entity group). If we assume that the Products table does change often and can be relatively large in size, then partitioning is a better strategy for that table.
-    So for the product entity group, table Products is partitioned by ProductID, and the Suppliers and Categories tables are replicated to all of the members where Products is partitioned.
-    Applications can now join Products, Suppliers and categories. For example:</p>
-<pre><code>select * from Products p , Suppliers s, Categories c 
-where c.categoryID = p.categoryID and p.supplierID = s.supplierID 
-and p.productID IN ('someProductKey1', ' someProductKey2', ' someProductKey3');
-</code></pre>
-<p>In the above query, SnappyData prunes the query execution to only those partitions that host 'someProductKey1’, ’ someProductKey2’, and ’ someProductKey3.’</p>
-</li>
-</ol>
               
             </div>
           </div>
@@ -1812,10 +1672,10 @@ and p.productID IN ('someProductKey1', ' someProductKey2', ' someProductKey3');
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../memory_management/" class="btn btn-neutral float-right" title="Memory Management">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../design_principles/" class="btn btn-neutral float-right" title="Designing Principles">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../setup_cluster/" class="btn btn-neutral" title="Setting up your Cluster"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../setup_cluster/" class="btn btn-neutral" title="Tuning for Concurrency and Computation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1850,7 +1710,7 @@ and p.productID IN ('someProductKey1', ' someProductKey2', ' someProductKey3');
         <span><a href="../setup_cluster/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../memory_management/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../design_principles/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

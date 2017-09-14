@@ -519,9 +519,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#using-jdbc-with-snappydata">Using JDBC with SnappyData</a></li>
-                
-                    <li><a class="toctree-l4" href="#multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</a></li>
+                <li class="toctree-l3"><a href="#multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</a></li>
                 
             
             </ul>
@@ -610,7 +608,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Setting up your Cluster</a>
+        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
@@ -623,8 +621,13 @@
 
         
             
+    <ul class="subnav">
+    <li><span>Designing your Database and Schema</span></li>
+
+        
+            
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
         
     </li>
 
@@ -632,6 +635,16 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
         
     </li>
 
@@ -1164,7 +1177,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup and restore</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
@@ -1626,20 +1653,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="using-jdbc-with-snappydata">Using JDBC with SnappyData</h1>
-<p>SnappyData is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. </p>
-<pre><code class="java">
-// 1527 is the default port a Locator or Server uses to listen for thin client connections
-Connection c = DriverManager.getConnection (&quot;jdbc:snappydata://locatorHostName:1527/&quot;);
-// While, clients typically just point to a locator, you could also directly point the 
-//   connection at a server endpoint
-</code></pre>
-
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</p>
-</div>
-<h2 id="multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</h2>
+                <h1 id="multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</h1>
 <p>SnappyData provides support for Apache Thrift protocol which enables users to access the cluster from other languages that are not supported directly by SnappyData.
 Thrift allows efficient and reliable communication across programming languages like Java, Python, PHP, Ruby, Elixir, Perl and other languages. For more information on Thrift, refer to the <a href="https://thrift.apache.org/">Apache Thrift documentation</a>.</p>
 <p>The JDBC driver for SnappyData that uses the <code>jdbc:snappydata://</code> URL schema, now uses Thrift for underlying protocol. The older URL scheme for RowStore <code>jdbc:gemfirexd://</code> continues to use the deprecated DRDA protocol.</p>
