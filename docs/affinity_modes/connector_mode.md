@@ -32,6 +32,8 @@ When queries are executed, while the entire query planning and execution is coor
 
 * Optimized column batch inserts like in the Embedded mode with job routing to same machines as data stores if possible.
 
+<a id="example"></a>
+
 **Example: Launch a Spark local mode cluster and use Smart Connector to access SnappyData cluster**
 
 **Step 1: Start the SnappyData cluster**:

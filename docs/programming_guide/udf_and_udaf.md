@@ -1,5 +1,33 @@
+# User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)
+Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
+The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
+
+!!! Note: 
+	Support for UDF is available from SnappyData version release 0.8 onwards.
+
+## Create User Defined Function
+
+You can simply extend any one of the interfaces in the package **org.apache.spark.sql.api.java**. 
+These interfaces can be included in your client application by adding **snappy-spark-sql_2.11-2.0.3-2.jar** to your classpath.
+
+### Define a User Defined Function class
+
+The number of the interfaces (UDF1 to UDF22) signifies the number of parameters a UDF can take.
+
+!!! Note: 
+	Currently, any UDF which can take more than 22 parameters is not supported.
+
+```scala
+package some.package
+import org.apache.spark.sql.api.java.UDF1
+
+class StringLengthUDF extends UDF1[String, Int] {
+ override def call(t1: String): Int = t1.length
+}
+```
+
 <a id= create_udf> </a>
-# Create User Defined Function
+### Create a User Defined Function
 
 !!! Note:
 	Place the jars used for creating persistent UDFs in a shared location (NFS, HDFS etc.) if you are configuring multiple leads for high availability. The same jar is used for DDL replay while the standby lead becomes the active lead.
@@ -38,7 +66,7 @@ You can write a JAVA or SCALA class to write a UDF implementation.
 |SHORT|java.lang.Short|
 |BYTE|java.lang.Byte|
 
-## Use UDF
+## Use a User Defined Function
 
 ```scala
 select strnglen(string_column) from <table>
@@ -47,7 +75,7 @@ select strnglen(string_column) from <table>
 If you try to use a UDF on a different type of column, for example, an **Int** column an exception is reported.
 
 
-#### **Drop the Function**
+#### Drop the Function
 
 ```scala
 DROP FUNCTION IF EXISTS udf_name
@@ -59,7 +87,7 @@ For example:
 DROP FUNCTION IF EXISTS app.strnglen
 ```
 
-#### **Modify an Existing UDF**
+#### Modify an Existing User Defined Function
 
  1) Drop the existing UDF
 

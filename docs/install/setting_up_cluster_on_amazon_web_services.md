@@ -35,7 +35,7 @@ To launch the instance and start SnappyData cluster:
 
 10. Click **Launch**. The Launch Status page is displayed.
 
-11. Click **View Status**. The dashboard which lists the instances is displayed.
+11. Click **View Instances**. The dashboard which lists the instances is displayed.
 
 12. Click **Refresh** to view the updated list and the status of the instance creation.
 
@@ -93,28 +93,37 @@ If you already have set up the AWS Command Line Interface on your local machine,
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
-Enter the command in the following format.
+**Syntax**
 
 `./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> <action> <your-cluster-name>`
 
-Here, `<your-key-name>` refers to the EC2 Key Pair, `<your-keyfile-path>` refers to the path to the key file and `<action>` refers to the action to be performed (for example, launch, start, stop).
+Here: 
+
+* `<your-key-name>` refers to the EC2 Key Pair
+
+* `<your-keyfile-path>` refers to the path to the key file 
+
+* `<action>` refers to the action to be performed. You must first launch your cluster using the `launch` action. The `start` and `stop` actions can be used to manage the nodes in the cluster.
 
 By default, the script starts one instance of a locator, lead, and server each.
 The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups.
 
-The  names and details of the members are automatically derived from the provided cluster name.
+The  names and details of the members are automatically derived from the provided cluster name. When running the script you can also specify properties like the number of stores and region.
 
-For example, if you launch a cluster named **my-cluster**, the locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
-
-When running the script you can also specify properties like the number of stores and region.
-
-For example, using the following command, you can start a SnappyData cluster named **snappydata-cluster** with 2 stores (or servers) in the N. California (us-west-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.
-
-The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
+**Example**
 
 ```
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch my-cluster
 ```
+
+In the above example, you are launching a SnappyData cluster named **my-cluster** with 2 stores (or servers). The locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
+
+The cluster is launched in the N. California (us-west-1) region on AWS and starts an Apache Zeppelin server on the instance where lead is running. 
+The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
+
+!!! Note:
+	By default, the cluster is launched in the US East (N. Virginia) region on AWS. To launch the cluster in a specific region ensure that you set the region property `--region=`.
+
 To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`.
 
 #### Specifying Properties

@@ -138,30 +138,3 @@ dStream.foreachDataFrame(_.write.insertInto("yourTableName"))
 ## Dynamic (ad-hoc) Continuous Queries
 Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.
 
-## User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)
-Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
-The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
-
-!!! Note: 
-	Support for UDF is available from SnappyData version 0.8 and future versions.
-
-## Create User Defined Function
-
-You can simply extend any one of the interfaces in the package **org.apache.spark.sql.api.java**. 
-These interfaces can be included in your client application by adding **snappy-spark-sql_2.11-2.0.3-2.jar** to your classpath.
-
-### Define a UDF class
-
-The number of the interfaces (UDF1 to UDF22) signifies the number of parameters a UDF can take.
-
-!!! Note: 
-	Currently, any UDF which can take more than 22 parameters is not supported.
-
-```scala
-package some.package
-import org.apache.spark.sql.api.java.UDF1
-
-class StringLengthUDF extends UDF1[String, Int] {
- override def call(t1: String): Int = t1.length
-}
-```

@@ -1,10 +1,11 @@
 # Working with Hadoop YARN Cluster Manager 
 
-SnappyData as such can not managed be Yarn cluster manager. However you can start Spark cluster with Yarn cluster manager, which can interact with SnappyData cluster in connector mode.
+The SnappyData embedded cluster uses its own cluster manager and as such cannot be managed using the YARN cluster manager. However, you can start the Spark cluster with the YARN cluster manager, which can interact with the SnappyData cluster in the [Smart Connector Mode](../affinity_modes/connector_mode.md).
 
-We assume that Apache Hadoop and YARN are already installed, and you want to bring in SnappyData cluster to work with YARN.
+!!! Note:
+	We assume that Apache Hadoop and YARN are already installed, and you want to bring in SnappyData cluster to work with YARN.
 
-You need to set, following environment variables -
+You need to set the following environment variables:
 
 ```scala
 export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
@@ -15,7 +16,7 @@ export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
 Start a SnappyData default cluster using the `./sbin/snappy-start-all.sh` command
 
-If you want to run SnappyData quickstart example using YARN, do the following. 
+To run SnappyData quickstart example using YARN, do the following:
 
 ```scala
 ./bin/spark-shell --master yarn  --conf spark.snappydata.connection=localhost:1527 --conf spark.ui.port=4041 -i $SNAPPY_HOME/quickstart/scripts/Quickstart.scala
@@ -26,12 +27,12 @@ If you want to run SnappyData quickstart example using YARN, do the following.
     
 ## Submitting spark-jobs using YARN
 
-1. Create the required tables in SnappyData cluster
+1. Create the required tables in the SnappyData cluster
 
 ```scala
 ./bin/snappy-job.sh submit --lead localhost:8090 --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
 ```
-    
+
 2. Run queries on the tables created from CreateAndLoadAirlineDataJob.
 
 ```scala

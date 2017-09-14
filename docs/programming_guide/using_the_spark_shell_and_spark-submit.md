@@ -2,6 +2,8 @@
 
 SnappyData, out-of-the-box, colocates Spark executors and the SnappyData store for efficient data intensive computations. 
 You, however, may need to isolate the computational cluster for other reasons. For instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly.
+Refer to [SnappyData Smart Connector Mode](../affinity_modes/connector_mode.md#example) for examples.
+
 
 To support such cases it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store the `spark.snappydata.connection` property should be provided while starting the Spark-shell. 
 

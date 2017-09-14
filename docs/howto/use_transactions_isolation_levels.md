@@ -1,7 +1,6 @@
 # How to use Transactions Isolation Levels
 
-SnappyData supports transaction isolation levels when using JDBC or ODBC connections. The default transaction level in SnappyData is set to NONE.</br> 
-This ensures that other transactions are prevented from modifying rows when the current transaction is running an operation on the same rows.
+SnappyData supports transaction isolation levels when using JDBC or ODBC connections. The default transaction level in SnappyData is set to NONE, which ensures that other transactions are prevented from modifying rows when the current transaction is running an operation on the same rows.
 
 SnappyData also supports `READ_COMMITTED` and `REPEATABLE_READ` transaction isolation levels. A detailed description of transactions semantics in SnappyData can be found in the [Using Transactions](../programming_guide/using_transactions.md) section.
 

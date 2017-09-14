@@ -111,7 +111,3 @@ If you are in the Embedded Mode, applications typically submit jobs to SnappyDat
 Jobs are the primary mechanism to interact with SnappyData using the Spark API in embedded mode.
 A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait.
 
-The implementation of the _runSnappyJob_ function from SnappySQLJob uses a SnappySession to interact with the SnappyData store to process and store tables.
-The implementation of _runSnappyJob_ from SnappyStreamingJob uses a SnappyStreamingContext to create streams and manage the streaming context.
-The jobs are submitted to the lead node of SnappyData over REST API using a utility like _spark-submit_ .
-
