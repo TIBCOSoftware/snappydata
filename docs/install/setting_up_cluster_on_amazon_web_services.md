@@ -1,4 +1,3 @@
-
 <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 # Setting up Cluster on Amazon Web Services (AWS)
 
@@ -34,13 +33,15 @@ To launch the instance and start SnappyData cluster:
 
 9. In the **Select an existing key pair or create a new key pair** dialog box, select a key pair.
 
-10. Click **Launch** to launch the instances.
+10. Click **Launch**. The Launch Status page is displayed.
 
-9. The dashboard which lists the instances is displayed. Click **Refresh** to view the updated list and the status of the instance creation.
+11. Click **View Status**. The dashboard which lists the instances is displayed.
 
-10. Once the status of the instance changes to **running**, you have successfully created and launched the instance with the SnappyData AMI.
+12. Click **Refresh** to view the updated list and the status of the instance creation.
 
-12. Use SSH to connect to the instance using the **ubuntu** username. You require:
+13. Once the status of the instance changes to **running**, you have successfully created and launched the instance with the SnappyData AMI.
+
+14. Use SSH to connect to the instance using the **ubuntu** username. You require:
 
 	* The private key file of the key pair with which the instance was launched, and
 
@@ -54,7 +55,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 		* The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. 
 
-13. Follow the [steps described here](#install-on-premise) to continue. </br>
+13. Follow the [steps described here](install_on_premise.md) to continue. </br>
 
 
 <a id="EC2"></a>

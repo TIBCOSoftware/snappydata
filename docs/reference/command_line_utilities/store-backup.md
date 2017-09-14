@@ -23,18 +23,21 @@ Creates a backup of operational disk stores for all members running in the distr
 
 # Syntax
 
-Use the -locator option, on the command line to connect to the SnappyData cluster.
+Use the `-locator` option, on the command line to connect to the SnappyData cluster.
 
 ``` pre
 snappy backup [-baseline=<baseline directory>] <target directory> [-J-D<vmprop>=<prop-value>]
- [-locators=<addresses>] [-bind-address=<address>] [-<prop-name>=<prop-value>]*
+ <-locators=<addresses>> [-bind-address=<address>] [-<prop-name>=<prop-value>]*
 ```
 
-The table describes options for snappy backup.
+!!! Note
+	The <_target directory_> must be provided immediately after `- snappy backup [-baseline]` followed by the other arguments. `-baseline` is optional.
+
+The table describes options for `snappy backup`:
 
 |Option|Description|
 |-|-|
-|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/SnappyDataBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the `-baseline` option.|
+|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/SnappyDataBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option.|
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#backup_directory).|
 |locators| List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
 |bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|

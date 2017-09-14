@@ -63,8 +63,9 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 This creates a default folder named **work** and stores all SnappyData member's artifacts separately. Each member folder is identified by the name of the node.
 
-If SSH is not supported then follow the instructions in the Machines without a Shared Path section.
+If SSH is not supported then follow the instructions in the [Machines without a Shared Path](#machine-shared-path) section.
 
+<a id="machine-shared-path"></a>
 ## Machines without a Shared Path
 
 ### Prerequisites
