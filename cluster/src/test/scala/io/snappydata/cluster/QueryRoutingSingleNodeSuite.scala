@@ -567,6 +567,31 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
+  def update_delete_query2(tableName1: String, cacheMapSize: Int): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    val s = conn.createStatement()
+    try {
+      val update1 =
+        s.executeUpdate(s"UPDATE $tableName1 SET ol_1_int_id = ol_1_int_id + 1 " +
+            s" WHERE ol_1_int2_id IN (SELECT max(ol_1_int2_id) from $tableName1)")
+      assert(update1 == 1, update1)
+
+      val delete1 =
+        s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id in "
+            + s"(SELECT min(ol_1_int2_id) from $tableName1)")
+      assert(delete1 == 1, delete1)
+
+      val selectQry1 = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id from $tableName1 limit 20"
+      verifyResults("update_delete_query2-select1",
+        s.executeQuery(selectQry1), Array(5000, 5001), cacheMapSize)
+    } finally {
+      s.close()
+      conn.close()
+    }
+  }
+
   test("update delete on column table") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
@@ -587,7 +612,10 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       insertRows(tableName1, 1000)
       insertRows(tableName2, 1000)
       update_delete_query1(tableName1, 1)
-      update_delete_query1(tableName2, 2)
+      update_delete_query2(tableName1, 2)
+
+      update_delete_query1(tableName2, 3)
+      update_delete_query2(tableName2, 4)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
