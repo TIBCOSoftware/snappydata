@@ -134,6 +134,13 @@ class SnappyContextTests(ReusedPySparkTestCase):
         self.assertTrue(sparkSession.delete(SnappyContextTests.tablename, "col1=1"), 2)
         self.drop_table()
 
+    def test_csv(self):
+        self.drop_table(True)
+        self.create_table_using_datasource("row")
+        sparkSession = SnappySession(self.sc)
+        sparkSession.read.csv("../../test_support/kv.txt").write.insertInto(tableName = SnappyContextTests.tablename)
+        self.drop_table()
+
     def put_table(self):
         sparkSession = SnappySession(self.sc)
         newrow = [1L, 2L, 3L], [2L, 3L, 4L]
@@ -159,7 +166,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
     def truncate_table(self):
         sparkSession = SnappySession(self.sc)
-        sparkSession.truncateTable(SnappyContextTests.tablename)
+        sparkSession.truncateTable(SnappyContextTests.tablename, True)
 
     def verify_table_rows(self, rowcount):
         sparkSession = SnappySession(self.sc)
