@@ -20,4 +20,8 @@
 # also should not be passed any arguments, since we need original $*
 
 # resolve links - $0 may be a softlink
-export SNAPPY_HOME="${SPARK_HOME}"
+if [ -z "$SNAPPY_HOME" ]; then
+  export SNAPPY_HOME="${SPARK_HOME}"
+elif [ -z "$SPARK_HOME" ]; then
+  export SPARK_HOME="${SNAPPY_HOME}"
+fi
