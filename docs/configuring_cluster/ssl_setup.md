@@ -1,5 +1,5 @@
 <a id="ssl"></a>
-### SSL Setup for Client-Server
+# SSL Setup for Client-Server
 
 SnappyData store supports Thrift protocol that provides functionality equivalent to JDBC/ODBC protocols and can be used to access the store from other languages that are not yet supported directly by SnappyData. In the command-line, SnappyData locators and servers accept the `-thrift-server-address` and -`thrift-server-port` arguments to start a Thrift server.
 

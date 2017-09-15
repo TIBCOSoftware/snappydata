@@ -1,4 +1,4 @@
-# Tuning for Concurrency and Computations
+# Tuning for Concurrency and Computation
 
 ## Handling Low Latency vs Analytic Jobs
 Unlike Spark, SnappyData can distinguish requests that are cheap (low latency) vs requests that require a lot of computational resources (high latency). This is done by a resource scheduler that can balance the needs of many contending users/threads.

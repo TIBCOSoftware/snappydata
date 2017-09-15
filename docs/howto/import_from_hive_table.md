@@ -1,4 +1,4 @@
-# How to Import Data from Hive Table into Snappydata Table
+# How to Import Data from Hive Table into SnappyData Table
 
 **Option 1** 
 

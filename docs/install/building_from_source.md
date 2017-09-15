@@ -1,10 +1,9 @@
-
 <a id="building-from-source"></a>
 # Building from Source
 Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 
-Quickstart to build all components of SnappyData:
-
+## Build all Components of SnappyData
+ 
 **Latest release branch**
 ```sh
 > git clone https://github.com/SnappyDataInc/snappydata.git -b branch-<release-version> --recursive
@@ -21,7 +20,9 @@ Quickstart to build all components of SnappyData:
 
 The product is in **build-artifacts/scala-2.11/snappy**
 
-If you want to build only the top-level SnappyData project but pull in jars for other projects (_spark_, _store_, _spark-jobserver_):
+## Build only the Top-Level Components
+
+Use this option, if you want to build only the top-level SnappyData project and pull in jars for other projects (spark, store, spark-jobserver):
 
 **Latest release branch**
 ```sh

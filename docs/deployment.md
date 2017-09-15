@@ -1,4 +1,4 @@
-# Overview
+# Affinity Modes
 In this section, the various modes available for colocation of related data and computation is discussed.
 
 You can run the SnappyData store in the following modes:

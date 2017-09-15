@@ -1,4 +1,4 @@
-# SnappyData Configuration Files
+# Configuration
 
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
 

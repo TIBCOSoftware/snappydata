@@ -1,4 +1,4 @@
-# Instruction for Migrating from SnappyData 0.8-0.9
+# Migrating from Version 0.8 to Version 0.9
 
 !!! Note
 	Upgrade of on-disk data files is not supported for this release. This document only contains instructions for users migrating from SnappyData 0.8 to SnappyData 0.9. After you have re-configured your cluster, you must reload your data into SnappyData tables.
