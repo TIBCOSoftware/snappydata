@@ -81,6 +81,8 @@ public class SnappyTest implements Serializable {
   public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
   public static boolean isRestarted = false;
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
+  public static boolean autoCommit = TestConfig.tab().booleanAt(SnappyPrms.setAutoCommit, false);
+  public static int txIsolationLevel = SnappyPrms.getTxIsolationLevel();
   /*public static boolean useThinClientSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);*/  //default to false
   public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
   public static boolean forceStart = TestConfig.tab().booleanAt(SnappyPrms.forceStart,
@@ -1175,14 +1177,6 @@ public class SnappyTest implements Serializable {
       String url = "jdbc:snappydata://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
       conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
-      /*if (SnappyPrms.setTx() && !tableCreation) {
-        conn.setTransactionIsolation(SnappyPrms.getTxIsolationLevel());
-        conn.setAutoCommit(SnappyPrms.setAutoCommit());
-        Log.getLogWriter().info("SS - Transaction Isolation level is set to " + conn
-            .getTransactionIsolation());
-        Log.getLogWriter().info("SS - AutoCommit is set to " + conn
-            .getAutoCommit());
-      }*/
     } else {
       String url = "jdbc:gemfirexd://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
@@ -1203,8 +1197,8 @@ public class SnappyTest implements Serializable {
       Log.getLogWriter().info("url is " + url);
       conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
       if (SnappyPrms.setTx() && !tableCreation) {
-        conn.setTransactionIsolation(SnappyPrms.getTxIsolationLevel());
-        conn.setAutoCommit(SnappyPrms.setAutoCommit());
+        conn.setTransactionIsolation(txIsolationLevel);
+        conn.setAutoCommit(autoCommit);
         Log.getLogWriter().info("SS - Transaction Isolation level is set to " + conn
             .getTransactionIsolation());
         Log.getLogWriter().info("SS - AutoCommit is set to " + conn

@@ -861,10 +861,10 @@ public class SnappyPrms extends BasePrms {
     else return Connection.TRANSACTION_NONE;
   }
 
-  public static boolean setAutoCommit() {
+/*  public static boolean setAutoCommit() {
     Long key = setAutoCommit;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
-  }
+  }*/
 
   static {
     BasePrms.setValues(SnappyPrms.class);
