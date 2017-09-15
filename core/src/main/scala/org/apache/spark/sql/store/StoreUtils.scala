@@ -168,7 +168,7 @@ object StoreUtils {
       linkBucketsToPartitions: Boolean): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    val preferPrimaries = Property.ForcePrimariesInQueryRouting.get(
+    val preferPrimaries = Property.PreferPrimariesInQuery.get(
       session.sessionState.conf)
     if (!linkBucketsToPartitions && callbacks != null) {
       allocateBucketsToPartitions(session, region, preferPrimaries)
