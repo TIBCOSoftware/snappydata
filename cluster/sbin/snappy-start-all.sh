@@ -27,7 +27,7 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
 
-MEMBERS_FILE="$SPARK_HOME/work/members.txt"
+MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
 if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
