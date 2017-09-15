@@ -783,7 +783,7 @@ case class DMLExternalTable(
 
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
   override lazy val resolved: Boolean = query.resolved
-  override def output: Seq[Attribute] = Seq.empty
+  override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
 }
 
 private[sql] case class SetSchema(schemaName: String) extends RunnableCommand {

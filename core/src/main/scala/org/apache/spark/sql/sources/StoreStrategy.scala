@@ -75,8 +75,8 @@ object StoreStrategy extends Strategy {
       val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
-    case DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
-      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
+    case d@DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
+      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand, d.output)) :: Nil
 
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
@@ -103,17 +103,17 @@ trait TableMutationPlan
 
 case class ExternalTableDMLCmd(
     storeRelation: LogicalRelation,
-    command: String) extends RunnableCommand with TableMutationPlan {
+    command: String, childOutput: Seq[Attribute]) extends RunnableCommand with TableMutationPlan {
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
-      case relation: SingleRowInsertableRelation =>
-        relation.executeUpdate(command)
+      case relation: SingleRowInsertableRelation => Seq(Row(relation.executeUpdate(command)))
       case other => throw new AnalysisException("DML support requires " +
           "SingleRowInsertableRelation but found " + other)
     }
-    Seq.empty[Row]
   }
+
+  override lazy val output: Seq[Attribute] = childOutput
 }
 
 case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
