@@ -19,7 +19,8 @@ from py4j.protocol import Py4JError
 from pyspark.rdd import RDD, ignore_unicode_prefix
 from pyspark.sql.types import StructType
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.context import SQLContext
+from pyspark.sql.readwriter import DataFrameReader
+from pyspark.sql.streaming import DataStreamReader
 from pyspark.sql.session import SparkSession, _monkey_patch_RDD
 
 __all__ = ["SnappySession"]
@@ -35,6 +36,8 @@ class SnappySession(SparkSession):
         if jsparkSession is None:
             jsparkSession = self._jvm.SnappySession(self._jsc.sc())
 
+        from pyspark.sql.snappy import SnappyContext
+        self._wrapped = SnappyContext(self._sc, jsparkSession)
         self._jsparkSession = jsparkSession
 
 
@@ -75,12 +78,12 @@ class SnappySession(SparkSession):
 
         return DataFrame(df, self)
 
-    def truncateTable(self, tableName):
+    def truncateTable(self, tableName, ifExists=False):
         """
         Empties the contents of the table without deleting the catalog entry.
         :param tableName table to be dropped
         """
-        self._jsparkSession.truncateTable(tableName)
+        self._jsparkSession.truncateTable(tableName, ifExists)
 
     def dropTable(self, tableName, ifExists=False):
         """
