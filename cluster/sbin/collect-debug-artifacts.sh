@@ -145,7 +145,7 @@ function check_configs {
     echo START TIME = "${START_TIME}"
     echo END   TIME = "${END_TIME}"
     echo SCRIPT_DIR = "${SCRIPT_DIR}"
-    echo SNAPPY_HOME = "${SPARK_HOME}"
+    echo SNAPPY_HOME = "${SNAPPY_HOME}"
     echo OUTPUT_DIR = "${OUTPUT_DIR}"
     echo TAR_FILE = "${TAR_FILE}"
   fi
