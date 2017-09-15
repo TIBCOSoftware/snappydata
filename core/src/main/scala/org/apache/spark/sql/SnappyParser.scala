@@ -689,9 +689,9 @@ class SnappyParser(session: SnappySession)
         commaSep)).? ~ ((ORDER | SORT) ~ BY ~ ordering).? ~ windowFrame.? ~ ')' ~
         ws ~> ((p: Any, o: Any, w: Any) =>
       WindowSpecDefinition(
-      p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty),
+        p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty),
         o.asInstanceOf[Option[Seq[SortOrder]]].getOrElse(Seq.empty),
-      w.asInstanceOf[Option[SpecifiedWindowFrame]]
+        w.asInstanceOf[Option[SpecifiedWindowFrame]]
           .getOrElse(UnspecifiedFrame))) |
     identifier ~> WindowSpecReference
   }
