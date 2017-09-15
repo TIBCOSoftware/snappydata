@@ -393,7 +393,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void performInsert() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn;
+      if(SnappyPrms.setTx()) {
+        conn = getLocatorConnection(false);
+      } else {
+        conn = getLocatorConnection();
+      }
       Connection dConn = null;
       String[] dmlTable = SnappySchemaPrms.getDMLTables();
       int rand = new Random().nextInt(dmlTable.length);
@@ -431,7 +436,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void performUpdate() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn;
+      if(SnappyPrms.setTx()) {
+        conn = getLocatorConnection(false);
+      } else {
+        conn = getLocatorConnection();
+      }
       Connection dConn = null; //get the derby connection here
       String updateStmt[] = SnappySchemaPrms.getUpdateStmts();
       int numRows = 0;
@@ -474,7 +484,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void performDelete() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn;
+      if(SnappyPrms.setTx()) {
+        conn = getLocatorConnection(false);
+      } else {
+        conn = getLocatorConnection();
+      }
       Connection dConn = null; //get the derby connection here
       String deleteStmt[] = SnappySchemaPrms.getDeleteStmts();
       int numRows = 0;

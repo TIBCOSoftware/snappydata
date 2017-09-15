@@ -1175,9 +1175,40 @@ public class SnappyTest implements Serializable {
       String url = "jdbc:snappydata://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
       conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
-      if (SnappyPrms.setTx()) {
+      /*if (SnappyPrms.setTx() && !tableCreation) {
         conn.setTransactionIsolation(SnappyPrms.getTxIsolationLevel());
         conn.setAutoCommit(SnappyPrms.setAutoCommit());
+        Log.getLogWriter().info("SS - Transaction Isolation level is set to " + conn
+            .getTransactionIsolation());
+        Log.getLogWriter().info("SS - AutoCommit is set to " + conn
+            .getAutoCommit());
+      }*/
+    } else {
+      String url = "jdbc:gemfirexd://" + endpoints.get(0);
+      Log.getLogWriter().info("url is " + url);
+      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+    }
+    return conn;
+  }
+
+
+  /**
+   * Gets Client connection.
+   */
+  public static Connection getLocatorConnection(boolean tableCreation) throws SQLException {
+    List<String> endpoints = validateLocatorEndpointData();
+    Connection conn = null;
+    if (!runGemXDQuery) {
+      String url = "jdbc:snappydata://" + endpoints.get(0);
+      Log.getLogWriter().info("url is " + url);
+      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+      if (SnappyPrms.setTx() && !tableCreation) {
+        conn.setTransactionIsolation(SnappyPrms.getTxIsolationLevel());
+        conn.setAutoCommit(SnappyPrms.setAutoCommit());
+        Log.getLogWriter().info("SS - Transaction Isolation level is set to " + conn
+            .getTransactionIsolation());
+        Log.getLogWriter().info("SS - AutoCommit is set to " + conn
+            .getAutoCommit());
       }
     } else {
       String url = "jdbc:gemfirexd://" + endpoints.get(0);

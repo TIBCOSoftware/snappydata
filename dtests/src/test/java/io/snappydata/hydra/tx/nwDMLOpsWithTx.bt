@@ -1,0 +1,2 @@
+//INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/jdbcClient/jdbcClient.bt
+INCLUDE $JTESTS/io/snappydata/hydra/tx/dmlOpsWithTxRowTables.bt
