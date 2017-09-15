@@ -64,6 +64,26 @@ class TokenizationTest
     snc.dropTable(s"$colTableName", ifExists = true)
   }
 
+  test("partition by interval - tpcds query") {
+    val sqlstr = s"SELECT i_item_desc, i_category, " +
+        s"i_class, i_current_price, sum(ws_ext_sales_price) " +
+        s"AS itemrevenue, sum(ws_ext_sales_price) * 100 / sum(sum(ws_ext_sales_price))" +
+        s" OVER (PARTITION BY i_class) AS revenueratio FROM " +
+        s"web_sales, item, date_dim WHERE ws_item_sk = i_item_sk AND i_category " +
+        s"IN ('Sports', 'Books', 'Home')" +
+        s" AND ws_sold_date_sk = d_date_sk AND d_date BETWEEN cast('1999-02-22' AS DATE) " +
+        s"AND (cast('1999-02-22' AS DATE) + INTERVAL 30 days) GROUP BY i_item_id, " +
+        s"i_item_desc, i_category, i_class, i_current_price ORDER BY i_category, " +
+        s"i_class, i_item_id, i_item_desc, revenueratio LIMIT 100"
+    try {
+      snc.sql(sqlstr)
+      fail(s"this should have given TableNotFoundException")
+    } catch {
+      case tnfe: TableNotFoundException =>
+      case t: Throwable => fail(s"unexpected exception $t")
+    }
+  }
+
   test("sql range operator") {
     var r = snc.sql(s"select id, concat('sym', cast((id) as STRING)) as" +
         s" sym from range(0, 100)").collect()
