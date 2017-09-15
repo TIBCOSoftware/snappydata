@@ -17,9 +17,8 @@
 
 # Specify the host name on which a Snappy server will be started. Also
 # specify the startup directory where the logs and configuration files
-# for that server instance are kept. Apart from these two things, snappy
-# specific properties can also be passed. If the directory and properties
-# are not specified a default directory is created inside the SPARK_HOME directory.
+# for that server instance are kept. If the directory and properties
+# are not specified a default directory is created inside the SNAPPY_HOME directory.
 #
 # localhost   -dir=/tmp/data/server (config args)
 #
@@ -33,5 +32,6 @@
 # 
 #     localhost   -client-bind-address=server1 -client-port=1555
 # 
-# For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
+# For more configuration options,
+# see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

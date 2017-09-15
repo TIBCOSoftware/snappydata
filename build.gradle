@@ -108,7 +108,7 @@ allprojects {
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
     scalatestVersion = '2.2.6'
-    jettyVersion = '9.2.16.v20160414'
+    jettyVersion = '9.2.22.v20170606'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.0'
     thriftVersion = '0.9.3'
@@ -130,6 +130,7 @@ allprojects {
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
     commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
     sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
+    buildIdPrefix = System.env.USER + ' ' 
   }
 
   if (!buildRoot.isEmpty()) {
@@ -137,6 +138,9 @@ allprojects {
   } else {
     // default output directory like in sbt/maven
     buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
+  }
+  if (rootProject.hasProperty('enablePublish')) {
+    buildIdPrefix = 'SnappyData, Inc. '
   }
 
   ext {
@@ -287,7 +291,7 @@ subprojects {
     reports.junitXml.destination = file(workingDir)
   }
   test {
-    maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
+    maxParallelForks = Runtime.getRuntime().availableProcessors()
     maxHeapSize '2g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
             '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
@@ -659,11 +663,6 @@ task publishMaven {
   }
 }
 
-task generateSources {
-  dependsOn ':snappy-spark:generateSources'
-  dependsOn ':snappy-store:generateSources'
-}
-
 task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
@@ -771,13 +770,31 @@ task product(type: Zip) {
       into "${snappyProductDir}/quickstart/python"
     }
     if (new File(rootDir, 'store/build.gradle').exists()) {
-      // copy snappy-store shared libraries for optimized JNI calls
-      copy {
-        from project(':snappy-store:snappydata-store-core').projectDir.path + '/lib'
-        into "${snappyProductDir}/jars"
+      // copy snappy-store shared libraries for JNI calls
+      def gemCoreProject = project(':snappy-store:gemfire-core')
+      def storeCoreProject = project(':snappy-store:snappydata-store-core')
+      if (osName.isLinux()) {
+        copy {
+          from "${gemCoreProject.projectDir}/lib"
+          into "${snappyProductDir}/jars"
+          include '*.so'
+          exclude '*_sol*.so'
+        }
+        copy {
+          from "${storeCoreProject.projectDir}/lib"
+          into "${snappyProductDir}/jars"
+          exclude '*_sol*.so'
+        }
+      }
+      if (osName.isWindows()) {
+        copy {
+          from "${gemCoreProject.projectDir}/lib"
+          into "${snappyProductDir}/jars"
+          include '*.dll'
+        }
       }
       copy {
-        from "${project(':snappy-store:snappydata-store-core').projectDir}/../quickstart"
+        from "${storeCoreProject.projectDir}/../quickstart"
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
       }
@@ -915,12 +932,17 @@ def runScript(def execName, def workDir, def param, env = null) {
   return "${stdout}"
 }
 
-task copyResourcesAll << {
+task copyResourcesAll { doLast {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
     copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
   }
+} }
+
+task generateSources {
+  dependsOn ':snappy-spark:generateSources', ':snappy-store:generateSources'
+  dependsOn copyResourcesAll
 }
 
 task cleanAll {

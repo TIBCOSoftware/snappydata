@@ -32,14 +32,14 @@ shift
 . "$sbin/snappy-config.sh"
 
 
-. "$SPARK_HOME/bin/load-spark-env.sh"
-. "$SPARK_HOME/bin/load-snappy-env.sh"
+. "$SNAPPY_HOME/bin/load-spark-env.sh"
+. "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
 
 
 # Start up  the locator instance
 function start_instance {
-  "$SPARK_HOME"/bin/snappy locator "$mode" "$@"
+  "$SNAPPY_HOME"/bin/snappy locator "$mode" "$@"
 }
 
 start_instance "$@"

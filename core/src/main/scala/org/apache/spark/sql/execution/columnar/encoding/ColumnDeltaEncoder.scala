@@ -543,6 +543,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val endIndex = startIndex + numDeltas
     val decoder = realEncoder.decoderBeforeFinish(encoderCursor)
     val decoderBuffer = realEncoder.buffer
+    val decoderData = realEncoder.columnData
+    val decoderAllocator = realEncoder.allocator
     val allocator = this.storageAllocator
 
     // make space for the positions at the start
@@ -575,6 +577,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     assert(realEncoder.flushWithoutFinish(cursor) ==
         allocator.baseOffset(buffer) + buffer.limit())
 
+    // release the old buffer
+    decoderAllocator.release(decoderData)
     // clear the encoder
     realEncoder.clearSource(0, releaseData = false)
     buffer
@@ -710,7 +714,7 @@ object DeltaWriter {
              |};
           """.stripMargin
         }
-        CodeGeneration.logInfo(
+        CodeGeneration.logDebug(
           s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
           Array.empty[String]).asInstanceOf[DeltaWriterFactory]

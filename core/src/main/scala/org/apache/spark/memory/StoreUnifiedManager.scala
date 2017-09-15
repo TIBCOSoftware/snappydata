@@ -17,12 +17,10 @@
 package org.apache.spark.memory
 
 import java.nio.ByteBuffer
-import java.util.concurrent.ExecutorService
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
-import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.util.Utils
@@ -201,13 +199,6 @@ object MemoryManagerCallback extends Logging {
     val manager = snappyUnifiedManager
     if ((manager ne null) && isCluster) manager
     else getMemoryManager
-  }
-
-  def poolForAsyncOperation: ExecutorService = {
-    val cache = Misc.getGemFireCacheNoThrow
-    if ((cache ne null) && !Thread.holdsLock(memoryManager)) {
-      cache.getDistributionManager.getHighPriorityThreadPool
-    } else null
   }
 
   private def getMemoryManager: StoreUnifiedManager = synchronized {

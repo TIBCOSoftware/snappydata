@@ -182,6 +182,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
   }
 
+  def hasUpdatedColumns: Boolean = currentDeltaStats ne null
+
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
       columnIndex: Int): UpdatedColumnDecoderBase = {
     if (currentDeltaStats eq null) null
@@ -291,6 +293,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
   private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
     new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
+  private var hasUpdates: Boolean = _
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
   def getCurrentBatchId: Long = currentUUID
@@ -301,6 +304,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     colBuffers match {
       case buffers if buffers.size() > 1 => // already filled in
       case buffers =>
+        hasUpdates = false
         for (i <- 1 to totalColumns) {
           ps.setLong(i, currentUUID)
         }
@@ -315,6 +319,10 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           }
           colBlob.free()
           buffers.put(position, colBuffer)
+          // check if this an update delta
+          if (!hasUpdates && position < ColumnFormatEntry.DELETE_MASK_COL_INDEX) {
+            hasUpdates = true
+          }
         }
     }
   }
@@ -322,6 +330,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   def getColumnLob(columnIndex: Int): ByteBuffer = {
     colBuffers.get(columnIndex + 1)
   }
+
+  def hasUpdatedColumns: Boolean = hasUpdates
 
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
       columnIndex: Int): UpdatedColumnDecoderBase = {

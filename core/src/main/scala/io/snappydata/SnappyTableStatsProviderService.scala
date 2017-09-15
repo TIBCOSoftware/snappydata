@@ -110,7 +110,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
                   }
                 } catch {
                   case _: CancelException => // ignore
-                  case e: Exception => if (!e.getMessage.contains(
+                  case e: Exception => if (e.getMessage != null && !e.getMessage.contains(
                     "com.gemstone.gemfire.cache.CacheClosedException")) {
                     logger.warning(e)
                   } else {

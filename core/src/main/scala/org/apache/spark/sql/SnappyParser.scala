@@ -686,10 +686,12 @@ class SnappyParser(session: SnappySession)
 
   protected final def windowSpec: Rule1[WindowSpec] = rule {
     '(' ~ ws ~ ((PARTITION | DISTRIBUTE | CLUSTER) ~ BY ~ (expression +
-        commaSep)).? ~ (ORDER | SORT) ~ BY ~ ordering ~ windowFrame.? ~ ')' ~
-        ws ~> ((p: Any, o: Seq[SortOrder], w: Any) => WindowSpecDefinition(
-      p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty), o,
-      w.asInstanceOf[Option[SpecifiedWindowFrame]]
+        commaSep)).? ~ ((ORDER | SORT) ~ BY ~ ordering).? ~ windowFrame.? ~ ')' ~
+        ws ~> ((p: Any, o: Any, w: Any) =>
+      WindowSpecDefinition(
+        p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty),
+        o.asInstanceOf[Option[Seq[SortOrder]]].getOrElse(Seq.empty),
+        w.asInstanceOf[Option[SpecifiedWindowFrame]]
           .getOrElse(UnspecifiedFrame))) |
     identifier ~> WindowSpecReference
   }
@@ -789,6 +791,7 @@ class SnappyParser(session: SnappySession)
   } else exprs
 
   protected final def primary: Rule1[Expression] = rule {
+    ( ( test(tokenize) ~ paramLiteral ) | literal | paramLiteralQuestionMark) |
     identifier ~ (
       ('.' ~ identifier).? ~ '(' ~ ws ~ (
         '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
@@ -842,7 +845,6 @@ class SnappyParser(session: SnappySession)
           case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
     } |
-    ( ( test(tokenize) ~ paramLiteral ) | literal | paramLiteralQuestionMark) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
