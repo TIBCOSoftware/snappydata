@@ -201,8 +201,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
       case ConnectionType.Embedded =>
-        val region = Misc.getRegionForTable[ColumnFormatKey,
-            ColumnFormatValue](columnTableName, true)
+        val region = Misc.getRegionForTable[ColumnFormatKey, ColumnFormatValue](
+          columnTableName, true)
         var key = new ColumnFormatKey(batchId, partitionId,
           ColumnFormatEntry.DELETE_MASK_COL_INDEX)
 
@@ -231,7 +231,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           // check for full batch delete
           if (ColumnDelta.checkBatchDeleted(buffer)) {
             val deleteStr = s"delete from $tableName where " +
-                s"uuid = ?, partitionId = ?, columnIndex = ?"
+                "uuid = ?, partitionId = ?, columnIndex = ?"
             val stmt = connection.prepareStatement(deleteStr)
             try {
               def addKeyToBatch(columnIndex: Int): Unit = {
