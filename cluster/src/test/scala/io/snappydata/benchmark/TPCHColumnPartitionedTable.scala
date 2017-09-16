@@ -563,8 +563,9 @@ object TPCHColumnPartitionedTable {
 
     for (i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
-      if (isParquet) {
-        suppDF = sqlContext.read.format("parquet").load(s"$path/parquet_supplier_$i")
+      val parquetDir = s"$path/parquet_supplier_$i"
+      if (isParquet && new File(parquetDir).exists()) {
+        suppDF = sqlContext.read.format("parquet").load(parquetDir)
       } else {
         val suppData = sc.textFile(s"$path/supplier.tbl.$i")
         val suppReadings = suppData.map(s => s.split('|')).map(s => TPCHTableSchema
