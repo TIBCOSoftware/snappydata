@@ -24,12 +24,13 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
 import io.snappydata.collection.ObjectHashSet
+
 import org.apache.spark._
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.Utils
@@ -38,7 +39,6 @@ import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.streaming.PhysicalDStreamPlan
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
-
 import scala.reflect.ClassTag
 
 /**
@@ -96,6 +96,12 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         throw new IllegalArgumentException(
           s"${getClass.getSimpleName} should not take $x as the JoinType")
     }
+  }
+
+  // hash join does not change ordering of the streamed plan
+  override def outputOrdering: Seq[SortOrder] = joinType match {
+    case FullOuter => Nil
+    case _ => streamedPlan.outputOrdering
   }
 
   override def requiredChildDistribution: Seq[Distribution] =
@@ -319,7 +325,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     if (streamedPlan.find(_.isInstanceOf[PhysicalDStreamPlan]).isDefined) {
-      refreshRDDs._1
+      refreshRDDs()._1
     } else {
       streamSideRDDs
     }
@@ -343,7 +349,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
     val rdds = {
       if (buildPlan.find(_.isInstanceOf[PhysicalDStreamPlan]).isDefined) {
-        refreshRDDs._2
+        refreshRDDs()._2
       } else {
         buildSideRDDs
       }
