@@ -53,6 +53,7 @@ import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, C
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -85,6 +86,11 @@ private[sql] final case class ColumnTableScan(
   override val nodeName: String = "ColumnTableScan"
 
   @transient private val MAX_SCHEMA_LENGTH = 40
+
+  override lazy val outputOrdering: Seq[SortOrder] = output.collectFirst {
+    case attr if attr.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)) =>
+      StoreUtils.getColumnUpdateDeleteOrdering(attr)
+  }.toSeq
 
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty

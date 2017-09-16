@@ -27,6 +27,7 @@ import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, Partitione
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.Partition
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, SortOrder}
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -469,6 +470,13 @@ object StoreUtils {
     parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)
     }).getOrElse(Seq.empty[String])
+  }
+
+  def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {
+    // this always sets ascending order though no particular ordering is required rather
+    // just grouping on batchId column, but does not matter so table scan should also
+    // set the same to not introduce any extra sorting for simple updates/deletes
+    SortOrder(batchIdColumn, Ascending)
   }
 
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
