@@ -230,8 +230,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
           // check for full batch delete
           if (ColumnDelta.checkBatchDeleted(buffer)) {
-            val deleteStr = s"delete from $tableName where " +
-                "uuid = ?, partitionId = ?, columnIndex = ?"
+            val deleteStr = s"delete from $columnTableName where " +
+                "uuid = ? and partitionId = ? and columnIndex = ?"
             val stmt = connection.prepareStatement(deleteStr)
             try {
               def addKeyToBatch(columnIndex: Int): Unit = {
