@@ -334,7 +334,7 @@ class SnappyParser(session: SnappySession)
 
   final def namedExpression: Rule1[Expression] = rule {
     expression ~ (
-        AS ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
+        AS.? ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         strictIdentifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
