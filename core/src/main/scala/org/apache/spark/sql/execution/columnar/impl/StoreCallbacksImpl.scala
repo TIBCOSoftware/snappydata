@@ -20,7 +20,7 @@ import java.util.Collections
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.Attribute
@@ -131,6 +131,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       }
     } else {
       java.util.Collections.emptySet[AnyRef]()
+    }
+  }
+
+  override def invokeColumnStorePutCallbacks(bucket: BucketRegion,
+      events: Array[EntryEventImpl]): Unit = {
+    val container = bucket.getPartitionedRegion.getUserAttribute
+        .asInstanceOf[GemFireContainer]
+    if ((container ne null) && container.isObjectStore) {
+      container.getRowEncoder.afterColumnStorePuts(bucket, events)
     }
   }
 

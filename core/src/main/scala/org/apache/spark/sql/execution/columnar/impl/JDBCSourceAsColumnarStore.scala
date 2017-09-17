@@ -208,7 +208,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
         // check for full batch delete
         if (ColumnDelta.checkBatchDeleted(buffer)) {
-          ColumnDelta.deleteBatch(key, columnTableName, region, forUpdate = false)
+          ColumnDelta.deleteBatch(key, region, columnTableName, forUpdate = false)
           return
         }
 
