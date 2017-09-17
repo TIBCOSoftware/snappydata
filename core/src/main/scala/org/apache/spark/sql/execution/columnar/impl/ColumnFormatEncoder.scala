@@ -29,13 +29,12 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import io.snappydata.thrift.common.BufferedBlob
 import io.snappydata.thrift.internal.ClientBlob
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 
 /**
  * A [[RowEncoder]] implementation for [[ColumnFormatValue]] and child classes.
  */
-final class ColumnFormatEncoder extends RowEncoder with Logging {
+final class ColumnFormatEncoder extends RowEncoder {
 
   override def toRow(entry: RegionEntry, value: AnyRef,
       container: GemFireContainer): ExecRow = {
