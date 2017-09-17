@@ -836,6 +836,7 @@ class QueryRoutingDUnitTest(val s: String)
         val owners = adviser.getBucketOwners(split.index)
 
         assert(preferredLocations.head == hostExecutorId(primary))
+        assert(owners.size() > 1)
         assert(owners.asScala.map(hostExecutorId) == preferredLocations.toSet)
       }
     }
