@@ -179,11 +179,15 @@ class QueryRoutingDUnitTest(val s: String)
     }
     assert(cnt == 5)
 
-    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR")
+    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR where spark_partition_id() > -1")
     assert(deleted == 5)
     s.execute("select col1 from TEST.ColumnTableQR order by col1")
     assert(!s.getResultSet.next())
-
+    createTableAndInsertData()
+    val deleted2 = s.executeUpdate("delete from TEST.ColumnTableQR")
+    assert(deleted2 == 5)
+    s.execute("select * from TEST.ColumnTableQR")
+    assert(!s.getResultSet.next())
     conn.close()
   }
 

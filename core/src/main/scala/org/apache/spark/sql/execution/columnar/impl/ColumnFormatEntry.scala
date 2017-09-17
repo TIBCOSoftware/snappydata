@@ -111,6 +111,9 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
 
   def getColumnIndex: Int = columnIndex
 
+  private[columnar] def withColumnIndex(columnIndex: Int): ColumnFormatKey =
+    new ColumnFormatKey(uuid, partitionId, columnIndex)
+
   override def hashCode(): Int = Murmur3_x86_32.hashInt(
     ClientResolverUtils.addLongToHashOpt(uuid, columnIndex), partitionId)
 
