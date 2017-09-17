@@ -206,11 +206,13 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
         if (ColumnFormatRelation.isColumnTable(table) &&
             pr.getLocalMaxMemory > 0) {
+          // TODO: this should use a transactional iterator to get a consistent
+          // snapshot (also pass the same transaction to getNumColumnsInTable
+          //   for reading value and delete count)
           val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
             true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
           var numColumnsInTable = -1
-          // Resetting PR Numrows in cached batch as this will be calculated every time.
-          // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
+          // Resetting PR numRows in cached batch as this will be calculated every time.
           var rowsInColumnBatch = 0L
           var offHeapSize = 0L
           if (container ne null) {
