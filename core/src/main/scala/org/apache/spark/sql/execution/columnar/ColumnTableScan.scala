@@ -511,22 +511,6 @@ private[sql] final case class ColumnTableScan(
       }
       ctx.addMutableState(updatedDecoderClass, updatedDecoder, "")
 
-      var deletedInit = ""
-      // add deleted column check if there is at least one column to scan
-      // (else it is taken care of by deletedCount being reduced from batch size)
-      if (rsIndex == 0) {
-        val incrementDeletedBatchCount = if (deletedBatchCount eq null) ""
-        else s"\nif ($deletedDecoder != null) $deletedBatchCount.${metricAdd("1")};"
-        deletedInit =
-          s"""
-             |$deletedDecoder = $colInput.getDeletedColumnDecoder();$incrementDeletedBatchCount
-           """.stripMargin
-        deletedDeclaration =
-            s"final $deletedDecoderClass $deletedDecoderLocal = $deletedDecoder;\n"
-        deletedCheck = s"if ($deletedDecoderLocal != null && " +
-            s"$deletedDecoderLocal.deleted($batchOrdinal)) continue;"
-      }
-
       ctx.addNewFunction(initBufferFunction,
         s"""
            |private void $initBufferFunction() {
@@ -539,7 +523,7 @@ private[sql] final case class ColumnTableScan(
            |  if ($updatedDecoder != null) {
            |    $incrementUpdatedColumnCount
            |  }
-           |  $deletedInit$numNullsVar = 0;
+           |  $numNullsVar = 0;
            |}
         """.stripMargin)
       columnBufferInit.append(s"$initBufferFunction();\n")
@@ -592,9 +576,20 @@ private[sql] final case class ColumnTableScan(
       case (attr, index) => rsIndex += 1; columnsInputMapper(attr, index, rsIndex)
     }
 
-    if (deletedCheck.isEmpty) {
+    if (output.isEmpty) {
       // no columns in a count(.) query
       deletedCountCheck = s" - ($inputIsRow ? 0 : $deletedCount)"
+    } else {
+      // add deleted column check if there is at least one column to scan
+      // (else it is taken care of by deletedCount being reduced from batch size)
+      val incrementDeletedBatchCount = if (deletedBatchCount eq null) ""
+      else s"\nif ($deletedDecoder != null) $deletedBatchCount.${metricAdd("1")};"
+      columnBufferInit.append(
+        s"$deletedDecoder = $colInput.getDeletedColumnDecoder();$incrementDeletedBatchCount\n")
+      deletedDeclaration =
+          s"final $deletedDecoderClass $deletedDecoderLocal = $deletedDecoder;\n"
+      deletedCheck = s"if ($deletedDecoderLocal != null && " +
+          s"$deletedDecoderLocal.deleted($batchOrdinal)) continue;"
     }
 
     if (isWideSchema) {
