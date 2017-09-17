@@ -19,13 +19,12 @@ package io.snappydata
 import java.io.File
 
 import io.snappydata.impl.LeadImpl
-import org.apache.hadoop.conf.Configuration
 
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
 import org.apache.spark.ui.{SnappyDashboardTab, SparkUI}
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{SparkConf, SparkContext}
 
 object ToolsCallbackImpl extends ToolsCallback {
 
@@ -35,15 +34,15 @@ object ToolsCallbackImpl extends ToolsCallback {
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
       partitionColumnAliases: Seq[Seq[Attribute]],
-      numPartitions: Int, numBuckets: Int): Partitioning = {
+      numPartitions: Int, numBuckets: Int, tableBuckets: Int): Partitioning = {
     OrderlessHashPartitioning(partitionColumns, partitionColumnAliases,
-      numPartitions, numBuckets)
+      numPartitions, numBuckets, tableBuckets)
   }
 
   override def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
-      (Seq[Expression], Seq[Seq[Attribute]], Int, Int)] = partitioning match {
+      (Seq[Expression], Seq[Seq[Attribute]], Int, Int, Int)] = partitioning match {
     case p: OrderlessHashPartitioning => Some(p.expressions, p.aliases,
-      p.numPartitions, p.numBuckets)
+      p.numPartitions, p.numBuckets, p.tableBuckets)
     case _ => None
   }
 

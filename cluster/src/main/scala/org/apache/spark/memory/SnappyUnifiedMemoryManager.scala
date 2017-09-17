@@ -288,10 +288,10 @@ class SnappyUnifiedMemoryManager private[memory](
     val memoryForObject = self.memoryForObject
     if (!memoryForObject.isEmpty) {
       memoryLog.append("\n\t").append("Objects:\n")
-      val objects = memoryForObject.entrySet().iterator()
+      val objects = memoryForObject.object2LongEntrySet().iterator()
       while (objects.hasNext) {
         val o = objects.next()
-        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getValue)
+        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getLongValue)
       }
     }
     logInfo(memoryLog.toString())
@@ -616,6 +616,11 @@ class SnappyUnifiedMemoryManager private[memory](
         }
 
         var couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
+        // run old map GC task explicitly before failing with low memory
+        if (!couldEvictSomeData) {
+          Misc.getGemFireCache.runOldEntriesCleanerThread()
+          couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
+        }
         // for off-heap try harder before giving up since pending references
         // may be on heap (due to unexpected exceptions) that will go away on GC
         if (!couldEvictSomeData && offHeap) {
