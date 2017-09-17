@@ -18,9 +18,8 @@ package org.apache.spark.sql.store
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.app.Data1
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import io.snappydata.core.{Data, TestData2}
+import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -497,7 +496,7 @@ class TokenizationTest
     val snap = snc
     val row = identity[(java.lang.Integer, java.lang.Double)](_)
 
-    import  snap.implicits._
+    import snap.implicits._
     lazy val l = Seq(
       row(1, 2.0),
       row(1, 2.0),
@@ -777,6 +776,21 @@ class TokenizationTest
     val r2 = normalizeRow(res2)
     assert(!r1.sameElements(r2))
     // assert( SnappySession.getPlanCache.asMap().size() == 1)
+
+    // also check partial delete followed by a full delete
+    val count = snc.table(colTableName).count()
+    val del1 = snc.sql(s"delete from $colTableName where depdelay = 0 and arrdelay > 0")
+    val delCount1 = del1.collect().foldLeft(0L)(_ + _.getLong(0))
+    assert(delCount1 > 0)
+    val del2 = snc.sql(s"delete from $colTableName")
+    val delCount2 = del2.collect().foldLeft(0L)(_ + _.getLong(0))
+    assert(delCount2 > 0)
+    assert(delCount1 + delCount2 === count)
+    assert(snc.table(colTableName).count() === 0)
+    assert(snc.table(colTableName).collect().length === 0)
+    assert(snc.sql(s"select * from $colTableName").collect().length === 0)
+
+    snc.dropTable(colTableName)
 
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }

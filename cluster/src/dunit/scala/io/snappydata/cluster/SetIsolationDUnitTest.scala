@@ -82,7 +82,8 @@ class SetIsolationDUnitTest (val s: String)
     stmt1.execute(s"delete from $tableName where col1 = 101")
     rs1 = stmt1.executeQuery(s"select count(*) from $tableName")
     assert(rs1.next())
-    assert(rs1.getInt(1) == 100, "result mismatch")
+    cnt = rs1.getInt(1)
+    assert(cnt == 100, s"Expected 100 but got $cnt")
     stmt1.close()
   }
 

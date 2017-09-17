@@ -726,8 +726,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       serverHostPort = TestUtil.startNetServer()
       // println("network server started")
       insertRows(tableName1, 10)
-      // TODO: SNAP-1944
-      insertInto(tableName3, tableName1, 0)
+      insertInto(tableName3, tableName1, 10)
 
       insertRows2(tableName2, 5)
       putInto(tableName3, tableName2, 5)
