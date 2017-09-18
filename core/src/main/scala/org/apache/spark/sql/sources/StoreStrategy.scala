@@ -19,7 +19,7 @@ package org.apache.spark.sql.sources
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
@@ -75,8 +75,8 @@ object StoreStrategy extends Strategy {
       val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
-    case DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
-      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
+    case d@DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
+      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand, d.output)) :: Nil
 
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
@@ -103,17 +103,17 @@ trait TableMutationPlan
 
 case class ExternalTableDMLCmd(
     storeRelation: LogicalRelation,
-    command: String) extends RunnableCommand with TableMutationPlan {
+    command: String, childOutput: Seq[Attribute]) extends RunnableCommand with TableMutationPlan {
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
-      case relation: SingleRowInsertableRelation =>
-        relation.executeUpdate(command)
+      case relation: SingleRowInsertableRelation => Seq(Row(relation.executeUpdate(command)))
       case other => throw new AnalysisException("DML support requires " +
           "SingleRowInsertableRelation but found " + other)
     }
-    Seq.empty[Row]
   }
+
+  override lazy val output: Seq[Attribute] = childOutput
 }
 
 case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
@@ -130,6 +130,34 @@ case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
           DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
             tableAttr.dataType)
       }
+}
+
+/**
+ * Unlike Spark's InsertIntoTable this plan provides the count of rows
+ * inserted as the output.
+ */
+final class Insert(
+    table: LogicalPlan,
+    partition: Map[String, Option[String]],
+    child: LogicalPlan,
+    overwrite: OverwriteOptions,
+    ifNotExists: Boolean)
+    extends InsertIntoTable(table, partition, child, overwrite, ifNotExists) {
+
+  override def output: Seq[Attribute] = AttributeReference(
+    "count", LongType)() :: Nil
+
+  override def makeCopy(newArgs: Array[AnyRef]): LogicalPlan = {
+    super.makeCopy(newArgs)
+  }
+
+  override def copy(table: LogicalPlan = table,
+      partition: Map[String, Option[String]] = partition,
+      child: LogicalPlan = child,
+      overwrite: OverwriteOptions = overwrite,
+      ifNotExists: Boolean = ifNotExists): Insert = {
+    new Insert(table, partition, child, overwrite, ifNotExists)
+  }
 }
 
 case class Update(table: LogicalPlan, child: LogicalPlan,

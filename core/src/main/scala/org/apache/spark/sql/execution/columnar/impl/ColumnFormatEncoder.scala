@@ -20,7 +20,7 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.nio.ByteBuffer
 import java.sql.Blob
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, RegionEntry}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, RegionEntry}
 import com.pivotal.gemfirexd.internal.engine.store.RowEncoder.PreProcessRow
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
@@ -98,5 +98,32 @@ final class ColumnFormatEncoder extends RowEncoder {
         row
       }
     }
+  }
+
+  override def afterColumnStorePuts(bucket: BucketRegion,
+      events: Array[EntryEventImpl]): Unit = {
+    // delete entire batch if all rows are marked deleted
+    events.foreach(event => event.getKey match {
+      case deleteKey: ColumnFormatKey
+        if deleteKey.columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX =>
+
+        val deleteDelta = event.getNewValue.asInstanceOf[ColumnFormatValue]
+        if (deleteDelta eq null) return
+
+        val region = bucket.getPartitionedRegion
+        val deleteBuffer = deleteDelta.getBufferRetain
+        val deleteBatch = try {
+          if (!deleteBuffer.hasRemaining) return
+          ColumnDelta.checkBatchDeleted(deleteBuffer)
+        } finally {
+          deleteDelta.release()
+        }
+        if (deleteBatch) {
+          ColumnDelta.deleteBatch(deleteKey, region,
+            region.getUserAttribute.asInstanceOf[GemFireContainer].getQualifiedTableName,
+            forUpdate = true)
+        }
+      case _ =>
+    })
   }
 }

@@ -126,7 +126,7 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
     def props = [
       'Product-Name'      : productName,
       'Product-Version'   : version,
-      'Build-Id'          : System.env.USER + ' ' + buildNumber,
+      'Build-Id'          : buildIdPrefix + buildNumber,
       'Build-Date'        : buildDate,
       'Build-Platform'    : osName.getName() + osVersion + osArch,
       'Build-Java-Version': jdkVersion,

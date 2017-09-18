@@ -31,14 +31,14 @@ shift
 . "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
 
-. "$SPARK_HOME/bin/load-spark-env.sh"
-. "$SPARK_HOME/bin/load-snappy-env.sh"
+. "$SNAPPY_HOME/bin/load-spark-env.sh"
+. "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
 
 
 # Start up  the lead instance
 function start_instance {
-  "$SPARK_HOME"/bin/snappy leader "$mode" "$@"
+  "$SNAPPY_HOME"/bin/snappy leader "$mode" "$@"
 }
 
 start_instance "$@"

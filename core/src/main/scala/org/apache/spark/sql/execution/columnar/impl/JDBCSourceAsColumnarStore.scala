@@ -82,11 +82,21 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     schema = StructTypeSerializer.read(kryo, input, c = null)
   }
 
-  override def storeColumnBatch(tableName: String, batch: ColumnBatch,
+  override def storeColumnBatch(columnTableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
       conn: Option[Connection]): Unit = {
-    doInsertOrPut(tableName, batch, batchId, getPartitionID(tableName, partitionId),
-      maxDeltaRows, conn)
+    if (partitionId >= 0) {
+      doInsertOrPut(columnTableName, batch, batchId, partitionId, maxDeltaRows, conn)
+    } else {
+      val (bucketId, br, batchSize) = getPartitionID(columnTableName,
+        () => batch.buffers.foldLeft(0L)(_ + _.capacity()))
+      try {
+        doInsertOrPut(columnTableName, batch, batchId, bucketId, maxDeltaRows, conn)
+      } finally br match {
+        case None =>
+        case Some(bucket) => bucket.updateInProgressSize(-batchSize)
+      }
+    }
   }
 
   // begin should decide the connection which will be used by insert/commit/rollback
@@ -184,18 +194,25 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }(conn)
   }
 
-  override def storeDelete(tableName: String, buffer: ByteBuffer,
+  override def storeDelete(columnTableName: String, buffer: ByteBuffer,
       statsData: Array[Byte], partitionId: Int,
       batchId: Long, conn: Option[Connection]): Unit = {
     val allocator = GemFireCacheImpl.getCurrentBufferAllocator
     val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
       case ConnectionType.Embedded =>
-        val region = Misc.getRegionForTable[ColumnFormatKey,
-            ColumnFormatValue](tableName, true)
-        val keyValues = new java.util.HashMap[ColumnFormatKey, ColumnFormatValue](2)
+        val region = Misc.getRegionForTable[ColumnFormatKey, ColumnFormatValue](
+          columnTableName, true)
         var key = new ColumnFormatKey(batchId, partitionId,
           ColumnFormatEntry.DELETE_MASK_COL_INDEX)
+
+        // check for full batch delete
+        if (ColumnDelta.checkBatchDeleted(buffer)) {
+          ColumnDelta.deleteBatch(key, region, columnTableName, forUpdate = false)
+          return
+        }
+
+        val keyValues = new java.util.HashMap[ColumnFormatKey, ColumnFormatValue](2)
         val value = new ColumnDeleteDelta(buffer)
         keyValues.put(key, value)
 
@@ -208,9 +225,52 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         region.putAll(keyValues)
 
       case _ =>
-        // noinspection RedundantDefaultArgument
-        tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) { connection =>
-          val deleteStr = getRowInsertOrPutStr(tableName, isPut = true)
+        tryExecute(columnTableName, closeOnSuccessOrFailure = false,
+          onExecutor = true) { connection =>
+
+          // check for full batch delete
+          if (ColumnDelta.checkBatchDeleted(buffer)) {
+            val deleteStr = s"delete from $columnTableName where " +
+                "uuid = ? and partitionId = ? and columnIndex = ?"
+            val stmt = connection.prepareStatement(deleteStr)
+            try {
+              def addKeyToBatch(columnIndex: Int): Unit = {
+                stmt.setLong(1, batchId)
+                stmt.setInt(2, partitionId)
+                stmt.setInt(3, columnIndex)
+                stmt.addBatch()
+              }
+              // find the number of columns in the table
+              val tableName = this.tableName
+              val (schemaName, name) = tableName.indexOf('.') match {
+                case -1 => (null, tableName)
+                case index => (tableName.substring(0, index), tableName.substring(index + 1))
+              }
+              val rs = connection.getMetaData.getColumns(null, schemaName, name, "%")
+              var numColumns = 0
+              while (rs.next()) {
+                numColumns += 1
+              }
+              rs.close()
+              // add the stats rows
+              addKeyToBatch(ColumnFormatEntry.STATROW_COL_INDEX)
+              addKeyToBatch(ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
+              // add column values and deltas
+              for (columnIndex <- 1 to numColumns) {
+                addKeyToBatch(columnIndex)
+                for (depth <- 0 until ColumnDelta.MAX_DEPTH) {
+                  addKeyToBatch(ColumnDelta.deltaColumnIndex(
+                    columnIndex - 1 /* zero based */ , depth))
+                }
+              }
+              stmt.executeBatch()
+            } finally {
+              stmt.close()
+            }
+            return
+          }
+
+          val deleteStr = getRowInsertOrPutStr(columnTableName, isPut = true)
           val stmt = connection.prepareStatement(deleteStr)
           var blob: ClientBlob = null
           try {
@@ -230,7 +290,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.addBatch()
 
             stmt.executeBatch()
-            stmt.close()
           } finally {
             // free the blob
             if (blob != null) {
@@ -240,6 +299,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                 case NonFatal(_) => // ignore
               }
             }
+            stmt.close()
           }
         }(conn)
     }
@@ -530,19 +590,22 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }
   }
 
+  private def getInProgressBucketSize(br: BucketRegion, shift: Int): Long =
+    (br.getTotalBytes + br.getInProgressSize) >> shift
+
   // use the same saved connection for all operation
-  private def getPartitionID(tableName: String, partitionId: Int = -1): Int = {
-    if (partitionId >= 0) return partitionId
+  private def getPartitionID(columnTableName: String,
+      getBatchSizeInBytes: () => Long): (Int, Option[BucketRegion], Long) = {
     connectionType match {
       case ConnectionType.Embedded =>
-        val region = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
+        val region = Misc.getRegionForTable(columnTableName, true).asInstanceOf[LocalRegion]
         region match {
           case pr: PartitionedRegion =>
-            if (partitionId == -1) pr.synchronized {
+            pr.synchronized {
               val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketRegions
               // if no local primary bucket, then select a random bucket
               if (primaryBuckets.isEmpty) {
-                Random.nextInt(pr.getTotalNumberOfBuckets)
+                (Random.nextInt(pr.getTotalNumberOfBuckets), None, 0L)
               } else {
                 // select the bucket with smallest size at this point
                 val iterator = primaryBuckets.iterator()
@@ -553,26 +616,27 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                 val shift = if (GemFireCacheImpl.hasNewOffHeap) 5 else 13
                 assert(iterator.hasNext)
                 var smallestBucket = iterator.next()
-                var minBucketSize = smallestBucket.getTotalBytes >> shift
+                var minBucketSize = getInProgressBucketSize(smallestBucket, shift)
                 while (iterator.hasNext) {
                   val bucket = iterator.next()
-                  val bucketSize = bucket.getTotalBytes >> shift
+                  val bucketSize = getInProgressBucketSize(bucket, shift)
                   if (bucketSize < minBucketSize ||
                       (bucketSize == minBucketSize && Random.nextBoolean())) {
                     smallestBucket = bucket
                     minBucketSize = bucketSize
                   }
                 }
-                smallestBucket.getId
+                val batchSize = getBatchSizeInBytes()
+                // update the in-progress size of the chosen bucket
+                smallestBucket.updateInProgressSize(batchSize)
+                (smallestBucket.getId, Some(smallestBucket), batchSize)
               }
-            } else {
-              partitionId
             }
-          case _ => partitionId
+          case _ => (-1, None, 0L)
         }
       // TODO: SW: for split mode, get connection to one of the
       // local servers and a bucket ID for only one of those
-      case _ => if (partitionId < 0) Random.nextInt(numPartitions) else partitionId
+      case _ => (Random.nextInt(numPartitions), None, 0L)
     }
   }
 }

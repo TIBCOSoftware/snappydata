@@ -16,10 +16,9 @@
 #
 
 # Specify the host name on which a Snappy lead will be started. Also
-# specify the startup directory where the logs and configuration files
-# for that lead instance are kept. Apart from these two things, snappy
-# specific properties can also be passed. If the directory and properties
-# are not specified a default directory is created inside the SPARK_HOME directory.
+# specify the directory where the logs and metadata files
+# for that lead instance will be created. If the directory and properties
+# are not specified a default directory is created inside the SNAPPY_HOME directory.
 # 
 # localhost   -dir=/tmp/data/lead (config args)
 #
@@ -32,5 +31,6 @@
 # 
 #     localhost   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16
 #
-# For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
+# For more configuration options,
+# see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

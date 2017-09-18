@@ -176,7 +176,7 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
 
 trait ColumnEncoder extends ColumnEncoding {
 
-  protected final var allocator: BufferAllocator = _
+  protected[sql] final var allocator: BufferAllocator = _
   private final var finalAllocator: BufferAllocator = _
   protected[sql] final var columnData: ByteBuffer = _
   protected[sql] final var columnBeginPosition: Long = _
