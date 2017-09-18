@@ -11,13 +11,16 @@ A simple analytic query that scans a 100 million-row column table shows SnappyDa
 
 **Start the Spark Shell using any of the options mentioned below:**
 
-**If you are using your own Spark installation(2.0.0, 2.0.1 or 2.0.2):**
+**If you are using your own Spark distribution that is compatible with version 2.1.x:**
 
 ```bash
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
 $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
+
+** If you are using Spark 2.0.x, use the same command above with packages set to "SnappyDataInc:snappydata:0.9-s_2.11" **
+
 
 **If you have downloaded SnappyData**:
 
@@ -104,5 +107,5 @@ scala> :q // Quit the Spark Shell
 ```
 
 !!! Note:
-	This benchmark code is tested in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times faster than Spark 2.0.2 .
+	This benchmark code is tested in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times faster than Spark 2.1 .
 
