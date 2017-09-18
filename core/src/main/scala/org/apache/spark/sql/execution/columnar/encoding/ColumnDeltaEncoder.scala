@@ -136,6 +136,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   override protected[sql] def getNumNullWords: Int = realEncoder.getNumNullWords
 
+  override protected[sql] def getNullWords: AnyRef = realEncoder.getNullWords
+
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = realEncoder.writeNulls(columnBytes, cursor, numWords)
 
@@ -255,16 +257,15 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   private def consumeDecoder(decoder: ColumnDecoder,
       decoderAbsolutePosition: Int /* for random access */ ,
-      decoderOrdinal: Int /* for sequential access */ ,
-      decoderBytes: AnyRef, writer: DeltaWriter, encoderCursor: Long,
+      decoderNullOrdinal: Int, decoderBytes: AnyRef,
+      decoderNullBytes: AnyRef, writer: DeltaWriter, encoderCursor: Long,
       encoderOrdinal: Int, forMerge: Boolean, doWrite: Boolean = true): Long = {
     assert(doWrite || decoderAbsolutePosition < 0)
-    if (realEncoder.isNullable) {
-      val isNull = if (decoderAbsolutePosition < 0) {
-        decoder.isNullAt(decoderBytes, decoderOrdinal)
-      } else decoder.isNullAt(decoderBytes, decoderAbsolutePosition)
-      if (isNull) {
-        if (doWrite) realEncoder.writeIsNull(encoderOrdinal)
+    if (decoderNullOrdinal >= 0) {
+      // nulls are always written as per relative position in decoder
+      if (decoder.isNullAt(decoderNullBytes, decoderNullOrdinal)) {
+        // null words are copied as is in initial creation so only write in merge
+        if (forMerge && doWrite) realEncoder.writeIsNull(encoderOrdinal)
         return encoderCursor
       }
     }
@@ -344,6 +345,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // new delta is on the "left" while the previous delta in the table is on "right"
     val (decoder1, columnBytes1) = ColumnEncoding.getColumnDecoderAndBuffer(
       newValue, field, initializeDecoder)
+    val nullable1 = decoder1.hasNulls
     val numBaseRows = tmpNumBaseRows
     val numPositions1 = tmpNumPositions
     var positionCursor1 = tmpPositionCursor
@@ -356,6 +358,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       ColumnEncoding.getColumnDecoderAndBuffer(
         existingValue, field, ColumnEncoding.identityLong)
     }
+    val nullable2 = decoder2.hasNulls
     var numPositions2 = 0
     var positionCursor2 = 0L
     val existingValueSize = existingValue.remaining()
@@ -408,8 +411,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         if (existingIsDelta && !areEqual) positionsArray(encoderOrdinal) = position2
         // consume data at position2 and move it if position2 is smaller
         // else if they are equal then newValue gets precedence
-        cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
-          columnBytes2, writer, cursor, encoderOrdinal, forMerge = true, doWrite = !areEqual)
+        cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1,
+          if (nullable2) relativePosition2 else -1, columnBytes2, columnBytes2,
+          writer, cursor, encoderOrdinal, forMerge = true, doWrite = !areEqual)
         relativePosition2 += 1
         if (relativePosition2 < numPositions2) {
           if (existingIsDelta) {
@@ -428,8 +432,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         // set next update position to be from first
         if (existingIsDelta) positionsArray(encoderOrdinal) = position1
         // consume data at position1 and move it
-        cursor = consumeDecoder(decoder1, decoderAbsolutePosition = -1, relativePosition1,
-          columnBytes1, writer, cursor, encoderOrdinal, forMerge = true)
+        cursor = consumeDecoder(decoder1, decoderAbsolutePosition = -1,
+          if (nullable1) relativePosition1 else -1, columnBytes1, columnBytes1,
+          writer, cursor, encoderOrdinal, forMerge = true)
         relativePosition1 += 1
         if (relativePosition1 < numPositions1) {
           position1 = ColumnEncoding.readInt(columnBytes1, positionCursor1)
@@ -449,8 +454,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         positionsArray(encoderOrdinal) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
         positionCursor1 += 4
       }
-      cursor = consumeDecoder(decoder1, decoderAbsolutePosition = -1, relativePosition1,
-        columnBytes1, writer, cursor, encoderOrdinal, forMerge = true)
+      cursor = consumeDecoder(decoder1, decoderAbsolutePosition = -1,
+        if (nullable1) relativePosition1 else -1, columnBytes1, columnBytes1,
+        writer, cursor, encoderOrdinal, forMerge = true)
       relativePosition1 += 1
     }
     positionCursor2 -= 4
@@ -461,8 +467,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         positionsArray(encoderOrdinal) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
         positionCursor2 += 4
       }
-      cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
-        columnBytes2, writer, cursor, encoderOrdinal, forMerge = true)
+      cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1,
+        if (nullable2) relativePosition2 else -1, columnBytes2, columnBytes2,
+        writer, cursor, encoderOrdinal, forMerge = true)
       relativePosition2 += 1
     }
 
@@ -543,6 +550,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val endIndex = startIndex + numDeltas
     val decoder = realEncoder.decoderBeforeFinish(encoderCursor)
     val decoderBuffer = realEncoder.buffer
+    val decoderNullBytes = realEncoder.getNullWords
     val decoderData = realEncoder.columnData
     val decoderAllocator = realEncoder.allocator
     val allocator = this.storageAllocator
@@ -565,12 +573,14 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     cursor = realEncoder.writeInternals(columnBytes, cursor)
 
     // write the encoded values
+    val nullable = decoder.hasNulls
     var i = startIndex
     while (i < endIndex) {
       val position = positionsArray(i)
       val decoderPosition = (position >> 32L).toInt
-      cursor = consumeDecoder(decoder, decoderPosition, decoderOrdinal = -1,
-        decoderBuffer, writer, cursor, i - startIndex, forMerge = false)
+      val ordinal = i - startIndex
+      cursor = consumeDecoder(decoder, decoderPosition, if (nullable) ordinal else -1,
+        decoderBuffer, decoderNullBytes, writer, cursor, ordinal, forMerge = false)
       i += 1
     }
     // finally flush the encoder

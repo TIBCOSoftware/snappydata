@@ -848,7 +848,7 @@ private[sql] final case class ColumnTableScan(
            |    $isNullVar = true;
            |    $numNullsVar = -$numNullsVar;
            |  }
-           |} else if ($updateDecoder.notNull()) {
+           |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
            |} else {
            |  $col = $defaultValue;
