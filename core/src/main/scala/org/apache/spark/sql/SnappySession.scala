@@ -110,7 +110,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
    */
   @transient
-  private[spark] lazy override val sessionState: SnappySessionState = {
+  lazy override val sessionState: SnappySessionState = {
     SnappySession.aqpSessionStateClass match {
       case Some(aqpClass) => aqpClass.getConstructor(classOf[SnappySession]).
           newInstance(self).asInstanceOf[SnappySessionState]
