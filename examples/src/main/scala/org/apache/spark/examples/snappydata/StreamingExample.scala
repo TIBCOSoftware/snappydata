@@ -61,7 +61,8 @@ import org.apache.spark.util.Utils
  * of storing and updating a state of streaming data)
  *
  * For more details on streaming with SnappyData refer to:
- * http://snappydatainc.github.io/snappydata/streamingWithSQL/
+ * http://snappydatainc.github.io/snappydata/programming_guide
+ * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */
 object StreamingExample {
