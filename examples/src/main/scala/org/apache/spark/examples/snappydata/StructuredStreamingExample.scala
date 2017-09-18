@@ -37,7 +37,8 @@ import scala.language.postfixOps
   *    `$ nc -lk 9999`
   *
   * For more details on streaming with SnappyData refer to:
-  * http://snappydatainc.github.io/snappydata/streamingWithSQL/
+  * http://snappydatainc.github.io/snappydata/programming_guide
+  * /stream_processing_using_sql/#stream-processing-using-sql
   *
   */
 object StructuredStreamingExample {
