@@ -269,6 +269,12 @@ object Property extends Enumeration {
         "as many partitions as executor cores clubbing multiple buckets " +
         "into each partition when possible.", Some(false), Constant.SPARK_PREFIX)
 
+  val PreferPrimariesInQuery: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}preferPrimaries",
+    "Property to prefer using primary buckets in queries. This reduces " +
+        "scalability of queries in the interest of reduced memory usage for " +
+        "secondary buckets. Default is false.", Some(false), Constant.SPARK_PREFIX)
+
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +
