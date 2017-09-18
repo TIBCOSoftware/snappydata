@@ -55,7 +55,13 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long updateStmts;
 
+  public static Long afterUpdateSelects;
+
+//  public static Long selectOrderbyClause;
+
   public static Long deleteStmts;
+
+  public static Long afterDeleteSelects;
 
   public static Long testUniqueKeys;
 
@@ -64,6 +70,8 @@ public class SnappySchemaPrms extends SnappyPrms {
   public static Long deleteTables;
 
   public static Long isHATest;
+
+  public static Long largeDataSet;
 
   /* boolean : For fast data loading, slipt the data files and load them parallely*/
   public static Long loadDataInParts;
@@ -159,6 +167,38 @@ public class SnappySchemaPrms extends SnappyPrms {
     }
     return strArr;
   }
+
+  public static String[] getAfterUpdateSelectStmts(){
+    Long key = afterUpdateSelects;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = new String[selectStmt.size()];
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr[i] = (String)selectStmt.elementAt(i);
+    }
+    return strArr;
+  }
+
+  public static String[] getAfterDeleteSelectStmts(){
+    Long key = afterDeleteSelects;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = new String[selectStmt.size()];
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr[i] = (String)selectStmt.elementAt(i);
+    }
+    return strArr;
+  }
+
+/*
+  public static String[] getOrderByClause(){
+    Long key = selectOrderbyClause;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = new String[selectStmt.size()];
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr[i] = (String)selectStmt.elementAt(i);
+    }
+    return strArr;
+  }
+*/
 
   public static String getDMLOperations(){
     Long key = dmlOperations;

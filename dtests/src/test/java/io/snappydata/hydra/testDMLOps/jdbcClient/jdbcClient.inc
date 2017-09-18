@@ -47,4 +47,4 @@ hydra.Prms-totalTaskTimeSec           = 900;
 hydra.Prms-maxResultWaitSec           = 600;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-testUniqueKeys = true;
-
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-largeDataSet = true;
