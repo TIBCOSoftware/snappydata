@@ -782,7 +782,7 @@ class TokenizationTest
 
     // null, non-null combinations of updates
 
-    // implicit int to string cast should fail (SNAP-2039)
+    // implicit int to string cast will cause it to be null (SNAP-2039)
     res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
         "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
     val numUpdated0 = res2.foldLeft(0L)(_ + _.getLong(0))
