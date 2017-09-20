@@ -20,10 +20,11 @@ Download the latest version of SnappyData:
 * [Download SnappyData 1.0-RC Enterprise Version](http://www.snappydata.io/download): </br> Users can download the Enterprise version for evaluation after registering on the SnappyData website.
 
 <a id="singlehost"></a>
-## Single Host Installation
+## Single-Host installation
 This is the simplest form of deployment and can be used for testing and POCs.
 
-Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory.
+Open the command prompt, go the location of the SnappyData downloaded file, and run the following command to extract the downloaded archive file.
+
 ```bash
 $ tar -xzf snappydata-<version-number>bin.tar.gz
 $ cd snappydata-<version-number>-bin/
@@ -32,10 +33,10 @@ Start a basic cluster with one data node, one lead, and one locator
 ```
 ./sbin/snappy-start-all.sh
 ```
-For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](../configuring_cluster/configuring_cluster.md).
+For custom configuration and to start more nodes,  see the section on [configuring the SnappyData cluster](../configuring_cluster/configuring_cluster.md).
 
-## Multi-Host Installation
-For real life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
+## Multi-Host installation
+For real-life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
 
 ## Machines with a Shared Path
 If all your machines can share a path over an NFS or similar protocol, then follow the steps below:
@@ -46,7 +47,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 * Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md).
 
-### Steps to Set up the Cluster
+### Steps to setup the cluster
 
 1. Copy the downloaded binaries to the shared folder.
 
@@ -55,7 +56,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 		$ tar -xzf snappydata-<version-number>-bin.tar.gz
 		$ cd snappydata-<version-number>.-bin/
 
-3. Configure the cluster as described in [How to Configure SnappyData cluster](../configuring_cluster/configuring_cluster.md).
+3. Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md).
 
 4. After configuring each of the components, run the `snappy-start-all.sh` script:
 
@@ -66,22 +67,22 @@ This creates a default folder named **work** and stores all SnappyData member's 
 If SSH is not supported then follow the instructions in the [Machines without a Shared Path](#machine-shared-path) section.
 
 <a id="machine-shared-path"></a>
-## Machines without a Shared Path
+## Machines without a shared path
 
 ### Prerequisites
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP Address of each SnappyData member machine.
 
-* On each host machine, create a new member working directory for each SnappyData member, that you want to run the host. <br> The member working directory provides a default location for the log, persistence, and status files for each member, and is also used as the default location for locating the member's configuration files.
+* On each host, create a working directory for each SnappyData member, that you want to run on the host. <br> The member working directory provides a default location for the log, persistence, and status files for that member.
 <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
 
-### To Configure the Cluster
+### To configure the cluster
 1. Copy and extract the downloaded binaries on each machine
 
 2. Individually configure and start each member
 
 !!! Note: 
-	All configuration parameter are provided as command line arguments rather than reading from a conf file.
+	All configuration parameters are provided as command line arguments rather than reading from a conf file.
 
 The example below starts a cluster by individually launching locator, server and lead processes.
 

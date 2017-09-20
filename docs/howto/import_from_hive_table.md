@@ -2,7 +2,7 @@
 
 **Option 1** 
 
-If Hive tables have the data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into SnappyData tables.
+If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into SnappyData tables.
 
 For example,
 ```
@@ -13,7 +13,7 @@ For more information on creating an external table, refer to [CREATE EXTERNAL TA
 
 **Option 2**
 
-Take the RDD[Row] from Dataset of Hive Table and insert it into column table
+Take the RDD[Row] from Dataset of Hive Table and insert it into column table.
 
 For example,
 ```

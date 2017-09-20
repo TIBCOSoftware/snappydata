@@ -1,11 +1,13 @@
 <a id="getting-started-with-docker-image"></a>
 # Getting Started with Docker Image
 
-SnappyData comes with a pre-configured Docker image. It has binaries for SnappyData, which enables you to easily try the quick start program and more, with SnappyData.
+SnappyData comes with a pre-configured Docker image. It has binaries for SnappyData, which enables you to try the quick start program and more, with SnappyData.
 
-This section assumes you have already installed Docker and it is configured properly. Refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
+This section assumes you have already installed and configured Docker properly. Refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
 
-**Verify that Docker is installed**: In the command prompt run the command:
+**Verify that Docker is installed**</br> 
+In the command prompt run the command:
+
 ```scala
 $ docker run hello-world
 
@@ -14,12 +16,16 @@ $ docker run hello-world
 !!! Note: 
 	Ensure that the Docker containers have access to at least 4GB of RAM on your machine.
 
-**Get the Docker Image:** In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.
+**Get the Docker image**</br>
+In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark shell.
+
 ```scala
 $  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 ```
-It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
-Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart).
 
-For more details about SnappyData docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker).
+It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time. </br>
+
+Once you have launched the Spark shell, in the `$ scala>` prompt, follow the steps explained [here](using_spark_scala_apis.md).</br>
+
+For more details about SnappyData Docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker).
 

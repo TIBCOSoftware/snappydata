@@ -1,5 +1,7 @@
 # Setting Up SnappyData ODBC Driver and Tableau Desktop
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+
 !!! Note: 
 	This is currently tested and supported only on Windows 10 (32-Bit & 64-Bit systems). Although versions other than Windows 10 may work, SnappyData is not claiming full testing on other versions.
 
@@ -35,7 +37,7 @@ To create SnappyData DSN from ODBC Data Sources:
 
 	* **Port**: Port number of the server. By default, it is **1528** for the first data server in the cluster.
 
-	* **Login ID**: The login ID required to connect to the server. Fir example, **app**
+	* **Login ID**: The login ID required to connect to the server. For example, **app**
 
 	* **Password**: The password required to connect to the server. For example, **app**
 

@@ -2,10 +2,10 @@
 # How to Use Stream Processing with SnappyData
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to the [documentation](../programming_guide.md#stream-processing-using-sql).
 
-**Code Example**: 
+**Code Example **: </br>
 Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets below show how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.
 
-**First get a SnappySession and a SnappyStreamingContext**: 
+**First get a SnappySession and a SnappyStreamingContext**: </br>
 Here SnappyStreamingContext is initialized in a batch duration of one second.
 ```scala
     val spark: SparkSession = SparkSession
@@ -106,3 +106,13 @@ snsc.sql("create table publisher_bid_counts(publisher string, bidCount int) usin
 snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
 
 ```
+
+## Spark's structured streaming with SnappyData 
+
+Using SnappyData you can run streaming queries on IoT Device data received from a data server listening on a TCP socket.
+
+**Code Example**:</br>
+
+The complete source code of the example ([StructuredStreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingExample.scala) shows the usage of structured streaming with SnappyData.
+
+

@@ -1,7 +1,7 @@
 <a id="getting-started-on-aws"></a>
-# Getting Started on AWS
+# Getting Started on Amazon Web Services (AWS)
 
-You can quickly create a single host SnappyData cluster (i.e. one lead node, one data node and a locator in a single EC2 instance) through the AWS CloudFormation.
+You can quickly create a single host SnappyData cluster (i.e. one lead node, one data node and a locator) in a single Amazon Elastic Compute Cloud (EC2) instance through the AWS CloudFormation.
 
 
 ## Prerequisites
@@ -14,7 +14,8 @@ Before you begin:
 
 *  Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 
-To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloudformation/home#/stacks/new?templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json) and follow the instructions below.
+### Launching the cluster from AWS EC2
+[Launch the cluster from EC2](https://console.aws.amazon.com/cloudformation/home#/stacks/new?templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json) and follow the instructions below.
 
 1. The AWS Login Screen is displayed. Enter your AWS login credentials. 
  

@@ -1,6 +1,8 @@
 <a id="howto-odbc"></a>
 # How to Connect using ODBC Driver
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+
 You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.
 <a id="howto-odbc-step1"></a>
 ## Step 1: Install Visual C++ Redistributable for Visual Studio 2015 
@@ -35,7 +37,7 @@ To download and install the ODBC driver:
 	!!! Note: 
 		Ensure that [SnappyData version 0.8 or later is installed](http://snappydatainc.github.io/snappydata/install/) and the [SnappyData cluster is running](start_snappy_cluster.md).
 
-## Connect to the SnappyData cluster 
+## Connect to the SnappyData Cluster 
 Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
 
 * Use the SnappyData Driver Connection URL:

@@ -1,7 +1,8 @@
 # Download and Install
+
 The following installation options are available:
 
-* [Install On Premise](install/install_on_premise.md)
+* [Install On-Premise](install/install_on_premise.md)
 
 * [Setting up Cluster on Amazon Web Services (AWS)](install/setting_up_cluster_on_amazon_web_services.md)
 

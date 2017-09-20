@@ -1,10 +1,12 @@
 <a id="getting-started-using-sql"></a> 
 # Using SQL
 
-SQL using Spark SQL-invoked using the Session API is illustrated. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](../howto.md#howto-snappyShell) section.
+In this section, SQL using Spark SQL-invoked using the session API is illustrated. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](../howto/use_snappy_shell.md) section.
 
 **Create a column table with a simple schema [Int, String] and default options.**
-For details on the options refer to the [Row and Column Tables](../programming_guide.md#tables-in-snappydata) section.
+
+For details on the options refer to the [Row and Column Tables](../programming_guide/tables_in_snappydata.md) section.
+
 ```scala
 scala>  snappy.sql("create table colTable(CustKey Integer, CustName String) using column options()")
 ```
@@ -24,11 +26,11 @@ scala>  snappy.sql("select count(*) from colTable").show
 **Create a row table with primary key**:
 
 ```scala
-//Row formatted tables are better when datasets constantly change or access is selective (like based on a key).
+//Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
 scala>  snappy.sql("create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, " +
             "CustName String) using row options()")
 ```
-If you create a table using standard SQL (i.e. no 'row options' clause) it creates a replicated Row table.
+If you create a table using standard SQL (that is, no 'row options' clause) it creates a replicated row table.
  
 ```scala
 //Insert couple of records to the row table
@@ -54,7 +56,7 @@ scala>  snappy.sql("drop table if exists colTable ")
 scala> :q //Quit the Spark Shell
 ```
 
-Now that you have seen the basic working of SnappyData tables, let us run the [benchmark](#start_benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
+Now that you have seen the basic working of SnappyData tables, let us run the [benchmark](../quickstart/performance_apache_spark.md) code to see the performance of SnappyData and compare it to Spark's native cache performance.
 
 ## More Information
 

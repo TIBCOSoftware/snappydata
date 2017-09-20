@@ -2,7 +2,10 @@
 Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.
 
 !!!Note:
-	 SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </p>
+	SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed.</br> 
+       If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
+    
+    </p>
 -   [Syntax](store-backup.md#syntax)
 
 -   [Description](store-backup.md#description)
