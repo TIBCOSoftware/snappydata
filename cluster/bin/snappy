@@ -17,10 +17,13 @@
 # limitations under the License.
 #
 
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
 if [ -z "${SPARK_HOME}" ]; then
-  export SPARK_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+  export SPARK_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
 fi
-export SNAPPY_HOME=${SPARK_HOME}
+export SNAPPY_HOME="${SPARK_HOME}"
 # disable randomized hash for string in Python 3.3+
 export PYTHONHASHSEED=0
 

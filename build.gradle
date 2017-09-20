@@ -879,13 +879,26 @@ ospackage {
   permissionGroup = 'snappydata'
 
   from(snappyProductDir) {
-    into '/opt/' + distributions.main.baseName
+    into '/opt/' + packageName
   }
+  from('release') {
+    include 'snappyProfile.*'
+    into '/etc/profile.d'
+    rename { fileName -> fileName.replace('Profile', 'data') }
+  }
+
+  link('/usr/sbin/snappy-start-all.sh', "/opt/${packageName}/sbin/snappy-start-all.sh")
+  link('/usr/sbin/snappy-stop-all.sh', "/opt/${packageName}/sbin/snappy-stop-all.sh")
+  link('/usr/sbin/snappy-status-all.sh', "/opt/${packageName}/sbin/snappy-status-all.sh")
+  link('/usr/bin/snappy', "/opt/${packageName}/bin/snappy")
+  link('/usr/bin/snappy-sql', "/opt/${packageName}/bin/snappy-sql")
+  link('/usr/bin/snappy-job.sh', "/opt/${packageName}/bin/snappy-job.sh")
 }
 
 buildRpm {
   requires('glibc')
   requires('bash')
+  requires('perl')
   requires('curl')
   dependsOn ':packageVSD'
   if (rootProject.hasProperty('hadoop-provided')) {
@@ -898,6 +911,7 @@ buildRpm {
 buildDeb {
   requires('libc6')
   requires('bash')
+  requires('perl')
   requires('curl')
   recommends('java8-sdk')
   dependsOn ':packageVSD'
