@@ -1,10 +1,8 @@
-#!/bin/sh -e
+# Add the default user/group
 
 SNAPPY_USER=snappydata
 SNAPPY_GROUP=snappydata
 SNAPPY_HOME=/opt/$SNAPPY_USER
-
-# Add the default user/group
 
 [ "$DPKG_MAINTSCRIPT_PACKAGE" ] && quiet="--quiet"
 
