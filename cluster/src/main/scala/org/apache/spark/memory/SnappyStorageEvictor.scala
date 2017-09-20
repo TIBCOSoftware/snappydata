@@ -83,7 +83,7 @@ class SnappyStorageEvictor extends Logging {
           val region = regionSet(i)
           try {
             val bytesEvicted = region.entries.asInstanceOf[AbstractLRURegionMap]
-                .centralizedLruUpdateCallback(offHeap)
+                .centralizedLruUpdateCallback(offHeap, true)
             if (bytesEvicted == 0) {
               regionSet.remove(i)
             } else {

@@ -31,6 +31,12 @@ import com.pivotal.gemfirexd.tools.GfxdSystemAdmin;
 
 public class SnappySystemAdmin extends GfxdSystemAdmin {
 
+  SnappySystemAdmin() {
+    super();
+    UTIL_Tools_DSProps = "UTIL_Snappy_Tools_DSProps";
+    UTIL_DSProps_HelpPost = "UTIL_Snappy_Tools_DSProps_HelpPost";
+  }
+
   public static void main(String[] args) {
     try {
       SnappyDataVersion.loadProperties();
@@ -51,6 +57,7 @@ public class SnappySystemAdmin extends GfxdSystemAdmin {
           .entrySet()) {
         admin.helpMap.put(overrideHelp.getKey(), overrideHelp.getValue());
       }
+
       admin.invoke(args);
     } catch (GemFireTerminateError term) {
       System.exit(term.getExitCode());
@@ -62,6 +69,14 @@ public class SnappySystemAdmin extends GfxdSystemAdmin {
     String productDirMessage = LocalizedResource.getMessage(
         "UTIL_version_ProductDirectory", getProductDir());
     System.out.println(utilMain.convertGfxdMessageToSnappy(productDirMessage));
+  }
+
+  @Override
+  protected String getUsageString(String cmd) {
+    final StringBuilder result = new StringBuilder(80);
+    result.append("snappy").append(' ');
+    result.append(this.usageMap.get(cmd.toLowerCase()));
+    return result.toString();
   }
 
   @Override

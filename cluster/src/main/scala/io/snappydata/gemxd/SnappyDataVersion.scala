@@ -36,7 +36,7 @@ object SnappyDataVersion {
   // properties file can be created for column store
   private val SNAPPYDATA_VERSION_PROPERTIES = "io/snappydata/SnappyDataVersion.properties"
 
-  private val AQP_VERSION_PROPERTIES = "io/snappydata/SnappyAQPVersion.properties"
+  val AQP_VERSION_PROPERTIES = "io/snappydata/SnappyAQPVersion.properties"
 
   private val isNativeLibLoaded: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)

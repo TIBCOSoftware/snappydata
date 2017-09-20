@@ -63,6 +63,12 @@ class ExampleTestSuite extends SnappyTestRunner {
       appJar = s"$snappyHome/quickstart/python/CreateTable.py")
   }
 
+  test("KMeans in Python"){
+    SparkSubmit("KMeansWeather", appClass = "", None,
+      confs = Seq.empty[String],
+      appJar = s"$snappyHome/quickstart/python/KMeansWeather.py")
+  }
+
   test("QuickStart.scala script"){
     SparkShell(Seq.empty[String], "--driver-memory=4g --driver-java-options=" +
       "\"-XX:+UseConcMarkSweepGC\" \"-XX:+UseParNewGC\" \"-XX:+CMSClassUnloadingEnabled\"" +

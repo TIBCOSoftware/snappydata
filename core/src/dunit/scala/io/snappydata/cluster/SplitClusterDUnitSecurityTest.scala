@@ -269,14 +269,20 @@ class SplitClusterDUnitSecurityTest(s: String)
       count = snc.sql(s"select count(*) from $embeddedRowTab1").collect()(0).getLong(0)
       assert(count == 1, s"expected 1 rows but found $count in $embeddedRowTab1")
 
-      // update TODO for column tables when support comes in master.
+      // update
+      snc.sql(s"update $embeddedColTab1 set col1 = 5000 where col1 = 10000")
+      var col1 = snc.sql(s"select * from $embeddedColTab1").collect()(0).get(0)
+      assert(col1 == 5000, s"Update failed in $embeddedColTab1, found value $col1")
       snc.sql(s"update $embeddedRowTab1 set col1 = 5000 where col1 = 10000")
-      var col1 = snc.sql(s"select * from $embeddedRowTab1").collect()(0).get(0)
+      col1 = snc.sql(s"select * from $embeddedRowTab1").collect()(0).get(0)
       assert(col1 == 5000, s"Update failed in $embeddedRowTab1, found value $col1")
 
-      // delete TODO for column tables when support comes in master.
+      // delete
+      snc.sql(s"delete from $embeddedColTab1 where col1 = 5000").collect()
+      var rows = snc.sql(s"select * from $embeddedColTab1").collect().length
+      assert(rows == 0, s"expected 0 rows but found $rows in $embeddedColTab1")
       snc.sql(s"delete from $embeddedRowTab1 where col1 = 5000")
-      var rows = snc.sql(s"select * from $embeddedRowTab1").collect().length
+      rows = snc.sql(s"select * from $embeddedRowTab1").collect().length
       assert(rows == 0, s"expected 0 rows but found $rows in $embeddedRowTab1")
 
       // insert more data. Adds 1005 rows each
@@ -284,8 +290,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       SplitClusterDUnitTest.populateTable(embeddedRowTab1, user1Conn)
 
       rows = snc.sql(s"select * from $embeddedColTab1").collect().length
-      // 1005 + 1 (which was not deleted above)
-      assert(rows == 1006, s"expected 1005 rows but found $rows in $embeddedColTab1")
+      assert(rows == 1005, s"expected 1005 rows but found $rows in $embeddedColTab1")
       rows = snc.sql(s"select * from $embeddedRowTab1").collect().length
       assert(rows == 1005, s"expected 1005 rows but found $rows in $embeddedRowTab1")
 
@@ -328,12 +333,14 @@ class SplitClusterDUnitSecurityTest(s: String)
         assert(rs.getInt(1) == 0, s"Update failed. Col1 value is ${rs.getInt(0)}, but expected 0 " +
             s"for $sql")
       }
-      // TODO for column tables when support comes in master.
-      stmt.execute(s"update $smartRowTab1 set col1 = 0, col2 = '$value' where " +
-          s"col1 < 0")
+      stmt.execute(s"update $smartColTab1 set col1 = 0, col2 = '$value' where col1 < 0")
+      checkCol1(s"select * from $smartColTab1 where col2 = '$value'")
+      stmt.execute(s"update $smartRowTab1 set col1 = 0, col2 = '$value' where col1 < 0")
       checkCol1(s"select * from $smartRowTab1 where col2 = '$value'")
 
-      // delete TODO for column tables when support comes in master.
+      // delete
+      stmt.execute(s"delete from $smartColTab1 where col1 = 0")
+      checkCount(s"select * from $smartColTab1", 1005, false)
       stmt.execute(s"delete from $smartRowTab1 where col1 = 0")
       checkCount(s"select * from $smartRowTab1", 1005, false)
 
@@ -378,6 +385,9 @@ class SplitClusterDUnitSecurityTest(s: String)
         || op.equalsIgnoreCase("delete")) {
       // We need select permission for insert, update and delete operation
       Seq(t1, t2).foreach(t => stmt.execute(s"$permit select on table $t $toFrom $user"))
+      if (op.equalsIgnoreCase("update")) {
+        Seq(t1, t2).foreach(t => stmt.execute(s"$permit insert on table $t $toFrom $user"))
+      }
     }
   }
 
@@ -437,8 +447,11 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"select * from $jdbcUser1.$embeddedRowTab1",
       s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
       s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
+      s"update $jdbcUser1.$embeddedColTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
+          s"col3 < 1.0",
       s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
           s"col3 < 1.0",
+      s"delete from $jdbcUser1.$embeddedColTab1 where col1 = 0",
       s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
     )
 
@@ -461,9 +474,9 @@ class SplitClusterDUnitSecurityTest(s: String)
     verifyGrantRevoke("select", List(sqls(0), sqls(1)))
     verifyGrantRevoke("insert", List(sqls(2), sqls(3)))
     // No update on column tables
-    verifyGrantRevoke("update", List(sqls(4)))
+    verifyGrantRevoke("update", List(sqls(4), sqls(5)))
     // No delete on column tables
-    verifyGrantRevoke("delete", List(sqls(5)))
+    verifyGrantRevoke("delete", List(sqls(6), sqls(7)))
 
     // SNAPPY_HIVE_METASTORE should not be modifiable by users.
     val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
@@ -482,8 +495,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     assertFailure(() => {snc.sql(sqls(0)).collect()}, sqls(0)) // select on embeddedColTab1
     executeSQL(user2Stmt, sqls(3)) // insert into embeddedRowTab1
     snc.sql(sqls(3)).collect() // insert into embeddedRowTab1
-    assertFailure(() => {executeSQL(user2Stmt, sqls(5))}, sqls(5)) // delete on embeddedRowTab1
-    assertFailure(() => {snc.sql(sqls(5)).collect()}, sqls(5)) // delete on embeddedRowTab1
+    assertFailure(() => {executeSQL(user2Stmt, sqls(7))}, sqls(7)) // delete on embeddedRowTab1
+    assertFailure(() => {snc.sql(sqls(6)).collect()}, sqls(6)) // delete on embeddedColTab1
   }
 
   def restartCluster(): Unit = {

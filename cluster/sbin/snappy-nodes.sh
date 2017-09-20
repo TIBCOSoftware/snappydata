@@ -21,7 +21,7 @@
 #
 # Environment Variables
 #
-#   SPARK_CONF_DIR  Alternate conf dir. Default is ${SPARK_HOME}/conf.
+#   SPARK_CONF_DIR  Alternate conf dir. Default is ${SNAPPY_HOME}/conf.
 #   SPARK_SSH_OPTS Options passed to ssh when running remote commands.
 ##
 
@@ -68,8 +68,8 @@ then
   shift
 fi
 
-. "$SPARK_HOME/bin/load-spark-env.sh"
-. "$SPARK_HOME/bin/load-snappy-env.sh"
+. "$SNAPPY_HOME/bin/load-spark-env.sh"
+. "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
 
 case $componentType in
@@ -121,7 +121,7 @@ else
   LOCATOR_ARGS="-locators=localhost[$default_loc_port]"
 fi
 
-MEMBERS_FILE="$SPARK_HOME/work/members.txt"
+MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
 
 FIRST_NODE=1
 export FIRST_NODE
@@ -130,7 +130,7 @@ function execute() {
 
   # Set directory folder if not already set.
   if [ -z "${dirparam}" ]; then
-    dirfolder="$SPARK_HOME"/work/"$host"-$componentType-$index
+    dirfolder="$SNAPPY_HOME"/work/"$host"-$componentType-$index
     dirparam="-dir=${dirfolder}"
     args="${args} ${dirparam}"
   fi
@@ -166,11 +166,11 @@ function execute() {
     args="${dirparam}"
   fi
 
-  if [ ! -d "${SPARK_HOME}/work" ]; then
-    mkdir -p "${SPARK_HOME}/work"
+  if [ ! -d "${SNAPPY_HOME}/work" ]; then
+    mkdir -p "${SNAPPY_HOME}/work"
     ret=$?
     if [ "$ret" != "0" ]; then
-      echo "Could not create work directory ${SPARK_HOME}/work"
+      echo "Could not create work directory ${SNAPPY_HOME}/work"
       exit 1
     fi
   fi

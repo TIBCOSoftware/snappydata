@@ -42,13 +42,13 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
   private var positionOrdinal: Int = _
 
   private def initialize(columnBytes: AnyRef, cursor: Long): Long = {
-    // read the positions
-    val numPositions = ColumnEncoding.readInt(columnBytes, cursor)
+    // read the positions (skip the number of base rows)
+    val numPositions = ColumnEncoding.readInt(columnBytes, cursor + 4)
 
     // initialize the start and end of mutated positions
-    positionCursor = cursor + 4
-    positionEndCursor = positionCursor + (numPositions << 2)
+    positionCursor = cursor + 8
 
+    positionEndCursor = positionCursor + (numPositions << 2)
     // round to nearest word to get data start position
     ((positionEndCursor + 7) >> 3) << 3
   }
@@ -57,10 +57,9 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     val cursor = positionCursor
     if (cursor < positionEndCursor) {
       positionCursor += 4
-      positionOrdinal += 1
       ColumnEncoding.readInt(deltaBytes, cursor)
     } else {
-      // convention used by MutableColumnDecoder to denote the end
+      // convention used by ColumnDeltaDecoder to denote the end
       // which is greater than everything so will never get selected
       Int.MaxValue
     }
@@ -68,8 +67,9 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
 
   @inline def hasNulls: Boolean = realDecoder.hasNulls
 
-  @inline def notNull: Boolean = {
+  @inline def readNotNull: Boolean = {
     val n = realDecoder.numNulls(deltaBytes, positionOrdinal, numNulls)
+    positionOrdinal += 1
     if (n >= 0) {
       numNulls = n
       true
@@ -79,7 +79,7 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     }
   }
 
-  @inline def nextNonNullOrdinal(): Unit = nonNullOrdinal += 1
+  @inline private[encoding] def nextNonNullOrdinal(): Unit = nonNullOrdinal += 1
 
   @inline def readBoolean: Boolean = {
     val ordinal = nonNullOrdinal

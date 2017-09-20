@@ -22,7 +22,7 @@ import java.nio.ByteBuffer
 /**
  * Decodes the deleted positions of a batch that has seen some deletes.
  */
-final class DeletedColumnDecoder(deleteBuffer: ByteBuffer) {
+final class ColumnDeleteDecoder(deleteBuffer: ByteBuffer) {
 
   private var nextDeletePosition: Int = _
   private var deleteCursor: Long = _
@@ -31,8 +31,8 @@ final class DeletedColumnDecoder(deleteBuffer: ByteBuffer) {
     val allocator = ColumnEncoding.getAllocator(deleteBuffer)
     deleteCursor = allocator.baseOffset(deleteBuffer) + deleteBuffer.position()
     deleteEndCursor = deleteCursor + deleteBuffer.remaining()
-    // skip 8 bytes header
-    deleteCursor += 8
+    // skip 12 bytes header
+    deleteCursor += 12
     val bytes = allocator.baseObject(deleteBuffer)
     nextDeletePosition = moveToNextDeletedPosition(bytes)
     bytes

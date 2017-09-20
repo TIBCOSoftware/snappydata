@@ -18,7 +18,7 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
@@ -60,6 +60,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
   override def nodeName: String = "ColumnUpdate"
 
+  // Require per-partition sort on batchId because deltas are accumulated for
+  // consecutive batchIds else it will  be very inefficient for bulk updates
+  // (e.g. for putInto). BatchId attribute is always third last in the keyColumns.
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] =
+    Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3))))
+
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
     else Map(
@@ -85,8 +91,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       escapeQuotes = true, separator = ", ")
     sql.append(" WHERE ")
     // only the ordinalId is required apart from partitioning columns
-    if (keyColumns.length > 3) {
-      JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.dropRight(3).map(_.name),
+    if (keyColumns.length > 4) {
+      JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.dropRight(4).map(_.name),
         escapeQuotes = true)
       sql.append(" AND ")
     }
@@ -95,7 +101,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
-         |  $finishUpdate($invalidUUID, -1); // force a finish
+         |  $finishUpdate($invalidUUID, -1, -1); // force a finish
          |}
          |$taskListener.setSuccess();
       """.stripMargin)
@@ -110,6 +116,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     batchOrdinal = ctx.freshName("batchOrdinal")
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
     val lastBucketId = ctx.freshName("lastBucketId")
+    val lastNumRows = ctx.freshName("lastNumRows")
     finishUpdate = ctx.freshName("finishUpdate")
     val initializeEncoders = ctx.freshName("initializeEncoders")
 
@@ -135,12 +142,14 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     ctx.addMutableState("int", batchOrdinal, "")
     ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
     ctx.addMutableState("int", lastBucketId, "")
+    ctx.addMutableState("int", lastNumRows, "")
 
     // last three columns in keyColumns should be internal ones
-    val keyCols = keyColumns.takeRight(3)
+    val keyCols = keyColumns.takeRight(4)
     assert(keyCols.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
     assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
     assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
+    assert(keyCols(3).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(3)))
 
     // bind the update expressions
     ctx.INPUT_ROW = null
@@ -155,15 +164,16 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     }
     ctx.currentVars = null
 
-    val keyVars = updateInput.takeRight(3)
+    val keyVars = updateInput.takeRight(4)
     val ordinalIdVar = keyVars.head.value
     val batchIdVar = keyVars(1).value
     val bucketVar = keyVars(2).value
+    val numRowsVar = keyVars(3).value
 
     val updateVarsCode = evaluateVariables(updateInput)
-    // row buffer needs to select the rowId and partitioning columns so drop last two
-    val rowConsume = super.doConsume(ctx, updateInput.dropRight(2),
-      StructType(getUpdateSchema(allExpressions.dropRight(2))))
+    // row buffer needs to select the rowId and partitioning columns so drop last three
+    val rowConsume = super.doConsume(ctx, updateInput.dropRight(3),
+      StructType(getUpdateSchema(allExpressions.dropRight(3))))
 
     ctx.addNewFunction(initializeEncoders,
       s"""
@@ -201,18 +211,19 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
-         |private void $finishUpdate(long batchId, int bucketId) {
+         |private void $finishUpdate(long batchId, int bucketId, int numRows) {
          |  if (batchId == $invalidUUID || batchId != $lastColumnBatchId) {
          |    if ($lastColumnBatchId == $invalidUUID) {
          |      // first call
          |      $lastColumnBatchId = batchId;
          |      $lastBucketId = bucketId;
+         |      $lastNumRows = numRows;
          |      return;
          |    }
          |    // finish previous encoders, put into table and re-initialize
          |    final java.nio.ByteBuffer[] buffers = new java.nio.ByteBuffer[$numColumns];
          |    for (int $index = 0; $index < $numColumns; $index++) {
-         |      buffers[$index] = $deltaEncoders[$index].finish($cursors[$index]);
+         |      buffers[$index] = $deltaEncoders[$index].finish($cursors[$index], $lastNumRows);
          |    }
          |    // TODO: SW: delta stats row (can have full limits for those columns)
          |    // for now put dummy bytes in delta stats row
@@ -226,6 +237,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |    $initializeEncoders();
          |    $lastColumnBatchId = batchId;
          |    $lastBucketId = bucketId;
+         |    $lastNumRows = numRows;
          |    $batchOrdinal = 0;
          |  }
          |}
@@ -236,7 +248,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
        |if ($batchIdVar != $invalidUUID) {
        |  // finish and apply update if the next column batch ID is seen
        |  if ($batchIdVar != $lastColumnBatchId) {
-       |    $finishUpdate($batchIdVar, $bucketVar);
+       |    $finishUpdate($batchIdVar, $bucketVar, $numRowsVar);
        |  }
        |  // write to the encoders
        |  $callEncoders

@@ -23,7 +23,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{Row, SnappySession}
 
 class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -526,7 +526,6 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
   def update_delete_query1(tableName1: String, cacheMapSize: Int): Unit = {
     // sc.setLogLevel("TRACE")
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
-
     val s = conn.createStatement()
     try {
       val delete1 = s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id < 400 ")
@@ -567,6 +566,56 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
+  def update_delete_query2(tableName1: String, cacheMapSize: Int): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    val s = conn.createStatement()
+    try {
+      val update1 = s.executeUpdate(s"UPDATE $tableName1 SET ol_1_int_id = ol_1_int_id + 1 " +
+            s" WHERE ol_1_int2_id IN (SELECT max(ol_1_int2_id) from $tableName1)")
+      assert(update1 == 1, update1)
+
+      val delete1 = s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id in "
+            + s"(SELECT min(ol_1_int2_id) from $tableName1)")
+      assert(delete1 == 1, delete1)
+
+      val selectQry1 = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id from $tableName1 limit 20"
+      verifyResults("update_delete_query2-select1",
+        s.executeQuery(selectQry1), Array(5000, 5001), cacheMapSize)
+    } finally {
+      s.close()
+      conn.close()
+    }
+  }
+
+  def update_delete_query3(tableName1: String, cacheMapSize: Int, numPartition: Int): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    val s = conn.createStatement()
+    try {
+      val update1 = snc.sql(s"UPDATE $tableName1 SET ol_1_int_id = ol_1_int_id + 1 " +
+            s" WHERE ol_1_int2_id IN (SELECT max(ol_1_int2_id) from $tableName1)")
+      val sum_update1 = update1.collect().map(_.get(0).asInstanceOf[Number].longValue).sum
+      val count_update1 = update1.count()
+      assert(sum_update1 == 1)
+      assert(count_update1 == numPartition)
+
+      val delete1 = snc.sql(s"delete from $tableName1 where ol_1_int2_id in "
+            + s"(SELECT min(ol_1_int2_id) from $tableName1)")
+      val sum_delete1 = delete1.collect().map(_.get(0).asInstanceOf[Number].longValue).sum
+      val count_delete1 = delete1.count()
+      assert(sum_delete1 == 1)
+      assert(count_delete1 == numPartition)
+
+      val selectQry1 = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id from $tableName1 limit 20"
+      verifyResults("update_delete_query3-select1",
+        s.executeQuery(selectQry1), Array(5002), cacheMapSize)
+    } finally {
+      s.close()
+      conn.close()
+    }
+  }
+
   test("update delete on column table") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
@@ -587,7 +636,12 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       insertRows(tableName1, 1000)
       insertRows(tableName2, 1000)
       update_delete_query1(tableName1, 1)
-      update_delete_query1(tableName2, 2)
+      update_delete_query2(tableName1, 2)
+      update_delete_query3(tableName1, 3, 2)
+
+      update_delete_query1(tableName2, 4)
+      update_delete_query2(tableName2, 5)
+      update_delete_query3(tableName2, 6, 1)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
@@ -672,8 +726,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       serverHostPort = TestUtil.startNetServer()
       // println("network server started")
       insertRows(tableName1, 10)
-      // TODO: SNAP-1944
-      insertInto(tableName3, tableName1, 0)
+      insertInto(tableName3, tableName1, 10)
 
       insertRows2(tableName2, 5)
       putInto(tableName3, tableName2, 5)

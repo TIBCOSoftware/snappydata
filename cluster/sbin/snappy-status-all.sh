@@ -35,4 +35,6 @@ sbin="`cd "$sbin"; pwd`"
 "$sbin"/snappy-servers.sh status "$@"
 
 # Start Leads
-"$sbin"/snappy-leads.sh status "$@"
+if [ "$1" != "rowstore" ]; then
+  "$sbin"/snappy-leads.sh status "$@"
+fi

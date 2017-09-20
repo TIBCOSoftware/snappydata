@@ -39,7 +39,7 @@ final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
 
   protected def nullable: Boolean = false
 
-  def notNull: Boolean = true
+  def readNotNull: Boolean = true
 }
 
 /**
@@ -54,7 +54,7 @@ final class UpdatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructFi
 
   protected def nullable: Boolean = true
 
-  def notNull: Boolean = currentDeltaBuffer.notNull
+  def readNotNull: Boolean = currentDeltaBuffer.readNotNull
 }
 
 object UpdatedColumnDecoder {
@@ -112,7 +112,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
   @inline protected final def skipUpdatedPosition(delta: ColumnDeltaDecoder): Unit = {
-    if (!nullable || delta.notNull) delta.nextNonNullOrdinal()
+    if (!nullable || delta.readNotNull) delta.nextNonNullOrdinal()
   }
 
   protected final def moveToNextUpdatedPosition(ordinal: Int): Int = {
@@ -192,7 +192,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     else skipUntil(ordinal)
   }
 
-  def notNull: Boolean
+  def readNotNull: Boolean
 
   // TODO: SW: need to create a combined delta+full value dictionary for this to work
 
