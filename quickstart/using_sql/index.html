@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../">Getting Started</a>
+        <a class="" href="../">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -346,21 +346,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -446,7 +446,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -629,7 +629,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -799,14 +799,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1635,7 +1635,7 @@
     
       
         
-          <li>Getting Started &raquo;</li>
+          <li>Getting Started in 5 minutes or Less &raquo;</li>
         
       
     
@@ -1657,9 +1657,9 @@
               
                 <p><a id="getting-started-using-sql"></a> </p>
 <h1 id="using-sql">Using SQL</h1>
-<p>SQL using Spark SQL-invoked using the Session API is illustrated. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the <a href="../../howto/#howto-snappyShell">How-to</a> section.</p>
-<p><strong>Create a column table with a simple schema [Int, String] and default options.</strong>
-For details on the options refer to the <a href="../../programming_guide/#tables-in-snappydata">Row and Column Tables</a> section.</p>
+<p>In this section, SQL using Spark SQL-invoked using the session API is illustrated. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the <a href="../../howto/use_snappy_shell/">How-to</a> section.</p>
+<p><strong>Create a column table with a simple schema [Int, String] and default options.</strong></p>
+<p>For details on the options refer to the <a href="../../programming_guide/tables_in_snappydata/">Row and Column Tables</a> section.</p>
 <pre><code class="scala">scala&gt;  snappy.sql(&quot;create table colTable(CustKey Integer, CustName String) using column options()&quot;)
 </code></pre>
 
@@ -1674,12 +1674,12 @@ scala&gt;  snappy.sql(&quot;select count(*) from colTable&quot;).show
 </code></pre>
 
 <p><strong>Create a row table with primary key</strong>:</p>
-<pre><code class="scala">//Row formatted tables are better when datasets constantly change or access is selective (like based on a key).
+<pre><code class="scala">//Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
 scala&gt;  snappy.sql(&quot;create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, &quot; +
             &quot;CustName String) using row options()&quot;)
 </code></pre>
 
-<p>If you create a table using standard SQL (i.e. no 'row options' clause) it creates a replicated Row table.</p>
+<p>If you create a table using standard SQL (that is, no 'row options' clause) it creates a replicated row table.</p>
 <pre><code class="scala">//Insert couple of records to the row table
 scala&gt;  snappy.sql(&quot;insert into rowTable values(1, 'a')&quot;)
 scala&gt;  snappy.sql(&quot;insert into rowTable values(2, 'b')&quot;)
@@ -1699,7 +1699,7 @@ scala&gt;  snappy.sql(&quot;drop table if exists colTable &quot;)
 <pre><code>scala&gt; :q //Quit the Spark Shell
 </code></pre>
 
-<p>Now that you have seen the basic working of SnappyData tables, let us run the <a href="#start_benchmark">benchmark</a> code to see the performance of SnappyData and compare it to Spark's native cache performance.</p>
+<p>Now that you have seen the basic working of SnappyData tables, let us run the <a href="../performance_apache_spark/">benchmark</a> code to see the performance of SnappyData and compare it to Spark's native cache performance.</p>
 <h2 id="more-information">More Information</h2>
 <p>For more examples of the common operations, you can refer to the <a href="../../howto/">How-tos</a> section. </p>
 <p>If you have questions or queries you can contact us through our <a href="../../techsupport/#community">community channels</a>.</p>

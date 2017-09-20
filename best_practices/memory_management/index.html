@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/">Getting Started</a>
+        <a class="" href="../../quickstart/">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -337,21 +337,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -437,7 +437,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -620,7 +620,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../design_principles/">Designing Principles</a>
+        <a class="" href="../design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -641,7 +641,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#overview">Overview</a></li>
+                <li class="toctree-l3"><a href="#memory-management">Memory Management</a></li>
                 
                     <li><a class="toctree-l4" href="#estimating-memory-size-for-column-and-row-tables">Estimating Memory Size for Column and Row Tables</a></li>
                 
@@ -807,14 +807,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1663,7 +1663,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="overview">Overview</h1>
+                <h1 id="memory-management">Memory Management</h1>
 <p>Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and Snappydata column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.</p>
 <p>SnappyData also monitors the JVM memory pools and avoids running into out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold, memory allocations within SnappyData fail, and a LowMemoryException error is reported. This, however, safeguards the server from crashing due to OutOfMemoryException.</p>
 <p><a id="memory-row-table"></a></p>

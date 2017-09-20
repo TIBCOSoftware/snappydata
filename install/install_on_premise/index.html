@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/">Getting Started</a>
+        <a class="" href="../../quickstart/">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -156,13 +156,13 @@
                 
                     <li><a class="toctree-l4" href="#download-snappydata">Download SnappyData</a></li>
                 
-                    <li><a class="toctree-l4" href="#single-host-installation">Single Host Installation</a></li>
+                    <li><a class="toctree-l4" href="#single-host-installation">Single-Host installation</a></li>
                 
-                    <li><a class="toctree-l4" href="#multi-host-installation">Multi-Host Installation</a></li>
+                    <li><a class="toctree-l4" href="#multi-host-installation">Multi-Host installation</a></li>
                 
                     <li><a class="toctree-l4" href="#machines-with-a-shared-path">Machines with a Shared Path</a></li>
                 
-                    <li><a class="toctree-l4" href="#machines-without-a-shared-path">Machines without a Shared Path</a></li>
+                    <li><a class="toctree-l4" href="#machines-without-a-shared-path">Machines without a shared path</a></li>
                 
             
             </ul>
@@ -356,21 +356,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -456,7 +456,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -639,7 +639,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -809,14 +809,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1691,9 +1691,9 @@
 </li>
 </ul>
 <p><a id="singlehost"></a></p>
-<h2 id="single-host-installation">Single Host Installation</h2>
+<h2 id="single-host-installation">Single-Host installation</h2>
 <p>This is the simplest form of deployment and can be used for testing and POCs.</p>
-<p>Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory.</p>
+<p>Open the command prompt, go the location of the SnappyData downloaded file, and run the following command to extract the downloaded archive file.</p>
 <pre><code class="bash">$ tar -xzf snappydata-&lt;version-number&gt;bin.tar.gz
 $ cd snappydata-&lt;version-number&gt;-bin/
 </code></pre>
@@ -1702,9 +1702,9 @@ $ cd snappydata-&lt;version-number&gt;-bin/
 <pre><code>./sbin/snappy-start-all.sh
 </code></pre>
 
-<p>For custom configuration and to start more nodes,  see the section <a href="../../configuring_cluster/configuring_cluster/">How to Configure the SnappyData cluster</a>.</p>
-<h2 id="multi-host-installation">Multi-Host Installation</h2>
-<p>For real life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.</p>
+<p>For custom configuration and to start more nodes,  see the section on <a href="../../configuring_cluster/configuring_cluster/">configuring the SnappyData cluster</a>.</p>
+<h2 id="multi-host-installation">Multi-Host installation</h2>
+<p>For real-life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.</p>
 <h2 id="machines-with-a-shared-path">Machines with a Shared Path</h2>
 <p>If all your machines can share a path over an NFS or similar protocol, then follow the steps below:</p>
 <h4 id="prerequisites_1">Prerequisites</h4>
@@ -1716,7 +1716,7 @@ $ cd snappydata-&lt;version-number&gt;-bin/
 <p>Ensure that SSH is supported and you have configured all machines to be accessed by <a href="../../reference/misc/passwordless_ssh/">passwordless SSH</a>.</p>
 </li>
 </ul>
-<h3 id="steps-to-set-up-the-cluster">Steps to Set up the Cluster</h3>
+<h3 id="steps-to-setup-the-cluster">Steps to setup the cluster</h3>
 <ol>
 <li>
 <p>Copy the downloaded binaries to the shared folder.</p>
@@ -1728,7 +1728,7 @@ $ cd snappydata-&lt;version-number&gt;.-bin/
 </code></pre>
 </li>
 <li>
-<p>Configure the cluster as described in <a href="../../configuring_cluster/configuring_cluster/">How to Configure SnappyData cluster</a>.</p>
+<p>Configure the cluster as described in <a href="../../configuring_cluster/configuring_cluster/">Configuring the Cluster</a>.</p>
 </li>
 <li>
 <p>After configuring each of the components, run the <code>snappy-start-all.sh</code> script:</p>
@@ -1739,18 +1739,18 @@ $ cd snappydata-&lt;version-number&gt;.-bin/
 <p>This creates a default folder named <strong>work</strong> and stores all SnappyData member's artifacts separately. Each member folder is identified by the name of the node.</p>
 <p>If SSH is not supported then follow the instructions in the <a href="#machine-shared-path">Machines without a Shared Path</a> section.</p>
 <p><a id="machine-shared-path"></a></p>
-<h2 id="machines-without-a-shared-path">Machines without a Shared Path</h2>
+<h2 id="machines-without-a-shared-path">Machines without a shared path</h2>
 <h3 id="prerequisites_2">Prerequisites</h3>
 <ul>
 <li>
 <p>Ensure that the <strong>/etc/hosts</strong> correctly configures the host and IP Address of each SnappyData member machine.</p>
 </li>
 <li>
-<p>On each host machine, create a new member working directory for each SnappyData member, that you want to run the host. <br> The member working directory provides a default location for the log, persistence, and status files for each member, and is also used as the default location for locating the member's configuration files.
+<p>On each host, create a working directory for each SnappyData member, that you want to run on the host. <br> The member working directory provides a default location for the log, persistence, and status files for that member.
 <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.</p>
 </li>
 </ul>
-<h3 id="to-configure-the-cluster">To Configure the Cluster</h3>
+<h3 id="to-configure-the-cluster">To configure the cluster</h3>
 <ol>
 <li>
 <p>Copy and extract the downloaded binaries on each machine</p>
@@ -1761,7 +1761,7 @@ $ cd snappydata-&lt;version-number&gt;.-bin/
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>All configuration parameter are provided as command line arguments rather than reading from a conf file.</p>
+<p>All configuration parameters are provided as command line arguments rather than reading from a conf file.</p>
 </div>
 <p>The example below starts a cluster by individually launching locator, server and lead processes.</p>
 <pre><code class="bash">$ bin/snappy locator start  -dir=/node-a/locator1

@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../">Getting Started</a>
+        <a class="" href="../">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -344,21 +344,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -444,7 +444,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -627,7 +627,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -797,14 +797,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1633,7 +1633,7 @@
     
       
         
-          <li>Getting Started &raquo;</li>
+          <li>Getting Started in 5 minutes or Less &raquo;</li>
         
       
     
@@ -1655,24 +1655,25 @@
               
                 <p><a id="getting-started-using-spark-scala-apis"></a></p>
 <h1 id="using-spark-scala-apis">Using Spark Scala APIs</h1>
-<p><strong>Create a SnappySession</strong>: A SnappySession extends SparkSession so you can mutate data, get much higher performance, etc.</p>
+<p><strong>Create a SnappySession</strong>:</br>
+A SnappySession extends the SparkSession so you can mutate data, get much higher performance, etc.</p>
 <pre><code class="scala">scala&gt; val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 //Import snappy extensions
 scala&gt; import snappy.implicits._
 </code></pre>
 
-<p><strong>Create a small dataset using Spark's APIs</strong>:</p>
+<p><strong>Create a small dataset using Spark's APIs</strong>:</br></p>
 <pre><code class="scala">scala&gt; val ds = Seq((1,&quot;a&quot;), (2, &quot;b&quot;), (3, &quot;c&quot;)).toDS()
 </code></pre>
 
-<p><strong>Define a schema for the table</strong>:</p>
+<p><strong>Define a schema for the table</strong>:</br></p>
 <pre><code class="scala">scala&gt;  import org.apache.spark.sql.types._
 scala&gt;  val tableSchema = StructType(Array(StructField(&quot;CustKey&quot;, IntegerType, false),
           StructField(&quot;CustName&quot;, StringType, false)))
 </code></pre>
 
-<p><strong>Create a column table with a simple schema [String, Int] and default options</strong>:
-For detailed option refer to the <a href="../../programming_guide/#tables-in-snappydata">Row and Column Tables</a> section.</p>
+<p><strong>Create a column table with a simple schema [String, Int] and default options</strong>:</br>
+For detailed option refer to the <a href="../../programming_guide/tables_in_snappydata/#row-and-column-tables">Row and Column Tables</a> section.</p>
 <pre><code class="scala">//Column tables manage data is columnar form and offer superier performance for analytic class queries.
 scala&gt;  snappy.createTable(tableName = &quot;colTable&quot;,
           provider = &quot;column&quot;, // Create a SnappyData Column table
@@ -1682,13 +1683,13 @@ scala&gt;  snappy.createTable(tableName = &quot;colTable&quot;,
 </code></pre>
 
 <p>SnappyData (SnappySession) extends SparkSession, so you can simply use all the Spark's APIs.</p>
-<p><strong>Insert the created DataSet to the column table "colTable"</strong>:</p>
+<p><strong>Insert the created DataSet to the column table "colTable"</strong>:</br></p>
 <pre><code class="scala">scala&gt;  ds.write.insertInto(&quot;colTable&quot;)
 // Check the total row count.
 scala&gt;  snappy.table(&quot;colTable&quot;).count
 </code></pre>
 
-<p><strong>Create a row object using Spark's API and insert the Row to the table</strong>:
+<p><strong>Create a row object using Spark's API and insert the Row to the table</strong>:</br>
 Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.</p>
 <pre><code class="scala">// Insert a new record
 scala&gt;  import org.apache.spark.sql.Row
@@ -1697,8 +1698,8 @@ scala&gt;  snappy.insert(&quot;colTable&quot;, Row(10, &quot;f&quot;))
 scala&gt;  snappy.table(&quot;colTable&quot;).count
 </code></pre>
 
-<p><strong>Create a "row" table with a simple schema [String, Int] and default options</strong>: 
-For detailed option refer to the <a href="../../programming_guide/#tables-in-snappydata">Row and Column Tables</a> section.</p>
+<p><strong>Create a "row" table with a simple schema [String, Int] and default options</strong>: </br>
+For detailed option refer to the <a href="../../programming_guide/tables_in_snappydata/#row-and-column-tables">Row and Column Tables</a> section.</p>
 <pre><code class="scala">//Row formatted tables are better when datasets constantly change or access is selective (like based on a key).
 scala&gt;  snappy.createTable(tableName = &quot;rowTable&quot;,
           provider = &quot;row&quot;,
@@ -1707,19 +1708,19 @@ scala&gt;  snappy.createTable(tableName = &quot;rowTable&quot;,
           allowExisting = false)
 </code></pre>
 
-<p><strong>Insert the created DataSet to the row table "rowTable"</strong>:</p>
+<p><strong>Insert the created DataSet to the row table "rowTable"</strong>:</br></p>
 <pre><code class="scala">scala&gt;  ds.write.insertInto(&quot;rowTable&quot;)
 //Check the row count
 scala&gt;  snappy.table(&quot;rowTable&quot;).count
 </code></pre>
 
-<p><strong>Insert a new record</strong>:</p>
+<p><strong>Insert a new record</strong>:</br></p>
 <pre><code class="scala">scala&gt;  snappy.insert(&quot;rowTable&quot;, Row(4, &quot;d&quot;))
 //Check the row count now
 scala&gt;  snappy.table(&quot;rowTable&quot;).count
 </code></pre>
 
-<p><strong>Change some data in a row table</strong>:</p>
+<p><strong>Change some data in a row table</strong>:</br></p>
 <pre><code class="scala">//Updating a row for customer with custKey = 1
 scala&gt;  snappy.update(tableName = &quot;rowTable&quot;, filterExpr = &quot;CUSTKEY=1&quot;,
                 newColumnValues = Row(&quot;d&quot;), updateColumns = &quot;CUSTNAME&quot;)

@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../">Getting Started</a>
+        <a class="" href="../">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -344,21 +344,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -444,7 +444,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -627,7 +627,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -797,14 +797,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1633,7 +1633,7 @@
     
       
         
-          <li>Getting Started &raquo;</li>
+          <li>Getting Started in 5 minutes or Less &raquo;</li>
         
       
     
@@ -1655,9 +1655,10 @@
               
                 <p><a id="getting-started-with-docker-image"></a></p>
 <h1 id="getting-started-with-docker-image">Getting Started with Docker Image</h1>
-<p>SnappyData comes with a pre-configured Docker image. It has binaries for SnappyData, which enables you to easily try the quick start program and more, with SnappyData.</p>
-<p>This section assumes you have already installed Docker and it is configured properly. Refer to <a href="http://docs.docker.com/installation/">Docker documentation</a> for more details.</p>
-<p><strong>Verify that Docker is installed</strong>: In the command prompt run the command:</p>
+<p>SnappyData comes with a pre-configured Docker image. It has binaries for SnappyData, which enables you to try the quick start program and more, with SnappyData.</p>
+<p>This section assumes you have already installed and configured Docker properly. Refer to <a href="http://docs.docker.com/installation/">Docker documentation</a> for more details.</p>
+<p><strong>Verify that Docker is installed</strong></br> 
+In the command prompt run the command:</p>
 <pre><code class="scala">$ docker run hello-world
 
 </code></pre>
@@ -1666,13 +1667,14 @@
 <p class="admonition-title">Note</p>
 <p>Ensure that the Docker containers have access to at least 4GB of RAM on your machine.</p>
 </div>
-<p><strong>Get the Docker Image:</strong> In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.</p>
+<p><strong>Get the Docker image</strong></br>
+In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark shell.</p>
 <pre><code class="scala">$  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 </code></pre>
 
-<p>It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
-Once you are inside the Spark Shell with the "$ scala&gt;" prompt, you can follow the steps explained <a href="#Start_quickStart">here</a>.</p>
-<p>For more details about SnappyData docker image see <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker">Snappy Cloud Tools</a>.</p>
+<p>It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time. </br></p>
+<p>Once you have launched the Spark shell, in the <code>$ scala&gt;</code> prompt, follow the steps explained <a href="../using_spark_scala_apis/">here</a>.</br></p>
+<p>For more details about SnappyData Docker image see <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker">Snappy Cloud Tools</a>.</p>
               
             </div>
           </div>
@@ -1683,7 +1685,7 @@ Once you are inside the Spark Shell with the "$ scala&gt;" prompt, you can follo
         <a href="../using_spark_scala_apis/" class="btn btn-neutral float-right" title="Using Spark Scala APIs">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../getting_started_on_aws/" class="btn btn-neutral" title="Getting Started on AWS"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../getting_started_on_aws/" class="btn btn-neutral" title="Getting Started with Amazon Web Services"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   

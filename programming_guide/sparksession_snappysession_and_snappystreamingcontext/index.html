@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/">Getting Started</a>
+        <a class="" href="../../quickstart/">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -337,21 +337,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -437,7 +437,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -633,7 +633,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -803,14 +803,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1677,7 +1677,7 @@ SparkSession object can be created by using SparkSession.Builder used as below.<
 </code></pre>
 
 <h2 id="create-a-snappysession">Create a SnappySession</h2>
-<p><a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a> is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's <a href="http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.sql.SparkSession">SparkSession</a> to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.</p>
+<p><a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a> is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's <a href="http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.SparkSession">SparkSession</a> to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.</p>
 <p>To create a SnappySession:</p>
 <p><strong>Scala</strong></p>
 <pre><code class="scala"> val spark: SparkSession = SparkSession
@@ -1711,7 +1711,7 @@ SparkSession object can be created by using SparkSession.Builder used as below.<
 
 <h2 id="create-a-snappystreamingcontext">Create a SnappyStreamingContext</h2>
 <p><a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a> is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
-<a href="http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext">Streaming Context</a>.</p>
+<a href="http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.streaming.StreamingContext">Streaming Context</a>.</p>
 <p>To create a SnappyStreamingContext:</p>
 <p><strong>Scala</strong></p>
 <pre><code class="scala"> val spark: SparkSession = SparkSession

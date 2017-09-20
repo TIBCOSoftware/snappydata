@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to Connect to the Cluster from External Clients - SnappyData Documentation</title>
+  <title>How to Connect to the Cluster from External Network - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -29,7 +29,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "How to Connect to the Cluster from External Clients";
+    var mkdocs_page_name = "How to Connect to the Cluster from External Network";
     var mkdocs_page_input_path = "howto/connect_to_the_cluster_from_external_clients.md";
     var mkdocs_page_url = "/howto/connect_to_the_cluster_from_external_clients/";
   </script>
@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/">Getting Started</a>
+        <a class="" href="../../quickstart/">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -337,11 +337,11 @@
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">How to Connect to the Cluster from External Clients</a>
+        <a class="current" href="./">How to Connect to the Cluster from External Network</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-connect-to-the-cluster-from-an-external-network">How to Connect to the Cluster from an External Network</a></li>
+                <li class="toctree-l3"><a href="#how-to-connect-to-the-cluster-from-external-network">How to Connect to the Cluster from External Network</a></li>
                 
             
             </ul>
@@ -351,14 +351,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -444,7 +444,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -627,7 +627,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -797,14 +797,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1637,7 +1637,7 @@
         
       
     
-    <li>How to Connect to the Cluster from External Clients</li>
+    <li>How to Connect to the Cluster from External Network</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1654,14 +1654,14 @@
             <div class="section">
               
                 <p><a id="howto-external-client"></a></p>
-<h1 id="how-to-connect-to-the-cluster-from-an-external-network">How to Connect to the Cluster from an External Network</h1>
+<h1 id="how-to-connect-to-the-cluster-from-external-network">How to Connect to the Cluster from External Network</h1>
 <p>You can also connect to the SnappyData cluster from a different network as a client (DbVisualizer, SQuirreL SQL etc.). </br>For example, to connect to a cluster on AWS from your local machine set the following properties in the <em>conf/locators</em> and <em>conf/servers</em> files:</p>
 <ul>
 <li>
-<p><code>client-bind-address</code>: Set the hostname or IP address to which the locator or server binds. </p>
+<p><code>client-bind-address</code>: Set the hostname or IP address to which the locator or server listens on, for JDBC/ODBC/thrift client connections.</p>
 </li>
 <li>
-<p><code>hostname-for-clients</code>: Set the IP address or host name that this server/locator listens on, for client connections. Setting a specific <code>hostname-for-clients</code> will cause locators to use this value when telling clients how to connect to this server. The default value causes the <code>bind-address</code> to be given to clients.</p>
+<p><code>hostname-for-clients</code>: Set the IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection. The default value causes the <code>client-bind-address</code> to be given to clients. </br> This value can be different from <code>client-bind-address</code> for cases where the servers/locators are behind a NAT firewall (AWS for example) where <code>client-bind-address</code> needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases, this is handled by hostname translation itself, that is, the hostname used in <code>client-bind-address</code> resolves to internal IP address from inside but to public IP address from outside, but for other cases, this property is required.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>By default, the locator or server binds to localhost. You may need to set either or both these properties to enable connection from external clients. If not set, external client connections may fail.</p>
@@ -1682,7 +1682,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../import_from_hive_table/" class="btn btn-neutral float-right" title="How to Import Data from Hive Table into Snappydata Table">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../import_from_hive_table/" class="btn btn-neutral float-right" title="How to Import Data from Hive Table into SnappyData Table">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../connect_using_odbc_driver/" class="btn btn-neutral" title="How to Connect using ODBC Driver"><span class="icon icon-circle-arrow-left"></span> Previous</a>

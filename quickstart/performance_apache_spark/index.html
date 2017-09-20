@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../">Getting Started</a>
+        <a class="" href="../">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -123,7 +123,9 @@
             
                 <li class="toctree-l3"><a href="#snappydata-performance-16x-20x-faster-than-apache-spark">SnappyData Performance: 16x-20x faster than Apache Spark</a></li>
                 
-                    <li><a class="toctree-l4" href="#to-get-the-performance-numbers">To get the Performance Numbers</a></li>
+                    <li><a class="toctree-l4" href="#start-the-spark-shell">Start the Spark shell</a></li>
+                
+                    <li><a class="toctree-l4" href="#to-get-the-performance-numbers">To get the performance numbers</a></li>
                 
             
             </ul>
@@ -346,21 +348,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -446,7 +448,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -629,7 +631,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -799,14 +801,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1635,7 +1637,7 @@
     
       
         
-          <li>Getting Started &raquo;</li>
+          <li>Getting Started in 5 minutes or Less &raquo;</li>
         
       
     
@@ -1657,20 +1659,22 @@
               
                 <p><a id="start_benchmark"></a></p>
 <h1 id="snappydata-performance-16x-20x-faster-than-apache-spark">SnappyData Performance: 16x-20x faster than Apache Spark</h1>
-<p>Here you are walked through a simple benchmark to compare SnappyData to Spark 2.1 performance.
+<p>Here you are walked through a simple benchmark to compare SnappyData's performance to Spark 2.1.1.
 Millions of rows are loaded into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. </p>
 <p>A simple analytic query that scans a 100 million-row column table shows SnappyData outperforming Apache Spark by 16-20X when both products have all the data in memory.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>It is recommended that you should have at least 4GB of RAM reserved for this test. </p>
 </div>
-<p><strong>Start the Spark Shell using any of the options mentioned below:</strong></p>
-<p><strong>If you are using your own Spark installation(2.0.0, 2.0.1 or 2.0.2):</strong></p>
-<pre><code class="bash"># Create a directory for SnappyData artifacts
+<h2 id="start-the-spark-shell">Start the Spark shell</h2>
+<p>Use any of the options mentioned below to start the Spark shell:</p>
+<p><strong>If you are using your own Spark distribution that is compatible with version 2.1.1:</strong></p>
+<pre><code>```bash
+# Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11&quot; --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+```
 </code></pre>
-
 <p><strong>If you have downloaded SnappyData</strong>:</p>
 <pre><code class="bash"># Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
@@ -1681,8 +1685,8 @@ $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-di
 <pre><code class="bash">$ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
 </code></pre>
 
-<h2 id="to-get-the-performance-numbers">To get the Performance Numbers</h2>
-<p>Ensure that you are in a Spark Shell, and then follow the instruction below to get the performance numbers.</p>
+<h2 id="to-get-the-performance-numbers">To get the performance numbers</h2>
+<p>Ensure that you are in a Spark shell, and then follow the instructions below to get the performance numbers.</p>
 <p><strong>Define a function "benchmark"</strong>, which tells us the average time to run queries after doing the initial warm-ups.</p>
 <pre><code class="scala">scala&gt;  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: =&gt; Unit) {
           for (i &lt;- 1 to warmups) {
@@ -1717,7 +1721,7 @@ scala&gt;  System.gc()
 scala&gt;  System.runFinalization()
 </code></pre>
 
-<p><strong>Create a SnappyContex</strong>:</p>
+<p><strong>Create a SnappyContext</strong>:</p>
 <pre><code class="scala">scala&gt;  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 </code></pre>
 
@@ -1743,7 +1747,7 @@ scala&gt;  snappy.sql(&quot;create table snappyTable (id bigint not null, sym va
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This benchmark code is tested in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times faster than Spark 2.0.2 .</p>
+<p>This benchmark code is tested on a system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. Also, in an AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance SnappyData is approximately 16 to 18 times faster than Spark 2.1.1.</p>
 </div>
               
             </div>

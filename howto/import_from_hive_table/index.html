@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to Import Data from Hive Table into Snappydata Table - SnappyData Documentation</title>
+  <title>How to Import Data from Hive Table into SnappyData Table - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -29,7 +29,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "How to Import Data from Hive Table into Snappydata Table";
+    var mkdocs_page_name = "How to Import Data from Hive Table into SnappyData Table";
     var mkdocs_page_input_path = "howto/import_from_hive_table.md";
     var mkdocs_page_url = "/howto/import_from_hive_table/";
   </script>
@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/">Getting Started</a>
+        <a class="" href="../../quickstart/">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -337,18 +337,18 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="current" href="./">How to Import Data from Hive Table into SnappyData Table</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-import-data-from-hive-table-into-snappydata-table">How to Import Data from Hive Table into Snappydata Table</a></li>
+                <li class="toctree-l3"><a href="#how-to-import-data-from-hive-table-into-snappydata-table">How to Import Data from Hive Table into SnappyData Table</a></li>
                 
             
             </ul>
@@ -358,7 +358,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -444,7 +444,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -627,7 +627,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -797,14 +797,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1637,7 +1637,7 @@
         
       
     
-    <li>How to Import Data from Hive Table into Snappydata Table</li>
+    <li>How to Import Data from Hive Table into SnappyData Table</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1653,9 +1653,9 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="how-to-import-data-from-hive-table-into-snappydata-table">How to Import Data from Hive Table into Snappydata Table</h1>
+                <h1 id="how-to-import-data-from-hive-table-into-snappydata-table">How to Import Data from Hive Table into SnappyData Table</h1>
 <p><strong>Option 1</strong> </p>
-<p>If Hive tables have the data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into SnappyData tables.</p>
+<p>If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into SnappyData tables.</p>
 <p>For example,</p>
 <pre><code>create external table Hive_External_Table_Name using parquet options(path path-to-parquet-or-orc)
 create table Snappy_Table_Name using column as (select * from Hive_External_Table_Name)
@@ -1663,7 +1663,7 @@ create table Snappy_Table_Name using column as (select * from Hive_External_Tabl
 
 <p>For more information on creating an external table, refer to <a href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a></p>
 <p><strong>Option 2</strong></p>
-<p>Take the RDD[Row] from Dataset of Hive Table and insert it into column table</p>
+<p>Take the RDD[Row] from Dataset of Hive Table and insert it into column table.</p>
 <p>For example,</p>
 <pre><code>val ds = spark.table(&quot;Hive_Table_Name&quot;)
 val df = snappy.createDataFrame(ds.rdd, ds.schema)
@@ -1678,10 +1678,10 @@ df.write.format(&quot;column&quot;).saveAsTable(&quot;Snappy_Table_Name&quot;)
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../export_hdfs/" class="btn btn-neutral float-right" title="How to Export and Restore Table Data to HDFS">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../export_hdfs/" class="btn btn-neutral float-right" title="How to Export and Restore Table Data using HDFS">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../connect_to_the_cluster_from_external_clients/" class="btn btn-neutral" title="How to Connect to the Cluster from External Clients"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../connect_to_the_cluster_from_external_clients/" class="btn btn-neutral" title="How to Connect to the Cluster from External Network"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   

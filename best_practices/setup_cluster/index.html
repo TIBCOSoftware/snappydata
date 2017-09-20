@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/">Getting Started</a>
+        <a class="" href="../../quickstart/">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -337,21 +337,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -437,7 +437,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -605,7 +605,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#tuning-for-concurrency-and-computations">Tuning for Concurrency and Computations</a></li>
+                <li class="toctree-l3"><a href="#tuning-for-concurrency-and-computation">Tuning for Concurrency and Computation</a></li>
                 
                     <li><a class="toctree-l4" href="#handling-low-latency-vs-analytic-jobs">Handling Low Latency vs Analytic Jobs</a></li>
                 
@@ -633,7 +633,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../design_principles/">Designing Principles</a>
+        <a class="" href="../design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -803,14 +803,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1659,7 +1659,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="tuning-for-concurrency-and-computations">Tuning for Concurrency and Computations</h1>
+                <h1 id="tuning-for-concurrency-and-computation">Tuning for Concurrency and Computation</h1>
 <h2 id="handling-low-latency-vs-analytic-jobs">Handling Low Latency vs Analytic Jobs</h2>
 <p>Unlike Spark, SnappyData can distinguish requests that are cheap (low latency) vs requests that require a lot of computational resources (high latency). This is done by a resource scheduler that can balance the needs of many contending users/threads.</p>
 <p>For instance, when a SQL client executes a ‘fetch by primary key’ query, there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and the response is directly sent to the requesting client (probably within a few milliseconds). </br>

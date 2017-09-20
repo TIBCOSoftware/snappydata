@@ -70,14 +70,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/">Getting Started</a>
+        <a class="" href="../../quickstart/">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Getting Started</span></li>
+    <li><span>Getting Started in 5 minutes or Less</span></li>
 
         
             
@@ -96,7 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started on AWS</a>
+        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
@@ -308,6 +308,8 @@
             
                 <li class="toctree-l3"><a href="#how-to-use-stream-processing-with-snappydata">How to Use Stream Processing with SnappyData</a></li>
                 
+                    <li><a class="toctree-l4" href="#sparks-structured-streaming-with-snappydata">Spark's structured streaming with SnappyData</a></li>
+                
             
             </ul>
         
@@ -344,21 +346,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Clients</a>
+        <a class="" href="../connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../import_from_hive_table/">How to Import Data from Hive Table into Snappydata Table</a>
+        <a class="" href="../import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../export_hdfs/">How to Export and Restore Table Data to HDFS</a>
+        <a class="" href="../export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
@@ -444,7 +446,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/property_description/">SnappyData Properties</a>
+        <a class="" href="../../configuring_cluster/property_description/">List of Properties</a>
         
     </li>
 
@@ -627,7 +629,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Designing Principles</a>
+        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
@@ -797,14 +799,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../security/security/">Security</a>
+        <a class="" href="../../security/security/">Managing Security</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Security</span></li>
+    <li><span>Managing Security</span></li>
 
         
             
@@ -1656,9 +1658,9 @@
                 <p><a id="howto-streams"></a></p>
 <h1 id="how-to-use-stream-processing-with-snappydata">How to Use Stream Processing with SnappyData</h1>
 <p>SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to the <a href="../../programming_guide/#stream-processing-using-sql">documentation</a>.</p>
-<p><strong>Code Example</strong>: 
+<p><strong>Code Example </strong>: </br>
 Code example for streaming is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala">StreamingExample.scala</a>. The code snippets below show how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.</p>
-<p><strong>First get a SnappySession and a SnappyStreamingContext</strong>: 
+<p><strong>First get a SnappySession and a SnappyStreamingContext</strong>: </br>
 Here SnappyStreamingContext is initialized in a batch duration of one second.</p>
 <pre><code class="scala">    val spark: SparkSession = SparkSession
         .builder
@@ -1746,6 +1748,11 @@ Here SnappyStreamingContext is initialized in a batch duration of one second.</p
 <pre><code class="scala">snsc.snappySession.sql(&quot;select publisher, bidCount from publisher_bid_counts&quot;).show()
 
 </code></pre>
+
+<h2 id="sparks-structured-streaming-with-snappydata">Spark's structured streaming with SnappyData</h2>
+<p>Using SnappyData you can run streaming queries on IoT Device data received from a data server listening on a TCP socket.</p>
+<p><strong>Code Example</strong>:</br></p>
+<p>The complete source code of the example (<a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingExample.scala">StructuredStreamingExample.scala</a> shows the usage of structured streaming with SnappyData.</p>
               
             </div>
           </div>
