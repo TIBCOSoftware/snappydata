@@ -34,7 +34,7 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.CachedPlanHelperExec
-import org.apache.spark.sql.sources.{Delete, PutIntoTable, Update}
+import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -334,7 +334,7 @@ class SnappyParser(session: SnappySession)
 
   final def namedExpression: Rule1[Expression] = rule {
     expression ~ (
-        AS ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
+        AS.? ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         strictIdentifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
@@ -963,7 +963,7 @@ class SnappyParser(session: SnappySession)
   protected final def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
     TABLE.? ~ relationFactor ~ subSelectQuery ~> ((o: Boolean, r: LogicalPlan,
-        s: LogicalPlan) => InsertIntoTable(r, Map.empty[String,
+        s: LogicalPlan) => new Insert(r, Map.empty[String,
         Option[String]], s, OverwriteOptions(o), ifNotExists = false))
   }
 

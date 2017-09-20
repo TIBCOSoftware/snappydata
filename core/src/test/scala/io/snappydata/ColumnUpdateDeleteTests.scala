@@ -271,6 +271,10 @@ object ColumnUpdateDeleteTests extends Assertions {
     assert(res.length === 1)
     assert(res(0).getInt(0) === 73)
     assert(res(0).getString(1) === "addr73")
+
+    // lastly delete everything and check there is nothing in table
+    session.sql("delete from updateTable")
+    assert(session.sql("select * from updateTable").collect().length === 0)
   }
 
   def testSNAP1925(session: SnappySession): Unit = {

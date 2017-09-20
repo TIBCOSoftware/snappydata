@@ -25,8 +25,10 @@ import scala.collection.mutable
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Property
 
 import org.apache.spark.Partition
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, SortOrder}
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -120,7 +122,8 @@ object StoreUtils {
   }
 
   private[sql] def getBucketPreferredLocations(region: PartitionedRegion,
-      bucketId: Int, forWrite: Boolean): Seq[String] = {
+      bucketId: Int, forWrite: Boolean,
+      preferPrimaries: Boolean = false): Seq[String] = {
     if (forWrite) {
       val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).toString
       SnappyContext.getBlockId(primary) match {
@@ -129,10 +132,25 @@ object StoreUtils {
       }
     } else {
       val distMembers = getBucketOwnersForRead(bucketId, region)
-      val members = new mutable.ArrayBuffer[String](2)
+      var members = new mutable.ArrayBuffer[String](2)
+      var prependPrimary = preferPrimaries
+      val primary = if (preferPrimaries) {
+        region.getOrCreateNodeForBucketWrite(bucketId, null)
+      } else null
       distMembers.foreach { m =>
         SnappyContext.getBlockId(m.toString) match {
-          case Some(b) => members += Utils.getHostExecutorId(b.blockId)
+          case Some(b) =>
+            if (prependPrimary && m.equals(primary)) {
+              // add primary for "preferPrimaries" at the start
+              if (members.isEmpty) {
+                members += Utils.getHostExecutorId(b.blockId)
+              } else {
+                members = Utils.getHostExecutorId(b.blockId) +: members
+              }
+              prependPrimary = false
+            } else {
+              members += Utils.getHostExecutorId(b.blockId)
+            }
           case None =>
         }
       }
@@ -158,13 +176,16 @@ object StoreUtils {
       linkBucketsToPartitions: Boolean): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
+    val preferPrimaries = Property.PreferPrimariesInQuery.get(
+      session.sessionState.conf)
     if (!linkBucketsToPartitions && callbacks != null) {
-      allocateBucketsToPartitions(session, region)
+      allocateBucketsToPartitions(session, region, preferPrimaries)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
 
       (0 until numPartitions).map { p =>
-        val prefNodes = getBucketPreferredLocations(region, p, forWrite = false)
+        val prefNodes = getBucketPreferredLocations(region, p,
+          forWrite = false, preferPrimaries)
         val buckets = new mutable.ArrayBuffer[Int](1)
         buckets += p
         new MultiBucketExecutorPartition(p, buckets, numPartitions, prefNodes)
@@ -192,14 +213,15 @@ object StoreUtils {
   }
 
   private def allocateBucketsToPartitions(session: SnappySession,
-      region: PartitionedRegion): Array[Partition] = {
+      region: PartitionedRegion, preferPrimaries: Boolean): Array[Partition] = {
 
     val numTotalBuckets = region.getTotalNumberOfBuckets
     val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
         (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])]()
     val adviser = region.getRegionAdvisor
     for (p <- 0 until numTotalBuckets) {
-      var prefNode = adviser.getPreferredInitializedNode(p, true)
+      var prefNode = if (preferPrimaries) region.getOrCreateNodeForBucketWrite(p, null)
+      else adviser.getPreferredInitializedNode(p, true)
       if (prefNode == null) {
         prefNode = region.getOrCreateNodeForInitializedBucketRead(p, true)
       }
@@ -469,6 +491,13 @@ object StoreUtils {
     parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)
     }).getOrElse(Seq.empty[String])
+  }
+
+  def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {
+    // this always sets ascending order though no particular ordering is required rather
+    // just grouping on batchId column, but does not matter so table scan should also
+    // set the same to not introduce any extra sorting for simple updates/deletes
+    SortOrder(batchIdColumn, Ascending)
   }
 
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {

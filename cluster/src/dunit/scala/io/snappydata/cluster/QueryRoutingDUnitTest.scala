@@ -21,23 +21,29 @@ import java.io.File
 import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
 import com.gemstone.gemfire.distributed.DistributedMember
-
 import scala.collection.mutable
+import scala.collection.JavaConverters._
+
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant._
+import io.snappydata.Property
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import junit.framework.TestCase
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, TPCHUtils}
+import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, SnappySession, TPCHUtils}
 import org.apache.spark.util.Benchmark
 
 /**
@@ -179,11 +185,15 @@ class QueryRoutingDUnitTest(val s: String)
     }
     assert(cnt == 5)
 
-    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR")
+    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR where spark_partition_id() > -1")
     assert(deleted == 5)
     s.execute("select col1 from TEST.ColumnTableQR order by col1")
     assert(!s.getResultSet.next())
-
+    createTableAndInsertData()
+    val deleted2 = s.executeUpdate("delete from TEST.ColumnTableQR")
+    assert(deleted2 == 5)
+    s.execute("select * from TEST.ColumnTableQR")
+    assert(!s.getResultSet.next())
     conn.close()
   }
 
@@ -798,6 +808,54 @@ class QueryRoutingDUnitTest(val s: String)
 
     // (1 to 5).foreach(d => query())
     limitQuery(serverHostPort, tableName)
+  }
+
+  def testPrimaryPreferenceInRouting(): Unit = {
+    val session = new SnappySession(sc)
+    Property.ColumnBatchSize.set(session.sessionState.conf, "10k")
+    Property.ForceLinkPartitionsToBuckets.set(session.sessionState.conf, true)
+    Property.PreferPrimariesInQuery.set(session.sessionState.conf, true)
+
+    val table = "UPDATETABLE"
+    val df = session.range(100000).selectExpr("id", "concat('addr', cast(id as string)) addr")
+    df.write.mode(SaveMode.Overwrite).format("column").option("redundancy", "1")
+        .saveAsTable(table)
+
+    def assertPrimaries(query: String): Unit = {
+
+      def hostExecutorId(m: InternalDistributedMember): String =
+        Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
+
+      val rdd = session.sql(query).queryExecution.executedPlan.execute()
+      val region = Misc.getRegionForTable(s"APP.$table", true)
+          .asInstanceOf[PartitionedRegion]
+      val adviser = region.getRegionAdvisor
+      rdd.partitions.foreach { split =>
+        val preferredLocations = rdd.preferredLocations(split)
+        val primary = adviser.getPrimaryMemberForBucket(split.index)
+        val owners = adviser.getBucketOwners(split.index)
+
+        assert(preferredLocations.head == hostExecutorId(primary))
+        assert(owners.size() > 1)
+        assert(owners.asScala.map(hostExecutorId) == preferredLocations.toSet)
+      }
+    }
+
+    assertPrimaries(s"select * from $table where id < 1000")
+    assertPrimaries(s"select * from $table")
+
+    // also for partitioned tables
+    val schema = session.table(table).schema
+    session.dropTable(table)
+
+    session.createTable(table, "column", schema,
+      Map("partition_by" -> "id", "redundancy" -> "1"))
+    df.write.insertInto(table)
+
+    assertPrimaries(s"select * from $table where id < 1000")
+    assertPrimaries(s"select * from $table")
+
+    session.dropTable(table)
   }
 
   def limitInsertRows(numRows: Int, serverHostPort: Int, tableName: String): Unit = {

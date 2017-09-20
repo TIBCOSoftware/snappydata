@@ -22,7 +22,8 @@ import com.gemstone.gemfire.SystemFailure
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
+import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.internal.CodeGenerationException
 
 /**
@@ -32,6 +33,10 @@ import org.apache.spark.sql.internal.CodeGenerationException
 case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   override def output: Seq[Attribute] = child.output
+
+  override def outputPartitioning: Partitioning = child.outputPartitioning
+
+  override def outputOrdering: Seq[SortOrder] = child.outputOrdering
 
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
     try {

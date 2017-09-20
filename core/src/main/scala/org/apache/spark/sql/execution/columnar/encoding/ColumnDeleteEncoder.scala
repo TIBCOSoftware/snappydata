@@ -48,6 +48,8 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
 
   override protected[sql] def getNumNullWords: Int = 0
 
+  override protected[sql] def getNullWords: AnyRef = null
+
   override protected[sql] def initializeNulls(initSize: Int): Int =
     throw new UnsupportedOperationException(s"initializeNulls for $toString")
 
