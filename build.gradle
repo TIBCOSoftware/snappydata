@@ -885,6 +885,7 @@ ospackage {
 
 buildRpm {
   requires('glibc')
+  requires('bash')
   requires('curl')
   dependsOn ':packageVSD'
   if (rootProject.hasProperty('hadoop-provided')) {
@@ -896,6 +897,7 @@ buildRpm {
 
 buildDeb {
   requires('libc6')
+  requires('bash')
   requires('curl')
   recommends('java8-sdk')
   dependsOn ':packageVSD'
