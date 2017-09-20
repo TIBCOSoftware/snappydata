@@ -871,7 +871,8 @@ ospackage {
   os = LINUX
 
   maintainer = vendorName
-  packageDescription = productName + ', the Spark Database. Stream - Transact - Analyze - Predict all in one cluster'
+  packageDescription = productName +
+      ', the Spark Database. Stream - Transact - Analyze - Predict all in one cluster'
   summary = productName + ' Installer'
 
   user = 'snappydata'
