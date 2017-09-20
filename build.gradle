@@ -42,7 +42,7 @@ buildscript {
     classpath 'io.snappydata:gradle-scalatest:0.13.1'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
     classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
-    classpath "com.netflix.nebula:gradle-ospackage-plugin:4.4.0"
+    classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.4.+'
   }
 }
 
@@ -101,6 +101,7 @@ allprojects {
 
   ext {
     productName = 'SnappyData'
+    vendorName = 'SnappyData, Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
@@ -144,7 +145,7 @@ allprojects {
     buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
   }
   if (rootProject.hasProperty('enablePublish')) {
-    buildIdPrefix = 'SnappyData, Inc. '
+    buildIdPrefix = "${vendorName} "
   }
 
   ext {
@@ -501,7 +502,7 @@ subprojects {
         'Created-By'        : createdBy,
         'Title'             : rootProject.name,
         'Version'           : version,
-        'Vendor'            : 'SnappyData, Inc.'
+        'Vendor'            : vendorName
       )
     }
   }
@@ -866,13 +867,10 @@ distributions {
 ospackage {
   packageName = distributions.main.baseName
   version = version
-
-//  release = new Date().format('yyyyMMdd-HHmmss')
-//  arch = NOARCH
-
+  release = '1'
   os = LINUX
 
-  maintainer = 'SnappyData, Inc.'
+  maintainer = vendorName
   packageDescription = productName + ', the Spark Database. Stream - Transact - Analyze - Predict all in one cluster'
   summary = productName + ' Installer'
 
@@ -880,26 +878,31 @@ ospackage {
   permissionGroup = 'snappydata'
 
   from(snappyProductDir) {
-//    fileMode = 0664
     into '/opt/' + distributions.main.baseName
   }
 }
 
 buildRpm {
   requires('glibc')
+  requires('curl')
   dependsOn ':packageVSD'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without_hadoop'
   }
+
+  preInstall file('release/preInstallRpm.sh')
 }
 
 buildDeb {
   requires('libc6')
+  requires('curl')
   recommends('java8-sdk')
   dependsOn ':packageVSD'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop'
   }
+
+  preInstall file('release/preInstallDeb.sh')
 }
 
 distTar {
