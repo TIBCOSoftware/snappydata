@@ -12,10 +12,10 @@ You can run the examples in any of the following ways:
 
 * **In the Local Mode**: By using `bin/run-example` script (to run Scala examples) or by using `bin/spark-submit` script (to run Python examples). The examples run colocated with Spark+SnappyData Store in the same JVM. 
 
-* **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
+* **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](howto/run_spark_job_inside_cluster.md) section for details on how to run a job.
 
 !!! Note: 
-	SnappyData also supports Java API. Refer to the [documentation](programming_guide.md#building-snappy-applications-using-spark-api) for more details on Java API.
+	SnappyData also supports Java API. Refer to the [documentation](./programming_guide/building_snappydata_applications_using_spark_api.md) for more details on Java API.
 
 The following topics are covered in this section:
 

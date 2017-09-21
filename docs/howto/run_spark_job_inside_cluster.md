@@ -76,4 +76,4 @@ In the above comand, **--lead** option specifies the host name of the lead node 
 bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 ```
 
-Refer to the [Building SnappyData applications using Spark API](../programming_guide.md#building-snappydata-applications-using-spark-api) section of the documentation for more details.
+Refer to the [Building SnappyData applications using Spark API](../programming_guide/building_snappydata_applications_using_spark_api.md) section of the documentation for more details.

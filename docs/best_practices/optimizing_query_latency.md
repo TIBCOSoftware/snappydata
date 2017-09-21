@@ -79,7 +79,7 @@ REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md) 
 
 A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table data. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage.
 
-For an example on the REDUNDANCY clause refer to [Tables in SnappyData](../programming_guide.md#tables-in-snappydata).
+For an example on the REDUNDANCY clause refer to [Tables in SnappyData](../programming_guide/tables_in_snappydata.md).
 
 <a id="overflow"></a>
 ## Overflow Configuration

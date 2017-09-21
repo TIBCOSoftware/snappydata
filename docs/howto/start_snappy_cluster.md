@@ -2,7 +2,7 @@
 # How to Start a SnappyData Cluster
 ## Start SnappyData Cluster on a Single Machine
 
-If you have [downloaded and extracted](../install.md#install-on-premise) the SnappyData product distribution, navigate to the SnappyData product root directory.
+If you have [downloaded and extracted](../install/install_on_premise.md) the SnappyData product distribution, navigate to the SnappyData product root directory.
 
 **Start the Cluster**: Run the `sbin/snappy-start-all.sh` script to start SnappyData cluster on your single machine using default settings. This starts one lead node, one locator, and one data server.
 
@@ -44,5 +44,5 @@ To start the cluster on multiple hosts:
 3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
 
 !!! Note: 
-	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](../install.md#install-on-premise) and [cluster configuration](../configuring_cluster/configuring_cluster.md).
+	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](../install/install_on_premise.md) and [cluster configuration](../configuring_cluster/configuring_cluster.md).
 

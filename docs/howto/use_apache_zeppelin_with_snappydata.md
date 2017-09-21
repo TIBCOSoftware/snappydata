@@ -2,7 +2,7 @@
 # How to Use Apache Zeppelin with SnappyData
 
 ## Step 1: Download, Install and Configure SnappyData
-1. [Download and Install SnappyData](../install.md#download-snappydata) </br>
+1. [Download and Install SnappyData](../install/install_on_premise.md#download-snappydata) </br>
  The table below lists the version of the SnappyData Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Release.
 	
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|

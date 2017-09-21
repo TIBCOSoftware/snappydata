@@ -3,7 +3,7 @@
 
 SnappyData comes with a Smart Connector that enables Spark applications to work with the SnappyData cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.0.x). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is no different than how Spark applications today work with stores like Cassandra, Redis, etc.
 
-For more information on the various modes, refer to the [SnappyData Smart Connector](../deployment.md#snappydata-smart-connector-mode) section of the documentation.
+For more information on the various modes, refer to the [SnappyData Smart Connector](../affinity_modes/connector_mode.md) section of the documentation.
 
 **Code Example:**
 The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)

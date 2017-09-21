@@ -3,7 +3,7 @@
 
 Column tables organize and manage data in a columnar form such that modern day CPUs can traverse and run computations like a sum or an average fast (as the values are available in contiguous memory).
 
-Refer to the [Row and column tables](../programming_guide.md#tables-in-snappydata) documentation for the complete list of attributes for column tables.
+Refer to the [Row and column tables](../programming_guide/tables_in_snappydata.md) documentation for the complete list of attributes for column tables.
 
 Full source code, for example, to create and perform operations on column table can be found in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala)
 
