@@ -38,11 +38,12 @@ function usage {
   echo
 }
 
-SCRIPT_DIR="`dirname "$0"`"
-SCRIPT_DIR="`cd "$SCRIPT_DIR" && pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
 
 if [ -z "${SNAPPY_HOME}" ]; then
-  export SNAPPY_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+  export SNAPPY_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
 fi
 
 while [ "$1" != "" ]; do
@@ -144,7 +145,6 @@ function check_configs {
     echo GET_EVERYTHING=${GET_EVERYTHING}
     echo START TIME = "${START_TIME}"
     echo END   TIME = "${END_TIME}"
-    echo SCRIPT_DIR = "${SCRIPT_DIR}"
     echo SNAPPY_HOME = "${SNAPPY_HOME}"
     echo OUTPUT_DIR = "${OUTPUT_DIR}"
     echo TAR_FILE = "${TAR_FILE}"
