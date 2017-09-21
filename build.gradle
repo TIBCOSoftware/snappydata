@@ -879,11 +879,9 @@ ospackage {
   permissionGroup = 'snappydata'
 
   from(snappyProductDir) {
-    createDirectoryEntry = true
     into '/opt/' + packageName
   }
   from('release') {
-    createDirectoryEntry = true
     include 'snappyProfile.*'
     into "/opt/${packageName}/profile.d"
     rename { fileName -> fileName.replace('Profile', 'data') }
