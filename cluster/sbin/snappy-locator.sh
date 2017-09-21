@@ -22,14 +22,16 @@
 
 usage="Usage: snappy-locator.sh (start|stop|status) -dir=directory"
 
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
 
 mode=$1
 shift
 
-. "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
 
 . "$SNAPPY_HOME/bin/load-spark-env.sh"

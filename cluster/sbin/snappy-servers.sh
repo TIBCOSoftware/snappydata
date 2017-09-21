@@ -18,11 +18,14 @@
 #
 
 # Starts a server instance on each machine specified in the conf/servers file.
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
 
-. "$sbin/spark-config.sh"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
+
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
 . "$SNAPPY_HOME/bin/load-spark-env.sh"
 . "$SNAPPY_HOME/bin/load-snappy-env.sh"

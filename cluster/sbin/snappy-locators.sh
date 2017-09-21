@@ -19,11 +19,13 @@
 
 # Starts a locator instance on each machine specified in the conf/locators file.
 
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
 
-. "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
 
 . "$SNAPPY_HOME/bin/load-spark-env.sh"

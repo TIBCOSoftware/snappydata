@@ -42,6 +42,7 @@ buildscript {
     classpath 'io.snappydata:gradle-scalatest:0.13.1'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
     classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
+    classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.4.+'
   }
 }
 
@@ -65,6 +66,8 @@ allprojects {
   apply plugin: 'idea'
   apply plugin: 'eclipse'
   apply plugin: "build-time-tracker"
+  apply plugin: "nebula.ospackage"
+  apply plugin: 'nebula.ospackage-base'
 
   group = 'io.snappydata'
   version = '1.0.0'
@@ -98,6 +101,7 @@ allprojects {
 
   ext {
     productName = 'SnappyData'
+    vendorName = 'SnappyData, Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
@@ -141,7 +145,7 @@ allprojects {
     buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
   }
   if (rootProject.hasProperty('enablePublish')) {
-    buildIdPrefix = 'SnappyData, Inc. '
+    buildIdPrefix = "${vendorName} "
   }
 
   ext {
@@ -498,7 +502,7 @@ subprojects {
         'Created-By'        : createdBy,
         'Title'             : rootProject.name,
         'Version'           : version,
-        'Vendor'            : 'SnappyData, Inc.'
+        'Vendor'            : vendorName
       )
     }
   }
@@ -859,6 +863,65 @@ distributions {
     }
   }
 }
+
+ospackage {
+  packageName = distributions.main.baseName
+  version = version
+  release = '1'
+  os = LINUX
+
+  maintainer = vendorName
+  packageDescription = productName +
+      ', the Spark Database. Stream - Transact - Analyze - Predict all in one cluster'
+  summary = productName + ' Installer'
+
+  user = 'snappydata'
+  permissionGroup = 'snappydata'
+
+  from(snappyProductDir) {
+    into '/opt/' + packageName
+  }
+  from('release') {
+    include 'snappyProfile.*'
+    into '/etc/profile.d'
+    rename { fileName -> fileName.replace('Profile', 'data') }
+  }
+
+  link('/usr/sbin/snappy-start-all.sh', "/opt/${packageName}/sbin/snappy-start-all.sh")
+  link('/usr/sbin/snappy-stop-all.sh', "/opt/${packageName}/sbin/snappy-stop-all.sh")
+  link('/usr/sbin/snappy-status-all.sh', "/opt/${packageName}/sbin/snappy-status-all.sh")
+  link('/usr/bin/snappy', "/opt/${packageName}/bin/snappy")
+  link('/usr/bin/snappy-sql', "/opt/${packageName}/bin/snappy-sql")
+  link('/usr/bin/snappy-job.sh', "/opt/${packageName}/bin/snappy-job.sh")
+}
+
+buildRpm {
+  requires('glibc')
+  requires('bash')
+  requires('perl')
+  requires('curl')
+  dependsOn ':packageVSD'
+  if (rootProject.hasProperty('hadoop-provided')) {
+    classifier 'without_hadoop'
+  }
+
+  preInstall file('release/preInstallRpm.sh')
+}
+
+buildDeb {
+  requires('libc6')
+  requires('bash')
+  requires('perl')
+  requires('curl')
+  recommends('java8-sdk')
+  dependsOn ':packageVSD'
+  if (rootProject.hasProperty('hadoop-provided')) {
+    classifier 'without-hadoop'
+  }
+
+  preInstall file('release/preInstallDeb.sh')
+}
+
 distTar {
   dependsOn product
   // also package VSD
@@ -877,6 +940,16 @@ distZip {
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
+}
+
+task distRpm {
+  dependsOn product
+  dependsOn buildRpm
+}
+
+task distDeb {
+  dependsOn product
+  dependsOn buildDeb
 }
 
 task copyShadowJars {
@@ -905,9 +978,16 @@ task copyShadowJars {
   }
 }
 
+task distInstallers {
+  dependsOn product
+  dependsOn buildRpm
+  dependsOn buildDeb
+}
+
 // use the task below to prepare final release bits
 task distProduct {
   dependsOn product, distTar, distZip
+  dependsOn distInstallers
   dependsOn copyShadowJars
 }
 
@@ -953,7 +1033,6 @@ task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
   dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
-  dependsOn distTar, distZip
   mustRunAfter cleanAll
 }
 task buildDtests {
@@ -1070,9 +1149,12 @@ task sparkPackage {
 packagePulse.mustRunAfter product
 packageVSD.mustRunAfter product
 
-distTar.mustRunAfter clean, cleanAll
-distZip.mustRunAfter clean, cleanAll
-distProduct.mustRunAfter clean, cleanAll
+distTar.mustRunAfter clean, cleanAll, product
+distZip.mustRunAfter clean, cleanAll, product
+distRpm.mustRunAfter clean, cleanAll, product
+distDeb.mustRunAfter clean, cleanAll, product
+distInstallers.mustRunAfter clean, cleanAll, product, distRpm, distDeb
+distProduct.mustRunAfter clean, cleanAll, product
 
 task deleteDocsDir(type: Delete) {
   delete "${rootProject.buildDir}/docs"
