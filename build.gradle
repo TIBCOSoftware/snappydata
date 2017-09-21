@@ -879,11 +879,13 @@ ospackage {
   permissionGroup = 'snappydata'
 
   from(snappyProductDir) {
+    createDirectoryEntry = true
     into '/opt/' + packageName
   }
   from('release') {
+    createDirectoryEntry = true
     include 'snappyProfile.*'
-    into '/etc/profile.d'
+    into "/opt/${packageName}/profile.d"
     rename { fileName -> fileName.replace('Profile', 'data') }
   }
 
@@ -893,6 +895,8 @@ ospackage {
   link('/usr/bin/snappy', "/opt/${packageName}/bin/snappy")
   link('/usr/bin/snappy-sql', "/opt/${packageName}/bin/snappy-sql")
   link('/usr/bin/snappy-job.sh', "/opt/${packageName}/bin/snappy-job.sh")
+  link('/etc/profile.d/snappydata.sh', "/opt/${packageName}/profile.d/snappydata.sh")
+  link('/etc/profile.d/snappydata.csh', "/opt/${packageName}/profile.d/snappydata.csh")
 }
 
 buildRpm {
