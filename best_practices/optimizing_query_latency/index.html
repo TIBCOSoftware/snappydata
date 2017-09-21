@@ -1731,7 +1731,7 @@ If only a single partition is active and is used largely by queries (especially 
 <h2 id="using-redundancy">Using Redundancy</h2>
 <p>REDUNDANCY clause of <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the SnappyData members fails or shuts down. </p>
 <p>A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table data. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage.</p>
-<p>For an example on the REDUNDANCY clause refer to <a href="../../programming_guide/#tables-in-snappydata">Tables in SnappyData</a>.</p>
+<p>For an example on the REDUNDANCY clause refer to <a href="../../programming_guide/tables_in_snappydata/">Tables in SnappyData</a>.</p>
 <p><a id="overflow"></a></p>
 <h2 id="overflow-configuration">Overflow Configuration</h2>
 <p>In SnappyData, column tables by default overflow to disk. For row tables, use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria.  </p>

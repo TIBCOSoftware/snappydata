@@ -336,7 +336,7 @@
             
                 <li class="toctree-l3"><a href="#how-to-connect-using-odbc-driver">How to Connect using ODBC Driver</a></li>
                 
-                    <li><a class="toctree-l4" href="#step-1-install-visual-c-redistributable-for-visual-studio-2015">Step 1: Install Visual C++ Redistributable for Visual Studio 2015</a></li>
+                    <li><a class="toctree-l4" href="#step-1-install-visual-c-redistributable-for-visual-studio-2013">Step 1: Install Visual C++ Redistributable for Visual Studio 2013</a></li>
                 
                     <li><a class="toctree-l4" href="#step-2-install-snappydata-odbc-driver">Step 2: Install SnappyData ODBC Driver</a></li>
                 
@@ -1662,16 +1662,13 @@
                 <p><a id="howto-odbc"></a></p>
 <h1 id="how-to-connect-using-odbc-driver">How to Connect using ODBC Driver</h1>
 <p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
-<p>You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.
-<a id="howto-odbc-step1"></a></p>
-<h2 id="step-1-install-visual-c-redistributable-for-visual-studio-2015">Step 1: Install Visual C++ Redistributable for Visual Studio 2015</h2>
-<p>To download and install the Visual C++ Redistributable for Visual Studio 2015:</p>
+<p>You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.</p>
+<p><a id="howto-odbc-step1"></a></p>
+<h2 id="step-1-install-visual-c-redistributable-for-visual-studio-2013">Step 1: Install Visual C++ Redistributable for Visual Studio 2013</h2>
+<p>To download and install the Visual C++ Redistributable for Visual Studio 2013:</p>
 <ol>
 <li>
-<p><a href="https://www.microsoft.com/en-in/download/details.aspx?id=48145">Download Visual C++ Redistributable for Visual Studio 2015</a></p>
-</li>
-<li>
-<p>Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.</p>
+<p><a href="https://www.microsoft.com/en-in/download/details.aspx?id=40784">Download Visual C++ Redistributable for Visual Studio 2013</a></p>
 </li>
 <li>
 <p>Select <strong>Run</strong> to start the installation and follow the steps to complete the installation.</p>
@@ -1682,35 +1679,43 @@
 <p>To download and install the ODBC driver:</p>
 <ol>
 <li>
-<p>Download the SnappyData ODBC Driver from the <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData Release page</a>.</p>
+<p><a href="http://www.snappydata.io/download">Download the SnappyData 1.0-RC Enterprise Version</a> by registering on the SnappyData website. The downloaded file contains the SnappyData ODBC driver installers.</p>
 </li>
 <li>
-<p>Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.</p>
-<ul>
-<li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32.zip">32-bit for 32-bit platform</a></p>
-</li>
-<li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32_64.zip">32-bit for 64-bit platform</a> </p>
-</li>
-<li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc64.zip">64-bit for 64-bit platform</a> </p>
-</li>
-</ul>
-</li>
-<li>
-<p>Extract the contents of the downloaded file.</p>
+<p>Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the SnappyData ODBC Driver.</p>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>ODBC Driver</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>32-bit for 32-bit platform</td>
+<td>snappydata-1.0.0-rc1-odbc32.zip</td>
+</tr>
+<tr>
+<td>32-bit for 64-bit platform</td>
+<td>snappydata-1.0.0-rc1-odbc32_64.zip</td>
+</tr>
+<tr>
+<td>64-bit for 64-bit platform</td>
+<td>snappydata-1.0.0-rc1-odbc64.zip</td>
+</tr>
+</tbody>
+</table>
 </li>
 <li>
 <p>Double-click on the <strong>SnappyDataODBCDriverInstaller.msi</strong> file, and follow the steps to complete the installation.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Ensure that <a href="http://snappydatainc.github.io/snappydata/install/">SnappyData version 0.8 or later is installed</a> and the <a href="../start_snappy_cluster/">SnappyData cluster is running</a>.</p>
+<p>Ensure that <a href="../../install/">SnappyData is installed</a> and the <a href="../start_snappy_cluster/">SnappyData cluster is running</a>.</p>
 </div>
 </li>
 </ol>
 <h2 id="connect-to-the-snappydata-cluster">Connect to the SnappyData Cluster</h2>
-<p>Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:</p>
+<p>Once you have installed the SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:</p>
 <ul>
 <li>
 <p>Use the SnappyData Driver Connection URL:</p>
@@ -1718,11 +1723,11 @@
 </code></pre>
 </li>
 <li>
-<p>Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> </p>
+<p>Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
+When prompted, select the SnappyData ODBC Driver from the list of drivers and enter a Data Source name, SnappyData Server Host, Port, User Name and Password.
+Refer to the documentation for detailed information on <a href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>.  </p>
 </li>
 </ul>
-<p>Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. </p>
-<p>Refer to the documentation for detailed information on <a href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>.  </p>
               
             </div>
           </div>

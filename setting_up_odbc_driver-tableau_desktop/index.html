@@ -1510,13 +1510,13 @@
             
                 <li class="toctree-l3"><a href="#setting-up-snappydata-odbc-driver-and-tableau-desktop">Setting Up SnappyData ODBC Driver and Tableau Desktop</a></li>
                 
-                    <li><a class="toctree-l4" href="#step-1-and-2">Step 1 and 2:</a></li>
+                    <li><a class="toctree-l4" href="#step-1-install-the-snappydata-odbc-driver">Step 1: Install the SnappyData ODBC Driver</a></li>
                 
-                    <li><a class="toctree-l4" href="#step-3-create-snappydata-dsn-from-odbc-data-sources-64-bit32-bit">Step 3: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit</a></li>
+                    <li><a class="toctree-l4" href="#step-2-create-snappydata-dsn-from-odbc-data-sources-64-bit32-bit">Step 2: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit</a></li>
                 
-                    <li><a class="toctree-l4" href="#step-4-install-tableau-desktop-101-or-higher">Step 4. Install Tableau Desktop (10.1 or Higher)</a></li>
+                    <li><a class="toctree-l4" href="#step-3-install-tableau-desktop-101-or-higher">Step 3. Install Tableau Desktop (10.1 or Higher)</a></li>
                 
-                    <li><a class="toctree-l4" href="#step-5-connecting-tableau-desktop-to-snappydata-server">Step 5. Connecting Tableau Desktop to SnappyData Server</a></li>
+                    <li><a class="toctree-l4" href="#step-4-connecting-tableau-desktop-to-snappydata-server">Step 4. Connecting Tableau Desktop to SnappyData Server</a></li>
                 
             
             </ul>
@@ -1665,28 +1665,27 @@
 <p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This is currently tested and supported only on Windows 10 (32-Bit &amp; 64-Bit systems). Although versions other than Windows 10 may work, SnappyData is not claiming full testing on other versions.</p>
+<ul>
+<li>
+<p>This is currently tested and supported only on Windows 10 (32-Bit &amp; 64-Bit systems).</p>
+</li>
+<li>
+<p><a href="https://www.microsoft.com/en-in/download/details.aspx?id=40784">Download and Install Visual C++ Redistributable for Visual Studio 2013</a> </p>
+</li>
+</ul>
 </div>
-<h2 id="step-1-and-2">Step 1 and 2:</h2>
-<p>Ensure that you do the following:</p>
-<ol>
-<li>
-<p><a href="../howto/connect_using_odbc_driver/#howto-odbc-step1">Install Visual C++ Redistributable for Visual Studio 2015</a></p>
-</li>
-<li>
-<p><a href="../howto/connect_using_odbc_driver/#howto-odbc-step2">Install SnappyData ODBC Driver</a></p>
-</li>
-</ol>
-<h2 id="step-3-create-snappydata-dsn-from-odbc-data-sources-64-bit32-bit">Step 3: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit</h2>
+<h2 id="step-1-install-the-snappydata-odbc-driver">Step 1: Install the SnappyData ODBC Driver</h2>
+<p><a href="http://www.snappydata.io/download">Download the SnappyData 1.0-RC Enterprise Version</a> by registering on the SnappyData website and <a href="../howto/connect_using_odbc_driver/#howto-odbc-step2">install the SnappyData ODBC Driver</a>.</p>
+<h2 id="step-2-create-snappydata-dsn-from-odbc-data-sources-64-bit32-bit">Step 2: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit</h2>
 <p>To create SnappyData DSN from ODBC Data Sources:</p>
 <ol>
 <li>
 <p>Open the <strong>ODBC Data Source Administrator</strong> window:</p>
-<p>a. On the <strong>Start</strong> page, type ODBC Data Sources, and select Set up ODBC data sources from the list or Select  <strong>ODBC Data Sources</strong> in the <strong>Administrative Tools</strong>. </p>
+<p>a. On the <strong>Start</strong> page, type ODBC Data Sources, and select <strong>Set up ODBC data sources</strong> from the list or select <strong>ODBC Data Sources</strong> in the <strong>Administrative Tools</strong>.</p>
 <p>b. Based on your Windows installation, open <strong>ODBC Data Sources (64-bit)</strong> or <strong>ODBC Data Sources (32-bit)</strong></p>
 </li>
 <li>
-<p>In the<strong> ODBC Data Source Administrator</strong> window, select either the <strong>User DSN</strong> or <strong>System DSN</strong> tab. </p>
+<p>In the <strong>ODBC Data Source Administrator</strong> window, select either the <strong>User DSN</strong> or <strong>System DSN</strong> tab. </p>
 </li>
 <li>
 <p>Click <strong>Add</strong> to view the list of installed ODBC Drivers on your machine.</p>
@@ -1695,7 +1694,7 @@
 <p>From the list of drivers, select <strong>SnappyData ODBC Driver</strong> and click <strong>Finish</strong>.</p>
 </li>
 <li>
-<p>The <strong>SnappyData ODBC Configuration Dialog</strong> is displayed. Enter the following details to create DSN:</p>
+<p>The <strong>SnappyData ODBC Configuration</strong> dialog is displayed. Enter the following details to create DSN:</p>
 <ul>
 <li>
 <p><strong>Data Source Name</strong>: Name of the Data Source. For example, snappydsn.  </p>
@@ -1719,7 +1718,7 @@
 <p class="admonition-title">Note</p>
 <p>Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. </p>
 </div>
-<h2 id="step-4-install-tableau-desktop-101-or-higher">Step 4. Install Tableau Desktop (10.1 or Higher)</h2>
+<h2 id="step-3-install-tableau-desktop-101-or-higher">Step 3. Install Tableau Desktop (10.1 or Higher)</h2>
 <p>To install Tableau desktop:</p>
 <ol>
 <li>
@@ -1732,15 +1731,15 @@
 <p>Follow the steps to complete the installation.</p>
 </li>
 </ol>
-<h2 id="step-5-connecting-tableau-desktop-to-snappydata-server">Step 5. Connecting Tableau Desktop to SnappyData Server</h2>
+<h2 id="step-4-connecting-tableau-desktop-to-snappydata-server">Step 4. Connecting Tableau Desktop to SnappyData Server</h2>
 <p>Before using Tableau with SnappyData ODBC Driver for the first time, you must add the <strong>odbc-snappydata.tdc</strong> configuration file in the Tableau data sources directory. Follow below steps to do so.</p>
 <p>To connect the Tableau Desktop to SnappyData Server:</p>
 <ol>
 <li>
-<p>Download <strong>odbc-snappydata.tdc</strong> configuration file from the <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData Release page</a>.</p>
+<p>The downloaded SnappyData file contains the <strong>odbc-snappydata.tdc</strong> configuration file.</p>
 </li>
 <li>
-<p>Copy the downloaded odbc-snappydata.tdc file to  the &lt;<em>User_Home_Path</em>&gt;\Documents\My Tableau Repository\Datasources directory.</p>
+<p>Copy the <strong>odbc-snappydata.tdc</strong> file to the &lt;<em>User_Home_Path</em>&gt;/Documents/My Tableau Repository/Datasources directory.</p>
 </li>
 <li>
 <p>Open the Tableau Desktop application</p>
@@ -1762,13 +1761,13 @@ The <strong>Other Databases (ODBC)</strong> window is displayed. </p>
 <p>Click <strong>Sign In</strong> to log into Tableau.</p>
 </li>
 <li>
-<p>From the <strong>Schema</strong> drop-down list, select a schema.</p>
+<p>From the <strong>Schema</strong> drop-down list, select a schema. For example, <strong>app</strong></p>
 </li>
 <li>
-<p>All Tables from the selected schema is listed.</p>
+<p>All tables from the selected schema is listed.</p>
 </li>
 <li>
-<p>Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click <strong>Update Now</strong> to see your changes.</p>
+<p>Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click <strong>Update Now</strong> to refresh and view your changes.</p>
 </li>
 <li>
 <p>Click the <strong>Worksheets</strong> tab &gt; <strong>sheet</strong> to start the analysis.</br> </p>
