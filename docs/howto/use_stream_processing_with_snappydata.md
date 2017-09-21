@@ -113,6 +113,6 @@ Using SnappyData you can run streaming queries on IoT Device data received from 
 
 **Code Example**:</br>
 
-The complete source code of the example ([StructuredStreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingExample.scala) shows the usage of structured streaming with SnappyData.
+The complete source code of the example [StructuredStreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingExample.scala) shows the usage of structured streaming with SnappyData.
 
 
