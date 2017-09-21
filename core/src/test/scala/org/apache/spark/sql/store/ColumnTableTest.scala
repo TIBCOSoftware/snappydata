@@ -1314,6 +1314,20 @@ class ColumnTableTest
 
     snc.sql("drop table if exists test")
   }
+
+  test("create table without explicit schema (SNAP-2047)") {
+    val hfile = getClass.getResource("/2015.parquet").getPath
+    val session = this.snc
+
+    session.createExternalTable("staging_airline", "parquet", Map("path" -> hfile))
+    session.sql("create table airline using row options(partition_by 'FlightNum') " +
+        "AS (SELECT * FROM staging_airline limit 100000)")
+    assert(session.table("airline").count() === 100000)
+
+    session.sql("drop table airline")
+  }
 }
-case class Record(id:Int, data: Employee)
+
+case class Record(id: Int, data: Employee)
+
 case class Employee(empName: String, empId: Int)
