@@ -1,4 +1,4 @@
-# CREATE Statements
+# Create Statements
 
 Use Create statements to create functions, indexes, procedures, schemas, synonyms, tables, triggers, and views.
 
