@@ -20,24 +20,26 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, ExecutionException}
 
-import scala.reflect.ClassTag
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
 import io.snappydata.collection.ObjectHashSet
+
+import org.apache.spark._
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.streaming.PhysicalDStreamPlan
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
-import org.apache.spark._
+import scala.reflect.ClassTag
 
 /**
  * :: DeveloperApi ::
@@ -94,6 +96,12 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         throw new IllegalArgumentException(
           s"${getClass.getSimpleName} should not take $x as the JoinType")
     }
+  }
+
+  // hash join does not change ordering of the streamed plan
+  override def outputOrdering: Seq[SortOrder] = joinType match {
+    case FullOuter => Nil
+    case _ => streamedPlan.outputOrdering
   }
 
   override def requiredChildDistribution: Seq[Distribution] =
@@ -181,6 +189,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
+
   private def findShuffleDependencies(rdd: RDD[_]): Seq[Dependency[_]] = {
     rdd.dependencies.flatMap {
       case s: ShuffleDependency[_, _, _] => if (s.rdd ne rdd) {
@@ -191,6 +200,68 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   private lazy val (streamSideRDDs, buildSideRDDs) = {
+    val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
+    val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
+
+    if (replicatedTableJoin) {
+      val streamRDD = streamRDDs.head
+      val numParts = streamRDD.getNumPartitions
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
+      val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
+        streamRDD.preferredLocations(streamRDD.partitions(i))
+      }
+      val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
+        // add the build-side shuffle dependecies to first stream-side RDD
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+          preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
+          streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
+            rdd.sparkContext, rdd, preferredLocations))
+      } else {
+        streamRDDs
+      }
+      (streamPlanRDDs, buildRDDs)
+    }
+    else {
+      // wrap in DelegateRDD for shuffle dependencies and preferred locations
+
+      // Get the build side shuffle dependencies.
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
+      val hasStreamSideShuffle = streamRDDs.exists(_.dependencies
+        .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
+      // treat as a zip of all stream side RDDs and build side RDDs and
+      // use intersection of preferred locations, if possible, else union
+      val numParts = streamRDDs.head.getNumPartitions
+      val allRDDs = streamRDDs ++ buildRDDs
+      val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
+        val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
+          rdd.partitions(i)))
+        val exactMatches = prefLocations.reduce(_.intersect(_))
+        // prefer non-exchange side locations if no exact matches
+        if (exactMatches.nonEmpty) exactMatches
+        else if (buildShuffleDeps.nonEmpty) {
+          prefLocations.take(streamRDDs.length).flatten.distinct
+        } else if (hasStreamSideShuffle) {
+          prefLocations.takeRight(buildRDDs.length).flatten.distinct
+        } else prefLocations.flatten.distinct
+      }
+      val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
+        // add the build-side shuffle dependecies to first stream-side RDD
+        val rdd = streamRDDs.head
+        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
+          preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
+          streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
+            rdd.sparkContext, rdd, preferredLocations))
+      } else {
+        streamRDDs.map(rdd => new DelegateRDD[InternalRow](
+          rdd.sparkContext, rdd, preferredLocations))
+      }
+
+      (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
+        rdd.sparkContext, rdd, preferredLocations)))
+    }
+  }
+
+  private def refreshRDDs() : (Seq[RDD[InternalRow]], Seq[RDD[InternalRow]]) = {
     val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
     val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
@@ -252,7 +323,13 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
   }
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = streamSideRDDs
+  override def inputRDDs(): Seq[RDD[InternalRow]] = {
+    if (streamedPlan.find(_.isInstanceOf[PhysicalDStreamPlan]).isDefined) {
+      refreshRDDs()._1
+    } else {
+      streamSideRDDs
+    }
+  }
 
   override def doProduce(ctx: CodegenContext): String = {
     startProducing()
@@ -270,7 +347,13 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
-    val rdds = buildSideRDDs
+    val rdds = {
+      if (buildPlan.find(_.isInstanceOf[PhysicalDStreamPlan]).isDefined) {
+        refreshRDDs()._2
+      } else {
+        buildSideRDDs
+      }
+    }
     val exprIds = buildPlan.output.map(_.exprId.id).toArray
     val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
       new CacheKey(exprIds, rdds.head.id))

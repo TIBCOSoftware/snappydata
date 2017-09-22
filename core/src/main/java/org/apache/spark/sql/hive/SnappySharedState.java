@@ -111,7 +111,7 @@ public final class SnappySharedState extends SharedState {
     try {
       // avoid inheritance of activeSession
       SparkSession.clearActiveSession();
-      this.client = new HiveClientUtil(sparkContext()).client();
+      this.client = HiveClientUtil$.MODULE$.newClient(sparkContext());
     } finally {
       SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(oldFlag);
     }

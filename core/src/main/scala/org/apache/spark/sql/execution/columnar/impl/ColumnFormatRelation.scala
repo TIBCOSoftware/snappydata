@@ -522,7 +522,7 @@ class ColumnFormatRelation(
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     // keyColumns should match the key fields required for update/delete
-    if (keyColumns.takeRight(3) != ColumnDelta.mutableKeyNames) {
+    if (keyColumns.takeRight(4) != ColumnDelta.mutableKeyNames) {
       throw new IllegalStateException(s"Unexpected keyColumns=$keyColumns, " +
           s"required=${ColumnDelta.mutableKeyNames}")
     }

@@ -20,25 +20,38 @@
 # Stops all snappy daemons - locator, lead and server on the nodes specified in the
 # conf/locators, conf/leads and conf/servers files respectively
 
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
 
 # Load the Spark configuration
 
-. "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
-
-# Check for background stop
 BACKGROUND=
-if [ "$1" = "-bg" -o "$1" = "--background" ]; then
-  BACKGROUND="$1"
+clustermode=
+
+while (( "$#" )); do
+  param="$1"
+  case $param in
+    -bg | --background)
+      # Check for background stop
+      BACKGROUND="$param"
+    ;;
+    rowstore)
+      clustermode="rowstore"
+    ;;
+    *)
+      echo "Invalid option: $param"
+    ;;
+  esac
   shift
-fi
+done
 
 # Stop Leads
-leadStatus=`"$sbin"/snappy-leads.sh status`
-if ! echo $leadStatus | grep -qw "status: stopped"; then
+if [ "$clustermode" != "rowstore" ]; then
   "$sbin"/snappy-leads.sh stop
 fi
 

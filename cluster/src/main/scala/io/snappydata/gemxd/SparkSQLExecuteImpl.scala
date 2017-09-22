@@ -18,14 +18,13 @@ package io.snappydata.gemxd
 
 import java.io.{CharArrayWriter, DataOutput}
 
-import com.pivotal.gemfirexd.Attribute
-
 import scala.collection.JavaConverters._
 
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -75,7 +74,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setSchema(schema)
 
-  session.setPreparedQuery(false, pvs)
+  session.setPreparedQuery(preparePhase = false, pvs)
 
   private[this] val df = session.sql(sql)
 
@@ -91,14 +90,14 @@ class SparkSQLExecuteImpl(val sql: String,
   // check for query hint to serialize complex types as JSON strings
   private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
-    case Some(v) => Misc.parseBoolean(v)
     case None => false
+    case Some(v) => Misc.parseBoolean(v)
   }
 
   private val (allAsClob, columnsAsClob) = session.getPreviousQueryHints.get(
     QueryHint.ColumnsAsClob.toString) match {
-    case Some(v) => Utils.parseColumnsAsClob(v)
     case None => (false, Set.empty[String])
+    case Some(v) => Utils.parseColumnsAsClob(v)
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,

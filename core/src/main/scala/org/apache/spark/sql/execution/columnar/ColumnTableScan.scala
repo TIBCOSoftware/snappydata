@@ -53,6 +53,7 @@ import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, C
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -85,6 +86,11 @@ private[sql] final case class ColumnTableScan(
   override val nodeName: String = "ColumnTableScan"
 
   @transient private val MAX_SCHEMA_LENGTH = 40
+
+  override lazy val outputOrdering: Seq[SortOrder] = output.collectFirst {
+    case attr if attr.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)) =>
+      StoreUtils.getColumnUpdateDeleteOrdering(attr)
+  }.toSeq
 
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
@@ -381,7 +387,7 @@ private[sql] final case class ColumnTableScan(
     val rsDecoderClass = classOf[ResultSetDecoder].getName
     val rsWithNullClass = classOf[ResultSetWithNull].getName
     val rowDecoderClass = classOf[UnsafeRowDecoder].getName
-    val deletedDecoderClass = classOf[DeletedColumnDecoder].getName
+    val deletedDecoderClass = classOf[ColumnDeleteDecoder].getName
     val batch = ctx.freshName("batch")
     val numBatchRows = s"${batch}NumRows"
     val batchIndex = s"${batch}Index"
@@ -505,20 +511,6 @@ private[sql] final case class ColumnTableScan(
       }
       ctx.addMutableState(updatedDecoderClass, updatedDecoder, "")
 
-      var deletedInit = ""
-      if (index == 0) {
-        val incrementDeletedBatchCount = if (deletedBatchCount eq null) ""
-        else s"\nif ($deletedDecoder != null) $deletedBatchCount.${metricAdd("1")};"
-        deletedInit =
-          s"""
-             |$deletedDecoder = $colInput.getDeletedColumnDecoder();$incrementDeletedBatchCount
-           """.stripMargin
-        deletedDeclaration =
-            s"final $deletedDecoderClass $deletedDecoderLocal = $deletedDecoder;\n"
-        deletedCheck = s"if ($deletedDecoderLocal != null && " +
-            s"$deletedDecoderLocal.deleted($batchOrdinal)) continue;"
-      }
-
       ctx.addNewFunction(initBufferFunction,
         s"""
            |private void $initBufferFunction() {
@@ -531,7 +523,7 @@ private[sql] final case class ColumnTableScan(
            |  if ($updatedDecoder != null) {
            |    $incrementUpdatedColumnCount
            |  }
-           |  $deletedInit$numNullsVar = 0;
+           |  $numNullsVar = 0;
            |}
         """.stripMargin)
       columnBufferInit.append(s"$initBufferFunction();\n")
@@ -578,14 +570,26 @@ private[sql] final case class ColumnTableScan(
           case 2 =>
             bucketIdTerm = ctx.freshName("bucketId")
             ExprCode("", "false", bucketIdTerm)
+          case 3 => ExprCode("", "false", numBatchRows)
           case _ => throw new IllegalStateException(s"Unexpected internal attribute $attr")
         }
       case (attr, index) => rsIndex += 1; columnsInputMapper(attr, index, rsIndex)
     }
 
-    if (deletedCheck.isEmpty) {
+    if (output.isEmpty) {
       // no columns in a count(.) query
       deletedCountCheck = s" - ($inputIsRow ? 0 : $deletedCount)"
+    } else {
+      // add deleted column check if there is at least one column to scan
+      // (else it is taken care of by deletedCount being reduced from batch size)
+      val incrementDeletedBatchCount = if (deletedBatchCount eq null) ""
+      else s"\nif ($deletedDecoder != null) $deletedBatchCount.${metricAdd("1")};"
+      columnBufferInit.append(
+        s"$deletedDecoder = $colInput.getDeletedColumnDecoder();$incrementDeletedBatchCount\n")
+      deletedDeclaration =
+          s"final $deletedDecoderClass $deletedDecoderLocal = $deletedDecoder;\n"
+      deletedCheck = s"if ($deletedDecoderLocal != null && " +
+          s"$deletedDecoderLocal.deleted($batchOrdinal)) continue;"
     }
 
     if (isWideSchema) {
@@ -630,7 +634,7 @@ private[sql] final case class ColumnTableScan(
       s"""
         while (true) {
           $batchAssign
-          if ($filterFunction($unsafeRow)) {
+          if ($colInput.hasUpdatedColumns() || $filterFunction($unsafeRow)) {
             break;
           }
           if (!$colInput.hasNext()) return false;
@@ -705,7 +709,7 @@ private[sql] final case class ColumnTableScan(
         // ordinalId is the last column in the row buffer table (exclude virtual columns)
         s"""
            |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(
-           |    ${if (embedded) relationSchema.length - 2 else output.length - 2}) : $batchOrdinal;
+           |    ${if (embedded) relationSchema.length - 3 else output.length - 3}) : $batchOrdinal;
         """.stripMargin)
     else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
@@ -844,7 +848,7 @@ private[sql] final case class ColumnTableScan(
            |    $isNullVar = true;
            |    $numNullsVar = -$numNullsVar;
            |  }
-           |} else if ($updateDecoder.notNull()) {
+           |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
            |} else {
            |  $col = $defaultValue;

@@ -19,6 +19,7 @@ package org.apache.spark
 import org.apache.spark
 
 import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.memory.StoreUnifiedManager
 import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{RetrieveSparkAppConfig, SparkAppConfig}
 import org.apache.spark.ui.{JettyUtils, SnappyBasicAuthenticator}
@@ -49,6 +50,8 @@ object SparkCallbacks {
   def stopExecutor(env: SparkEnv): Unit = {
     if (env != null) {
       SparkHadoopUtil.get.runAsSparkUser { () =>
+        // Copy the memory state to boot memory manager
+        SparkEnv.get.memoryManager.asInstanceOf[StoreUnifiedManager].close
         env.stop()
         SparkEnv.set(null)
         SparkHadoopUtil.get.stopCredentialUpdater()

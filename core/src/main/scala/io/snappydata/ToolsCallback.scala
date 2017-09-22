@@ -18,9 +18,7 @@ package io.snappydata
 
 import java.io.File
 
-import org.apache.hadoop.conf.Configuration
-
-import org.apache.spark.{SecurityManager, SparkConf, SparkContext}
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
@@ -30,10 +28,10 @@ trait ToolsCallback {
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
       partitionColumnAliases: Seq[Seq[Attribute]],
-      numPartitions: Int, numBuckets: Int): Partitioning
+      numPartitions: Int, numBuckets: Int, tableBuckets: Int): Partitioning
 
   def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
-      (Seq[Expression], Seq[Seq[Attribute]], Int, Int)]
+      (Seq[Expression], Seq[Seq[Attribute]], Int, Int, Int)]
 
   def updateUI(scUI: Option[Any]): Unit // Option[SparkUI] is expected
 

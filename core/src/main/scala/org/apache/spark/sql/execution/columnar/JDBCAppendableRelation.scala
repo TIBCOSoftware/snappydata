@@ -19,15 +19,16 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import com.pivotal.gemfirexd.Attribute
-
 import scala.collection.JavaConverters._
+
+import com.pivotal.gemfirexd.Attribute
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, OverwriteOptions}
+import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -133,10 +134,10 @@ abstract case class JDBCAppendableRelation(
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    // use the InsertIntoTable plan for best performance
+    // use the Insert plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
     sqlContext.sessionState.executePlan(
-      InsertIntoTable(
+      new Insert(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,

@@ -172,6 +172,7 @@ trait SplitClusterDUnitTestBase extends Logging {
         ColumnUpdateDeleteTests.testBasicDelete(session)
         ColumnUpdateDeleteTests.testSNAP1925(session)
         ColumnUpdateDeleteTests.testSNAP1926(session)
+        ColumnUpdateDeleteTests.testConcurrentOps(session)
       }
     })
   }

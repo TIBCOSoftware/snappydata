@@ -70,10 +70,10 @@ dependencies {
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
-    compile project(':snappy-store:gemfirexd-client')
-    compile project(':snappy-store:gemfirexd-core')
-    compile project(':snappy-store:gemfirexd-tools')
-    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+    compile project(':snappy-store:snappydata-store-client')
+    compile project(':snappy-store:snappydata-store-core')
+    compile project(':snappy-store:snappydata-store-tools')
+    testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
   } else {
     compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
     compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
@@ -81,7 +81,7 @@ dependencies {
     testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
   }
 
-  compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.3") {
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.4") {
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
@@ -168,7 +168,11 @@ task getApacheSparkDist {
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 dunitSecurityTest.dependsOn getApacheSparkDist
-check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
+check.dependsOn test, scalaTest, dunitTest
+if (rootProject.hasProperty('snappydata.enterprise')) {
+  check.dependsOn dunitSecurityTest
+}
+
 
 archivesBaseName = 'snappydata-core_' + scalaBinaryVersion
 shadowJar {
@@ -194,7 +198,7 @@ shadowJar {
       'Created-By'        : createdBy,
       'Title'             : "snappydata-core_${scalaBinaryVersion}",
       'Version'           : version,
-      'Vendor'            : 'SnappyData, Inc.'
+      'Vendor'            : vendorName
     )
   }
 }

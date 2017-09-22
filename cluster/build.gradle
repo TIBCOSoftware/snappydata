@@ -85,7 +85,7 @@ dependencies {
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
-    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+    testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
   } else {
     testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
   }
@@ -126,7 +126,7 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
     def props = [
       'Product-Name'      : productName,
       'Product-Version'   : version,
-      'Build-Id'          : System.env.USER + ' ' + buildNumber,
+      'Build-Id'          : buildIdPrefix + buildNumber,
       'Build-Date'        : buildDate,
       'Build-Platform'    : osName.getName() + osVersion + osArch,
       'Build-Java-Version': jdkVersion,
@@ -176,5 +176,9 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
+check.dependsOn test, scalaTest, dunitTest
+if (rootProject.hasProperty('snappydata.enterprise')) {
+    check.dependsOn dunitSecurityTest
+}
+
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion

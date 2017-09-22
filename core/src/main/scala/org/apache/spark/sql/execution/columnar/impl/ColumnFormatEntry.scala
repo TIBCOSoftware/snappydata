@@ -41,7 +41,7 @@ import org.slf4j.Logger
 import org.apache.spark.Logging
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.unsafe.hash.Murmur3_x86_32
 
@@ -97,7 +97,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
           .asInstanceOf[ColumnFormatValue]
       if (value ne null) {
         val buffer = value.getBufferRetain
-        try {
+        val baseRowCount = try {
           if (buffer.remaining() > 0) {
             val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
             unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
@@ -105,11 +105,33 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
         } finally {
           value.release()
         }
+        // decrement the deleted row count
+        val deleteKey = withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
+        val delete = currentBucketRegion.get(deleteKey, null,
+          false /* generateCallbacks */, true /* disableCopyOnRead */,
+          false /* preferCD */, null, null, null, null, false /* returnTombstones */,
+          false /* allowReadFromHDFS */).asInstanceOf[ColumnFormatValue]
+        if (delete eq null) baseRowCount
+        else {
+          val deleteBuffer = delete.getBufferRetain
+          try {
+            if (deleteBuffer.remaining() > 0) {
+              val allocator = ColumnEncoding.getAllocator(deleteBuffer)
+              baseRowCount - ColumnEncoding.readInt(allocator.baseObject(deleteBuffer),
+                allocator.baseOffset(deleteBuffer) + deleteBuffer.position() + 8)
+            } else baseRowCount
+          } finally {
+            delete.release()
+          }
+        }
       } else 0
     } else 0
   }
 
   def getColumnIndex: Int = columnIndex
+
+  private[columnar] def withColumnIndex(columnIndex: Int): ColumnFormatKey =
+    new ColumnFormatKey(uuid, partitionId, columnIndex)
 
   override def hashCode(): Int = Murmur3_x86_32.hashInt(
     ClientResolverUtils.addLongToHashOpt(uuid, columnIndex), partitionId)
@@ -273,19 +295,22 @@ class ColumnFormatValue extends SerializedDiskBuffer
   override final def getBufferRetain: ByteBuffer = {
     if (retain()) {
       duplicateBuffer(columnBuffer)
-    } else synchronized {
-      // check if already read from disk by another thread and still valid
-      val buffer = this.columnBuffer
-      if ((buffer ne DiskEntry.Helper.NULL_BUFFER) && retain()) {
-        return duplicateBuffer(buffer)
+    } else {
+      var diskId: DiskId = null
+      synchronized {
+        // check if already read from disk by another thread and still valid
+        val buffer = this.columnBuffer
+        if ((buffer ne DiskEntry.Helper.NULL_BUFFER) && retain()) {
+          return duplicateBuffer(buffer)
+        }
+        diskId = this.diskId
       }
 
       // try to read using DiskId
-      val diskId = this.diskId
       if (diskId ne null) {
         try {
           DiskEntry.Helper.getValueOnDisk(diskId, diskRegion) match {
-            case v: ColumnFormatValue =>
+            case v: ColumnFormatValue => synchronized {
               // transfer the buffer from the temporary ColumnFormatValue
               columnBuffer = v.columnBuffer
               // restart reference count from 1
@@ -297,6 +322,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
                   return duplicateBuffer(columnBuffer)
                 }
               }
+            }
             case null | _: Token => // return empty buffer
             case o => throw new IllegalStateException(
               s"unexpected value in column store $o")

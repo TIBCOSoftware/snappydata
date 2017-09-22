@@ -473,8 +473,8 @@ object SnappyUnifiedMemoryManagerDUnitTest {
       if (SparkEnv.get.memoryManager.isInstanceOf[SnappyUnifiedMemoryManager]) {
         val umm = SparkEnv.get.memoryManager
             .asInstanceOf[SnappyUnifiedMemoryManager]
-        if (umm._memoryForObjectMap ne null) {
-          umm._memoryForObjectMap.clear()
+        if (umm.memoryForObject ne null) {
+          umm.memoryForObject.clear()
         }
         MemoryManagerCallback.resetMemoryManager()
       }
@@ -494,7 +494,7 @@ object SnappyUnifiedMemoryManagerDUnitTest {
     if (SparkEnv.get != null) {
       if (SparkEnv.get.memoryManager.isInstanceOf[SnappyUnifiedMemoryManager]) {
         val mMap = SparkEnv.get.memoryManager
-            .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap
+            .asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject
         SparkEnv.get.memoryManager
             .asInstanceOf[SnappyUnifiedMemoryManager].logStats()
         val keys = mMap.keySet().iterator()

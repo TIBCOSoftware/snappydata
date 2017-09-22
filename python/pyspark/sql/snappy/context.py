@@ -31,14 +31,13 @@ class SnappyContext(SQLContext):
         :class:`SnappyContext` in the JVM, instead we make all calls to this object.
     """
 
-    def __init__(self, sparkContext, snappyContext=None):
+    def __init__(self, sparkContext, snappyContext=None, jsparkSession=None):
         self._sc = sparkContext
         self._jsc = self._sc._jsc
         self._jvm = self._sc._jvm
-        snappySession = SnappySession(sparkContext)
-        SQLContext.__init__(self, sparkContext, snappySession)
+        self._jsparkSession = jsparkSession
         if snappyContext:
-            self._scala_SnappyContext = snappyContext
+           self._scala_SnappyContext = snappyContext
 
 
     @property
@@ -52,7 +51,7 @@ class SnappyContext(SQLContext):
                             "./gradlew product ", e)
 
     def _get_snappy_ctx(self):
-        return self._jvm.SnappyContext(self.sparkSession._jsparkSession)
+        return self._jvm.SnappyContext(self._jsparkSession)
 
     def createTable(self, tableName, provider=None, schema=None, allowExisting=True, **options):
         """

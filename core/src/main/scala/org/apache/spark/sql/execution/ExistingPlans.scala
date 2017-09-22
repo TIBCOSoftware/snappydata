@@ -96,7 +96,7 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
-    if (numPartitions == 1) {
+    if (numPartitions == 1 && numBuckets == 1) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
       val callbacks = ToolsCallbackInit.toolsCallback
@@ -106,7 +106,7 @@ private[sql] abstract class PartitionedPhysicalScan(
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         callbacks.getOrderlessHashPartitioning(partitionColumns,
           partitionColumnAliases, numPartitions,
-          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets)
+          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets, numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }

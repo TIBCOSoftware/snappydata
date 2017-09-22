@@ -258,6 +258,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     ColumnUpdateDeleteTests.testBasicDelete(session)
     ColumnUpdateDeleteTests.testSNAP1925(session)
     ColumnUpdateDeleteTests.testSNAP1926(session)
+    ColumnUpdateDeleteTests.testConcurrentOps(session)
   }
 }
 

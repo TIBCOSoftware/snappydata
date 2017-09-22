@@ -19,16 +19,15 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.cache.{EntryEvent, Region}
+import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
 import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSeq, BindReferences}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding}
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
 /**
@@ -138,25 +137,17 @@ object ColumnDelta {
   val mutableKeyNames: Seq[String] = Seq(
     mutableKeyNamePrefix + "ROW_ORDINAL",
     mutableKeyNamePrefix + "BATCH_ID",
-    mutableKeyNamePrefix + "BUCKET_ORDINAL"
+    mutableKeyNamePrefix + "BUCKET_ORDINAL",
+    mutableKeyNamePrefix + "BATCH_NUMROWS"
   )
   val mutableKeyFields: Seq[StructField] = Seq(
     StructField(mutableKeyNames.head, LongType, nullable = false),
     StructField(mutableKeyNames(1), LongType, nullable = false),
-    StructField(mutableKeyNames(2), IntegerType, nullable = false)
+    StructField(mutableKeyNames(2), IntegerType, nullable = false),
+    StructField(mutableKeyNames(3), IntegerType, nullable = false)
   )
-  def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
-  def bindKeyColumns(keyColumns: Seq[Attribute], ctx: CodegenContext,
-      input: Seq[ExprCode], output: AttributeSeq): (ExprCode, ExprCode, ExprCode) = {
-    ctx.INPUT_ROW = null
-    ctx.currentVars = input
-    val ordinalId = BindReferences.bindReference(keyColumns.head, output).genCode(ctx)
-    val batchId = BindReferences.bindReference(keyColumns(1), output).genCode(ctx)
-    val bucketId = BindReferences.bindReference(keyColumns(2), output).genCode(ctx)
-    ctx.currentVars = null
-    (ordinalId, batchId, bucketId)
-  }
+  def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
   def deltaHierarchyDepth(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) % MAX_DEPTH
@@ -175,4 +166,52 @@ object ColumnDelta {
    */
   def deltaColumnIndex(tableColumnIndex: Int, hierarchyDepth: Int): Int =
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1 - hierarchyDepth
+
+  /**
+   * Check if all the rows in a batch have been deleted.
+   */
+  private[columnar] def checkBatchDeleted(deleteBuffer: ByteBuffer): Boolean = {
+    val allocator = ColumnEncoding.getAllocator(deleteBuffer)
+    val bufferBytes = allocator.baseObject(deleteBuffer)
+    val bufferCursor = allocator.baseOffset(deleteBuffer) + 4
+    val numBaseRows = ColumnEncoding.readInt(bufferBytes, bufferCursor)
+    val numDeletes = ColumnEncoding.readInt(bufferBytes, bufferCursor + 4)
+    numDeletes >= numBaseRows
+  }
+
+  /**
+   * Delete entire batch from column store for the batchId and partitionId
+   * matching those of given key.
+   */
+  private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _],
+      columnTableName: String, forUpdate: Boolean): Unit = {
+
+    // delete all the rows with matching batchId
+    def destroyKey(key: ColumnFormatKey): Unit = {
+      try {
+        columnRegion.destroy(key)
+      } catch {
+        case _: EntryNotFoundException => // ignore
+      }
+    }
+
+    val numColumns = key.getNumColumnsInTable(columnTableName)
+    // delete the stats rows first
+    destroyKey(key.withColumnIndex(ColumnFormatEntry.STATROW_COL_INDEX))
+    if (forUpdate) {
+      destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
+    }
+    // column values and deltas next
+    for (columnIndex <- 1 to numColumns) {
+      destroyKey(key.withColumnIndex(columnIndex))
+      for (depth <- 0 until MAX_DEPTH) {
+        destroyKey(key.withColumnIndex(deltaColumnIndex(
+          columnIndex - 1 /* zero based */ , depth)))
+      }
+    }
+    // lastly the delete delta row itself
+    if (forUpdate) {
+      destroyKey(key.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX))
+    }
+  }
 }

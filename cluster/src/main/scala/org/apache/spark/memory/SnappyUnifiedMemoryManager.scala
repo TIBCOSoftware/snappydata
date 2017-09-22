@@ -53,14 +53,16 @@ import org.apache.spark.{Logging, SparkConf}
 class SnappyUnifiedMemoryManager private[memory](
     conf: SparkConf,
     override val maxHeapMemory: Long,
-    numCores: Int, val tempManager: Boolean)
+    numCores: Int, val bootManager: Boolean)
   extends UnifiedMemoryManager(SnappyUnifiedMemoryManager.setMemorySize(conf),
     maxHeapMemory,
     (maxHeapMemory * conf.getDouble("spark.memory.storageFraction",
       SnappyUnifiedMemoryManager.DEFAULT_STORAGE_FRACTION)).toLong,
     numCores) with StoreUnifiedManager {
 
-  private val managerId = if (!tempManager) "RuntimeMemoryManager" else "BootTimeMemoryManager"
+  self =>
+
+  private val managerId = if (!bootManager) "RuntimeMemoryManager" else "BootTimeMemoryManager"
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
       conf.getDouble("spark.memory.storageMaxFraction", 0.95)).toLong
@@ -96,7 +98,7 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
-  @volatile private[memory] var _memoryForObjectMap:
+  @volatile private var _memoryForObjectMap:
     Object2LongOpenHashMap[(String, MemoryMode)] = _
 
   private[memory] def memoryForObject: Object2LongOpenHashMap[(String, MemoryMode)] = {
@@ -107,10 +109,10 @@ class SnappyUnifiedMemoryManager private[memory](
         _memoryForObjectMap = new Object2LongOpenHashMap[(String, MemoryMode)]()
         _memoryForObjectMap.defaultReturnValue(0L)
         // transfer the memory map from tempMemoryManager on first use
-        if (!tempManager) {
+        if (!bootManager) {
           logInfo(s"Allocating boot time memory to $managerId ")
 
-          val bootTimeManager = MemoryManagerCallback.tempMemoryManager
+          val bootTimeManager = MemoryManagerCallback.bootMemoryManager
               .asInstanceOf[SnappyUnifiedMemoryManager]
           val bootTimeMap = bootTimeManager._memoryForObjectMap
           if (bootTimeMap ne null) {
@@ -136,6 +138,45 @@ class SnappyUnifiedMemoryManager private[memory](
     } else memoryMap
   }
 
+  /**
+    * This method will be called if executor is going to be restarted.
+    * When executor is coming up all accounting from store will be done in
+    * bootMemoryManager.
+    * When executor stops we will copy the existing entry in this manager to
+    * boot manager.
+    * Once executor comes back again we will again copy the boot manager entries
+    * to run time manager.
+    */
+  override def close(): Unit = {
+    assert(!bootManager)
+    // First reset the memory manager in callback. Hence all request will
+    // go to Boot Manager
+    MemoryManagerCallback.resetMemoryManager()
+    synchronized {
+      logInfo(s" Closing Memory Manager ${this}")
+      val bootManager = MemoryManagerCallback.bootMemoryManager
+          .asInstanceOf[SnappyUnifiedMemoryManager]
+
+      val bootManagerMap = bootManager.memoryForObject
+      val memoryForObject = self.memoryForObject
+      memoryForObject.object2LongEntrySet().iterator().asScala foreach { entry =>
+        val (objectName, memoryMode) = entry.getKey
+        if (!objectName.equals(SPARK_CACHE) &&
+            !objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
+          bootManagerMap.addTo(objectName -> memoryMode, entry.getLongValue)
+        }
+      }
+      clear()
+    }
+  }
+
+  /**
+    * Clears the internal map
+    */
+  override def clear(): Unit = synchronized {
+    if (_memoryForObjectMap ne null) _memoryForObjectMap.clear()
+  }
+
   val threadsWaitingForStorage = new AtomicInteger()
 
   val SPARK_CACHE = "_SPARK_CACHE_"
@@ -151,7 +192,7 @@ class SnappyUnifiedMemoryManager private[memory](
   def this(conf: SparkConf, numCores: Int) = {
     this(conf,
       SnappyUnifiedMemoryManager.getMaxMemory(conf),
-      numCores, tempManager = false)
+      numCores, bootManager = false)
   }
 
   logMemoryConfiguration()
@@ -159,7 +200,8 @@ class SnappyUnifiedMemoryManager private[memory](
   private def logMemoryConfiguration(): Unit = {
     val memoryLog = new StringBuilder
     val separator = "\n\t\t"
-    memoryLog.append(s"$managerId configuration:")
+    memoryLog.append(s"$managerId ${this} configuration:")
+
     memoryLog.append(separator).append("Total Usable Heap = ")
         .append(Utils.bytesToString(maxHeapMemory))
         .append(" (").append(maxHeapMemory).append(')')
@@ -215,7 +257,7 @@ class SnappyUnifiedMemoryManager private[memory](
     case MemoryMode.ON_HEAP => onHeapExecutionMemoryPool.poolSize
   }
 
-  override def getOffHeapMemory(objectName: String): Long = {
+  override def getOffHeapMemory(objectName: String): Long = synchronized {
     if (maxOffHeapMemory > 0) memoryForObject.getLong(objectName -> MemoryMode.OFF_HEAP)
     else 0L
   }
@@ -225,7 +267,7 @@ class SnappyUnifiedMemoryManager private[memory](
   override def logStats(): Unit = synchronized {
     val memoryLog = new StringBuilder
     val separator = "\n\t\t"
-    memoryLog.append(s"$managerId stats:")
+    memoryLog.append(s"$managerId ${this} stats:")
     memoryLog.append(separator).append("Storage Used = ")
         .append(onHeapStorageMemoryPool.memoryUsed)
         .append(" (size=").append(onHeapStorageMemoryPool.poolSize).append(')')
@@ -243,13 +285,13 @@ class SnappyUnifiedMemoryManager private[memory](
           .append(offHeapExecutionMemoryPool.memoryUsed)
           .append(" (size=").append(offHeapExecutionMemoryPool.poolSize).append(')')
     }
-    val memoryForObject = this.memoryForObject
+    val memoryForObject = self.memoryForObject
     if (!memoryForObject.isEmpty) {
       memoryLog.append("\n\t").append("Objects:\n")
-      val objects = memoryForObject.entrySet().iterator()
+      val objects = memoryForObject.object2LongEntrySet().iterator()
       while (objects.hasNext) {
         val o = objects.next()
-        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getValue)
+        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getLongValue)
       }
     }
     logInfo(memoryLog.toString())
@@ -264,6 +306,7 @@ class SnappyUnifiedMemoryManager private[memory](
     val changeOwner = new Consumer[String] {
       override def accept(fromOwner: String): Unit = {
         if (fromOwner ne null) {
+          val memoryForObject = self.memoryForObject
           // "from" was changed to "to"
           val prev = memoryForObject.addTo(fromOwner -> mode, -totalSize)
           if (prev >= totalSize) {
@@ -308,9 +351,10 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   private def getMinOffHeapEviction(required: Long): Long = {
-    // off-heap calculations are precise so evict exactly as much as required
-    (required * math.max(1, math.min(4, threadsWaitingForStorage.get()))) -
-        offHeapStorageMemoryPool.memoryFree
+    // off-heap calculations are precise so evict exactly as much as required;
+    // bit of "padding" (1M) to account for inaccuracies in pre-allocation by
+    // putAll threads
+    math.max(0, required - offHeapStorageMemoryPool.memoryFree + (1024 * 1024))
   }
 
   /**
@@ -538,7 +582,7 @@ class SnappyUnifiedMemoryManager private[memory](
         }
       }
       // First let spark try to free some memory
-      val enoughMemory = if (tempManager) {
+      val enoughMemory = if (bootManager) {
         // For temp manager no eviction , hence numBytes to free is passed as 0
         storagePool.acquireMemory(blockId, numBytes, numBytesToFree = 0)
       } else {
@@ -572,6 +616,11 @@ class SnappyUnifiedMemoryManager private[memory](
         }
 
         var couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
+        // run old map GC task explicitly before failing with low memory
+        if (!couldEvictSomeData) {
+          Misc.getGemFireCache.runOldEntriesCleanerThread()
+          couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
+        }
         // for off-heap try harder before giving up since pending references
         // may be on heap (due to unexpected exceptions) that will go away on GC
         if (!couldEvictSomeData && offHeap) {
@@ -632,6 +681,7 @@ class SnappyUnifiedMemoryManager private[memory](
     super.releaseStorageMemory(numBytes, memoryMode)
     val offHeap = memoryMode eq MemoryMode.OFF_HEAP
     wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
+    val memoryForObject = self.memoryForObject
     if (memoryForObject.containsKey(key)) {
       if (memoryForObject.addTo(key, -numBytes) == numBytes) {
         memoryForObject.removeLong(key)
@@ -647,6 +697,7 @@ class SnappyUnifiedMemoryManager private[memory](
                                           memoryMode: MemoryMode,
                                           ignoreNumBytes: Long): Long = synchronized {
     val key = name -> memoryMode
+    val memoryForObject = self.memoryForObject
     val bytesToBeFreed = memoryForObject.getLong(key)
     val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
     logDebug(s"Dropping $managerId memory for $name = $numBytes (registered=$bytesToBeFreed)")
@@ -661,17 +712,18 @@ class SnappyUnifiedMemoryManager private[memory](
 
   // Test Hook. Not to be used anywhere else
   private[memory] def dropAllObjects(memoryMode: MemoryMode): Unit = synchronized {
+    val memoryForObject = self.memoryForObject
     val keys = memoryForObject.keySet().asScala
     val clearList = keys.filter(key => {
       if (key._2 eq memoryMode) {
-        val numBytes = memoryForObject.get(key)
+        val numBytes = memoryForObject.getLong(key)
         super.releaseStorageMemory(numBytes, memoryMode)
         val offHeap = memoryMode eq MemoryMode.OFF_HEAP
         wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
         true
       } else false
     })
-    clearList.foreach(key => memoryForObject.remove(key))
+    clearList.foreach(key => memoryForObject.removeLong(key))
   }
 
   // Recovery is a special case. If any of the storage pool has reached 90% of
@@ -698,6 +750,7 @@ class SnappyUnifiedMemoryManager private[memory](
   private def setMemoryManagerStats(stats: MemoryManagerStats): Unit = {
     wrapperStats.setMemoryManagerStats(stats)
   }
+
 }
 
 object SnappyUnifiedMemoryManager extends Logging {

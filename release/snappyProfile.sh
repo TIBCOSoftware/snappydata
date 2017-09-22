@@ -1,0 +1,4 @@
+SNAPPY_HOME=/opt/snappydata
+SPARK_HOME=${SNAPPY_HOME}
+
+export SNAPPY_HOME SPARK_HOME

@@ -131,12 +131,12 @@ case class SnappyHashAggregateExec(
     if (callbacks ne null) {
       partitioning match {
         case OrderlessHashPartitioningExtract(expressions, aliases,
-        nPartitions, nBuckets) => callbacks.getOrderlessHashPartitioning(
-          expressions, getAliases(expressions, aliases), nPartitions, nBuckets)
+        nPartitions, nBuckets, tBuckets) => callbacks.getOrderlessHashPartitioning(
+          expressions, getAliases(expressions, aliases), nPartitions, nBuckets, tBuckets)
 
         case HashPartitioning(expressions, nPartitions) =>
           callbacks.getOrderlessHashPartitioning(expressions,
-            getAliases(expressions, Nil), nPartitions, 0)
+            getAliases(expressions, Nil), nPartitions, 0, 0)
 
         case _ => partitioning
       }

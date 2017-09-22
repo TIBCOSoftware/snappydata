@@ -31,7 +31,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, ResolveInlineTables, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
@@ -68,7 +68,7 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  private[sql] var disableStoreOptimizations : Boolean = false
+  private[sql] var disableStoreOptimizations: Boolean = false
 
   // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
   // Rest all rules, even if redundant, are same as analyzer for maintainability reason
@@ -91,7 +91,7 @@ class SnappySessionState(snappySession: SnappySession)
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       getExtendedResolutionRules(this)
 
-    override val extendedCheckRules = getExtendedCheckRules
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
 
   def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
@@ -134,7 +134,7 @@ class SnappySessionState(snappySession: SnappySession)
 
       modified :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
-          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets) :+
+          Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets(conf)) :+
           Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
     }
   }
@@ -193,9 +193,12 @@ class SnappySessionState(snappySession: SnappySession)
    * be created for tables to be the same as number of buckets. This will avoid
    * exchange on one side of a non-collocated join in many cases.
    */
-  object LinkPartitionsToBuckets extends Rule[LogicalPlan] {
+  final class LinkPartitionsToBuckets(conf: SQLConf) extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan.foreach {
+        case _ if Property.ForceLinkPartitionsToBuckets.get(conf) =>
+          // always create one partition per bucket
+          snappySession.linkPartitionsToBuckets(flag = true)
         case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
@@ -484,7 +487,8 @@ class SnappyConf(@transient val session: SnappySession)
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
-         Property.HashAggregateSize.name => session.clearPlanCache()
+         Property.HashAggregateSize.name |
+         Property.ForceLinkPartitionsToBuckets.name => session.clearPlanCache()
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {

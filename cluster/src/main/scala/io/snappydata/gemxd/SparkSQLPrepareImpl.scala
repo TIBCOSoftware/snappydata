@@ -25,7 +25,6 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
-import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 import org.apache.spark.Logging
@@ -58,7 +57,7 @@ class SparkSQLPrepareImpl(val sql: String,
 
   session.setSchema(schema)
 
-  session.setPreparedQuery(true, None)
+  session.setPreparedQuery(preparePhase = true, None)
 
   private[this] val sessionState: SnappySessionState = {
     val field = classOf[SnappySession].getDeclaredField("sessionState")
@@ -209,10 +208,10 @@ class SparkSQLPrepareImpl(val sql: String,
   def remainingParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
       case c@Cast(ParamLiteral(Row(pos: Int), NullType, 0), castType: DataType) =>
-        addParamLiteral(pos, castType, false, result)
+        addParamLiteral(pos, castType, nullable = false, result)
         c
       case cc@Cast(CaseWhen(branches, elseValue), castType: DataType) =>
-        handleCase(branches, elseValue, castType, false, result)
+        handleCase(branches, elseValue, castType, nullable = false, result)
         cc
     }
     handleSubQuery(allParams(plan), allParams)

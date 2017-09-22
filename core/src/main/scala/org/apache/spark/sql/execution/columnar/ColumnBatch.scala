@@ -30,7 +30,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.thrift.common.BufferedBlob
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, DeletedColumnDecoder, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, ColumnDeleteDecoder, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.types.StructField
@@ -182,6 +182,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
   }
 
+  def hasUpdatedColumns: Boolean = currentDeltaStats ne null
+
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
       columnIndex: Int): UpdatedColumnDecoderBase = {
     if (currentDeltaStats eq null) null
@@ -197,12 +199,12 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
   }
 
-  def getDeletedColumnDecoder: DeletedColumnDecoder = {
+  def getDeletedColumnDecoder: ColumnDeleteDecoder = {
     if (currentDeltaStats eq null) null
     else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
       throwIfMissing = false) match {
       case null => null
-      case deleteBuffer => new DeletedColumnDecoder(deleteBuffer)
+      case deleteBuffer => new ColumnDeleteDecoder(deleteBuffer)
     }
   }
 
@@ -215,7 +217,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
       else {
         val allocator = ColumnEncoding.getAllocator(delete)
         ColumnEncoding.readInt(allocator.baseObject(delete),
-          allocator.baseOffset(delete) + delete.position() + 4)
+          allocator.baseOffset(delete) + delete.position() + 8)
       }
     }
   }
@@ -291,6 +293,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
   private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
     new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
+  private var hasUpdates: Boolean = _
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
   def getCurrentBatchId: Long = currentUUID
@@ -301,6 +304,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     colBuffers match {
       case buffers if buffers.size() > 1 => // already filled in
       case buffers =>
+        hasUpdates = false
         for (i <- 1 to totalColumns) {
           ps.setLong(i, currentUUID)
         }
@@ -315,6 +319,10 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           }
           colBlob.free()
           buffers.put(position, colBuffer)
+          // check if this an update delta
+          if (!hasUpdates && position < ColumnFormatEntry.DELETE_MASK_COL_INDEX) {
+            hasUpdates = true
+          }
         }
     }
   }
@@ -322,6 +330,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   def getColumnLob(columnIndex: Int): ByteBuffer = {
     colBuffers.get(columnIndex + 1)
   }
+
+  def hasUpdatedColumns: Boolean = hasUpdates
 
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
       columnIndex: Int): UpdatedColumnDecoderBase = {
@@ -335,10 +345,10 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     } else null
   }
 
-  def getDeletedColumnDecoder: DeletedColumnDecoder = {
+  def getDeletedColumnDecoder: ColumnDeleteDecoder = {
     colBuffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX) match {
       case null => null
-      case deleteBuffer => new DeletedColumnDecoder(deleteBuffer)
+      case deleteBuffer => new ColumnDeleteDecoder(deleteBuffer)
     }
   }
 
@@ -349,7 +359,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     else {
       val allocator = ColumnEncoding.getAllocator(delete)
       ColumnEncoding.readInt(allocator.baseObject(delete),
-        allocator.baseOffset(delete) + delete.position() + 4)
+        allocator.baseOffset(delete) + delete.position() + 8)
     }
   }
 

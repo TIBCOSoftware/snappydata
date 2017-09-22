@@ -19,19 +19,21 @@
 
 # Starts a locator instance on each machine specified in the conf/locators file.
 
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
 
-. "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
 
-. "$SPARK_HOME/bin/load-spark-env.sh"
-. "$SPARK_HOME/bin/load-snappy-env.sh"
+. "$SNAPPY_HOME/bin/load-spark-env.sh"
+. "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
 # Launch the slaves
 if echo $@ | grep -qw start; then
-  "$sbin/snappy-nodes.sh" locator cd "$SPARK_HOME" \; "$sbin/snappy-locator.sh" $@ $LOCATOR_STARTUP_OPTIONS
+  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" $@ $LOCATOR_STARTUP_OPTIONS
 else
-  "$sbin/snappy-nodes.sh" locator cd "$SPARK_HOME" \; "$sbin/snappy-locator.sh" $@
+  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" $@
 fi

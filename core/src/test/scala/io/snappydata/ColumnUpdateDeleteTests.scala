@@ -17,6 +17,16 @@
 
 package io.snappydata
 
+import java.util.concurrent.{CyclicBarrier, Executors}
+
+import scala.collection.concurrent.TrieMap
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 import org.scalatest.Assertions
 
 import org.apache.spark.sql.SnappySession
@@ -261,6 +271,10 @@ object ColumnUpdateDeleteTests extends Assertions {
     assert(res.length === 1)
     assert(res(0).getInt(0) === 73)
     assert(res(0).getString(1) === "addr73")
+
+    // lastly delete everything and check there is nothing in table
+    session.sql("delete from updateTable")
+    assert(session.sql("select * from updateTable").collect().length === 0)
   }
 
   def testSNAP1925(session: SnappySession): Unit = {
@@ -343,5 +357,134 @@ object ColumnUpdateDeleteTests extends Assertions {
 
     session.sql("drop table customers")
     session.conf.unset(Property.ColumnBatchSize.name)
+  }
+
+  def testConcurrentOps(session: SnappySession): Unit = {
+    // reduced size to ensure both column table and row buffer have data
+    session.conf.set(Property.ColumnBatchSize.name, "10k")
+    // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
+
+    session.sql("drop table if exists updateTable")
+    session.sql("drop table if exists checkTable1")
+    session.sql("drop table if exists checkTable2")
+    session.sql("drop table if exists checkTable3")
+
+    session.sql("create table updateTable (id int, addr string, status boolean) " +
+        "using column options(buckets '4')")
+    session.sql("create table checkTable1 (id int, addr string, status boolean) " +
+        "using column options(buckets '2')")
+    session.sql("create table checkTable2 (id int, addr string, status boolean) " +
+        "using column options(buckets '8')")
+
+    // avoid rollover in updateTable during concurrent updates
+    val avoidRollover = new SerializableRunnable() {
+      override def run(): Unit = {
+        if (GemFireCacheImpl.getInstance ne null) {
+          val pr = Misc.getRegionForTable("APP.UPDATETABLE", false)
+              .asInstanceOf[PartitionedRegion]
+          if (pr ne null) {
+            pr.getUserAttribute.asInstanceOf[GemFireContainer].fetchHiveMetaData(true)
+            pr.setColumnBatchSizes(10000000, 10000, 1000)
+          }
+        }
+      }
+    }
+    DistributedTestBase.invokeInEveryVM(avoidRollover)
+    avoidRollover.run()
+
+    for (_ <- 1 to 3) {
+      testConcurrentOpsIter(session)
+
+      session.sql("truncate table updateTable")
+      session.sql("truncate table checkTable1")
+      session.sql("truncate table checkTable2")
+    }
+
+    // cleanup
+    session.sql("drop table updateTable")
+    session.sql("drop table checkTable1")
+    session.sql("drop table checkTable2")
+    session.conf.unset(Property.ColumnBatchSize.name)
+  }
+
+  def testConcurrentOpsIter(session: SnappySession): Unit = {
+    val numElements = 100000
+    val concurrency = 8
+    // each thread will update/delete after these many rows
+    val step = 10
+
+    session.range(numElements).selectExpr("id", "concat('addr', cast(id as string))",
+      "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
+
+    // expected results after updates in this table
+    val idUpdate = s"id + ($numElements / 2)"
+    val idSet = s"case when (id % $step) < $concurrency then id + ($numElements / 2) else id end"
+    val addrSet = s"case when (id % $step) < $concurrency " +
+        s"then concat('addrUpd', cast(($idUpdate) as string)) " +
+        s"else concat('addr', cast(id as string)) end"
+    session.range(numElements).selectExpr(idSet, addrSet,
+      "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable1")
+
+    // expected results after updates and deletes in this table
+    session.table("checkTable1").filter(s"(id % $step) < ${step - concurrency}")
+        .write.insertInto("checkTable2")
+
+    val exceptions = new TrieMap[Thread, Throwable]
+    val executionContext = ExecutionContext.fromExecutorService(
+      Executors.newFixedThreadPool(concurrency + 2))
+
+    // concurrent updates to different rows but same batches
+    val barrier = new CyclicBarrier(concurrency)
+    var tasks = Array.tabulate(concurrency)(i => Future {
+      try {
+        val snappy = new SnappySession(session.sparkContext)
+        var res = snappy.sql("select count(*) from updateTable").collect()
+        assert(res(0).getLong(0) === numElements)
+
+        barrier.await()
+        res = snappy.sql(s"update updateTable set id = $idUpdate, " +
+            s"addr = concat('addrUpd', cast(($idUpdate) as string)) " +
+            s"where (id % $step) = $i").collect()
+        assert(res.map(_.getLong(0)).sum > 0)
+      } catch {
+        case t: Throwable =>
+          exceptions += Thread.currentThread() -> t
+          throw t
+      }
+    }(executionContext))
+    tasks.foreach(Await.ready(_, Duration.Inf))
+
+    assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
+
+    session.table("updateTable").show()
+
+    var res = session.sql(
+      "select * from updateTable EXCEPT select * from checkTable1").collect()
+    assert(res.length === 0)
+
+    // concurrent deletes
+    tasks = Array.tabulate(concurrency)(i => Future {
+      try {
+        val snappy = new SnappySession(session.sparkContext)
+        var res = snappy.sql("select count(*) from updateTable").collect()
+        assert(res(0).getLong(0) === numElements)
+
+        barrier.await()
+        res = snappy.sql(
+          s"delete from updateTable where (id % $step) = ${step - i - 1}").collect()
+        assert(res.map(_.getLong(0)).sum > 0)
+      } catch {
+        case t: Throwable =>
+          exceptions += Thread.currentThread() -> t
+          throw t
+      }
+    }(executionContext))
+    tasks.foreach(Await.ready(_, Duration.Inf))
+
+    assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
+
+    res = session.sql(
+      "select * from updateTable EXCEPT select * from checkTable2").collect()
+    assert(res.length === 0)
   }
 }
