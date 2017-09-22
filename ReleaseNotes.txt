@@ -7,9 +7,108 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
-Release 1.0.0 (WIP)
+Release 1.0.0
 
 - New Features/Fixed Issues
+
+  [SNAP-953] Add RPM/DEB installer packaging targets using the Netflix Nebula ospackage gradle
+  plugin.
+
+  [SNAP-2039] Correct null updates to column tables. (#861)
+
+  Use concurrent TrieMaps in SnappySession contextObjects, and queryHints map. Reason being that
+  SnappySession can be read concurrently by multiple threads from same query for sub-query/broadcast
+  kind of plans where planning for the BroadcastExchangeExec plan happens in parallel on another
+  thread.
+
+  [SNAP-2029] Added new "snappydata.preferPrimaries" option to prefer primaries for queries. (#852)
+  Avoid double memory at the cost of reduced scalability but still having a hot backup.
+  See discussion on Slack: https://snappydata-public.slack.com/archives/C0DCF0UGG/p1505460492000378
+
+  Fixed a parser issue where AS can be optional in namedExpression rule. This fixes Q77 of TPCDS.
+
+  [SNAP-2030] Now routed update and delete query on row table would return number of affected rows.
+
+  [SNAP-2028] Snappy Python APIs fixes. (#851)
+  A) Some of the SparkSession python APIs used to pass SQLContext to DataFrameWriter and
+  DataFrameReader APIs.
+  B) Fixed truncate table API.
+
+  Fixed a couple of issues in parser. (#849)
+  1. Order by and sort by clauses after partition by can be optional.
+  2. INTERVAL non reserved key word was being treated as an identifier because of optional clauses
+  ordering.
+
+  [SNAP-2022] Remove the check which tested if any lead is already stopped, in snappy-stop-all.sh
+  (#845). This was causing the script to skip shutting down of other running leads, if any. Added
+   a check for rowstore, so that 'sbin/snappy-stop-all.sh rowstore' doesn't see the message.
+
+  [SNAP-2020] Track in-progress insert size to avoid data skew. (#844)
+  With many concurrent inserts/partitions on a node, significant data skew in inserts was still
+  observed (on machines with large number of cores like 32) due to same smallest bucket being
+  chosen by multiple partitions. This change now tracks the in-progress size for bucket and adds
+  that to determine smallest bucket.
+
+  [SNAP-2012] Skip locked entries in evictor. (#839)
+  Fix as suggested by @rishitesh to use Unsafe API to try acquire monitor on RegionEntry.
+
+  Hiding commands not applicable to snappydata (will be continued to be displayed for GemFireXD and
+  RowStore mode). (#838)
+
+  [SNAP-2003] Fix for 'stream to big table join CQ returning incorrect result'. (#829)
+  HashJoinExec's streamPlan and buildPlan RDDs are computed on each CQ execution.
+
+  [AQP-293] Changes for JNI UTF8String.contains. (#832)
+  Convert UTF8Strings in ParamLiteral to off-heap when snappydata's off-heap is enabled.
+  Changes in SnappyParser. Also, updated parboiled2 to latest release.
+
+  [SNAP-1995] Added a python example showcasing KMeans usage. (#827)
+
+  Fix an issue in collect-debug-artifacts script with extraction. Skip any configuration checks in
+  collect-debug-artifacts for extraction (-x, --extract=).
+
+  [SNAP-1993] Fixes for data skew when no partition_by is provided. (#825)
+  With these changes, distribution in ColumnCacheBenchmark test, for example, is nearly equal most
+  of the time among the buckets. Other cases like those reported originally with 7M rows have only
+  ~50% difference between min and max (as compared to ~4X originally)
+
+  Remove ParamLiteral for LIKE/RLIKE/REGEXP. If expression foldable is false, then LIKE family
+  generates very suboptimal plan (if not converted to Contains/StartsWith/EndsWith) that will
+  compile the Regex for every row.
+
+  [SNAP-1984] Changes to retain UnifiedMemoryManager state across executor restart by copying the
+  state in a temporary memory manager, which is created when store boots up but Spark environment is
+  not ready. (#821)
+
+  [SNAP-1981] For prepare phase, avoid rules that do not handle NullType since that is what is used
+  as placeholder for params. (#815)
+
+  [SNAP-1851] Properly closing the connection in case when connection commit fails. (#796)
+
+  [SNAP-1976] Changes to set isolation level. (#813)
+  Allow operations on row and column tables if isolation level is set to other than NONE and
+  autocommit is true (query routing is enabled). If autocommit is false, query routing will be
+  disabled and transactions on row tables will be supported. Queries on column tables will error out
+  when query routing is disabled.
+
+  [SNAP-1973][SNAP-1970] Avoid clearing hive meta-store system properties. (#816)
+  The hive meta-store system properties are required to be set for static initialization of Hive and
+  should not be cleared because a concurrent hive context initialization (from some other path) can
+  see inconsistencies like system property found but not available when actually read.
+
+  [SNAP-1979] Added MemoryManagerStats for capturing different stats for UnifiedMemoryManager.(#814)
+  Smart Cconnector mode will not have these stats as GemFireXD cache will not be available.
+
+  [SNAP-1982] Change batch UUID to be a long (#812)
+  Now using region.newUUID to generate the batch UUID. Use colocatedRegion of column table (the row
+  buffer) to generate the UUID since that is what smart connector and internal rollover uses.
+
+  [SNAP-1611] Increased spark.memory.fraction from 92% to 97% (#808)
+  We want to give a little buffer to JVM before it reaches the critical hep size.
+
+  Make SnappySession.contextObjects as transient to fix the serialization issues reported on
+  spark-shell when SnappySession gets captured in closures (e.g. import session.implicits._ with
+  toDF)
 
   [SNAP-1955] Fixes for issues seen in parallel test runs (#805)
 
