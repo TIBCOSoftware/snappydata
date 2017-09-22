@@ -12,9 +12,9 @@ snappy version
 
 ``` scala
 bin/snappy version
-SnappyData Platform Version 1.0.0-rc1 
-    SnappyData RowStore 1.5.6-rc1 
-    SnappyData Column Store 1.0.0-rc1 
+SnappyData Platform Version 1.0.0
+    SnappyData RowStore 1.5.6
+    SnappyData Column Store 1.0.0
 ```
 
 

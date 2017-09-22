@@ -91,7 +91,7 @@ $ cat /home/user1/snappy/job.config
 In the below example, the above configuration file is passed when submitting a job.
 ```scala
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
