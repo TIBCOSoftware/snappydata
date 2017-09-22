@@ -1,7 +1,5 @@
 # CREATE SCHEMA
 
-Creates a schema with the given name which provides a mechanism to logically group objects.
-
 ``` pre
 CREATE SCHEMA schema-name;
 ```

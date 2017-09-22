@@ -22,18 +22,18 @@ This table describes options for the `snappy run` command. Default values are us
 
 |Option|Description|
 |-|-|
-|-file|</br>The local path of a SQL command file to execute, or a URL that links to the SQL command file. All commands in the specified file must be compatible with the interactive snappy SQL shell.</br>This argument is required.|
-|-auth-provider|Sets the authentication provider to use for peer-to-peer connections as well as client-server connections. Valid values are BUILTIN and LDAP. All other members of the SnappyData distributed system must use the same authentication provider and user definitions. If you omit this option, the connection uses no authentication mechanism.|
-|-client-bind-address|</br>The hostname or IP address on which a SnappyData locator listens for client connections. The default is "localhost" </br>Use this option with `-client-port` to attach to a SnappyData cluster as a thin client and perform the command.|
-|-client-port|</br>The port on which a SnappyData locator listens for client connections. The default is 1527.</br>Use this option with `-client-bind-address` to attach to a SnappyData cluster as a thin client and perform the command.|
-|-encoding|The character set encoding of the SQL script file (`-file` argument). The default is UTF-8. Other possible values are: US-ASCII, ISO-8859-1, UTF-8, UTF-16BE, UTF-16LE, UTF-16. See the [java.nio.charset.Charset](http://docs.oracle.com/javase/7/docs/api/java/nio/charset/Charset.html) reference for more information.|
-|-extra-conn-props|</br>A semicolon-separated list of properties to use when connecting to the SnappyData distributed system.|
-|-help, --help|</br>Display the help message for this snappy command.|
-|-ignore-errors|Include this option to ignore any errors that may occur while executing statements in the file, and continue executing the remaining statements. If you omit this option, then snappy immediately terminates the script's execution if an exception occurs.|
-|-J-D;property=value;|Sets Java system property to the specified value.|
-|-password|</br>If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, you are prompted to enter a password from the console.|
-|-path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a [run](../../reference/interactive_commands/store_command_reference.md) command.|
-|-user|If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.|
+|file|</br>The local path of a SQL command file to execute, or a URL that links to the SQL command file. All commands in the specified file must be compatible with the interactive snappy SQL shell.</br>This argument is required.|
+|auth-provider|Sets the authentication provider to use for peer-to-peer connections as well as client-server connections. Valid values are BUILTIN and LDAP. All other members of the SnappyData distributed system must use the same authentication provider and user definitions. If you omit this option, the connection uses no authentication mechanism.|
+|client-bind-address|</br>The hostname or IP address on which a SnappyData locator listens on, for client connections. The default is "localhost" </br>Use this option with `-client-port` to attach to a SnappyData cluster as a thin client and perform the command.|
+|client-port|</br>The port on which a SnappyData locator listens for client connections. The default is 1527.</br>Use this option with `-client-bind-address` to attach to a SnappyData cluster as a thin client and perform the command.|
+|encoding|The character set encoding of the SQL script file (`-file` argument). The default is UTF-8. Other possible values are: US-ASCII, ISO-8859-1, UTF-8, UTF-16BE, UTF-16LE, UTF-16. See the [java.nio.charset.Charset](http://docs.oracle.com/javase/7/docs/api/java/nio/charset/Charset.html) reference for more information.|
+|extra-conn-props|</br>A semicolon-separated list of properties to use when connecting to the SnappyData distributed system.|
+|help, --help|</br>Display the help message for this snappy command.|
+|ignore-errors|Include this option to ignore any errors that may occur while executing statements in the file, and continue executing the remaining statements. If you omit this option, then snappy immediately terminates the script's execution if an exception occurs.|
+|J-D;property=value;|Sets Java system property to the specified value.|
+|password|</br>If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, you are prompted to enter a password from the console.|
+|path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a [run](../../reference/interactive_commands/store_command_reference.md) command.|
+|user|If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.|
 
 ## Description
 
