@@ -510,7 +510,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // write any internal structures (e.g. dictionary)
     cursor = writeInternals(columnBytes, cursor)
 
-    // cursor returned above may not be actual cursor into the data
+    // cursor returned above may not be actual cursor into the data (SNAP-2054)
     cursor = realEncoder.columnBeginPosition + realEncoder.offset(cursor)
     assert(cursor + deltaSize == realEncoder.columnEndPosition)
 
@@ -557,7 +557,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // write any internal structures (e.g. dictionary)
     cursor = realEncoder.writeInternals(columnBytes, cursor)
 
-    // cursor returned above may not be actual cursor into the data
+    // cursor returned above may not be actual cursor into the data (SNAP-2054)
     val cursorOffset = realEncoder.offset(cursor)
     cursor = realEncoder.columnBeginPosition + cursorOffset
 

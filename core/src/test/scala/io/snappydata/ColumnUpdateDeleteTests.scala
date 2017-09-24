@@ -153,6 +153,7 @@ object ColumnUpdateDeleteTests extends Assertions {
     assert(res.length === 2)
     assert(res.toSet === Set(Row(87, "addr87_update", false), Row(32, "addr32", false)))
 
+    // check BroadcastNestedLoopJoin
     res = session.sql("select u.* from updateTable u, checkTable3 c where " +
         "u.id < 100 and c.id < 100 and (u.status <> c.status or u.addr <> c.addr)").collect()
     assert(res.length === 9902)
@@ -183,6 +184,7 @@ object ColumnUpdateDeleteTests extends Assertions {
     assert(res.toSet === Set(Row(39, "addr39_update", true),
       Row(87, "addr87_update", true), Row(32, "addr32", true)))
 
+    // check no caching for BroadcastNestedLoopJoin
     res = session.sql("select u.* from updateTable u, checkTable3 c where " +
         "u.id < 100 and c.id < 100 and (u.status <> c.status or u.addr <> c.addr)").collect()
     assert(res.length === 9903)
