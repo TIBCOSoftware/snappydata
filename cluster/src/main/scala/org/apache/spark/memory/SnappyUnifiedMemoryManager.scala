@@ -287,10 +287,10 @@ class SnappyUnifiedMemoryManager private[memory](
     val memoryForObject = self.memoryForObject
     if (memoryForObject.size() > 0) {
       memoryLog.append("\n\t").append("Objects:\n")
-      val objects = memoryForObject.object2LongEntrySet().iterator()
+      val objects = memoryForObject.entrySet().iterator()
       while (objects.hasNext) {
         val o = objects.next()
-        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getLongValue)
+        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getValue)
       }
     }
     logInfo(memoryLog.toString())
