@@ -744,6 +744,8 @@ trait ColumnEncoder extends ColumnEncoding {
 
   protected[sql] def getNumNullWords: Int
 
+  protected[sql] def getNullWords: AnyRef
+
   protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long
 
@@ -1058,7 +1060,7 @@ trait NullableDecoder extends ColumnDecoder {
   private[this] final var nextNullOrdinal: Int = _
   private[this] final var numNullBytes: Int = _
 
-  private final def updateNextNullOrdinal(columnBytes: AnyRef, nextNull: Int) {
+  private final def updateNextNullOrdinal(columnBytes: AnyRef, nextNull: Int): Unit = {
     nextNullOrdinal = BitSet.nextSetBit(columnBytes, baseNullOffset, nextNull, numNullBytes)
   }
 
@@ -1140,6 +1142,8 @@ trait NotNullEncoder extends ColumnEncoder {
 
   override protected[sql] def getNumNullWords: Int = 0
 
+  override protected[sql] def getNullWords: AnyRef = null
+
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = cursor
 
@@ -1184,6 +1188,8 @@ trait NullableEncoder extends NotNullEncoder {
     while (numWords > 0 && nullWords(numWords - 1) == 0L) numWords -= 1
     numWords
   }
+
+  override protected[sql] def getNullWords: AnyRef = nullWords
 
   override protected[sql] def initializeNulls(initSize: Int): Int = {
     if (nullWords eq null) {

@@ -34,7 +34,7 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.CachedPlanHelperExec
-import org.apache.spark.sql.sources.{Delete, PutIntoTable, Update}
+import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -334,7 +334,7 @@ class SnappyParser(session: SnappySession)
 
   final def namedExpression: Rule1[Expression] = rule {
     expression ~ (
-        AS ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
+        AS.? ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         strictIdentifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
@@ -686,10 +686,12 @@ class SnappyParser(session: SnappySession)
 
   protected final def windowSpec: Rule1[WindowSpec] = rule {
     '(' ~ ws ~ ((PARTITION | DISTRIBUTE | CLUSTER) ~ BY ~ (expression +
-        commaSep)).? ~ (ORDER | SORT) ~ BY ~ ordering ~ windowFrame.? ~ ')' ~
-        ws ~> ((p: Any, o: Seq[SortOrder], w: Any) => WindowSpecDefinition(
-      p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty), o,
-      w.asInstanceOf[Option[SpecifiedWindowFrame]]
+        commaSep)).? ~ ((ORDER | SORT) ~ BY ~ ordering).? ~ windowFrame.? ~ ')' ~
+        ws ~> ((p: Any, o: Any, w: Any) =>
+      WindowSpecDefinition(
+        p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty),
+        o.asInstanceOf[Option[Seq[SortOrder]]].getOrElse(Seq.empty),
+        w.asInstanceOf[Option[SpecifiedWindowFrame]]
           .getOrElse(UnspecifiedFrame))) |
     identifier ~> WindowSpecReference
   }
@@ -789,6 +791,7 @@ class SnappyParser(session: SnappySession)
   } else exprs
 
   protected final def primary: Rule1[Expression] = rule {
+    ( ( test(tokenize) ~ paramLiteral ) | literal | paramLiteralQuestionMark) |
     identifier ~ (
       ('.' ~ identifier).? ~ '(' ~ ws ~ (
         '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
@@ -842,7 +845,6 @@ class SnappyParser(session: SnappySession)
           case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
     } |
-    ( ( test(tokenize) ~ paramLiteral ) | literal | paramLiteralQuestionMark) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
@@ -961,7 +963,7 @@ class SnappyParser(session: SnappySession)
   protected final def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
     TABLE.? ~ relationFactor ~ subSelectQuery ~> ((o: Boolean, r: LogicalPlan,
-        s: LogicalPlan) => InsertIntoTable(r, Map.empty[String,
+        s: LogicalPlan) => new Insert(r, Map.empty[String,
         Option[String]], s, OverwriteOptions(o), ifNotExists = false))
   }
 

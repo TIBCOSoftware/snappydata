@@ -53,6 +53,7 @@ import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, C
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -85,6 +86,11 @@ private[sql] final case class ColumnTableScan(
   override val nodeName: String = "ColumnTableScan"
 
   @transient private val MAX_SCHEMA_LENGTH = 40
+
+  override lazy val outputOrdering: Seq[SortOrder] = output.collectFirst {
+    case attr if attr.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)) =>
+      StoreUtils.getColumnUpdateDeleteOrdering(attr)
+  }.toSeq
 
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
@@ -505,22 +511,6 @@ private[sql] final case class ColumnTableScan(
       }
       ctx.addMutableState(updatedDecoderClass, updatedDecoder, "")
 
-      var deletedInit = ""
-      // add deleted column check if there is at least one column to scan
-      // (else it is taken care of by deletedCount being reduced from batch size)
-      if (rsIndex == 0) {
-        val incrementDeletedBatchCount = if (deletedBatchCount eq null) ""
-        else s"\nif ($deletedDecoder != null) $deletedBatchCount.${metricAdd("1")};"
-        deletedInit =
-          s"""
-             |$deletedDecoder = $colInput.getDeletedColumnDecoder();$incrementDeletedBatchCount
-           """.stripMargin
-        deletedDeclaration =
-            s"final $deletedDecoderClass $deletedDecoderLocal = $deletedDecoder;\n"
-        deletedCheck = s"if ($deletedDecoderLocal != null && " +
-            s"$deletedDecoderLocal.deleted($batchOrdinal)) continue;"
-      }
-
       ctx.addNewFunction(initBufferFunction,
         s"""
            |private void $initBufferFunction() {
@@ -533,7 +523,7 @@ private[sql] final case class ColumnTableScan(
            |  if ($updatedDecoder != null) {
            |    $incrementUpdatedColumnCount
            |  }
-           |  $deletedInit$numNullsVar = 0;
+           |  $numNullsVar = 0;
            |}
         """.stripMargin)
       columnBufferInit.append(s"$initBufferFunction();\n")
@@ -586,9 +576,20 @@ private[sql] final case class ColumnTableScan(
       case (attr, index) => rsIndex += 1; columnsInputMapper(attr, index, rsIndex)
     }
 
-    if (deletedCheck.isEmpty) {
+    if (output.isEmpty) {
       // no columns in a count(.) query
       deletedCountCheck = s" - ($inputIsRow ? 0 : $deletedCount)"
+    } else {
+      // add deleted column check if there is at least one column to scan
+      // (else it is taken care of by deletedCount being reduced from batch size)
+      val incrementDeletedBatchCount = if (deletedBatchCount eq null) ""
+      else s"\nif ($deletedDecoder != null) $deletedBatchCount.${metricAdd("1")};"
+      columnBufferInit.append(
+        s"$deletedDecoder = $colInput.getDeletedColumnDecoder();$incrementDeletedBatchCount\n")
+      deletedDeclaration =
+          s"final $deletedDecoderClass $deletedDecoderLocal = $deletedDecoder;\n"
+      deletedCheck = s"if ($deletedDecoderLocal != null && " +
+          s"$deletedDecoderLocal.deleted($batchOrdinal)) continue;"
     }
 
     if (isWideSchema) {
@@ -847,7 +848,7 @@ private[sql] final case class ColumnTableScan(
            |    $isNullVar = true;
            |    $numNullsVar = -$numNullsVar;
            |  }
-           |} else if ($updateDecoder.notNull()) {
+           |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
            |} else {
            |  $col = $defaultValue;

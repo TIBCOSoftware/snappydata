@@ -18,7 +18,7 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
@@ -59,6 +59,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   override protected def opType: String = "Update"
 
   override def nodeName: String = "ColumnUpdate"
+
+  // Require per-partition sort on batchId because deltas are accumulated for
+  // consecutive batchIds else it will  be very inefficient for bulk updates
+  // (e.g. for putInto). BatchId attribute is always third last in the keyColumns.
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] =
+    Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3))))
 
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty

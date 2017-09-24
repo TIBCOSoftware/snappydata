@@ -38,11 +38,12 @@ function usage {
   echo
 }
 
-SCRIPT_DIR="`dirname "$0"`"
-SCRIPT_DIR="`cd "$SCRIPT_DIR" && pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
 
-if [ -z "${SPARK_HOME}" ]; then
-  export SPARK_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+if [ -z "${SNAPPY_HOME}" ]; then
+  export SNAPPY_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
 fi
 
 while [ "$1" != "" ]; do
@@ -109,7 +110,7 @@ function check_configs {
   fi
 
   if [ -z "${CONF_FILE}" ]; then
-    CONF_FILE="${SPARK_HOME}/conf/debug.conf.template"
+    CONF_FILE="${SNAPPY_HOME}/conf/debug.conf.template"
   fi
 
   if [ ! -f "${CONF_FILE}" ]; then
@@ -144,8 +145,7 @@ function check_configs {
     echo GET_EVERYTHING=${GET_EVERYTHING}
     echo START TIME = "${START_TIME}"
     echo END   TIME = "${END_TIME}"
-    echo SCRIPT_DIR = "${SCRIPT_DIR}"
-    echo SPARK_HOME = "${SPARK_HOME}"
+    echo SNAPPY_HOME = "${SNAPPY_HOME}"
     echo OUTPUT_DIR = "${OUTPUT_DIR}"
     echo TAR_FILE = "${TAR_FILE}"
   fi
@@ -466,7 +466,7 @@ fi
 # Make output directory
 TS=`date +%m.%d.%H.%M.%S`
 if [ -z "${OUTPUT_DIR}" ]; then
-  out_dir="${SPARK_HOME}/work/debug_data_${TS}"
+  out_dir="${SNAPPY_HOME}/work/debug_data_${TS}"
 else
   out_dir="${OUTPUT_DIR}/debug_data_${TS}"
 fi

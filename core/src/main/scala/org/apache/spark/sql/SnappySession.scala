@@ -20,6 +20,7 @@ import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
@@ -110,7 +111,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
    */
   @transient
-  private[spark] lazy override val sessionState: SnappySessionState = {
+  lazy override val sessionState: SnappySessionState = {
     SnappySession.aqpSessionStateClass match {
       case Some(aqpClass) => aqpClass.getConstructor(classOf[SnappySession]).
           newInstance(self).asInstanceOf[SnappySessionState]
@@ -213,12 +214,12 @@ class SnappySession(@transient private val sc: SparkContext,
   }
 
   @transient
-  private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
+  private[sql] val queryHints: TrieMap[String, String] = TrieMap.empty
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
   @transient
-  private val contextObjects = new mutable.HashMap[Any, Any]
+  private val contextObjects: TrieMap[Any, Any] = TrieMap.empty
 
   @transient
   private[sql] var currentKey: SnappySession.CachedKey = _
@@ -1149,7 +1150,7 @@ class SnappySession(@transient private val sc: SparkContext,
                   + s"doesn't match the data schema[${data.schema}]'s")
             }
             s.zip(data.schema).
-              find(x => !(compareDataTypeIgnoreNameAndNullability(x._1.dataType, x._2.dataType)))
+              find(x => !compareDataTypeIgnoreNameAndNullability(x._1.dataType, x._2.dataType))
             match {
               case Some(_) => throw new AnalysisException(s"The column types " +
                   s"of the specified schema[$s] " +

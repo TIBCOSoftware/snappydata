@@ -172,7 +172,7 @@ object Utils {
         try {
           vs.toLong
         } catch {
-          case nfe: NumberFormatException => throw analysisException(
+          case _: NumberFormatException => throw analysisException(
             s"$module: Cannot parse int '$option' from string '$vs'")
         }
       case vl: Long => vl
@@ -197,7 +197,7 @@ object Utils {
         try {
           vs.toDouble
         } catch {
-          case nfe: NumberFormatException => throw analysisException(
+          case _: NumberFormatException => throw analysisException(
             s"$module: Cannot parse double '$option' from string '$vs'")
         }
       case vf: Float => vf.toDouble
@@ -243,7 +243,7 @@ object Utils {
   }
 
   /** string specification for time intervals */
-  final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
+  private final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
 
   /**
     * Parse the given time interval value as long milliseconds.
@@ -276,11 +276,11 @@ object Utils {
     try {
       ts.toLong
     } catch {
-      case nfe: NumberFormatException =>
+      case _: NumberFormatException =>
         try {
           CastLongTime.getMillis(java.sql.Timestamp.valueOf(ts))
         } catch {
-          case iae: IllegalArgumentException =>
+          case _: IllegalArgumentException =>
             throw analysisException(
               s"$module: Cannot parse timestamp '$col'=$ts")
         }
@@ -330,7 +330,7 @@ object Utils {
       case StringType => classOf[String]
       case DateType => classOf[Int]
       case TimestampType => classOf[Long]
-      case d: DecimalType => classOf[Decimal]
+      case _: DecimalType => classOf[Decimal]
       // case "binary" => org.apache.spark.sql.types.BinaryType
       // case "raw" => org.apache.spark.sql.types.BinaryType
       // case "logical" => org.apache.spark.sql.types.BooleanType
@@ -607,9 +607,9 @@ object Utils {
 
     private[this] val map = m
 
-    override def size = map.size
+    override def size: Int = map.size
 
-    override def -(elem: A) = {
+    override def -(elem: A): Map[A, B] = {
       if (map.contains(elem)) {
         val builder = Map.newBuilder[A, B]
         for (pair <- map) if (pair._1 != elem) {
@@ -629,11 +629,11 @@ object Utils {
       builder.result()
     }
 
-    override def iterator = map.iterator
+    override def iterator: Iterator[(A, B)] = map.iterator
 
-    override def foreach[U](f: ((A, B)) => U) = map.foreach(f)
+    override def foreach[U](f: ((A, B)) => U): Unit = map.foreach(f)
 
-    override def get(key: A) = map.get(key)
+    override def get(key: A): Option[B] = map.get(key)
   }
 
   def createScalaConverter(dataType: DataType): Any => Any =
@@ -986,7 +986,7 @@ class ExecutorMultiBucketLocalShellPartition(override val index: Int,
 }
 
 object ToolsCallbackInit extends Logging {
-  final val toolsCallback = {
+  final val toolsCallback: ToolsCallback = {
     try {
       val c = org.apache.spark.util.Utils.classForName(
         "io.snappydata.ToolsCallbackImpl$")
@@ -994,7 +994,7 @@ object ToolsCallbackInit extends Logging {
       logInfo("toolsCallback initialized")
       tc
     } catch {
-      case cnf: ClassNotFoundException =>
+      case _: ClassNotFoundException =>
         logWarning("toolsCallback couldn't be INITIALIZED." +
             "DriverURL won't get published to others.")
         null
@@ -1004,7 +1004,7 @@ object ToolsCallbackInit extends Logging {
 
 object OrderlessHashPartitioningExtract {
   def unapply(partitioning: Partitioning): Option[(Seq[Expression],
-      Seq[Seq[Attribute]], Int, Int)] = {
+      Seq[Seq[Attribute]], Int, Int, Int)] = {
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks ne null) {
       callbacks.checkOrderlessHashPartitioning(partitioning)

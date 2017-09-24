@@ -22,23 +22,25 @@
 
 usage="Usage: snappy-lead.sh (start|stop|status) -locators=locatorhost:port[,locatorhostN:portN] -dir=directory"
 
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
 
 mode=$1
 shift
 
-. "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
-. "$SPARK_HOME/bin/load-spark-env.sh"
-. "$SPARK_HOME/bin/load-snappy-env.sh"
+. "$SNAPPY_HOME/bin/load-spark-env.sh"
+. "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
 
 
 # Start up  the lead instance
 function start_instance {
-  "$SPARK_HOME"/bin/snappy leader "$mode" "$@"
+  "$SNAPPY_HOME"/bin/snappy leader "$mode" "$@"
 }
 
 start_instance "$@"
