@@ -1,26 +1,26 @@
 #
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License"); you
+# may not use this file except in compliance with the License. You
+# may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License. See accompanying
+# LICENSE file.
 #
-
+#
 # Specify the host name on which a Snappy server will be started. Also
 # specify the startup directory where the logs and configuration files
 # for that server instance are kept. If the directory and properties
 # are not specified a default directory is created inside the SNAPPY_HOME directory.
 #
-# localhost   -dir=/tmp/data/server (config args)
+#     localhost   -dir=/tmp/data/server [config args]
 #
 # An example of how you can specify multiple locators for a server and
 # set its heap size to 64 GB.
@@ -28,9 +28,12 @@
 #     localhost   -dir=/tmp/data/server -locators=locator1:9988,locator2:8899 -heap-size=64g
 # 
 # One can also specify bind address for clients and the port where it listens for
-# the client connections.
+# the client connections. It is also recommended to specify -J-Dgemfirexd.hostname-for-clients
+# so that clients from outside the network can connect to the server. It should be set to the
+# hostname or IP address that will be sent to clients to connect to. The default is the
+# `bind-address` of the locator.
 # 
-#     localhost   -client-bind-address=server1 -client-port=1555
+#     localhost   -client-bind-address=server1 -client-port=1555 -J-Dgemfirexd.hostname-for-clients=<hostname or IP>
 # 
 # For more configuration options,
 # see http://snappydatainc.github.io/snappydata/configuration/#configuration

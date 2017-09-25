@@ -1,4 +1,4 @@
-# Drop Function
+# DROP FUNCTION
 
 ```
 DROP FUNCTION IF EXISTS udf_name
