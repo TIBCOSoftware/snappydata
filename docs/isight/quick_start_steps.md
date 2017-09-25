@@ -307,7 +307,7 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 ### Examples of Queries and Results
 This section provides you with examples you can use in a paragraph.
 
-* In this example, you can create tables using an external Dataset from AWS S3.
+* In this example, you can create tables using an external dataset from AWS S3.
 
 ![Example](../Images/sde_exampleusingexternaldatabase.png)
 
