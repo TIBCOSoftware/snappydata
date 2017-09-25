@@ -55,7 +55,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 
 	    * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
 
-	    * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.
+	    * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the <!--iSight Cloud-->SnappyData CloudBuilder creation steps.
 
 	    * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
 

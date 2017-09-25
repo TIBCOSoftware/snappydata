@@ -134,7 +134,7 @@ To import into IntelliJ IDEA:
 	4. Copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by IDEA. 
 	5. Verify that the settings are now applied in **File> Settings> Editor> Code Style> Java** which should display indent as 2 and continuation indent as 4 (same as Scala).
 
-* If the Gradle tab is not visible immediately, then select it from option avaiable at the bottom-left of IDE. If you click on that window list icon, then the tabs are displayed permanently.
+* If the Gradle tab is not visible immediately, then select it from option available at the bottom-left of IDE. If you click on that window list icon, then the tabs are displayed permanently.
 
 * Generate Apache Avro and SnappyData required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The **Run** option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may take some time to complete, as it downloads the jar files and other required files. This step has to be done the first time, or if **./gradlew clean** has been run, or if you have made changes to **javacc/avro/messages.xml** source files.
 

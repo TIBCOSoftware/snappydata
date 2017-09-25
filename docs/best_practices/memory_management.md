@@ -1,5 +1,5 @@
 # Memory Management
-Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and Snappydata column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.
+Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and SnappyData column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.
 
 SnappyData also monitors the JVM memory pools and avoids running into out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold, memory allocations within SnappyData fail, and a LowMemoryException error is reported. This, however, safeguards the server from crashing due to OutOfMemoryException.
 
@@ -89,12 +89,15 @@ At the start, each of the two pools is assigned a portion of the available memor
 ```scala
 Reserved_Heap_Memory => 20g * (1 - 0.9) = 2g ( 0.9 being derived from critical_heap_percentage)
 Heap_Memory_Fraction => (20g - Reserved_Memory) *(0.97) = 17.4 ( 0.97 being derived from spark.memory.fraction)
-Heap_Storage_Pool_Size => 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.memory.storageFractio)
+Heap_Storage_Pool_Size => 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.memory.storageFraction)
 Heap_Execution_Pool_Size => 17.4 * (0.5) = 8.73
 Heap_Max_Storage_pool_Size => 17.4 * 0.81 = 14.1 ( 0.81 derived from eviction_heap_percentage)
 ```
 <a id="off-heap"></a>
 ## SnappyData Off-Heap Memory 
+
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+
 In addition to heap memory, SnappyData can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, the off-heap setting is recommended. However, several artifacts in the product need heap memory, so some minimum heap size is also required for this.
 
 | Parameter Name | Default Value | Description	 |
@@ -122,7 +125,7 @@ Max_Heap_Storage_pool_Size => 3.5g * 0.81 = 2.8 ( 0.81 derived from eviction_hea
 
 
 Off-Heap Storage_Pool_Size => 16g * (0.5) = 8g
-Heap Execution_Pool_Size => 16g * (0.5) = 8g
+Off-Heap Execution_Pool_Size => 16g * (0.5) = 8g
 Max_Off_Heap_Storage_pool_Size => 16g * 0.9 = 14.4 ( 0.9 System default)
 ```
 
