@@ -137,9 +137,9 @@ mark {
 
 /* Formatting for TroubleShooting */
 
-question {
+error {
     color: black;
-    font-size: 18px;
+    font-size: 14px;
     font-style: bold;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     background: #cc2222
@@ -149,12 +149,34 @@ question {
     background-color: #f5f6f6;
 }
 
-solution {
+error-text {
     color: black;
-    font-size: 14px;
+    font-size: 12px;
+    font-style: bold;
+    font-style: italic;	
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    background: #cc2222
+    white-space: pre;
+    word-wrap: normal;
+    display: block;
+    background-color: #f5f6f6;
+}
+
+diagnosis {
+    color: black;
+    font-size: 12px;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     word-wrap: normal;
     display: block;
+}
+
+action {
+    color: black;
+    font-size: 12px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    word-wrap: normal;
+    display: block;
+    border-bottom: 1px solid #333
 }
 
 /* Formatting for Tables */
@@ -165,7 +187,7 @@ table
     border-collapse: separate;
     line-height: 24px;
     margin: 15px auto;
-    text-align: center;
+    text-align: left;
     width: auto;
     color: black;
     font-size: 14px;
@@ -184,4 +206,21 @@ th {
     padding: 10px 15px;
     position: relative;
     text-shadow: 0 1px 0 #000;  
+}
+/* Formatting for Enterprise*/
+
+ent {
+  background-color: #FBFEDD; 
+  color: black;
+  margin: 10px 0px;
+  padding:5px 5px 5px 5px;
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  border: #E5E5E4 1px solid;
+  border-radius: 5px; 
+  word-wrap: normal;
+  display: block;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size:14px;
+  font-style: bold; 	
 }

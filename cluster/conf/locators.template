@@ -1,33 +1,54 @@
 #
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License"); you
+# may not use this file except in compliance with the License. You
+# may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License. See accompanying
+# LICENSE file.
 #
+#
+# By default, SnappyData launch scripts will start a single locator on localhost
+# and uses <snappyData_dir>/work/localhost-locator-1/ as the directory for logs and 
+# statistics. 
+# Assuming your network is ssh enabled you can add hostnames (one line per host) to start
+# locator on multiple hosts. 
+#
+# Example configurations:
+# I) Configuring the IP address for cluster members to find the locator:
+# By default, locator binds to localhost on port 10334 for discovering other members of the cluster.
+# Set peer-discovery-address to an IP address (usually the internal LAN IP) where other members of
+# cluster can talk to locator (configured as their -locators option), and peer-discover-port if you
+# want to change port from the default 10334. The peer-discovery-address can be a wildcard like 
+# 0.0.0.0 to listen on all interfaces.
 
-# Specify the host name on which a Snappy locator will be started. Also
-# specify the startup directory where the logs and metadata files
-# for that locator instance will be created. Apart from these two things,
-# snappy specific properties can also be passed. If the directory and properties
-# are not specified a default directory is created inside the SNAPPY_HOME directory.
-#
-#     localhost    -dir=/tmp/data/locator (config args)
-# 
-# When a machine is not on any network, specify peer-discovery-address too along with hostname.
-# Also, if there are multiple locators in the cluster, specify hostname:port of other locators.
+# If there are multiple locators in the cluster, then specify hostname:port of other locators in the
+# -locators option.
 # 
 #     localhost -peer-discovery-address=locator1 -peer-discovery-port=9988 -locators=locator2:8899
 # 
-# For more configuration options,
-# see http://snappydatainc.github.io/snappydata/configuration/#configuration
+# II) Using bind address:
+# In Cloud environments with an internal IP and a different public IP address for clients, you
+# should configure the client-bind-address. It is also recommended to specify
+# -J-Dgemfirexd.hostname-for-clients so that clients from outside the network can connect to the
+# locator. It should be set to the hostname or IP address that will be sent to clients to connect to.
+# The default is the `bind-address` of the locator.
+#
+#     localhost -client-bind-address=<public IP for clients> -J-Dgemfirexd.hostname-for-clients=<public IP for clients>
+#
+# III) Logging to different directory 
+# Specify the startup directory where the logs and configuration files for that locator instance
+# are managed. 
+#
+#     localhost -dir=/tmp/data/locator -client-bind-address=<public IP for clients>
+# 
+# For more configuration options, see
+# http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

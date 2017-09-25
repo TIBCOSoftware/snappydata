@@ -17,7 +17,9 @@
 # LICENSE file.
 #
 
-bin="`dirname "$0"`"
-bin="`cd "$bin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+bin="$(dirname "$(absPath "$0")")"
 
-"$bin"/snappy "$@"
+exec "$bin/snappy" "$@"

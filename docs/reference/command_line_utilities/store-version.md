@@ -4,18 +4,17 @@ Prints information about the SnappyData product version.
 
 # Syntax
 
-``` pre
+``` scala
 snappy version
 ```
 
 # Example
 
-``` pre
+``` scala
 bin/snappy version
-SnappyData Platform Version 0.9 
-    SnappyData RowStore 1.5.4 
-    SnappyData Column Store 0.9 
-    SnappyData AQP 0.9
+SnappyData Platform Version 1.0.0-rc1 
+    SnappyData RowStore 1.5.6-rc1 
+    SnappyData Column Store 1.0.0-rc1 
 ```
 
 
