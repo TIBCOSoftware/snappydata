@@ -72,7 +72,7 @@ The program must be compiled and bundled as a jar file and submitted to jobs ser
 
 ```scala
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
@@ -102,7 +102,7 @@ This Job ID can be used to query the status of the running job.
 
 ```scala
 $ bin/snappy-job.sh status  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 
 {
@@ -119,7 +119,7 @@ Once the tables are created, they can be queried by running another job. Please 
 
 ```scala
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
@@ -128,12 +128,12 @@ The status of this job can be queried in the same manner as shown above. The res
 
 ### Jar Dependencies for Jobs
 
-For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.0-rc1.1](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1.1)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
+For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.0](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
 
 For example, gradle can be configured as:
 
 ```
-compile('io.snappydata:snappydata-cluster_2.11:1.0.0-rc1.1') {
+compile('io.snappydata:snappydata-cluster_2.11:1.0.0') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
@@ -178,7 +178,7 @@ This job creates stream tables on tweet streams, registers continuous queries an
 
 ```scala
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
@@ -196,13 +196,13 @@ To start another streaming job with a new streaming context, you need to first s
 
 ```scala
 $ bin/snappy-job.sh stop  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
 
 $ bin/snappy-job.sh listcontexts  \
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 ["snappyContext1452598154529305363", "snappyStreamingContext1463987084945028747", "snappyStreamingContext"]
 
 $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 ```

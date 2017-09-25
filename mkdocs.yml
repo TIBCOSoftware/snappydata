@@ -26,11 +26,11 @@ pages:
     - 'Setting up Cluster on Amazon Web Services': 'install/setting_up_cluster_on_amazon_web_services.md'
     - 'Building from Source': 'install/building_from_source.md'
 # - System Requirements: additional_files/system_requirements.md
-- 'Migration Guide': 'migration/migration.md'
-- 'Migration Guide':
+#- 'Migration Guide': 'migration/migration.md'
+#- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
 #    - 'Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.0': 'migration/upgrade_sqlfire_standalone.md'    
-    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
+#    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 #    - 'Migrating from Version 0.9 to Version 1.0.0-RC1 Release': 'migration/migration-0.9-01_rc.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
@@ -107,15 +107,16 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-- 'Using iSight-Cloud': 'aqp_aws.md'
-- 'Using iSight-Cloud': 
+- 'Using SnappyData CloudBuilder': 'aqp_aws.md'
+- 'Using SnappyData CloudBuilder': 
     - 'Key Components': 'isight/key_components.md'
     - 'Quick Start Steps': 'isight/quick_start_steps.md'
-    - 'The Technology Powering iSight Cloud': 'isight/the_technology_powering_isight_cloud.md'
+    - 'The Technology Powering SnappyData CloudBuilder': 'isight/the_technology_powering_isight_cloud.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
+    - 'Configuring Logging': 'monitoring/configure_logging.md'
 # -- Topic - Reference Guide
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 

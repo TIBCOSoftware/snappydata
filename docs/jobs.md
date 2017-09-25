@@ -314,7 +314,7 @@ Following command submits [CreateAndLoadAirlineDataJob](https://github.com/Snapp
 
 ```
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
@@ -340,7 +340,7 @@ The status returned by the utility is shown below:
 This job ID can be used to query the status of the running job. 
 ```
 $ bin/snappy-job.sh status  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 
 {
@@ -356,7 +356,7 @@ $ bin/snappy-job.sh status  \
 Once the tables are created, they can be queried by firing another job. Please refer to [AirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) from [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for the implementation of the job. 
 ```
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
@@ -380,7 +380,7 @@ For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata
 
 ```
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
@@ -399,13 +399,13 @@ User needs to stop the currently running streaming job followed by its streaming
 
 ```
 $ bin/snappy-job.sh stop  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
 
 $ bin/snappy-job.sh listcontexts  \
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 ["snappyContext1452598154529305363", "snappyStreamingContext1463987084945028747", "snappyStreamingContext"]
 
 $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 ```
