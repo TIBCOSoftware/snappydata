@@ -99,7 +99,7 @@ For example, if there are 32 cores for the Smart Connector application and the n
 You can modify this setting in the `spark.executor.memory` property. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/configuration.html#available-properties).
 
 ### JVM settings for optimal performance:
-The following JVM setting is recommended for optimal perforamance:
+The following JVM setting is recommended for optimal performance:
 
 ```-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k```
 

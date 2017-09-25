@@ -5,7 +5,7 @@ Internally, it uses JDBC to interact with the cluster. You can also use tools li
 ```
 // from the SnappyData base directory  
 $ bin/snappy-sql
-SnappyData version 1.0.0-rc1.1
+SnappyData version 1.0.0
 snappy> 
 
 //Connect to the cluster as a client  

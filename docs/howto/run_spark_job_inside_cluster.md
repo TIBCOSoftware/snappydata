@@ -29,7 +29,7 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>1.0.0-rc1.1</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -37,7 +37,7 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 
 ```scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0-rc1.1"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0"
 ```
 
 **Running the Job**: 
@@ -54,7 +54,7 @@ For example, the command submits the job and runs it as:
     --app-name CreatePartitionedRowTable
     --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
     --app-jar examples/jars/quickstart.jar
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 ```
 In the above comand, **--lead** option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).
 
@@ -73,7 +73,7 @@ In the above comand, **--lead** option specifies the host name of the lead node 
 **Check Status**: You can check the status of the job using the Job ID listed above:
 
 ```scala
-bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
+bin/snappy-job.sh status --lead localhost:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 ```
 
 Refer to the [Building SnappyData applications using Spark API](../programming_guide/building_snappydata_applications_using_spark_api.md) section of the documentation for more details.
