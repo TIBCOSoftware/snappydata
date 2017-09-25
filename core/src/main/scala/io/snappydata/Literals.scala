@@ -18,8 +18,7 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
-import com.gemstone.gemfire.distributed.internal.DistributionConfig
-import com.gemstone.gemfire.internal.snappy.StoreCallbacks
+import com.gemstone.gemfire.internal.shared.SystemProperties
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
@@ -46,7 +45,7 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = DistributionConfig.SNAPPY_PREFIX
+  val STORE_PROPERTY_PREFIX = SystemProperties.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 
@@ -78,16 +77,17 @@ object Constant {
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 20000
 
   // Internal Column table store schema
-  final val SHADOW_SCHEMA_NAME = StoreCallbacks.SHADOW_SCHEMA_NAME
+  final val SHADOW_SCHEMA_NAME = SystemProperties.SHADOW_SCHEMA_NAME
 
   // Internal Column table store suffix
-  final val SHADOW_TABLE_SUFFIX = StoreCallbacks.SHADOW_TABLE_SUFFIX
+  final val SHADOW_TABLE_SUFFIX = SystemProperties.SHADOW_TABLE_SUFFIX
 
-  final val SHADOW_SCHEMA_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_SEPARATOR
+  final val SHADOW_SCHEMA_SEPARATOR = SystemProperties.SHADOW_SCHEMA_SEPARATOR
 
   final val SHADOW_SCHEMA_NAME_WITH_PREFIX: String = "." + SHADOW_SCHEMA_NAME
 
-  final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_NAME_WITH_SEPARATOR
+  final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR =
+    SystemProperties.SHADOW_SCHEMA_NAME_WITH_SEPARATOR
 
   final val COLUMN_TABLE_INDEX_PREFIX = "SNAPPYSYS_INDEX____"
 

@@ -29,6 +29,7 @@ import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, Unsaf
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 import io.snappydata.collection.ObjectLongHashMap
 
 import org.apache.spark.storage.BlockId
@@ -803,11 +804,11 @@ object SnappyUnifiedMemoryManager extends Logging {
     val memorySize = if (cache ne null) {
       cache.getMemorySize
     } else { // for local mode testing
-      val size = conf.getSizeAsBytes(DistributionConfig.SNAPPY_PREFIX +
+      val size = conf.getSizeAsBytes(Constant.STORE_PROPERTY_PREFIX +
           DistributionConfig.MEMORY_SIZE_NAME, "0b")
       if (size == 0) {
         // try with additional "spark." prefix
-        conf.getSizeAsBytes("spark." + DistributionConfig.SNAPPY_PREFIX +
+        conf.getSizeAsBytes("spark." + Constant.STORE_PROPERTY_PREFIX +
             DistributionConfig.MEMORY_SIZE_NAME, "0b")
       } else size
     }

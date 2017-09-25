@@ -22,7 +22,7 @@ import java.util.Properties
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
@@ -136,7 +136,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
       })
       val hc = newClient()
       // Perform some action to hit other paths that could throw warning messages.
-      ifSmartConn(() => {hc.getTableOption(Misc.SNAPPY_HIVE_METASTORE, "DBS")})
+      ifSmartConn(() => {hc.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS")})
       hc
     } finally { // reset log config
       ifSmartConn(() => {
@@ -174,11 +174,12 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     }
     var logURL = dbURL
     val secureDbURL = if (user.isDefined && password.isDefined) {
-      logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";user=" + user.get
+      logURL = dbURL + ";default-schema=" + SystemProperties.SNAPPY_HIVE_METASTORE +
+          ";user=" + user.get
       logURL + ";password=" + password.get + ";"
     } else {
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        Misc.SNAPPY_HIVE_METASTORE)
+        SystemProperties.SNAPPY_HIVE_METASTORE)
       dbURL
     }
     logInfo(s"Using dbURL = $logURL for Hive metastore initialization")

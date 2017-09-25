@@ -111,7 +111,7 @@ object TypeUtilities {
     InternalRow) => Unit = {
     val applyMethod = JacksonUtils.getClass.getMethods
       .find(_.getName == "apply")
-    if (applyMethod != None) {
+    if (applyMethod.isDefined) {
       applyMethod.get.getParameterTypes.length match {
         case 3 => // Spark 2.0.0
           (rowSchema: StructType, gen: JsonGenerator, row: InternalRow) =>
