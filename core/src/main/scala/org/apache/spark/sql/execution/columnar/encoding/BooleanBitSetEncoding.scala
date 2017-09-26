@@ -31,16 +31,14 @@ trait BooleanBitSetEncoding extends ColumnEncoding {
 }
 
 final class BooleanBitSetDecoder(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends BooleanBitSetDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NotNullDecoder
+      initDelta) with NotNullDecoder
 
 final class BooleanBitSetDecoderNullable(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends BooleanBitSetDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NullableDecoder
+      initDelta) with NullableDecoder
 
 final class BooleanBitSetEncoder
     extends NotNullEncoder with BooleanBitSetEncoderBase
@@ -49,9 +47,9 @@ final class BooleanBitSetEncoderNullable
     extends NullableEncoder with BooleanBitSetEncoderBase
 
 abstract class BooleanBitSetDecoderBase(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
+    field: StructField, initDelta: (AnyRef, Long) => Long)
     extends ColumnDecoder(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with BooleanBitSetEncoding {
+      initDelta) with BooleanBitSetEncoding {
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long = cursor
@@ -90,13 +88,7 @@ trait BooleanBitSetEncoderBase
     1L
   }
 
-  override private[sql] def decoderBeforeFinish(mask: Long): ColumnDecoder = {
-    flushWithoutFinish(mask)
-    // can't depend on nullCount because even with zero count, it may have
-    // allocated some null space at the start in advance
-    if (isNullable) new BooleanBitSetDecoderNullable(null, 0L, null, fromUnfinishedEncoder = this)
-    else new BooleanBitSetDecoder(null, 0L, null, fromUnfinishedEncoder = this)
-  }
+  override def offset(cursor: Long): Long = byteCursor - columnBeginPosition
 
   override def writeInternals(columnBytes: AnyRef, cursor: Long): Long = {
     byteCursor = cursor

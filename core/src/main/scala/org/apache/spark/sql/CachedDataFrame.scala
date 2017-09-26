@@ -46,7 +46,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
-import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
@@ -58,7 +57,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
-    val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty,
+    val allbcplans: mutable.Map[SparkPlan, ArrayBuffer[Any]] = mutable.Map.empty,
     val queryHints: Map[String, String] = Map.empty,
     var planProcessingTime: Long = 0,
     var currentExecutionId: Option[Long] = None)
@@ -69,12 +68,11 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
       rddId: Int, hasLocalCollectProcessing: Boolean,
       allLiterals: Array[LiteralValue],
-      allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]],
       queryHints: Map[String, String],
       planProcessingTime: Long, currentExecutionId: Option[Long]) = {
     // scalastyle:on
     this(ds.sparkSession, ds.queryExecution, ds.exprEnc, queryString, cachedRDD,
-      shuffleDependencies, rddId, hasLocalCollectProcessing, allLiterals, allbcplans,
+      shuffleDependencies, rddId, hasLocalCollectProcessing, allLiterals, mutable.Map.empty,
       queryHints, planProcessingTime, currentExecutionId)
   }
 
