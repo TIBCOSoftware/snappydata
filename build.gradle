@@ -677,12 +677,13 @@ task product(type: Zip) {
   def targetProject = clusterProject
   def isEnterpriseProduct = new File(rootDir, 'aqp/build.gradle').exists() &&
       rootProject.hasProperty('snappydata.enterprise')
+  def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
   def hasJdbcConnectorProject = new File(rootDir,
       'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 
   if (isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
-    targetProject = project(":snappy-aqp_${scalaBinaryVersion}")
+    targetProject = aqpProject
   }
 
   if (hasJdbcConnectorProject && rootProject.hasProperty('snappydata.enterprise')) {
@@ -760,7 +761,9 @@ task product(type: Zip) {
       from projectDir
       into snappyProductDir
       include 'LICENSE'
-      include 'NOTICE'
+      if (!isEnterpriseProduct) {
+        include 'NOTICE'
+      }
       include 'README.md'
     }
     copy {
@@ -807,8 +810,14 @@ task product(type: Zip) {
     if (isEnterpriseProduct) {
       // copy enterprise shared libraries for optimized JNI calls
       copy {
-        from project(":snappy-aqp_${scalaBinaryVersion}").projectDir.path + '/lib'
+        from aqpProject.projectDir.path + '/lib'
         into "${snappyProductDir}/jars"
+      }
+      copy {
+        from aqpProject.projectDir
+        into snappyProductDir
+        include 'NOTICE'
+        include '*EULA*'
       }
     }
     copy {
