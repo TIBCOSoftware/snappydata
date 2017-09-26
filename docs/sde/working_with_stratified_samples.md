@@ -68,7 +68,7 @@ Here are some general guidelines to use when creating samples:
 
 * Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above 'hack_license' is picked (one license per driver) as the strata and 1% of the records associated with each driver is sampled. 
 
-* Avoid using unique columns or timestamps for your QCS. For instance, in the example above, 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is a possibility that each record in the Dataset has a different timesstamp. Instead, when dealing with time series the 'hour' function is used to capture data for each hour. 
+* Avoid using unique columns or timestamps for your QCS. For instance, in the example above, 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is a possibility that each record in the dataset has a different timesstamp. Instead, when dealing with time series the 'hour' function is used to capture data for each hour. 
 
 * When the accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
 

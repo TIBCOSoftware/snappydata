@@ -27,7 +27,7 @@ scala>  val tableSchema = StructType(Array(StructField("CustKey", IntegerType, f
 **Create a column table with a simple schema [String, Int] and default options**:</br>
 For detailed option refer to the [Row and Column Tables](../programming_guide/tables_in_snappydata.md#row-and-column-tables) section.
 ```scala
-//Column tables manage data is columnar form and offer superier performance for analytic class queries.
+//Column tables manage data is columnar form and offer superior performance for analytic class queries.
 scala>  snappy.createTable(tableName = "colTable",
           provider = "column", // Create a SnappyData Column table
           schema = tableSchema,

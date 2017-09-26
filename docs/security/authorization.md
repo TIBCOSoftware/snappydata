@@ -49,7 +49,7 @@ gemfirexd.group-ldap-member-attributes
 //attributes specifying the list of members
 ```
 
-If no `gemfirexd.group-ldap-search-base` property has been provided then the one used for authentication gemfirexd.auth-ldap-search-base is used. </br>
+If no `gemfirexd.group-ldap-search-base` property has been provided then the one used for authentication `gemfirexd.auth-ldap-search-base` is used. </br>
 If no search filter is specified then SnappyData uses the standard objectClass groupOfMembers (rfc2307) or groupOfNames with attribute as member, or objectClass groupOfUniqueMembers with attribute as uniqueMember.
 To be precise, the default search filter is:
 

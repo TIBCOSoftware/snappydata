@@ -1066,18 +1066,18 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val clusterMode = SnappyContext.getClusterMode(sc)
+    val userSchema = userSpecifiedSchema.getOrElse(
+      normalizeSchema(Dataset.ofRows(sqlContext.sparkSession, query).schema))
     val plan = clusterMode match {
       // for smart connector mode create the table here and allow
       // further processing to load the data
       case ThinClientConnectorMode(_, _) =>
-        val userSchema = userSpecifiedSchema.getOrElse(
-          normalizeSchema(Dataset.ofRows(sqlContext.sparkSession, query).schema))
         sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.createTable(tableIdent,
           provider, Option(userSchema), schemaDDL, mode, options, isBuiltIn)
         createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
           partitionColumns, SaveMode.Append, options, query, isBuiltIn)
       case _ =>
-        createTableAsSelect(tableIdent, provider, userSpecifiedSchema, schemaDDL,
+        createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
           partitionColumns, mode, options, query, isBuiltIn)
     }
 
