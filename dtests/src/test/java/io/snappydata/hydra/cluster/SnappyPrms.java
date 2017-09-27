@@ -290,6 +290,13 @@ public class SnappyPrms extends BasePrms {
   public static Long waitTimeBeforeNextCycleVM;
 
   /**
+   * (int) how long (milliseconds) it should wait before restarting the VMs.
+   * Required mostly in case of long Running test scenarios where we don't want to restart the
+   * killed VM immediately
+   */
+  public static Long waitTimeBeforeRestartVM;
+
+  /**
    * (int) how long (milliseconds) it should wait before retrieving snappy-job status
    */
   public static Long sleepTimeSecsForJobStatus;

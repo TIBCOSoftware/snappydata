@@ -110,6 +110,8 @@ public class SnappyTest implements Serializable {
   public static long lastCycledTime = 0;
   public static long lastCycledTimeForLead = 0;
   public static int waitTimeBeforeNextCycleVM = TestConfig.tab().intAt(SnappyPrms.waitTimeBeforeNextCycleVM, 20); //secs
+  public static int waitTimeBeforeRestartVM = TestConfig.tab().intAt(SnappyPrms
+      .waitTimeBeforeRestartVM, 180000); //millisecs
   public static final int THOUSAND = 1000;
   public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "snappyStore");
   public static String cycleLeadVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "lead");
@@ -2816,7 +2818,9 @@ public class SnappyTest implements Serializable {
         stopMode.equalsIgnoreCase("NICE_KILL"))) {
       killVM(vmDir, clientName, vmName);
       try {
-        Thread.sleep(180000);
+        if (isLongRunningTest) {
+          Thread.sleep(waitTimeBeforeRestartVM);
+        } else Thread.sleep(180000);
       } catch (InterruptedException e) {
         String s = "Exception occurred while waiting for the kill " + clientName + "process " +
             "execution..";
