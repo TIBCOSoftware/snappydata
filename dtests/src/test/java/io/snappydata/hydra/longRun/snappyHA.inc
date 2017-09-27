@@ -9,19 +9,19 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  =  
 
 TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLeadVM
             maxThreads = 1
-            startInterval = 3600
-            endInterval = 3600
+            startInterval = 21600
+            endInterval = 21600
             threadGroups = snappyStoreThreads;
 
 TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleStoreVms
-            startInterval = 1800
-            endInterval = 1800
+            startInterval = 14400
+            endInterval = 14400
             maxThreads = 1
             threadGroups = leadThreads;
 
 TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLocatorVms
-            startInterval = 5400
-            endInterval = 5400
+            startInterval = 28800
+            endInterval = 28800
             maxThreads = 1
             threadGroups = snappyThreads;
 
@@ -35,6 +35,7 @@ CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = r
             threadGroups = snappyThreads;
 
 io.snappydata.hydra.cluster.SnappyPrms-waitTimeBeforeNextCycleVM = 1800;
+io.snappydata.hydra.cluster.SnappyPrms-waitTimeBeforeRestartVM = 600000;
 io.snappydata.hydra.cluster.SnappyPrms-cycleVms = true;
 
 util.StopStartPrms-stopModes = NICE_KILL;

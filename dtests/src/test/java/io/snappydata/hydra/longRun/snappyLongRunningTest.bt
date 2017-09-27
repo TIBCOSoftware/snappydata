@@ -35,8 +35,8 @@ io/snappydata/hydra/longRun/rcore.conf
   A=snappy snappyHosts=2 snappyVMsPerHost=1 snappyThreadsPerVM=4
   dataLocation="/export/shared/QA_DATA/RCORE_DATA/"
 
-io/snappydata/hydra/longRun/clusterRestart.conf
-  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+/*io/snappydata/hydra/longRun/clusterRestart.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4*/
 
 io/snappydata/hydra/longRun/dmlOps.conf
   A=snappy snappyHosts=2 snappyVMsPerHost=1 snappyThreadsPerVM=8
