@@ -60,7 +60,6 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTabl
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState}
@@ -1065,18 +1064,18 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val clusterMode = SnappyContext.getClusterMode(sc)
+    val userSchema = userSpecifiedSchema.getOrElse(
+      normalizeSchema(Dataset.ofRows(sqlContext.sparkSession, query).schema))
     val plan = clusterMode match {
       // for smart connector mode create the table here and allow
       // further processing to load the data
       case ThinClientConnectorMode(_, _) =>
-        val userSchema = userSpecifiedSchema.getOrElse(
-          normalizeSchema(Dataset.ofRows(sqlContext.sparkSession, query).schema))
         sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.createTable(tableIdent,
           provider, Option(userSchema), schemaDDL, mode, options, isBuiltIn)
         createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
           partitionColumns, SaveMode.Append, options, query, isBuiltIn)
       case _ =>
-        createTableAsSelect(tableIdent, provider, userSpecifiedSchema, schemaDDL,
+        createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
           partitionColumns, mode, options, query, isBuiltIn)
     }
 
@@ -1853,7 +1852,7 @@ object SnappySession extends Logging {
 
     if (key ne null) {
       val noCaching = session.getContextObject[Boolean](
-        CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
+        CachedPlanHelperExec.NOCACHING_KEY).isDefined
       if (noCaching) {
         key.invalidatePlan()
       }
@@ -1864,10 +1863,12 @@ object SnappySession extends Logging {
         }
       }
     }
-    // keep the broadcast hash join plans and their references as well
-    val allBroadcastPlans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
+    // keep the broadcast join plans and their references as well
+    /*
+    val allBroadcastPlans = session.getContextObject[mutable.Map[SparkPlan,
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
-      mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
+      mutable.Map.empty[SparkPlan, ArrayBuffer[Any]])
+    */
     val (cachedRDD, shuffleDeps, rddId, localCollect, executionId, executionTime) =
       executedPlan match {
       case _: ExecutedCommandExec | _: ExecutePlan =>
@@ -1917,12 +1918,6 @@ object SnappySession extends Logging {
           Some(executionId), executionTime)
     }
 
-    /*
-    val allAllBroadcastPlans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
-        ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
-      mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
-    */
-
     logDebug(s"qe.executedPlan = ${df.queryExecution.executedPlan}")
 
     // keep references as well
@@ -1936,7 +1931,7 @@ object SnappySession extends Logging {
     // need to be replaced in the subsequent execution
     if (key != null) {
       val nocaching = session.getContextObject[Boolean](
-        CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
+        CachedPlanHelperExec.NOCACHING_KEY).isDefined
       if (nocaching /* || allallbroadcastplans.nonEmpty */) {
         logDebug(s"Invalidating the key because explicit nocaching")
         key.invalidatePlan()
@@ -1973,7 +1968,7 @@ object SnappySession extends Logging {
     }
 
     val cdf = new CachedDataFrame(df, sqlText, cachedRDD, shuffleDeps, rddId,
-      localCollect, allLiterals, allBroadcastPlans, queryHints, executionTime, executionId)
+      localCollect, allLiterals, queryHints, executionTime, executionId)
 
     // if this has in-memory caching then don't cache since plan can change
     // dynamically after caching due to unpersist etc

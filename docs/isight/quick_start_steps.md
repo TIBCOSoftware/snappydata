@@ -4,7 +4,7 @@ To understand the product follow these easy steps that can get you started quick
 
 1. [Setting up SnappyData Cloud Cluster](#SettingUp)
 
-	* [Deploying SnappyData Cloud Cluster with iSight CloudBuilder](#DeployingClusterCloudFormation)
+	* [Deploying SnappyData Cloud Cluster with <!--iSight Cloud-->SnappyData CloudBuilder](#DeployingClusterCloudFormation)
 
 	* [Deploying SnappyData Cloud Cluster on AWS using Scripts](#DeployingClusterScript)
 
@@ -20,11 +20,11 @@ To understand the product follow these easy steps that can get you started quick
 
 <a id="SettingUp"></a>
 ## Setting Up SnappyData Cloud Cluster
-This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using a script.
+This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the <!--iSight Cloud-->SnappyData CloudBuilder and using a script.
 
 <a id="DeployingClusterCloudFormation"></a>
-## Deploying SnappyData Cloud Cluster with iSight CloudBuilder
-Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.
+## Deploying SnappyData Cloud Cluster with <!--iSight Cloud-->SnappyData CloudBuilder
+Watch the following  video to learn how easy it is to use <!--iSight Cloud-->SnappyData CloudBuilder, which generates a SnappyData Cloud Cluster.
 
 [![Cloudbuilder](../Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
 
@@ -46,7 +46,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 ### Configuring and Launching the SnappyData Cloud Cluster
 
-Launch the iSight CloudBuilder from [http://www.snappydata.io/cloudbuilder](http://www.snappydata.io/cloudbuilder). 
+Launch the <!--iSight Cloud-->SnappyData CloudBuilder from [http://www.snappydata.io/cloudbuilder](http://www.snappydata.io/cloudbuilder). 
 
 1. Enter the name for your cluster. Each cluster is identified by its unique name. 
 The names and details of the members are automatically derived from the provided cluster name. <br>
@@ -114,7 +114,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 
 		* **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
 
-		* **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.
+		* **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the <!--iSight Cloud-->SnappyData CloudBuilder creation steps.
 
 		* **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*
 
@@ -307,7 +307,7 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 ### Examples of Queries and Results
 This section provides you with examples you can use in a paragraph.
 
-* In this example, you can create tables using an external Dataset from AWS S3.
+* In this example, you can create tables using an external dataset from AWS S3.
 
 ![Example](../Images/sde_exampleusingexternaldatabase.png)
 

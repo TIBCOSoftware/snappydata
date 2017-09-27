@@ -132,7 +132,7 @@ object StoreUtils {
       }
     } else {
       val distMembers = getBucketOwnersForRead(bucketId, region)
-      var members = new mutable.ArrayBuffer[String](2)
+      val members = new mutable.ArrayBuffer[String](2)
       var prependPrimary = preferPrimaries
       val primary = if (preferPrimaries) {
         region.getOrCreateNodeForBucketWrite(bucketId, null)
@@ -145,7 +145,7 @@ object StoreUtils {
               if (members.isEmpty) {
                 members += Utils.getHostExecutorId(b.blockId)
               } else {
-                members = Utils.getHostExecutorId(b.blockId) +: members
+                Utils.getHostExecutorId(b.blockId) +=: members
               }
               prependPrimary = false
             } else {

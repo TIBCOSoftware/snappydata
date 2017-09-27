@@ -11,7 +11,7 @@ The script assumes certain conditions to be fulfilled before it is invoked. Plea
 The conditions are:
 
 1. This script is expected to be run by a user who has read and write permissions on the output directories of all the SnappyData nodes.
-2. The user should have a passwordless ssh setup between all the machines where the SnappyData nodes are running.
+2. The user should have a [passwordless ssh setup](../reference/misc/passwordless_ssh.md) between all the machines where the SnappyData nodes are running.
 
 Below is the usage of the script
 
@@ -40,7 +40,7 @@ Options:
   Prints a usage message summary briefly summarizing the command line options
 
   -c, --conf 
-  The script uses a configration file which has three configuration elements.
+  The script uses a configuration file which has three configuration elements.
   1. MEMBERS_FILE -- This is a text file which has member information. Each line has the host machine name followed by the full path to the run directory of the member. This file is generated automatically when the sbin/start-all-scripts.sh is used.
   2. NO_OF_STACK_DUMPS -- This parameter tells the script that how many stack dumps will be attempted per member/node of the running system.
   3. INTERVAL_BETWEEN_DUMPS -- The amount of time in seconds the script waits between registering stack dumps.

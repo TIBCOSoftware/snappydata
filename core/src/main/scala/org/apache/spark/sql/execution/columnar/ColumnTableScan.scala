@@ -87,10 +87,19 @@ private[sql] final case class ColumnTableScan(
 
   @transient private val MAX_SCHEMA_LENGTH = 40
 
-  override lazy val outputOrdering: Seq[SortOrder] = output.collectFirst {
-    case attr if attr.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)) =>
-      StoreUtils.getColumnUpdateDeleteOrdering(attr)
-  }.toSeq
+  override lazy val outputOrdering: Seq[SortOrder] = {
+    val buffer = new ArrayBuffer[SortOrder](2)
+    // sorted on [batchId, ordinal (position within batch)] for update/delete
+    output.foreach {
+      case attr if attr.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)) => // batchId
+        // ensure batchId is the first one in Seq[SortOrder]
+        StoreUtils.getColumnUpdateDeleteOrdering(attr) +=: buffer
+      case attr if attr.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head) => // ordinal
+        buffer += StoreUtils.getColumnUpdateDeleteOrdering(attr)
+      case _ =>
+    }
+    buffer
+  }
 
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty

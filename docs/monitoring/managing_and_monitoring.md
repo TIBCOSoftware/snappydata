@@ -9,3 +9,5 @@ The following topics are covered in this section:
 * [SnappyData Pulse](monitoring.md)
 
 * [Configuring High Availability for a Partitioned Table](configure_high_availability.md)
+
+* [Configuring Logging](configure_logging.md)

@@ -29,7 +29,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 import org.scalatest.Assertions
 
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{Row, SnappySession}
 
 /**
  * Common tests for updates/deletes on column table.
@@ -151,10 +151,43 @@ object ColumnUpdateDeleteTests extends Assertions {
 
     res = session.sql("select * from updateTable EXCEPT select * from checkTable3").collect()
     assert(res.length === 2)
-    assert(res(0).getInt(0) === 87 || res(1).getInt(0) === 87)
-    assert(res(0).getString(1) === "addr87_update" || res(1).getString(1) === "addr87_update")
-    assert(res(0).getInt(0) === 32 || res(1).getInt(0) === 32)
-    assert(res(0).getString(1) === "addr32" || res(1).getString(1) === "addr32")
+    assert(res.toSet === Set(Row(87, "addr87_update", false), Row(32, "addr32", false)))
+
+    // check BroadcastNestedLoopJoin
+    res = session.sql("select u.* from updateTable u, checkTable3 c where " +
+        "u.id < 100 and c.id < 100 and (u.status <> c.status or u.addr <> c.addr)").collect()
+    assert(res.length === 9902)
+
+    // also with multiple updates leading to delta merges
+    session.sql("truncate table checkTable3")
+    session.range(numElements).selectExpr(s"id",
+      "concat(concat('addr', cast(id as string)), '_update')",
+      "case when (id % 2) = 1 then false else true end").write.insertInto("checkTable3")
+
+    session.sql(s"update updateTable set status = not status where id <> 39")
+
+    assert(session.table("updateTable").count() === numElements)
+    assert(session.table("checkTable3").count() === numElements)
+
+    res = session.sql("select * from updateTable where id = 39").collect()
+    assert(res.length === 1)
+    assert(res(0).getInt(0) === 39)
+    assert(res(0).getString(1) === "addr39_update")
+    assert(res(0).getBoolean(2) === true)
+
+    res = session.sql("select * from updateTable where status = ((id % 2) = 1)").collect()
+    assert(res.length === 2)
+    assert(res.toSet === Set(Row(39, "addr39_update", true), Row(87, "addr87_update", true)))
+
+    res = session.sql("select * from updateTable EXCEPT select * from checkTable3").collect()
+    assert(res.length === 3)
+    assert(res.toSet === Set(Row(39, "addr39_update", true),
+      Row(87, "addr87_update", true), Row(32, "addr32", true)))
+
+    // check no caching for BroadcastNestedLoopJoin
+    res = session.sql("select u.* from updateTable u, checkTable3 c where " +
+        "u.id < 100 and c.id < 100 and (u.status <> c.status or u.addr <> c.addr)").collect()
+    assert(res.length === 9903)
 
     session.sql("drop table updateTable")
     session.sql("drop table checkTable1")
