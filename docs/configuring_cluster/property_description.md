@@ -42,7 +42,6 @@ This sets the property for the snappy SQL shell's session.
 Set in the *conf/leads* file
 ```
 $ cat conf/leads
-# This goes to the default directory 
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
 ```
 
@@ -53,7 +52,6 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 |snappydata.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`. The default value is100 MB.|
 |snappydata.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (with b/k/m/g/t/p suffixes for unit) and not the output size. Set this only if there are queries that can return large number of rows in aggregation results. The default value is set to 0b which means, no limit is set on the size, so the optimized hash aggregation is always used.|
 |spark.sql.autoBroadcastJoinThreshold|Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled. |
-|`spark.sql.autoBroadcastJoinThreshold`|Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join. By setting this value to -1 broadcasting can be disabled. |
 
 <a id="sde-properties"></a>
 
@@ -71,7 +69,6 @@ snappy> set snappydata.flushReservoirThreshold=20000;
 Set in the *conf/leads* file
 ```
 $ cat conf/leads
-# This goes to the default directory 
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k -spark.sql.aqp.error=0.5
 ```
 This sets the property for the snappy SQL shell's session.

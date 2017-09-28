@@ -66,21 +66,20 @@ To connect the Tableau Desktop to the SnappyData Server:
 
 2. Open the Tableau Desktop application.
 
-3. On the Start Page, click **Connect to Data**.
+3. On the Start Page,
 
-	1. On the Connect page, click **Other Databases (ODBC)**.
-	2. In the DSN drop-down list, select the name that you provided for your SnappyData ODBC connection (for example *snappydsn*), and then click **Connect**.
+	a. Under **Connect** > **To a Server**, click **Other Databases (ODBC)**. The Other Databases (ODBC) window is displayed.
+
+	b. In the DSN drop-down list, select the name that you provided for your SnappyData ODBC connection (for example *snappydsn*), and then click **Connect**.
 
 4. When connection to the SnappyData server is established, the **Sign In** option is enabled. Click **Sign In** to log into Tableau.
 
-5. From the **Schema** drop-down list, select a schema. For example, *app*
+5. From the **Schema** drop-down list, select a schema. For example, *app*. </br>All tables from the selected schema are listed.
 
-6. All tables from the selected schema are listed.
+6. Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click **Update Now** to refresh and view your changes.
 
-7. Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click **Update Now** to refresh and view your changes.
+7. In the **Worksheets** tab, click **sheet** to start the analysis.</br> 
 
-8. In the **Worksheets** tab, click **sheet** to start the analysis.</br> 
-
-9. On this screen, you can click and drag a field from the **Dimensions** area to** Rows** or **Columns**. Refer to the Tableau documentation for more information on data visualization.
+8. On this screen, you can click and drag a field from the **Dimensions** area to** Rows** or **Columns**.</br> Refer to the Tableau documentation for more information on data visualization.
 
 

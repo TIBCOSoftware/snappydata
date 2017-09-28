@@ -3,13 +3,12 @@
 
 ## Step 1: Download, Install and Configure SnappyData
 1. [Download and Install SnappyData](../install/install_on_premise.md#download-snappydata) </br>
- The table below lists the version of the SnappyData Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Release.
+ The table below lists the version of the SnappyData Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Releases.
 	
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-	|[Version 0.6.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) </br> [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) and [future releases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
-    |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) [and future releases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
-
+    |[Version 0.7.2](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.2) |[Version 0.7.2](https://zeppelin.apache.org/download.html) |[Release 1.0.0](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.0)|
+    
 2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
 
 3. In [lead node configuration](../configuring_cluster/configuring_cluster.md#configuring-leads) set the following properties:
@@ -17,6 +16,8 @@
 	- Enable the SnappyData Zeppelin interpreter by adding `-zeppelin.interpreter.enable=true` 
 
     - In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding `-classpath=/<download_location>/snappydata-zeppelin-<version_number>.jar`.
+
+    - In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing the [SnappyData Pulse UI](../monitoring/monitoring.md) from outside the network.
 
 4. [Start the SnappyData cluster](start_snappy_cluster.md)
 

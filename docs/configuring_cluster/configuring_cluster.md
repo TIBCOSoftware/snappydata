@@ -82,7 +82,6 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 ```
 $ cat conf/leads
-# This goes to the default directory 
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
 

@@ -1,20 +1,19 @@
 # Download and Install
 
-SnappyData offers two editions of the product, they are the Community edition and the Enterprise edition.</br>
-The Community edition that is Apache V2 licensed, is a free, open-source version of the product which anyone can download.</br>
-The Enterprise edition of the product includes everything that is offered in the Community edition and includes additional capabilities that are closed source and only available as part of a licensed subscription. 
+SnappyData offers two editions of the product, Community and Enterprise.
+
+The Community edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
+The Enterprise edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.
 
 For more information on the capabilities of the Community and Enterprise edition see, [Community Edition/Enterprise Edition Components](additional_files/open_source_components.md).
 
 ## Download SnappyData Community Edition
 
-* [Download SnappyData 1.0 Community Edition](https://github.com/SnappyDataInc/snappydata/releases/):</br>
- This page lists the latest and previous releases of SnappyData. The packages are available in compressed files (.zip and .tar format). 
+[Download the SnappyData 1.0 Community edition](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
-	* **SnappyData 1.0.0 Release download link**
-[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-bin.zip)
+* [**SnappyData 1.0.0 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-bin.tar.gz)
 
-	* **SnappyData 1.0.0 Release (user-provided Hadoop) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-without-hadoop-bin.zip)
+* [**SnappyData 1.0.0 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-without-hadoop-bin.tar.gz) 
 
 ## Download SnappyData Enterprise Edition
 
@@ -22,11 +21,11 @@ For more information on the capabilities of the Community and Enterprise edition
 
 2. On this page, enter your email address.
 
-3. Read the END USER LICENSE AGREEMENT and click the **Agree to the terms of service** option to accept it.
+3. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
 
-4. Click **Download** to download the installer (**snappydata-enterprise-1.0.0-rc1.tar.gz**).
+4. Click **Download** to download the installer (**snappydata-1.0.0-bin.tar.gz**).
 
-5. You can download the following additional files by clicking on the provided links.
+5. You can also download the following additional files by clicking on the links:
 
 	* DEBIAN INSTALLER
 
