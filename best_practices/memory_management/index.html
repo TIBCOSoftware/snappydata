@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -146,6 +153,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -161,28 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -211,7 +203,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -302,7 +294,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -316,14 +308,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -742,14 +734,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -768,7 +760,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -798,6 +790,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1588,7 +1587,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1664,7 +1663,7 @@
             <div class="section">
               
                 <h1 id="memory-management">Memory Management</h1>
-<p>Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and Snappydata column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.</p>
+<p>Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and SnappyData column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.</p>
 <p>SnappyData also monitors the JVM memory pools and avoids running into out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold, memory allocations within SnappyData fail, and a LowMemoryException error is reported. This, however, safeguards the server from crashing due to OutOfMemoryException.</p>
 <p><a id="memory-row-table"></a></p>
 <h2 id="estimating-memory-size-for-column-and-row-tables">Estimating Memory Size for Column and Row Tables</h2>
@@ -1803,13 +1802,14 @@ If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds <c
 <p><strong>Example</strong>: Depicts how SnappyData derives different memory region sizes</p>
 <pre><code class="scala">Reserved_Heap_Memory =&gt; 20g * (1 - 0.9) = 2g ( 0.9 being derived from critical_heap_percentage)
 Heap_Memory_Fraction =&gt; (20g - Reserved_Memory) *(0.97) = 17.4 ( 0.97 being derived from spark.memory.fraction)
-Heap_Storage_Pool_Size =&gt; 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.memory.storageFractio)
+Heap_Storage_Pool_Size =&gt; 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.memory.storageFraction)
 Heap_Execution_Pool_Size =&gt; 17.4 * (0.5) = 8.73
 Heap_Max_Storage_pool_Size =&gt; 17.4 * 0.81 = 14.1 ( 0.81 derived from eviction_heap_percentage)
 </code></pre>
 
 <p><a id="off-heap"></a></p>
 <h2 id="snappydata-off-heap-memory">SnappyData Off-Heap Memory</h2>
+<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <p>In addition to heap memory, SnappyData can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, the off-heap setting is recommended. However, several artifacts in the product need heap memory, so some minimum heap size is also required for this.</p>
 <table>
 <thead>
@@ -1842,7 +1842,7 @@ Max_Heap_Storage_pool_Size =&gt; 3.5g * 0.81 = 2.8 ( 0.81 derived from eviction_
 
 
 Off-Heap Storage_Pool_Size =&gt; 16g * (0.5) = 8g
-Heap Execution_Pool_Size =&gt; 16g * (0.5) = 8g
+Off-Heap Execution_Pool_Size =&gt; 16g * (0.5) = 8g
 Max_Off_Heap_Storage_pool_Size =&gt; 16g * 0.9 = 14.4 ( 0.9 System default)
 </code></pre>
 

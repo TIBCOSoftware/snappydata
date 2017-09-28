@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -142,6 +149,13 @@
             <li>
     <ul class="subnav">
     <li><span>Download and Install</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../system_requirements/">System Requirements</a>
+        
+    </li>
 
         
             
@@ -189,28 +203,6 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
         <a class="" href="../../howto/">How Tos</a>
         
     </li>
@@ -230,7 +222,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -321,7 +313,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -335,14 +327,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -744,14 +736,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -770,7 +762,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -800,6 +792,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1590,7 +1589,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1667,7 +1666,10 @@
               
                 <p><a id="building-from-source"></a></p>
 <h1 id="building-from-source">Building from Source</h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Building SnappyData requires JDK 8 installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>).</p>
+</div>
 <h2 id="build-all-components-of-snappydata">Build all components of SnappyData</h2>
 <p><strong>Latest release branch</strong></p>
 <pre><code class="bash">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt; --recursive
@@ -1705,7 +1707,7 @@
 <p><strong>cluster</strong> - Provides the SnappyData implementation of cluster manager embedding GemFireXD, query routing, job server initialization etc.</p>
 </li>
 </ul>
-<p>This component depends on <em>core</em> and <em>store</em>.  The code in the <em>cluster</em> depends on the <em>core</em> but not the other way round.</p>
+<p>This component depends on <em>core</em> and <em>store</em>. The code in the <em>cluster</em> depends on the <em>core</em> but not the other way round.</p>
 <ul>
 <li>
 <p><strong>spark</strong> - <em>Apache Spark</em> code with SnappyData enhancements.</p>
@@ -1727,7 +1729,7 @@
 <h2 id="building">Building</h2>
 <p>Gradle is the build tool used for all the SnappyData projects. Changes to <em>Apache Spark</em> and <em>spark-jobserver</em> forks include the addition of Gradle build scripts to allow building them independently as well as a sub-project of SnappyData. The only requirement for the build is a JDK 8 installation. The Gradle wrapper script downloads all the other build dependencies as required.</p>
 <p>If you do not want to deal with sub-modules and only work on a SnappyData project, you can clone only the SnappyData repository (without the <code>--recursive</code> option) and the build pulls those SnappyData project jar dependencies from Maven central.</p>
-<p>If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build recognizes the same and build those projects too and include the same in the top-level product distribution jar. The <em>spark</em> and <em>store</em> submodules can also be built and published independently.</p>
+<p>If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build recognizes the same and build those projects too and includes the same in the top-level product distribution jar. The <em>spark</em> and <em>store</em> submodules can also be built and published independently.</p>
 <p>Useful build and test targets:</p>
 <pre><code>./gradlew assemble      -  build all the sources
 ./gradlew testClasses   -  build all the tests
@@ -1749,13 +1751,13 @@
 </code></pre>
 
 <p>The default build directory is <em>build-artifacts/scala-2.11</em> for projects. An exception is <em>store</em> project, where the default build directory is <em>build-artifacts/;os</em>; where; <em>;os;</em> is <em>linux</em> on Linux systems, <em>osx</em> on Mac, <em>windows</em> on Windows.</p>
-<p>The usual Gradle test run targets (<em>test</em>, <em>check</em>) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (<em>scalaTest</em>) while the <em>check</em> target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with <em>singleSuite</em> option while running a single test within some suite works with the <em>--tests</em> option:</p>
+<p>The usual Gradle test run targets (<em>test</em>, <em>check</em>) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (<em>scalaTest</em>) while the <em>check</em> target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with <em>singleSuite</em> option while running a single test within some suite works with the <code>--tests</code> option:</p>
 <pre><code class="sh">&gt; ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
 &gt; ./gradlew core:scalaTest \
 &gt;    --tests &quot;Test the creation/dropping of table using SQL&quot;  # run a single test (use full name)
 </code></pre>
 
-<p>Running individual tests within some suite works using the <em>--tests</em> argument.</p>
+<p>Running individual tests within some suite works using the <code>--tests</code> argument.</p>
 <h2 id="setting-up-intellij-idea-with-gradle">Setting up IntelliJ IDEA with Gradle</h2>
 <p>IntelliJ IDEA is the IDE commonly used by developers at SnappyData. Users who prefer to use Eclipse can try the Scala-IDE and Gradle support, however, it is recommended to use IntelliJ IDEA. </br>
 Steps required for setting up SnappyData with all its components in IDEA are listed below.</p>
@@ -1765,7 +1767,7 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
 <p>Upgrade IntelliJ IDEA to version 2016.x, including the latest Scala plug-in. Older versions (pre 14.x) have trouble dealing with Scala code, particularly some of the code in Spark. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via <em>JAVA_HOME</em>).</p>
 </li>
 <li>
-<p>Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase -Xmx option to be something like <em>-Xmx=2g</em> for comfortable use.</p>
+<p>Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase <code>-Xmx</code> option to be something like <em>-Xmx=2g</em> for comfortable use.</p>
 </li>
 <li>
 <p>Select <strong>Import Project</strong>, and then select the SnappyData directory. Use external Gradle import. Clear the <strong>Create separate module per source set</strong> option, while other options can continue with the default . Click <strong>Next</strong> in the following screens.<br/></p>
@@ -1787,24 +1789,34 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
 <li>
 <p>When import is completed, </p>
 <ol>
-<li>Go to <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Scala</strong>. Set the scheme as <strong>Project</strong>. </li>
-<li>In the same window, select <strong>Java</strong> code style and set the scheme as <strong>Project</strong>. </li>
-<li>Click <strong>OK</strong> to apply and close the window. </li>
-<li>Copy <strong>codeStyleSettings.xml</strong> located in the SnappyData top-level directory, to the <strong>.idea</strong> directory created by IDEA. </li>
-<li>Verify that the settings are now applied in <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Java</strong> which should display indent as 2 and continuation indent as 4 (same as Scala).</li>
+<li>
+<p>Go to <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Scala</strong>. Set the scheme as <strong>Project</strong>. </p>
+</li>
+<li>
+<p>In the same window, select <strong>Java</strong> code style and set the scheme as <strong>Project</strong>. </p>
+</li>
+<li>
+<p>Click <strong>OK</strong> to apply and close the window. </p>
+</li>
+<li>
+<p>Copy <strong>codeStyleSettings.xml</strong> located in the SnappyData top-level directory, to the <strong>.idea</strong> directory created by IDEA. </p>
+</li>
+<li>
+<p>Verify that the settings are now applied in <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Java</strong> which should display indent as 2 and continuation indent as 4 (same as Scala).</p>
+</li>
 </ol>
 </li>
 <li>
-<p>If the Gradle tab is not visible immediately, then select it from option avaiable at the bottom-left of IDE. If you click on that window list icon, then the tabs are displayed permanently.</p>
+<p>If the Gradle tab is not visible immediately, then select it from option available at the bottom-left of IDE. Click on that window list icon for the tabs to be displayed permanently.</p>
 </li>
 <li>
 <p>Generate Apache Avro and SnappyData required sources by expanding: <strong>snappydata_2.11&gt; Tasks&gt; other</strong>. Right-click on <strong>generateSources</strong> and run it. The <strong>Run</strong> option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may take some time to complete, as it downloads the jar files and other required files. This step has to be done the first time, or if <strong>./gradlew clean</strong> has been run, or if you have made changes to <strong>javacc/avro/messages.xml</strong> source files.</p>
 </li>
 <li>
-<p>If you get unexpected <strong>"Database not found"</strong> or <strong>NullPointerException</strong> errors in SnappyData-store/GemFireXD layer, run the <strong>generateSources</strong> target (Gradle tab) again.</p>
+<p>If you get unexpected <strong>Database not found</strong> or <strong>NullPointerException</strong> errors in SnappyData-store/GemFireXD layer, run the <strong>generateSources</strong> target (Gradle tab) again.</p>
 </li>
 <li>
-<p>If you get <strong>NullPointerException</strong> error when reading the spark-version-info.properties file, right-click and run the <strong>copyResourcesAll</strong> target from <strong>snappydata_2.11&gt; Tasks&gt; other</strong> (Gradle tab) to copy the required resources.</p>
+<p>If you get <strong>NullPointerException</strong> error when reading the <strong>spark-version-info.properties</strong> file, right-click and run the <strong>copyResourcesAll</strong> target from <strong>snappydata_2.11&gt; Tasks&gt; other</strong> (Gradle tab) to copy the required resources.</p>
 </li>
 <li>
 <p>Increase the compiler heap sizes or else the build can take a long to completely, especially with integrated <em>spark</em> and <em>store</em>. In <strong>File&gt; Settings&gt; Build, Execution, Deployment&gt; Compiler</strong> option increase the <strong>Build process heap size</strong> to 1536 or 2048. Similarly, in <strong>Languages &amp; Frameworks&gt; Scala Compiler Server</strong> option, increase the JVM maximum heap size to 1536 or 2048.</p>
@@ -1820,10 +1832,10 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
 <p>Running Scala/JUnit tests from IntelliJ IDEA is straightforward.</p>
 <ul>
 <li>
-<p>When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise, an external Gradle process is launched that can start building the project again and will not be cleanly integrated with IDEA. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).</p>
+<p>When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise, an external Gradle process is launched that can start building the project again is not cleanly integrated with IDEA. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).</p>
 </li>
 <li>
-<p>For JUnit tests, ensure that the working directory is the top-level <strong>\$MODULE_DIR\$/build-artifacts</strong> as mentioned earlier. Otherwise, many SnappyData-store tests fail to find the resource files required in tests. They also pollute the files, so when launched this allows those to go into <strong>build-artifacts</strong> that are easier to clean. For that reason, it is preferable to do the same for ScalaTests.</p>
+<p>For JUnit tests, ensure that the working directory is the top-level <strong>\$MODULE_DIR\$/build-artifacts</strong> as mentioned earlier. Otherwise, many SnappyData-store tests fail to find the resource files required in tests. They also pollute the files, so when launched, this allows those to go into <strong>build-artifacts</strong> that are easier to clean. For that reason, it is preferable to do the same for ScalaTests.</p>
 </li>
 <li>
 <p>Some of the tests use data files from the <strong>tests-common</strong> directory. For such tests, run the Gradle task <strong>snappydata_2.11&gt; Tasks&gt; other&gt; copyResourcesAll</strong> to copy the resources in build area where IDEA runs can find it.</p>
@@ -1836,7 +1848,7 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../migration/migration/" class="btn btn-neutral float-right" title="Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../howto/" class="btn btn-neutral float-right" title="How Tos">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../setting_up_cluster_on_amazon_web_services/" class="btn btn-neutral" title="Setting up Cluster on Amazon Web Services"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -1874,7 +1886,7 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
         <span><a href="../setting_up_cluster_on_amazon_web_services/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../migration/migration/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../../howto/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

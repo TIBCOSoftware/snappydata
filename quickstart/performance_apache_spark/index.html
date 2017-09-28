@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -123,9 +130,9 @@
             
                 <li class="toctree-l3"><a href="#snappydata-performance-16x-20x-faster-than-apache-spark">SnappyData Performance: 16x-20x faster than Apache Spark</a></li>
                 
-                    <li><a class="toctree-l4" href="#start-the-spark-shell">Start the Spark shell</a></li>
+                    <li><a class="toctree-l4" href="#start-the-spark-shell">Start the Spark Shell</a></li>
                 
-                    <li><a class="toctree-l4" href="#to-get-the-performance-numbers">To get the performance numbers</a></li>
+                    <li><a class="toctree-l4" href="#to-get-the-performance-numbers">To get the Performance Numbers</a></li>
                 
             
             </ul>
@@ -157,6 +164,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -172,28 +186,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -222,7 +214,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -313,7 +305,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -327,14 +319,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -736,14 +728,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -762,7 +754,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -792,6 +784,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1582,7 +1581,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1659,36 +1658,48 @@
               
                 <p><a id="start_benchmark"></a></p>
 <h1 id="snappydata-performance-16x-20x-faster-than-apache-spark">SnappyData Performance: 16x-20x faster than Apache Spark</h1>
-<p>Here you are walked through a simple benchmark to compare SnappyData's performance to Spark 2.1.1.
-Millions of rows are loaded into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. </p>
+<p>In this section, you are walked through a simple benchmark to compare SnappyData's performance to Spark 2.1.1.</br>
+Millions of rows are loaded into a cached Spark DataFrame, some analytic queries measuring its performance are run, and then, the same using SnappyData's column table is repeated.</p>
 <p>A simple analytic query that scans a 100 million-row column table shows SnappyData outperforming Apache Spark by 16-20X when both products have all the data in memory.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>It is recommended that you should have at least 4GB of RAM reserved for this test. </p>
 </div>
-<h2 id="start-the-spark-shell">Start the Spark shell</h2>
+<h2 id="start-the-spark-shell">Start the Spark Shell</h2>
 <p>Use any of the options mentioned below to start the Spark shell:</p>
+<ul>
+<li>
 <p><strong>If you are using your own Spark distribution that is compatible with version 2.1.1:</strong></p>
-<pre><code>```bash
-# Create a directory for SnappyData artifacts
+<pre><code># Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
-```
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
+--conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log 
+--packages "SnappyDataInc:snappydata:1.0.0-s_2.11" 
+--driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 </code></pre>
+</li>
+<li>
 <p><strong>If you have downloaded SnappyData</strong>:</p>
-<pre><code class="bash"># Create a directory for SnappyData artifacts
+<pre><code># Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
+--conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log 
+--driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 </code></pre>
-
+</li>
+<li>
 <p><strong>If you are using Docker</strong>:</p>
-<pre><code class="bash">$ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options=&quot;-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g&quot;
+<pre><code>$ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g 
+--driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 </code></pre>
-
-<h2 id="to-get-the-performance-numbers">To get the performance numbers</h2>
+</li>
+</ul>
+<h2 id="to-get-the-performance-numbers">To get the Performance Numbers</h2>
 <p>Ensure that you are in a Spark shell, and then follow the instructions below to get the performance numbers.</p>
+<ol>
+<li>
 <p><strong>Define a function "benchmark"</strong>, which tells us the average time to run queries after doing the initial warm-ups.</p>
-<pre><code class="scala">scala&gt;  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: =&gt; Unit) {
+<pre><code>scala&gt;  def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: =&gt; Unit) {
           for (i &lt;- 1 to warmups) {
             f
           }
@@ -1697,54 +1708,62 @@ $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-di
             f
           }
           val endTime = System.nanoTime
-          println(s&quot;Average time taken in $name for $times runs: &quot; +
-            (endTime - startTime).toDouble / (times * 1000000.0) + &quot; millis&quot;)
+          println(s"Average time taken in $name for $times runs: " +
+            (endTime - startTime).toDouble / (times * 1000000.0) + " millis")
         }
 </code></pre>
-
-<p><strong>Create a DataFrame and temp table using Spark's range method</strong>:
-Cache it in Spark to get optimal performance. This creates a DataFrame of 100 million records.You can change the number of rows based on  your memory availability.</p>
-<pre><code class="scala">scala&gt;  var testDF = spark.range(100000000).selectExpr(&quot;id&quot;, &quot;concat('sym', cast((id % 100) as STRING)) as sym&quot;)
+</li>
+<li>
+<p><strong>Create a DataFrame and temporary table using Spark's range method</strong>:</p>
+<p>Cache it in Spark to get optimal performance. This creates a DataFrame of 100 million records.You can change the number of rows, based on your memory availability.</p>
+<pre><code>scala&gt;  var testDF = spark.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
 scala&gt;  testDF.cache
-scala&gt;  testDF.createOrReplaceTempView(&quot;sparkCacheTable&quot;)
+scala&gt;  testDF.createOrReplaceTempView("sparkCacheTable")
 </code></pre>
-
-<p><strong>Run a query and to check the performance</strong>:
-The queries use average of a field, without any where clause. This ensures that it touches all records while scanning.</p>
-<pre><code class="scala">scala&gt;  benchmark(&quot;Spark perf&quot;) {spark.sql(&quot;select sym, avg(id) from sparkCacheTable group by sym&quot;).collect()}
+</li>
+<li>
+<p><strong>Run a query and to check the performance</strong>:</p>
+<p>The queries use an average of a field, without any "where" clause. This ensures that it touches all records while scanning.</p>
+<pre><code>scala&gt;  benchmark("Spark perf") {spark.sql("select sym, avg(id) from sparkCacheTable group by sym").collect()}
 </code></pre>
-
-<p><strong>Clean up the JVM</strong>:
-This ensures that all in memory artifacts for Spark is cleaned up.</p>
-<pre><code class="scala">scala&gt;  testDF.unpersist()
+</li>
+<li>
+<p><strong>Clean up the JVM</strong>:</p>
+<p>This ensures that all in-memory artifacts for Spark are cleaned up.</p>
+<pre><code>scala&gt;  testDF.unpersist()
 scala&gt;  System.gc()
 scala&gt;  System.runFinalization()
 </code></pre>
-
+</li>
+<li>
 <p><strong>Create a SnappyContext</strong>:</p>
-<pre><code class="scala">scala&gt;  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
+<pre><code>scala&gt;  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 </code></pre>
-
+</li>
+<li>
 <p><strong>Create similar 100 million record DataFrame</strong>:</p>
-<pre><code class="scala">scala&gt;  testDF = snappy.range(100000000).selectExpr(&quot;id&quot;, &quot;concat('sym', cast((id % 100) as varchar(10))) as sym&quot;)
+<pre><code>scala&gt;  testDF = snappy.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
 </code></pre>
-
+</li>
+<li>
 <p><strong>Create the table</strong>:</p>
-<pre><code class="scala">scala&gt;  snappy.sql(&quot;drop table if exists snappyTable&quot;)
-scala&gt;  snappy.sql(&quot;create table snappyTable (id bigint not null, sym varchar(10) not null) using column&quot;)
+<pre><code>scala&gt;  snappy.sql("drop table if exists snappyTable")
+scala&gt;  snappy.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using column")
 </code></pre>
-
+</li>
+<li>
 <p><strong>Insert the created DataFrame into the table and measure its performance</strong>:</p>
-<pre><code class="scala">scala&gt;  benchmark(&quot;Snappy insert perf&quot;, 1, 0) {testDF.write.insertInto(&quot;snappyTable&quot;) }
+<pre><code>scala&gt;  benchmark("Snappy insert perf", 1, 0) {testDF.write.insertInto("snappyTable") }
 </code></pre>
+</li>
+<li>
+<p><strong>Now, let us run the same benchmark against Spark DataFrame</strong>:</p>
+<pre><code>scala&gt;  benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()}
 
-<p><strong>Now let us run the same benchmark against Spark DataFrame</strong>:</p>
-<pre><code class="scala">scala&gt;  benchmark(&quot;Snappy perf&quot;) {snappy.sql(&quot;select sym, avg(id) from snappyTable group by sym&quot;).collect()}
+scala&gt; :q // Quit the Spark Shell
 </code></pre>
-
-<pre><code>scala&gt; :q // Quit the Spark Shell
-</code></pre>
-
+</li>
+</ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This benchmark code is tested on a system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. Also, in an AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance SnappyData is approximately 16 to 18 times faster than Spark 2.1.1.</p>

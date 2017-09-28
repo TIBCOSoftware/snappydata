@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DefaultMemoryManager - snappydata_2.11 0.9 API - org.apache.spark.memory.DefaultMemoryManager</title>
-          <meta name="description" content="DefaultMemoryManager - snappydata 2.11 0.9 API - org.apache.spark.memory.DefaultMemoryManager" />
-          <meta name="keywords" content="DefaultMemoryManager snappydata 2.11 0.9 API org.apache.spark.memory.DefaultMemoryManager" />
+          <title>DefaultMemoryManager - snappydata_2.11 1.0.0 API - org.apache.spark.memory.DefaultMemoryManager</title>
+          <meta name="description" content="DefaultMemoryManager - snappydata 2.11 1.0.0 API - org.apache.spark.memory.DefaultMemoryManager" />
+          <meta name="keywords" content="DefaultMemoryManager snappydata 2.11 1.0.0 API org.apache.spark.memory.DefaultMemoryManager" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -222,6 +222,25 @@ like encoder etc will account memory here.
 Passing the owner as null allows moving ByteBuffers not allocated
 by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be also changed and freshly accounted.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.DefaultMemoryManager">DefaultMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
+    </li><li name="org.apache.spark.memory.DefaultMemoryManager#clear" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clear():Unit"></a>
+      <a id="clear():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clear</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.DefaultMemoryManager@clear():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Clears the internal map
+</p><div class="fullcomment"><div class="comment cmt"><p>Clears the internal map
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.DefaultMemoryManager">DefaultMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -245,6 +264,24 @@ by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be als
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.memory.DefaultMemoryManager#close" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="close():Unit"></a>
+      <a id="close():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">close</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.DefaultMemoryManager@close():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Closes the memory manager.</p><div class="fullcomment"><div class="comment cmt"><p>Closes the memory manager.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.DefaultMemoryManager">DefaultMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.DefaultMemoryManager#dropStorageMemoryForObject" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dropStorageMemoryForObject(objectName:String,memoryMode:org.apache.spark.memory.MemoryMode,ignoreNumBytes:Long):Long"></a>
       <a id="dropStorageMemoryForObject(String,MemoryMode,Long):Long"></a>

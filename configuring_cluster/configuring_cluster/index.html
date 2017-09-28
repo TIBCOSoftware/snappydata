@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -146,6 +153,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -161,28 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -211,7 +203,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -302,7 +294,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -316,14 +308,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -744,14 +736,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -770,7 +762,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -800,6 +792,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1590,7 +1589,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1831,7 +1830,6 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </table>
 <p><strong>Example</strong>: To start a lead (node-l), set <code>spark.executor.cores</code> as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:</p>
 <pre><code>$ cat conf/leads
-# This goes to the default directory 
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 </code></pre>
 
@@ -1962,7 +1960,7 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
 <p><strong>Example</strong>:</p>
 <pre><code class="bash">$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
     --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-    --packages &quot;SnappyDataInc:snappydata:1.0.0-rc1.1-s_2.11&quot; 
+    --packages &quot;SnappyDataInc:snappydata:1.0.0-s_2.11&quot; 
 </code></pre>
 
 <p><a id="logging"></a></p>

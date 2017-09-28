@@ -119,6 +119,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -155,6 +162,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -170,28 +184,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -220,7 +212,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -311,7 +303,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -325,14 +317,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -734,14 +726,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -760,7 +752,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -790,6 +782,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1580,7 +1579,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1657,18 +1656,18 @@
               
                 <p><a id="getting-started-on-aws"></a></p>
 <h1 id="getting-started-on-amazon-web-services-aws">Getting Started on Amazon Web Services (AWS)</h1>
-<p>You can quickly create a single host SnappyData cluster (i.e. one lead node, one data node and a locator) in a single Amazon Elastic Compute Cloud (EC2) instance through the AWS CloudFormation.</p>
+<p>You can quickly create a single host SnappyData cluster (that is, a lead node, a data node and a locator) in a single Amazon Elastic Compute Cloud (EC2) instance through the AWS CloudFormation.</p>
 <h2 id="prerequisites">Prerequisites</h2>
 <p>Before you begin:</p>
 <ul>
 <li>
-<p>Ensure that you have an existing AWS account with required permissions to launch EC2 resources from CloudFormation</p>
+<p>Ensure that you have an existing AWS account with the permissions required to launch the EC2 resources from CloudFormation</p>
 </li>
 <li>
 <p>Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.</p>
 </li>
 <li>
-<p>Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster</p>
+<p>Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster.</p>
 </li>
 </ul>
 <h3 id="launching-the-cluster-from-aws-ec2">Launching the cluster from AWS EC2</h3>
@@ -1690,7 +1689,7 @@
 <p>On the <strong>Specify Details</strong> page, you can:<br></p>
 <ul>
 <li>
-<p>Provide the stack name: Enter a name for the stack. The stack name must contain only letters, numbers, dashes and should start with an alpha character. This is a mandatory field.</p>
+<p>Provide the stack name: Enter a name for the stack. This is a mandatory field, and must contain only letters, numbers, dashes and should start with an alpha character.</p>
 </li>
 <li>
 <p>Select Instance Type: By default, the c4.2xlarge instance (with 8 CPU core and 15 GB RAM) is selected. This is the recommended instance size for running this quick start.</p>
@@ -1699,7 +1698,7 @@
 <p>Select KeyPairName: Select a key pair from the list of key pairs available to you. This is a mandatory field.</p>
 </li>
 <li>
-<p>Search VPCID: Select the VPC ID from the drop-down list. Your instance(s) is launched within this VPC. This is a mandatory field.<br> 
+<p>Search VPCID: Select the virtual private cloud (VPC) ID from the drop-down list. Your instance(s) are launched within this VPC. This is a mandatory field.<br> 
 <img alt="Refresh" src="../../Images/cluster_specifydetails.png" /></p>
 </li>
 </ul>
@@ -1716,7 +1715,7 @@
 <a id="Stack"></a></p>
 </li>
 <li>
-<p>The next page lists the existing stacks. Click <strong>Refresh</strong> to view the updated list. Select the stack to view its status. 
+<p>The next page lists the existing stacks. Click <strong>Refresh</strong> to view the updated list. Select the stack to view its status.
 When the cluster has started, the status of the stack changes to <strong>CREATE_COMPLETE</strong>. This process may take 4-5 minutes to complete.<br>
 <img alt="Refresh" src="../../Images/cluster_refresh.png" />
 <a id="Stack"></a></p>
@@ -1728,7 +1727,7 @@ When the cluster has started, the status of the stack changes to <strong>CREATE_
 <p><strong>Insufficient Permissions</strong>: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.</p>
 </li>
 <li>
-<p><strong>Invalid Keypair</strong>: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.</p>
+<p><strong>Invalid Keypair</strong>: Verify that the EC2 key pair exists in the region you selected in the <!--iSight Cloud-->SnappyData CloudBuilder creation steps.</p>
 </li>
 <li>
 <p><strong>Limit Exceeded</strong>: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.</p>
@@ -1737,7 +1736,7 @@ When the cluster has started, the status of the stack changes to <strong>CREATE_
 </div>
 </li>
 <li>
-<p>Your cluster is now running. You can explore it using Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has already been started on the instance for you. Simply follow its link (URL) from the <strong>Outputs</strong> tab.<br>
+<p>Your cluster is now running. You can explore it using Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has been started on the instance for you. Simply follow its link (URL) from the <strong>Outputs</strong> tab.<br>
     <img alt="Public IP" src="../../Images/cluster_links.png" /></p>
 </li>
 </ol>
@@ -1746,10 +1745,10 @@ When the cluster has started, the status of the stack changes to <strong>CREATE_
 <p class="admonition-title">Note</p>
 <ul>
 <li>
-<p>Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the <a href="../../install/setting_up_cluster_on_amazon_web_services/">EC2 scripts</a>.</p>
+<p>Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the <a href="../../install/setting_up_cluster_on_amazon_web_services/#EC2">EC2 scripts</a>.</p>
 </li>
 <li>
-<p>To stop incurring charges for the instance, you can either terminate the instance or delete the stack after you are done playing with the cluster. However, you cannot connect to or restart an instance after you have terminated it.</p>
+<p>To stop incurring charges for the instance, it is recommended that you either terminate the instance or delete the stack when not in use.  However, you cannot connect to or restart an instance after you have terminated it.</p>
 </li>
 </ul>
 </div>

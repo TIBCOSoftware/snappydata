@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnDeltaEncoder - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder</title>
-          <meta name="description" content="ColumnDeltaEncoder - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder" />
-          <meta name="keywords" content="ColumnDeltaEncoder snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder" />
+          <title>ColumnDeltaEncoder - snappydata_2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder</title>
+          <meta name="description" content="ColumnDeltaEncoder - snappydata 2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder" />
+          <meta name="keywords" content="ColumnDeltaEncoder snappydata 2.11 1.0.0 API org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -350,7 +350,7 @@ and scan overhead.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -711,6 +711,23 @@ that occupied after <a href="ColumnEncoder.html#finish(cursor:Long):java.nio.Byt
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#finish" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="finish(encoderCursor:Long,numBaseRows:Int):java.nio.ByteBuffer"></a>
+      <a id="finish(Long,Int):ByteBuffer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finish</span><span class="params">(<span name="encoderCursor">encoderCursor: <span class="extype" name="scala.Long">Long</span></span>, <span name="numBaseRows">numBaseRows: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder@finish(encoderCursor:Long,numBaseRows:Int):java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#finish" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finish(encoderCursor:Long):java.nio.ByteBuffer"></a>
       <a id="finish(Long):ByteBuffer"></a>
@@ -746,7 +763,7 @@ The encoder can be reused for new column data of same type again.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">flush any pending data when <a href="#finish(encoderCursor:Long):java.nio.ByteBuffer" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#finish">finish</a> is not being invoked explicitly</p><div class="fullcomment"><div class="comment cmt"><p>flush any pending data when <a href="#finish(encoderCursor:Long):java.nio.ByteBuffer" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#finish">finish</a> is not being invoked explicitly</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder">ColumnDeltaEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
+      <p class="shortcomment cmt">flush any pending data when <a href="#finish(encoderCursor:Long,numBaseRows:Int):java.nio.ByteBuffer" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#finish">finish</a> is not being invoked explicitly</p><div class="fullcomment"><div class="comment cmt"><p>flush any pending data when <a href="#finish(encoderCursor:Long,numBaseRows:Int):java.nio.ByteBuffer" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#finish">finish</a> is not being invoked explicitly</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder">ColumnDeltaEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder#forComplexType" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="forComplexType:Boolean"></a>
       <a id="forComplexType:Boolean"></a>
@@ -832,6 +849,23 @@ The encoder can be reused for new column data of same type again.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#getNullWords" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNullWords:AnyRef"></a>
+      <a id="getNullWords:AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNullWords</span><span class="result">: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder@getNullWords:AnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder">ColumnDeltaEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#getNumNullWords" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getNumNullWords:Int"></a>
       <a id="getNumNullWords:Int"></a>
@@ -916,8 +950,8 @@ The encoder can be reused for new column data of same type again.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Initialize this ColumnDeltaEncoder.</p><div class="fullcomment"><div class="comment cmt"><p>Initialize this ColumnDeltaEncoder.
-</p></div><dl class="paramcmts block"><dt class="param">dataType</dt><dd class="cmt"><p>DataType of the field to be written</p></dd><dt class="param">nullable</dt><dd class="cmt"><p>True if the field can have nulls else false</p></dd><dt class="param">initSize</dt><dd class="cmt"><p>initial number of columns to accomodate in the delta</p></dd><dt class="param">withHeader</dt><dd class="cmt"><p>ignored</p></dd><dt class="param">allocator</dt><dd class="cmt"><p>the <span class="extype" name="BufferAllocator">BufferAllocator</span> to use for the data</p></dd><dt class="param">minBufferSize</dt><dd class="cmt"><p>the minimum size of initial buffer to use (ignored if &lt;= 0)</p></dd><dt>returns</dt><dd class="cmt"><p>initial position of the cursor that caller must use to write</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder">ColumnDeltaEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
+      <p class="shortcomment cmt">Initialize this ColumnEncoder.</p><div class="fullcomment"><div class="comment cmt"><p>Initialize this ColumnEncoder.
+</p></div><dl class="paramcmts block"><dt class="param">dataType</dt><dd class="cmt"><p>DataType of the field to be written</p></dd><dt class="param">nullable</dt><dd class="cmt"><p>True if the field is nullable, false otherwise</p></dd><dt class="param">initSize</dt><dd class="cmt"><p>Initial estimated number of elements to be written</p></dd><dt class="param">withHeader</dt><dd class="cmt"><p>True if header is to be written to data (typeId etc)</p></dd><dt class="param">allocator</dt><dd class="cmt"><p>the <span class="extype" name="BufferAllocator">BufferAllocator</span> to use for the data</p></dd><dt class="param">minBufferSize</dt><dd class="cmt"><p>the minimum size of initial buffer to use (ignored if &lt;= 0)</p></dd><dt>returns</dt><dd class="cmt"><p>initial position of the cursor that caller must use to write</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder">ColumnDeltaEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder#initialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initialize(dataType:org.apache.spark.sql.types.DataType,nullable:Boolean,initSize:Int,withHeader:Boolean,allocator:com.gemstone.gemfire.internal.shared.BufferAllocator):Long"></a>
       <a id="initialize(DataType,Boolean,Int,Boolean,BufferAllocator):Long"></a>
@@ -1953,7 +1987,7 @@ storage being used by column store in embedded mode.
       </a>
     </span>
       <p class="shortcomment cmt">Write any internal structures (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Write any internal structures (e.g. dictionary) of the encoder that would
-normally be written by <a href="#finish(encoderCursor:Long):java.nio.ByteBuffer" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#finish">finish</a> after the header and null bit mask.
+normally be written by <a href="#finish(encoderCursor:Long,numBaseRows:Int):java.nio.ByteBuffer" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#finish">finish</a> after the header and null bit mask.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder">ColumnDeltaEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder#writeInterval" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="writeInterval(cursor:Long,value:org.apache.spark.unsafe.types.CalendarInterval):Long"></a>

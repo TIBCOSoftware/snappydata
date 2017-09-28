@@ -109,8 +109,19 @@
             
                 <li class="toctree-l3"><a href="#getting-started-with-docker-image">Getting Started with Docker Image</a></li>
                 
+                    <li><a class="toctree-l4" href="#verify-that-docker-is-installed">Verify that Docker is Installed</a></li>
+                
+                    <li><a class="toctree-l4" href="#get-the-docker-image">Get the Docker Image</a></li>
+                
             
             </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
         
     </li>
 
@@ -153,6 +164,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -168,28 +186,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -218,7 +214,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -309,7 +305,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -323,14 +319,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -732,14 +728,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -758,7 +754,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -788,6 +784,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1578,7 +1581,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1657,8 +1660,8 @@
 <h1 id="getting-started-with-docker-image">Getting Started with Docker Image</h1>
 <p>SnappyData comes with a pre-configured Docker image. It has binaries for SnappyData, which enables you to try the quick start program and more, with SnappyData.</p>
 <p>This section assumes you have already installed and configured Docker properly. Refer to <a href="http://docs.docker.com/installation/">Docker documentation</a> for more details.</p>
-<p><strong>Verify that Docker is installed</strong></br> 
-In the command prompt run the command:</p>
+<h2 id="verify-that-docker-is-installed">Verify that Docker is Installed</br></h2>
+<p>In the command prompt run the command:</p>
 <pre><code class="scala">$ docker run hello-world
 
 </code></pre>
@@ -1667,12 +1670,12 @@ In the command prompt run the command:</p>
 <p class="admonition-title">Note</p>
 <p>Ensure that the Docker containers have access to at least 4GB of RAM on your machine.</p>
 </div>
-<p><strong>Get the Docker image</strong></br>
-In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark shell.</p>
+<h2 id="get-the-docker-image">Get the Docker Image</br></h2>
+<p>In the command prompt, type the following command to get the Docker image. This starts the container and takes you to the Spark shell.</p>
 <pre><code class="scala">$  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 </code></pre>
 
-<p>It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time. </br></p>
+<p>The latest image files starts downloading to your local machine. Depending on your network connection, it may take some time. </br></p>
 <p>Once you have launched the Spark shell, in the <code>$ scala&gt;</code> prompt, follow the steps explained <a href="../using_spark_scala_apis/">here</a>.</br></p>
 <p>For more details about SnappyData Docker image see <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker">Snappy Cloud Tools</a>.</p>
               
@@ -1682,7 +1685,7 @@ In the command prompt, type the following command to get the docker image. This 
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../using_spark_scala_apis/" class="btn btn-neutral float-right" title="Using Spark Scala APIs">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../getting_started_gemfire_connector/" class="btn btn-neutral float-right" title="Getting Started with SnappyData GemFire Connector">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../getting_started_on_aws/" class="btn btn-neutral" title="Getting Started with Amazon Web Services"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -1720,7 +1723,7 @@ In the command prompt, type the following command to get the docker image. This 
         <span><a href="../getting_started_on_aws/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../using_spark_scala_apis/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../getting_started_gemfire_connector/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

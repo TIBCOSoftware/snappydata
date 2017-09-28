@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyAQPSessionState - snappydata_2.11 0.9 API - org.apache.spark.sql.internal.SnappyAQPSessionState</title>
-          <meta name="description" content="SnappyAQPSessionState - snappydata 2.11 0.9 API - org.apache.spark.sql.internal.SnappyAQPSessionState" />
-          <meta name="keywords" content="SnappyAQPSessionState snappydata 2.11 0.9 API org.apache.spark.sql.internal.SnappyAQPSessionState" />
+          <title>SnappyAQPSessionState - snappydata_2.11 1.0.0 API - org.apache.spark.sql.internal.SnappyAQPSessionState</title>
+          <meta name="description" content="SnappyAQPSessionState - snappydata 2.11 1.0.0 API - org.apache.spark.sql.internal.SnappyAQPSessionState" />
+          <meta name="keywords" content="SnappyAQPSessionState snappydata 2.11 1.0.0 API org.apache.spark.sql.internal.SnappyAQPSessionState" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -127,6 +127,27 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState.LinkPartitionsToBuckets" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LinkPartitionsToBucketsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="LinkPartitionsToBuckets:LinkPartitionsToBuckets"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySessionState$LinkPartitionsToBuckets.html"><span class="name">LinkPartitionsToBuckets</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@LinkPartitionsToBucketsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This rule sets the flag at query level to link the partitions to
+be created for tables to be the same as number of buckets.</p><div class="fullcomment"><div class="comment cmt"><p>This rule sets the flag at query level to link the partitions to
+be created for tables to be the same as number of buckets. This will avoid
+exchange on one side of a non-collocated join in many cases.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -185,27 +206,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.LinkPartitionsToBuckets" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="LinkPartitionsToBuckets"></a>
-      <a id="LinkPartitionsToBuckets:LinkPartitionsToBuckets"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappySessionState$LinkPartitionsToBuckets$.html"><span class="name">LinkPartitionsToBuckets</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@LinkPartitionsToBuckets" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">This rule sets the flag at query level to link the partitions to
-be created for tables to be the same as number of buckets.</p><div class="fullcomment"><div class="comment cmt"><p>This rule sets the flag at query level to link the partitions to
-be created for tables to be the same as number of buckets. This will avoid
-exchange on one side of a non-collocated join in many cases.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionState.ParamLiteralFolding" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ParamLiteralFolding"></a>
       <a id="ParamLiteralFolding:ParamLiteralFolding"></a>

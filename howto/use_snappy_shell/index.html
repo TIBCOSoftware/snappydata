@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -146,6 +153,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -161,28 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -211,7 +203,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -243,7 +235,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-use-snappy-sql-shell-snappy-sql">How to Use Snappy SQL shell (snappy-sql)</a></li>
+                <li class="toctree-l3"><a href="#how-to-use-snappy-sql-shell-snappy-sql">How to use Snappy SQL Shell (snappy-sql)</a></li>
                 
             
             </ul>
@@ -309,7 +301,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -323,14 +315,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -732,14 +724,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -758,7 +750,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -788,6 +780,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1578,7 +1577,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1654,16 +1653,16 @@
             <div class="section">
               
                 <p><a id="howto-snappyShell"></a></p>
-<h1 id="how-to-use-snappy-sql-shell-snappy-sql">How to Use Snappy SQL shell (snappy-sql)</h1>
-<p><code>snappy-sql</code> can be used to execute SQL on SnappyData cluster. In the background, <code>snappy-sql</code> uses JDBC connections to execute SQL.</p>
-<p><strong>Connect to a SnappyData Cluster</strong>: 
-Use the <code>snappy-sql</code> and <code>connect client</code> command on the Snappy SQL Shell</p>
+<h1 id="how-to-use-snappy-sql-shell-snappy-sql">How to use Snappy SQL Shell (snappy-sql)</h1>
+<p>The Snappy SQL shell can be used to execute SQL on SnappyData cluster. In the background, <code>snappy-sql</code> uses JDBC connections to execute SQL.</p>
+<p><strong>Connect to a SnappyData Cluster</strong>: </br>
+Use the <code>snappy-sql</code> and <code>connect client</code> commands on the Snappy SQL shell as follows:</p>
 <pre><code class="scala">$ bin/snappy-sql
 snappy&gt; connect client '&lt;locatorHostName&gt;:1527';
 </code></pre>
 
-<p>Where <code>&lt;locatorHostName&gt;</code> is the host name of the node on which the locator is started and <strong>1527</strong> is the default port on which the locator listens for connections. </p>
-<p><strong>Execute SQL queries</strong>: Once connected you can execute SQL queries using <code>snappy-sql</code></p>
+<p>Here, the <code>&lt;locatorHostName&gt;</code> is the host name of the node on which the locator is started and <strong>1527</strong> is the default port on which the locator listens for connections.</p>
+<p><strong>Execute SQL queries</strong>:</br> Once connected, you can execute SQL queries using <code>snappy-sql</code></p>
 <pre><code class="scala">snappy&gt; CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
 
 snappy&gt; INSERT INTO APP.PARTSUPP VALUES(100, 1, 5000, 100);
@@ -1679,8 +1678,8 @@ PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST
 2 rows selected
 </code></pre>
 
-<p><strong>View the members of cluster</strong>: 
-Use the <code>show members</code> command</p>
+<p><strong>View the members of cluster</strong>: </br>
+Use the <code>show members</code> command.</p>
 <pre><code class="scala">snappy&gt; show members;
 ID                            |HOST                          |KIND                          |STATUS              |NETSERVERS                    |SERVERGROUPS                  
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1691,8 +1690,8 @@ localhost(21262)&lt;v0&gt;:22770    |localhost                     |locator(norm
 3 rows selected
 </code></pre>
 
-<p><strong>View the list tables in a schema</strong>: 
-Use <code>show tables in &lt;schema&gt;</code> command</p>
+<p><strong>View the list tables in a schema</strong>: </br>
+Use <code>show tables in &lt;schema&gt;</code> command.</p>
 <pre><code class="scala">snappy&gt; show tables in app;
 TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE|REMARKS             
 -----------------------------------------------------------------------------------

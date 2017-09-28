@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -146,6 +153,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -161,28 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -211,7 +203,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -302,7 +294,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -316,14 +308,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -738,14 +730,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -764,7 +756,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -794,6 +786,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1584,7 +1583,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1728,7 +1727,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 </div>
 <p>The program must be compiled and bundled as a jar file and submitted to jobs server as shown below.</p>
 <pre><code class="scala">$ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
@@ -1761,7 +1760,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 
 <p>This Job ID can be used to query the status of the running job. </p>
 <pre><code class="scala">$ bin/snappy-job.sh status  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 
 {
@@ -1777,7 +1776,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 
 <p>Once the tables are created, they can be queried by running another job. Please refer to <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala">AirlineDataJob</a> for implementing the job. </p>
 <pre><code class="scala">$ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
@@ -1785,9 +1784,9 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 
 <p>The status of this job can be queried in the same manner as shown above. The result of the job returns a file path that has the query results.</p>
 <h3 id="jar-dependencies-for-jobs">Jar Dependencies for Jobs</h3>
-<p>For writing jobs, users need to include <strong><a href="http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0-rc1.1">snappydata-cluster_2.11:1.0.0-rc1.1</a></strong> to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.</p>
+<p>For writing jobs, users need to include <strong><a href="http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0">snappydata-cluster_2.11:1.0.0</a></strong> to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.</p>
 <p>For example, gradle can be configured as:</p>
-<pre><code>compile('io.snappydata:snappydata-cluster_2.11:1.0.0-rc1.1') {
+<pre><code>compile('io.snappydata:snappydata-cluster_2.11:1.0.0') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
@@ -1824,7 +1823,7 @@ Alternatively, you can specify the name of an existing/pre-created streaming con
 <p>For example, <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala">TwitterPopularTagsJob</a> can be submitted as follows. 
 This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, and top 10 popular tweets.</p>
 <pre><code class="scala">$ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
@@ -1841,15 +1840,15 @@ This job creates stream tables on tweet streams, registers continuous queries an
 
 <p>To start another streaming job with a new streaming context, you need to first stop the currently running streaming job, followed by its streaming context.</p>
 <pre><code class="scala">$ bin/snappy-job.sh stop  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
 
 $ bin/snappy-job.sh listcontexts  \
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 [&quot;snappyContext1452598154529305363&quot;, &quot;snappyStreamingContext1463987084945028747&quot;, &quot;snappyStreamingContext&quot;]
 
 $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 </code></pre>
               
             </div>

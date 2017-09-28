@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>OrderlessHashPartitioning - snappydata_2.11 0.9 API - org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning</title>
-          <meta name="description" content="OrderlessHashPartitioning - snappydata 2.11 0.9 API - org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning" />
-          <meta name="keywords" content="OrderlessHashPartitioning snappydata 2.11 0.9 API org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning" />
+          <title>OrderlessHashPartitioning - snappydata_2.11 1.0.0 API - org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning</title>
+          <meta name="description" content="OrderlessHashPartitioning - snappydata 2.11 1.0.0 API - org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning" />
+          <meta name="keywords" content="OrderlessHashPartitioning snappydata 2.11 1.0.0 API org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">OrderlessHashPartitioning</span><span class="params">(<span name="expressions">expressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="aliases">aliases: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a> with <a href="../../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">OrderlessHashPartitioning</span><span class="params">(<span name="expressions">expressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="aliases">aliases: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="tableBuckets">tableBuckets: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a> with <a href="../../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -93,7 +93,7 @@ than this partitioning then also it is considered equal.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],aliases:Seq[Seq[org.apache.spark.sql.catalyst.expressions.Attribute]],numPartitions:Int,numBuckets:Int):org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning"></a>
+      <a id="&lt;init&gt;(expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],aliases:Seq[Seq[org.apache.spark.sql.catalyst.expressions.Attribute]],numPartitions:Int,numBuckets:Int,tableBuckets:Int):org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning"></a>
       <a id="&lt;init&gt;:OrderlessHashPartitioning"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -101,10 +101,10 @@ than this partitioning then also it is considered equal.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">OrderlessHashPartitioning</span><span class="params">(<span name="expressions">expressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="aliases">aliases: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>)</span>
+        <span class="name">OrderlessHashPartitioning</span><span class="params">(<span name="expressions">expressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="aliases">aliases: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="tableBuckets">tableBuckets: <span class="extype" name="scala.Int">Int</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning@&lt;init&gt;(expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],aliases:Seq[Seq[org.apache.spark.sql.catalyst.expressions.Attribute]],numPartitions:Int,numBuckets:Int):org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning@&lt;init&gt;(expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],aliases:Seq[Seq[org.apache.spark.sql.catalyst.expressions.Attribute]],numPartitions:Int,numBuckets:Int,tableBuckets:Int):org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1380,6 +1380,23 @@ this method may return an arbitrary user facing string.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning#tableBuckets" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="tableBuckets:Int"></a>
+      <a id="tableBuckets:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tableBuckets</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning@tableBuckets:Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#toJSON" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toJSON:String"></a>
       <a id="toJSON:String"></a>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnDeleteEncoder - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder</title>
-          <meta name="description" content="ColumnDeleteEncoder - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder" />
-          <meta name="keywords" content="ColumnDeleteEncoder snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder" />
+          <title>ColumnDeleteEncoder - snappydata_2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder</title>
+          <meta name="description" content="ColumnDeleteEncoder - snappydata 2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder" />
+          <meta name="keywords" content="ColumnDeleteEncoder snappydata 2.11 1.0.0 API org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -321,7 +321,7 @@ PFOR (https://github.com/lemire/JavaFastPFOR).
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -682,6 +682,23 @@ that occupied after <a href="ColumnEncoder.html#finish(cursor:Long):java.nio.Byt
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder#finish" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="finish(numPositions:Int,numBaseRows:Int):java.nio.ByteBuffer"></a>
+      <a id="finish(Int,Int):ByteBuffer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finish</span><span class="params">(<span name="numPositions">numPositions: <span class="extype" name="scala.Int">Int</span></span>, <span name="numBaseRows">numBaseRows: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder@finish(numPositions:Int,numBaseRows:Int):java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder#finish" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finish(cursor:Long):java.nio.ByteBuffer"></a>
       <a id="finish(Long):ByteBuffer"></a>
@@ -786,6 +803,23 @@ The encoder can be reused for new column data of same type again.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder#getNullWords" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNullWords:AnyRef"></a>
+      <a id="getNullWords:AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNullWords</span><span class="result">: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder@getNullWords:AnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder">ColumnDeleteEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder#getNumNullWords" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getNumNullWords:Int"></a>
       <a id="getNumNullWords:Int"></a>
@@ -856,18 +890,18 @@ The encoder can be reused for new column data of same type again.
       <p class="shortcomment cmt">Initialize this ColumnEncoder.</p><div class="fullcomment"><div class="comment cmt"><p>Initialize this ColumnEncoder.
 </p></div><dl class="paramcmts block"><dt class="param">dataType</dt><dd class="cmt"><p>DataType of the field to be written</p></dd><dt class="param">nullable</dt><dd class="cmt"><p>True if the field is nullable, false otherwise</p></dd><dt class="param">initSize</dt><dd class="cmt"><p>Initial estimated number of elements to be written</p></dd><dt class="param">withHeader</dt><dd class="cmt"><p>True if header is to be written to data (typeId etc)</p></dd><dt class="param">allocator</dt><dd class="cmt"><p>the <span class="extype" name="BufferAllocator">BufferAllocator</span> to use for the data</p></dd><dt class="param">minBufferSize</dt><dd class="cmt"><p>the minimum size of initial buffer to use (ignored if &lt;= 0)</p></dd><dt>returns</dt><dd class="cmt"><p>initial position of the cursor that caller must use to write</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder">ColumnDeleteEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder#initialize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="initialize(initSize:Int):Long"></a>
-      <a id="initialize(Int):Long"></a>
+      <a id="initialize(initSize:Int):Int"></a>
+      <a id="initialize(Int):Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initialize</span><span class="params">(<span name="initSize">initSize: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">initialize</span><span class="params">(<span name="initSize">initSize: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder@initialize(initSize:Int):Long" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder@initialize(initSize:Int):Int" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1839,7 +1873,24 @@ storage being used by column store in embedded mode.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder#writeInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder#writeInt" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="writeInt(position:Int,value:Int):Int"></a>
+      <a id="writeInt(Int,Int):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">writeInt</span><span class="params">(<span name="position">position: <span class="extype" name="scala.Int">Int</span></span>, <span name="value">value: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder@writeInt(position:Int,value:Int):Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder#writeInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="writeInt(cursor:Long,value:Int):Long"></a>
       <a id="writeInt(Long,Int):Long"></a>
       <h4 class="signature">
@@ -1855,7 +1906,7 @@ storage being used by column store in embedded mode.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder">ColumnDeleteEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder#writeIntUnchecked" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="writeIntUnchecked(cursor:Long,value:Int):Long"></a>
       <a id="writeIntUnchecked(Long,Int):Long"></a>

@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -146,6 +153,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -161,28 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -211,7 +203,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -236,7 +228,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData store from an Existing Spark Installation using Smart Connector</a></li>
+                <li class="toctree-l3"><a href="#how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData Store from an existing Spark Installation using Smart Connector</a></li>
                 
             
             </ul>
@@ -309,7 +301,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -323,14 +315,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -732,14 +724,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -758,7 +750,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -788,6 +780,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1578,7 +1577,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1654,40 +1653,40 @@
             <div class="section">
               
                 <p><a id="howto-splitmode"></a></p>
-<h1 id="how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData store from an Existing Spark Installation using Smart Connector</h1>
-<p>SnappyData comes with a Smart Connector that enables Spark applications to work with the SnappyData cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.0.x). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is no different than how Spark applications today work with stores like Cassandra, Redis, etc.</p>
+<h1 id="how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData Store from an existing Spark Installation using Smart Connector</h1>
+<p>SnappyData comes with a Smart Connector that enables Spark applications to work with the SnappyData cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.1.1). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is similar to how Spark applications today work with stores like Cassandra, Redis, etc.</p>
 <p>For more information on the various modes, refer to the <a href="../../affinity_modes/connector_mode/">SnappyData Smart Connector</a> section of the documentation.</p>
 <p><strong>Code Example:</strong>
 The code example for this mode is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample.scala</a></p>
-<p><strong>Configure a SnappySession</strong>: </p>
-<p>The code below shows how to initialize a SparkSession. Here the property <code>snappydata.connection</code> instructs the connector to acquire cluster connectivity and catalog metadata and registers it locally in the Spark cluster. Its value is consists of  locator host and JDBC client port on which the locator listens for connections (default 1527).</p>
-<pre><code class="scala">    val spark: SparkSession = SparkSession
-        .builder
-        .appName(&quot;SmartConnectorExample&quot;)
-        // It can be any master URL
-        .master(&quot;local[4]&quot;)
-         // snappydata.connection property enables the application to interact with SnappyData store
-        .config(&quot;snappydata.connection&quot;, &quot;localhost:1527&quot;)
-        .getOrCreate
+<p><strong>Configure a SnappySession</strong>:</br>
+The code below shows how to initialize a SparkSession. Here the property <code>snappydata.connection</code> instructs the connector to acquire cluster connectivity, catalog metadata and register it locally in the Spark cluster. The values consists of <em>locator host</em> and <em>JDBC client port</em> on which the locator listens for connections (default 1527).</p>
+<pre><code class="scala">val spark: SparkSession = SparkSession
+    .builder
+    .appName(&quot;SmartConnectorExample&quot;)
+    // It can be any master URL
+    .master(&quot;local[4]&quot;)
+    // snappydata.connection property enables the application to interact with SnappyData store
+    .config(&quot;snappydata.connection&quot;, &quot;localhost:1527&quot;)
+    .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext)
+val snSession = new SnappySession(spark.sparkContext)
 </code></pre>
 
 <p><strong>Create Table and Run Queries</strong>: 
-You can now create tables and run queries in SnappyData store using your Apache Spark program</p>
-<pre><code class="scala">    // reading an already created SnappyStore table SNAPPY_COL_TABLE
-    val colTable = snSession.table(&quot;SNAPPY_COL_TABLE&quot;)
-    colTable.show(10)
+You can now create tables and run queries in SnappyData store using your Apache Spark program.</p>
+<pre><code class="scala">// reading an already created SnappyStore table SNAPPY_COL_TABLE
+val colTable = snSession.table(&quot;SNAPPY_COL_TABLE&quot;)
+colTable.show(10)
 
-    snSession.dropTable(&quot;TestColumnTable&quot;, ifExists = true)
+snSession.dropTable(&quot;TestColumnTable&quot;, ifExists = true)
 
-    // Creating a table from a DataFrame
-    val dataFrame = snSession.range(1000).selectExpr(&quot;id&quot;, &quot;floor(rand() * 10000) as k&quot;)
+// Creating a table from a DataFrame
+val dataFrame = snSession.range(1000).selectExpr(&quot;id&quot;, &quot;floor(rand() * 10000) as k&quot;)
 
-    snSession.sql(&quot;create table TestColumnTable (id bigint not null, k bigint not null) using column&quot;)
+snSession.sql(&quot;create table TestColumnTable (id bigint not null, k bigint not null) using column&quot;)
 
-    // insert data in TestColumnTable
-    dataFrame.write.insertInto(&quot;TestColumnTable&quot;)
+// insert data in TestColumnTable
+dataFrame.write.insertInto(&quot;TestColumnTable&quot;)
 </code></pre>
               
             </div>

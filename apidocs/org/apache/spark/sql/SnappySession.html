@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappySession - snappydata_2.11 0.9 API - org.apache.spark.sql.SnappySession</title>
-          <meta name="description" content="SnappySession - snappydata 2.11 0.9 API - org.apache.spark.sql.SnappySession" />
-          <meta name="keywords" content="SnappySession snappydata 2.11 0.9 API org.apache.spark.sql.SnappySession" />
+          <title>SnappySession - snappydata_2.11 1.0.0 API - org.apache.spark.sql.SnappySession</title>
+          <meta name="description" content="SnappySession - snappydata 2.11 1.0.0 API - org.apache.spark.sql.SnappySession" />
+          <meta name="keywords" content="SnappySession snappydata 2.11 1.0.0 API org.apache.spark.sql.SnappySession" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -2149,6 +2149,26 @@ sparkSession.readStream.schema(schema).json(<span class="lit">"/path/to/director
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.SnappySession#sessionState" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sessionState:org.apache.spark.sql.internal.SnappySessionState"></a>
+      <a id="sessionState:SnappySessionState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sessionState</span><span class="result">: <a href="internal/SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@sessionState:org.apache.spark.sql.internal.SnappySessionState" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">State isolated across sessions, including SQL configurations, temporary tables, registered
+functions, and everything else that accepts a <a href="internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">org.apache.spark.sql.internal.SQLConf</a>.</p><div class="fullcomment"><div class="comment cmt"><p>State isolated across sessions, including SQL configurations, temporary tables, registered
+functions, and everything else that accepts a <a href="internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">org.apache.spark.sql.internal.SQLConf</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a> → <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#setPreparedQuery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="setPreparedQuery(preparePhase:Boolean,paramSet:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]):Unit"></a>
       <a id="setPreparedQuery(Boolean,Option[ParameterValueSet]):Unit"></a>

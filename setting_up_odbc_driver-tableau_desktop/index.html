@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -146,6 +153,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -161,28 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -211,7 +203,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -302,7 +294,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -316,14 +308,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -725,14 +717,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -751,7 +743,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -781,6 +773,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1586,7 +1585,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1667,7 +1666,7 @@
 <p class="admonition-title">Note</p>
 <ul>
 <li>
-<p>This is currently tested and supported only on Windows 10 (32-Bit &amp; 64-Bit systems).</p>
+<p>This is currently tested and supported only on Windows 10 (32-bit and 64-bit systems).</p>
 </li>
 <li>
 <p><a href="https://www.microsoft.com/en-in/download/details.aspx?id=40784">Download and Install Visual C++ Redistributable for Visual Studio 2013</a> </p>
@@ -1675,7 +1674,17 @@
 </ul>
 </div>
 <h2 id="step-1-install-the-snappydata-odbc-driver">Step 1: Install the SnappyData ODBC Driver</h2>
-<p><a href="http://www.snappydata.io/download">Download the SnappyData 1.0-RC Enterprise Version</a> by registering on the SnappyData website and <a href="../howto/connect_using_odbc_driver/#howto-odbc-step2">install the SnappyData ODBC Driver</a>.</p>
+<ol>
+<li>
+<p><a href="../install/#download-snappydata">Download the SnappyData 1.0-RC Enterprise Edition</a>.</p>
+</li>
+<li>
+<p>Click <strong>ODBC INSTALLERS</strong> to download the <strong>snappydata-odbc-1.0.0.zip</strong> file.</p>
+</li>
+<li>
+<p>Follow <a href="../howto/connect_using_odbc_driver/">steps 1 and 2</a> to install the  SnappyData ODBC driver.</p>
+</li>
+</ol>
 <h2 id="step-2-create-snappydata-dsn-from-odbc-data-sources-64-bit32-bit">Step 2: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit</h2>
 <p>To create SnappyData DSN from ODBC Data Sources:</p>
 <ol>
@@ -1688,16 +1697,16 @@
 <p>In the <strong>ODBC Data Source Administrator</strong> window, select either the <strong>User DSN</strong> or <strong>System DSN</strong> tab. </p>
 </li>
 <li>
-<p>Click <strong>Add</strong> to view the list of installed ODBC Drivers on your machine.</p>
+<p>Click <strong>Add</strong> to view the list of installed ODBC drivers on your machine.</p>
 </li>
 <li>
 <p>From the list of drivers, select <strong>SnappyData ODBC Driver</strong> and click <strong>Finish</strong>.</p>
 </li>
 <li>
-<p>The <strong>SnappyData ODBC Configuration</strong> dialog is displayed. Enter the following details to create DSN:</p>
+<p>The <strong>SnappyData ODBC Configuration</strong> dialog is displayed. </br>Enter the following details to create a DSN:</p>
 <ul>
 <li>
-<p><strong>Data Source Name</strong>: Name of the Data Source. For example, snappydsn.  </p>
+<p><strong>Data Source Name</strong>: Name of the Data Source. For example, <em>snappydsn</em>.  </p>
 </li>
 <li>
 <p><strong>Server (Hostname or IP)</strong>: IP address of the data server which is running in the SnappyData cluster.</p>
@@ -1706,10 +1715,10 @@
 <p><strong>Port</strong>: Port number of the server. By default, it is <strong>1528</strong> for the first data server in the cluster.</p>
 </li>
 <li>
-<p><strong>Login ID</strong>: The login ID required to connect to the server. For example, <strong>app</strong></p>
+<p><strong>Login ID</strong>: The login ID required to connect to the server. For example, <em>app</em></p>
 </li>
 <li>
-<p><strong>Password</strong>: The password required to connect to the server. For example, <strong>app</strong></p>
+<p><strong>Password</strong>: The password required to connect to the server. For example, <em>app</em></p>
 </li>
 </ul>
 </li>
@@ -1725,55 +1734,41 @@
 <p><a href="https://www.tableau.com/products/desktop">Download Tableau Desktop</a>.</p>
 </li>
 <li>
-<p>Depending on your Windows installation, download the 32-bit or 64-bit version of the installer. </p>
+<p>Depending on your Windows installation, download the 32-bit or 64-bit version of the installer.</p>
 </li>
 <li>
-<p>Follow the steps to complete the installation.</p>
+<p>Follow the steps to complete the installation and ensure that you register and activate your product.</p>
 </li>
 </ol>
 <h2 id="step-4-connecting-tableau-desktop-to-snappydata-server">Step 4. Connecting Tableau Desktop to SnappyData Server</h2>
-<p>Before using Tableau with SnappyData ODBC Driver for the first time, you must add the <strong>odbc-snappydata.tdc</strong> configuration file in the Tableau data sources directory. Follow below steps to do so.</p>
-<p>To connect the Tableau Desktop to SnappyData Server:</p>
+<p>When using Tableau with the SnappyData ODBC Driver for the first time, you must add the <strong>odbc-snappydata.tdc</strong> file, that is available in the downloaded <strong>snappydata-odbc-1.0.0.zip</strong>.</p>
+<p>To connect the Tableau Desktop to the SnappyData Server:</p>
 <ol>
-<li>
-<p>The downloaded SnappyData file contains the <strong>odbc-snappydata.tdc</strong> configuration file.</p>
-</li>
 <li>
 <p>Copy the <strong>odbc-snappydata.tdc</strong> file to the &lt;<em>User_Home_Path</em>&gt;/Documents/My Tableau Repository/Datasources directory.</p>
 </li>
 <li>
-<p>Open the Tableau Desktop application</p>
+<p>Open the Tableau Desktop application.</p>
 </li>
 <li>
-<p>On the start page, under <strong>Connect</strong> &gt; <strong>To a Server</strong>, and then click, <strong>Other Databases (ODBC)</strong>.
-The <strong>Other Databases (ODBC)</strong> window is displayed. </p>
+<p>On the Start Page,</p>
+<p>a. Under <strong>Connect</strong> &gt; <strong>To a Server</strong>, click <strong>Other Databases (ODBC)</strong>. The Other Databases (ODBC) window is displayed.</p>
+<p>b. In the DSN drop-down list, select the name that you provided for your SnappyData ODBC connection (for example <em>snappydsn</em>), and then click <strong>Connect</strong>.</p>
 </li>
 <li>
-<p>In the <strong>Connect Using &gt; DSN</strong> drop-down, select the data source name provided earlier. (eg. snappydsn).</p>
+<p>When connection to the SnappyData server is established, the <strong>Sign In</strong> option is enabled. Click <strong>Sign In</strong> to log into Tableau.</p>
 </li>
 <li>
-<p>Click <strong>Connect</strong>.</p>
-</li>
-<li>
-<p>When a connection to SnappyData Server is established, the <strong>Sign In</strong> option is enabled. </p>
-</li>
-<li>
-<p>Click <strong>Sign In</strong> to log into Tableau.</p>
-</li>
-<li>
-<p>From the <strong>Schema</strong> drop-down list, select a schema. For example, <strong>app</strong></p>
-</li>
-<li>
-<p>All tables from the selected schema is listed.</p>
+<p>From the <strong>Schema</strong> drop-down list, select a schema. For example, <em>app</em>. </br>All tables from the selected schema are listed.</p>
 </li>
 <li>
 <p>Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click <strong>Update Now</strong> to refresh and view your changes.</p>
 </li>
 <li>
-<p>Click the <strong>Worksheets</strong> tab &gt; <strong>sheet</strong> to start the analysis.</br> </p>
+<p>In the <strong>Worksheets</strong> tab, click <strong>sheet</strong> to start the analysis.</br> </p>
 </li>
 <li>
-<p>On this screen, you can click and drag a field from the <strong>Dimensions</strong> area to<strong> Rows</strong> or <strong>Columns</strong>. Refer to the Tableau documentation for more information on data visualization.</p>
+<p>On this screen, you can click and drag a field from the <strong>Dimensions</strong> area to<strong> Rows</strong> or <strong>Columns</strong>.</br> Refer to the Tableau documentation for more information on data visualization.</p>
 </li>
 </ol>
               

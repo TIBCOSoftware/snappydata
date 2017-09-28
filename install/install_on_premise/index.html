@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -145,6 +152,13 @@
 
         
             
+    <li class="toctree-l1 ">
+        <a class="" href="../system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
     <li class="toctree-l1 current">
         <a class="current" href="./">Install On-Premise</a>
         
@@ -152,15 +166,11 @@
             
                 <li class="toctree-l3"><a href="#install-on-premise">Install On-Premise</a></li>
                 
-                    <li><a class="toctree-l4" href="#prerequisites">Prerequisites</a></li>
-                
-                    <li><a class="toctree-l4" href="#download-snappydata">Download SnappyData</a></li>
-                
                     <li><a class="toctree-l4" href="#single-host-installation">Single-Host installation</a></li>
                 
                     <li><a class="toctree-l4" href="#multi-host-installation">Multi-Host installation</a></li>
                 
-                    <li><a class="toctree-l4" href="#machines-with-a-shared-path">Machines with a Shared Path</a></li>
+                    <li><a class="toctree-l4" href="#machines-with-a-shared-path">Machines with a shared path</a></li>
                 
                     <li><a class="toctree-l4" href="#machines-without-a-shared-path">Machines without a shared path</a></li>
                 
@@ -189,28 +199,6 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
         <a class="" href="../../howto/">How Tos</a>
         
     </li>
@@ -230,7 +218,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -321,7 +309,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -335,14 +323,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -744,14 +732,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -770,7 +758,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -800,6 +788,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1590,7 +1585,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1667,33 +1662,11 @@
               
                 <p><a id="install-on-premise"></a></p>
 <h1 id="install-on-premise">Install On-Premise</h1>
-<p>SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.</p>
-<h2 id="prerequisites">Prerequisites</h2>
-<p>Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the <em>JAVA_HOME</em> environment variable is set on each computer.</p>
-<h2 id="download-snappydata">Download SnappyData</h2>
-<p>Download the latest version of SnappyData: </p>
-<ul>
-<li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/">Download SnappyData 1.0 RC Open Source Version</a>:</br>
- This page lists the latest and previous releases of SnappyData. The packages are available in compressed files (.zip and .tar format). You can also view details of features and enhancements introduced in specific releases.</p>
-<ul>
-<li>
-<p><strong>SnappyData 1.0.0-rc1 Release download link</strong>
-<a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0-rc1/snappydata-1.0.0-rc1-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0-rc1/snappydata-1.0.0-rc1-bin.zip">(zip)</a></p>
-</li>
-<li>
-<p><strong>SnappyData 1.0.0-rc1 Release (user-provided Hadoop) download link</strong> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0-rc1/snappydata-1.0.0-rc1-without-hadoop-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0-rc1/snappydata-1.0.0-rc1-without-hadoop-bin.zip">(zip)</a></p>
-</li>
-</ul>
-</li>
-<li>
-<p><a href="http://www.snappydata.io/download">Download SnappyData 1.0-RC Enterprise Version</a>: </br> Users can download the Enterprise version for evaluation after registering on the SnappyData website.</p>
-</li>
-</ul>
+<p>SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premise installation, SnappyData is installed and operated from your in-house computing infrastructure.</p>
 <p><a id="singlehost"></a></p>
 <h2 id="single-host-installation">Single-Host installation</h2>
 <p>This is the simplest form of deployment and can be used for testing and POCs.</p>
-<p>Open the command prompt, go the location of the SnappyData downloaded file, and run the following command to extract the downloaded archive file.</p>
+<p>Open the command prompt, go the location of the downloaded SnappyData file, and run the following command to extract the archive file.</p>
 <pre><code class="bash">$ tar -xzf snappydata-&lt;version-number&gt;bin.tar.gz
 $ cd snappydata-&lt;version-number&gt;-bin/
 </code></pre>
@@ -1705,9 +1678,9 @@ $ cd snappydata-&lt;version-number&gt;-bin/
 <p>For custom configuration and to start more nodes,  see the section on <a href="../../configuring_cluster/configuring_cluster/">configuring the SnappyData cluster</a>.</p>
 <h2 id="multi-host-installation">Multi-Host installation</h2>
 <p>For real-life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.</p>
-<h2 id="machines-with-a-shared-path">Machines with a Shared Path</h2>
+<h2 id="machines-with-a-shared-path">Machines with a shared path</h2>
 <p>If all your machines can share a path over an NFS or similar protocol, then follow the steps below:</p>
-<h4 id="prerequisites_1">Prerequisites</h4>
+<h4 id="prerequisites">Prerequisites</h4>
 <ul>
 <li>
 <p>Ensure that the <strong>/etc/hosts</strong> correctly configures the host and IP address of each SnappyData member machine.</p>
@@ -1736,11 +1709,11 @@ $ cd snappydata-&lt;version-number&gt;.-bin/
 </code></pre>
 </li>
 </ol>
-<p>This creates a default folder named <strong>work</strong> and stores all SnappyData member's artifacts separately. Each member folder is identified by the name of the node.</p>
+<p>This creates a default folder named <strong>work</strong> and stores all SnappyData member's artifacts separately. The folder is identified by the name of the node.</p>
 <p>If SSH is not supported then follow the instructions in the <a href="#machine-shared-path">Machines without a Shared Path</a> section.</p>
 <p><a id="machine-shared-path"></a></p>
 <h2 id="machines-without-a-shared-path">Machines without a shared path</h2>
-<h3 id="prerequisites_2">Prerequisites</h3>
+<h3 id="prerequisites_1">Prerequisites</h3>
 <ul>
 <li>
 <p>Ensure that the <strong>/etc/hosts</strong> correctly configures the host and IP Address of each SnappyData member machine.</p>
@@ -1761,7 +1734,7 @@ $ cd snappydata-&lt;version-number&gt;.-bin/
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>All configuration parameters are provided as command line arguments rather than reading from a conf file.</p>
+<p>All configuration parameters are provided as command line arguments rather than reading from a configuration file.</p>
 </div>
 <p>The example below starts a cluster by individually launching locator, server and lead processes.</p>
 <pre><code class="bash">$ bin/snappy locator start  -dir=/node-a/locator1
@@ -1782,7 +1755,7 @@ $ bin/snappy leader stop -dir=/node-c/lead1top
         <a href="../setting_up_cluster_on_amazon_web_services/" class="btn btn-neutral float-right" title="Setting up Cluster on Amazon Web Services">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../" class="btn btn-neutral" title="Download and Install"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../system_requirements/" class="btn btn-neutral" title="System Requirements"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1814,7 +1787,7 @@ $ bin/snappy leader stop -dir=/node-c/lead1top
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../system_requirements/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../setting_up_cluster_on_amazon_web_services/" style="color: #fcfcfc">Next &raquo;</a></span>

@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Using iSight-Cloud - SnappyData Documentation</title>
+  <title>Using SnappyData CloudBuilder - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -29,7 +29,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Using iSight-Cloud";
+    var mkdocs_page_name = "Using SnappyData CloudBuilder";
     var mkdocs_page_input_path = "aqp_aws.md";
     var mkdocs_page_url = "/aqp_aws/";
   </script>
@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -146,6 +153,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -161,28 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -211,7 +203,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -302,7 +294,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -316,14 +308,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -725,11 +717,11 @@
           
             <li>
     <li class="toctree-l1 current">
-        <a class="current" href="./">Using iSight-Cloud</a>
+        <a class="current" href="./">Using SnappyData CloudBuilder</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#using-isight-cloud">Using iSight-Cloud</a></li>
+                <li class="toctree-l3"><a href="#using-snappydata-cloudbuilder">Using SnappyData CloudBuilder</a></li>
                 
             
             </ul>
@@ -739,7 +731,7 @@
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -758,7 +750,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -788,6 +780,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1578,7 +1577,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1633,7 +1632,7 @@
     
       
     
-    <li>Using iSight-Cloud</li>
+    <li>Using SnappyData CloudBuilder</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1649,11 +1648,13 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="using-isight-cloud">Using iSight-Cloud</h1>
-<p>iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (<a href="../aqp/">SDE</a>), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. </p>
-<p>iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. </p>
-<p>The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight-Cloud EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
-With iSight-Cloud, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.</p>
+                <h1 id="using-snappydata-cloudbuilder">Using <!--iSight-Cloud-->SnappyData CloudBuilder</h1>
+<p><!--iSight-Cloud-->CloudBuilder is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (<a href="../aqp/">SDE</a>), users interact with <!--iSight-Cloud-->CloudBuilder to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. </p>
+<!--iSight-Cloud-->
+
+<p>CloudBuilder uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. </p>
+<p>The service provides a web URL that spins up a cluster instance on AWS or users can download the <!--iSight-Cloud-->CloudBuilder EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
+With <!--iSight-Cloud-->CloudBuilder, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.</p>
 <p>In this document, the features provided by SnappyData for analyzing your data is described. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.</p>
 <p>Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.</p>
 <p>The following topics are covered in this section:</p>
@@ -1665,7 +1666,7 @@ With iSight-Cloud, you can speed up the process of understanding what your data 
 <p><a href="../isight/quick_start_steps/">Quick Start Steps</a></p>
 </li>
 <li>
-<p><a href="../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a></p>
+<p><a href="../isight/the_technology_powering_isight_cloud/">The Technology Powering CloudB</a></p>
 </li>
 </ul>
               

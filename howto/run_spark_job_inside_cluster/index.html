@@ -110,6 +110,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
@@ -146,6 +153,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -161,28 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -211,7 +203,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -229,7 +221,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-run-spark-code-inside-the-cluster">How to Run Spark Code inside the Cluster</a></li>
+                <li class="toctree-l3"><a href="#how-to-run-spark-code-inside-the-cluster">How to run Spark Code inside the Cluster</a></li>
                 
             
             </ul>
@@ -309,7 +301,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -323,14 +315,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -732,14 +724,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -758,7 +750,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -788,6 +780,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1578,7 +1577,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1654,8 +1653,8 @@
             <div class="section">
               
                 <p><a id="howto-job"></a></p>
-<h1 id="how-to-run-spark-code-inside-the-cluster">How to Run Spark Code inside the Cluster</h1>
-<p>A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.</p>
+<h1 id="how-to-run-spark-code-inside-the-cluster">How to run Spark Code inside the Cluster</h1>
+<p>Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.</p>
 <p><strong>Implementing a Job</strong>: 
 A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the <code>runSnappyJob</code> method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>
 Any of the Spark APIs can be invoked by a SnappyJob.</p>
@@ -1674,34 +1673,32 @@ Any of the Spark APIs can be invoked by a SnappyJob.</p>
 <p><strong>Dependencies</strong>:
 To compile your job, use the Maven/SBT dependencies for the latest released version of SnappyData.</p>
 <p><strong>Example: Maven dependency</strong>:</p>
-<pre><code class="scala">&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 --&gt;
+<pre><code class="scala">// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 &lt;dependency&gt;
     &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
     &lt;artifactId&gt;snappydata-cluster_2.11&lt;/artifactId&gt;
-    &lt;version&gt;1.0.0-rc1.1&lt;/version&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre>
 
 <p><strong>Example: SBT dependency</strong>:</p>
 <pre><code class="scala">// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;1.0.0-rc1.1&quot;
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;1.0.0&quot;
 </code></pre>
 
 <p><strong>Running the Job</strong>: 
-Once you create a jar file for SnappyData job, use <code>bin/snappy-job.sh</code> to submit the job to SnappyData cluster and run the job. This is similar to Spark-submit for any Spark application. </p>
-<p>For example, to run the job implemented in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala">CreatePartitionedRowTable.scala</a> you can use the following command.
-Here <strong>quickstart.jar</strong> contains the program and is bundled in the product distribution.<br/>
-For example, the command submits the job and runs it as:</p>
+Once you create a jar file for SnappyData job, use the <code>bin/snappy-job.sh</code> to submit the job in the SnappyData cluster, and then run the job. This is similar to <code>spark-submit</code> for any Spark application. </p>
+<p>For example, to run the job implemented in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala">CreatePartitionedRowTable.scala</a> you can use the following command. The command submits the job and runs it as:</p>
 <pre><code class="scala"> # first cd to your SnappyData product dir
  $ cd $SNAPPY_HOME
  $ bin/snappy-job.sh submit
     --app-name CreatePartitionedRowTable
     --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
     --app-jar examples/jars/quickstart.jar
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 </code></pre>
 
-<p>In the above comand, <strong>--lead</strong> option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).</p>
+<p>In the above command, <strong>quickstart.jar</strong> contains the program and is bundled in the product distribution and the <strong>--lead</strong> option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).</p>
 <p><strong>Output</strong>: It returns output similar to:</p>
 <pre><code class="scala">{
   &quot;status&quot;: &quot;STARTED&quot;,
@@ -1713,7 +1710,7 @@ For example, the command submits the job and runs it as:</p>
 </code></pre>
 
 <p><strong>Check Status</strong>: You can check the status of the job using the Job ID listed above:</p>
-<pre><code class="scala">bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
+<pre><code class="scala">bin/snappy-job.sh status --lead localhost:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 </code></pre>
 
 <p>Refer to the <a href="../../programming_guide/building_snappydata_applications_using_spark_api/">Building SnappyData applications using Spark API</a> section of the documentation for more details.</p>

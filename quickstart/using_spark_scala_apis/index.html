@@ -109,6 +109,13 @@
 
         
             
+    <li class="toctree-l1 ">
+        <a class="" href="../getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
+        
+    </li>
+
+        
+            
     <li class="toctree-l1 current">
         <a class="current" href="./">Using Spark Scala APIs</a>
         
@@ -153,6 +160,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
         
     </li>
@@ -168,28 +182,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
         
     </li>
 
@@ -218,7 +210,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -309,7 +301,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -323,14 +315,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -732,14 +724,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -758,7 +750,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -788,6 +780,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1578,7 +1577,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1655,87 +1654,98 @@
               
                 <p><a id="getting-started-using-spark-scala-apis"></a></p>
 <h1 id="using-spark-scala-apis">Using Spark Scala APIs</h1>
-<p><strong>Create a SnappySession</strong>:</br>
-A SnappySession extends the SparkSession so you can mutate data, get much higher performance, etc.</p>
-<pre><code class="scala">scala&gt; val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
-//Import snappy extensions
+<ol>
+<li>
+<p><strong>Create a SnappySession</strong></br>
+    SnappySession extends the SparkSession so you can mutate data, get much higher performance, etc.</p>
+<pre><code>scala&gt; val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
+// Import Snappy extensions
 scala&gt; import snappy.implicits._
 </code></pre>
-
-<p><strong>Create a small dataset using Spark's APIs</strong>:</br></p>
-<pre><code class="scala">scala&gt; val ds = Seq((1,&quot;a&quot;), (2, &quot;b&quot;), (3, &quot;c&quot;)).toDS()
+</li>
+<li>
+<p><strong>Create a dataset using the Spark APIs</strong></br></p>
+<pre><code>scala&gt; val ds = Seq((1,"a"), (2, "b"), (3, "c")).toDS()
 </code></pre>
-
-<p><strong>Define a schema for the table</strong>:</br></p>
-<pre><code class="scala">scala&gt;  import org.apache.spark.sql.types._
-scala&gt;  val tableSchema = StructType(Array(StructField(&quot;CustKey&quot;, IntegerType, false),
-          StructField(&quot;CustName&quot;, StringType, false)))
+</li>
+<li>
+<p><strong>Define a schema for the table</strong></br></p>
+<pre><code>scala&gt;  import org.apache.spark.sql.types._
+scala&gt;  val tableSchema = StructType(Array(StructField("CustKey", IntegerType, false),
+          StructField("CustName", StringType, false)))
 </code></pre>
-
-<p><strong>Create a column table with a simple schema [String, Int] and default options</strong>:</br>
-For detailed option refer to the <a href="../../programming_guide/tables_in_snappydata/#row-and-column-tables">Row and Column Tables</a> section.</p>
-<pre><code class="scala">//Column tables manage data is columnar form and offer superier performance for analytic class queries.
-scala&gt;  snappy.createTable(tableName = &quot;colTable&quot;,
-          provider = &quot;column&quot;, // Create a SnappyData Column table
+</li>
+<li>
+<p><strong>Create a "column" table with a simple schema [String, Int] and default options</strong></br>
+    For detailed option refer to the <a href="../../programming_guide/tables_in_snappydata/#row-and-column-tables">Row and Column Tables</a> section.</p>
+<pre><code>// Column tables manage data is columnar form and offer superior performance for analytic class queries.
+scala&gt;  snappy.createTable(tableName = "colTable",
+          provider = "column", // Create a SnappyData Column table
           schema = tableSchema,
-          options = Map.empty[String, String], // Map for options.
+          options = Map.empty[String, String], // Map for options
           allowExisting = false)
 </code></pre>
-
 <p>SnappyData (SnappySession) extends SparkSession, so you can simply use all the Spark's APIs.</p>
-<p><strong>Insert the created DataSet to the column table "colTable"</strong>:</br></p>
-<pre><code class="scala">scala&gt;  ds.write.insertInto(&quot;colTable&quot;)
+</li>
+<li>
+<p><strong>Insert the created DataSet to the column table "colTable"</strong></br></p>
+<pre><code>scala&gt;  ds.write.insertInto("colTable")
 // Check the total row count.
-scala&gt;  snappy.table(&quot;colTable&quot;).count
+scala&gt;  snappy.table("colTable").count
 </code></pre>
-
-<p><strong>Create a row object using Spark's API and insert the Row to the table</strong>:</br>
-Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.</p>
-<pre><code class="scala">// Insert a new record
+</li>
+<li>
+<p><strong>Create a row object using Spark's API and insert the row into the table</strong></br>
+    Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.</p>
+<pre><code>// Insert a new record
 scala&gt;  import org.apache.spark.sql.Row
-scala&gt;  snappy.insert(&quot;colTable&quot;, Row(10, &quot;f&quot;))
-// Check the total row count after inserting the row.
-scala&gt;  snappy.table(&quot;colTable&quot;).count
+scala&gt;  snappy.insert("colTable", Row(10, "f"))
+// Check the total row count after inserting the row
+scala&gt;  snappy.table("colTable").count
 </code></pre>
-
-<p><strong>Create a "row" table with a simple schema [String, Int] and default options</strong>: </br>
-For detailed option refer to the <a href="../../programming_guide/tables_in_snappydata/#row-and-column-tables">Row and Column Tables</a> section.</p>
-<pre><code class="scala">//Row formatted tables are better when datasets constantly change or access is selective (like based on a key).
-scala&gt;  snappy.createTable(tableName = &quot;rowTable&quot;,
-          provider = &quot;row&quot;,
-          schema = tableSchema,
-          options = Map.empty[String, String],
-          allowExisting = false)
+</li>
+<li>
+<p><strong>Create a "row" table with a simple schema [String, Int] and default options</strong> </br>
+    For detailed option refer to the <a href="../../programming_guide/tables_in_snappydata/#row-and-column-tables">Row and Column Tables</a> section.</p>
+<pre><code>// Row formatted tables are better when datasets constantly change or access is selective (like based on a key)
+scala&gt;  snappy.createTable(tableName = "rowTable",
+provider = "row",
+schema = tableSchema,
+options = Map.empty[String, String],
+allowExisting = false)
 </code></pre>
-
-<p><strong>Insert the created DataSet to the row table "rowTable"</strong>:</br></p>
-<pre><code class="scala">scala&gt;  ds.write.insertInto(&quot;rowTable&quot;)
-//Check the row count
-scala&gt;  snappy.table(&quot;rowTable&quot;).count
+</li>
+<li>
+<p><strong>Insert the created DataSet to the row table "rowTable"</strong></br></p>
+<pre><code>scala&gt;  ds.write.insertInto("rowTable")
+// Check the row count
+scala&gt;  snappy.table("rowTable").count
 </code></pre>
-
-<p><strong>Insert a new record</strong>:</br></p>
-<pre><code class="scala">scala&gt;  snappy.insert(&quot;rowTable&quot;, Row(4, &quot;d&quot;))
+</li>
+<li>
+<p><strong>Insert a new record</strong></br></p>
+<pre><code>scala&gt;  snappy.insert("rowTable", Row(4, "d"))
 //Check the row count now
-scala&gt;  snappy.table(&quot;rowTable&quot;).count
+scala&gt;  snappy.table("rowTable").count
 </code></pre>
+</li>
+<li>
+<p><strong>Change some data in the row table</strong></br></p>
+<pre><code>// Updating a row for customer with custKey = 1
+scala&gt;  snappy.update(tableName = "rowTable", filterExpr = "CUSTKEY=1",
+                newColumnValues = Row("d"), updateColumns = "CUSTNAME")
 
-<p><strong>Change some data in a row table</strong>:</br></p>
-<pre><code class="scala">//Updating a row for customer with custKey = 1
-scala&gt;  snappy.update(tableName = &quot;rowTable&quot;, filterExpr = &quot;CUSTKEY=1&quot;,
-                newColumnValues = Row(&quot;d&quot;), updateColumns = &quot;CUSTNAME&quot;)
+scala&gt;  snappy.table("rowTable").orderBy("CUSTKEY").show
 
-scala&gt;  snappy.table(&quot;rowTable&quot;).orderBy(&quot;CUSTKEY&quot;).show
+// Delete the row for customer with custKey = 1
+scala&gt;  snappy.delete(tableName = "rowTable", filterExpr = "CUSTKEY=1")
 
-//Delete the row for customer with custKey = 1
-scala&gt;  snappy.delete(tableName = &quot;rowTable&quot;, filterExpr = &quot;CUSTKEY=1&quot;)
-
+// Drop the existing tables
+scala&gt;  snappy.dropTable("rowTable", ifExists = true)
+scala&gt;  snappy.dropTable("colTable", ifExists = true)
 </code></pre>
-
-<pre><code class="scala">//Drop the existing tables
-scala&gt;  snappy.dropTable(&quot;rowTable&quot;, ifExists = true)
-scala&gt;  snappy.dropTable(&quot;colTable&quot;, ifExists = true)
-</code></pre>
+</li>
+</ol>
               
             </div>
           </div>
@@ -1746,7 +1756,7 @@ scala&gt;  snappy.dropTable(&quot;colTable&quot;, ifExists = true)
         <a href="../performance_apache_spark/" class="btn btn-neutral float-right" title="SnappyData Performance:16x-20x faster than Apache Spark">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../getting_started_with_docker_image/" class="btn btn-neutral" title="Getting Started with Docker Image"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../getting_started_gemfire_connector/" class="btn btn-neutral" title="Getting Started with SnappyData GemFire Connector"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1778,7 +1788,7 @@ scala&gt;  snappy.dropTable(&quot;colTable&quot;, ifExists = true)
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../getting_started_with_docker_image/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../getting_started_gemfire_connector/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../performance_apache_spark/" style="color: #fcfcfc">Next &raquo;</a></span>

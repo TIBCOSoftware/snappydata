@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Migrating from Version 0.8 to Version 0.9 - SnappyData Documentation</title>
+  <title>Getting Started with SnappyData GemFire Connector - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -29,9 +29,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Migrating from Version 0.8 to Version 0.9";
-    var mkdocs_page_input_path = "migration/migration-0.8-0.9.md";
-    var mkdocs_page_url = "/migration/migration-0.8-0.9/";
+    var mkdocs_page_name = "Getting Started with SnappyData GemFire Connector";
+    var mkdocs_page_input_path = "quickstart/getting_started_gemfire_connector.md";
+    var mkdocs_page_url = "/quickstart/getting_started_gemfire_connector/";
   </script>
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
@@ -70,7 +70,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/">Getting Started in 5 minutes or Less</a>
+        <a class="" href="../">Getting Started in 5 minutes or Less</a>
         
     </li>
 <li>
@@ -82,49 +82,71 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_your_spark_distribution/">Getting Started with your Spark Distribution</a>
+        <a class="" href="../getting_started_with_your_spark_distribution/">Getting Started with your Spark Distribution</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
+        <a class="" href="../getting_started_on_aws/">Getting Started with Amazon Web Services</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Getting Started with SnappyData GemFire Connector</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#getting-started-with-snappydata-gemfire-connector">Getting Started with SnappyData GemFire Connector</a></li>
+                
+                    <li><a class="toctree-l4" href="#features">Features</a></li>
+                
+                    <li><a class="toctree-l4" href="#version-and-compatibility">Version and Compatibility</a></li>
+                
+                    <li><a class="toctree-l4" href="#quick-start-steps">Quick Start Steps</a></li>
+                
+                    <li><a class="toctree-l4" href="#setup-gemfire-82-cluster-and-deploy-snappydata-connector-functions">Setup GemFire 8.2 Cluster and Deploy SnappyData Connector Functions</a></li>
+                
+            
+            </ul>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/using_spark_scala_apis/">Using Spark Scala APIs</a>
+        <a class="" href="../using_spark_scala_apis/">Using Spark Scala APIs</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/performance_apache_spark/">SnappyData Performance:16x-20x faster than Apache Spark</a>
+        <a class="" href="../performance_apache_spark/">SnappyData Performance:16x-20x faster than Apache Spark</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/using_sql/">Using SQL</a>
+        <a class="" href="../using_sql/">Using SQL</a>
         
     </li>
 
@@ -142,6 +164,13 @@
             <li>
     <ul class="subnav">
     <li><span>Download and Install</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/system_requirements/">System Requirements</a>
+        
+    </li>
 
         
             
@@ -170,41 +199,6 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../migration/">Migration Guide</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Migration Guide</span></li>
-
-        
-            
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Migrating from Version 0.8 to Version 0.9</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#migrating-from-version-08-to-version-09">Migrating from Version 0.8 to Version 0.9</a></li>
-                
-                    <li><a class="toctree-l4" href="#memory-management-heap-and-off-heap">Memory Management: Heap and Off-Heap</a></li>
-                
-                    <li><a class="toctree-l4" href="#tables-persistent-to-disk-by-default">Tables Persistent To Disk By Default</a></li>
-                
-                    <li><a class="toctree-l4" href="#changes-to-properties">Changes to Properties</a></li>
-                
-            
-            </ul>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
         <a class="" href="../../howto/">How Tos</a>
         
     </li>
@@ -224,7 +218,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -315,7 +309,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to Use Stream Processing with SnappyData</a>
+        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
@@ -329,14 +323,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to Use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to Use Python to Create Tables and Run Queries</a>
+        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
@@ -738,14 +732,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using iSight-Cloud</span></li>
+    <li><span>Using SnappyData CloudBuilder</span></li>
 
         
             
@@ -764,7 +758,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering iSight Cloud</a>
+        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -794,6 +788,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_high_availability/">Configuring High Availability for a Partitioned Table</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
         
     </li>
 
@@ -1584,7 +1585,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/open_source_components/">Open Source/ Enterprise Components</a>
+        <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
 <li>
@@ -1639,11 +1640,11 @@
     
       
         
-          <li>Migration Guide &raquo;</li>
+          <li>Getting Started in 5 minutes or Less &raquo;</li>
         
       
     
-    <li>Migrating from Version 0.8 to Version 0.9</li>
+    <li>Getting Started with SnappyData GemFire Connector</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1659,105 +1660,126 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="migrating-from-version-08-to-version-09">Migrating from Version 0.8 to Version 0.9</h1>
+                <h1 id="getting-started-with-snappydata-gemfire-connector">Getting Started with SnappyData GemFire Connector</h1>
+<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
+<p>The SnappyData GemFire Connector allows SnappyData/Spark programs to read-from and write-into data regions in the GemFire cluster. Applications can connect to one or more GemFire cluster, expose GemFire regions as SnappyData Tables/Spark DataFrames, run complex SQL queries on data stored in GemFire, and save SnappyData Tables out to GemFire regions. </br>The connector is designed to execute in a highly parallelized manner targeting GemFire partitioned datasets(buckets) for the highest possible performance.</p>
+<p>By exposing GemFire regions as Spark DataFrames, applications can benefit from the analytic features in SnappyData such as; flexible data transformations, analytics and moving data from/into almost all modern data stores.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li>
+<p>Expose GemFire regions as SnappyData external tables</p>
+</li>
+<li>
+<p>Run SQL queries on GemFire regions from SnappyData</p>
+</li>
+<li>
+<p>Support joins on GemFire regions from SnappyData</p>
+</li>
+<li>
+<p>Save SnappyData tables/DataFrames to GemFire</p>
+</li>
+<li>
+<p>Support for POJOs as well as native support for GemFire PDX</p>
+</li>
+<li>
+<p>Push query predicates and projection down to GemFire and use OQL for query execution</p>
+</li>
+<li>
+<p>Query federation across multiple GemFire clusters</p>
+</li>
+</ul>
+<h2 id="version-and-compatibility">Version and Compatibility</h2>
+<p>SnappyData GemFire Connector supports Spark 2.1 and has been tested with GemFire 8.2 or later.</p>
+<h2 id="quick-start-steps">Quick Start Steps</h2>
+<p>In this quickstart, we explain how to start a GemFire cluster, load some data into a partitioned region, access this region as an SQL table, replicate to a SnappyData column table, and then run queries on both GemFire and SnappyData tables.</p>
+<h2 id="setup-gemfire-82-cluster-and-deploy-snappydata-connector-functions">Setup GemFire 8.2 Cluster and Deploy SnappyData Connector Functions</h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Upgrade of on-disk data files is not supported for this release. This document only contains instructions for users migrating from SnappyData 0.8 to SnappyData 0.9. After you have re-configured your cluster, you must reload your data into SnappyData tables.</p>
+<ul>
+<li>
+<p>This document assumes that you have basic knowledge of GemFire.</p>
+</li>
+<li>
+<p>Ensure that you have <a href="https://network.pivotal.io/products/pivotal-gemfire#/releases/4375">GemFire version 8.2 or later</a> installed and running.</p>
+</li>
+</ul>
 </div>
-<h2 id="memory-management-heap-and-off-heap">Memory Management: Heap and Off-Heap</h2>
-<p>SnappyData can now be configured to use both off-heap and on-heap storage. The <code>memory-size</code> and <code>heap-size</code>  properties control the off-heap and on-heap sizes of the SnappyData server process. </p>
-<p>Row tables are always stored on on-heap storage. You can now configure column tables to use off-heap storage. Off-heap storage is also recommended for production environments. Several artifacts in the product, however, require on-heap memory, and therefore minimum heap size is also required in such cases. 
-For example:</p>
+<p>The following section provides instructions to get a two-node GemFire cluster running, and to deploy the functions required by SnappyData to access GemFire.</p>
+<h3 id="start-the-gemfire-shell">Start the GemFire Shell</h3>
+<pre><code class="bash">$ &lt;GemFire_home&gt;/bin/gfsh
+
+gfsh&gt; start locator --name=locator1 --port=55221
+// You need to use a non-default port, as SnappyData uses the same defaults as GemFire.
+
+// Start two data servers
+gfsh&gt;start server --name=server1 
+--locators=localhost[55221]
+
+gfsh&gt;start server --name=server2 
+--locators=localhost[55221] --server-port=40405 
+
+gfsh&gt;create region --name=GemRegion --type=PARTITION --key-constraint=java.lang.String --value-constraint=java.lang.String
+
+// Next, add at least 10 entries in this region using the PUT command.
+
+gfsh&gt; put --key=1 --value='James'      --region=/GemRegion
+gfsh&gt; put --key=2 --value='Jim'        --region=/GemRegion
+gfsh&gt; put --key=3 --value='James Bond' --region=/GemRegion
+gfsh&gt; put --key=4 --value='007'        --region=/GemRegion
+
+// You have to deploy these functions to the GemFire cluster.
+
+gfsh&gt;deploy --jar=&lt;SnappyData-home&gt;/connectors/gfeFunctions-0.9.jar
+</code></pre>
+
+<p>A two node Gemfire cluster is up and running with a region <strong>GemRegion</strong> and the added entries.</p>
+<h3 id="configuring-the-snappydata-cluster">Configuring the SnappyData Cluster</h3>
+<p>The SnappyData cluster needs to be configured with details of the GemFire cluster with which the connector interfaces.
+</br>The configuration details should be provided to both the SnappyData lead and server nodes.</p>
+<p>Modify the server and lead configuration files that are located at:</p>
 <ul>
-<li>
-<p>To use row tables: According to the row table size requirements, configure the heap size. Currently, row tables in SnappyData do not use off-heap memory.</p>
-</li>
-<li>
-<p>To read-write Parquet and CSV: Parquet and CSV read-write are memory consuming activities, and still, use heap memory. Ensure that you provide sufficient heap memory in such cases.</p>
-</li>
-<li>
-<p>When most of your data reside in column tables, use off-heap memory. They are faster and put less pressure on garbage collection threads.</p>
-</li>
+<li><strong>&lt;<em>SnappyData-home</em>&gt;/conf/leads</strong> </li>
+<li><strong>&lt;<em>SnappyData-home</em>&gt;/conf/servers</strong></li>
 </ul>
-<p>The following properties have been added for memory management:
-<a id="memory-properties"></a></p>
-<table>
-<thead>
-<tr>
-<th>Properties</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>memory-size</code></td>
-<td>The total memory that can be used by the node for column storage and execution in off-heap. The default value is 0 (OFF_HEAP is not used by default).</td>
-</tr>
-<tr>
-<td><code>critical-heap-percentage</code></td>
-<td>The portion of memory that is reserved for system use, unaccounted on-the-fly objects, JVM, GC overhead etc. The default value is 90% and can be increased to 95% or similar for large heaps (&gt;20G). This is only applicable to heap-size accounting. </br>Off-heap configuration with memory-size uses the entire available memory and does not have any reserved area.</td>
-</tr>
-<tr>
-<td><code>spark.memory.storageFraction</code></td>
-<td>The fraction of total storage memory that is immune to eviction. Execution can never grow into this portion of memory. </br>If set to a higher value, less working memory may be available for execution, and tasks may overflow to disk. It is recommended that you do not modify the default setting.</td>
-</tr>
-<tr>
-<td><code>spark.memory.storageMaxFraction</code></td>
-<td>The fraction of total memory used for storage and immune to eviction. Execution can never grow into this portion of memory. </br>If set to a higher value, less working memory may be available for execution, and tasks may overflow to disk. It is recommended that you do not modify the default setting.</td>
-</tr>
-<tr>
-<td><code>spark.memory.storageMaxFraction</code></td>
-<td>Specifies how much off-heap memory can be consumed by storage. The default is 0.9 of the total <code>memory-size</code> (off-heap size). Beyond this, all data in storage gets evicted to disk. The split between execution and storage is governed by the <code>spark.memory.storageFraction</code> property, but storage grows into execution space up to this limit if space is available in the execution area. However, if execution requires space, then it evicts storage to the <code>spark.memory.storageFraction</code> limit. </br>Normally you do not need to modify this property even if queries are expected to take lots of execution space. It is better to use the <code>spark.memory.storageFraction</code> property to control the split between storage and execution.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="tables-persistent-to-disk-by-default">Tables Persistent To Disk By Default</h2>
-<p>In the previous releases (0.8 and earlier), tables were stored in memory by default, and users had to configure the <code>persistence</code> clause to store data on disk.
-From this release onwards, all tables persist to disk by default and can be explicitly turned OFF for pure memory-only tables by specifying the <code>persistence</code> option as <code>none</code>.</p>
-<h2 id="changes-to-properties">Changes to Properties</h2>
-<p>In this release, the following changes have been made to the properties 
-* <a href="#memory-properties">Memory management</a> </p>
-<ul>
-<li>
-<p><a href="#new-properties">New Properties</a></p>
-</li>
-<li>
-<p><a href="#deleted-properties">Deleted Properties</a>. </p>
-</li>
-</ul>
-<p>Make sure that you familiarise yourself with changes before you re-configure your cluster.</p>
-<p><a id="new-properties"></a></p>
-<h3 id="new-property">New Property</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>snappydata.connection</code></td>
-<td>This property points to thrift network server running on a locator or a data server of a running SnappyData cluster. The value of this property is a combination of locator or server and JDBC client port on which the thrift network server listens for connections (The port that is specified by the <code>client-port</code> property and defaults to 1527 or the next available port on the locator/server).</td>
-</tr>
-</tbody>
-</table>
-<p><a id="deleted-properties"></a></p>
-<h3 id="deleted-property">Deleted Property</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>snappydata.store.locators</code></td>
-<td>Instructs the connector to acquire cluster connectivity, catalog metadata and registers it locally in the Spark cluster.</br>This property has been deleted and replaced with <code>`snappydata.connection</code>.</td>
-</tr>
-</tbody>
-</table>
+<p>Add the connector jar (connector-0.9.jar) to the classpath and configure the remote GemFire cluster (locators, the servers and lead files) as follows:</p>
+<pre><code class="bash">localhost -locators=localhost:10334 -client-bind-address=localhost 
+-classpath= &lt;SnappyData-home&gt;/connectors/connector-0.9.jar
+-spark.gemfire-grid.\&lt;UniqueID\&gt;=localhost[55221] 
+</code></pre>
+
+<p>Here, the UniqueID is a name assigned for the Grid. </br></p>
+<p>For example, SnappyData GemFire connector can connect to multiple Grids for federated data access.</p>
+<pre><code>-spark.gemfire-grid.gridOne=localhost[55221] -spark.gemfire-grid.gridTwo=localhost[65221]
+</code></pre>
+
+<p>Finally, <a href="../../howto/start_snappy_cluster/">start the SnappyData cluster</a> using the following command:</p>
+<pre><code class="bash">$ &lt;SnappyData-home&gt;/sbin/snappy-start-all.sh
+</code></pre>
+
+<h3 id="access-gemfire-as-an-sql-table-and-run-queries">Access GemFire as an SQL table and Run Queries</h3>
+<p>Start the Snappy Shell using the command,</p>
+<pre><code class="bash">$ &lt;SnappyData-home&gt;/bin/snappy
+
+snappy&gt; connect client 'localhost:1527';
+
+// Register an external table in SnappyData pointing to the GemFire region
+
+snappy&gt; create external table GemTable using gemfire options(regionPath 'GemRegion', keyClass 'java.lang.String', valueClass 'java.lang.String') ;
+
+// The schema is automatically inferred from the object data in GemFire
+snappy&gt; describe gemTable;
+
+snappy&gt; select * from gemTable;
+</code></pre>
+
+<h3 id="copy-to-snappydata-column-table-run-queries-join-with-gemfire">Copy to SnappyData Column Table, Run Queries, Join with GemFire</h3>
+<pre><code class="bash">snappy&gt; create table SnappyDataTable using column as (select * from gemTable);
+
+snappy&gt; select * from SnappyDataTable;
+
+// Join Snappy column table with GemFire data
+snappy&gt; select t1.keyColumn, t1.valueColumn, t2.valueColumn from GemTable t1, SnappyDataTable t2 where t1.keyColumn = t2.keyColumn;
+</code></pre>
               
             </div>
           </div>
@@ -1765,10 +1787,10 @@ From this release onwards, all tables persist to disk by default and can be expl
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../howto/" class="btn btn-neutral float-right" title="How Tos">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../using_spark_scala_apis/" class="btn btn-neutral float-right" title="Using Spark Scala APIs">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../migration/" class="btn btn-neutral" title="Migration Guide"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../getting_started_with_docker_image/" class="btn btn-neutral" title="Getting Started with Docker Image"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1800,10 +1822,10 @@ From this release onwards, all tables persist to disk by default and can be expl
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../migration/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../getting_started_with_docker_image/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../howto/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../using_spark_scala_apis/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

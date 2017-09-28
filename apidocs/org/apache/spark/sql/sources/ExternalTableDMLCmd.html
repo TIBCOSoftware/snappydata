@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ExternalTableDMLCmd - snappydata_2.11 0.9 API - org.apache.spark.sql.sources.ExternalTableDMLCmd</title>
-          <meta name="description" content="ExternalTableDMLCmd - snappydata 2.11 0.9 API - org.apache.spark.sql.sources.ExternalTableDMLCmd" />
-          <meta name="keywords" content="ExternalTableDMLCmd snappydata 2.11 0.9 API org.apache.spark.sql.sources.ExternalTableDMLCmd" />
+          <title>ExternalTableDMLCmd - snappydata_2.11 1.0.0 API - org.apache.spark.sql.sources.ExternalTableDMLCmd</title>
+          <meta name="description" content="ExternalTableDMLCmd - snappydata 2.11 1.0.0 API - org.apache.spark.sql.sources.ExternalTableDMLCmd" />
+          <meta name="keywords" content="ExternalTableDMLCmd snappydata 2.11 1.0.0 API org.apache.spark.sql.sources.ExternalTableDMLCmd" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ExternalTableDMLCmd</span><span class="params">(<span name="storeRelation">storeRelation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <a href="TableMutationPlan.html" class="extype" name="org.apache.spark.sql.sources.TableMutationPlan">TableMutationPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">ExternalTableDMLCmd</span><span class="params">(<span name="storeRelation">storeRelation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="childOutput">childOutput: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <a href="TableMutationPlan.html" class="extype" name="org.apache.spark.sql.sources.TableMutationPlan">TableMutationPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.sources.ExternalTableDMLCmd#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(storeRelation:org.apache.spark.sql.execution.datasources.LogicalRelation,command:String):org.apache.spark.sql.sources.ExternalTableDMLCmd"></a>
+      <a id="&lt;init&gt;(storeRelation:org.apache.spark.sql.execution.datasources.LogicalRelation,command:String,childOutput:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.sources.ExternalTableDMLCmd"></a>
       <a id="&lt;init&gt;:ExternalTableDMLCmd"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ExternalTableDMLCmd</span><span class="params">(<span name="storeRelation">storeRelation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">ExternalTableDMLCmd</span><span class="params">(<span name="storeRelation">storeRelation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="childOutput">childOutput: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.ExternalTableDMLCmd@&lt;init&gt;(storeRelation:org.apache.spark.sql.execution.datasources.LogicalRelation,command:String):org.apache.spark.sql.sources.ExternalTableDMLCmd" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ExternalTableDMLCmd@&lt;init&gt;(storeRelation:org.apache.spark.sql.execution.datasources.LogicalRelation,command:String,childOutput:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.sources.ExternalTableDMLCmd" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -298,6 +298,23 @@ pasted in the REPL to build an equivalent Tree.
     </span>
       <p class="shortcomment cmt">Canonicalized copy of this query plan.</p><div class="fullcomment"><div class="comment cmt"><p>Canonicalized copy of this query plan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> → <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.ExternalTableDMLCmd#childOutput" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="childOutput:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]"></a>
+      <a id="childOutput:Seq[Attribute]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">childOutput</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.ExternalTableDMLCmd@childOutput:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.LeafNode#children" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="children:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="children:Seq[LogicalPlan]"></a>
@@ -1346,13 +1363,13 @@ before children).
     </span>
       <p class="shortcomment cmt">Args to the constructor that should be copied, but not transformed.</p><div class="fullcomment"><div class="comment cmt"><p>Args to the constructor that should be copied, but not transformed.
 These are appended to the transformed args automatically by makeCopy</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.logical.Command#output" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.sources.ExternalTableDMLCmd#output" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]"></a>
       <a id="output:Seq[Attribute]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
         <span class="name">output</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>
@@ -1362,7 +1379,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> → <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.sources.ExternalTableDMLCmd">ExternalTableDMLCmd</a> → <a href="../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> → <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="outputSet:AttributeSet"></a>

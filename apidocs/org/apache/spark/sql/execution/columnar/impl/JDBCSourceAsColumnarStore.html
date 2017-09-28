@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>JDBCSourceAsColumnarStore - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore</title>
-          <meta name="description" content="JDBCSourceAsColumnarStore - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
-          <meta name="keywords" content="JDBCSourceAsColumnarStore snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
+          <title>JDBCSourceAsColumnarStore - snappydata_2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore</title>
+          <meta name="description" content="JDBCSourceAsColumnarStore - snappydata 2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
+          <meta name="keywords" content="JDBCSourceAsColumnarStore snappydata 2.11 1.0.0 API org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -807,23 +807,6 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#rand" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="rand:org.apache.spark.util.random.XORShiftRandom"></a>
-      <a id="rand:XORShiftRandom"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">rand</span><span class="result">: <span class="extype" name="org.apache.spark.util.random.XORShiftRandom">XORShiftRandom</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@rand:org.apache.spark.util.random.XORShiftRandom" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#read" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="read(kryo:com.esotericsoftware.kryo.Kryo,input:com.esotericsoftware.kryo.io.Input):Unit"></a>
       <a id="read(Kryo,Input):Unit"></a>
@@ -876,7 +859,7 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#storeColumnBatch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="storeColumnBatch(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,partitionId:Int,batchId:Long,maxDeltaRows:Int,conn:Option[java.sql.Connection]):Unit"></a>
+      <a id="storeColumnBatch(columnTableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,partitionId:Int,batchId:Long,maxDeltaRows:Int,conn:Option[java.sql.Connection]):Unit"></a>
       <a id="storeColumnBatch(String,ColumnBatch,Int,Long,Int,Option[Connection]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -884,16 +867,16 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">storeColumnBatch</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="batch">batch: <a href="../ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>, <span name="maxDeltaRows">maxDeltaRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">storeColumnBatch</span><span class="params">(<span name="columnTableName">columnTableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="batch">batch: <a href="../ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>, <span name="maxDeltaRows">maxDeltaRows: <span class="extype" name="scala.Int">Int</span></span>, <span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@storeColumnBatch(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,partitionId:Int,batchId:Long,maxDeltaRows:Int,conn:Option[java.sql.Connection]):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@storeColumnBatch(columnTableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,partitionId:Int,batchId:Long,maxDeltaRows:Int,conn:Option[java.sql.Connection]):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> → <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#storeDelete" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="storeDelete(tableName:String,buffer:java.nio.ByteBuffer,statsData:Array[Byte],partitionId:Int,batchId:Long,conn:Option[java.sql.Connection]):Unit"></a>
+      <a id="storeDelete(columnTableName:String,buffer:java.nio.ByteBuffer,statsData:Array[Byte],partitionId:Int,batchId:Long,conn:Option[java.sql.Connection]):Unit"></a>
       <a id="storeDelete(String,ByteBuffer,Array[Byte],Int,Long,Option[Connection]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -901,10 +884,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">storeDelete</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>, <span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">storeDelete</span><span class="params">(<span name="columnTableName">columnTableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>, <span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@storeDelete(tableName:String,buffer:java.nio.ByteBuffer,statsData:Array[Byte],partitionId:Int,batchId:Long,conn:Option[java.sql.Connection]):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@storeDelete(columnTableName:String,buffer:java.nio.ByteBuffer,statsData:Array[Byte],partitionId:Int,batchId:Long,conn:Option[java.sql.Connection]):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

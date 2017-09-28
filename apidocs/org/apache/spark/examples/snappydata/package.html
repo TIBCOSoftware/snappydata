@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>snappydata - snappydata_2.11 0.9 API - org.apache.spark.examples.snappydata</title>
-          <meta name="description" content="snappydata - snappydata 2.11 0.9 API - org.apache.spark.examples.snappydata" />
-          <meta name="keywords" content="snappydata snappydata 2.11 0.9 API org.apache.spark.examples.snappydata" />
+          <title>snappydata - snappydata_2.11 1.0.0 API - org.apache.spark.examples.snappydata</title>
+          <meta name="description" content="snappydata - snappydata 2.11 1.0.0 API - org.apache.spark.examples.snappydata" />
+          <meta name="keywords" content="snappydata snappydata 2.11 1.0.0 API org.apache.spark.examples.snappydata" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -103,6 +103,23 @@ Check the status of your job id
 bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
 
 </p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.DeviceData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DeviceDataextendsProductwithSerializable"></a>
+      <a id="DeviceData:DeviceData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DeviceData.html"><span class="name">DeviceData</span></a><span class="params">(<span name="device">device: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="signal">signal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@DeviceDataextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.examples.snappydata.EmbeddedKafkaUtils" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="EmbeddedKafkaUtilsextendsLogging"></a>
       <a id="EmbeddedKafkaUtils:EmbeddedKafkaUtils"></a>
@@ -417,7 +434,32 @@ are managed declaratively by creating a stream table(adImpressionStream). A
 continuous query is executed on the stream and its result is processed and
 publisher_bid_counts table is modified based on the streaming data</p><p>We also update a row table to maintain the no of distinct bids so far(example
 of storing and updating a state of streaming data)</p><p>For more details on streaming with SnappyData refer to:
-http://snappydatainc.github.io/snappydata/streamingWithSQL/</p></div></div>
+http://snappydatainc.github.io/snappydata/programming_guide
+/stream_processing_using_sql/#stream-processing-using-sql</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.StructuredStreamingExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StructuredStreamingExample"></a>
+      <a id="StructuredStreamingExample:StructuredStreamingExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredStreamingExample$.html"><span class="name">StructuredStreamingExample</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@StructuredStreamingExample" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example showing usage of structured streaming with SnappyData</p><div class="fullcomment"><div class="comment cmt"><p>An example showing usage of structured streaming with SnappyData</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.StructuredStreamingExample
+</pre></p><p>To run this on your local machine, you need to first run a Netcat server
+   <code>$ nc -lk 9999</code></p><p>For more details on streaming with SnappyData refer to:
+http://snappydatainc.github.io/snappydata/programming_guide
+/stream_processing_using_sql/#stream-processing-using-sql</p></div></div>
     </li><li name="org.apache.spark.examples.snappydata.SynopsisDataExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SynopsisDataExample"></a>
       <a id="SynopsisDataExample:SynopsisDataExample"></a>

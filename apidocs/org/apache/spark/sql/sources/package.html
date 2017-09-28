@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>sources - snappydata_2.11 0.9 API - org.apache.spark.sql.sources</title>
-          <meta name="description" content="sources - snappydata 2.11 0.9 API - org.apache.spark.sql.sources" />
-          <meta name="keywords" content="sources snappydata 2.11 0.9 API org.apache.spark.sql.sources" />
+          <title>sources - snappydata_2.11 1.0.0 API - org.apache.spark.sql.sources</title>
+          <meta name="description" content="sources - snappydata 2.11 1.0.0 API - org.apache.spark.sql.sources" />
+          <meta name="keywords" content="sources snappydata 2.11 1.0.0 API org.apache.spark.sql.sources" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -467,7 +467,7 @@ and backend-specific schema.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="ExternalTableDMLCmd.html"><span class="name">ExternalTableDMLCmd</span></a><span class="params">(<span name="storeRelation">storeRelation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <a href="TableMutationPlan.html" class="extype" name="org.apache.spark.sql.sources.TableMutationPlan">TableMutationPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="ExternalTableDMLCmd.html"><span class="name">ExternalTableDMLCmd</span></a><span class="params">(<span name="storeRelation">storeRelation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="childOutput">childOutput: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <a href="TableMutationPlan.html" class="extype" name="org.apache.spark.sql.sources.TableMutationPlan">TableMutationPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sources.package@ExternalTableDMLCmdextendsLeafNodewithRunnableCommandwithTableMutationPlanwithProductwithSerializable" title="Permalink" target="_top">
@@ -583,6 +583,24 @@ greater than or equal to <code>value</code>.
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.Insert" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InsertextendsInsertIntoTable"></a>
+      <a id="Insert:Insert"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Insert.html"><span class="name">Insert</span></a><span class="result"> extends <a href="../catalyst/plans/logical/InsertIntoTable.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable">InsertIntoTable</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.package@InsertextendsInsertIntoTable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Unlike Spark's InsertIntoTable this plan provides the count of rows
+inserted as the output.</p>
     </li><li name="org.apache.spark.sql.sources.InsertableRelation" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="InsertableRelationextendsAnyRef"></a>
       <a id="InsertableRelation:InsertableRelation"></a>
