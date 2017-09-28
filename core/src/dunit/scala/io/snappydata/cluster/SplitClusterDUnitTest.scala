@@ -599,6 +599,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   private def checkValidJsonString(s: String): Unit = {
     logInfo(s"Checking valid JSON for $s")
+    assert(s.trim().length() > 0)
     try {
       val parser = new ObjectMapper().getFactory.createParser(s)
       while (parser.nextToken() != null) {
