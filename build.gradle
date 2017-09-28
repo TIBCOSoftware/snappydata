@@ -896,6 +896,12 @@ ospackage {
     rename { fileName -> fileName.replace('Profile', 'data') }
   }
 
+  if (rootProject.hasProperty('enablePublish')) {
+    signingKeyId = rootProject.property('signing.keyId')
+    signingKeyPassphrase = rootProject.property('signing.password')
+    signingKeyRingFile = file(rootProject.property('signing.secretKeyRingFile'))
+  }
+
   link('/usr/sbin/snappy-start-all.sh', "/opt/${packageName}/sbin/snappy-start-all.sh")
   link('/usr/sbin/snappy-stop-all.sh', "/opt/${packageName}/sbin/snappy-stop-all.sh")
   link('/usr/sbin/snappy-status-all.sh', "/opt/${packageName}/sbin/snappy-status-all.sh")
