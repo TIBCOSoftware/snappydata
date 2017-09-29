@@ -44,7 +44,7 @@ You can now create tables and run queries in SnappyData store using your Apache 
     dataFrame.write.insertInto("TestColumnTable")
 ```
 
-**Running a Smart Connector Application*:
+**Running a Smart Connector Application**:
 Start a SnappyData cluster and create a table inside it.
 
 ```bash
