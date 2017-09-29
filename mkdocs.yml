@@ -34,6 +34,7 @@ pages:
 #    - 'Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.0': 'migration/upgrade_sqlfire_standalone.md'    
 #    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 #    - 'Migrating from Version 0.9 to Version 1.0.0-RC1 Release': 'migration/migration-0.9-01_rc.md'
+#---
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
