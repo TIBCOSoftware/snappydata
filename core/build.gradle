@@ -96,11 +96,11 @@ dependencies {
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
-  compile 'org.apache.tomcat:tomcat-jdbc:8.5.9'
-  compile 'com.zaxxer:HikariCP:2.6.0'
+  compile 'org.apache.tomcat:tomcat-jdbc:8.5.21'
+  compile 'com.zaxxer:HikariCP:2.7.1'
   // compile 'org.spark-project:dstream-twitter_2.11:0.1.0'
-  compile 'org.twitter4j:twitter4j-stream:4.0.4'
-  compile 'org.objenesis:objenesis:2.4'
+  compile 'org.twitter4j:twitter4j-stream:4.0.6'
+  compile 'org.objenesis:objenesis:2.6'
   compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
   compile "com.koloboke:koloboke-api-jdk8:${kolobokeVersion}"
   compile "com.koloboke:koloboke-impl-common-jdk8:${kolobokeVersion}"
