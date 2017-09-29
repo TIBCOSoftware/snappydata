@@ -5,7 +5,7 @@ SnappyData comes with a Smart Connector that enables Spark applications to work 
 
 For more information on the various modes, refer to the [SnappyData Smart Connector](../affinity_modes/connector_mode.md) section of the documentation.
 
-**Code Example:**
+## Code Example
 The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
 **Configure a SnappySession**: 
@@ -44,7 +44,7 @@ You can now create tables and run queries in SnappyData store using your Apache 
     dataFrame.write.insertInto("TestColumnTable")
 ```
 
-**Running a Smart Connector Application**:
+## Execute a Smart Connector Application
 Start a SnappyData cluster and create a table inside it.
 
 ```bash

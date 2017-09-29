@@ -128,7 +128,7 @@ class ExampleTestSuite extends SnappyTestRunner {
 
     RunExample("SmartConnectorExample",
       "snappydata.SmartConnectorExample",
-      Seq("--conf spark.snappydata.connector=localhost:1527"))
+      Seq("spark.snappydata.connection=localhost:1527"))
   }
 
   test("StreamingExample") {
