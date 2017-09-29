@@ -126,7 +126,9 @@ class ExampleTestSuite extends SnappyTestRunner {
       s"insert into SNAPPY_COL_TABLE VALUES(2,2);",
       "exit;"))
 
-    RunExample("SmartConnectorExample", "snappydata.SmartConnectorExample")
+    RunExample("SmartConnectorExample",
+      "snappydata.SmartConnectorExample",
+      Seq("--conf spark.snappydata.connector=localhost:1527"))
   }
 
   test("StreamingExample") {

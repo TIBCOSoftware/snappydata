@@ -65,6 +65,6 @@ snappy> insert into SNAPPY_COL_TABLE VALUES(2,2);
 A Smart Connector Application can now connect to this SnappyData cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside SnappyData cluster. SnappyData package has to be specified along with the application jar to run the Smart Connector application. 
 
 ```bash
-$ <Spark_Product_Home>/bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.0-s_2.11       <SnappyData_Product_Home>/examples/jars/quickstart.jar
+$ <Spark_Product_Home>/bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages SnappyDataInc:snappydata:1.0.0-s_2.11 <SnappyData_Product_Home>/examples/jars/quickstart.jar
 
 ```
