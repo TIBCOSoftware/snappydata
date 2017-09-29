@@ -1,8 +1,8 @@
 # Download and Install
 
-SnappyData offers two editions of the product, Community and Enterprise.
+SnappyData offers two editions of the product, SnappyData Community Edition and SnappyData Enterprise Edition.
 
-The Community edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
+The SnappyData Community edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
 The Enterprise edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.
 
 For more information on the capabilities of the Community and Enterprise edition see, [Community Edition/Enterprise Edition Components](additional_files/open_source_components.md).

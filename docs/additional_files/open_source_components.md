@@ -1,4 +1,4 @@
-# Community and Enterprise Edition Features
+# SnappyData Community and Enterprise Edition Features
 
 SnappyData offers a fully functional core OSS distribution that is Apache 2.0 licensed and includes the following capabilities:
 
@@ -24,7 +24,7 @@ SnappyData offers a fully functional core OSS distribution that is Apache 2.0 li
 
 **Additional Enterprise Features**
 
-The Enterprise version of the product includes everything that is offered in the OSS version and includes the following additional capabilities that are closed source and only available as part of a licensed subscription. Users can download the Enterprise version for evaluation after registering on the [SnappyData website](http://www.snappydata.io/download).
+The Enterprise edition of the product includes everything that is offered in the OSS version and includes the following additional capabilities that are closed source and only available as part of a licensed subscription. Users can download the Enterprise version for evaluation after registering on the [SnappyData website](http://www.snappydata.io/download).
 
 * Synopsis Data Engine capabilities which provides users with the ability to run queries on samples and other summary structures built into the system and get statistically verified accurate results
 
