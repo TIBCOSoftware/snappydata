@@ -44,7 +44,6 @@ ext {
 dependencies {
     compile 'org.scala-lang:scala-library:' + scalaVersion
     compile 'org.scala-lang:scala-reflect:' + scalaVersion
-    compile 'org.scala-lang:scala-compiler:' + scalaVersion
 
     compile (project(':snappy-core_' + scalaBinaryVersion)) {
        exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)

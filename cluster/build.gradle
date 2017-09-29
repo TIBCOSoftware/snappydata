@@ -28,7 +28,6 @@ sourceSets.test.java.srcDirs = [ ]
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
-  compile 'org.scala-lang:scala-compiler:' + scalaVersion
 
   compile 'org.slf4j:slf4j-api:' + slf4jVersion
   compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
