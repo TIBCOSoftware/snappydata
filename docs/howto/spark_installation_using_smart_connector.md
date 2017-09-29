@@ -43,3 +43,28 @@ You can now create tables and run queries in SnappyData store using your Apache 
     // insert data in TestColumnTable
     dataFrame.write.insertInto("TestColumnTable")
 ```
+
+**Running a Smart Connector Application*:
+Start a SnappyData cluster and create a table inside it.
+
+```bash
+
+$ <SnappyData_Product_Home>/sbin/snappy-start-all.sh
+
+$ <SnappyData_Product_Home>/bin/snappy
+SnappyData version 1.0.0
+snappy>  connect client 'localhost:1527';
+Using CONNECTION0
+snappy> CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
+snappy> insert into SNAPPY_COL_TABLE VALUES(1,1);
+1 row inserted/updated/deleted
+snappy> insert into SNAPPY_COL_TABLE VALUES(2,2);
+1 row inserted/updated/deleted
+
+```
+A Smart Connector Application can now connect to this SnappyData cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside SnappyData cluster. SnappyData package has to be specified along with the application jar to run the Smart Connector application. 
+
+```bash
+$ <Spark_Product_Home>/bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.0-s_2.11       <SnappyData_Product_Home>/examples/jars/quickstart.jar
+
+```
