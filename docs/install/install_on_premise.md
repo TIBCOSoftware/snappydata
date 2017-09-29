@@ -9,7 +9,7 @@ Before you start the installation, make sure that Java SE Development Kit 8 is i
 
 Download the latest version of SnappyData: 
 
-* [Download SnappyData 1.0 RC Open Source Version](https://github.com/SnappyDataInc/snappydata/releases/):</br>
+* [Download SnappyData Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/):</br>
  This page lists the latest and previous releases of SnappyData. The packages are available in compressed files (.zip and .tar format). You can also view details of features and enhancements introduced in specific releases.
 
 	* **SnappyData 1.0.0 Release download link**
@@ -17,7 +17,7 @@ Download the latest version of SnappyData:
 
 	* **SnappyData 1.0.0 Release (user-provided Hadoop) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-without-hadoop-bin.zip)
 
-* [Download SnappyData 1.0-RC Enterprise Version](http://www.snappydata.io/download): </br> Users can download the Enterprise version for evaluation after registering on the SnappyData website.
+* [Download SnappyData Enterprise Edition](http://www.snappydata.io/download): </br> Users can download the Enterprise version for evaluation after registering on the SnappyData website.
 
 <a id="singlehost"></a>
 ## Single-Host installation
