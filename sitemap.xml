@@ -815,10 +815,20 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/release_notes/release_notes_1.0-rc/</loc>
+     <loc>http://www.snappydata.io/release_notes/release_notes_1.0/</loc>
      <lastmod>2017-09-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
+    
+
+    
+        
+    <url>
+     <loc>http://www.snappydata.io/release_notes/known_issues/</loc>
+     <lastmod>2017-09-29</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
     
 
     

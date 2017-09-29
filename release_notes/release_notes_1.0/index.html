@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Key Concepts - SnappyData Documentation</title>
+  <title>Release Notes - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -29,9 +29,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Key Concepts";
-    var mkdocs_page_input_path = "sde/key_concepts.md";
-    var mkdocs_page_url = "/sde/key_concepts/";
+    var mkdocs_page_name = "Release Notes";
+    var mkdocs_page_input_path = "release_notes/release_notes_1.0.md";
+    var mkdocs_page_url = "/release_notes/release_notes_1.0/";
   </script>
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
@@ -664,63 +664,50 @@
 
         
             
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Key Concepts</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#key-concepts">Key Concepts</a></li>
-                
-                    <li><a class="toctree-l4" href="#stratified-sampling">Stratified Sampling</a></li>
-                
-                    <li><a class="toctree-l4" href="#online-sampling">Online Sampling</a></li>
-                
-                    <li><a class="toctree-l4" href="#sketching">Sketching</a></li>
-                
-            
-            </ul>
+    <li class="toctree-l1 ">
+        <a class="" href="../../sde/key_concepts/">Key Concepts</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../working_with_stratified_samples/">Working with Stratified Samples</a>
+        <a class="" href="../../sde/working_with_stratified_samples/">Working with Stratified Samples</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../running_queries/">Running Queries</a>
+        <a class="" href="../../sde/running_queries/">Running Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../more_examples/">More Examples</a>
+        <a class="" href="../../sde/more_examples/">More Examples</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../sample_selection/">Sample Selection</a>
+        <a class="" href="../../sde/sample_selection/">Sample Selection</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../hac_contracts/">High-level Accuracy Contracts (HAC)</a>
+        <a class="" href="../../sde/hac_contracts/">High-level Accuracy Contracts (HAC)</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../sketching/">Sketching</a>
+        <a class="" href="../../sde/sketching/">Sketching</a>
         
     </li>
 
@@ -1596,8 +1583,17 @@
 <li>
           
             <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../release_notes/release_notes_1.0/">Release Notes</a>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Release Notes</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#release-notes">Release Notes</a></li>
+                
+                    <li><a class="toctree-l4" href="#new-featuresfixed-issues">New Features/Fixed Issues</a></li>
+                
+            
+            </ul>
         
     </li>
 <li>
@@ -1609,7 +1605,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../release_notes/known_issues/">Known Issues</a>
+        <a class="" href="../known_issues/">Known Issues</a>
         
     </li>
 
@@ -1652,12 +1648,8 @@
     <li><a href="../..">Docs</a> &raquo;</li>
     
       
-        
-          <li>Synopsis Data Engine (SDE) &raquo;</li>
-        
-      
     
-    <li>Key Concepts</li>
+    <li>Release Notes</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1673,26 +1665,197 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="key-concepts">Key Concepts</h1>
-<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
-<p>SnappyData SDE relies on two methods for approximations - <strong>Stratified Sampling</strong> and <strong>Sketching</strong>. A brief introduction to these concepts is provided below.</p>
-<h2 id="stratified-sampling">Stratified Sampling</h2>
-<p>Sampling is quite intuitive and commonly used by data scientists and explorers. The most common algorithm in use is 'uniform random sampling'. As the term implies, the algorithm is designed to randomly pick a small fraction of the population (the full data set). The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any element being selected in the sample is the same (or uniform). But, uniform random sampling does not work well for general purpose querying.</p>
-<p>Take this simple example table that manages AdImpressions. If random sample is created that is a third of the original size two records is picked in random. 
-This is depicted in the following figure:</p>
-<p><img alt="Uniform Random Sampling" src="../../Images/aqp_stratifiedsampling1.png" /></p>
-<p>If a query is executed, like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. </p>
-<p><img alt="Uniform Random Sampling" src="../../Images/aqp_stratifiedsampling2.png" /></p>
-<p>But, if the data distribution along this 'GEO' dimension is skewed, you could still keep picking any records or have too few records to produce a good answer to queries. </p>
-<p>Stratified sampling, on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata have enough representation in the sampled data set. For instance, as shown in the following figure, a sample stratified on 'Geo' would provide a much better answer. </p>
-<p><img alt="Stratified Sampling" src="../../Images/aqp_stratifiedsampling3.png" /></p>
-<p>To understand these concepts in further detail, refer to the <a href="https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf">handbook</a>. It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.</p>
-<h2 id="online-sampling">Online Sampling</h2>
-<p>SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark DataFrame APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a> for each startum in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
-There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, SnappyData can ensure having enough samples over each 5-minute time window, while still ensuring that all GEOs have good representation in the sample.</p>
-<h2 id="sketching">Sketching</h2>
-<p>While stratified sampling ensures that data dimensions with low representation are captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, other data structures like a Count-min-sketch are relied on to capture data frequencies in a stream. This is a data structure that requires that it captures how often an element is seen in a stream for the top-N such elements. 
-While a <a href="https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch">Count-min-sketch</a> is well described, SDE extends this with support for providing top-K estimates over time series data. </p>
+                <h1 id="release-notes">Release Notes</h1>
+<p>The SnappyData team is pleased to announce the availability of SnappyData Release 1.0.0.</p>
+<h2 id="new-featuresfixed-issues">New Features/Fixed Issues</h2>
+<p>[SNAP-953] Add RPM/DEB installer packaging targets using the Netflix Nebula ospackage gradle
+  plugin.</p>
+<p>[SNAP-2039] Correct null updates to column tables. (#861)</p>
+<p>Use concurrent TrieMaps in SnappySession contextObjects, and queryHints map. Reason being that
+  SnappySession can be read concurrently by multiple threads from same query for sub-query/broadcast
+  kind of plans where planning for the BroadcastExchangeExec plan happens in parallel on another
+  thread.</p>
+<p>[SNAP-2029] Added new "snappydata.preferPrimaries" option to prefer primaries for queries. (#852)
+  Avoid double memory at the cost of reduced scalability but still having a hot backup.
+  See discussion on Slack: https://snappydata-public.slack.com/archives/C0DCF0UGG/p1505460492000378</p>
+<p>Fixed a parser issue where AS can be optional in namedExpression rule. This fixes Q77 of TPCDS.</p>
+<p>[SNAP-2030] Now routed update and delete query on row table would return number of affected rows.</p>
+<p>[SNAP-2028] Snappy Python APIs fixes. (#851)
+  A) Some of the SparkSession python APIs used to pass SQLContext to DataFrameWriter and
+  DataFrameReader APIs.
+  B) Fixed truncate table API.</p>
+<p>Fixed a couple of issues in parser. (#849)
+  1. Order by and sort by clauses after partition by can be optional.
+  2. INTERVAL non reserved key word was being treated as an identifier because of optional clauses
+  ordering.</p>
+<p>[SNAP-2022] Remove the check which tested if any lead is already stopped, in snappy-stop-all.sh
+  (#845). This was causing the script to skip shutting down of other running leads, if any. Added
+   a check for rowstore, so that 'sbin/snappy-stop-all.sh rowstore' doesn't see the message.</p>
+<p>[SNAP-2020] Track in-progress insert size to avoid data skew. (#844)
+  With many concurrent inserts/partitions on a node, significant data skew in inserts was still
+  observed (on machines with large number of cores like 32) due to same smallest bucket being
+  chosen by multiple partitions. This change now tracks the in-progress size for bucket and adds
+  that to determine smallest bucket.</p>
+<p>[SNAP-2012] Skip locked entries in evictor. (#839)
+  Fix as suggested by @rishitesh to use Unsafe API to try acquire monitor on RegionEntry.</p>
+<p>Hiding commands not applicable to snappydata (will be continued to be displayed for GemFireXD and
+  RowStore mode). (#838)</p>
+<p>[SNAP-2003] Fix for 'stream to big table join CQ returning incorrect result'. (#829)
+  HashJoinExec's streamPlan and buildPlan RDDs are computed on each CQ execution.</p>
+<p>[AQP-293] Changes for JNI UTF8String.contains. (#832)
+  Convert UTF8Strings in ParamLiteral to off-heap when snappydata's off-heap is enabled.
+  Changes in SnappyParser. Also, updated parboiled2 to latest release.</p>
+<p>[SNAP-1995] Added a python example showcasing KMeans usage. (#827)</p>
+<p>Fix an issue in collect-debug-artifacts script with extraction. Skip any configuration checks in
+  collect-debug-artifacts for extraction (-x, --extract=).</p>
+<p>[SNAP-1993] Fixes for data skew when no partition_by is provided. (#825)
+  With these changes, distribution in ColumnCacheBenchmark test, for example, is nearly equal most
+  of the time among the buckets. Other cases like those reported originally with 7M rows have only
+  ~50% difference between min and max (as compared to ~4X originally)</p>
+<p>Remove ParamLiteral for LIKE/RLIKE/REGEXP. If expression foldable is false, then LIKE family
+  generates very suboptimal plan (if not converted to Contains/StartsWith/EndsWith) that will
+  compile the Regex for every row.</p>
+<p>[SNAP-1984] Changes to retain UnifiedMemoryManager state across executor restart by copying the
+  state in a temporary memory manager, which is created when store boots up but Spark environment is
+  not ready. (#821)</p>
+<p>[SNAP-1981] For prepare phase, avoid rules that do not handle NullType since that is what is used
+  as placeholder for params. (#815)</p>
+<p>[SNAP-1851] Properly closing the connection in case when connection commit fails. (#796)</p>
+<p>[SNAP-1976] Changes to set isolation level. (#813)
+  Allow operations on row and column tables if isolation level is set to other than NONE and
+  autocommit is true (query routing is enabled). If autocommit is false, query routing will be
+  disabled and transactions on row tables will be supported. Queries on column tables will error out
+  when query routing is disabled.</p>
+<p>[SNAP-1973]/[SNAP-1970] Avoid clearing hive meta-store system properties. (#816)
+  The hive meta-store system properties are required to be set for static initialization of Hive and
+  should not be cleared because a concurrent hive context initialization (from some other path) can
+  see inconsistencies like system property found but not available when actually read.</p>
+<p>[SNAP-1979] Added MemoryManagerStats for capturing different stats for UnifiedMemoryManager.(#814)
+  Smart Cconnector mode will not have these stats as GemFireXD cache will not be available.</p>
+<p>[SNAP-1982] Change batch UUID to be a long (#812)
+  Now using region.newUUID to generate the batch UUID. Use colocatedRegion of column table (the row
+  buffer) to generate the UUID since that is what smart connector and internal rollover uses.</p>
+<p>[SNAP-1611] Increased spark.memory.fraction from 92% to 97% (#808)
+  We want to give a little buffer to JVM before it reaches the critical hep size.</p>
+<p>Make SnappySession.contextObjects as transient to fix the serialization issues reported on
+  spark-shell when SnappySession gets captured in closures (e.g. import session.implicits._ with
+  toDF)</p>
+<p>[SNAP-1955] Fixes for issues seen in parallel test runs (#805)</p>
+<p>[SNAP-1660] Remove password from product logging.</p>
+<p>[SNAP_1948] Added an option to specify streaming batch interval during streaming job submission.
+  e.g. bin/snappy-job.sh submit --lead localhost:8090 --app-name appname --class appclass \
+      --app-jar appjar --conf logFileName=demo.txt --stream --batch-interval 4000</p>
+<p>[SNAP-1893] Changed locator status to RUNNING after stopped locator is restarted with
+  snappy-start-all.sh</p>
+<p>[SNAP-1877] GC issues with large dictionaries in decoding and other optimizations (#787)
+  1. Performance issues with dictionary decoder when dictionary is large. 2. Data skew fixes. 3.
+  Using a consistent sort order so that generated code is identical across sessions for the same
+  query. 4. Reducing the size of generated code.</p>
+<p>Fix issues seen during concurrency testing (#782)</p>
+<p>[SNAP-1884] Fixed result mismatch in join between snappy table and temp table.</p>
+<p>Overridden two methods from Executor.scala. (#783) These methods have been added in Spark
+  executor to check store related errors.</p>
+<p>[SNAP-1917] Properly comparing datatype of complex schema.</p>
+<p>[SNAP-1919]/[SNAP-1916] Added isPartitioned flag to determine partitioned tables (#784)</p>
+<p>[SNAP-1904] Use same connection for rowbuffer and columnstore.</p>
+<p>[SNAP-1883] Parser change for range operator.</p>
+<p>Fixed: After new job classloader changes executors are not fetching driver files. (#777)</p>
+<p>[SNAP-1894] Codegen issue for query with case in predicate expression (#772)</p>
+<p>[SNAP-1888]/[SNAP-1886] Fixed parser error in two level nested subQuery, works with Spark (#774)</p>
+<p>[Snap 1833] Fixed the synchronization problem with sc.addJar() (#728)</p>
+<p>[SNAP-1377]/[SNAP-902] Proper handling of exceptions in case of Lead and Server HA  (#758)</p>
+<p>[Snap 1871] Remove custom built-in jdbc provider and instead use spark's JDBC provider (#757)</p>
+<p>[SNAP-1882] Changes done for routing update and delete queries on column table to lead node.
+  Also handled prepared statement on update and delete queries for column table.</p>
+<p>[SNAP-1885] Fixed Semijoin returning incorrect result (#768)</p>
+<p>[SNAP-1787] - Handling Array[Decimal] in both embedded and split mode (#754)</p>
+<p>[SNAP-1892] .show() after table creation using CreateExternalTable api gives empty/null
+  entries, caused due to empty UserSpecifiedSchema instead of None (#764)</p>
+<p>[SNAP-1734] Query plan shows 0 number of output rows at the start of the plan. (#761)
+  Snappy's execution happens in two phases. First phase the plan is executed to create a rdd
+  which is then used to create a CachedDataFrame. In second phase, the CachedDataFrame is then
+  used for further actions. For accumulating the metrics for first phase,
+  SparkListenerSQLPlanExecutionStart is fired. This keeps the current executionID in
+  _executionIdToData but does not add it to the active executions. This ensures that query is not
+  shown in the UI but the new jobs that are run while the plan is being executed are tracked
+  against this executionID. In the second phase, when the query is actually executed,
+  SparkListenerSQLPlanExecutionStart adds the execution data to the active executions.
+  SparkListenerSQLPlanExecutionEnd is then sent with the accumulated time of both the phases. For
+  consuming SparkListenerSQLPlanExecutionStart, Snappy's SQLListener has been added. Overridden
+  withNewExecutionId in CachedDataFrame so that the above explained process also happens when the
+  dataset APIs are used.</p>
+<p>[SNAP-1878] Proper handling of path option while creation of external table using API (#760)</p>
+<p>[SNAP-1850] Remove connection used in JDBCSourceAsColumnarStore#getPartitionID v2 (#750)</p>
+<p>[SNAP-1389] Update and delete support for column tables (#747)</p>
+<p>[SNAP-1426] Fixed the Snappy Dashboard freezing issue when loading data sets (#732)</p>
+<p>Making background start of multi-node cluster as default</p>
+<p>[SNAP-1860] Close the connection if \commit/rollback is not done (#746)
+  Made changes to make sure to commit/rollback the snapshot tx in case of exception. e.g Security
+  related while trying to iterate over the region.</p>
+<p>[SNAP-1656] Security support in snappydata (#731)
+  Enable LDAP based authentication and authorization in Snappydata cluster.</p>
+<p>Support for snapshot transactional insert in column table (#718)</p>
+<p>[SNAP-1825]/[SNAP-1818] DDL routing changes  (#742)
+  Fix for ALTER TABLE ADD column does not work in case of row table when the table is altered
+  after inserting data and CREATE ASYNCEVENTLISTENER doesn't work with lead node.</p>
+<p>Removing old 2.0.x backward compatibility classes.</p>
+<p>Fixes the "describe table" from Spark and shows the full schema.</p>
+<p>[SNAP-1268] Code changes to start SnappyTableStatsProviderService service only once. (#738)</p>
+<p>[SNAP-1838] skip plan cache clear if there is no SparkContext</p>
+<p>Fixes for issues found during concurrency testing (#730)</p>
+<p>[SNAP-1815] Disallow configuration of Hive metsatore using hive.metastore.uris property in
+  hive-site.xml (#714)</p>
+<p>[SNAP-1708] collect-debug-artifacts script won't need both way ssh now. (#723)</p>
+<p>[SNAP-1723] When foldable functions are there in the queries and literals are there in their
+  argument then identify case where Tokenization should be stopped. Added a bunch of such functions
+  with corresponding relevant argument numbers for that. (#706)</p>
+<p>[SNAP-1806] Changed the exception handling in SnappyConnector mode. (#719)</p>
+<p>Support for setting scheduler pools using the set command (#700)</p>
+<p>[SNAP-671] Added support for DSID to work for column tables (#716)</p>
+<p>Added a task context listener to explicitly remove the obtained memory. (#713)</p>
+<p>[SNAP-1326] SnappyParser changes to support ALTER TABLE ADD/DROP COLUMN DDLs (#711)</p>
+<p>[SNAP-1808] Create cachedbatch tables in user's schema instead of the earlier common schema
+  SNAPPYSYS_INTERNAL. Changes from Sumedh @sumwale (#712)</p>
+<p>[SNAP-1805] Fixed Query Execution statistics are not getting displayed in SQL graph, caused
+  because function to withNewExecutionId was executed before it was passed as argument (#703)</p>
+<p>[SNAP-1777] Increasing default member-timeout for SnappyData (#704)</p>
+<p>[SNAP-1610] Removing the code related to split cluster mode (that was disabled for users in 0.9
+  release) (#696)</p>
+<p>[SNAP-1363] Performance degrades because of PoolExhaustedException when run from connector mode.
+  Increasing max connection pool size since there is an idle timeout in the pool implementations
+  (default: 120s), so cleanup of unused connections will happen in any case.</p>
+<p>[SNAP-1794] Modified code generation of DynamicFoldableExpression such that even the
+  initMutableState splits into multiple init() functions, code will be generated properly. (#699)</p>
+<p>Changes for Apache Spark 2.1.1 merge (#695)</p>
+<p>[SNAP-1451] set default startup-recovery-delay to 102s for Snappy tables to avoid interfering
+  with initial bucket creation.</p>
+<p>[SNAP-1722] Test to validate support for long, short, tinyint and byte datatypes for row tables
+  (#689)</p>
+<p>Spark 2.1 Merge (#501)</p>
+<p>Fixing NoSuchElementException "None get" in dropTable. Using the global SparkContext directly
+  instead of getting from active SparkSession (which may not exist) in hive meta-store listener.</p>
+<p>[SNAP-1688] CachedDataFrame memory allocation should be accounted with execution memory rather
+  than storage memory.</p>
+<p>[SNAP-1748] Fixed: Without persistence, data loading is unsuccessful with eviction on (#682)</p>
+<p>[SNAP-1721] Avoid code generation failure in WorkingWithObject.scala example (#685)</p>
+<p>Changes for SNAP-1678 Smart connector should emit info logs that indicate the cluster to which it is connecting (#676)</p>
+<p>[SNAP-1760] Correct null bitset expansion and reduce copying in inserts. (#678) Fixes
+  ArrayIndexOutOfBounds exception in queries with wide schema having nulls.</p>
+<p>Corrected the scaladoc examples in SnappySession. (#672)</p>
+<p>Allow for spaces at start of API parser calls</p>
+<p>[SNAP-1737] While passing value to GemFireXD, it should ve converted from catalyst type to scala
+  type.(#669)</p>
+<p>[SNAP-1735] use single batch count in stats row (#664)</p>
+<p>Renamed "-b" option to "-bg" to match convention used in other POSIX commands</p>
+<p>[SNAP-1725] Fix start and collect-debug scripts for Mac.</p>
+<p>[SNAP-1714] Correcting case-sensitivity handling for API calls (#657)</p>
+<p>[SNAP-1792] Snappy Monitoring UI now also displays Member Details View which shows member specific
+  information, various statistics (like Status, CPU, Memory, Heap &amp; Off-Heap Usages, etc) and
+  members logs in incremental way.</p>
+<p>[Snap-1890] Snappy Monitoring UI displays new Pulse logo. Also product and it's build details are
+  shown under version in pop up window.</p>
+<p>[Snap-1813] Pulse (Snappy Monitoring UI) users need to provide valid user name and password if
+  SnappyData cluster is running in secure mode.</p>
               
             </div>
           </div>
@@ -1700,10 +1863,10 @@ While a <a href="https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch">Count-m
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../working_with_stratified_samples/" class="btn btn-neutral float-right" title="Working with Stratified Samples">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../known_issues/" class="btn btn-neutral float-right" title="Known Issues">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../../aqp/" class="btn btn-neutral" title="Synopsis Data Engine (SDE)"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../additional_files/license_model/" class="btn btn-neutral" title="License Model"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1735,10 +1898,10 @@ While a <a href="https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch">Count-m
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../../aqp/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../additional_files/license_model/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../working_with_stratified_samples/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../known_issues/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

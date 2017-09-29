@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Release Notes - SnappyData Documentation</title>
+  <title>Known Issues - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -29,9 +29,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Release Notes";
-    var mkdocs_page_input_path = "release_notes/release_notes_1.0-rc.md";
-    var mkdocs_page_url = "/release_notes/release_notes_1.0-rc/";
+    var mkdocs_page_name = "Known Issues";
+    var mkdocs_page_input_path = "release_notes/known_issues.md";
+    var mkdocs_page_url = "/release_notes/known_issues/";
   </script>
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
@@ -1583,25 +1583,32 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../release_notes_1.0/">Release Notes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Release Notes</span></li>
+
+        
+            
     <li class="toctree-l1 current">
-        <a class="current" href="./">Release Notes</a>
+        <a class="current" href="./">Known Issues</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#release-notes">Release Notes</a></li>
-                
-                    <li><a class="toctree-l4" href="#new-features">New Features</a></li>
-                
-                    <li><a class="toctree-l4" href="#performance-enhancements">Performance Enhancements</a></li>
-                
-                    <li><a class="toctree-l4" href="#select-bug-fixes-and-performance-related-fixes">Select bug fixes and performance related fixes</a></li>
-                
-                    <li><a class="toctree-l4" href="#known-issues">Known Issues</a></li>
+                <li class="toctree-l3"><a href="#known-issues">Known Issues</a></li>
                 
             
             </ul>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1639,8 +1646,12 @@
     <li><a href="../..">Docs</a> &raquo;</li>
     
       
+        
+          <li>Release Notes &raquo;</li>
+        
+      
     
-    <li>Release Notes</li>
+    <li>Known Issues</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1656,101 +1667,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="release-notes">Release Notes</h1>
-<p>The SnappyData team is pleased to announce the availability of SnappyData version 1.0.0-RC1.</p>
-<h2 id="new-features">New Features</h2>
-<ul>
-<li>
-<p>Fully compatible with Apache Spark 2.1.1</p>
-</li>
-<li>
-<p>Mutability support for column store (SNAP-1389):</p>
-<ul>
-<li>UPDATE and DELETE operations are now supported on column tables.</li>
-</ul>
-</li>
-<li>
-<p>ALTER TABLE support for row table (SNAP-1326).</p>
-</li>
-<li>
-<p>Security Support (available in <a href="http://www.snappydata.io/download">enterprise edition</a>):  This release introduces cluster security with authentication and authorisation based on LDAP mechanism. Will be extended to other mechanisms in future (SNAP-1656, SNAP-1813).</p>
-</li>
-<li>
-<p>Support for setting scheduler pools using the set command.</p>
-</li>
-<li>
-<p>Multi-node cluster now boots up quickly as background start of server processes is enabled by default.</p>
-</li>
-<li>
-<p>Pulse Console:  SnappyData Pulse has been enhanced to be more useful to both developers and operations personnel (SNAP-1890, SNAP-1792). Improvements include</p>
-<ul>
-<li>
-<p>Ability to sort members list based on members type.</p>
-</li>
-<li>
-<p>Added new UI view named SnappyData Member Details Page which includes, among other things, latest logs.</p>
-</li>
-<li>
-<p>Added members Heap and Off-Heap memory usage details along with their storage and execution splits.</p>
-</li>
-</ul>
-</li>
-<li>
-<p>Users can specify streaming batch interval when submitting a stream job via conf/snappy-job.sh (SNAP-1948).</p>
-</li>
-<li>
-<p>Row tables now support LONG, SHORT, TINYINT and BYTE datatypes (SNAP-1722).</p>
-</li>
-<li>
-<p>The history file for snappy shell has been renamed from .gfxd.history to .snappy.history. You may copy your existing ~/.gfxd.history to ~/.snappy.history to be able to access your historical snappy shell commands.</p>
-</li>
-</ul>
-<h2 id="performance-enhancements">Performance Enhancements</h2>
-<ul>
-<li>
-<p>Performance enhancements with dictionary decoder when dictionary is large. (SNAP-1877)</p>
-<ul>
-<li>
-<p>Different sessions end up creating different code due to indeterminate statsPredicate ordering. Now using a consistent sort order so that generated code is identical across sessions for the same query.</p>
-</li>
-<li>
-<p>Reduced the size of generated code.</p>
-</li>
-</ul>
-</li>
-<li>
-<p>Indexed cursors in decoders to improve heavily filtered queries (SNAP-1936)</p>
-</li>
-<li>
-<p>Performance improvements in Smart Connector mode, specially with queries on tables with wide schema (SNAP-1363, SNAP-1699)</p>
-</li>
-<li>
-<p>Several other performance improvements.</p>
-</li>
-</ul>
-<h2 id="select-bug-fixes-and-performance-related-fixes">Select bug fixes and performance related fixes</h2>
-<p>Some of these are included below. For the complete list, see <a href="https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt">ReleaseNotes.txt</a>.</p>
-<ul>
-<li>
-<p>Fixed data inconsistency issues when a new node is joining the cluster and at the same time write operations are going on. (SNAP-1756)</p>
-</li>
-<li>
-<p>The product internally does retries on redundant copy of partitions on the event of a node failure (SNAP-1377, SNAP-902)</p>
-</li>
-<li>
-<p>Fixed the wrong status of locators on restarts. After cluster restart, snappy-status-all.sh used to show locators in waiting state even when the actual status changed to running (SNAP-1893)</p>
-</li>
-<li>
-<p>Fixed the SnappyData Pulse freezing when loading data sets (SNAP-1426)</p>
-</li>
-<li>
-<p>More accurate accounting of execution and storage memory (SNAP-1688, SNAP-1798)</p>
-</li>
-<li>
-<p>Corrected case-sensitivity handling for query API calls (SNAP-1714)</p>
-</li>
-</ul>
-<h2 id="known-issues">Known Issues</h2>
+                <h1 id="known-issues">Known Issues</h1>
 <p>The following key issues have been registered as bugs in the SnappyData bug tracking system:</p>
 <table align="left">
 <colgroup>
@@ -1776,7 +1693,12 @@
 1. User may either create a new SnappySession in such scenarios </br>OR </br> 
 2. Invalidate the cache on the Smart Connector mode, for example by calling </br>  `snappy.sessionCatalog.invalidateAll()`</td>
 </tr>
-
+<tr class="odd">
+<td><a href="https://jira.snappydata.io/browse/SNAP-1634">SNAP-1634</a></td>
+<td>Creating a temporary table with the same name as an existing table in any schema should not be allowed</td>
+<td>When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br></td>
+<td> Ensure that you create temporary tables with a unique name. </td>
+</tr>
 <tr class="even">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1753">SNAP-1753</a></td>
 <td>TPCH Q19 execution performance degraded in 0.9</td>
@@ -1813,12 +1735,12 @@ select
 </code></pre>
 </td>
 </tr>
-<tr class="odd">
-<td><a href="https://jira.snappydata.io/browse/SNAP-1634">SNAP-1634</a></td>
-<td>Creating a temporary table with the same name as an existing table in any schema should not be allowed</td>
-<td>When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br></td>
-<td> Ensure that you create temporary tables with a unique name. </td>
-</tr><!--
+
+
+
+
+
+<!--
 <tr class="even">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1153">SNAP-1153</a></td>
 <td></td>
@@ -1853,7 +1775,7 @@ Format for new rows
         <a href="../../techsupport/" class="btn btn-neutral float-right" title="Contact and Support">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../../additional_files/license_model/" class="btn btn-neutral" title="License Model"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../release_notes_1.0/" class="btn btn-neutral" title="Release Notes"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1885,7 +1807,7 @@ Format for new rows
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../../additional_files/license_model/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../release_notes_1.0/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../../techsupport/" style="color: #fcfcfc">Next &raquo;</a></span>
