@@ -31,7 +31,7 @@ import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
 import com.gemstone.gemfire.internal.GemFireVersion
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
@@ -1772,6 +1772,7 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
 
   lazy val isEnterpriseEdition: Boolean = {
+    GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
     GemFireVersion.isEnterpriseEdition
   }

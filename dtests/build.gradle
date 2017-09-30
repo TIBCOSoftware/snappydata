@@ -136,7 +136,6 @@ scalaTest {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)
     }
-    testOutput '/dev/tty'
     doLast {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)

@@ -16,6 +16,8 @@
  */
 
 import groovy.json.JsonSlurper
+import org.gradle.api.tasks.testing.logging.*
+import org.gradle.internal.logging.*
 
 apply plugin: 'wrapper'
 apply plugin: 'distribution'
@@ -272,7 +274,8 @@ subprojects {
     // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
     //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
 
-    testLogging.exceptionFormat = 'full'
+    testLogging.exceptionFormat = TestExceptionFormat.FULL
+    testLogging.events = TestLogEvent.values() as Set
 
     List<String> suites = []
     extensions.add(com.github.maiflai.ScalaTestAction.SUITES, suites)
@@ -309,13 +312,22 @@ subprojects {
     maxHeapSize '2g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
             '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
-    testLogging.exceptionFormat = 'full'
+    testLogging.exceptionFormat = TestExceptionFormat.FULL
 
-    include '**/*.class'
-    exclude '**/*DUnitTest.class'
-    exclude '**/*DUnitSecurityTest.class'
-    exclude '**/*DUnitSingleTest.class'
-    exclude '**/*TestBase.class'
+    includes.clear()
+
+    def single = System.getProperty('junit.single')
+    if (single == null || single.length() == 0) {
+      single = rootProject.hasProperty('junit.single') ?
+          rootProject.property('junit.single') : null
+    }
+    if (single == null || single.length() == 0) {
+      include '**/*.class'
+      exclude '**/*TestBase.class'
+      exclude '**/*DUnit*.class'
+    } else {
+      include single
+    }
 
     workingDir = "${testResultsBase}/junit"
 
@@ -343,12 +355,15 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def single = rootProject.hasProperty('dunit.single') ?
-        rootProject.property('dunit.single') : null
+    def single = System.getProperty('dunit.single')
+    if (single == null || single.length() == 0) {
+      single = rootProject.hasProperty('dunit.single') ?
+          rootProject.property('dunit.single') : null
+    }
     if (single == null || single.length() == 0) {
       def dunitTests = fileTree(dir: testClassesDir,
-          includes: ['**/*DUnitTest.class'],
-          excludes: ['**/*DUnitSecurityTest.class'])
+          includes: ['**/*DUnitTest.class', '**/*DUnit.class'],
+          excludes: ['**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class'])
       FileTree includeTestFiles = dunitTests
       int dunitFrom = rootProject.hasProperty('dunit.from') ?
           getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
@@ -404,7 +419,7 @@ subprojects {
     if (single == null || single.length() == 0) {
       def dunitSecurityTests = fileTree(dir: testClassesDir,
           includes: ['**/*DUnitSecurityTest.class'],
-          excludes: ['**/*DUnitTest.class'])
+          excludes: ['**/*DUnitTest.class', '**/NCJ*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class'])
       FileTree includeTestFiles = dunitSecurityTests
       int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
           getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
@@ -424,6 +439,7 @@ subprojects {
     }
     exclude '**/*Suite.class'
     exclude '**/*DUnitTest.class'
+    exclude '**/*DUnit.class'
     if (!rootProject.hasProperty('snappydata.enterprise')) {
       exclude '**/*DUnitSecurityTest.class'
     }
@@ -469,19 +485,11 @@ subprojects {
           'APACHE_SPARK_HOME': sparkProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
-        int numTestClasses = test.getCandidateClassFiles().getFiles().size()
-        def testCount = new java.util.concurrent.atomic.AtomicInteger(0)
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
         def progress = new File(workingDir, 'progress.txt')
         def output = new File(workingDir, 'output.txt')
 
         String eol = System.getProperty('line.separator')
-        beforeSuite { desc ->
-          if (desc.className != null) {
-            def count = testCount.incrementAndGet()
-            println "${now()} Start ${desc.className} ($count/$numTestClasses)"
-          }
-        }
         beforeTest { desc ->
           String now = now()
           progress << "${now} Starting test ${desc.className} ${desc.name}${eol}"
@@ -507,23 +515,25 @@ subprojects {
             failureCount.incrementAndGet()
           }
         }
-        afterSuite { desc, result ->
-          if (desc.className != null) {
-            println "${now()} END ${desc.className}"
-          }
-        }
         doLast {
           def report = "${test.reports.html.destination}/index.html"
+          boolean hasProgress = progress.exists()
           if (failureCount.get() > 0) {
             println()
             def failureMsg = "FAILED: There were ${failureCount.get()} failures.${eol}"
-            failureMsg    += "        See the progress report in: file://$progress${eol}"
+            if (hasProgress) {
+              failureMsg    += "        See the progress report in: file://$progress${eol}"
+            }
             failureMsg    += "        HTML report in: file://$report"
             throw new GradleException(failureMsg)
-          } else {
+          } else if (hasProgress) {
             println()
             println("SUCCESS: See the progress report in: file://$progress")
             println("         HTML report in: file://$report")
+            println()
+          } else {
+            println()
+            println("SUCCESS: See the HTML report in: file://$report")
             println()
           }
         }
@@ -800,26 +810,12 @@ task product(type: Zip) {
     }
     if (new File(rootDir, 'store/build.gradle').exists()) {
       // copy snappy-store shared libraries for JNI calls
-      def gemCoreProject = project(':snappy-store:gemfire-core')
       def storeCoreProject = project(':snappy-store:snappydata-store-core')
       if (osName.isLinux()) {
-        copy {
-          from "${gemCoreProject.projectDir}/lib"
-          into "${snappyProductDir}/jars"
-          include '*.so'
-          exclude '*_sol*.so'
-        }
         copy {
           from "${storeCoreProject.projectDir}/lib"
           into "${snappyProductDir}/jars"
           exclude '*_sol*.so'
-        }
-      }
-      if (osName.isWindows()) {
-        copy {
-          from "${gemCoreProject.projectDir}/lib"
-          into "${snappyProductDir}/jars"
-          include '*.dll'
         }
       }
       copy {
@@ -1092,7 +1088,7 @@ task checkAll {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
-    dependsOn ':buildDtests', ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+    dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
   mustRunAfter buildAll
 }
@@ -1265,8 +1261,6 @@ def buildOutput = new File("${rootDir}/buildOutput.log")
 if (buildOutput.length() > 1000000) {
   delete buildOutput
 }
-
-import org.gradle.internal.logging.*
 
 gradle.services.get(LoggingOutputInternal).addStandardOutputListener (new StandardOutputListener () {
   void onOutput(CharSequence output) {
