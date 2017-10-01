@@ -24,7 +24,6 @@ import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.impl.SnappyHiveCatalog
@@ -126,7 +125,8 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
    * meta-store that is configured in the hive-site.xml file.
    */
   private def newClientWithLogSetting(): HiveClient = {
-    val currentLevel = ClientSharedUtils.converToJavaLogLevel(LogManager.getRootLogger.getLevel)
+    val currentLevel = ClientSharedUtils.convertToJavaLogLevel(
+      LogManager.getRootLogger.getLevel)
     try {
       ifSmartConn(() => {
         val props = new Properties()
