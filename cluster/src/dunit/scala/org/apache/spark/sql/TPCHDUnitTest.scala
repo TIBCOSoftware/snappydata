@@ -22,7 +22,6 @@ import java.sql.PreparedStatement
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 import io.snappydata.SnappyTableStatsProviderService
-import io.snappydata.benchmark.snappy.TPCH_Snappy
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
 import io.snappydata.cluster.ClusterManagerTestBase
@@ -236,7 +235,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     val snc = SnappyContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
     val conn = getANetConnection(locatorNetPort)
-    val prepStatement = conn.prepareStatement(TPCH_Snappy.getQuery10)
+    val prepStatement = conn.prepareStatement(TPCH_Queries.getQuery10_ForPrepareStatement)
     verifyResultSnap1296_1297(prepStatement)
     prepStatement.close()
 
@@ -439,6 +438,8 @@ object TPCHUtils extends Logging {
 //    queries.foreach(query => TPCH_Snappy.execute(query, snc,
 //      isResultCollection, isSnappy, warmup = warmup,
 //      runsForAverage = runsForAverage, avgPrintStream = System.out))
-    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection, isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage, avgPrintStream = System.out))
+    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection,
+      isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage,
+      avgPrintStream = System.out))
   }
 }
