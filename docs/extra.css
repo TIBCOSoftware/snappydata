@@ -24,6 +24,12 @@ h2{
 /*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
 }
 
+heading2{
+    color: #335183;
+    font-size: 18pt;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
+}
+
 
 h3{
     color: #404040;
@@ -32,6 +38,12 @@ h3{
     border-bottom: thin double #e0e0e0;
 }
 
+heading3{
+    color: #404040;
+    font-size: 16pt;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
+    border-bottom: thin double #e0e0e0;
+}
 h4 {
     color: #404040;
     font-size: 14pt;

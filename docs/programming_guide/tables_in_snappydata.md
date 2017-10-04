@@ -19,8 +19,8 @@ CREATE TABLE [IF NOT EXISTS] table_name
 USING row | column
 OPTIONS (
 COLOCATE_WITH 'table_name',  // Default none
-PARTITION_BY 'PRIMARY KEY' | 'column name', // If not specified it will be a replicated table
-BUCKETS  'NumPartitions', // Default 113
+PARTITION_BY 'PRIMARY KEY' | 'column name', // If not specified, a replicated table is created
+BUCKETS  'NumPartitions', // Default 128
 REDUNDANCY '1' ,
 EVICTION_BY 'LRUMEMSIZE 200' | 'LRUCOUNT 200' | 'LRUHEAPPERCENT',
 OVERFLOW 'true',
@@ -81,9 +81,9 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * <b>COLOCATE_WITH:</b> The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
 
-   * <b>PARTITION_BY:</b> Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for the column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
+   * <b>PARTITION_BY:</b> Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode and two times the number of cores in local mode. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
-   * <b>BUCKETS:</b>  The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
+   * <b>BUCKETS:</b>  The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 128.
 
    * <b>REDUNDANCY:</b>  Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
@@ -179,7 +179,7 @@ data.map { r =>
 }
 ```scala
 
-**Usage SnappySession.update()**: Update all rows in table that match passed filter expression
+Usage SnappySession.update(): Update all rows in table that match passed filter expression
 
 ```scala
 snappy.update(tableName, "ITEMREF = 3" , Row(99) , "ITEMREF" )

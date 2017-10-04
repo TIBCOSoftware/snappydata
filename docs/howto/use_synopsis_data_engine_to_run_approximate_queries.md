@@ -64,7 +64,7 @@ The query below returns airlines by number of flights in descending order. The '
 ```
 
 **Join the sample table with a reference table**:
-You can join the sample table with a reference table to execute queries. For example a reference table (AIRLINEREF) is created as follows from a parquet data file.
+You can join the sample table with a reference table to execute queries. The example below illustrates how a reference table (AIRLINEREF) is created as from a parquet data file.
 ```scala
     // create temporary staging table to load parquet data
     snSession.sql("CREATE EXTERNAL TABLE STAGING_AIRLINEREF USING " +

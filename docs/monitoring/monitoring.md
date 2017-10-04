@@ -32,8 +32,6 @@ The Dashboard offers the following capabilities and benefits:
 
 * [Table Statistics](#table)
 
-The Dashboard offers the following capabilities and benefits:
-
 <a id="cluster"></a>
 ### Cluster Statistics
 
@@ -87,10 +85,10 @@ The Dashboard offers the following capabilities and benefits:
 
 * **Heap Memory**</br>
    Displays the total available heap memory and used heap memory.</br> 
-   You can view the detailed distribution of the member's heap storage, heap execution memory, their utilizations along with JVM Heap utilization by clicking on the arrow next to the member name.
+   You can view the detailed distribution of the member's heap storage, heap execution memory, their utilization along with JVM Heap utilization by clicking on the arrow next to the member name.
 
 * **Off-Heap Memory Usage**</br>
-   Displays the members total off-heap memory and used off-heap memory.</br> You can also view the member's off-heap storage and off-heap execution memory and utilizations by clicking on the arrow next to the member name.
+   Displays the members total off-heap memory and used off-heap memory.</br> You can also view the member's off-heap storage and off-heap execution memory and utilization by clicking on the arrow next to the member name.
 
 <a id="table"></a>
 ### Table Statistics
@@ -127,7 +125,7 @@ The Member Details View offers the following capabilities and benefits:
 
 * [Member Logs](#memberlogs)
 
-The top-right side of the page displays the last updated the date and time for the member.
+The top-right side of the page displays the last updated date and time for the member.
 
 <a id="memberstats"></a>
 ### Member Statistics
@@ -140,34 +138,36 @@ The top-right side of the page displays the last updated the date and time for t
 	
 * **Process ID**</br> Displays the process ID of the member. 
 
-* **Heap Memory**</br> Displays the total available heap memory, used heap memory and their distribution into heap storage, heap execution memory and their utilizations.
+* **Heap Memory**</br> Displays the total available heap memory, used heap memory, their distribution into heap storage, heap execution memory and their utilization.
 
 * **Off-Heap Memory Usage**</br>
-   Displays the members total off-heap memory, used off-heap memory and their distribution into off-heap storage and off-heap execution memory and their utilizations.
+   Displays the members total off-heap memory, used off-heap memory, their distribution into off-heap storage and off-heap execution memory, and their utilization.
 	
 * **Member Status**</br> Displays the current status of the member which can be either Running or Stopped.
    
     | Status | Description |
 	  |--------|--------|
 	  |![Running Member](../Images/running-status.png)|Member is running|
-    |![Stopped Member](../Images/stopped-status.png)|Member is stopped or unavailable|
+    |![Stopped Member](../Images/stopped-status.png)|Member has been stopped or is unavailable|
 
 * **CPU Usage**</br> The CPU utilized by the member's host.
 
 * **Memory Usage**</br> Members collective Heap and Off-Heap Memory utilization along with total memory.
 
-* **Memory JVM Usage**</br> Members total JVM Heap and it's utilization.
+* **Memory JVM Usage**</br> Members total JVM Heap and its utilization.
 
 <a id="memberlogs"></a>
 ### Member Logs
 
 ![MemberLogs](../Images/monitoring_memberdetails_logs.png)
 
-* **Log File Location **</br>Displays the absolute path of the members primary log file on host where current member process is running. 
+* **Log File Location **</br>Displays the absolute path of the member's primary log file on a host where the current member process is running. 
 	
-* **Log Details**</br>Displays the loaded logs details like Loaded Bytes, Start and End Indexes of Laoded Bytes and Total Bytes of logs content.
+* **Log Details**</br>Displays details of the loaded logs like Loaded Bytes, Start and End Indexes of Loaded Bytes and Total Bytes of logs content.
 
-* **Logs**</br>Displays the actual log entries from the log files.   </br> It also displays two clickable buttons to load more log entries from log files.   </br> **Load New** : Loads latest log entries from log file, if generated, after logs were last loaded/updated.    </br> **Load More** : Loads older log entries from log files, if available.
+* **Logs**</br>Displays the actual log entries from the log files. </br> It also displays two clickable buttons to load more log entries from log files.   </br>
+	*  **Load New**: Loads latest log entries from the log file (if generated) after logs were last loaded/updated.    </br> 
+	*  **Load More**: Loads older log entries from log files, if available.
 
 <a id="sql"></a>
 ## SQL Page
@@ -177,7 +177,7 @@ The top-right side of the page displays the last updated the date and time for t
 
 * **Whole-Stage Code Generation**: A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.
 
-* **Per node execution timing**: Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged, 
+* **Per node execution timing**: Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.
 
 * **Pool Name**: Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command `set snappydata.scheduler.pool=lowlatency`. 
 
@@ -205,7 +205,7 @@ The top-right side of the page displays the last updated the date and time for t
 
 * Scheduler Delay indicates the waiting period for the task. Delays can  be caused if there are too many concurrent jobs.
 
-* Shuffle reads and writes: Shuffles are written to disk and take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle times.  
+* Shuffle reads and writes: Shuffles are written to disk and take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle time.  
 
 * Number of parallel tasks: Due to concurrency, multiple queries may take cores and a particular query may take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
 
