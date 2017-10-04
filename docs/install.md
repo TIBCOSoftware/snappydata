@@ -5,17 +5,17 @@ SnappyData offers two editions of the product, SnappyData Community Edition and 
 The SnappyData Community edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
 The Enterprise edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.
 
-For more information on the capabilities of the Community and Enterprise edition see, [Community Edition/Enterprise Edition Components](additional_files/open_source_components.md).
+For more information on the capabilities of the Community and Enterprise edition see, [Community Edition (Open Source)/Enterprise Edition Components](additional_files/open_source_components.md).
 
-## Download SnappyData Community Edition
+<heading2> Download SnappyData Community Edition</heading2>
 
-[Download the SnappyData 1.0 Community edition](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
+[Download the SnappyData 1.0 Community edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
 * [**SnappyData 1.0.0 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-bin.tar.gz)
 
 * [**SnappyData 1.0.0 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-without-hadoop-bin.tar.gz) 
 
-## Download SnappyData Enterprise Edition
+<heading2> Download SnappyData Enterprise Edition</heading2>
 
 1. Go to the [SnappyData website](http://www.snappydata.io/download).
 
@@ -35,9 +35,9 @@ For more information on the capabilities of the Community and Enterprise edition
 
 	* ODBC INSTALLERS
 
-## Installation Options
+<heading2> Installation Options</heading2>
 
-### Prerequisites
+<heading3> Prerequisites </heading3>
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
 The following installation options are available:

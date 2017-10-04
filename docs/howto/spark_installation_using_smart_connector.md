@@ -42,3 +42,29 @@ snSession.sql("create table TestColumnTable (id bigint not null, k bigint not nu
 // insert data in TestColumnTable
 dataFrame.write.insertInto("TestColumnTable")
 ```
+## Running a Smart Connector Application
+
+[Start a SnappyData cluster](start_snappy_cluster.md) and create a table.
+
+```bash
+
+$ <SnappyData_home>/sbin/snappy-start-all.sh
+
+$ <SnappyData_home>/bin/snappy
+SnappyData version 1.0.0
+snappy>  connect client 'localhost:1527';
+Using CONNECTION0
+snappy> CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
+snappy> insert into SNAPPY_COL_TABLE VALUES(1,1);
+1 row inserted/updated/deleted
+snappy> insert into SNAPPY_COL_TABLE VALUES(2,2);
+1 row inserted/updated/deleted
+```
+
+The Smart Connector Application can now connect to this SnappyData cluster. </br>
+
+The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside the SnappyData cluster. </br>SnappyData package has to be specified along with the application jar to run the Smart Connector application.
+
+```bash
+$ <Spark_Product_Home>/bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.0-s_2.11       <SnappyData_Product_Home>/examples/jars/quickstart.jar
+```

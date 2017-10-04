@@ -18,8 +18,8 @@ SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memor
 
 | Operating System| Version |
 |--------|--------|
-|Red Hat Enterprise Linux|RHEL 6, 7|
-|Ubuntu|Ubuntu Server 14.04 and higher|
+|Red Hat Enterprise Linux|RHEL 6.0 and 7.0|
+|Ubuntu|Ubuntu Server 14.04 and later|
 |CentOS|CentOS 6, 7|
 
 

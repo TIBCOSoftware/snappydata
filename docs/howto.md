@@ -63,11 +63,12 @@ The following topics are covered in this section:
 
 * [How to use Apache Zeppelin with SnappyData](howto/use_apache_zeppelin_with_snappydata.md)<a id="howto-zeppelin"></a>
 
-### Known Issue
+<heading2> Known Issue</heading2>
 
 If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
 
-### More Information
+<heading2> More Information</heading2>
+
 Refer to these sections for information:
 
 * [About the Interpreter](aqp_aws.md#using-the-interpreter) 

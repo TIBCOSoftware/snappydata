@@ -1,9 +1,9 @@
-# Getting Started in 5 Minutes or Less
+# Getting Started in 5 Minutes or less
 
 Welcome to the Getting Started section! <br>
 In this section, multiple options are provided for getting started with SnappyData.
 
-**Before you begin**
+<heading2>Before you begin<heading2>
 
 You must first [download and extract](install.md) the SnappyData product distribution, navigate to the SnappyData product root directory and [start the cluster](howto/start_snappy_cluster.md).
 
