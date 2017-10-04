@@ -2371,7 +2371,7 @@ public class SnappyTest implements Serializable {
     File log = null;
     ProcessBuilder pb = null;
     try {
-      pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "-bg", "start");
+      pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"));
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
@@ -2438,7 +2438,7 @@ public class SnappyTest implements Serializable {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.sparkClusterStarted);
       if (num == 1) {
         // modifyJobServerConfig();
-        ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"), "-bg");
+        ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"));
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
         File logFile = new File(dest);
@@ -2497,8 +2497,7 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSnappyServers() {
     File log = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"),
-          "-bg", "stop");
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "stop");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
       File logFile = new File(dest);
@@ -2539,8 +2538,7 @@ public class SnappyTest implements Serializable {
     File log = null;
     try {
       initSnappyArtifacts();
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"),
-          "-bg");
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"));
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
@@ -3159,8 +3157,7 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("Starting server/s using rowstore option...");
         pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "-bg",
-            "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
