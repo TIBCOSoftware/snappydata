@@ -2353,6 +2353,12 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_startSnappyCluster() {
     if (forceStart) {
       startSnappyCluster();
+      try {
+        Thread.sleep(120000);
+      } catch (InterruptedException e) {
+        String s = "Exception occurred while waiting for snappy-start-all script execution..";
+        throw new TestException(s, e);
+      }
     } else {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
       if (num == 1) {
