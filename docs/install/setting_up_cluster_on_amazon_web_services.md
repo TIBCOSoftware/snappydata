@@ -5,7 +5,7 @@
 You can launch a SnappyData cluster on Amazon EC2 instance(s) using the AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 
 ### Prerequisites
-Ensure that you have an existing AWS account with required permissions to launch EC2 resources.
+Ensure that you have an existing AWS account with required permissions to launch the EC2 resources.
 
 ### Launching the instance
 To launch the instance and start the SnappyData cluster:
@@ -86,9 +86,9 @@ If you already have set up the AWS Command Line Interface on your local machine,
 
 * Ensure Python v 2.7 or later is installed on your local computer.
 
-### Cluster management
+### Cluster Management
 
-#### Launching SnappyData cluster
+#### Launching SnappyData Cluster
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
@@ -117,7 +117,7 @@ The  names and details of the members are automatically derived from the provide
 
 In the above example, you are launching a SnappyData cluster named **my-cluster** with 2 stores (or servers). The locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
 
-The cluster is launched in the N. California (us-west-1) region on AWS and starts an Apache Zeppelin server on the instance where lead is running. 
+The cluster is launched in the N. California (us-west-1) region on AWS and starts an Apache Zeppelin server on the instance where the lead is running.</br> 
 The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
 !!! Note:
@@ -127,13 +127,11 @@ To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedd
 
 #### Specifying properties
 
-If you want to configure each of the locator, lead, or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](../configuring_cluster/configuring_cluster.md#configuration-files) for example on how to write these conf files.
-
-This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.
-
+If you want to configure each of the locator, lead, or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under **aws/ec2/deploy/home/ec2-user/snappydata/**. Refer to [this SnappyData documentation page](../configuring_cluster/configuring_cluster.md#configuration-files) for example on how to configure these configuration files.</br>
+This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.</br>
 The important difference here is that, instead of the host names of the locator, lead or store, you have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. N stands for Nth locator, lead or server. The script replaces these with the actual host name of the members when they are launched.
 
-The sample conf files for a cluster with 2 locators, 1 lead and 2 stores are given below:
+The sample configuration files for a cluster with 2 locators, 1 lead and 2 stores are given below:
 
 *locators*
 ````
@@ -149,13 +147,13 @@ The sample conf files for a cluster with 2 locators, 1 lead and 2 stores are giv
 {{SERVER_0}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888
 {{SERVER_1}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -client-port=1530
 ````
-When you run **snappy-ec2**, it looks for these files under **aws/ec2/deploy/home/ec2-user/snappydata/** and, if present, reads them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options `--locators`, `--leads` or `--stores` must match to the number of entries in their respective conf files.
-
-The script also reads **snappy-env.sh**, if present in this location.
+When you run **snappy-ec2**, it looks for these files under **aws/ec2/deploy/home/ec2-user/snappydata/** and, if present, reads them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options `--locators`, `--leads` or `--stores` must match to the number of entries in their respective configuration file.
+</br>The script also reads **snappy-env.sh**, if present in this location.
 
 #### Stopping a cluster
 
-When you stop a cluster, it shuts down the EC2 instances and any data saved on its local instance stores is lost. However, the data saved on EBS volumes, if any, is retained unless the spot-instances were used.
+When you stop a cluster, it shuts down the EC2 instances and any data saved on the local instance stores is lost. However, the data saved on EBS volumes is retained, unless the spot-instances are used.
+
 ````
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
 ````
@@ -167,7 +165,7 @@ When you start a cluster, it uses the existing EC2 instances associated with the
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
 ````
 !!!Note: 
-	The start command (or launch command with `--resume` option) ignores `--locators`, `--leads` or `--stores` options and launches SnappyData cluster on existing instances. But the configuration files are read in any case if they are present in the location mentioned above. So, you need to ensure that every time you use the start command, the number of entries in conf files is equal to the number of instances in their respective security group.
+	The start command (or launch command with `--resume` option) ignores the `--locators`, `--leads` or `--stores` options, and launches the SnappyData cluster on existing instances. The configuration files however, are read if they are present in the location mentioned above. You therefore must ensure that every time you use the `start` command, the number of entries in configuration files are equal to the number of instances in their respective security group.
 
 #### Adding servers to a cluster
 
@@ -183,19 +181,19 @@ Use the `get-lead` command to get the first lead's hostname.
 
 #### Connecting to a cluster
 
-You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance. From there, you can SSH to any other member of the cluster without a password.
-The SnappyData product directory is located under /home/ec2-user/snappydata/ on all the members.
+You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance. You can then use SSH to connect to any other member of the cluster without a password. </br>
+The SnappyData product directory is located under **/home/ec2-user/snappydata/** on all the members.
 ````
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
 ````
 
 #### Destroying a cluster
 
-Destroying a cluster destroys all the data on the local instance stores, as well as, on the attached EBS volumes permanently.
+Destroying a cluster permanently destroys all the data on the local instance stores and on the attached EBS volumes.
 ````
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem destroy cluster-name
 ````
-This retains the security groups created for this cluster. To delete them as well, use it with `--delete-` group option.
+This retains the security groups created for this cluster. To delete this, use it with `--delete-` group option.
 
 #### Starting cluster with Apache Zeppelin
 
@@ -207,14 +205,15 @@ Optionally, you can start an instance of Apache Zeppelin server with the cluster
 
 ### More options
 
-For a complete list of options, this script has, run `./snappy-ec2`. The options are also provided below for quick reference.
-````
+For a complete list of options provided by the script run `./snappy-ec2`. </br>The options are also provided below for quick reference.
+
+```pre
 Usage: `snappy-ec2 [options] <action> <cluster_name>`
 
 <action> can be: launch, destroy, login, stop, start, get-locator, get-lead, reboot-cluster
 
 Options:
-  --version             show program's version number and exit
+  --version             show programs version number and exit
   -h, --help            show this help message and exit
   -s STORES, --stores=STORES
                         Number of stores to launch (default: 1)
@@ -306,8 +305,7 @@ Options:
                         just stop
   --instance-profile-name=INSTANCE_PROFILE_NAME
                         IAM profile name to launch instances under
-````
-
+```
 
 ## Known Limitations
 

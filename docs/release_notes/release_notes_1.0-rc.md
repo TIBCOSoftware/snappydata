@@ -122,13 +122,18 @@ select
         ( p_size between 1 and 5 or  p_brand = 'Brand#3')
 </code></pre>
 </td>
-</tr><!--
+</tr>
 <tr class="odd">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1634">SNAP-1634</a></td>
-<td>Widening coverage scenario for Prepared statement </td>
-<td>In certain cases (for example with ternary and unary expressions) an UnsupportedOperationException
-may be reported when using prepared statements.</td>
-<td> - </td>
+<td>Creating a temporary table with the same name as an existing table in any schema should not be allowed</td>
+<td>When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br></td>
+<td> Ensure that you create temporary tables with a unique name. </td>
+</tr><!--
+<tr class="even">
+<td><a href="https://jira.snappydata.io/browse/SNAP-1153">SNAP-1153</a></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 -->
 </table>
