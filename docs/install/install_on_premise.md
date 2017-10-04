@@ -1,6 +1,7 @@
 <a id="install-on-premise"></a>
 # Install On-Premise
-SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premise installation, SnappyData is installed and operated from your in-house computing infrastructure.
+
+SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
 <a id="singlehost"></a>
 ## Single-Host installation

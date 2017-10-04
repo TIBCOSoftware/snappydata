@@ -1315,5 +1315,7 @@ class ColumnTableTest
     snc.sql("drop table if exists test")
   }
 }
-case class Record(id:Int, data: Employee)
+
+case class Record(id: Int, data: Employee)
+
 case class Employee(empName: String, empId: Int)

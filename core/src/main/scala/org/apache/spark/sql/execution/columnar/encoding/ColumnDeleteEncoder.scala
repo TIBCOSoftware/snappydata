@@ -31,9 +31,9 @@ import org.apache.spark.sql.types.{DataType, IntegerType}
 import org.apache.spark.unsafe.Platform
 
 /**
- * Currently just stores the deleted positions in a sorted way. This can be optimized
- * to use a more efficient storage when number of positions is large like
- * a boolean bitset, or use a more comprehensive compression scheme like
+ * Currently just stores the deleted positions assuming sorted by position at plan level.
+ * This can be optimized to use a more efficient storage when number of positions is large
+ * large like a boolean bitset, or use a more comprehensive compression scheme like
  * PFOR (https://github.com/lemire/JavaFastPFOR).
  */
 final class ColumnDeleteEncoder extends ColumnEncoder {
@@ -187,15 +187,6 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
   }
 
   def finish(numPositions: Int, numBaseRows: Int): ByteBuffer = {
-    // sort the deleted positions and create the final storage buffer
-
-    // Spark's RadixSort is the fastest for larger sizes >= 1000. It requires
-    // long values and sorting on partial bytes is a bit costly at small sizes.
-    // The more common case is sorting of small number of elements where the
-    // JDK's standard Arrays.sort is the fastest among those tested
-    // (Fastutil's radixSort, quickSort, mergeSort, and Spark's RadixSort)
-    if (numPositions > 1) java.util.Arrays.sort(deletedPositions, 0, numPositions)
-
     createFinalBuffer(numPositions, numBaseRows)
   }
 }

@@ -350,11 +350,12 @@ class TokenizationTest
 
       query = s"select * from $table t1, $table2 t2 where t1.a = t2.a"
       snc.sql(query).collect()
-      assert( cacheMap.size() == 3)
+      // broadcast join not cached
+      assert( cacheMap.size() == 2)
 
       query = s"select * from $table t1, $table2 t2 where t1.a = t2.b"
       snc.sql(query).collect()
-      assert( cacheMap.size() == 4)
+      assert( cacheMap.size() == 2)
 
       // let us clear the plan cache
       snc.clear()

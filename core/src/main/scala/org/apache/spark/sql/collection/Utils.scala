@@ -30,7 +30,6 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.fasterxml.jackson.core.JsonGenerator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
@@ -47,6 +46,7 @@ import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
@@ -729,12 +729,21 @@ object Utils {
     }
   }
 
-  def generateJson(dataType: DataType, gen: JsonGenerator,
-      row: InternalRow): Unit = {
-    // JacksonGenerator(StructType(Seq(StructField("", dataType))), gen)(row)
-    // compatibility with both Spark 2.0.0 and 2.0.2
-    TypeUtilities.jacksonApply(StructType(Seq(StructField("", dataType))), gen, row)
+  def getJsonGenerator(dataType: DataType, columnName: String,
+      writer: java.io.Writer): AnyRef = {
+    val schema = StructType(Seq(StructField(columnName, dataType)))
+    JacksonUtils.verifySchema(schema)
+    new JacksonGenerator(schema, writer, new JSONOptions(Map.empty[String, String]))
   }
+
+  def generateJson(gen: AnyRef, row: InternalRow, columnIndex: Int,
+      columnType: DataType): Unit = {
+    val generator = gen.asInstanceOf[JacksonGenerator]
+    generator.write(InternalRow(row.get(columnIndex, columnType)))
+    generator.flush()
+  }
+
+  def closeJsonGenerator(gen: AnyRef): Unit = gen.asInstanceOf[JacksonGenerator].close()
 
   def getNumColumns(partitioning: Partitioning): Int = partitioning match {
     case c: PartitioningCollection =>

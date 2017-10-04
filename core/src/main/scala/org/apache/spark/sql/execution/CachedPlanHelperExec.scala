@@ -33,7 +33,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, Param
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
-import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
+import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNestedLoopJoinExec}
 import org.apache.spark.sql.internal.CodeGenerationException
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -62,43 +62,31 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
       case None => session.addContextObject(REFERENCES_KEY,
         ArrayBuffer[ArrayBuffer[Any]](ctx.references))
     }
-    // keep a map of the first BroadcastHashJoinExec plan and the corresponding ref array
-    // collect the broadcasthashjoins in this wholestage and the references array
+    // keep a map of the first broadcast plan and the corresponding ref array
+    // collect the broadcast joins in this wholestage and the references array
     var nextStageStarted = false
     var alreadyGotBroadcastNode = false
     childPlan transformDown {
-      case bchj: BroadcastHashJoinExec =>
+      case bchj@(_: BroadcastHashJoinExec | _: BroadcastNestedLoopJoinExec) =>
         logDebug(s"Got a bchj = $bchj and nextstagestarted = $nextStageStarted")
 
         if (!nextStageStarted) {
           // The below assertion was kept thinking that there will be just one
-          // broadcasthashjoin in one stage but there can be more than one and so
+          // broadcast join in one stage but there can be more than one and so
           // removing the assertion and instead adding this information in the context
           // indicating the above layer not to cache this plan.
           // assert(!alreadyGotBroadcastNode, "only one broadcast plans expected per wholestage")
           if (alreadyGotBroadcastNode) {
-            session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
-              CachedPlanHelperExec.NOCACHING_KEY) match {
+            session.getContextObject[Boolean](CachedPlanHelperExec.NOCACHING_KEY) match {
               case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
               case Some(_) =>
             }
-          }
-          session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
-            CachedPlanHelperExec.BROADCASTS_KEY) match {
-            case Some(map) => map += bchj -> ctx.references
-            case None => session.addContextObject(CachedPlanHelperExec.BROADCASTS_KEY,
-              mutable.Map(bchj -> ctx.references))
           }
           alreadyGotBroadcastNode = true
         }
-        bchj transformAllExpressions {
-          case pl: ParamLiteral =>
-            session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
-              CachedPlanHelperExec.NOCACHING_KEY) match {
-              case Some(_) =>
-              case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
-            }
-            pl
+        session.getContextObject[Boolean](CachedPlanHelperExec.NOCACHING_KEY) match {
+          case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+          case Some(_) =>
         }
         bchj
       case cp: CachedPlanHelperExec =>
@@ -129,7 +117,6 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
 object CachedPlanHelperExec extends Logging {
 
   val REFERENCES_KEY = "TokenizationReferences"
-  val BROADCASTS_KEY = "TokenizationBroadcasts"
   val WRAPPED_CONSTANTS = "TokenizedConstants"
   val NOCACHING_KEY = "TokenizationNoCaching"
 
