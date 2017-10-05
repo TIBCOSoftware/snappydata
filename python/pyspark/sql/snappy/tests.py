@@ -51,7 +51,7 @@ else:
     import unittest
 
 class SnappyContextTests(ReusedPySparkTestCase):
-    testdata = [[1, 2, 3], [7, 8, 9], [1, 2, 3], [4, 2, 3], [5, 6, 7]]
+    testdata = ((1, 2, 3), (7, 8, 9), (1, 2, 3), (4, 2, 3), (5, 6, 7))
     tablename = "TESTTABLE"
 
     def test_new_session(self):
@@ -115,10 +115,10 @@ class SnappyContextTests(ReusedPySparkTestCase):
         self.drop_table()
 
     def test_put(self):
-         self.drop_table(True)
-         self.create_table_using_datasource("row")
-         self.put_table()
-         self.drop_table()
+        self.drop_table(True)
+        self.create_table_using_datasource("row")
+        self.put_table()
+        self.drop_table()
 
     def test_insert(self):
         self.drop_table(True)
@@ -143,25 +143,25 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
     def put_table(self):
         sparkSession = SnappySession(self.sc)
-        newrow = [1L, 2L, 3L], [2L, 3L, 4L]
+        newrow = ((1, 2, 3), (2, 3, 4))
         sparkSession.put(SnappyContextTests.tablename, newrow)
         self.verify_table_rows(7)
-        newrow = [1L, 2L, 3L]
+        newrow = (1, 2, 3)
         sparkSession.put(SnappyContextTests.tablename , newrow)
         self.verify_table_rows(8)
 
     def insert_table(self):
         sparkSession = SnappySession(self.sc)
-        newrow = [1L, 2L, 3L], [2L, 3L, 4L]
+        newrow = ((1, 2, 3), (2, 3, 4))
         sparkSession.insert(SnappyContextTests.tablename, newrow)
         self.verify_table_rows(7)
-        newrow = [1L, 2L, 3L]
+        newrow = (1, 2, 3)
         sparkSession.insert(SnappyContextTests.tablename , newrow)
         self.verify_table_rows(8)
 
     def update_table(self):
         sparkSession = SnappySession(self.sc)
-        modifiedrows = sparkSession.update(SnappyContextTests.tablename, "COL2 =2", [7L], ["COL1"])
+        modifiedrows = sparkSession.update(SnappyContextTests.tablename, "COL2 =2", (7), ["COL1"])
         self.assertTrue(modifiedrows == 3)
 
     def truncate_table(self):
@@ -179,7 +179,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
     def create_table_using_sql(self, ddl, provider):
         sparkSession = SnappySession(self.sc)
-        dataDF = sparkSession._sc.parallelize(SnappyContextTests.testdata, 5).toDF()
+        dataDF = sparkSession._sc.parallelize((1,2,3)).toDF()
         sparkSession.sql("DROP TABLE IF EXISTS " + SnappyContextTests.tablename)
         sparkSession.sql(ddl)
         dataDF.write.insertInto(SnappyContextTests.tablename)
