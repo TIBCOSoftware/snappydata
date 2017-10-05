@@ -303,9 +303,9 @@
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Currently just stores the deleted positions in a sorted way.</p><div class="fullcomment"><div class="comment cmt"><p>Currently just stores the deleted positions in a sorted way. This can be optimized
-to use a more efficient storage when number of positions is large like
-a boolean bitset, or use a more comprehensive compression scheme like
+      <p class="shortcomment cmt">Currently just stores the deleted positions assuming sorted by position at plan level.</p><div class="fullcomment"><div class="comment cmt"><p>Currently just stores the deleted positions assuming sorted by position at plan level.
+This can be optimized to use a more efficient storage when number of positions is large
+large like a boolean bitset, or use a more comprehensive compression scheme like
 PFOR (https://github.com/lemire/JavaFastPFOR).
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">

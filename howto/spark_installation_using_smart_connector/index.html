@@ -230,6 +230,12 @@
             
                 <li class="toctree-l3"><a href="#how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData Store from an existing Spark Installation using Smart Connector</a></li>
                 
+                    <li><a class="toctree-l4" href="#code-example">Code Example</a></li>
+                
+                    <li><a class="toctree-l4" href="#running-a-smart-connector-application">Running a Smart Connector Application</a></li>
+                
+                    <li><a class="toctree-l4" href="#execute-a-smart-connector-application">Execute a Smart Connector Application</a></li>
+                
             
             </ul>
         
@@ -1532,7 +1538,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/member_startup_problems/">Member Startup Problems</a>
+        <a class="" href="../../troubleshooting/member_startup_problems/">Member startup problems</a>
         
     </li>
 
@@ -1546,21 +1552,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing Disk Full Errors</a>
+        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing disk full errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from Disk Full Errors</a>
+        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        <a class="" href="../../troubleshooting/collect_debug_artifacts/">Collecting logs, stats and dumps using the collect-debug-artifacts script</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting error messages</a>
         
     </li>
 
@@ -1587,6 +1600,28 @@
         <a class="" href="../../additional_files/license_model/">License Model</a>
         
     </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../release_notes/release_notes/">Release Notes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Release Notes</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../release_notes/known_issues/">Known Issues</a>
+        
+    </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1649,8 +1684,8 @@
 <h1 id="how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData Store from an existing Spark Installation using Smart Connector</h1>
 <p>SnappyData comes with a Smart Connector that enables Spark applications to work with the SnappyData cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.1.1). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is similar to how Spark applications today work with stores like Cassandra, Redis, etc.</p>
 <p>For more information on the various modes, refer to the <a href="../../affinity_modes/connector_mode/">SnappyData Smart Connector</a> section of the documentation.</p>
-<p><strong>Code Example:</strong>
-The code example for this mode is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample.scala</a></p>
+<h2 id="code-example">Code Example</h2>
+<p>The code example for this mode is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample.scala</a></p>
 <p><strong>Configure a SnappySession</strong>:</br>
 The code below shows how to initialize a SparkSession. Here the property <code>snappydata.connection</code> instructs the connector to acquire cluster connectivity, catalog metadata and register it locally in the Spark cluster. The values consists of <em>locator host</em> and <em>JDBC client port</em> on which the locator listens for connections (default 1527).</p>
 <pre><code class="scala">val spark: SparkSession = SparkSession
@@ -1680,6 +1715,49 @@ snSession.sql(&quot;create table TestColumnTable (id bigint not null, k bigint n
 
 // insert data in TestColumnTable
 dataFrame.write.insertInto(&quot;TestColumnTable&quot;)
+</code></pre>
+
+<h2 id="running-a-smart-connector-application">Running a Smart Connector Application</h2>
+<p><a href="../start_snappy_cluster/">Start a SnappyData cluster</a> and create a table.</p>
+<pre><code class="bash">
+$ &lt;SnappyData_home&gt;/sbin/snappy-start-all.sh
+
+$ &lt;SnappyData_home&gt;/bin/snappy
+SnappyData version 1.0.0
+snappy&gt;  connect client 'localhost:1527';
+Using CONNECTION0
+snappy&gt; CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
+snappy&gt; insert into SNAPPY_COL_TABLE VALUES(1,1);
+1 row inserted/updated/deleted
+snappy&gt; insert into SNAPPY_COL_TABLE VALUES(2,2);
+1 row inserted/updated/deleted
+</code></pre>
+
+<p>The Smart Connector Application can now connect to this SnappyData cluster. </br></p>
+<p>The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside the SnappyData cluster. </br>SnappyData package has to be specified along with the application jar to run the Smart Connector application.</p>
+<pre><code class="bash">$ &lt;Spark_Product_Home&gt;/bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.0-s_2.11       &lt;SnappyData_Product_Home&gt;/examples/jars/quickstart.jar
+</code></pre>
+
+<h2 id="execute-a-smart-connector-application">Execute a Smart Connector Application</h2>
+<p>Start a SnappyData cluster and create a table inside it.</p>
+<pre><code class="bash">
+$ &lt;SnappyData_Product_Home&gt;/sbin/snappy-start-all.sh
+
+$ &lt;SnappyData_Product_Home&gt;/bin/snappy
+SnappyData version 1.0.0
+snappy&gt;  connect client 'localhost:1527';
+Using CONNECTION0
+snappy&gt; CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
+snappy&gt; insert into SNAPPY_COL_TABLE VALUES(1,1);
+1 row inserted/updated/deleted
+snappy&gt; insert into SNAPPY_COL_TABLE VALUES(2,2);
+1 row inserted/updated/deleted
+
+</code></pre>
+
+<p>A Smart Connector Application can now connect to this SnappyData cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside SnappyData cluster. SnappyData package has to be specified along with the application jar to run the Smart Connector application. </p>
+<pre><code class="bash">$ &lt;Spark_Product_Home&gt;/bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages SnappyDataInc:snappydata:1.0.0-s_2.11 &lt;SnappyData_Product_Home&gt;/examples/jars/quickstart.jar
+
 </code></pre>
               
             </div>

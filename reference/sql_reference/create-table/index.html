@@ -1534,7 +1534,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../troubleshooting/member_startup_problems/">Member Startup Problems</a>
+        <a class="" href="../../../troubleshooting/member_startup_problems/">Member startup problems</a>
         
     </li>
 
@@ -1548,21 +1548,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../troubleshooting/preventing_disk_full_errors/">Preventing Disk Full Errors</a>
+        <a class="" href="../../../troubleshooting/preventing_disk_full_errors/">Preventing disk full errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../troubleshooting/recovering_from_disk_full_errors/">Recovering from Disk Full Errors</a>
+        <a class="" href="../../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        <a class="" href="../../../troubleshooting/collect_debug_artifacts/">Collecting logs, stats and dumps using the collect-debug-artifacts script</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/troubleshooting_error_messages/">Troubleshooting error messages</a>
         
     </li>
 
@@ -1589,6 +1596,28 @@
         <a class="" href="../../../additional_files/license_model/">License Model</a>
         
     </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../release_notes/release_notes/">Release Notes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Release Notes</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../release_notes/known_issues/">Known Issues</a>
+        
+    </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1660,7 +1689,7 @@
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
     PARTITION_BY 'column-name', // If not specified it will be a replicated table.
-    BUCKETS  'num-partitions', // Default 113. Must be an integer.
+    BUCKETS  'num-partitions', // Default 128. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
@@ -1729,10 +1758,10 @@ In this release, LONG is supported only for column tables. It is recommended to 
 The COLOCATE_WITH clause specifies a partitioned table to colocate with. The referenced table must already exist. 
 <a id="partition-by"></a>
 <code>PARTITION_BY</code></br>
-Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. </br>If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.</p>
+Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. </br>If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.</p>
 <p><a id="buckets"></a>
 <code>BUCKETS</code> </br>
-The optional BUCKETS attribute specifies the fixed number of "buckets" to use for the partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of 5 nodes and bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers will host all the data for this table. If not specified, the number of buckets defaults to 113. See <a href="../../../best_practices/optimizing_query_latency/#partition-scheme">best practices</a> for more information.</p>
+The optional BUCKETS attribute specifies the fixed number of "buckets" to use for the partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of 5 nodes and bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers will host all the data for this table. If not specified, the number of buckets defaults to 128. See <a href="../../../best_practices/optimizing_query_latency/#partition-scheme">best practices</a> for more information.</p>
 <p><a id="redundancy"></a>
 <code>REDUNDANCY</code></br>
 Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that a redundancy of '1' implies two physical copies of data. By default, REDUNDANCY is set to 0 (zero). See <a href="../../../best_practices/optimizing_query_latency/#redundancy">best practices</a> for more information.</p>

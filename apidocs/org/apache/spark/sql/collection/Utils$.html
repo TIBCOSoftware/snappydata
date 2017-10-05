@@ -381,6 +381,23 @@ field is stored (and rendered) as CHAR by SnappyStore.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.collection.Utils#closeJsonGenerator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="closeJsonGenerator(gen:AnyRef):Unit"></a>
+      <a id="closeJsonGenerator(AnyRef):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">closeJsonGenerator</span><span class="params">(<span name="gen">gen: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@closeJsonGenerator(gen:AnyRef):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.collection.Utils#codecCompress" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="codecCompress(codec:org.apache.spark.io.CompressionCodec,input:Array[Byte],inputLen:Int):Array[Byte]"></a>
       <a id="codecCompress(CompressionCodec,Array[Byte],Int):Array[Byte]"></a>
@@ -592,18 +609,18 @@ field is stored (and rendered) as CHAR by SnappyStore.
     </span>
       
     </li><li name="org.apache.spark.sql.collection.Utils#generateJson" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="generateJson(dataType:org.apache.spark.sql.types.DataType,gen:com.fasterxml.jackson.core.JsonGenerator,row:org.apache.spark.sql.catalyst.InternalRow):Unit"></a>
-      <a id="generateJson(DataType,JsonGenerator,InternalRow):Unit"></a>
+      <a id="generateJson(gen:AnyRef,row:org.apache.spark.sql.catalyst.InternalRow,columnIndex:Int,columnType:org.apache.spark.sql.types.DataType):Unit"></a>
+      <a id="generateJson(AnyRef,InternalRow,Int,DataType):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateJson</span><span class="params">(<span name="dataType">dataType: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="gen">gen: <span class="extype" name="com.fasterxml.jackson.core.JsonGenerator">JsonGenerator</span></span>, <span name="row">row: <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">generateJson</span><span class="params">(<span name="gen">gen: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="row">row: <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></span>, <span name="columnIndex">columnIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="columnType">columnType: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@generateJson(dataType:org.apache.spark.sql.types.DataType,gen:com.fasterxml.jackson.core.JsonGenerator,row:org.apache.spark.sql.catalyst.InternalRow):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@generateJson(gen:AnyRef,row:org.apache.spark.sql.catalyst.InternalRow,columnIndex:Int,columnType:org.apache.spark.sql.types.DataType):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -757,6 +774,23 @@ field is stored (and rendered) as CHAR by SnappyStore.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@getInternalType(dataType:org.apache.spark.sql.types.DataType):Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.collection.Utils#getJsonGenerator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getJsonGenerator(dataType:org.apache.spark.sql.types.DataType,columnName:String,writer:java.io.Writer):AnyRef"></a>
+      <a id="getJsonGenerator(DataType,String,Writer):AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getJsonGenerator</span><span class="params">(<span name="dataType">dataType: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="columnName">columnName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="writer">writer: <span class="extype" name="java.io.Writer">Writer</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@getJsonGenerator(dataType:org.apache.spark.sql.types.DataType,columnName:String,writer:java.io.Writer):AnyRef" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

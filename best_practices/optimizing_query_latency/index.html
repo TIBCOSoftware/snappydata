@@ -1544,7 +1544,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/member_startup_problems/">Member Startup Problems</a>
+        <a class="" href="../../troubleshooting/member_startup_problems/">Member startup problems</a>
         
     </li>
 
@@ -1558,21 +1558,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing Disk Full Errors</a>
+        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing disk full errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from Disk Full Errors</a>
+        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
+        <a class="" href="../../troubleshooting/collect_debug_artifacts/">Collecting logs, stats and dumps using the collect-debug-artifacts script</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting error messages</a>
         
     </li>
 
@@ -1599,6 +1606,28 @@
         <a class="" href="../../additional_files/license_model/">License Model</a>
         
     </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../release_notes/release_notes/">Release Notes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Release Notes</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../release_notes/known_issues/">Known Issues</a>
+        
+    </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1710,8 +1739,9 @@ SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce
 For examples refer to, <a href="../../howto/perform_a_colocated_join/">How to colocate tables for doing a colocated join</a>.</p>
 <p><a id="buckets"></a></p>
 <h3 id="buckets">Buckets</h3>
-<p>A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. For more information on BUCKETS, refer to <a href="../important_settings/#buckets">BUCKETS</a>.</br>
-By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.</p>
+<p>A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. For more information on BUCKETS, refer to <a href="../important_settings/#buckets">BUCKETS</a>.</br></p>
+<p>The default number of buckets in SnappyData cluster mode is 128. In the local mode it is cores*2, subject to maximum of 64 buckets and minumum of 8 buckets.</p>
+<p>The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.</p>
 <p>When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.</p>
 <p>The  <a href="../../configuring_cluster/property_description/#rebalance">-rebalance</a> option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY&gt;0 has been specified). </br>
 You can also set the system procedure <a href="../../reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets">call sys.rebalance_all_buckets()</a> to trigger rebalance.</p>
