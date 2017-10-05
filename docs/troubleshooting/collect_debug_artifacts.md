@@ -11,7 +11,7 @@ The conditions are:
 
 1. This script is expected to be run by a user who has read and write permissions on the output directories of all the SnappyData nodes.
 
-2. The user should have atleast one way passwordless ssh setup between all the machines where the SnappyData nodes are running.
+2. The user should have one way passwordless ssh setup from one machine to the other machines where the SnappyData nodes are running.
 
 Below is the usage of the script
 
