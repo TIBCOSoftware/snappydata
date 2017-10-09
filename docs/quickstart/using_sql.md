@@ -1,11 +1,12 @@
 <a id="getting-started-using-sql"></a> 
 # Using SQL
 
-In this section, SQL using Spark SQL-invoked using the session API is illustrated. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](../howto/use_snappy_shell.md) section.
+In this section, you can also connect to SQL using Snappy Session API. </br>
+You can use any SQL client tool (for example, Snappy shell). For an example, refer to the [How-to](../howto/use_snappy_shell.md) section.
 
-**Create a column table with a simple schema [Int, String] and default options.**
+**Create a column table with a simple schema [Int, String] and default options**
 
-For details on the options refer to the [Row and Column Tables](../programming_guide/tables_in_snappydata.md) section.
+For more information on the available options, refer to the [Row and Column Tables](../programming_guide/tables_in_snappydata.md) section.
 
 ```scala
 scala>  snappy.sql("create table colTable(CustKey Integer, CustName String) using column options()")
@@ -23,10 +24,10 @@ scala>  snappy.sql("insert into colTable values(3, '3')")
 scala>  snappy.sql("select count(*) from colTable").show
 ```
 
-**Create a row table with primary key**:
+**Create a row table with a primary key**:
 
 ```scala
-//Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
+// Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
 scala>  snappy.sql("create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, " +
             "CustName String) using row options()")
 ```
@@ -44,7 +45,6 @@ scala>  snappy.sql("insert into rowTable values(3, '3')")
 scala>  snappy.sql("update rowTable set CustName='d' where custkey = 1")
 scala>  snappy.sql("select * from rowTable order by custkey").show
 ```
-
 
 ```scala
 //Drop the existing tables

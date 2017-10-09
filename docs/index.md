@@ -13,14 +13,14 @@ Analytic processing requires large datasets to be repeatedly copied from an exte
 ## The SnappyData Approach
 SnappyData fuses a low latency, highly available in-memory transactional database (GemFire) into Spark with shared memory management and several optimizations that deliver performance and concurrency for mixed workloads. Data in the highly available in-memory store is laid out using a custom columnar format somewhat similar to the layout used by Spark caching. Query engine operators are optimized through better vectorization and code generation. The net effect of these changes is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.
 
-Essentially, Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams and running analytic SQL queries.
+Essentially, Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with streams and running analytic SQL queries.
 
 ![SnappyData Architecture](Images/SnappyArchitecture.png)
 
 SnappyData is an in-memory database that runs Spark’s compute engine directly in the database, and offers **Spark's API and SQL as its interface and computational engine**. The fusion with Spark allows SnappyData to work with a large number of data sources like HDFS, NoSQL etc. through bespoke Spark connectors. </br>
 While the SnappyData engine (that builds on Spark Catalyst SQL engine) is primarily designed for SQL processing, applications can also work with Objects through Spark RDDs and the Spark Datasets API.
 
-Any Spark DataFrame can be easily managed as a SnappyData Table or conversely any table can be accessed as a DataFrame.
+Any Spark DataFrame can be easily managed as a SnappyData table or conversely any table can be accessed as a DataFrame.
 
 By default, when the cluster is started, the data store is bootstrapped and when any Spark Jobs/OLAP queries are submitted, Spark executors are automatically launched within the SnappyData process space (JVMs). There is no need to connect and manage external data store clusters. The SnappyData store can synchronously replicate for high availability (HA) with strong consistency and store/recover from disk for additional reliability.
 
@@ -62,7 +62,7 @@ SnappyData extends Spark’s unified API:
 	
 	* Allow for OLTP operations, for example, transactions and mutations (inserts/updates/deletions) on tables 
  
-	* Conform with SQL standards, for example, allowing tables alterations, constraints, indexes, and   
+	* Conform with SQL standards, for example, allowing tables alterations, constraints, and indexes   
 
 	* Support declarative stream processing in SQL
 
@@ -76,14 +76,14 @@ SnappyData extends Spark’s unified API:
 
 	- Compute estimates for any ad hoc query from the sample(s). It can also provide error estimates for arbitrarily complex queries on streams.
 
-	- Provide simple knobs for the user to trade off speed for accuracy, i.e. simple SQL extensions so the user can specify the error tolerance for all queries. When query error is higher than tolerance level, the system automatically delegates the query to the source.
+	- Provide simple knobs for the user to trade off speed for accuracy, that is, simple SQL extensions so the user can specify the error tolerance for all queries. When query error is higher than tolerance level, the system automatically delegates the query to the source.
 
 	-	Express their accuracy requirements as high-level accuracy contracts (HAC), without overwhelming them with numerous statistical concepts.
 
 ## Morphing Spark to support mixed workloads (OLTP, OLAP)
-Spark is designed as a computational engine for processing batch jobs. Each Spark application (for example, a Map-reduce job) runs as an independent set of processes (that is, executor JVMs) in the cluster. These JVMs are reused for the lifetime of the application. While, data can be cached and reused in these JVMs for a single application, sharing data across applications or clients requires an external storage tier, such as HDFS. SnappyData, on the other hand, targets a real-time, “always-on”, operational design center— clients can connect at will, and share data across any number of concurrent connections. This is similar to any operational database in the market today. Thus, to manage data in the same JVM, our first challenge is to alter the life cycle of these executors so that they are long-lived and decoupled from individual applications.
+Spark is designed as a computational engine for processing batch jobs. Each Spark application (for example, a Map-reduce job) runs as an independent set of processes (that is, executor JVMs) in the cluster. These JVMs are reused for the lifetime of the application. While, data can be cached and reused in these JVMs for a single application, sharing data across applications or clients require an external storage tier, such as HDFS. SnappyData, on the other hand, targets a real-time, “always-on”, operational design center— clients can connect at will, and share data across any number of concurrent connections. This is similar to any operational database in the market today. Thus, to manage data in the same JVM, our first challenge is to alter the life cycle of these executors so that they are long-lived and decoupled from individual applications.
 
-A second but related challenge is Spark’s design for how user requests (i.e., jobs) are handled. A single driver orchestrates all the work done on the executors. Given our need for high concurrency and a hybrid OLTP-OLAP workload, this driver introduces:
+A second but related challenge is Spark’s design for how user requests (jobs) are handled. A single driver orchestrates all the work done on the executors. Given our need for high concurrency and a hybrid OLTP-OLAP workload, this driver introduces:
 
 1. A single point of contention for all requests, and 
 
