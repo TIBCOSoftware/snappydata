@@ -1012,18 +1012,6 @@ def copyTestsCommonResources(def bdir) {
   }
 }
 
-def runScript(def execName, def workDir, def param, env = null) {
-  def stdout = new ByteArrayOutputStream()
-  exec {
-    executable "${execName}"
-    workingDir = workDir
-    args (param)
-    standardOutput = stdout
-    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"
-  }
-  return "${stdout}"
-}
-
 task copyResourcesAll { doLast {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
@@ -1212,6 +1200,20 @@ task publishDocs(type:Exec) {
   dependsOn docs
   //on linux
   commandLine './publish-site.sh'
+}
+
+task testPython (type:Exec) {
+  String w1 = "${testResultsBase}/python"
+  delete w1
+  file(w1).mkdirs()
+  workingDir  w1
+  copy {
+    from "python/pyspark/test_supprt"
+    into w1
+  }
+  environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"
+  environment 'SPARK_HOME', "${snappyProductDir}"
+  commandLine 'python', '-u', "${rootDir}/python/run-snappy-tests.py"
 }
 
 task precheckin {

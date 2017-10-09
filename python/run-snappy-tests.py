@@ -40,9 +40,9 @@ from sparktestsupport.modules import all_modules  # noqa
 from sparktestsupport.shellutils import which, subprocess_check_output  # noqa
 
 SPARK_HOME = os.environ.get("SPARK_HOME")
-SNAPPY_HOME = os.environ.get("SNAPPY_HOME")
 PYTHONPATH = os.environ.get("PYTHONPATH")
 print(PYTHONPATH)
+print(SPARK_HOME)
 
 python_modules = dict((m.name, m) for m in all_modules if m.python_test_goals if m.name != 'root')
 
@@ -50,7 +50,7 @@ def print_red(text):
     print('\033[31m' + text + '\033[0m')
 
 
-LOG_FILE = os.path.join(SNAPPY_HOME, "python/unit-tests.log")
+LOG_FILE = os.path.join(os.path.abspath(''), "unit-tests.log")
 FAILURE_REPORTING_LOCK = Lock()
 LOGGER = logging.getLogger()
 

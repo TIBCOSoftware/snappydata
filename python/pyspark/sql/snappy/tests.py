@@ -138,7 +138,8 @@ class SnappyContextTests(ReusedPySparkTestCase):
         self.drop_table(True)
         self.create_table_using_datasource("row")
         sparkSession = SnappySession(self.sc)
-        sparkSession.read.csv("../../test_support/kv.txt").write.insertInto(tableName = SnappyContextTests.tablename)
+        csvPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../test_support/kv.txt")
+        sparkSession.read.csv(csvPath).write.insertInto(tableName = SnappyContextTests.tablename)
         self.drop_table()
 
     def put_table(self):
