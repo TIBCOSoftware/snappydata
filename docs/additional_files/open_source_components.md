@@ -1,6 +1,6 @@
-# Open Source/ Enterprise Components
+# SnappyData Community Edition (Open Source) and Enterprise Edition
 
-SnappyData offers a fully functional core OSS distribution that is Apache V2 licensed and includes the following capabilities:
+SnappyData offers a fully functional core OSS distribution that is Apache 2.0 licensed and includes the following capabilities:
 
 * Mutable row and column store with support for SQL-92 and Spark SQL queries
 
@@ -22,7 +22,9 @@ SnappyData offers a fully functional core OSS distribution that is Apache V2 lic
 
 * SQL Extensions for stream processing
 
-The Enterprise version of the product includes everything that is offered in the OSS version and includes the following additional capabilities that are closed source and only available as part of a licensed subscription. Users can download the Enterprise version for evaluation after registering on the [SnappyData website](https://www.snappydata.io/).
+<heading2>Additional Enterprise Edition Features</heading2>
+
+The Enterprise edition of the product includes everything that is offered in the OSS version and includes the following additional capabilities that are closed source and only available as part of a licensed subscription. Users can download the Enterprise version for evaluation after registering on the [SnappyData website](http://www.snappydata.io/download).
 
 * Synopsis Data Engine capabilities which provides users with the ability to run queries on samples and other summary structures built into the system and get statistically verified accurate results
 

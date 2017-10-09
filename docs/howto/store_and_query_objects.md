@@ -3,7 +3,7 @@
 
 You can use domain object to load data into SnappyData tables and select the data by executing queries against the table.
 
-**Code Example: Insert Person object into the column table**
+**Code Example: Insert Person objects into the column table**
 
 The code snippet below inserts Person objects into a column table. The source code for this example is located at [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala). After creating SnappySession, the Person objects are inserted using Spark API and loads into a SnappyData table.
 
