@@ -771,6 +771,13 @@ task product(type: Zip) {
       into "${snappyProductDir}/docs"
     }
 
+    copy {
+      from "${rootDir}/python/pyspark/"
+      include 'sql/**'
+      include 'streaming/**'
+      into "${snappyProductDir}/python/pyspark"
+    }
+
     // Next the remaining components of full product like examples etc
     // Spark portions already copied in the assembly:product dependency
     copy {
@@ -1202,13 +1209,14 @@ task publishDocs(type:Exec) {
   commandLine './publish-site.sh'
 }
 
+// It runs test script from product dir.
 task testPython (type:Exec) {
   String w1 = "${testResultsBase}/python"
   delete w1
   file(w1).mkdirs()
   workingDir  w1
   copy {
-    from "python/pyspark/test_supprt"
+    from "${rootDir}/python/pyspark/test_supprt"
     into w1
   }
   environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"

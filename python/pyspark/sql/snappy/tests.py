@@ -162,7 +162,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
     def update_table(self):
         sparkSession = SnappySession(self.sc)
-        modifiedrows = sparkSession.update(SnappyContextTests.tablename, "COL2 =2", (7), ["COL1"])
+        modifiedrows = sparkSession.update(SnappyContextTests.tablename, "COL2 =2", [7], ["COL1"])
         self.assertTrue(modifiedrows == 3)
 
     def truncate_table(self):
@@ -180,14 +180,14 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
     def create_table_using_sql(self, ddl, provider):
         sparkSession = SnappySession(self.sc)
-        dataDF = sparkSession._sc.parallelize((1,2,3)).toDF()
+        dataDF = sparkSession._sc.parallelize((1,2,3)).toDF("COL1: int , COL2 : int, COL3 : int")
         sparkSession.sql("DROP TABLE IF EXISTS " + SnappyContextTests.tablename)
         sparkSession.sql(ddl)
         dataDF.write.insertInto(SnappyContextTests.tablename)
 
     def create_table_using_datasource(self, provider, schemaddl=False):
         sparkSession = SnappySession(self.sc)
-        df = sparkSession._sc.parallelize(SnappyContextTests.testdata, 5).toDF(["COL1", "COL2", "COL3"])
+        df = sparkSession._sc.parallelize(SnappyContextTests.testdata, 5).toDF("COL1: int , COL2 : int, COL3 : int")
         if schemaddl is False:
             sparkSession.createTable(SnappyContextTests.tablename, provider, df.schema)
         else:
