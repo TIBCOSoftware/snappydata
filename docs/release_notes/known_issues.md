@@ -25,13 +25,13 @@ The following key issues have been registered as bugs in the SnappyData bug trac
 1. User may either create a new SnappySession in such scenarios </br>OR </br> 
 2. Invalidate the cache on the Smart Connector mode, for example by calling </br>  `snappy.sessionCatalog.invalidateAll()`</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1634">SNAP-1634</a></td>
 <td>Creating a temporary table with the same name as an existing table in any schema should not be allowed</td>
 <td>When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br></td>
 <td> Ensure that you create temporary tables with a unique name. </td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1753">SNAP-1753</a></td>
 <td>TPCH Q19 execution performance degraded in 0.9</td>
 <td>A disjunctive query (that is, query with two or more predicates joined by an OR clause) with common filter predicates may report performance issues.</td>
