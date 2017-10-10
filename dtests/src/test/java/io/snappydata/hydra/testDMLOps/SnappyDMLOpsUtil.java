@@ -150,13 +150,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static void HydraTask_initializeDMLThreads() {
     testInstance.getDmlLock();
     ArrayList<Integer> dmlthreads;
-    if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
-      dmlthreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
+    if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
+      dmlthreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
     else
       dmlthreads = new ArrayList<>();
     if (!dmlthreads.contains(testInstance.getMyTid())) {
       dmlthreads.add(testInstance.getMyTid());
-      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("dmlThreads", dmlthreads);
+      SnappyDMLOpsBB.getBB().getSharedMap().put("dmlThreads", dmlthreads);
     }
     testInstance.releaseDmlLock();
   }
