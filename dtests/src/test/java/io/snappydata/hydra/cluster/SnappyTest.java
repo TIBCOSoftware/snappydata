@@ -377,7 +377,7 @@ public class SnappyTest implements Serializable {
                 while (leadPort < 8091 || leadPort > 8099);*/
         nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList +
             SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
-            //" -spark.local.dir=" + snappyTest.getTempDir("temp") +
+            " -spark.local.dir=" + snappyTest.getTempDir("temp") +
             " -dir=" + dirPath + clientPort + port +
             SnappyPrms.getLeadMemory() + SnappyPrms.getSparkSqlBroadcastJoinThreshold()
             + " -spark.jobserver.port=" + leadPort + SnappyPrms.getSparkSchedulerMode()
@@ -1625,13 +1625,17 @@ public class SnappyTest implements Serializable {
   public void executeProcess(ProcessBuilder pb, File logFile) {
     Process p = null;
     try {
-      pb.redirectErrorStream(true);
-      pb.redirectError(ProcessBuilder.Redirect.PIPE);
-      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+      if (logFile != null) {
+        pb.redirectErrorStream(true);
+        pb.redirectError(ProcessBuilder.Redirect.PIPE);
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+      }
       p = pb.start();
-      assert pb.redirectInput() == ProcessBuilder.Redirect.PIPE;
-      assert pb.redirectOutput().file() == logFile;
-      assert p.getInputStream().read() == -1;
+      if (logFile != null) {
+        assert pb.redirectInput() == ProcessBuilder.Redirect.PIPE;
+        assert pb.redirectOutput().file() == logFile;
+        assert p.getInputStream().read() == -1;
+      }
       int rc = p.waitFor();
       if (rc == 0) {
         Log.getLogWriter().info("Executed successfully");
@@ -2165,7 +2169,8 @@ public class SnappyTest implements Serializable {
             SnappyPrms.getSleepTimeSecsForJobStatus() + " ; done";
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         Log.getLogWriter().info("job " + str + " starts at: " + System.currentTimeMillis());
-        executeProcess(pb, commandOutput);
+        // output is already redirected by script
+        executeProcess(pb, null);
         Log.getLogWriter().info("job " + str + " finishes at:  " + System.currentTimeMillis());
         FileInputStream fis = new FileInputStream(commandOutput);
         BufferedReader br = new BufferedReader(new InputStreamReader(fis));
@@ -2353,6 +2358,14 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_startSnappyCluster() {
     if (forceStart) {
       startSnappyCluster();
+      try {
+        //2 mins sleep is added to avoid the stopSnappy cluster call immediately after restart and
+        // verify the recovery in UI.
+        Thread.sleep(120000);
+      } catch (InterruptedException e) {
+        String s = "Exception occurred while waiting for snappy-start-all script execution..";
+        throw new TestException(s, e);
+      }
     } else {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
       if (num == 1) {
@@ -2365,7 +2378,7 @@ public class SnappyTest implements Serializable {
     File log = null;
     ProcessBuilder pb = null;
     try {
-      pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "-bg", "start");
+      pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"));
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
@@ -2432,7 +2445,7 @@ public class SnappyTest implements Serializable {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.sparkClusterStarted);
       if (num == 1) {
         // modifyJobServerConfig();
-        ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"), "-bg");
+        ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"));
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
         File logFile = new File(dest);
@@ -2491,8 +2504,7 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSnappyServers() {
     File log = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"),
-          "-bg", "stop");
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "stop");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
       File logFile = new File(dest);
@@ -2533,16 +2545,19 @@ public class SnappyTest implements Serializable {
     File log = null;
     try {
       initSnappyArtifacts();
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"),
-          "-bg");
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"));
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
-      Thread.sleep(60000);
       boolean stopAllFailed = snappyTest.waitForStopAll();
       if (stopAllFailed) {
-        snappyTest.threadDumpForAllServers();
+        // try again
+        Thread.sleep(60000);
+        stopAllFailed = snappyTest.waitForStopAll();
+        if (stopAllFailed) {
+          threadDumpForAllServers();
+        }
       }
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
@@ -2800,10 +2815,20 @@ public class SnappyTest implements Serializable {
       HydraTask_stopSnappyLocator();
     }
     try {
-      Thread.sleep(180000);
+      Thread.sleep(10000);
       boolean serverStopFailed = snappyTest.waitForMemberStop(vmDir, clientName, vmName);
       if (serverStopFailed) {
-        snappyTest.threadDumpForAllServers();
+        // try again
+        Thread.sleep(60000);
+        serverStopFailed = snappyTest.waitForMemberStop(vmDir, clientName, vmName);
+        if (serverStopFailed) {
+          // last try
+          Thread.sleep(120000);
+          serverStopFailed = snappyTest.waitForMemberStop(vmDir, clientName, vmName);
+          if (serverStopFailed) {
+            threadDumpForAllServers();
+          }
+        }
       }
     } catch (InterruptedException e) {
       String s = "Exception occurred while waiting for the kill " + clientName + "process " +
@@ -2895,7 +2920,8 @@ public class SnappyTest implements Serializable {
       ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
       Log.getLogWriter().info("Server Status script for " + clientName + " starts at: " + System
           .currentTimeMillis());
-      executeProcess(pb, commandOutput);
+      // output is already redirected by script
+      executeProcess(pb, null);
       Log.getLogWriter().info("Server Status script for " + clientName + " finishes at:  " + System
           .currentTimeMillis());
     } catch (IOException e) {
@@ -2944,13 +2970,13 @@ public class SnappyTest implements Serializable {
           + " > " + commandOutput + " 2>&1 ; grep -e 'status: stopped' -e " +
           "'status: waiting' -e 'status: stopping' -e 'java.lang.IllegalStateException' " +
           commandOutput + " | wc -l)\"";
-      String command = "while [ \"$(" + expression + " -le  0  ] ; do rm " +
-          commandOutput + " ;  touch " + commandOutput + "   ;  sleep " +
+      String command = "while [ \"$(" + expression + " -le  0  ] ; do sleep " +
           SnappyPrms.getSleepTimeSecsForMemberStatus() + " ; done";
       ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
       Log.getLogWriter().info("snappy-status-all script starts at: " +
           System.currentTimeMillis());
-      executeProcess(pb, commandOutput);
+      // output is already redirected by script
+      executeProcess(pb, null);
       Log.getLogWriter().info("snappy-status-all script finishes at:  " + System
           .currentTimeMillis());
     } catch (IOException e) {
@@ -3153,8 +3179,7 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("Starting server/s using rowstore option...");
         pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "-bg",
-            "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
