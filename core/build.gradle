@@ -103,6 +103,9 @@ dependencies {
   compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
   compile "com.koloboke:koloboke-api-jdk8:${kolobokeVersion}"
   compile "com.koloboke:koloboke-impl-common-jdk8:${kolobokeVersion}"
+  // support AWS URLs
+  compile "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
+
   compileOnly 'com.rabbitmq:amqp-client:3.5.7'
 
   testCompile project(':dunit')
