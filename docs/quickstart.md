@@ -14,11 +14,7 @@ Depending on your preference you can try any of the following options:
 
 * [Getting started by installing SnappyData On-Premise](quickstart/getting_started_by_installing_snappydata_on-premise.md)
 
-* [Getting started with AWS](quickstart/getting_started_on_aws.md)
-
 * [Getting started with Docker image](quickstart/getting_started_with_docker_image.md)
-
-* [Getting Started with SnappyData GemFire Connector](quickstart/getting_started_gemfire_connector)
 
 This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. 
 
