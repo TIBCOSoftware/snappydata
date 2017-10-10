@@ -1030,13 +1030,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     
     command = "grep -v -F -x -f " + derbyFileName + " " + snappyFileName;
     pb = new ProcessBuilder("/bin/bash", "-c", command);
-    Log.getLogWriter().info("[Sonal] Executing command : " + command);
+    Log.getLogWriter().info("Executing command : " + command);
     //get the unexpected rows in snappy
     testInstance.executeProcess(pb,unexpectedResultsFile);
 
     command = "grep -v -F -x -f " + snappyFileName + " " + derbyFileName;
     pb = new ProcessBuilder("/bin/bash", "-c", command);
-    Log.getLogWriter().info("[Sonal] Executing command : " + command);
+    Log.getLogWriter().info("Executing command : " + command);
     //get the missing rows in snappy
     testInstance.executeProcess(pb,missingResultsFile);
 

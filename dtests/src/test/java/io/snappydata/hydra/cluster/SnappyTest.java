@@ -1626,7 +1626,7 @@ public class SnappyTest implements Serializable {
     Process p = null;
     try {
       pb.redirectErrorStream(true);
-      pb.redirectError(ProcessBuilder.Redirect.appendTo(logFile));
+      pb.redirectError(ProcessBuilder.Redirect.PIPE);
       pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
       p = pb.start();
       assert pb.redirectInput() == ProcessBuilder.Redirect.PIPE;

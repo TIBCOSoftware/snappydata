@@ -36,10 +36,10 @@ class ConvertCsvToParquetAndLoadTablesJob extends SnappySQLJob {
       // scalastyle:off println
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       pw.println(s"dataFilesLocation is : ${dataFilesLocation}")
-      println(s"dataFilesLocation is : ${dataFilesLocation}")
       snc.setConf("dataFilesLocation", dataFilesLocation)
 
-      val parquetFileLocation = currDir + File.separator + ".." + File.separator + ".." + File.separator + "parquetFiles"
+      val parquetFileLocation = currDir + File.separator + ".." + File.separator + ".." 
+          + File.separator + "parquetFiles"
       pw.println(s"Parquet file location is : ${parquetFileLocation}")
       val parquetFileDir : File = new File(parquetFileLocation)
       if(!parquetFileDir.exists()) {
