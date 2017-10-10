@@ -18,9 +18,12 @@ package org.apache.spark.executor
 
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.tcp.ConnectionTable
 import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -39,6 +42,32 @@ class SnappyExecutor(
     exceptionHandler: SnappyUncaughtExceptionHandler,
     isLocal: Boolean = false)
     extends Executor(executorId, executorHostname, env, userClassPath, isLocal) {
+
+  {
+    // set a thread-factory for the thread pool for cleanup
+    val threadGroup = Thread.currentThread().getThreadGroup
+    val threadFactory = new ThreadFactory {
+
+      private val threadNum = new AtomicInteger(0)
+
+      override def newThread(command: Runnable): Thread = {
+        val r = new Runnable {
+          override def run(): Unit = {
+            try {
+              command.run()
+            } finally {
+              ConnectionTable.releaseThreadsSockets()
+            }
+          }
+        }
+        val thread = new Thread(threadGroup, r,
+          "Executor task launch worker-" + threadNum.getAndIncrement())
+        thread.setDaemon(true)
+        thread
+      }
+    }
+    threadPool.setThreadFactory(threadFactory)
+  }
 
   if (!isLocal) {
     // Setup an uncaught exception handler for non-local mode.
@@ -114,7 +143,7 @@ class SnappyExecutor(
       Misc.checkIfCacheClosing(t)
       false
     } catch {
-      case ex: CancelException => true
+      case _: CancelException => true
       case _: Throwable => false
     }
   }
