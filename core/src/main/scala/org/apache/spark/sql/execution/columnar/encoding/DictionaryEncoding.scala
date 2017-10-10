@@ -36,28 +36,24 @@ trait DictionaryEncoding extends ColumnEncoding {
 }
 
 final class DictionaryDecoder(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends DictionaryDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NotNullDecoder
+      initDelta) with NotNullDecoder
 
 final class DictionaryDecoderNullable(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends DictionaryDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NullableDecoder
+      initDelta) with NullableDecoder
 
 final class BigDictionaryDecoder(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends BigDictionaryDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NotNullDecoder
+      initDelta) with NotNullDecoder
 
 final class BigDictionaryDecoderNullable(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends BigDictionaryDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NullableDecoder
+      initDelta) with NullableDecoder
 
 final class DictionaryEncoder
     extends NotNullEncoder with DictionaryEncoderBase
@@ -66,9 +62,9 @@ final class DictionaryEncoderNullable
     extends NullableEncoder with DictionaryEncoderBase
 
 abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
+    field: StructField, initDelta: (AnyRef, Long) => Long)
     extends ColumnDecoder(columnDataRef, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with DictionaryEncoding {
+      initDelta) with DictionaryEncoding {
 
   protected[this] final var stringDictionary: StringDictionary = _
   protected[this] final var intDictionary: Array[Int] = _
@@ -140,9 +136,8 @@ abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
 }
 
 abstract class BigDictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
-    extends DictionaryDecoderBase(columnDataRef, startCursor, field,
-      initDelta, fromUnfinishedEncoder) {
+    field: StructField, initDelta: (AnyRef, Long) => Long)
+    extends DictionaryDecoderBase(columnDataRef, startCursor, field, initDelta) {
 
   override def typeId: Int = ColumnEncoding.BIG_DICTIONARY_TYPE_ID
 
@@ -254,36 +249,6 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     }
     // write dictionary and position cursor at start of index bytes
     writeDictionary(columnBytes, cursor, numDictionaryElements, dictionarySize)
-  }
-
-  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder = {
-    // can depend on nullCount here because there is no additional space
-    // pre-allocated for storing nulls by dictionary encoder
-    if (nullCount > 0) {
-      if (isShortDictionary) {
-        new DictionaryDecoderNullable(null, 0L, null, fromUnfinishedEncoder = this)
-      } else new BigDictionaryDecoderNullable(null, 0L, null, fromUnfinishedEncoder = this)
-    } else {
-      if (isShortDictionary) new DictionaryDecoder(null, 0L, null, fromUnfinishedEncoder = this)
-      else new BigDictionaryDecoder(null, 0L, null, fromUnfinishedEncoder = this)
-    }
-  }
-
-  override private[encoding] def initializeDecoderBeforeFinish(decoder: ColumnDecoder): Long = {
-    initializeNullsBeforeFinish(decoder)
-    // TODO: only supported for strings; use ByteBufferHashMap for longArray too
-    // when long/int dictionary support is added
-    if (stringMap ne null) {
-      // TODO: SW: release of buffers?
-      val dictionaryData = stringMap.valueData
-      val dictionaryDecoder = decoder.asInstanceOf[DictionaryDecoderBase]
-      val dictionaryLen = stringMap.size
-      dictionaryDecoder.initializeDictionary(dictionaryData.baseObject,
-        dictionaryData.baseOffset, dictionaryLen, dictionaryLen, StringType)
-      // base cursor will start at the index cursor since dictionary is separate
-      columnBeginPosition
-    } else throw new UnsupportedOperationException(
-      "decoder on unfinished data for long/int dictionary")
   }
 
   protected final def switchToBigDictionary(numUsedIndexes: Int,

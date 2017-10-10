@@ -59,15 +59,19 @@ object SmartConnectorExample {
 
   def main(args: Array[String]): Unit = {
 
-    val spark: SparkSession = SparkSession
-        .builder
-        .appName("SmartConnectorExample")
-        // It can be any master URL
-        .master("local[4]")
-        // snappydata.connection property enables the application to interact with SnappyData store
-        .config("snappydata.connection", "localhost:1527")
-        .getOrCreate
+    val builder = SparkSession
+      .builder
+      .appName("SmartConnectorExample")
+      // It can be any master URL
+      .master("local[4]")
 
+    args.foreach( prop => {
+      val params = prop.split("=")
+      builder.config(params(0), params(1))
+    })
+
+    val spark: SparkSession = builder
+        .getOrCreate
     val snSession = new SnappySession(spark.sparkContext)
 
     println("\n\n ####  Reading from the SnappyStore table SNAPPY_COL_TABLE  ####  \n")

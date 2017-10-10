@@ -34,16 +34,14 @@ trait Uncompressed extends ColumnEncoding {
 }
 
 final class UncompressedDecoder(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends UncompressedDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NotNullDecoder
+      initDelta) with NotNullDecoder
 
 final class UncompressedDecoderNullable(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends UncompressedDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NullableDecoder
+      initDelta) with NullableDecoder
 
 final class UncompressedEncoder
     extends NotNullEncoder with UncompressedEncoderBase
@@ -52,9 +50,8 @@ final class UncompressedEncoderNullable
     extends NullableEncoder with UncompressedEncoderBase
 
 abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
-    extends ColumnDecoder(columnDataRef, startCursor, field, initDelta, fromUnfinishedEncoder)
-        with Uncompressed {
+    field: StructField, initDelta: (AnyRef, Long) => Long)
+    extends ColumnDecoder(columnDataRef, startCursor, field, initDelta) with Uncompressed {
 
   /**
    * The last value for "nonNullPosition" for variable width columns.
@@ -213,13 +210,6 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
 }
 
 trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
-
-  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder = {
-    // can't depend on nullCount because even with zero count, it may have
-    // allocated some null space at the start in advance
-    if (isNullable) new UncompressedDecoderNullable(null, 0L, null, fromUnfinishedEncoder = this)
-    else new UncompressedDecoder(null, 0L, null, fromUnfinishedEncoder = this)
-  }
 
   override def writeBoolean(cursor: Long, value: Boolean): Long = {
     var position = cursor

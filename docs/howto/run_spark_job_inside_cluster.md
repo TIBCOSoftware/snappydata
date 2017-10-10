@@ -1,6 +1,6 @@
 <a id="howto-job"></a>
-# How to Run Spark Code inside the Cluster
-A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.
+# How to run Spark Code inside the Cluster
+Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.
 
 **Implementing a Job**: 
 A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>
@@ -25,7 +25,7 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 **Example: Maven dependency**:
 
 ```scala
-<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
@@ -41,11 +41,9 @@ libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0"
 ```
 
 **Running the Job**: 
-Once you create a jar file for SnappyData job, use `bin/snappy-job.sh` to submit the job to SnappyData cluster and run the job. This is similar to Spark-submit for any Spark application. 
+Once you create a jar file for SnappyData job, use the `bin/snappy-job.sh` to submit the job in the SnappyData cluster, and then run the job. This is similar to `spark-submit` for any Spark application. 
 
-For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command.
-Here **quickstart.jar** contains the program and is bundled in the product distribution.<br/>
-For example, the command submits the job and runs it as:
+For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command. The command submits the job and runs it as:
 
 ```scala
  # first cd to your SnappyData product dir
@@ -56,7 +54,7 @@ For example, the command submits the job and runs it as:
     --app-jar examples/jars/quickstart.jar
     --lead localhost:8090
 ```
-In the above comand, **--lead** option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).
+In the above command, **quickstart.jar** contains the program and is bundled in the product distribution and the **--lead** option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).
 
 **Output**: It returns output similar to:
 

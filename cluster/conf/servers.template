@@ -20,20 +20,24 @@
 # for that server instance are kept. If the directory and properties
 # are not specified a default directory is created inside the SNAPPY_HOME directory.
 #
-#     localhost   -dir=/tmp/data/server [config args]
+#     server1   -dir=/tmp/data/server [config args]
 #
 # An example of how you can specify multiple locators for a server and
 # set its heap size to 64 GB.
 # 
-#     localhost   -dir=/tmp/data/server -locators=locator1:9988,locator2:8899 -heap-size=64g
+#     server1   -dir=/tmp/data/server -locators=locator1:9988,locator2:8899 -heap-size=64g
 # 
-# One can also specify bind address for clients and the port where it listens for
-# the client connections. It is also recommended to specify -J-Dgemfirexd.hostname-for-clients
-# so that clients from outside the network can connect to the server. It should be set to the
-# hostname or IP address that will be sent to clients to connect to. The default is the
-# `bind-address` of the locator.
-# 
-#     localhost   -client-bind-address=server1 -client-port=1555 -J-Dgemfirexd.hostname-for-clients=<hostname or IP>
+# One can specify bind address for clients to allow clients from outside this machine to connect
+# using JDBC/ODBC/Thrift protocols (default for `client-bind-address` is localhost).
+#
+# In environments with an internal hostname/IP and a different public hostname (e.g. cloud deployments),
+# you should also configure the -hostname-for-clients else clients from outside the network
+# will not be able to connect to the servers. It should be set to the public hostname
+# or public IP address that will be sent to clients to connect to. It can be skipped for cases
+# where private hostname is the same as public hostname (e.g. DNS translates appropriately).
+# Default is the `client-bind-address` of the server.
+#
+#     <private hostname/IP> -client-bind-address=<private hostname/IP> -client-port=1555 -hostname-for-clients=<public hostname/IP for clients>
 # 
 # For more configuration options,
 # see http://snappydatainc.github.io/snappydata/configuration/#configuration

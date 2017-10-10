@@ -60,11 +60,13 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
   override def nodeName: String = "ColumnUpdate"
 
-  // Require per-partition sort on batchId because deltas are accumulated for
-  // consecutive batchIds else it will  be very inefficient for bulk updates
-  // (e.g. for putInto). BatchId attribute is always third last in the keyColumns.
+  // Require per-partition sort on batchId+ordinal because deltas are accumulated for
+  // consecutive batchIds+ordinals else it will  be very inefficient for bulk updates
+  // (e.g. for putInto). BatchId attribute is always third last in the keyColumns
+  // while ordinal (index of row in the batch) is the one before that.
   override def requiredChildOrdering: Seq[Seq[SortOrder]] =
-    Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3))))
+  Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
+    StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
 
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
