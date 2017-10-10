@@ -2359,6 +2359,8 @@ public class SnappyTest implements Serializable {
     if (forceStart) {
       startSnappyCluster();
       try {
+        //2 mins sleep is added to avoid the stopSnappy cluster call immediately after restart and
+        // verify the recovery in UI.
         Thread.sleep(120000);
       } catch (InterruptedException e) {
         String s = "Exception occurred while waiting for snappy-start-all script execution..";
