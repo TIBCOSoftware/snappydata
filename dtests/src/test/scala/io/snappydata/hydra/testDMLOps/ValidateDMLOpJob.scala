@@ -47,7 +47,7 @@ class ValidateDMLOpJob extends SnappySQLJob {
       val df = snc.sql(stmt)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
-      pw.println(df);
+      pw.println(df.show);
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")
       println(s"Operation completed successfully. See ${getCurrentDirectory}/${outputFile}")
       pw.println(s"Operation completed successfully.")
