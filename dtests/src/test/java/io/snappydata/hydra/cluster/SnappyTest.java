@@ -1637,7 +1637,7 @@ public class SnappyTest implements Serializable {
         assert p.getInputStream().read() == -1;
       }
       int rc = p.waitFor();
-      if (rc == 0) {
+      if ((rc == 0) || (pb.command().contains("grep") && rc == 1)) {
         Log.getLogWriter().info("Executed successfully");
       } else {
         Log.getLogWriter().info("Failed with exit code: " + rc);
@@ -2010,9 +2010,9 @@ public class SnappyTest implements Serializable {
         String command = null;
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
-        String userAppJars = SnappyPrms.getUserAppArgs();
+        String userAppArgs = SnappyPrms.getUserAppArgs();
         if (SnappyPrms.hasDynamicAppProps()) {
-          userAppJars = userAppJars + " " + dynamicAppProps.get(getMyTid());
+          userAppArgs = userAppArgs + " " + dynamicAppProps.get(getMyTid());
         }
         command = snappyJobScript + " --class " + userJob +
             " --master spark://" + masterHost + ":" + masterPort + " " +
@@ -2021,7 +2021,7 @@ public class SnappyTest implements Serializable {
             " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
             " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-            userAppJars + " " + primaryLocatorHost + ":" + primaryLocatorPort;
+            userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         Log.getLogWriter().info("spark-submit command is : " + command);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
