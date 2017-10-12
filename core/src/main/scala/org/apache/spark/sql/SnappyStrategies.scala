@@ -71,7 +71,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  object LocalJoinStrategies extends Strategy {
+  object HashJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
@@ -674,9 +674,9 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
 }
 
 /**
-  * Rule to collapse the partial and final aggregates if the grouping keys
-  * match or are superset of the child distribution.
-  */
+ * Rule to insert a helper plan to collect information for other entities
+ * like parameterized literals.
+ */
 case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     extends Rule[SparkPlan] {
   private def addFallback(plan: SparkPlan): SparkPlan = {
