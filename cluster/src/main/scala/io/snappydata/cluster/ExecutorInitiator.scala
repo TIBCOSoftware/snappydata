@@ -54,10 +54,12 @@ object ExecutorInitiator extends Logging {
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
     private var driverDM: InternalDistributedMember = _
-    @volatile var stopTask = false
-    private var retryTask: Boolean = false
-    private val lock = new Object()
+    @volatile private[cluster] var stopTask = false
+    @volatile private[cluster] var stopped = true
+    private[cluster] var retryTask: Boolean = false
+    private[cluster] val lock = new Object()
     private val testLock = new Object()
+    @volatile var testStartDone = false
 
     val membershipListener = new MembershipListener {
       override def quorumLost(failures: util.Set[InternalDistributedMember],
@@ -81,12 +83,16 @@ object ExecutorInitiator extends Logging {
 
     def setRetryFlag(retry: Boolean = true): Unit = lock.synchronized {
       retryTask = retry
-      lock.notify()
+      lock.notifyAll()
     }
 
     // Test hook. Not to be used in other situations
-    def waitForExecutor(retry: Boolean = true): Unit = testLock.synchronized {
-      testLock.wait(30000)
+    def testWaitForExecutor(retry: Boolean = true): Unit = testLock.synchronized {
+      var maxTries = 100
+      while (maxTries > 0 && !testStartDone) {
+        maxTries -= 1
+        testLock.wait(500)
+      }
     }
 
     def getRetryFlag: Boolean = lock.synchronized {
@@ -102,10 +108,11 @@ object ExecutorInitiator extends Logging {
       driverURL = url
       driverDM = dm
       SnappyContext.clearStaticArtifacts()
-      lock.notify()
+      lock.notifyAll()
     }
 
     override def run(): Unit = {
+      stopped = false
       var prevDriverURL = ""
       var env: SparkEnv = null
       var numTries = 0
@@ -196,7 +203,8 @@ object ExecutorInitiator extends Logging {
                     rpcenv.setupEndpoint("Executor", executor)
                   }
                   prevDriverURL = url
-                  testLock.synchronized(testLock.notify())
+                  testStartDone = true
+                  testLock.synchronized(testLock.notifyAll())
                 case None =>
                   // If driver url is none, already running executor is stopped.
                   prevDriverURL = ""
@@ -220,6 +228,9 @@ object ExecutorInitiator extends Logging {
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
+        stopped = true
+        testStartDone = false
+        lock.synchronized(lock.notifyAll())
         try {
           Misc.checkIfCacheClosing(null)
           GemFireXDUtils.getGfxdAdvisor.getDistributionManager
@@ -247,14 +258,22 @@ object ExecutorInitiator extends Logging {
     }
     executorRunnable.setDriverDetails(None, null)
     Utils.clearDefaultSerializerAndCodec()
+    val lock = executorRunnable.lock
+    lock.synchronized {
+      var maxTries = 100
+      while (maxTries > 0 && !executorRunnable.stopped) {
+        maxTries -= 1
+        lock.wait(500)
+      }
+    }
   }
 
   def restartExecutor(): Unit = {
     executorRunnable.setRetryFlag()
   }
 
-  def waitForExecutor(): Unit = {
-    executorRunnable.waitForExecutor()
+  def testWaitForExecutor(): Unit = {
+    executorRunnable.testWaitForExecutor()
   }
 
   /**

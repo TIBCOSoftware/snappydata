@@ -115,6 +115,8 @@ allprojects {
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
+    awsVersion = '1.11.211'
+    jacksonVersion = '2.9.1'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.22.v20170606'
     guavaVersion = '14.0.1'
