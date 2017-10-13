@@ -392,4 +392,45 @@ public class SnappyStartUpTest extends SnappyTest {
     HydraTask_startSnappyCluster();
     Log.getLogWriter().info("Snappy cluster restarted successfully...." + vmDir);
   }
+
+  public static void HydraTask_verifyTableData() {
+    Connection conn;
+    ResultSet rs;
+    String query = null;
+    Vector tableNames, numRowsinTables = null;
+    long expectedNumRows, actualNumRows = 0;
+    try {
+      conn = getLocatorConnection();
+      tableNames = SnappyPrms.getTableList();
+      numRowsinTables = SnappyPrms.getNumRowsList();
+      if (tableNames.isEmpty() || numRowsinTables.isEmpty()) {
+        throw new TestException("Either list of tables or number of rows against tableNames " +
+            "required for validation is not specified");
+      }
+      if (tableNames.size() != numRowsinTables.size()) {
+        Log.getLogWriter().info("Mismatch observed in expected number of rows list and tables " +
+            "list. Please verify the configuration again.");
+      }
+      for (int i = 0; i < tableNames.size(); i++) {
+        String tableName = (String) tableNames.elementAt(i);
+        query = "select count(*) from " + tableName;
+        rs = conn.createStatement().executeQuery(query);
+        expectedNumRows = Long.parseLong((String) numRowsinTables.elementAt(i));
+        while (rs.next()) {
+          actualNumRows = rs.getLong(1);
+          Log.getLogWriter().info("Qyery : " + query + " executed successfully and query " +
+              "result is ::" + actualNumRows);
+        }
+        if (actualNumRows != expectedNumRows) {
+          throw new TestException("Mismatch observed. Expected " + expectedNumRows +
+              "number of rows, " + "but observed actual Number of rows " + actualNumRows + " in " +
+              "table " + tableName);
+        }
+      }
+      closeConnection(conn);
+    } catch (SQLException e) {
+      SQLHelper.printSQLException(e);
+      throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+    }
+  }
 }

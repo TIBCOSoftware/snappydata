@@ -356,7 +356,7 @@ public class SnappyTest implements Serializable {
             " -J-Dgemfirexd.table-default-partitioned=" +
             SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
             SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() +
-            SnappyPrms.getEvictionHeapPercentage() +
+            SnappyPrms.getEvictionHeapPercentage() + SnappyPrms.getPersistIndexes() +
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
             " -J-XX:+DisableExplicitGC" +
@@ -2358,14 +2358,6 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_startSnappyCluster() {
     if (forceStart) {
       startSnappyCluster();
-      try {
-        //2 mins sleep is added to avoid the stopSnappy cluster call immediately after restart and
-        // verify the recovery in UI.
-        Thread.sleep(120000);
-      } catch (InterruptedException e) {
-        String s = "Exception occurred while waiting for snappy-start-all script execution..";
-        throw new TestException(s, e);
-      }
     } else {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
       if (num == 1) {
