@@ -77,41 +77,35 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
 INITTASK    taskClass   = util.StopStartVMs  taskMethod = StopStart_initTask
             threadGroups = snappyThreads, locatorThreads, snappyStoreThreads, leadThreads;
 
-INITTASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScripts
-           /*io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = /export/shared/QA_DATA/odsData_10GB/PERSONS.schema.sql /export/shared/QA_DATA/odsData_10GB/CLAIM_DETAIL.schema.sql /export/shared/QA_DATA/odsData_10GB/CLAIM_STATUS.schema.sql*/
-           io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = /export/shared/QA_DATA/odsData/smallData/PERSONS.schema.sql /export/shared/QA_DATA/odsData/smallData/CLAIM_DETAIL.schema.sql /export/shared/QA_DATA/odsData/smallData/CLAIM_STATUS.schema.sql
-           threadGroups = snappyThreads
-           ;
+TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
+            io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.LoadODSData
+            io.snappydata.hydra.cluster.SnappyPrms-userAppJar =             snappydata-store-scala-tests*tests.jar
+            io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "rowTableList=0-1-2,dataLocation=${dataLocation}"
+            io.snappydata.hydra.cluster.SnappyPrms-numTimesToRetry = 2
+            maxTimesToRun = 1
+            threadGroups = snappyThreads
+            ;
 
-TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
-           io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.LoadODSData
-           io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
-           io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "rowTableList=0-1-2,dataLocation=${dataLocation}"
-           io.snappydata.hydra.cluster.SnappyPrms-numTimesToRetry = 2
-           maxTimesToRun = 1
-           threadGroups = snappyThreads
-           ;
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
+            threadGroups = snappyThreads;
 
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
-           threadGroups = snappyThreads;
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSnappyCluster
+            threadGroups = snappyThreads;
 
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSnappyCluster
-           threadGroups = snappyThreads;
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyStartUpTest taskMethod = HydraTask_verifyTableData
+            threadGroups = snappyThreads;
 
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyStartUpTest taskMethod = HydraTask_verifyTableData
-           threadGroups = snappyThreads;
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
+            threadGroups = snappyThreads;
 
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
-           threadGroups = snappyThreads;
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSnappyCluster
+            threadGroups = snappyThreads;
 
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSnappyCluster
-           threadGroups = snappyThreads;
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyStartUpTest taskMethod = HydraTask_verifyTableData
+            threadGroups = snappyThreads;
 
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyStartUpTest taskMethod = HydraTask_verifyTableData
-           threadGroups = snappyThreads;
-
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappy
-           threadGroups = snappyThreads;
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappy
+            threadGroups = snappyThreads;
 
 ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
             clientNames = locator1;
@@ -123,7 +117,7 @@ ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
             clientNames = locator1;
 
 hydra.Prms-totalTaskTimeSec           = 100;
-hydra.Prms-maxResultWaitSec           = 7200;
+hydra.Prms-maxResultWaitSec           = 8400;
 
 hydra.Prms-maxCloseTaskResultWaitSec  = 900;
 hydra.Prms-serialExecution            = false;
