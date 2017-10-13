@@ -7,8 +7,10 @@ Setting this property to **true** prevents this and requires different machines 
 
 ## Usage
 
-host1 -gemfire.enforce-unique-host=true
-host2
+In the **conf/servers** file you can set this as:
+```
+localhost -locators=localhost:3241,localhost:3242 -gemfire.enforce-unique-host=true
+```
 
 ## Default Value
 

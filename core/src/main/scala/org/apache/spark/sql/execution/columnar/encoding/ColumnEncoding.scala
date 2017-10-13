@@ -62,13 +62,11 @@ trait ColumnEncoding {
 // Removing the columnBytes argument to decoders (and storing within)
 // results in significant deterioration in basic ColumnCacheBenchmark.
 abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null) extends ColumnEncoding {
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
+    extends ColumnEncoding {
 
   protected[sql] final val baseCursor: Long = {
-    if (fromUnfinishedEncoder ne null) {
-      fromUnfinishedEncoder.initializeDecoderBeforeFinish(this)
-    } else if (startCursor != 0L) {
+    if (startCursor != 0L) {
       initializeCursor(columnDataRef, initDelta(columnDataRef,
         initializeNulls(columnDataRef, startCursor, field)), field.dataType)
     } else 0L
@@ -347,7 +345,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def baseOffset: Long = columnBeginPosition
 
-  final def offset(cursor: Long): Long = cursor - columnBeginPosition
+  def offset(cursor: Long): Long = cursor - columnBeginPosition
 
   final def buffer: AnyRef = columnBytes
 
@@ -356,25 +354,6 @@ trait ColumnEncoder extends ColumnEncoding {
    * normally be written by [[finish]] after the header and null bit mask.
    */
   def writeInternals(columnBytes: AnyRef, cursor: Long): Long = cursor
-
-  /**
-   * Get a decoder for currently written data before [[finish]] has been invoked.
-   * The decoder is required to be already initialized and caller should be able
-   * to invoke "absolute*" methods on it.
-   */
-  private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder =
-    throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
-
-  private[encoding] def initializeDecoderBeforeFinish(decoder: ColumnDecoder): Long = {
-    decoder.initializeCursor(null, initializeNullsBeforeFinish(decoder), NullType)
-  }
-
-  /**
-   * Initialize the position skipping header on currently written data
-   * for a decoder returned by [[decoderBeforeFinish]].
-   */
-  protected def initializeNullsBeforeFinish(decoder: ColumnDecoder): Long =
-    throw new UnsupportedOperationException(s"initializeNullsBeforeFinish for $toString")
 
   protected[sql] final def setSource(buffer: ByteBuffer,
       releaseOld: Boolean): Unit = {
@@ -731,8 +710,7 @@ trait ColumnEncoder extends ColumnEncoding {
    * The final size of the encoder column (excluding header and nulls) which should match
    * that occupied after [[finish]] but without writing anything.
    */
-  def encodedSize(cursor: Long, dataBeginPosition: Long): Long =
-    throw new UnsupportedOperationException(s"encodedSize for $toString")
+  def encodedSize(cursor: Long, dataBeginPosition: Long): Long = cursor - dataBeginPosition
 
   /**
    * Close and relinquish all resources of this encoder.
@@ -743,6 +721,8 @@ trait ColumnEncoder extends ColumnEncoding {
   }
 
   protected[sql] def getNumNullWords: Int
+
+  protected[sql] def getNullWords: AnyRef
 
   protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long
@@ -1058,7 +1038,7 @@ trait NullableDecoder extends ColumnDecoder {
   private[this] final var nextNullOrdinal: Int = _
   private[this] final var numNullBytes: Int = _
 
-  private final def updateNextNullOrdinal(columnBytes: AnyRef, nextNull: Int) {
+  private final def updateNextNullOrdinal(columnBytes: AnyRef, nextNull: Int): Unit = {
     nextNullOrdinal = BitSet.nextSetBit(columnBytes, baseNullOffset, nextNull, numNullBytes)
   }
 
@@ -1076,13 +1056,6 @@ trait NullableDecoder extends ColumnDecoder {
     cursor += numNullBytes
     updateNextNullOrdinal(columnBytes, 0)
     cursor
-  }
-
-  override private[sql] def initializeNullsBeforeFinish(
-      columnBytes: AnyRef, cursor: Long, numNullBytes: Int): Unit = {
-    this.baseNullOffset = cursor
-    this.numNullBytes = numNullBytes
-    updateNextNullOrdinal(columnBytes, 0)
   }
 
   private def updateNumNulls(columnBytes: AnyRef, ordinal: Int): Int = {
@@ -1128,9 +1101,6 @@ trait NotNullEncoder extends ColumnEncoder {
 
   override protected[sql] def initializeNulls(initSize: Int): Int = 0
 
-  override protected def initializeNullsBeforeFinish(decoder: ColumnDecoder): Long =
-    columnBeginPosition + 8L // skip typeId and nulls size
-
   override def nullCount: Int = 0
 
   override def isNullable: Boolean = false
@@ -1139,6 +1109,8 @@ trait NotNullEncoder extends ColumnEncoder {
     throw new UnsupportedOperationException(s"writeIsNull for $toString")
 
   override protected[sql] def getNumNullWords: Int = 0
+
+  override protected[sql] def getNullWords: AnyRef = null
 
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = cursor
@@ -1167,9 +1139,6 @@ trait NotNullEncoder extends ColumnEncoder {
       newColumnData
     }
   }
-
-  override def encodedSize(cursor: Long, dataBeginPosition: Long): Long =
-    cursor - dataBeginPosition
 }
 
 trait NullableEncoder extends NotNullEncoder {
@@ -1184,6 +1153,8 @@ trait NullableEncoder extends NotNullEncoder {
     while (numWords > 0 && nullWords(numWords - 1) == 0L) numWords -= 1
     numWords
   }
+
+  override protected[sql] def getNullWords: AnyRef = nullWords
 
   override protected[sql] def initializeNulls(initSize: Int): Int = {
     if (nullWords eq null) {
@@ -1204,13 +1175,6 @@ trait NullableEncoder extends NotNullEncoder {
       }
       numWords
     }
-  }
-
-  override protected def initializeNullsBeforeFinish(decoder: ColumnDecoder): Long = {
-    // initialize the NullableDecoder
-    decoder.initializeNullsBeforeFinish(nullWords, Platform.LONG_ARRAY_OFFSET,
-      getNumNullWords << 3)
-    columnBeginPosition + (initialNumWords << 3) + 8L // skip typeId and nulls size
   }
 
   override def nullCount: Int = {

@@ -23,15 +23,17 @@ import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
+
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -40,13 +42,12 @@ import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
-import org.apache.spark.sql.{SnappyContext, SnappySession}
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
-import scala.concurrent.Future
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 
 class LeadImpl extends ServerImpl with Lead
     with ProtocolOverrides with Logging {
@@ -252,16 +253,6 @@ class LeadImpl extends ServerImpl with Lead
       case _ =>
         logWarning(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
     }
-  }
-
-  /**
-    * @inheritdoc
-    */
-  override def notifyRunning() {
-    logDebug("Accepting RUNNING notification")
-    serverstatus = State.RUNNING
-    // status file for CacheServerLauncher is updated in the LeadImpl.internalStart
-    // via callback of  notifyStatusChange
   }
 
   private def checkAuthProvider(props: Properties): Unit = {

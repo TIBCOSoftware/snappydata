@@ -19,6 +19,7 @@ package io.snappydata.hydra.testDMLOps;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Vector;
 
@@ -101,7 +102,12 @@ public class SnappyDMLOpsUsingAPITest extends SnappyDMLOpsUtil {
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
         derbyTestUtils.closeDiscConnection(dConn, true);
-        String message = verifyResultsForTable(tableName, true);
+        String selectQuery = SnappySchemaPrms.getAfterUpdateSelectStmts()[rand];
+        String orderByClause = "";
+//        String[] dmlTables = SnappySchemaPrms.getDMLTables();
+//        orderByClause = SnappySchemaPrms.getOrderByClause()[Arrays.asList(dmlTables)
+//            .indexOf(tableName)];
+        String message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
         if (message.length() != 0) {
           throw new util.TestException("Validation failed after update table.");
         }
@@ -146,7 +152,12 @@ public class SnappyDMLOpsUsingAPITest extends SnappyDMLOpsUtil {
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Deleted " + derbyRows + " rows in derby.");
         derbyTestUtils.closeDiscConnection(dConn, true);
-        String message = verifyResultsForTable(tableName, true);
+        String selectQuery = SnappySchemaPrms.getAfterDeleteSelectStmts()[rand];
+        String orderByClause = "";
+//        String[] dmlTables = SnappySchemaPrms.getDMLTables();
+//        orderByClause = SnappySchemaPrms.getOrderByClause()[Arrays.asList(dmlTables)
+//            .indexOf(tableName)];
+        String message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
         if (message.length() != 0) {
           throw new util.TestException("Validation failed after executing delete on table.");
         }
@@ -165,7 +176,7 @@ public class SnappyDMLOpsUsingAPITest extends SnappyDMLOpsUtil {
       String row = getRowFromCSV(tableName, rand);
       if (testUniqueKeys)
         row = row + "," + getMyTid();
-      String stmt = SnappySchemaPrms.getInsertStmts()[rand];
+      String stmt = SnappySchemaPrms.getInsertStmts().get(rand);
       String insertStmt = getStmt(stmt, row, tableName);
       int tid = getMyTid();
 
@@ -189,7 +200,7 @@ public class SnappyDMLOpsUsingAPITest extends SnappyDMLOpsUtil {
         int derbyRowCount = dConn.createStatement().executeUpdate(insertStmt);
         Log.getLogWriter().info("Inserted " + derbyRowCount + " row in derby.");
         derbyTestUtils.closeDiscConnection(dConn, true);
-        String message = verifyResultsForTable(tableName, true);
+        String message = verifyResultsForTable("select * from ", tableName, "",true);
         if (message.length() != 0) {
           throw new util.TestException("Validation failed after insert in table " + tableName + ".");
         }

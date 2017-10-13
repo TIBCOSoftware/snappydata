@@ -33,7 +33,7 @@ import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
-import org.apache.spark.memory.{SnappyUnifiedMemoryManager, StoreUnifiedManager}
+import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
