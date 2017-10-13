@@ -17,18 +17,23 @@
 package org.apache.spark.sql.streaming
 
 import scala.reflect.ClassTag
-
 import kafka.serializer.Decoder
-
+import org.apache.kafka.common.TopicPartition
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.kafka010.JsonUtils
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.kafka.KafkaUtils
+import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
 import org.apache.spark.util.Utils
+import org.json4s.NoTypeHints
+import org.json4s.jackson.Serialization
+
+import scala.util.Random
+import scala.util.control.NonFatal
 
 class DirectKafkaStreamSource extends StreamPlanProvider {
 
@@ -46,31 +51,58 @@ final class DirectKafkaStreamRelation(
     extends StreamBaseRelation(options)
     with Logging with Serializable {
 
-  val topicsSet = options("topics").split(",").toSet
+  val topics = options("subscribe").split(",").toList
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
     t.split(";").map { s =>
       val a = s.split("->")
       (a(0), a(1))
     }.toMap
   }.getOrElse(Map())
+  val preferredHosts = LocationStrategies.PreferConsistent
+  val startingOffsets = partitionOffsets(options("startingOffsets"))
 
-  val K = options.getOrElse("K", "java.lang.String")
-  val V = options.getOrElse("V", "java.lang.String")
-  val KD = options.getOrElse("KD", "kafka.serializer.StringDecoder")
-  val VD = options.getOrElse("VD", "kafka.serializer.StringDecoder")
+//  val K = options.getOrElse("K", "java.lang.String")
+//  val V = options.getOrElse("V", "java.lang.String")
+//  val KD = options.getOrElse("KD", "kafka.serializer.StringDecoder")
+//  val VD = options.getOrElse("VD", "kafka.serializer.StringDecoder")
 
   override protected def createRowStream(): DStream[InternalRow] = {
-    val ck: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(K))
-    val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
-    val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
-    val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
-    KafkaUtils.createDirectStream[Any, Any, Decoder[Any], Decoder[Any]](context,
-      kafkaParams, topicsSet)(ck, cv, ckd, cvd).mapPartitions { iter =>
-      val encoder = RowEncoder(schema)
-      // need to call copy() below since there are builders at higher layers
-      // (e.g. normal Seq.map) that store the rows and encoder reuses buffer
-      iter.flatMap(p => rowConverter.toRows(p._2).iterator.map(
-        encoder.toRow(_).copy()))
+//    val ck: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(K))
+//    val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
+//    val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
+//    val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
+
+    val consumerStrategies = ConsumerStrategies
+      .Subscribe[String, String](topics, kafkaParams, startingOffsets)
+
+    val stream = KafkaUtils.createDirectStream[String, String](context,
+      preferredHosts, consumerStrategies)
+      .mapPartitions { iter =>
+        val encoder = RowEncoder(schema)
+        iter.flatMap(p => {
+          rowConverter.toRows(p.value()).iterator.map(
+          encoder.toRow(_).copy())
+        })
+      }
+    stream
+  }
+
+  private implicit val formats = Serialization.formats(NoTypeHints)
+
+  /**
+    * Read per-TopicPartition offsets from json string
+    */
+  def partitionOffsets(str: String): Map[TopicPartition, Long] = {
+    try {
+      Serialization.read[Map[String, Map[Int, Long]]](str).flatMap { case (topic, partOffsets) =>
+        partOffsets.map { case (part, offset) =>
+          new TopicPartition(topic, part) -> offset
+        }
+      }.toMap
+    } catch {
+      case NonFatal(x) =>
+        throw new IllegalArgumentException(
+          s"""Expected e.g. {"topicA":{"0":23,"1":-1},"topicB":{"0":-2}}, got $str""")
     }
   }
 }

@@ -20,15 +20,6 @@ import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{ExprCode, CodegenContext}
-import org.apache.spark.unsafe.types.UTF8String
-
-import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
-import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
-
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
@@ -37,7 +28,7 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.expressions.{LeafExpression, ExpressionDescription, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -49,6 +40,7 @@ import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 // import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
+import org.apache.spark._
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedObjectCache
@@ -56,10 +48,9 @@ import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyS
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.{StringType, DataType, StructType}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark._
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -842,8 +833,7 @@ object SnappyContext extends Logging {
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
-    "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
-    "directkafka_stream" -> classOf[DirectKafkaStreamSource].getCanonicalName,
+    "kafka_stream" -> classOf[DirectKafkaStreamSource].getCanonicalName,
     "twitter_stream" -> classOf[TwitterStreamSource].getCanonicalName,
     "raw_socket_stream" -> classOf[RawSocketStreamSource].getCanonicalName,
     "text_socket_stream" -> classOf[TextSocketStreamSource].getCanonicalName,
