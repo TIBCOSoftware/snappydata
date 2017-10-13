@@ -19,8 +19,14 @@
 # should not be executable directly
 # also should not be passed any arguments, since we need original $*
 
-# resolve links - $0 may be a softlink
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+
 if [ -z "$SNAPPY_HOME" ]; then
+  if [ -z "$SPARK_HOME" ]; then
+    export SPARK_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
+  fi
   export SNAPPY_HOME="${SPARK_HOME}"
 elif [ -z "$SPARK_HOME" ]; then
   export SPARK_HOME="${SNAPPY_HOME}"

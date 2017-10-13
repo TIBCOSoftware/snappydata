@@ -57,7 +57,6 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     val cursor = positionCursor
     if (cursor < positionEndCursor) {
       positionCursor += 4
-      positionOrdinal += 1
       ColumnEncoding.readInt(deltaBytes, cursor)
     } else {
       // convention used by ColumnDeltaDecoder to denote the end
@@ -68,8 +67,9 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
 
   @inline def hasNulls: Boolean = realDecoder.hasNulls
 
-  @inline def notNull: Boolean = {
+  @inline def readNotNull: Boolean = {
     val n = realDecoder.numNulls(deltaBytes, positionOrdinal, numNulls)
+    positionOrdinal += 1
     if (n >= 0) {
       numNulls = n
       true
@@ -79,7 +79,7 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     }
   }
 
-  @inline def nextNonNullOrdinal(): Unit = nonNullOrdinal += 1
+  @inline private[encoding] def nextNonNullOrdinal(): Unit = nonNullOrdinal += 1
 
   @inline def readBoolean: Boolean = {
     val ordinal = nonNullOrdinal

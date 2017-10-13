@@ -350,11 +350,12 @@ class TokenizationTest
 
       query = s"select * from $table t1, $table2 t2 where t1.a = t2.a"
       snc.sql(query).collect()
-      assert( cacheMap.size() == 3)
+      // broadcast join not cached
+      assert( cacheMap.size() == 2)
 
       query = s"select * from $table t1, $table2 t2 where t1.a = t2.b"
       snc.sql(query).collect()
-      assert( cacheMap.size() == 4)
+      assert( cacheMap.size() == 2)
 
       // let us clear the plan cache
       snc.clear()
@@ -772,13 +773,59 @@ class TokenizationTest
         s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
         s" where distance = 658 group by dest having count ( * ) > 100) group by dest order " +
         s" by avgTaxiTime desc")
-    val res2 = df.collect()
+    var res2 = df.collect()
     val r2 = normalizeRow(res2)
     assert(!r1.sameElements(r2))
     // assert( SnappySession.getPlanCache.asMap().size() == 1)
 
     // also check partial delete followed by a full delete
     val count = snc.table(colTableName).count()
+
+    // null, non-null combinations of updates
+
+    // implicit int to string cast will cause it to be null (SNAP-2039)
+    res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+    val numUpdated0 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated0 > 0)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 350 and dest is not null").collect().length === 0)
+
+    // check null updates
+    res2 = snc.sql(s"update $colTableName set DEST = null where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+    val numUpdated1 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated1 > 0)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 350 and dest is not null").collect().length === 0)
+
+    // check normal non-null updates
+    res2 = snc.sql(s"update $colTableName set DEST = 'DEST__UPDATED' where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+    val numUpdated2 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated1 === numUpdated2)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 350 and dest not like '%__UPDATED'").collect().length === 0)
+
+    // new overlapping null updates
+    res2 = snc.sql(s"update $colTableName set DEST = null where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 250").collect()
+    val numUpdated3 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated3 > numUpdated1)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 250 and dest is not null").collect().length === 0)
+
+    // new overlapping non-null updates
+    res2 = snc.sql(s"update $colTableName set DEST = concat(DEST, '__UPDATED') where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 100").collect()
+    val numUpdated4 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated4 > numUpdated3)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        s"and airtime > 250 and dest is not null").collect().length === 0)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 100 and airtime <= 250 and dest not like '%__UPDATED'")
+        .collect().length === 0)
+
     val del1 = snc.sql(s"delete from $colTableName where depdelay = 0 and arrdelay > 0")
     val delCount1 = del1.collect().foldLeft(0L)(_ + _.getLong(0))
     assert(delCount1 > 0)

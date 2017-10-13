@@ -4,8 +4,8 @@ Delete rows from a table.
 
 ``` pre
 {
-    DELETE FROM table-name [ ]
-        [ WHERE ]
+DELETE FROM table-name [ ]
+[ WHERE ]
 }
 ```
 
@@ -22,6 +22,3 @@ DELETE FROM TRADE.CUSTOMERS WHERE CID = 10;
 -- Delete all rows from table T.
 DELETE FROM T;
 ```
-!!!Note
-	This statement is currently supported only for row tables.
-

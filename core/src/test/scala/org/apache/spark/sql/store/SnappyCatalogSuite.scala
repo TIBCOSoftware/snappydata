@@ -139,12 +139,14 @@ class SnappyCatalogSuite extends SnappyFunSuite
         }
     assume(tableMetadata.schema.nonEmpty, "bad test")
     // assume(tableMetadata.partitionColumnNames.nonEmpty, "bad test")
-    assume(tableMetadata.bucketSpec.nonEmpty, "bad test")
+    // assume(tableMetadata.bucketSpec.nonEmpty, "bad test")
     assert(columns.collect().map(_.name).toSet == tableMetadata.schema.map(_.name).toSet)
+    /*
     columns.collect().foreach { col =>
       assert(col.isPartition == tableMetadata.partitionColumnNames.contains(col.name))
       assert(col.isBucket == tableMetadata.bucketSpec.contains(col.name))
     }
+    */
   }
 
 

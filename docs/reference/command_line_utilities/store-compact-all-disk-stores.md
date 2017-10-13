@@ -5,17 +5,17 @@ Perform online compaction of SnappyData disk stores.
 ## Syntax
 
 ``` pre
-snappy compact-all-disk-stores====
- [-locators=<addresses>] [-bind-address=<address>] [-<prop-name>=<prop-value>]*
+snappy compact-all-disk-stores==
+  <-locators=<addresses>> [-bind-address=<address>] [-<prop-name>=<prop-value>]*
 ```
 
-The table describes options for snappy compact-all-disk-stores. If no multicast or locator options are specified on the command-line, then the command uses the gemfirexd.properties file (if available) to determine the distributed system to which it should connect.
+The table describes options for `snappy compact-all-disk-stores`. 
 
 |Option|Description|
 |--------|--------|
-|-locators    |</br>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
-|-bind-address    |The address to which this peer binds for receiving peer-to-peer messages. By default `gfxd` uses the hostname, or localhost if the hostname points to a local loopback address.|
-|-prop-name</br> prop-value    |Any other SnappyData distributed system property.|
+|locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
+|bind-address    |The address to which this peer binds for receiving peer-to-peer messages. By default `snappy` uses the hostname, or localhost if the hostname points to a local loopback address.|
+|prop-name</br> prop-value    |Any other SnappyData distributed system property.|
 
 ## Description
 
@@ -27,4 +27,5 @@ Offline compaction runs essentially in the same way, but without the incoming CR
 
 ## Online Compaction
 
-To run manual online compaction, allow-force-compaction should be true. You can run manual online compaction at any time while the system is running. Oplogs eligible for compaction based on the *compaction-threshold* are compacted into the current oplog.
+To run manual online compaction, ALLOWFORCECOMPACTION should be set to true while [creating a diskstore](/reference/sql_reference/create-diskstore.md)
+You can run manual online compaction at any time while the system is running. Oplogs eligible for compaction based on the COMPACTIONTHRESHOLD are compacted into the current oplog.

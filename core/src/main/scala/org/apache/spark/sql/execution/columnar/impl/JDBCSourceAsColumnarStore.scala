@@ -108,8 +108,10 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       (conn: Connection) => {
         connectionType match {
           case ConnectionType.Embedded =>
-            val txMgr = Misc.getGemFireCache.getCacheTransactionManager
-            if (TXManagerImpl.snapshotTxState.get() == null && (txMgr.getTXState == null)) {
+            val context = TXManagerImpl.currentTXContext()
+            if (context == null ||
+                (context.getSnapshotTXState == null && context.getTXState == null)) {
+              val txMgr = Misc.getGemFireCache.getCacheTransactionManager
               txMgr.begin(com.gemstone.gemfire.cache.IsolationLevel.SNAPSHOT, null)
               Array(conn, txMgr.getTransactionId.stringFormat())
             } else {
@@ -681,7 +683,7 @@ final class ColumnarStorePartitionedRDD(
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
 
     Option(context).foreach(_.addTaskCompletionListener(_ => {
-      val tx = TXManagerImpl.snapshotTxState.get()
+      val tx = TXManagerImpl.getCurrentSnapshotTXState
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
         val cache = Misc.getGemFireCacheNoThrow
         if (cache ne null) {

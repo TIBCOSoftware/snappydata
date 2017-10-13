@@ -32,21 +32,19 @@ trait RunLengthEncoding extends ColumnEncoding {
 }
 
 final class RunLengthDecoder(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends RunLengthDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NotNullDecoder
+      initDelta) with NotNullDecoder
 
 final class RunLengthDecoderNullable(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
-    fromUnfinishedEncoder: ColumnEncoder = null)
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong)
     extends RunLengthDecoderBase(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with NullableDecoder
+      initDelta) with NullableDecoder
 
 abstract class RunLengthDecoderBase(columnBytes: AnyRef, startCursor: Long,
-    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
+    field: StructField, initDelta: (AnyRef, Long) => Long)
     extends ColumnDecoder(columnBytes, startCursor, field,
-      initDelta, fromUnfinishedEncoder) with RunLengthEncoding {
+      initDelta) with RunLengthEncoding {
 
   private[this] var runLengthEndPosition = -1
   private[this] var currentValueLong: Long = _

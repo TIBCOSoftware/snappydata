@@ -1,33 +1,63 @@
 #
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License"); you
+# may not use this file except in compliance with the License. You
+# may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License. See accompanying
+# LICENSE file.
 #
-
-# Specify the host name on which a Snappy locator will be started. Also
-# specify the startup directory where the logs and metadata files
-# for that locator instance will be created. Apart from these two things,
-# snappy specific properties can also be passed. If the directory and properties
-# are not specified a default directory is created inside the SNAPPY_HOME directory.
 #
-#     localhost    -dir=/tmp/data/locator (config args)
+# By default, SnappyData launch scripts will start a single locator on localhost
+# and uses <snappyData_dir>/work/localhost-locator-1/ as the directory for logs and 
+# statistics. 
+# Assuming your network is ssh enabled you can add hostnames (one line per host) to start
+# locator on multiple hosts. 
+#
+# Example configurations:
+# I) Configuring the hostname/IP address for cluster members to find the locator:
+#
+# By default, locator binds to provided hostname on port 10334 for discovering other members of the cluster.
+# Optionally set peer-discovery-address to a hostname/IP (usually the internal LAN IP) where other members of
+# cluster can talk to locator (configured as their -locators option) which is the provided hostname by default,
+# and peer-discover-port if you want to change port from the default 10334.
+# The peer-discovery-address can be a wildcard like 0.0.0.0 to listen on all interfaces.
+#
+#     locator1 -peer-discovery-port=9988 -locators=locator2:8899
+#
+# If there are multiple locators in the cluster, then specify hostname:port of other locators in the
+# -locators option.
 # 
-# When a machine is not on any network, specify peer-discovery-address too along with hostname.
-# Also, if there are multiple locators in the cluster, specify hostname:port of other locators.
+#     locator1 -peer-discovery-port=9988 -locators=locator2:8899
+#     locator2 -peer-discovery-port=9988 -locators=locator1:8899
 # 
-#     localhost -peer-discovery-address=locator1 -peer-discovery-port=9988 -locators=locator2:8899
+# II) Using client bind address:
+#
+# One can specify bind address for clients to allow clients from outside this machine to connect
+# using JDBC/ODBC/Thrift protocols (default for `client-bind-address` is localhost).
+#
+# In environments with an internal hostname/IP and a different public hostname (e.g. cloud deployments),
+# you should also configure the -hostname-for-clients else clients from outside the network
+# will not be able to connect to the locators/servers. It should be set to the public hostname
+# or public IP address that will be sent to clients to connect to. It can be skipped for cases
+# where private hostname is the same as public hostname (e.g. DNS translates appropriately).
+# Default is the `client-bind-address` of the locator.
+#
+#     <private hostname/IP> -client-bind-address=<private hostname/IP> -hostname-for-clients=<public hostname/IP for clients>
+#
+# III) Logging to different directory 
+# Specify the startup directory where the logs and configuration files for that locator instance
+# are managed. 
+#
+#     locator1 -dir=/tmp/data/locator -client-bind-address=locator1
 # 
-# For more configuration options,
-# see http://snappydatainc.github.io/snappydata/configuration/#configuration
+# For more configuration options, see
+# http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

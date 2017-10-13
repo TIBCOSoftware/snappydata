@@ -19,8 +19,8 @@ package io.snappydata.gemxd
 import java.io.{CharArrayWriter, DataOutput}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
-import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
@@ -348,17 +348,20 @@ object SparkSQLExecuteImpl {
   def getRowIterator(dvds: Array[DataValueDescriptor], types: Array[Int],
       precisions: Array[Int], scales: Array[Int], dataTypes: Array[AnyRef],
       input: ByteArrayDataInput): java.util.Iterator[ValueRow] = {
-    // initialize JSON generator if required
-    var continue = true
-    var writer: CharArrayWriter = null
-    var gen: JsonGenerator = null
-    for (d <- dataTypes if continue) {
+    // initialize JSON generators if required
+    var writers: ArrayBuffer[CharArrayWriter] = null
+    var generators: ArrayBuffer[AnyRef] = null
+    for (d <- dataTypes) {
       if (d ne null) {
-        writer = new CharArrayWriter()
-        // create the Generator without separator inserted between 2 records
-        gen = new JsonFactory().createGenerator(writer)
-            .setRootValueSeparator(null)
-        continue = false
+        if (writers eq null) {
+          writers = new ArrayBuffer[CharArrayWriter](2)
+          generators = new ArrayBuffer[AnyRef](2)
+        }
+        val size = writers.length
+        val writer = new CharArrayWriter()
+        writers += writer
+        generators += Utils.getJsonGenerator(d.asInstanceOf[DataType],
+          s"COL_$size", writer)
       }
     }
     val execRow = new ValueRow(dvds)
@@ -367,6 +370,7 @@ object SparkSQLExecuteImpl {
       input.array(), input.position(), input.available())
     unsafeRows.map { row =>
       var index = 0
+      var writeIndex = 0
       while (index < numFields) {
         val dvd = dvds(index)
         if (row.isNullAt(index)) {
@@ -424,12 +428,14 @@ object SparkSQLExecuteImpl {
               dvd.setValue(row.getDouble(index))
             case StoredFormatIds.REF_TYPE_ID =>
               // convert to Json using JacksonGenerator
-              val dataType = dataTypes(index).asInstanceOf[DataType]
-              Utils.generateJson(dataType, gen, row)
-              gen.flush()
+              val writer = writers(writeIndex)
+              val generator = generators(writeIndex)
+              Utils.generateJson(generator, row, index,
+                dataTypes(index).asInstanceOf[DataType])
               val json = writer.toString
               writer.reset()
               dvd.setValue(json)
+              writeIndex += 1
             case StoredFormatIds.SQL_BLOB_ID =>
               // all complex types too work with below because all of
               // Array, Map, Struct (as well as Binary itself) transport
@@ -441,7 +447,9 @@ object SparkSQLExecuteImpl {
           index += 1
         }
       }
-      if ((gen ne null) && !unsafeRows.hasNext) gen.close()
+      if ((generators ne null) && !unsafeRows.hasNext) {
+        generators.foreach(Utils.closeJsonGenerator)
+      }
 
       execRow
     }.asJava
