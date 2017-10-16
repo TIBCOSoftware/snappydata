@@ -16,22 +16,17 @@
 # LICENSE file.
 
 
-from functools import reduce
-import glob
 import os
 from datetime import date, datetime
 import sys
-from itertools import chain
 import time
-import operator
 import tempfile
-import random
 import struct
 import shutil
 from pyspark.streaming.tests import PySparkStreamingTestCase, BasicOperationTests, CheckpointTests, StreamingListenerTests, StreamingContextTests, WindowFunctionTests
 from pyspark.streaming.snappy.context import SnappyStreamingContext , SparkConf, SparkContext
 from pyspark.sql.types import *
-from pyspark.sql.snappy import SnappyContext
+from pyspark.sql.snappy import SnappySession
 from pyspark.sql.types import *
 try:
     import xmlrunner
@@ -113,8 +108,8 @@ class SnappyProgrammingGuideTests(unittest.TestCase):
 
         dstream = snsc.queueStream([rddList(1, 10), rddList(10, 20), rddList(20, 30)])
 
-        snsc._snappycontext.dropTable("streamingExample", True)
-        snsc._snappycontext.createTable("streamingExample", "column", schema)
+        snsc._snappySession.dropTable("streamingExample", True)
+        snsc._snappySession.createTable("streamingExample", "column", schema)
 
         schemadstream = snsc.createSchemaDStream(dstream, schema)
         schemadstream.foreachDataFrame(lambda df: saveFunction(df))
@@ -192,7 +187,7 @@ class SnappyStreamingContextTests(StreamingContextTests):
         dstream = self.ssc.queueStream(rdd)
         self.ssc.sql("drop  table if exists testTable")
 
-        self.ssc._snappycontext.createTable("testTable", "column", schema)
+        self.ssc._snappySession.createTable("testTable", "column", schema)
 
         schemdstream = self.ssc.createSchemaDStream(dstream, schema)
 
@@ -204,7 +199,7 @@ class SnappyStreamingContextTests(StreamingContextTests):
         self.ssc.sql("select count (*)  from testTable").collect()
         self.ssc.start()
         self.ssc.awaitTermination(2)
-        result = SnappyContext(self.sc).sql("select count(*) from testTable").collect()
+        result = SnappySession(self.sc).sql("select count(*) from testTable").collect()
         self.assertEqual(result[0][0], 1)
 
     def test_text_file_stream(self):

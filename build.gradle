@@ -775,6 +775,7 @@ task product(type: Zip) {
       from "${rootDir}/python/pyspark/"
       include 'sql/**'
       include 'streaming/**'
+      include 'test_support/**'
       into "${snappyProductDir}/python/pyspark"
     }
 
@@ -1209,15 +1210,16 @@ task publishDocs(type:Exec) {
   commandLine './publish-site.sh'
 }
 
-// It runs test script from product dir.
-task testPython (type:Exec) {
-  String w1 = "${testResultsBase}/python"
-  delete w1
-  file(w1).mkdirs()
-  workingDir  w1
+// It runs test script from product dir. Hence if running the target individually make sure
+// to run product target first
+task checkPython(type:Exec) {
+  String wdir = "${testResultsBase}/python"
+  delete wdir
+  file(wdir).mkdirs()
+  workingDir  wdir
   copy {
     from "${rootDir}/python/pyspark/test_supprt"
-    into w1
+    into wdir
   }
   environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"
   environment 'SPARK_HOME', "${snappyProductDir}"
@@ -1225,7 +1227,7 @@ task testPython (type:Exec) {
 }
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports, docs
+  dependsOn cleanAll, buildAll, checkAll, checkPython, allReports, docs
 }
 
 if (rootProject.hasProperty('trackBuildTime') ) {

@@ -21,19 +21,9 @@ individual modules.
 """
 import os
 import sys
-import pydoc
-import shutil
-import tempfile
-import pickle
-import functools
-import time
-import datetime
-
-import py4j
 
 from pyspark.tests import ReusedPySparkTestCase
-from pyspark.sql.tests import Row
-from pyspark.sql.snappy import SnappyContext
+from pyspark.sql.types import *
 from pyspark.sql.snappy import SnappySession
 
 try:
@@ -147,7 +137,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
         newrow = ((1, 2, 3), (2, 3, 4))
         sparkSession.put(SnappyContextTests.tablename, newrow)
         self.verify_table_rows(7)
-        newrow = (1, 2, 3)
+        newrow = [1, 2, 3]
         sparkSession.put(SnappyContextTests.tablename , newrow)
         self.verify_table_rows(8)
 
@@ -156,7 +146,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
         newrow = ((1, 2, 3), (2, 3, 4))
         sparkSession.insert(SnappyContextTests.tablename, newrow)
         self.verify_table_rows(7)
-        newrow = (1, 2, 3)
+        newrow = [1, 2, 3]
         sparkSession.insert(SnappyContextTests.tablename , newrow)
         self.verify_table_rows(8)
 
@@ -180,16 +170,20 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
     def create_table_using_sql(self, ddl, provider):
         sparkSession = SnappySession(self.sc)
-        dataDF = sparkSession._sc.parallelize((1,2,3)).toDF("COL1: int , COL2 : int, COL3 : int")
+        schema = StructType().add("col1", IntegerType()).add("col2", IntegerType()).add("col3", IntegerType())
+        input = SnappyContextTests.testdata
+        dataDF = sparkSession.createDataFrame(input, schema)
         sparkSession.sql("DROP TABLE IF EXISTS " + SnappyContextTests.tablename)
         sparkSession.sql(ddl)
         dataDF.write.insertInto(SnappyContextTests.tablename)
 
     def create_table_using_datasource(self, provider, schemaddl=False):
         sparkSession = SnappySession(self.sc)
-        df = sparkSession._sc.parallelize(SnappyContextTests.testdata, 5).toDF("COL1: int , COL2 : int, COL3 : int")
+        schema = StructType().add("col1", IntegerType()).add("col2", IntegerType()).add("col3", IntegerType())
+        input = SnappyContextTests.testdata
+        df = sparkSession.createDataFrame(input, schema)
         if schemaddl is False:
-            sparkSession.createTable(SnappyContextTests.tablename, provider, df.schema)
+            sparkSession.createTable(SnappyContextTests.tablename, provider, schema)
         else:
             sparkSession.createTable(SnappyContextTests.tablename, provider, "(COL1 INT , COL2 INT , COL3 INT)")
         df.write.format("row").mode("append").saveAsTable(SnappyContextTests.tablename)
