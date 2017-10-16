@@ -59,6 +59,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   public static final ThreadLocal<Boolean> SKIP_HIVE_TABLE_CALLS =
       new ThreadLocal<>();
 
+  public static final Object hiveClientSync = new Object();
+
   private final ExecutorService hmsQueriesExecutorService;
 
   public SnappyHiveCatalog() {
@@ -109,7 +111,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
    *
    * @return the location of hive warehouse (unused but hive creates the directory)
    */
-  public static synchronized String initCommonHiveMetaStoreProperties(
+  public static String initCommonHiveMetaStoreProperties(
       HiveConf metadataConf) {
     metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE);
     // Tomcat pool has been shown to work best but does not work in split mode
@@ -297,7 +299,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         }
       switch (this.qType) {
         case INIT:
-          initHMC();
+          synchronized (hiveClientSync) {
+            initHMC();
+          }
           return true;
 
         case ISROWTABLE_QUERY:
