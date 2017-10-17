@@ -17,6 +17,23 @@
 # limitations under the License.
 #
 
+#
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you
+#
+# may not use this file except in compliance with the License. You
+# may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License. See accompanying
+# LICENSE file.
+
 from __future__ import print_function
 import logging
 from optparse import OptionParser
@@ -36,15 +53,13 @@ else:
 # Append `SPARK_HOME/dev` to the Python path so that we can import the sparktestsupport module
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../spark/dev/"))
 
-from sparktestsupport.modules import all_modules  # noqa
 from sparktestsupport.shellutils import which, subprocess_check_output  # noqa
 
 SPARK_HOME = os.environ.get("SPARK_HOME")
 PYTHONPATH = os.environ.get("PYTHONPATH")
-print(PYTHONPATH)
-print(SPARK_HOME)
 
-python_modules = dict((m.name, m) for m in all_modules if m.python_test_goals if m.name != 'root')
+snappy_python_modules = ["pyspark-sql-snappy", "pyspark-streaming-snappy"]
+
 
 def print_red(text):
     print('\033[31m' + text + '\033[0m')
@@ -54,7 +69,9 @@ LOG_FILE = os.path.join(os.path.abspath(''), "unit-tests.log")
 FAILURE_REPORTING_LOCK = Lock()
 LOGGER = logging.getLogger()
 
-python_test_goals = ["pyspark.sql.snappy.tests"]
+python_test_goals = {"pyspark-sql-snappy": "pyspark.sql.snappy.tests",
+                     "pyspark-streaming-snappy": "pyspark.streaming.snappy.tests"}
+
 
 def run_individual_python_test(test_name, pyspark_python):
     env = dict(os.environ)
@@ -68,9 +85,12 @@ def run_individual_python_test(test_name, pyspark_python):
     start_time = time.time()
     try:
         per_test_output = tempfile.TemporaryFile()
+        testDir = test_name + pyspark_python
+        if not os.path.exists(testDir):
+             os.makedirs(testDir)
         retcode = subprocess.Popen(
             [os.path.join(SPARK_HOME, "bin/pyspark"), test_name],
-            stderr=per_test_output, stdout=per_test_output, env=env).wait()
+            stderr=per_test_output, stdout=per_test_output, env=env, cwd=testDir).wait()
     except:
         LOGGER.exception("Got exception while running %s with %s", test_name, pyspark_python)
         # Here, we use os._exit() instead of sys.exit() in order to force Python to exit even if
@@ -121,7 +141,7 @@ def parse_opts():
     )
     parser.add_option(
         "--modules", type="string",
-        default=",".join(sorted(python_modules.keys())),
+        default=",".join(sorted(snappy_python_modules)),
         help="A comma-separated list of Python modules to test (default: %default)"
     )
     parser.add_option(
@@ -154,14 +174,14 @@ def main():
     python_execs = opts.python_executables.split(',')
     modules_to_test = []
     for module_name in opts.modules.split(','):
-        if module_name in python_modules:
-            modules_to_test.append(python_modules[module_name])
+        if module_name in snappy_python_modules:
+            modules_to_test.append(module_name)
         else:
             print("Error: unrecognized module '%s'. Supported modules: %s" %
-                  (module_name, ", ".join(python_modules)))
+                  (module_name, ", ".join(snappy_python_modules)))
             sys.exit(-1)
     LOGGER.info("Will test against the following Python executables: %s", python_execs)
-    LOGGER.info("Will test the following Python modules: %s", [x.name for x in modules_to_test])
+    LOGGER.info("Will test the following Python modules: %s", [x for x in modules_to_test])
 
     task_queue = Queue.PriorityQueue()
     for python_exec in python_execs:
@@ -171,9 +191,9 @@ def main():
         LOGGER.info("%s python_implementation is %s", python_exec, python_implementation)
         LOGGER.info("%s version is: %s", python_exec, subprocess_check_output(
             [python_exec, "--version"], stderr=subprocess.STDOUT, universal_newlines=True).strip())
-        for test_goal in python_test_goals:
-           priority = 0
-           task_queue.put((priority, (python_exec, test_goal)))
+        for module in modules_to_test:
+            test_goal = python_test_goals[module]
+            task_queue.put((0, (python_exec, test_goal)))
 
     def process_queue(task_queue):
         while True:
