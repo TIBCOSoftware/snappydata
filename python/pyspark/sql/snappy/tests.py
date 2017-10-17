@@ -194,4 +194,3 @@ if __name__ == "__main__":
         unittest.main(testRunner=xmlrunner.XMLTestRunner(output='target/test-reports'))
     else:
         unittest.main()
-        
