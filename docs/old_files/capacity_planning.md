@@ -88,7 +88,10 @@ However, the redundant copies double the memory requirements. If there are no re
 
 Bucket is the unit of partitioning for SnappyData tables. The data is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, the buckets are moved around for rebalancing. 
 
-The number of buckets should be set according to the table size. By default, there are 113 buckets for a table. 
+The number of buckets should be set according to the table size. 
+
+The default number of buckets in the SnappyData cluster mode is 128. In the local mode it is cores*2, subject to a maximum of 64 buckets and a minumum of 8 buckets.
+
 If there are more buckets in a table than required, it means there is fewer data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. 
 Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently.
 Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.

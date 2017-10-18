@@ -15,27 +15,28 @@ pages:
 - 'Getting Started in 5 minutes or Less': 
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'Getting Started by Installing SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
-    - 'Getting Started with Amazon Web Services': 'quickstart/getting_started_on_aws.md'
+#    - 'Getting Started with Amazon Web Services': 'quickstart/getting_started_on_aws.md'
     - 'Getting Started with Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'SnappyData Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
 - 'Download and Install': 'install.md'
 - 'Download and Install':
+    - System Requirements: 'install/system_requirements.md'
     - 'Install On-Premise': 'install/install_on_premise.md'
     - 'Setting up Cluster on Amazon Web Services': 'install/setting_up_cluster_on_amazon_web_services.md'
     - 'Building from Source': 'install/building_from_source.md'
-# - System Requirements: additional_files/system_requirements.md
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
 #    - 'Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.0': 'migration/upgrade_sqlfire_standalone.md'    
 #    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 #    - 'Migrating from Version 0.9 to Version 1.0.0-RC1 Release': 'migration/migration-0.9-01_rc.md'
+#---
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
-    - 'How to Check the Status of a SnappyData Cluster': 'howto/check_status_cluster.md'
+    - 'How to check the Status of a SnappyData Cluster': 'howto/check_status_cluster.md'
     - 'How to Stop a SnappyData Cluster': 'howto/stop_snappy_cluster.md'
     - 'How to Run Spark Job inside the Cluster': 'howto/run_spark_job_inside_cluster.md'
     - 'How to Access SnappyData Store from existing Spark Installation using Smart Connector': 'howto/spark_installation_using_smart_connector.md'
@@ -48,10 +49,10 @@ pages:
     - 'How to Connect using JDBC Driver': 'howto/connect_using_jdbc_driver.md'
     - 'How to Store and Query JSON Objects': 'howto/store_and_query_json_objects.md'
     - 'How to Store and Query Objects': 'howto/store_and_query_objects.md'
-    - 'How to Use Stream Processing with SnappyData': 'howto/use_stream_processing_with_snappydata.md'
+    - 'How to use Stream Processing with SnappyData': 'howto/use_stream_processing_with_snappydata.md'
     - 'How to use Transactions Isolation Levels': 'howto/use_transactions_isolation_levels.md'
-    - 'How to Use Synopsis Data Engine to Run Approximate Queries': 'howto/use_synopsis_data_engine_to_run_approximate_queries.md'
-    - 'How to Use Python to Create Tables and Run Queries': 'howto/use_python_to_create_tables_and_run_queries.md'
+    - 'How to use Synopsis Data Engine to Run Approximate Queries': 'howto/use_synopsis_data_engine_to_run_approximate_queries.md'
+    - 'How to use Python to Create Tables and Run Queries': 'howto/use_python_to_create_tables_and_run_queries.md'
     - 'How to Connect using ODBC Driver': 'howto/connect_using_odbc_driver.md'
     - 'How to Connect to the Cluster from External Network': 'howto/connect_to_the_cluster_from_external_clients.md'
     - 'How to Import Data from Hive Table into SnappyData Table': 'howto/import_from_hive_table.md'    
@@ -107,6 +108,10 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
+#- 'Using Connectors': 'connectors/connectors.md'
+#- 'Using Connectors': 
+    #    - How to Use the Snappy JDBC Streaming Connector': 'connectors/jdbc_streaming_connector.md'
+    #    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'   
 - 'Using SnappyData CloudBuilder': 'aqp_aws.md'
 - 'Using SnappyData CloudBuilder': 
     - 'Key Components': 'isight/key_components.md'
@@ -247,19 +252,20 @@ pages:
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
-    - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
+    - 'Member startup problems': 'troubleshooting/member_startup_problems.md'
     - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
-    - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
-    - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
-    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
+    - 'Preventing disk full errors': 'troubleshooting/preventing_disk_full_errors.md'
+    - 'Recovering from disk full errors': 'troubleshooting/recovering_from_disk_full_errors.md'
+    - 'Collecting logs, stats and dumps using the collect-debug-artifacts script': 'troubleshooting/collect_debug_artifacts.md'
+    - 'Troubleshooting error messages': 'troubleshooting/troubleshooting_error_messages.md'  
 - Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
-- Open Source/ Enterprise Components: additional_files/open_source_components.md
+- Community Edition/ Enterprise Edition Features: additional_files/open_source_components.md
 - 'License Model': 'additional_files/license_model.md'
-- 'Release Notes': 'release_notes/release_notes_1.0-rc.md'
-#- 'Release Notes': 
-    #- 'Known Issues': 'release_notes/known_issues.md'
+- 'Release Notes': 'release_notes/release_notes.md'
+- 'Release Notes': 
+    - 'Known Issues': 'release_notes/known_issues.md'
 - Contact and Support: techsupport.md
 - License: LICENSE.md
 
