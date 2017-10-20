@@ -236,19 +236,11 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     ssnc.start()
     ssnc.awaitTerminationOrTimeout(3000)
   }
-  test("stream adhoc query plan caching"){
-
-  }
-  test("window units syntax variations"){
-
-  }
-  test("tumbling window join"){
-
-  }
-  test("big window duration join "){
-
-  }
-  test("stream adhoc sql"){
-
-  }
+//  test("stream adhoc query plan caching")
+//  test("window units syntax variations")
+//  test("tumbling window join")
+//  test("big window duration join ")
+//  test("stream adhoc sql")
 }
+
+case class Tweet (id: Int, text: String)

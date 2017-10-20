@@ -26,6 +26,7 @@ import org.apache.spark.sql.streaming.ProcessingTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
+case class Account(accountName: String)
 
 class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   with BeforeAndAfter with BeforeAndAfterAll {
@@ -64,8 +65,8 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
-      .option("kafka.metadata.max.age.ms", "1")
-      .option("maxOffsetsPerTrigger", 10)
+      //.option("kafka.metadata.max.age.ms", "1")
+      //.option("maxOffsetsPerTrigger", 10)
       .option("subscribe", topic)
       .option("startingOffsets", "earliest")
       .load
@@ -86,12 +87,14 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .as[(String, String)]
       .map(kv => kv._2.toInt)
       .writeStream
-      .format("console")
+      .format("memory")
+      .queryName("simple")
       .outputMode("append")
-      .trigger(ProcessingTime("3 seconds"))
+      .trigger(ProcessingTime("1 seconds"))
       .start
 
     streamingQuery.awaitTermination(timeoutMs = 15000)
+    assert(113 == session.sql("select * from simple").count)
   }
 
 
@@ -115,7 +118,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .option("maxOffsetsPerTrigger", 10)
       .option("subscribe", topic)
       .option("startingOffsets", startingOffsets)
-      .option("failOnDataLoss", "false")
+      // .option("failOnDataLoss", "false")
       .load
 
     val streamingQuery = streamingDF
@@ -123,7 +126,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .as[(String, String)]
       .writeStream
       .format("memory")// .format("snappy")
-      .option("checkpointLocation", "/tmp/snappyTable")
+      //.option("checkpointLocation", "/tmp/snappyTable")
       .queryName("snappyTable")
       .outputMode("append")
       .trigger(ProcessingTime("1 seconds"))
@@ -165,7 +168,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .as[(String, String)]
       .writeStream
       .format("memory") // .format("snappy")
-      .option("checkpointLocation", "/tmp/snappyAggrTable")
+      // .option("checkpointLocation", "/tmp/snappyAggrTable")
       .queryName("snappyAggrTable")
       .outputMode("complete")
       .trigger(ProcessingTime("1 seconds"))
@@ -226,7 +229,6 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     streamingQuery.stop()
   }
 
-  case class Account(accountName: String)
 
   test("streaming DataFrame join to static DataFrame") {
     val rdd = snc.sparkContext.parallelize((15 to 25).map(i => Account(i.toString)))
@@ -252,8 +254,8 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     val streamingQuery = acctStreamingDF.join(dfBlackList, "accountName")
       .writeStream
       .outputMode("append")
-      .format("console")
-      .option("checkpointLocation", "/tmp/snappyResultTable")
+      .format("memory")
+      // .option("checkpointLocation", "/tmp/snappyResultTable")
       .queryName("snappyResultTable")
       .trigger(ProcessingTime("1 seconds"))
       .start
@@ -335,7 +337,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   // track of all the data received in the stream.
   // This is therefore fundamentally hard to execute efficiently.
 
-  test("SnappyForeachWriter sink") {
+  ignore("SnappyForeachWriter sink") {
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
     kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
