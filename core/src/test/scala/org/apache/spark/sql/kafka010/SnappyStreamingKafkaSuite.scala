@@ -27,6 +27,7 @@ import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.streaming.StreamToRowsConverter
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.streaming.{Duration, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -63,7 +64,7 @@ class SnappyStreamingKafkaSuite  extends SnappyFunSuite with Eventually
 
   protected var ssnc: SnappyStreamingContext = _
 
-  def batchDuration: Duration = Milliseconds(500)
+  def batchDuration: Duration = Milliseconds(1000)
 
   def creatingFunc(): SnappyStreamingContext = {
     val context = new SnappyStreamingContext(sc, batchDuration)
@@ -150,16 +151,21 @@ class SnappyStreamingKafkaSuite  extends SnappyFunSuite with Eventually
       s"startingOffsets '$startingOffsets', " +
       s" subscribe '$topic')")
 
+    snc.dropTable("snappyTable", ifExists = true)
+    snc.createTable("snappyTable", "column",
+      StructType(Seq(StructField("pubisher", StringType, nullable = false))),
+      Map.empty[String, String])
     ssnc.registerCQ("select * from kafkaStream" +
       " window (duration 1 seconds, slide 1 seconds)")
-      .foreachDataFrame(_.show)
+      .foreachDataFrame(_.write.insertInto("snappyTable"))
     ssnc.start
-    ssnc.awaitTerminationOrTimeout(7000)
 
     kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
     kafkaTestUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
     kafkaTestUtils.sendMessages(topic, Array("1"), Some(2))
-
+    eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
+      assert(113 == session.sql("select * from snappyTable").count)
+    }
   }
 }
 
