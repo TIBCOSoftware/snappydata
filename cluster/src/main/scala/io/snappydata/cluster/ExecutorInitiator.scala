@@ -47,7 +47,7 @@ object ExecutorInitiator extends Logging {
 
   val SNAPPY_MEMORY_MANAGER: String = classOf[SnappyUnifiedMemoryManager].getName
 
-  var executorRunnable: ExecutorRunnable = new ExecutorRunnable
+  private var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
   var executorThread: Thread = new Thread(executorRunnable)
 
@@ -118,8 +118,8 @@ object ExecutorInitiator extends Logging {
             Misc.checkIfCacheClosing(null)
             if (prevDriverURL == getDriverURLString && !getRetryFlag) {
               lock.synchronized {
-                while (prevDriverURL == getDriverURLString && !getRetryFlag) {
-                  lock.wait(5000)
+                while (!stopTask && prevDriverURL == getDriverURLString && !getRetryFlag) {
+                  lock.wait(1000)
                 }
               }
             } else {
