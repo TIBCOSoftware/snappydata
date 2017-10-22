@@ -20,8 +20,10 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.io.{DataInput, DataOutput}
 import java.nio.{ByteBuffer, ByteOrder}
 import java.util.concurrent.locks.LockSupport
+import java.util.function.Supplier
 
 import com.gemstone.gemfire.cache.{DiskAccessException, EntryDestroyedException, EntryOperation, Region, RegionDestroyedException}
+import com.gemstone.gemfire.internal.DSFIDFactory.GfxdDSFID
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
@@ -30,7 +32,7 @@ import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, ClientSharedUtils, HeapBufferAllocator, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
-import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
+import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
@@ -54,10 +56,22 @@ object ColumnFormatEntry extends Logging {
 
   def registerTypes(): Unit = {
     // register the column key and value types
-    GfxdDataSerializable.registerSqlSerializable(classOf[ColumnFormatKey])
-    GfxdDataSerializable.registerSqlSerializable(classOf[ColumnFormatValue])
-    GfxdDataSerializable.registerSqlSerializable(classOf[ColumnDelta])
-    GfxdDataSerializable.registerSqlSerializable(classOf[ColumnDeleteDelta])
+    DSFIDFactory.registerGemFireXDClass(GfxdSerializable.COLUMN_FORMAT_KEY,
+      new Supplier[GfxdDSFID] {
+        override def get(): GfxdDSFID = new ColumnFormatKey()
+      })
+    DSFIDFactory.registerGemFireXDClass(GfxdSerializable.COLUMN_FORMAT_VALUE,
+      new Supplier[GfxdDSFID] {
+        override def get(): GfxdDSFID = new ColumnFormatValue()
+      })
+    DSFIDFactory.registerGemFireXDClass(GfxdSerializable.COLUMN_FORMAT_DELTA,
+      new Supplier[GfxdDSFID] {
+        override def get(): GfxdDSFID = new ColumnDelta()
+      })
+    DSFIDFactory.registerGemFireXDClass(GfxdSerializable.COLUMN_DELETE_DELTA,
+      new Supplier[GfxdDSFID] {
+        override def get(): GfxdDSFID = new ColumnDeleteDelta()
+      })
   }
 
   private[columnar] def alignedSize(size: Int) = ((size + 7) >>> 3) << 3
