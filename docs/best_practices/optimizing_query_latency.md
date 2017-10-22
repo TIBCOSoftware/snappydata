@@ -60,7 +60,10 @@ For examples refer to, [How to colocate tables for doing a colocated join](../ho
 <a id="buckets"></a>
 ### Buckets
 A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. For more information on BUCKETS, refer to [BUCKETS](important_settings.md#buckets).</br>
-By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
+
+The default number of buckets in SnappyData cluster mode is 128. In the local mode it is cores*2, subject to maximum of 64 buckets and minumum of 8 buckets.
+
+The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
 
 When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
 

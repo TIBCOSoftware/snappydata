@@ -152,7 +152,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     }
   }
 
-  private def newClient(): HiveClient = {
+  private def newClient(): HiveClient = SnappyHiveCatalog.hiveClientSync.synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
     // We instantiate a HiveConf here to read in the hive-site.xml file and

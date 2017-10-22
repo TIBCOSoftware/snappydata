@@ -1,4 +1,4 @@
-# Getting Started with SnappyData GemFire Connector
+# How to use the SnappyData GemFire Connector
 
 <ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
