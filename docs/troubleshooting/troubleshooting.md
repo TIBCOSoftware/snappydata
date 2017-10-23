@@ -8,9 +8,9 @@ The following topics are covered in this section:
 
 * [Recovering from a ConflictingPersistentDataException](recovering_from_a_conflictingpersistentdataexception.md)
 
-* [Preventing Disk Full Errors](preventing_disk_full_errors.md)
+* [Preventing disk full errors](preventing_disk_full_errors.md)
 
-* [Recovering from Disk Full Errors](recovering_from_disk_full_errors.md)
+* [Recovering from disk full errors](recovering_from_disk_full_errors.md)
 
 * [Collecting logs, stats and dumps using the collect-debug-artifacts script](collect_debug_artifacts.md)
 
