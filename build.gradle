@@ -1233,7 +1233,7 @@ task checkPython(type:Exec) {
 }
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, checkPython, allReports, docs
+  dependsOn cleanAll, buildAll, checkAll, allReports, docs
 }
 
 if (rootProject.hasProperty('trackBuildTime') ) {
