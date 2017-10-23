@@ -16,7 +16,7 @@ The following topics are covered in this section:
 
 * [Quick Start Steps](isight/quick_start_steps.md)
 
-* [The Technology Powering CloudB](isight/the_technology_powering_isight_cloud.md)
+* [The Technology Powering SnappyData CloudBuilder](isight/the_technology_powering_isight_cloud.md)
 
 
 
