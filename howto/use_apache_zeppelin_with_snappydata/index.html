@@ -96,21 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
         
     </li>
 
@@ -203,7 +189,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
+        <a class="" href="../check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -358,7 +344,9 @@
                 
                     <li><a class="toctree-l4" href="#step-1-download-install-and-configure-snappydata">Step 1: Download, Install and Configure SnappyData</a></li>
                 
-                    <li><a class="toctree-l4" href="#step-2-configure-snappydata-for-apache-zeppelin">Step 2: Configure SnappyData for Apache Zeppelin</a></li>
+                    <li><a class="toctree-l4" href="#step-2-configure-interpreter-settings">Step 2: Configure Interpreter Settings</a></li>
+                
+                    <li><a class="toctree-l4" href="#additional-settings">Additional Settings</a></li>
                 
             
             </ul>
@@ -1581,13 +1569,6 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/additional_docs/">Additional Information</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
         <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -1712,7 +1693,8 @@
 <p>Enable the SnappyData Zeppelin interpreter by adding <code>-zeppelin.interpreter.enable=true</code> </p>
 </li>
 <li>
-<p>In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding <code>-classpath=/&lt;download_location&gt;/snappydata-zeppelin-&lt;version_number&gt;.jar</code>.</p>
+<p>In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding</br>
+<code>-classpath=/&lt;download_location&gt;/snappydata-zeppelin-&lt;version_number&gt;.jar</code></p>
 </li>
 <li>
 <p>In the <strong>conf/spark-env.sh</strong> file, set the <code>SPARK_PUBLIC_DNS</code> property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing the <a href="../../monitoring/monitoring/">SnappyData Pulse UI</a> from outside the network.</p>
@@ -1726,24 +1708,31 @@
 <p>Extract the contents of the Zeppelin binary package. </br> </p>
 </li>
 <li>
-<p>Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
-    <code>./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:&lt;snappydata_interpreter_version_number&gt;</code>. </br>
-    Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.</p>
+<p>Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br></p>
+<pre><code>./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:&lt;snappydata_interpreter_version_number&gt;.
+</code></pre>
+<p>Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.</p>
 </li>
 <li>
 <p>Rename the <strong>zeppelin-site.xml.template</strong> file (located in zeppelin-&lt;<em>version_number</em>&gt;-bin-all/conf directory) to <strong>zeppelin-site.xml</strong>.</p>
 </li>
 <li>
-<p>Edit the <strong>zeppelin-site.xml</strong> file, and in the <code>zeppelin.interpreters</code> property, add the following interpreter class names: <code>org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter</code>.</p>
+<p>Edit the <strong>zeppelin-site.xml</strong> file: </p>
+<p>In the <code>zeppelin.interpreters</code> property, add the following interpreter class names: </p>
+<pre><code>    org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter
+</code></pre>
+</li>
+<li>
+<p>Download the predefined SnappyData notebooks <a href="https://github.com/SnappyDataInc/zeppelin-interpreter/blob/notes/examples/notebook/notebook.tar.gz">notebook.tar.gz</a>. </br> Extract and copy the contents of the notebook.tar.gz  compressed file to the <strong>notebook</strong> folder in the Zeppelin installation on your local machine.</p>
 </li>
 <li>
 <p>Start the Zeppelin daemon using the command: </br> <code>bin/zeppelin-daemon.sh start</code>.</p>
 </li>
 <li>
-<p>To ensure that the installation is successful, log into the Zeppelin UI (<strong>http://localhost:8080</strong>) from your web browser.</p>
+<p>To ensure that the installation is successful, log into the Zeppelin UI (<strong>http://localhost:8080</strong>) from your web browser. </p>
 </li>
 </ol>
-<h2 id="step-2-configure-snappydata-for-apache-zeppelin">Step 2: Configure SnappyData for Apache Zeppelin</h2>
+<h2 id="step-2-configure-interpreter-settings">Step 2: Configure Interpreter Settings</h2>
 <ol>
 <li>
 <p>Log on to Zeppelin from your web browser and select <strong>Interpreter</strong> from the <strong>Settings</strong> option.</p>
@@ -1836,8 +1825,16 @@
 <li>
 <p>If required, edit other properties, and then click <strong>Save</strong> to apply your changes.</br></p>
 </li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can modify the default port number of the Zeppelin interpreter by setting the property:</br>
+<code>-zeppelin.interpreter.port=&lt;port_number&gt;</code> in <a href="../../configuring_cluster/configuring_cluster/#configuring-leads">lead node configuration</a>. </p>
+</div>
+<h2 id="additional-settings">Additional Settings</h2>
+<ol>
 <li>
-<p>Bind the interpreter and set SnappyData as the default interpreter.</br> SnappyData Zeppelin Interpreter group consist of two interpreters. Click and drag <em>&lt;<em>Interpreter_Name</em>&gt;</em> to the top of the list to set it as the default interpreter. </p>
+<p>Create a note and bind the interpreter by setting SnappyData as the default interpreter.</br> SnappyData Zeppelin Interpreter group consist of two interpreters. Click and drag <em>&lt;<em>Interpreter_Name</em>&gt;</em> to the top of the list to set it as the default interpreter.</p>
 <table>
 <thead>
 <tr>
@@ -1858,14 +1855,9 @@
 </table>
 </li>
 <li>
-<p>Click <strong>Save</strong> to apply your changes.</p>
+<p>Click <strong>Save</strong> to apply your changes. For more information on using Zeppelin, see <a href="../../isight/quick_start_steps/#LoggingZeppelin">Using Apache Zeppelin</a>.</p>
 </li>
 </ol>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You can modify the default port number of the Zeppelin interpreter by setting the property:</br>
-<code>-zeppelin.interpreter.port=&lt;port_number&gt;</code> in <a href="../../configuring_cluster/configuring_cluster/#configuring-leads">lead node configuration</a>. </p>
-</div>
               
             </div>
           </div>

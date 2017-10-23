@@ -96,21 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
         
     </li>
 
@@ -216,7 +202,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -1583,13 +1569,6 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/additional_docs/">Additional Information</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
         <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -1757,15 +1736,18 @@ Refer to the following documentation, for more information on <a href="http://do
 <p>The public hostname/IP address information is available on the EC2 dashboard &gt; <strong>Description</strong> tab. </p>
 </li>
 <li>
-<p>The SnappyData binaries are automatically downloaded and extracted to the location <strong>/snappydata/downloads/</strong> and Java 8 is installed. </p>
+<p>The SnappyData product distribution is already downloaded and extracted in the <strong>/opt/snappydata</strong> directory and Java 8 is installed. </p>
 </li>
 </ul>
 </div>
 </li>
 <li>
-<p>Follow the <a href="../install_on_premise/">steps described here</a> to continue. </br></p>
+<p>Go to the <strong>/opt/snappydata</strong> directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.</p>
 </li>
 </ol>
+<pre><code class="bash">./sbin/snappy-start-all.sh
+</code></pre>
+
 <p><a id="EC2"></a></p>
 <h2 id="using-snappydata-ec2-scripts">Using SnappyData EC2 scripts</h2>
 <p>The <code>snappy-ec2</code> script enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific configuration files, which the script reads before launching the cluster.</p>
@@ -1787,13 +1769,15 @@ Refer to the following documentation, for more information on <a href="http://do
 <li>
 <p>Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, <code>AWS_SECRET_ACCESS_KEY</code> and <code>AWS_ACCESS_KEY_ID</code>. You can find this information in the AWS IAM console page.<br/>
 If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.</p>
-<p>For example:
-<code>export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112</code>
-<code>export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10</code></p>
 </li>
-<li>
-<p>Ensure Python v 2.7 or later is installed on your local computer.</p>
-</li>
+</ul>
+<p>For example:</p>
+<pre><code class="bash">export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
+export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
+</code></pre>
+
+<ul>
+<li>Ensure Python v 2.7 or later is installed on your local computer.</li>
 </ul>
 <h3 id="cluster-management">Cluster Management</h3>
 <h4 id="launching-snappydata-cluster">Launching SnappyData Cluster</h4>

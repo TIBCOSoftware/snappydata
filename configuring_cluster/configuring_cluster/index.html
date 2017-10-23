@@ -96,21 +96,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_on_aws/">Getting Started with Amazon Web Services</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_gemfire_connector/">Getting Started with SnappyData GemFire Connector</a>
         
     </li>
 
@@ -203,7 +189,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to check the Status of a SnappyData Cluster</a>
+        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
         
     </li>
 
@@ -429,9 +415,9 @@
                 
                     <li><a class="toctree-l4" href="#configuring-snappydata-smart-connector">Configuring SnappyData Smart Connector</a></li>
                 
-                    <li><a class="toctree-l4" href="#logging">Logging</a></li>
+                    <li><a class="toctree-l4" href="#environment-settings">Environment Settings</a></li>
                 
-                    <li><a class="toctree-l4" href="#snappydata-command-line-utility">SnappyData Command Line Utility</a></li>
+                    <li><a class="toctree-l4" href="#logging">Logging</a></li>
                 
             
             </ul>
@@ -1589,13 +1575,6 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../additional_files/additional_docs/">Additional Information</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
         <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -1963,6 +1942,7 @@ node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 </code></pre>
 
+<p><a id="configure-smart-connector"></a></p>
 <h2 id="configuring-snappydata-smart-connector">Configuring SnappyData Smart Connector</h2>
 <p>Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). In Smart connector mode, a Spark application connects to SnappyData cluster to store and process data. SnappyData currently works with Spark version 2.1.1. To work with SnappyData cluster, a Spark application has to set the snappydata.connection property while starting.   </p>
 <table>
@@ -1985,6 +1965,28 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
     --packages &quot;SnappyDataInc:snappydata:1.0.0-s_2.11&quot; 
 </code></pre>
 
+<p><a id="environment"></a></p>
+<h2 id="environment-settings">Environment Settings</h2>
+<p>Any Spark or SnappyData specific environment settings can be done by creating a <strong>snappy-env.sh</strong> or <strong>spark-env.sh</strong> in <strong>SNAPPY_HOME/conf</strong>.</p>
+<p><a id="hadoop-setting"></a></p>
+<h3 id="hadoop-provided-settings">Hadoop Provided Settings</h3>
+<p>If you want to run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.</p>
+<p>To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:</p>
+<pre><code>export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
+</code></pre>
+
+<p><a id="command-line"></a></p>
+<h3 id="snappydata-command-line-utility">SnappyData Command Line Utility</h3>
+<p>Instead of starting SnappyData cluster using the <code>snappy-start-all.sh</code> script, individual components can be configured, started and stopped on a system locally using these commands.</p>
+<pre><code>$ bin/snappy locator start  -dir=/node-a/locator1 
+$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
+$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
+
+$ bin/snappy locator stop -dir=/node-a/locator1
+$ bin/snappy server stop -dir=/node-b/server1
+$ bin/snappy leader stop -dir=/node-c/lead1
+</code></pre>
+
 <p><a id="logging"></a></p>
 <h2 id="logging">Logging</h2>
 <p>Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property <em>-log-file</em> as the path of the directory. </br>
@@ -1998,16 +2000,6 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 <p class="admonition-title">Note</p>
 <p>For a set of applicable class names and default values see the file <strong>conf/log4j.properties.template</strong>, which can be used as a starting point. Consult the <a href="http://logging.apache.org/log4j/">log4j 1.2.x documentation</a> for more details on the configuration file.</p>
 </div>
-<h2 id="snappydata-command-line-utility">SnappyData Command Line Utility</h2>
-<p>Instead of starting SnappyData cluster using SSH scripts, individual components can be configured, started and stopped on a system locally using these commands.</p>
-<pre><code>$ bin/snappy locator start  -dir=/node-a/locator1 
-$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
-$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
-
-$ bin/snappy locator stop -dir=/node-a/locator1
-$ bin/snappy server stop -dir=/node-b/server1
-$ bin/snappy leader stop -dir=/node-c/lead1
-</code></pre>
               
             </div>
           </div>
