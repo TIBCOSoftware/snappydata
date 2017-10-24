@@ -1,4 +1,7 @@
 # List of Properties
+
+Below is a list of properties that can be set to configure the cluster. These properties can be set in the **conf/server**, **conf/leads** or **conf/locators** configuration files.
+
 |Property|Description|Components</br>|
 |-|-|-|
 |J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|Server</br>Lead</br>Locator|
