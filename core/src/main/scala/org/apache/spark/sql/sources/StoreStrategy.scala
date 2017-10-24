@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
-import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
 
 /**
@@ -58,12 +58,40 @@ object StoreStrategy extends Strategy {
           temporary = false, tableDesc.partitionColumnNames.toArray, mode,
           options, query, isBuiltIn = false)
       ExecutedCommandExec(cmd) :: Nil
-    case create: CreateMetastoreTableUsing =>
-      ExecutedCommandExec(create) :: Nil
-    case createSelect: CreateMetastoreTableUsingSelect =>
-      ExecutedCommandExec(createSelect) :: Nil
-    case drop: DropTable =>
-      ExecutedCommandExec(drop) :: Nil
+
+    case CreateTableUsing(tableIdent, baseTable, userSpecifiedSchema, schemaDDL,
+    provider, allowExisting, options, isBuiltIn) =>
+      ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, baseTable,
+        userSpecifiedSchema, schemaDDL, provider, allowExisting, options, isBuiltIn)) :: Nil
+
+    case CreateTableUsingSelect(tableIdent, baseTable, userSpecifiedSchema, schemaDDL,
+    provider, temporary, partitionColumns, mode, options, query, isBuiltIn) =>
+      ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, baseTable,
+        userSpecifiedSchema, schemaDDL, provider, temporary, partitionColumns, mode,
+        options, query, isBuiltIn)) :: Nil
+
+    case DropTable(ifExists, tableIdent) =>
+      ExecutedCommandExec(DropTableCommand(ifExists, tableIdent)) :: Nil
+
+    case TruncateTable(ifExists, tableIdent) =>
+      ExecutedCommandExec(TruncateTableCommand(ifExists, tableIdent)) :: Nil
+
+    case AlterTableAddColumn(tableIdent, addColumn) =>
+      ExecutedCommandExec(AlterTableAddColumnCommand(tableIdent, addColumn)) :: Nil
+
+    case AlterTableDropColumn(tableIdent, column) =>
+      ExecutedCommandExec(AlterTableDropColumnCommand(tableIdent, column)) :: Nil
+
+    case CreateIndex(indexName, baseTable, indexColumns, options) =>
+      ExecutedCommandExec(CreateIndexCommand(indexName, baseTable, indexColumns, options)) :: Nil
+
+    case DropIndex(indexName, ifExists) =>
+      ExecutedCommandExec(DropIndexCommand(indexName, ifExists)) :: Nil
+
+    case SetSchema(schemaName) => ExecutedCommandExec(SetSchemaCommand(schemaName)) :: Nil
+
+    case SnappyStreamingActions(action, batchInterval) =>
+      ExecutedCommandExec(SnappyStreamingActionsCommand(action, batchInterval)) :: Nil
 
     case p: EncoderPlan[_] =>
       val plan = p.asInstanceOf[EncoderPlan[Any]]

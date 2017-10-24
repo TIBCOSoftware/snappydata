@@ -21,7 +21,6 @@ import java.util.Objects
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
@@ -76,7 +75,7 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
 //  override def toString: String = s"pl[${super.toString}]"
 
   override def hashCode(): Int = {
-    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
+    31 * (31 * Objects.hashCode(dataType)) + pos
   }
 
   override def equals(obj: Any): Boolean = obj match {
@@ -148,7 +147,7 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
              |  $valueTerm = ${ctx.defaultValue(dataType)};
              |} else {
              |  $valueTerm = ($box)$valueRef.value();
-             |  if (${classOf[GemFireCacheImpl].getName}.hasNewOffHeap() &&
+             |  if (com.gemstone.gemfire.internal.cache.GemFireCacheImpl.hasNewOffHeap() &&
              |      $getContext() != null) {
              |    // convert to off-heap value if possible
              |    $memoryManagerClass mm = $getContext().taskMemoryManager();

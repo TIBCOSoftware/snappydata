@@ -699,6 +699,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     if (!beforeClassDone) {
       beforeClass();
       beforeClassDone = true;
+      lastTest = null;
     }
     if (lastTest == null) {
       // for class-level afterClass, list the test methods and do the
