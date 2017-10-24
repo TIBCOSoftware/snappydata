@@ -85,7 +85,13 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   val sparkConf: SparkConf = snappySession.sparkContext.getConf
 
-  private[sql] var client = metadataHive
+  private var _client = metadataHive
+
+  private[sql] def client = {
+    // check initialized meta-store (including initial consistency check)
+    Misc.getMemStoreBooting.getExternalCatalog
+    _client
+  }
 
 
   // Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
@@ -570,6 +576,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                                provider: String,
                                options: Map[String, String],
                                relation: BaseRelation): Unit = {
+    val client = this.client
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
@@ -677,7 +684,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         // stale JDBC connection
         Hive.closeCurrent()
         SnappyStoreHiveCatalog.suspendActiveSession {
-          client = externalCatalog.client.newSession()
+          _client = externalCatalog.client.newSession()
         }
         function
     }
