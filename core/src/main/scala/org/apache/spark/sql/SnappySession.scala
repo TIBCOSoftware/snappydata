@@ -24,22 +24,22 @@ import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
-import scala.reflect.runtime.universe.TypeTag
-import scala.reflect.runtime.{universe => u}
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
 import com.gemstone.gemfire.internal.GemFireVersion
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
-import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, functions => snappydataFunctions}
+import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
@@ -66,7 +66,7 @@ import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionS
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
-import org.apache.spark.sql.types.{StructType, _}
+import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -126,11 +126,13 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
+  def snappyParser: SnappyParser = sessionState.sqlParser.sqlParser
+
   @transient
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
-  snappydataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
+  SnappyDataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
   /**
@@ -362,7 +364,7 @@ class SnappySession(@transient private val sc: SparkContext,
     if (key != null && key.valid) {
       allLiterals = CachedPlanHelperExec.allLiterals(
         getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
-          CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty)
+          SnappyParserConsts.REFERENCES_KEY).getOrElse(Seq.empty)
       ).filter(!_.collectedForPlanCaching)
 
       allLiterals.foreach(_.collectedForPlanCaching = true)
@@ -410,10 +412,10 @@ class SnappySession(@transient private val sc: SparkContext,
   @DeveloperApi
   def saveStream[T](stream: DStream[T],
       aqpTables: Seq[String],
-      transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: u.TypeTag[T]) {
+      transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: TypeTag[T]) {
     val transform = transformer match {
       case Some(x) => x
-      case None => if (!(v.tpe =:= u.typeOf[Row])) {
+      case None => if (!(v.tpe =:= typeOf[Row])) {
         // check if the stream type is already a Row
         throw new IllegalStateException(" Transformation to Row type needs to be supplied")
       } else {
@@ -1718,8 +1720,29 @@ class SnappySession(@transient private val sc: SparkContext,
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
 
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
-    sessionState.setPreparedQuery(preparePhase, paramSet)
+    snappyParser.setPreparedQuery(preparePhase, paramSet)
 
+  private[sql] def getParameterValue(questionMarkCounter: Int, pvs: Any): (Any, DataType) = {
+    val parameterValueSet = pvs.asInstanceOf[ParameterValueSet]
+    if (questionMarkCounter > parameterValueSet.getParameterCount) {
+      assert(assertion = false, s"For Prepared Statement, Got more number of" +
+          s" placeholders = $questionMarkCounter" +
+          s" than given number of parameter" +
+          s" constants = ${parameterValueSet.getParameterCount}")
+    }
+    val dvd = parameterValueSet.getParameter(questionMarkCounter - 1)
+    val scalaTypeVal = CachedPlanHelperExec.getValue(dvd)
+    val storeType = dvd.getTypeFormatId
+    val storePrecision = dvd match {
+      case d: SQLDecimal => d.getDecimalValuePrecision
+      case _ => -1
+    }
+    val storeScale = dvd match {
+      case d: SQLDecimal => d.getDecimalValueScale
+      case _ => -1
+    }
+    (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
+  }
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -1749,6 +1772,7 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
 
   lazy val isEnterpriseEdition: Boolean = {
+    GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
     GemFireVersion.isEnterpriseEdition
   }
@@ -1852,7 +1876,7 @@ object SnappySession extends Logging {
 
     if (key ne null) {
       val noCaching = session.getContextObject[Boolean](
-        CachedPlanHelperExec.NOCACHING_KEY).isDefined
+        SnappyParserConsts.NOCACHING_KEY).isDefined
       if (noCaching) {
         key.invalidatePlan()
       }
@@ -1931,7 +1955,7 @@ object SnappySession extends Logging {
     // need to be replaced in the subsequent execution
     if (key != null) {
       val nocaching = session.getContextObject[Boolean](
-        CachedPlanHelperExec.NOCACHING_KEY).isDefined
+        SnappyParserConsts.NOCACHING_KEY).isDefined
       if (nocaching /* || allallbroadcastplans.nonEmpty */) {
         logDebug(s"Invalidating the key because explicit nocaching")
         key.invalidatePlan()
@@ -2083,7 +2107,7 @@ object SnappySession extends Logging {
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val lp = session.onlyParseSQL(sqlText)
     val currentWrappedConstants = session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
-      CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+      SnappyParserConsts.WRAPPED_CONSTANTS_KEY) match {
       case Some(list) => list
       case None => mutable.ArrayBuffer.empty[ParamLiteral]
     }

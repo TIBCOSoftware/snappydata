@@ -26,13 +26,13 @@ import com.pivotal.gemfirexd.internal.iapi.types._
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappyParserConsts.{NOCACHING_KEY, REFERENCES_KEY}
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, SortOrder}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
-import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNestedLoopJoinExec}
 import org.apache.spark.sql.internal.CodeGenerationException
 import org.apache.spark.unsafe.types.UTF8String
@@ -77,15 +77,15 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
           // indicating the above layer not to cache this plan.
           // assert(!alreadyGotBroadcastNode, "only one broadcast plans expected per wholestage")
           if (alreadyGotBroadcastNode) {
-            session.getContextObject[Boolean](CachedPlanHelperExec.NOCACHING_KEY) match {
-              case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+            session.getContextObject[Boolean](NOCACHING_KEY) match {
+              case None => session.addContextObject(NOCACHING_KEY, true)
               case Some(_) =>
             }
           }
           alreadyGotBroadcastNode = true
         }
-        session.getContextObject[Boolean](CachedPlanHelperExec.NOCACHING_KEY) match {
-          case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+        session.getContextObject[Boolean](NOCACHING_KEY) match {
+          case None => session.addContextObject(NOCACHING_KEY, true)
           case Some(_) =>
         }
         bchj
@@ -115,10 +115,6 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
 }
 
 object CachedPlanHelperExec extends Logging {
-
-  val REFERENCES_KEY = "TokenizationReferences"
-  val WRAPPED_CONSTANTS = "TokenizedConstants"
-  val NOCACHING_KEY = "TokenizationNoCaching"
 
   private[sql] def allLiterals(allReferences: Seq[Seq[Any]]): Array[LiteralValue] = {
     allReferences.flatMap(_.collect {
