@@ -38,6 +38,7 @@ abstract class ClusterManagerLDAPTestBase(s: String, val adminUser: String = "ge
       getClass.getResource("/auth.ldif").getPath)
     setSecurityProps(ldapProperties)
     super.beforeClass()
+    SplitClusterDUnitSecurityTest.bootExistingAuthModule(ldapProperties)
   }
 
   override def afterClass(): Unit = {

@@ -16,26 +16,27 @@
  */
 package org.apache.spark.sql
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.shared.SystemProperties
 import io.snappydata.Constant
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
  */
-abstract class SnappyBaseParser(session: SnappySession) extends Parser {
+abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   protected var caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
 
-  private[sql] final val queryHints = new mutable.HashMap[String, String]
+  private[sql] final val queryHints: TrieMap[String, String] = TrieMap.empty
 
   protected def reset(): Unit = queryHints.clear()
 
@@ -335,6 +336,14 @@ object SnappyParserConsts {
     k
   }
 
+  final val REFERENCES_KEY = "TokenizationReferences"
+  final val WRAPPED_CONSTANTS_KEY = "TokenizedConstants"
+  final val NOCACHING_KEY = "TokenizationNoCaching"
+
+  final val COLUMN_SOURCE = "column"
+  final val ROW_SOURCE = "row"
+  final val DEFAULT_SOURCE = ROW_SOURCE
+
   // reserved keywords
   final val ALL: Keyword = reservedKeyword("all")
   final val AND: Keyword = reservedKeyword("and")
@@ -392,8 +401,7 @@ object SnappyParserConsts {
   final val FUNCTION: Keyword = reservedKeyword("function")
 
   // marked as internal keywords to prevent use in SQL
-  final val HIVE_METASTORE: Keyword = reservedKeyword(
-    SnappyStoreHiveCatalog.HIVE_METASTORE)
+  final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
 
   final val SAMPLER_WEIGHTAGE: Keyword = nonReservedKeyword(
     Utils.WEIGHTAGE_COLUMN_NAME)
