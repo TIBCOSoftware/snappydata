@@ -815,6 +815,14 @@ task product(type: Zip) {
       into "${snappyProductDir}/docs"
     }
 
+    copy {
+      from "${rootDir}/python/pyspark/"
+      include 'sql/**'
+      include 'streaming/**'
+      include 'test_support/**'
+      into "${snappyProductDir}/python/pyspark"
+    }
+
     // Next the remaining components of full product like examples etc
     // Spark portions already copied in the assembly:product dependency
     copy {
@@ -1048,18 +1056,6 @@ def copyTestsCommonResources(def bdir) {
   }
 }
 
-def runScript(def execName, def workDir, def param, env = null) {
-  def stdout = new ByteArrayOutputStream()
-  exec {
-    executable "${execName}"
-    workingDir = workDir
-    args (param)
-    standardOutput = stdout
-    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"
-  }
-  return "${stdout}"
-}
-
 task copyResourcesAll { doLast {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
@@ -1248,6 +1244,22 @@ task publishDocs(type:Exec) {
   dependsOn docs
   //on linux
   commandLine './publish-site.sh'
+}
+
+// It runs test script from product dir. Hence if running the target individually make sure
+// to run product target first
+task checkPython(type:Exec) {
+  String wdir = "${testResultsBase}/python"
+  delete wdir
+  file(wdir).mkdirs()
+  workingDir  wdir
+  copy {
+    from "${rootDir}/python/pyspark/test_supprt"
+    into wdir
+  }
+  environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"
+  environment 'SPARK_HOME', "${snappyProductDir}"
+  commandLine 'python', '-u', "${rootDir}/python/run-snappy-tests.py"
 }
 
 task precheckin {
