@@ -61,7 +61,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     else {
       Some(driverUrl)
     }
-    logInfo(s"invoking startOrTransmute with. $url")
+    logInfo(s"invoking startOrTransmute with $url")
     ExecutorInitiator.startOrTransmuteExecutor(url, driverDM)
   }
 

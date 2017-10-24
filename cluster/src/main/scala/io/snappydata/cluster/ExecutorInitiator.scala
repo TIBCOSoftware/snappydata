@@ -47,7 +47,7 @@ object ExecutorInitiator extends Logging {
 
   val SNAPPY_MEMORY_MANAGER: String = classOf[SnappyUnifiedMemoryManager].getName
 
-  var executorRunnable: ExecutorRunnable = new ExecutorRunnable
+  private var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
   var executorThread: Thread = new Thread(executorRunnable)
 
@@ -58,8 +58,8 @@ object ExecutorInitiator extends Logging {
     @volatile private[cluster] var stopped = true
     private[cluster] var retryTask: Boolean = false
     private[cluster] val lock = new Object()
-    private val testLock = new Object()
-    @volatile var testStartDone = false
+    private[cluster] val testLock = new Object()
+    @volatile private[cluster] var testStartDone = false
 
     val membershipListener = new MembershipListener {
       override def quorumLost(failures: util.Set[InternalDistributedMember],
@@ -84,15 +84,6 @@ object ExecutorInitiator extends Logging {
     def setRetryFlag(retry: Boolean = true): Unit = lock.synchronized {
       retryTask = retry
       lock.notifyAll()
-    }
-
-    // Test hook. Not to be used in other situations
-    def testWaitForExecutor(retry: Boolean = true): Unit = testLock.synchronized {
-      var maxTries = 100
-      while (maxTries > 0 && !testStartDone) {
-        maxTries -= 1
-        testLock.wait(500)
-      }
     }
 
     def getRetryFlag: Boolean = lock.synchronized {
@@ -125,8 +116,8 @@ object ExecutorInitiator extends Logging {
             Misc.checkIfCacheClosing(null)
             if (prevDriverURL == getDriverURLString && !getRetryFlag) {
               lock.synchronized {
-                while (prevDriverURL == getDriverURLString && !getRetryFlag) {
-                  lock.wait(5000)
+                while (!stopTask && prevDriverURL == getDriverURLString && !getRetryFlag) {
+                  lock.wait(1000)
                 }
               }
             } else {
@@ -226,11 +217,13 @@ object ExecutorInitiator extends Logging {
         case e: Throwable =>
           logWarning("ExecutorInitiator failing with exception: ", e)
       } finally {
+        testStartDone = false
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
-        stopped = true
-        testStartDone = false
-        lock.synchronized(lock.notifyAll())
+        lock.synchronized {
+          stopped = true
+          lock.notifyAll()
+        }
         try {
           Misc.checkIfCacheClosing(null)
           GemFireXDUtils.getGfxdAdvisor.getDistributionManager
@@ -253,17 +246,16 @@ object ExecutorInitiator extends Logging {
    * with None.
    */
   def stop(): Unit = {
-    if (executorThread.getState != Thread.State.NEW) {
-      executorRunnable.stopTask = true
-    }
+    executorRunnable.stopTask = true
     executorRunnable.setDriverDetails(None, null)
     Utils.clearDefaultSerializerAndCodec()
     val lock = executorRunnable.lock
     lock.synchronized {
-      var maxTries = 100
+      lock.notifyAll()
+      var maxTries = 50
       while (maxTries > 0 && !executorRunnable.stopped) {
         maxTries -= 1
-        lock.wait(500)
+        lock.wait(1000)
       }
     }
   }
@@ -272,8 +264,21 @@ object ExecutorInitiator extends Logging {
     executorRunnable.setRetryFlag()
   }
 
+  // Test hook. Not to be used in other situations
   def testWaitForExecutor(): Unit = {
-    executorRunnable.testWaitForExecutor()
+    var maxTries = 100
+    while (maxTries > 0) {
+      val runnable = executorRunnable
+      if (!runnable.testStartDone) {
+        maxTries -= 1
+        runnable.testLock.synchronized {
+          runnable.wait(500)
+        }
+      } else {
+        // break the loop
+        maxTries = 0
+      }
+    }
   }
 
   /**
