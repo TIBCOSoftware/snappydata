@@ -350,6 +350,15 @@ class TokenizationTest
       res1 = snc.sql(query).collect()
       assert( cacheMap.size() == 9)
 
+      // fetch first with actual result validation
+      query = s"select a from $table order by a desc fetch first 1 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 10)
+      assert (res1.size == 1)
+      res1 foreach { r =>
+        assert (r.get(0) == 10)
+      }
+
       // let us clear the plan cache
       snc.clear()
       assert( cacheMap.size() == 0)
