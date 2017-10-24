@@ -15,12 +15,9 @@
 # permissions and limitations under the License. See accompanying
 # LICENSE file.
 
-from py4j.protocol import Py4JError
-from pyspark.rdd import RDD, ignore_unicode_prefix
+
 from pyspark.sql.types import StructType
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.readwriter import DataFrameReader
-from pyspark.sql.streaming import DataStreamReader
 from pyspark.sql.session import SparkSession, _monkey_patch_RDD
 
 __all__ = ["SnappySession"]

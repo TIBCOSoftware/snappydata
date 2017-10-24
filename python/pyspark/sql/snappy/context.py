@@ -17,7 +17,6 @@
 
 from py4j.protocol import Py4JError
 from pyspark.sql.context import SQLContext
-from pyspark.sql.snappy.snappysession import SnappySession
 from pyspark.sql.types import StructType
 from pyspark.sql.dataframe import DataFrame
 
@@ -150,6 +149,3 @@ class SnappyContext(SQLContext):
         :return: number of rows deleted
         """
         return self._ssql_ctx.delete(tableName, filterExpr)
-
-
-

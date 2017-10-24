@@ -13,6 +13,7 @@ Open the command prompt, go the location of the downloaded SnappyData file, and 
 $ tar -xzf snappydata-<version-number>bin.tar.gz
 $ cd snappydata-<version-number>-bin/
 ```
+
 Start a basic cluster with one data node, one lead, and one locator
 ```
 ./sbin/snappy-start-all.sh

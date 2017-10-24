@@ -439,7 +439,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
             hdos.write(buffer)
 
           case _ =>
-            val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+            val allocator = ColumnEncoding.getAllocator(buffer)
             out.write(allocator.toBytes(buffer))
         }
       }
