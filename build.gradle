@@ -39,7 +39,6 @@ buildscript {
   repositories {
     maven { url 'https://plugins.gradle.org/m2' }
     mavenCentral()
-    mavenLocal()
   }
   dependencies {
     classpath 'io.snappydata:gradle-scalatest:0.16'
