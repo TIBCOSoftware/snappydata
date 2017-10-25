@@ -1026,22 +1026,13 @@ object SnappyContext extends Logging {
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
     } else {
       val conf = sc.conf
-      val embedded = Property.Embedded.getOption(conf).exists(_.toBoolean)
       Property.Locators.getOption(conf).collectFirst {
         case s if !s.isEmpty =>
-          val url = "locators=" + s + ";mcast-port=0"
-          if (embedded) ExternalEmbeddedMode(sc, url)
-//          else SplitClusterMode(sc, url)
-          else throw new SparkException(
-          s"Invalid configuration parameter ${Property.Locators}. " +
+          throw new SparkException(s"Invalid configuration parameter ${Property.Locators}. " +
               s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
-          val url = "mcast-port=" + s
-          if (embedded) ExternalEmbeddedMode(sc, url)
-//          else SplitClusterMode(sc, url)
-          else throw new SparkException(
-            s"Invalid configuration parameter mcast-port. " +
+          throw new SparkException("Invalid configuration parameter mcast-port. " +
                 s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
         case hostPort if !hostPort.isEmpty =>
@@ -1095,10 +1086,6 @@ object SnappyContext extends Logging {
         ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
       case ThinClientConnectorMode(_, url) =>
         SnappyTableStatsProviderService.start(sc, url)
-      case ExternalEmbeddedMode(_, url) =>
-        SnappyContext.urlToConf(url, sc)
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyTableStatsProviderService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
