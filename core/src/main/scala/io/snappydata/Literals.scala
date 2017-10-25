@@ -219,10 +219,6 @@ object Property extends Enumeration {
      "and client port of the locator be specified for this.",
      None, Constant.SPARK_PREFIX)
 
-  val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
-    "Enabled in SnappyData embedded cluster and disabled for other " +
-        "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
-
   val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
     s"Number of query plans that will be cached.", Some(3000))
 
