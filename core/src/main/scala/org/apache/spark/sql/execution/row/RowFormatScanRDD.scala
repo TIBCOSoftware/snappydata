@@ -232,7 +232,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext): Unit = {
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      val tx = TXManagerImpl.snapshotTxState.get()
+      val tx = TXManagerImpl.getCurrentSnapshotTXState
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
         val txMgr = tx.getTxMgr
         txMgr.masqueradeAs(tx)
@@ -408,7 +408,7 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
   protected final var hasNextValue = true
   protected final var doMove = true
   // transaction started by row buffer scan should be used here
-  private val tx = TXManagerImpl.snapshotTxState.get()
+  private val tx = TXManagerImpl.getCurrentSnapshotTXState
   private[execution] final val itr = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,

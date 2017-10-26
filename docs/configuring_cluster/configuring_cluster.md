@@ -82,7 +82,6 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 ```
 $ cat conf/leads
-# This goes to the default directory 
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
 
@@ -123,6 +122,8 @@ $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 ```
+
+<a id="configure-smart-connector"></a>
 ## Configuring SnappyData Smart Connector  
 
 Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). In Smart connector mode, a Spark application connects to SnappyData cluster to store and process data. SnappyData currently works with Spark version 2.1.1. To work with SnappyData cluster, a Spark application has to set the snappydata.connection property while starting.   
@@ -138,6 +139,35 @@ $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
 	--packages "SnappyDataInc:snappydata:1.0.0-s_2.11" 
 ```
+<a id="environment"></a>
+## Environment Settings
+
+Any Spark or SnappyData specific environment settings can be done by creating a **snappy-env.sh** or **spark-env.sh** in **SNAPPY_HOME/conf**.
+
+<a id="hadoop-setting"></a>
+### Hadoop Provided Settings
+
+If you want to run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.
+
+To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
+
+```
+export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
+```
+<a id="command-line"></a>
+### SnappyData Command Line Utility
+
+Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, individual components can be configured, started and stopped on a system locally using these commands.
+
+```
+$ bin/snappy locator start  -dir=/node-a/locator1 
+$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
+$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
+
+$ bin/snappy locator stop -dir=/node-a/locator1
+$ bin/snappy server stop -dir=/node-b/server1
+$ bin/snappy leader stop -dir=/node-c/lead1
+```
 
 <a id="logging"></a>
 ## Logging 
@@ -152,17 +182,3 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 ```
 !!! Note:
 	For a set of applicable class names and default values see the file **conf/log4j.properties.template**, which can be used as a starting point. Consult the [log4j 1.2.x documentation](http://logging.apache.org/log4j/) for more details on the configuration file.
-
-## SnappyData Command Line Utility
-
-Instead of starting SnappyData cluster using SSH scripts, individual components can be configured, started and stopped on a system locally using these commands.
-
-```
-$ bin/snappy locator start  -dir=/node-a/locator1 
-$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
-$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
-
-$ bin/snappy locator stop -dir=/node-a/locator1
-$ bin/snappy server stop -dir=/node-b/server1
-$ bin/snappy leader stop -dir=/node-c/lead1
-```

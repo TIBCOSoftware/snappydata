@@ -30,7 +30,7 @@ import org.apache.spark.scheduler._
  */
 class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
-  val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   SnappyClusterManager.init(this)
 
@@ -61,7 +61,6 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
       logger.info(s"setting from url $prop with $value")
       sc.conf.set(prop, value)
-      sc.conf.set(Property.Embedded.name, "true")
     }
     new SnappyTaskSchedulerImpl(sc)
   }

@@ -20,46 +20,36 @@ import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{ExprCode, CodegenContext}
-import org.apache.spark.unsafe.types.UTF8String
-
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
+import scala.reflect.runtime.universe.TypeTag
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
+
+import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.expressions.{LeafExpression, ExpressionDescription, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.types.StructField
-
-import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
-import scala.language.implicitConversions
-import scala.reflect.runtime.universe.TypeTag
-import scala.reflect.runtime.{universe => u}
-// import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.{StringType, DataType, StructType}
+import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.{SnappyParserConsts => ParserConsts}
 import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark._
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -122,7 +112,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   @DeveloperApi
   def saveStream[T](stream: DStream[T],
       aqpTables: Seq[String],
-      transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: u.TypeTag[T]) {
+      transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: TypeTag[T]) {
     snappySession.saveStream(stream, aqpTables, transformer)
   }
 
@@ -824,20 +814,18 @@ object SnappyContext extends Logging {
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
-  val COLUMN_SOURCE = "column"
-  val ROW_SOURCE = "row"
+
   val SAMPLE_SOURCE = "column_sample"
   val TOPK_SOURCE = "approx_topk"
 
-  val DEFAULT_SOURCE = ROW_SOURCE
   val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
     classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     classOf[execution.row.DefaultSource].getCanonicalName,
     "org.apache.spark.sql.sampling.DefaultSource"
   )
   private val builtinSources = new CaseInsensitiveMap(Map(
-    COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
-    ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
+    ParserConsts.COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
+    ParserConsts.ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
@@ -1038,22 +1026,13 @@ object SnappyContext extends Logging {
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
     } else {
       val conf = sc.conf
-      val embedded = Property.Embedded.getOption(conf).exists(_.toBoolean)
       Property.Locators.getOption(conf).collectFirst {
         case s if !s.isEmpty =>
-          val url = "locators=" + s + ";mcast-port=0"
-          if (embedded) ExternalEmbeddedMode(sc, url)
-//          else SplitClusterMode(sc, url)
-          else throw new SparkException(
-          s"Invalid configuration parameter ${Property.Locators}. " +
+          throw new SparkException(s"Invalid configuration parameter ${Property.Locators}. " +
               s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
-          val url = "mcast-port=" + s
-          if (embedded) ExternalEmbeddedMode(sc, url)
-//          else SplitClusterMode(sc, url)
-          else throw new SparkException(
-            s"Invalid configuration parameter mcast-port. " +
+          throw new SparkException("Invalid configuration parameter mcast-port. " +
                 s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
         case hostPort if !hostPort.isEmpty =>
@@ -1107,10 +1086,6 @@ object SnappyContext extends Logging {
         ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
       case ThinClientConnectorMode(_, url) =>
         SnappyTableStatsProviderService.start(sc, url)
-      case ExternalEmbeddedMode(_, url) =>
-        SnappyContext.urlToConf(url, sc)
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyTableStatsProviderService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)

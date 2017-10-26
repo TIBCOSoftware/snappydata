@@ -20,15 +20,16 @@ package io.snappydata
 import java.io._
 import java.util.regex.Pattern
 
-import com.gemstone.gemfire.internal.AvailablePort
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.output.TeeOutputStream
-
-import org.apache.spark.Logging
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Retries}
 import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.parsing.json.JSON
+
+import com.gemstone.gemfire.internal.AvailablePort
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.output.TeeOutputStream
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Retries}
+
+import org.apache.spark.Logging
 
 /**
  * Extensible Abstract test suite to test different shell based commands
