@@ -113,6 +113,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
+  final def FETCH: Rule0 = rule { keyword(Consts.FETCH) }
   final def FIRST: Rule0 = rule { keyword(Consts.FIRST) }
   final def FN: Rule0 = rule { keyword(Consts.FN) }
   final def FULL: Rule0 = rule { keyword(Consts.FULL) }
@@ -129,6 +130,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
   final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
+  final def ONLY: Rule0 = rule { keyword(Consts.ONLY) }
   final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
   final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
   final def PARTITION: Rule0 = rule { keyword(Consts.PARTITION) }
