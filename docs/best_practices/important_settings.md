@@ -21,7 +21,9 @@ This section provides guidelines for configuring the following important setting
 
 A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
 
-By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
+The default number of buckets in the SnappyData cluster mode is 128. In the local mode it is cores*2, subject to a maximum of 64 buckets and a minumum of 8 buckets.
+
+The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
 
 If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently. Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.
 
@@ -98,9 +100,9 @@ For example, if there are 32 cores for the Smart Connector application and the n
 
 You can modify this setting in the `spark.executor.memory` property. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/configuration.html#available-properties).
 
-### JVM settings for optimal performance:
-The following JVM setting is recommended for optimal performance:
+### JVM settings for optimal performance
+The JVM setting is set by default and the following is recommended only for local mode:
 
 ```-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k```
 
-Set in the conf/locators, leads, servers
+Set in the **conf/locators**, **conf/leads**, and **conf/servers** file.

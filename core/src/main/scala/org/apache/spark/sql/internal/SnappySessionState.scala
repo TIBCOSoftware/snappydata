@@ -23,7 +23,6 @@ import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
@@ -444,17 +443,6 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
-
-  var isPreparePhase: Boolean = false
-
-  var pvs: Option[ParameterValueSet] = None
-
-  var questionMarkCounter: Int = 0
-
-  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit = {
-    isPreparePhase = preparePhase
-    pvs = paramSet
-  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
@@ -502,7 +490,7 @@ class SnappyConf(@transient val session: SnappySession)
         case None => Property.SchedulerPool.defaultValue.get
         case Some(pool) if session.sparkContext.getAllPools.exists(_.name == pool) =>
           pool.toString
-        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool ${pool}")
+        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
     case _ => // ignore others
   }
@@ -749,7 +737,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
   }
 
   private val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, LocalJoinStrategies)
+    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,

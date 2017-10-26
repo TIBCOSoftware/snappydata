@@ -84,8 +84,8 @@ a.expander.top-level,
 .wy-menu-vertical li{
   font-size: 12px;
   color: #000000;	
-/*  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
-  text-transform: capitalize;	
+/*  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  text-transform: capitalize;	*/
 /*  font-weight: bold;*/
 }
 
@@ -94,7 +94,7 @@ a.expander.top-level,
   font-size: 12px;
   color: #000000;	
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-  text-transform: capitalize;
+/*  text-transform: capitalize;*/
 }
 .wy-menu-vertical a:active{
 /*colour of the left nav selected item*/

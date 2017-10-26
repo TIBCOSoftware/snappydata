@@ -15,14 +15,14 @@ SnappyData relies on the Spark SQL Data Sources API to parallelly load data from
 For instance, you can first [create an external table](../reference/sql_reference/create-external-table.md). 
 
 ```scala
-create external table <_tablename_> using <_any_data_source_supported_> options <_options_>
+create external table <tablename> using <any-data-source-supported> options <options>
 ```
 
 Next, use it in any SQL query or DDL. For example,
 
 ```scala
-create table snappyTable using column as (select * from externalTable)
-```
+CREATE EXTERNAL TABLE STAGING_CUSTOMER USING parquet OPTIONS(path 'quickstart/src/main/resources/customerparquet')
+CREATE TABLE CUSTOMER USING column OPTIONS(buckets '11') AS ( SELECT * FROM STAGING_CUSTOMER)```
 
 
 **Example - Load from CSV**
