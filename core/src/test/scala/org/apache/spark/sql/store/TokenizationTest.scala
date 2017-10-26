@@ -305,6 +305,19 @@ class TokenizationTest
       var res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 4)
 
+      // test fetch first syntax also
+      // Cache map size doesn't change because fetch first converts into limit
+      // itself and the exact same thing is fired above
+      query = s"select * from $table where a = 0 fetch first 1 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 4)
+
+      // Cache map size doesn't change because fetch first converts into limit
+      // itself and the exact same thing is fired above
+      query = s"select * from $table where a = 0 fetch first 10 rows only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 4)
+
       // test constants in projection
       query = s"select a, 'x' from $table where a = 0"
       res1 = snc.sql(query).collect()
@@ -325,6 +338,26 @@ class TokenizationTest
       res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 7)
       assert(!(res1.sameElements(res2)))
+
+      // test fetch first syntax also
+      // Cache map size changes because limit '3' is different
+      query = s"select * from $table where a = 0 fetch first 3 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 8)
+
+      // Cache map size changes because limit '4' is different
+      query = s"select * from $table where a = 0 fetch first 4 rows only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 9)
+
+      // fetch first with actual result validation
+      query = s"select a from $table order by a desc fetch first 1 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 10)
+      assert (res1.size == 1)
+      res1 foreach { r =>
+        assert (r.get(0) == 10)
+      }
 
       // let us clear the plan cache
       snc.clear()

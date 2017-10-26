@@ -645,7 +645,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         RepartitionByExpression(e, l)))).? ~
     (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
         ((id: String, w: WindowSpec) => id -> w)) + commaSep)).? ~
-    (LIMIT ~ TOKENIZE_END ~ expression).? ~> { (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
+    ((LIMIT ~ TOKENIZE_END ~ expression) | fetchExpression).? ~> {
+      (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
       val withOrder = o.asInstanceOf[Option[LogicalPlan => LogicalPlan]]
           .map(_ (l)).getOrElse(l)
       val window = w.asInstanceOf[Option[Seq[(String, WindowSpec)]]].map { ws =>
@@ -667,6 +668,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       }.getOrElse(withOrder)
       e.asInstanceOf[Option[Expression]].map(Limit(_, window)).getOrElse(window)
     }
+  }
+
+  protected final def fetchExpression: Rule1[Expression] = rule {
+    FETCH ~ FIRST ~ TOKENIZE_END ~ expression ~ ((ROW|ROWS) ~ ONLY) ~> ((f: Expression) => f)
   }
 
   protected final def distributeBy: Rule1[LogicalPlan => LogicalPlan] = rule {
