@@ -928,11 +928,6 @@ ospackage {
   from(snappyProductDir) {
     into '/opt/' + packageName
   }
-  from('release') {
-    include 'snappyProfile.*'
-    into "/opt/${packageName}/profile.d"
-    rename { fileName -> fileName.replace('Profile', 'data') }
-  }
 
   if (rootProject.hasProperty('enablePublish')) {
     signingKeyId = rootProject.property('signing.keyId')
