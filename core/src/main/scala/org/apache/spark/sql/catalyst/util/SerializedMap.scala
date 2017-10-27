@@ -16,6 +16,11 @@
  */
 package org.apache.spark.sql.catalyst.util
 
+import java.io.{Externalizable, IOException, ObjectInput, ObjectOutput}
+
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.unsafe.Platform
 
@@ -26,7 +31,8 @@ import org.apache.spark.unsafe.Platform
  */
 // TODO: optimize this to use a serialized hash map and corresponding plan
 // additions for direct hash based lookup
-final class SerializedMap extends MapData {
+final class SerializedMap extends MapData
+    with Externalizable with KryoSerializable {
 
   private var baseObject: AnyRef = _
   private var baseOffset: Long = _
@@ -89,5 +95,71 @@ final class SerializedMap extends MapData {
       Platform.BYTE_ARRAY_OFFSET, sizeInBytes)
     copy.pointTo(dataCopy, Platform.BYTE_ARRAY_OFFSET)
     copy
+  }
+
+  /**
+   * Returns the underlying bytes for this row.
+   */
+  def toBytes: Array[Byte] = {
+    if (baseOffset == Platform.BYTE_ARRAY_OFFSET) baseObject match {
+      case bytes: Array[Byte] if bytes.length == sizeInBytes => return bytes
+      case _ => // fallback to full copy
+    }
+    val bytes = new Array[Byte](sizeInBytes)
+    Platform.copyMemory(baseObject, baseOffset, bytes,
+      Platform.BYTE_ARRAY_OFFSET, sizeInBytes)
+    bytes
+  }
+
+  override def toString: String = {
+    val sb = new StringBuilder("[")
+    val baseOffset = this.baseOffset
+    var i = 0
+    while (i < sizeInBytes) {
+      if (i != 0) sb.append(',')
+      // platform endianness deliberately ignored below
+      sb.append(java.lang.Long.toHexString(Platform.getLong(baseObject,
+        baseOffset + i)))
+      i += 8
+    }
+    sb.append(']')
+    sb.toString
+  }
+
+  @throws[IOException]
+  override def writeExternal(out: ObjectOutput): Unit = {
+    val bytes = toBytes
+    out.writeInt(bytes.length)
+    out.write(bytes)
+  }
+
+  @throws[IOException]
+  @throws[ClassNotFoundException]
+  override def readExternal(in: ObjectInput): Unit = {
+    val size = in.readInt
+    val bytes = new Array[Byte](size)
+    in.readFully(bytes)
+    pointTo(bytes, Platform.BYTE_ARRAY_OFFSET)
+    if (size != sizeInBytes) {
+      throw new IOException(
+        s"Expected to read a SerializedMap of size = $size but got $sizeInBytes")
+    }
+  }
+
+  override def write(kryo: Kryo, out: Output): Unit = {
+    val bytes = toBytes
+    out.writeInt(bytes.length)
+    out.write(bytes)
+  }
+
+  override def read(kryo: Kryo, in: Input): Unit = {
+    val size = in.readInt
+    val bytes = new Array[Byte](size)
+    in.read(bytes)
+    pointTo(bytes, Platform.BYTE_ARRAY_OFFSET)
+    if (size != sizeInBytes) {
+      throw new IOException(
+        s"Expected to read a SerializedMap of size = $size but got $sizeInBytes")
+    }
   }
 }

@@ -33,7 +33,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen._
-import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
+import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
 import org.apache.spark.sql.execution.columnar.{ColumnWriter, ExternalStoreUtils}
@@ -132,7 +132,10 @@ object CodeGeneration extends Logging {
     val timeUtilsClass = DateTimeUtils.getClass.getName.replace("$", "")
     val encoderClass = classOf[UncompressedEncoder].getName
     val utilsClass = classOf[ClientSharedUtils].getName
-    val nonNullCode = dataType match {
+    val serArrayClass = classOf[SerializedArray].getName
+    val serMapClass = classOf[SerializedMap].getName
+    val serRowClass = classOf[SerializedRow].getName
+    val nonNullCode = Utils.getSQLDataType(dataType) match {
       case IntegerType => s"$stmt.setInt(${col + 1}, ${ev.value});"
       case LongType => s"$stmt.setLong(${col + 1}, ${ev.value});"
       case DoubleType => s"$stmt.setDouble(${col + 1}, ${ev.value});"
@@ -157,12 +160,16 @@ object CodeGeneration extends Logging {
           s"$encoderVar = new $encoderClass();")
         s"""
            |final ArrayData $arr = ${ev.value};
-           |final $encoderClass $encoder = $encoderVar;
-           |long $cursor = $encoder.initialize($schema[$col], 1, false);
-           |${ColumnWriter.genCodeArrayWrite(ctx, a, encoder, cursor,
-              arr, "0")}
-           |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |if ($arr instanceof $serArrayClass) {
+           |  $stmt.setBytes(${col + 1}, (($serArrayClass)$arr).toBytes());
+           |} else {
+           |  final $encoderClass $encoder = $encoderVar;
+           |  long $cursor = $encoder.initialize($schema[$col], 1, false);
+           |  ${ColumnWriter.genCodeArrayWrite(ctx, a, encoder, cursor,
+                arr, "0")}
+           |  // finish and set the bytes into the statement
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |}
         """.stripMargin
       case m: MapType =>
         val encoderVar = ctx.freshName("encoderObj")
@@ -173,11 +180,15 @@ object CodeGeneration extends Logging {
           s"$encoderVar = new $encoderClass();")
         s"""
            |final MapData $map = ${ev.value};
-           |final $encoderClass $encoder = $encoderVar;
-           |long $cursor = $encoder.initialize($schema[$col], 1, false);
-           |${ColumnWriter.genCodeMapWrite(ctx, m, encoder, cursor, map, "0")}
-           |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |if ($map instanceof $serMapClass) {
+           |  $stmt.setBytes(${col + 1}, (($serMapClass)$map).toBytes());
+           |} else {
+           |  final $encoderClass $encoder = $encoderVar;
+           |  long $cursor = $encoder.initialize($schema[$col], 1, false);
+           |  ${ColumnWriter.genCodeMapWrite(ctx, m, encoder, cursor, map, "0")}
+           |  // finish and set the bytes into the statement
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |}
         """.stripMargin
       case s: StructType =>
         val encoderVar = ctx.freshName("encoderObj")
@@ -188,12 +199,16 @@ object CodeGeneration extends Logging {
           s"$encoderVar = new $encoderClass();")
         s"""
            |final InternalRow $struct = ${ev.value};
-           |final $encoderClass $encoder = $encoderVar;
-           |long $cursor = $encoder.initialize($schema[$col], 1, false);
-           |${ColumnWriter.genCodeStructWrite(ctx, s, encoder, cursor,
-              struct, "0")}
-           |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |if ($struct instanceof $serRowClass) {
+           |  $stmt.setBytes(${col + 1}, (($serRowClass)$struct).toBytes());
+           |} else {
+           |  final $encoderClass $encoder = $encoderVar;
+           |  long $cursor = $encoder.initialize($schema[$col], 1, false);
+           |  ${ColumnWriter.genCodeStructWrite(ctx, s, encoder, cursor,
+                struct, "0")}
+           |  // finish and set the bytes into the statement
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |}
         """.stripMargin
       case _ =>
         s"$stmt.setObject(${col + 1}, ${ev.value});"
@@ -328,12 +343,18 @@ object CodeGeneration extends Logging {
     val fieldVar = ctx.freshName("field")
     val dosVar = ctx.freshName("dos")
     val utilsClass = classOf[ClientSharedUtils].getName
-    val typeConversion = dataType match {
+    val serArrayClass = classOf[SerializedArray].getName
+    val serMapClass = classOf[SerializedMap].getName
+    val serRowClass = classOf[SerializedRow].getName
+    val typeConversion = Utils.getSQLDataType(dataType) match {
       case a: ArrayType =>
         val arr = ctx.freshName("arr")
         val cursor = ctx.freshName("cursor")
         s"""
            |final ArrayData $arr = (ArrayData)$inputVar;
+           |if ($arr instanceof $serArrayClass) {
+           |  return (($serArrayClass)$arr).toBytes();
+           |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
            |${ColumnWriter.genCodeArrayWrite(ctx, a, encoderVar, cursor,
               arr, "0")}
@@ -350,6 +371,9 @@ object CodeGeneration extends Logging {
         val cursor = ctx.freshName("cursor")
         s"""
            |final MapData $map = (MapData)$inputVar;
+           |if ($map instanceof $serMapClass) {
+           |  return (($serMapClass)$map).toBytes();
+           |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
            |${ColumnWriter.genCodeMapWrite(ctx, m, encoderVar, cursor,
               map, "0")}
@@ -366,6 +390,9 @@ object CodeGeneration extends Logging {
         val cursor = ctx.freshName("cursor")
         s"""
            |final InternalRow $struct = (InternalRow)$inputVar;
+           |if ($struct instanceof $serRowClass) {
+           |  return (($serRowClass)$struct).toBytes();
+           |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
            |${ColumnWriter.genCodeStructWrite(ctx, s, encoderVar, cursor,
               struct, "0")}

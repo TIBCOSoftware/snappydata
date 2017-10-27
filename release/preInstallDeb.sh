@@ -13,3 +13,6 @@ if ! getent passwd $SNAPPY_USER > /dev/null; then
   adduser --system $quiet --home $SNAPPY_HOME --no-create-home --shell /bin/bash \
       --ingroup $SNAPPY_GROUP --gecos "SnappyData cluster owner" $SNAPPY_USER
 fi
+
+# remove old system profiles if present
+rm -f /opt/$SNAPPY_HOME/profile.d/snappydata.*sh
