@@ -24,7 +24,7 @@ import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
+import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
@@ -349,7 +349,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def notExpression: Rule1[Expression] = rule {
-    (NOT ~> falseFn).? ~ comparisonExpression ~> ((not: Any, e: Expression) =>
+    (NOT ~ push(true)).? ~ comparisonExpression ~> ((not: Any, e: Expression) =>
       if (not.asInstanceOf[Option[Boolean]].isEmpty) e else Not(e))
   }
 
@@ -377,7 +377,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
         invertibleExpression |
-        IS ~ (NOT ~> trueFn).? ~ NULL ~>
+        IS ~ (NOT ~ push(true)).? ~ NULL ~>
             ((e: Expression, not: Any) =>
               if (not.asInstanceOf[Option[Boolean]].isEmpty) IsNull(e)
               else IsNotNull(e)) |
@@ -615,7 +615,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
-    ((expression ~ sortDirection.? ~ (NULLS ~ (FIRST ~> trueFn | LAST ~> falseFn)).? ~>
+    ((expression ~ sortDirection.? ~ (NULLS ~ (FIRST ~ push(true) | LAST ~ push(false))).? ~>
         ((e: Expression, d: Any, n: Any) => (e, d, n))) + commaSep) ~> ((exps: Any) =>
       exps.asInstanceOf[Seq[(Expression, Option[SortDirection], Option[Boolean])]].map {
         case (child, d, n) =>
@@ -797,7 +797,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
             val n2str = if (n2.isEmpty) "" else s".${n2.get}"
             throw Utils.analysisException(s"invalid expression $n1$n2str(*)")
           }) |
-          (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
+          (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
             val f2 = n2.asInstanceOf[Option[String]]
             val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
@@ -869,7 +869,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected def select: Rule1[LogicalPlan] = rule {
-    SELECT ~ (DISTINCT ~> trueFn).? ~
+    SELECT ~ (DISTINCT ~ push(true)).? ~
     (namedExpression + commaSep) ~
     (FROM ~ relations).? ~
     (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~

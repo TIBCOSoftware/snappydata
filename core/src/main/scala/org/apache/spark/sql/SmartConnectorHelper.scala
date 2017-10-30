@@ -39,7 +39,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private var conn: Connection = _
   private var connectionURL: String = _
   private val createSnappyTblString = "call sys.CREATE_SNAPPY_TABLE(?, ?, ?, ?, ?, ?, ?)"
-  private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
+  private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?, ?)"
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
   private val dropSnappyIdxString = "call sys.DROP_SNAPPY_INDEX(?, ?)"
   private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?, ?, ?)"
@@ -142,9 +142,10 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     createSnappyTblStmt.execute()
   }
 
-  def dropTable(tableIdent: QualifiedTableName, ifExists: Boolean = false): Unit = {
+  def dropTable(tableIdent: QualifiedTableName, ifExists: Boolean,
+      isExternal: Boolean): Unit = {
     snappySession.sessionCatalog.invalidateTable(tableIdent)
-    runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
+    runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists, isExternal))
     SnappyStoreHiveCatalog.registerRelationDestroy()
     SnappySession.clearAllCache()
   }
@@ -167,9 +168,10 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   private def executeDropTableStmt(tableIdent: QualifiedTableName,
-      ifExists: Boolean): Unit = {
+      ifExists: Boolean, isExternal: Boolean): Unit = {
     dropSnappyTblStmt.setString(1, tableIdent.schemaName + "." + tableIdent.table)
     dropSnappyTblStmt.setBoolean(2, ifExists)
+    dropSnappyTblStmt.setBoolean(3, isExternal)
     dropSnappyTblStmt.execute()
   }
 

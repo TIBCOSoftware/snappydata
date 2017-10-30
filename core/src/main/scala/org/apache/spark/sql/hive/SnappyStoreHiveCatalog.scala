@@ -569,7 +569,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                                partitionColumns: Array[String],
                                provider: String,
                                options: Map[String, String],
-                               relation: BaseRelation): Unit = {
+                               relation: Option[BaseRelation]): Unit = {
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
@@ -609,7 +609,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case Some(schema) =>
             tableProperties.put(ExternalStoreUtils.USER_SPECIFIED_SCHEMA, "true")
             schema
-          case None => relation.schema
+          case None => relation match {
+            case Some(r) => r.schema
+            case _ => StructType(Seq.empty)
+          }
         }
         val schemaJsonString = tableSchema.json
         // Split the JSON string.
@@ -617,11 +620,14 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           HIVE_SCHEMA_PROP, tableProperties)
 
         // get the tableType
-        val tableType = getTableType(relation)
+        val tableType = relation match {
+          case Some(r) => getTableType(r)
+          case None => ExternalTableType.External
+        }
         tableProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY, tableType.name)
         // add baseTable property if required
         relation match {
-          case dep: DependentRelation => dep.baseTable.foreach { t =>
+          case Some(dep: DependentRelation) => dep.baseTable.foreach { t =>
             lookupRelation(newQualifiedTableName(t)) match {
               case LogicalRelation(p: ParentRelation, _, _) =>
                 p.addDependent(dep, this)

@@ -79,27 +79,25 @@ private[sql] case class CreateMetastoreTableUsingSelect(
   }
 }
 
-private[sql] case class DropTableCommand(ifExists: Any,
+private[sql] case class DropTableCommand(ifExists: Boolean,
     tableIdent: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    snc.dropTable(catalog.newQualifiedTableName(tableIdent),
-      ifExists.asInstanceOf[Option[Boolean]].isDefined)
+    snc.dropTable(catalog.newQualifiedTableName(tableIdent), ifExists, resolveRelation = false)
     Seq.empty
   }
 }
 
-private[sql] case class TruncateTableCommand(ifExists: Any,
+private[sql] case class TruncateTableCommand(ifExists: Boolean,
     tableIdent: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
     snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
-      ifExists.asInstanceOf[Option[Boolean]].isDefined,
-      ignoreIfUnsupported = false)
+      ifExists, ignoreIfUnsupported = false)
     Seq.empty
   }
 }

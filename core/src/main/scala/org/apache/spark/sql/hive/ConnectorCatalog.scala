@@ -206,7 +206,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
       partitionColumns: Array[String],
       provider: String,
       options: Map[String, String],
-      relation: BaseRelation): Unit = {
+      relation: Option[BaseRelation]): Unit = {
     // no op
   }
 

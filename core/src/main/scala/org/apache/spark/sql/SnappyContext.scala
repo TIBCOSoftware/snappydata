@@ -1147,6 +1147,26 @@ object SnappyContext extends Logging {
       else providerName)
   }
 
+  /**
+   * Check if given provider is builtin (including qualified names) and return
+   * the short name and a flag indicating whether provider is a builtin or not.
+   */
+  def getBuiltInProvider(providerName: String): (String, Boolean) = {
+    if (builtinSources.contains(providerName)) {
+      (providerName, true)
+    } else {
+      // check in values too
+      val fullProvider = if (providerName.endsWith(".DefaultSource")) providerName
+      else providerName + ".DefaultSource"
+      builtinSources.collectFirst {
+        case (p, c) if c == providerName ||
+            ((fullProvider ne providerName) && c == fullProvider) => p
+      } match {
+        case Some(p) => (p, true)
+        case _ => (providerName, false)
+      }
+    }
+  }
 
   def flushSampleTables(): Unit = {
     val sampleRelations = _anySNContext.sessionState.catalog.

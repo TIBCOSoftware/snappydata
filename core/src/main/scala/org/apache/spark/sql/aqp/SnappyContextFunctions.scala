@@ -31,7 +31,7 @@ class SnappyContextFunctions {
 
   def clearStatic(): () => Unit = () => {}
 
-  def postRelationCreation(relation: BaseRelation, session: SnappySession): Unit = {}
+  def postRelationCreation(relation: Option[BaseRelation], session: SnappySession): Unit = {}
 
   def registerAQPErrorFunctions(session: SnappySession) {}
 
