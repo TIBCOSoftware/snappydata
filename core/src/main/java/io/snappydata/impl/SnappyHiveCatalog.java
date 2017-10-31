@@ -330,8 +330,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             List<String> tables = hmc.getAllTables(schema);
             for (String tableName : tables) {
               Table table = hmc.getTable(schema, tableName);
-              String tableType = table.getParameters().get(
-                  JdbcExtendedUtils.TABLETYPE_PROPERTY());
+              String tableType = ExternalTableType.getTableType(table);
               if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType)) {
                 // TODO: FIX ME: should not convert to upper case blindly
                 // but unfortunately hive meta-store is not case-sensitive
@@ -361,9 +360,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             List <String> upperCaseTableNames = new LinkedList<>();
             for (String t : tables) {
               Table hiveTab = hmc.getTable(db, t);
-              String tableType = hiveTab.getParameters().get(
-                  JdbcExtendedUtils.TABLETYPE_PROPERTY());
-              if (isTableInStoreDD(tableType)) {
+              String tableType = ExternalTableType.getTableType(hiveTab);
+              if (ExternalTableType.isTableBackedByRegion(tableType)) {
                 upperCaseTableNames.add(Utils.toUpperCase(t));
               }
             }
@@ -400,9 +398,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS()));
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? null : value.toString();
-          String tableType = table.getParameters().get(
-              JdbcExtendedUtils.TABLETYPE_PROPERTY());
-        return new ExternalTableMetaData(
+          String tableType = ExternalTableType.getTableType(table);
+          return new ExternalTableMetaData(
               fullyQualifiedName,
               schema,
               tableType,
@@ -524,19 +521,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private String getType(HiveMetaStoreClient hmc) throws SQLException {
-      Table t = getTable(hmc, this.dbName, this.tableName);
-      if (t != null) {
-        return t.getParameters().get(JdbcExtendedUtils.TABLETYPE_PROPERTY());
-      } else {
-        // assume ROW type in GemFireXD
-        return ExternalTableType.Row().name();
-      }
-    }
-
-    private boolean isTableInStoreDD(String type) {
-      return type.equalsIgnoreCase(ExternalTableType.Row().name()) ||
-          type.equalsIgnoreCase(ExternalTableType.Column().name()) ||
-          type.equalsIgnoreCase(ExternalTableType.Sample().name());
+      return ExternalTableType.getTableType(getTable(hmc, this.dbName, this.tableName));
     }
 
     private Table getTableWithRetry(HiveMetaStoreClient hmc) throws SQLException {

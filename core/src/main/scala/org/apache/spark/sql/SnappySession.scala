@@ -73,16 +73,9 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
 
 
-class SnappySession(@transient private val sc: SparkContext,
-    @transient private val existingSharedState: Option[SnappySharedState])
-    extends SparkSession(sc) {
+class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   self =>
-
-  def this(sc: SparkContext) {
-    this(sc, None)
-  }
-
 
   // initialize GemFireXDDialect so that it gets registered
 
@@ -96,14 +89,14 @@ class SnappySession(@transient private val sc: SparkContext,
 
   new FinalizeSession(this)
 
+  private def sc: SparkContext = sparkContext
+
   /**
    * State shared across sessions, including the [[SparkContext]], cached data, listener,
    * and a catalog that interacts with external systems.
    */
   @transient
-  override private[sql] lazy val sharedState: SnappySharedState = {
-    existingSharedState.getOrElse(SnappySharedState.create(sc))
-  }
+  override private[sql] lazy val sharedState: SnappySharedState = SnappyContext.sharedState
 
   /**
    * State isolated across sessions, including SQL configurations, temporary tables, registered
@@ -128,8 +121,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def snappyParser: SnappyParser = sessionState.sqlParser.sqlParser
 
-  @transient
-  private[spark] val snappyContextFunctions = sessionState.contextFunctions
+  private[spark] def snappyContextFunctions = sessionState.contextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
   SnappyDataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
@@ -164,7 +156,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * @since 2.0.0
    */
   override def newSession(): SnappySession = {
-    new SnappySession(sparkContext, Some(sharedState))
+    new SnappySession(sparkContext)
   }
 
  /**
@@ -393,6 +385,12 @@ class SnappySession(@transient private val sc: SparkContext,
     clearQueryData()
     clearPlanCache()
     snappyContextFunctions.clear()
+  }
+
+  /** Close the session which will be unusable after this call. */
+  override def close(): Unit = synchronized {
+    clear()
+    sessionCatalog.close()
   }
 
   /**
@@ -1407,7 +1405,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * @param schemaName schema name which goes in the catalog
    */
   def setSchema(schemaName: String): Unit = {
-    sessionCatalog.setSchema(schemaName)
+    sessionCatalog.setCurrentDatabase(schemaName)
   }
 
   /**
@@ -1811,8 +1809,11 @@ private class FinalizeSession(session: SnappySession)
 
   override protected def doFinalize(): Boolean = {
     if (sessionId != SnappySession.INVALID_ID) {
-      SnappySession.clearSessionCache(sessionId)
+      val session = SnappySession.clearSessionCache(sessionId)
       sessionId = SnappySession.INVALID_ID
+      if (session ne null) {
+        session.sessionCatalog.close()
+      }
     }
     true
   }
@@ -2225,15 +2226,18 @@ object SnappySession extends Logging {
     else ID.incrementAndGet()
   }
 
-  private[spark] def clearSessionCache(sessionId: Long): Unit = {
+  private[spark] def clearSessionCache(sessionId: Long): SnappySession = {
+    var foundSession: SnappySession = null
     val iter = planCache.asMap().keySet().iterator()
     while (iter.hasNext) {
       val item = iter.next()
       val session = item.asInstanceOf[CachedKey].session
       if (session.id == sessionId) {
+        foundSession = session
         iter.remove()
       }
     }
+    foundSession
   }
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
@@ -2272,7 +2276,7 @@ object SnappySession extends Logging {
         return session.asInstanceOf[SnappySession]
       }
 
-      session = new SnappySession(sc, None)
+      session = new SnappySession(sc)
       SparkSession.setDefaultSession(session)
 
       // Register a successfully instantiated context to the singleton.

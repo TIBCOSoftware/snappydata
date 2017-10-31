@@ -36,13 +36,14 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
+import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException, NoSuchPermanentFunctionException}
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException, NoSuchPermanentFunctionException, NoSuchTableException}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
@@ -123,7 +124,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
 
   override def setCurrentDatabase(db: String): Unit = {
-    val dbName = formatTableName(db)
+    val dbName = formatDatabaseName(db)
     requireDbExists(dbName)
     synchronized {
       currentSchema = dbName
@@ -374,7 +375,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName = {
     tableIdent match {
       case q: QualifiedTableName => q
-      case _ => new QualifiedTableName(formatTableName(
+      case _ => new QualifiedTableName(formatDatabaseName(
         tableIdent.database.getOrElse(currentSchema)),
         formatTableName(tableIdent.table))
     }
@@ -431,10 +432,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  final def setSchema(schema: String): Unit = {
-    this.currentSchema = schema
-  }
-
   /**
    * Return whether a table with the specified name is a temporary table.
    */
@@ -448,8 +445,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         if (table.properties.contains(HIVE_PROVIDER)) {
           getCachedHiveTable(tableIdent)
         } else if (table.tableType == CatalogTableType.VIEW) {
-          // @TODO Confirm from Sumedh
-          // Difference between VirtualView & View
           val viewText = table.viewText
               .getOrElse(sys.error("Invalid view without text."))
           snappySession.sessionState.sqlParser.parsePlan(viewText)
@@ -459,40 +454,34 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
 
       case None => synchronized {
-        tempTables.getOrElse(tableIdent.table,
-          throw new TableNotFoundException(s"Table '$tableIdent' not found")) match {
-          case lr: LogicalRelation => lr.catalogTable match {
+        val schema = tableIdent.schemaName
+        val table = tableIdent.table
+        val plan = if (schema == globalTempViewManager.database) {
+          globalTempViewManager.get(table)
+        } else if ((schema == null) || schema.isEmpty || schema == currentSchema) {
+          tempTables.get(table).orElse(globalTempViewManager.get(table))
+        } else None
+        plan match {
+          case Some(lr: LogicalRelation) => lr.catalogTable match {
             case Some(_) => lr
             case None => lr.copy(catalogTable = Some(CatalogTable(tableIdent,
               CatalogTableType.VIEW, null, lr.schema)))
           }
-          case x => x
+          case Some(p) => p
+          case None =>
+            throw new TableNotFoundException(s"Table '$tableIdent' not found")
         }
       }
     }
   }
 
   final def lookupRelationOption(tableIdent: QualifiedTableName): Option[LogicalPlan] = {
-    tableIdent.getTableOption(this) match {
-      case Some(table) =>
-        if (table.properties.contains(HIVE_PROVIDER)) {
-          Some(getCachedHiveTable(tableIdent))
-        } else if (table.tableType == CatalogTableType.VIEW) {
-          // @TODO Confirm from Sumedh
-          // Difference between VirtualView & View
-          val viewText = table.viewText
-              .getOrElse(sys.error("Invalid view without text."))
-          Some(snappySession.sessionState.sqlParser.parsePlan(viewText))
-        } else {
-          None
-        }
-
-      case None => synchronized {
-        tempTables.get(tableIdent.table).orElse(None)
-      }
+    try {
+      Some(lookupRelation(tableIdent))
+    } catch {
+      case _: TableNotFoundException | _: NoSuchTableException => None
     }
   }
-
 
   override def lookupRelation(tableIdent: TableIdentifier,
       alias: Option[String]): LogicalPlan = {
@@ -681,7 +670,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     } catch {
       case he: HiveException if isDisconnectException(he) =>
         // stale JDBC connection
-        Hive.closeCurrent()
+        SnappyStoreHiveCatalog.closeHive(client)
         SnappyStoreHiveCatalog.suspendActiveSession {
           client = externalCatalog.client.newSession()
         }
@@ -1050,6 +1039,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def getTableOption(qtn: QualifiedTableName): Option[CatalogTable] = {
     client.getTableOption(qtn.schemaName, qtn.table)
   }
+
+  def close(): Unit = synchronized {
+    closeHive(client)
+  }
 }
 
 object SnappyStoreHiveCatalog {
@@ -1140,8 +1133,16 @@ object SnappyStoreHiveCatalog {
     }
   }
 
-  def closeCurrent(): Unit = {
-    Hive.closeCurrent()
+  def closeHive(client: HiveClient): Unit = {
+    if (client ne null) {
+      val loader = client.asInstanceOf[HiveClientImpl].clientLoader
+      val hive = loader.cachedHive
+      if (hive != null) {
+        loader.cachedHive = null
+        Hive.set(hive.asInstanceOf[Hive])
+        Hive.closeCurrent()
+      }
+    }
   }
 }
 
@@ -1184,14 +1185,24 @@ object ExternalTableType {
   val TopK = ExternalTableType("TOPK")
   val External = ExternalTableType("EXTERNAL")
 
-  def isTableBackedByRegion(t: Table): Boolean = {
-    val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
-    tableType match {
-      case _ if tableType == ExternalTableType.Row.name ||
-          tableType == ExternalTableType.Column.name ||
-          tableType == ExternalTableType.Sample.name ||
-          tableType == ExternalTableType.Index.name => true
-      case _ => false
+  def getTableType(t: Table): String = {
+    if (t ne null) {
+      // check for VIEW types
+      if (TableType.VIRTUAL_VIEW.name.equalsIgnoreCase(t.getTableType)) {
+        return "VIEW"
+      } else {
+        val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
+        if (tableType ne null) return tableType
+      }
     }
+    // assume EXTERNAL type
+    ExternalTableType.External.name
+  }
+
+  def isTableBackedByRegion(tableType: String): Boolean = {
+    tableType.equalsIgnoreCase(ExternalTableType.Row.name) ||
+        tableType.equalsIgnoreCase(ExternalTableType.Column.name) ||
+        tableType.equalsIgnoreCase(ExternalTableType.Sample.name) ||
+        tableType.equalsIgnoreCase(ExternalTableType.Index.name)
   }
 }

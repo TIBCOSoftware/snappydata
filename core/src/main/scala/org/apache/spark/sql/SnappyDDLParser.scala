@@ -206,16 +206,15 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def createTable: Rule1[LogicalPlan] = rule {
-    CREATE ~ (EXTERNAL ~ push(true) | TEMPORARY ~ push(false)).? ~ TABLE ~
-        ifNotExists ~ tableIdentifier ~ tableEnd ~> { (te: Any, allowExisting: Boolean,
+    CREATE ~ (EXTERNAL ~ push(true)).? ~ TABLE ~ ifNotExists ~
+        tableIdentifier ~ tableEnd ~> { (external: Any, allowExisting: Boolean,
         tableIdent: TableIdentifier, schemaStr: StringBuilder, remaining: TableEnd) =>
 
-      val tempOrExternal = te.asInstanceOf[Option[Boolean]]
       val options = remaining._2.getOrElse(Map.empty[String, String])
       val provider = remaining._1.getOrElse(Consts.DEFAULT_SOURCE)
       val schemaString = schemaStr.toString().trim
 
-      val hasExternalSchema = if (tempOrExternal.isDefined) false
+      val hasExternalSchema = if (external != None) false
       else {
         // check if provider class implements ExternalSchemaRelationProvider
         try {
@@ -243,35 +242,25 @@ abstract class SnappyDDLParser(session: SparkSession)
         case Some(queryPlan) =>
           // When IF NOT EXISTS clause appears in the query,
           // the save mode will be ignore.
-          val mode = if (allowExisting) SaveMode.Ignore
-          else SaveMode.ErrorIfExists
-          tempOrExternal match {
-            case None =>
-              CreateTableUsingSelect(tableIdent, None,
-                userSpecifiedSchema, schemaDDL, provider, temporary = false,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
+          val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+          external match {
             case Some(true) =>
               CreateTableUsingSelect(tableIdent, None,
-                userSpecifiedSchema, schemaDDL, provider, temporary = false,
+                userSpecifiedSchema, schemaDDL, provider,
                 Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
-            case Some(false) if remaining._1.isEmpty && remaining._2.isEmpty =>
+            case _ =>
               CreateTableUsingSelect(tableIdent, None,
-                userSpecifiedSchema, schemaDDL, provider, temporary = true,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
-            case Some(_) => throw Utils.analysisException(
-              "CREATE TEMPORARY TABLE ... USING ... does not allow AS query")
+                userSpecifiedSchema, schemaDDL, provider,
+                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
           }
         case None =>
-          tempOrExternal match {
-            case None =>
-              CreateTableUsing(tableIdent, None, userSpecifiedSchema,
-                schemaDDL, provider, allowExisting, options, isBuiltIn = true)
+          external match {
             case Some(true) =>
               CreateTableUsing(tableIdent, None, userSpecifiedSchema,
                 schemaDDL, provider, allowExisting, options, isBuiltIn = false)
-            case Some(false) =>
-              CreateTempViewUsing(tableIdent, userSpecifiedSchema,
-                replace = allowExisting, global = false, provider, options)
+            case _ =>
+              CreateTableUsing(tableIdent, None, userSpecifiedSchema,
+                schemaDDL, provider, allowExisting, options, isBuiltIn = true)
           }
       }
     }
@@ -324,15 +313,16 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def createView: Rule1[LogicalPlan] = rule {
-    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary.? ~ VIEW ~ ifNotExists ~
-        tableIdentifier ~ ('(' ~ ws ~ (identifierWithComment + commaSep) ~ ')' ~ ws).? ~
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ (globalOrTemporary.? ~ VIEW |
+        globalOrTemporary ~ TABLE) ~ ifNotExists ~ tableIdentifier ~
+        ('(' ~ ws ~ (identifierWithComment + commaSep) ~ ')' ~ ws).? ~
         (COMMENT ~ stringLiteral).? ~ AS ~ capture(query) ~> { (replace: Any, gt: Any,
         allowExisting: Boolean, table: TableIdentifier, cols: Any, comment: Any,
         plan: LogicalPlan, queryStr: String) =>
 
       val viewType = gt match {
-        case Some(true) => GlobalTempView
-        case Some(false) => LocalTempView
+        case Some(true) | true => GlobalTempView
+        case Some(false) | false => LocalTempView
         case _ => PersistedView
       }
       val userCols = cols.asInstanceOf[Option[Seq[(String, Option[String])]]] match {
@@ -353,7 +343,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def createTempViewUsing: Rule1[LogicalPlan] = rule {
-    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ VIEW ~
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW | TABLE) ~
         tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
         (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, tableIdent: TableIdentifier,
         schema: Any, provider: String, options: Any) => CreateTempViewUsing(
@@ -670,7 +660,6 @@ case class CreateTableUsingSelect(
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
-    temporary: Boolean,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],

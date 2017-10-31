@@ -53,7 +53,6 @@ private[sql] case class CreateMetastoreTableUsingSelect(
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
-    temporary: Boolean,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
@@ -63,18 +62,9 @@ private[sql] case class CreateMetastoreTableUsingSelect(
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    if (temporary) {
-      // the equivalent of a registerTempTable of a DataFrame
-      if (tableIdent.database.isDefined) {
-        throw Utils.analysisException(
-          s"Temporary table '$tableIdent' should not have specified a database")
-      }
-      Dataset.ofRows(session, query).createTempView(tableIdent.table)
-    } else {
-      snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
-        userSpecifiedSchema, schemaDDL, partitionColumns, mode,
-        snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
-    }
+    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
+      userSpecifiedSchema, schemaDDL, partitionColumns, mode,
+      snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
     Seq.empty
   }
 }

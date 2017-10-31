@@ -223,7 +223,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       ois.readObject().asInstanceOf[Table]
     }
 
-    if (ExternalTableType.isTableBackedByRegion(t)) {
+    if (ExternalTableType.isTableBackedByRegion(ExternalTableType.getTableType(t))) {
       val bucketCount = getMetaDataStmt.getInt(3)
       val indexColsString = getMetaDataStmt.getString(5)
       val indexCols = Option(indexColsString) match {

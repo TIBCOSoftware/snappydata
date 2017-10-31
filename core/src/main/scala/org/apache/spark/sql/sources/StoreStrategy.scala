@@ -53,10 +53,9 @@ object StoreStrategy extends Strategy {
         .asInstanceOf[SnappySession].normalizeSchema(query.schema)
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
       val (provider, isBuiltIn) = SnappyContext.getBuiltInProvider(tableDesc.provider.get)
-      val cmd =
-        CreateMetastoreTableUsingSelect(tableDesc.identifier, None, Some(userSpecifiedSchema), None,
-          provider, temporary = false, tableDesc.partitionColumnNames.toArray, mode,
-          options, query, isBuiltIn)
+      val cmd = CreateMetastoreTableUsingSelect(tableDesc.identifier, None,
+        Some(userSpecifiedSchema), None, provider, tableDesc.partitionColumnNames.toArray,
+        mode, options, query, isBuiltIn)
       ExecutedCommandExec(cmd) :: Nil
 
     case CreateTableUsing(tableIdent, baseTable, userSpecifiedSchema, schemaDDL,
@@ -65,9 +64,9 @@ object StoreStrategy extends Strategy {
         userSpecifiedSchema, schemaDDL, provider, allowExisting, options, isBuiltIn)) :: Nil
 
     case CreateTableUsingSelect(tableIdent, baseTable, userSpecifiedSchema, schemaDDL,
-    provider, temporary, partitionColumns, mode, options, query, isBuiltIn) =>
+    provider, partitionColumns, mode, options, query, isBuiltIn) =>
       ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, baseTable,
-        userSpecifiedSchema, schemaDDL, provider, temporary, partitionColumns, mode,
+        userSpecifiedSchema, schemaDDL, provider, partitionColumns, mode,
         options, query, isBuiltIn)) :: Nil
 
     case DropTable(ifExists, tableIdent) =>
