@@ -431,6 +431,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
+  final def setSchema(schema: String): Unit = {
+    this.currentSchema = schema
+  }
+
   /**
    * Return whether a table with the specified name is a temporary table.
    */
@@ -1185,18 +1189,18 @@ object ExternalTableType {
   val External = ExternalTableType("EXTERNAL")
 
   def getTableType(t: Table): String = {
-    if (t ne null) getTableType(t.getTableType.name(), t.getParameters)
-    // assume EXTERNAL type
-    else ExternalTableType.External.name
-  }
-
-  def getTableType(typeName: String, parameters: java.util.Map[String, String]): String = {
-    // check for VIEW types
-    if (TableType.VIRTUAL_VIEW.name.equalsIgnoreCase(typeName)) "VIEW"
-    else {
-      val tableType = parameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
-      if (tableType ne null) tableType else ExternalTableType.External.name
+    if (t ne null) {
+      // check for VIEW types
+      if (TableType.VIRTUAL_VIEW.name.equalsIgnoreCase(t.getTableType.name())) {
+        return "VIEW"
+      }
+      else {
+        val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
+        if (tableType ne null) return tableType
+      }
     }
+    // assume EXTERNAL type
+    ExternalTableType.External.name
   }
 
   def isTableBackedByRegion(tableType: String): Boolean = {

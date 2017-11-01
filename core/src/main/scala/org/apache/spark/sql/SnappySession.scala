@@ -1401,7 +1401,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * @param schemaName schema name which goes in the catalog
    */
   def setSchema(schemaName: String): Unit = {
-    sessionCatalog.setCurrentDatabase(schemaName)
+    sessionCatalog.setSchema(schemaName)
   }
 
   /**

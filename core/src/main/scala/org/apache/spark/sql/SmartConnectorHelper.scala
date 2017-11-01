@@ -23,7 +23,7 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 import io.snappydata.impl.SparkConnectorRDDHelper
-import org.apache.hadoop.hive.metastore.api.Table
+import org.apache.hadoop.hive.ql.metadata.Table
 
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -223,9 +223,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       ois.readObject().asInstanceOf[Table]
     }
 
-    val tableType = if (t ne null) ExternalTableType.getTableType(t.getTableType, t.getParameters)
-    else ExternalTableType.External.name
-    if (ExternalTableType.isTableBackedByRegion(tableType)) {
+    if (ExternalTableType.isTableBackedByRegion(ExternalTableType.getTableType(t))) {
       val bucketCount = getMetaDataStmt.getInt(3)
       val indexColsString = getMetaDataStmt.getString(5)
       val indexCols = Option(indexColsString) match {

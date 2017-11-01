@@ -18,9 +18,14 @@ package org.apache.spark.sql.hive
 
 import java.util.concurrent.ExecutionException
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
+
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import org.apache.hadoop.hive.metastore.api.{FieldSchema, Table}
+import org.apache.hadoop.hive.metastore.api.FieldSchema
+import org.apache.hadoop.hive.ql.metadata.Table
+
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
@@ -31,9 +36,6 @@ import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtend
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.{MetadataBuilder, StructField, StructType}
 import org.apache.spark.sql.{AnalysisException, SaveMode, SmartConnectorHelper}
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
 
 trait ConnectorCatalog extends SnappyStoreHiveCatalog {
 
@@ -74,8 +76,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
           connectorHelper.getHiveTableAndMetadata(in)
 
         //        val table: CatalogTable = in.getTable(client)
-        val table: CatalogTable = getCatalogTable(
-          new org.apache.hadoop.hive.ql.metadata.Table(hiveTable)).get
+        val table: CatalogTable = getCatalogTable(hiveTable).get
 
         val userSpecifiedSchema = ExternalStoreUtils.getTableSchema(
           table.properties)
