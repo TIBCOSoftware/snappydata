@@ -19,6 +19,9 @@ package io.snappydata.hydra.cluster;
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 import hydra.*;
+import io.snappydata.hydra.connectionPool.HikariConnectionPool;
+import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
+import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -1137,7 +1140,7 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
-  protected static List<String> validateLocatorEndpointData() {
+  public static List<String> validateLocatorEndpointData() {
     List<String> endpoints = getNetworkLocatorEndpoints();
     if (endpoints.size() == 0) {
       if (isLongRunningTest) {
@@ -1169,16 +1172,25 @@ public class SnappyTest implements Serializable {
    * Gets Client connection.
    */
   public static Connection getLocatorConnection() throws SQLException {
-    List<String> endpoints = validateLocatorEndpointData();
     Connection conn = null;
-    if (!runGemXDQuery) {
-      String url = "jdbc:snappydata://" + endpoints.get(0);
-      Log.getLogWriter().info("url is " + url);
-      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
-    } else {
-      String url = "jdbc:gemfirexd://" + endpoints.get(0);
-      Log.getLogWriter().info("url is " + url);
-      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+    int connPoolType = SnappyConnectionPoolPrms.getConnPoolType();
+    if(connPoolType == 0){
+      conn = HikariConnectionPool.getConnection();
+    } else if (connPoolType == 1){
+      conn = TomcatConnectionPool.getConnection();
+    }
+    else {
+      List<String> endpoints = validateLocatorEndpointData();
+
+      if (!runGemXDQuery) {
+        String url = "jdbc:snappydata://" + endpoints.get(0);
+        Log.getLogWriter().info("url is " + url);
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+      } else {
+        String url = "jdbc:gemfirexd://" + endpoints.get(0);
+        Log.getLogWriter().info("url is " + url);
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+      }
     }
     return conn;
   }
