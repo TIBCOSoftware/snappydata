@@ -37,8 +37,7 @@ import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
-import org.apache.hadoop.hive.metastore.api.Table
-import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
@@ -1186,17 +1185,18 @@ object ExternalTableType {
   val External = ExternalTableType("EXTERNAL")
 
   def getTableType(t: Table): String = {
-    if (t ne null) {
-      // check for VIEW types
-      if (TableType.VIRTUAL_VIEW.name.equalsIgnoreCase(t.getTableType)) {
-        return "VIEW"
-      } else {
-        val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
-        if (tableType ne null) return tableType
-      }
-    }
+    if (t ne null) getTableType(t.getTableType.name(), t.getParameters)
     // assume EXTERNAL type
-    ExternalTableType.External.name
+    else ExternalTableType.External.name
+  }
+
+  def getTableType(typeName: String, parameters: java.util.Map[String, String]): String = {
+    // check for VIEW types
+    if (TableType.VIRTUAL_VIEW.name.equalsIgnoreCase(typeName)) "VIEW"
+    else {
+      val tableType = parameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
+      if (tableType ne null) tableType else ExternalTableType.External.name
+    }
   }
 
   def isTableBackedByRegion(tableType: String): Boolean = {

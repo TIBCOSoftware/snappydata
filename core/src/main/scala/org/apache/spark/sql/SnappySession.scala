@@ -1344,16 +1344,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
           }
         }
-      case Some(plan) => // This is a temp table with no relation as source
-        Dataset.ofRows(this, plan).unpersist(blocking = true)
+      case _ if isTempTable => // This is a temp table with no relation as source
+        planOpt.foreach(Dataset.ofRows(this, _).unpersist(blocking = true))
         sessionCatalog.unregisterTable(tableIdent)
-      case None =>
-        // this is a table in smart connector remote call
-        if (isTempTable) {
-          sessionCatalog.unregisterTable(tableIdent)
-        } else {
-          sessionCatalog.unregisterDataSourceTable(tableIdent, None)
-        }
+      case _ =>
+        // this is a table in smart connector remote call or a view
+        sessionCatalog.unregisterDataSourceTable(tableIdent, None)
     }
   }
 

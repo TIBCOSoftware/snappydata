@@ -360,7 +360,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def dropTable: Rule1[LogicalPlan] = rule {
-    DROP ~ TABLE ~ ifExists ~ tableIdentifier ~> DropTable
+    DROP ~ (TABLE | VIEW) ~ ifExists ~ tableIdentifier ~> DropTable
   }
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {

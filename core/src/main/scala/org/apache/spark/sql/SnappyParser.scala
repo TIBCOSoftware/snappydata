@@ -870,7 +870,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~ push(true)).? ~
-    (namedExpression + commaSep) ~
+    TOKENIZE_BEGIN ~ (namedExpression + commaSep) ~ TOKENIZE_END ~
     (FROM ~ relations).? ~
     (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     groupBy.? ~
@@ -1012,30 +1012,30 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   // Only when wholeStageEnabled try for tokenization. It should be true
   private val tokenizationDisabled = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
 
-  private var tokenize = !tokenizationDisabled && session.sessionState.conf.wholeStageEnabled
+  private var tokenize = false
 
-  private var isSelect = false
+  private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() =>
-      tokenize = !tokenizationDisabled && isSelect && session.sessionState.conf.wholeStageEnabled)
+    MATCH ~> (() => tokenize = !tokenizationDisabled && canTokenize &&
+        session.sessionState.conf.wholeStageEnabled)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
     MATCH ~> {() => tokenize = false}
   }
 
-  protected final def SET_SELECT: Rule0 = rule {
-    MATCH ~> (() => isSelect = true)
+  protected final def ENABLE_TOKENIZE: Rule0 = rule {
+    MATCH ~> (() => canTokenize = true)
   }
 
-  protected final def SET_NOSELECT: Rule0 = rule {
-    MATCH ~> (() => isSelect = false)
+  protected final def DISABLE_TOKENIZE: Rule0 = rule {
+    MATCH ~> (() => canTokenize = false)
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (SET_SELECT ~ (query.named("select") | insert | put | update | delete)) |
-        (SET_NOSELECT ~ (dmlOperation | ctes | ddl | set | cache | uncache | desc))
+    (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete)) |
+        (DISABLE_TOKENIZE ~ (dmlOperation | ctes | ddl | set | cache | uncache | desc))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
