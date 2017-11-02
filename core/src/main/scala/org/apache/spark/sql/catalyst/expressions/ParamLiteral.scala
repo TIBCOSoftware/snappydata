@@ -256,7 +256,12 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
   def convertedLiteral: Any = createToScalaConverter(dataType)(eval(null))
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    // skip subexpression elimination for this because actual values
+    // at runtime can be different
+    val subExprs = ctx.subExprEliminationExprs.toMap
+    ctx.subExprEliminationExprs.clear()
     val eval = expr.genCode(ctx)
+    ctx.subExprEliminationExprs ++= subExprs
     val newVar = ctx.freshName("paramLiteralExpr")
     val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
     val comment = ctx.registerComment(expr.toString)
@@ -274,9 +279,14 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
 
   override def children: Seq[Expression] = Seq(expr)
 
-  override def canEqual(that: Any): Boolean = that match {
-    case thatExpr: DynamicFoldableExpression => expr.canEqual(thatExpr.expr)
-    case other => expr.canEqual(other)
+  // object reference equality for this class since values can change at runtime
+  // so this should never be considered for subexpression elimination, for example
+
+  override def hashCode(): Int = System.identityHashCode(this)
+
+  override def equals(that: Any): Boolean = that match {
+    case thatExpr: DynamicFoldableExpression => thatExpr eq this
+    case _ => false
   }
 
   override def nodeName: String = "DynamicExpression"

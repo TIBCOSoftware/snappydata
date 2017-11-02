@@ -76,13 +76,13 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     }
   }
 
-  def withHiveExceptionHandling[T](function: => T): T = {
+  def withHiveExceptionHandling[T](function: => T): T = synchronized {
     try {
       function
     } catch {
       case he: HiveException if isDisconnectException(he) =>
         // stale JDBC connection
-        Hive.closeCurrent()
+        SnappyStoreHiveCatalog.closeHive(client)
         SnappyStoreHiveCatalog.suspendActiveSession {
           client = client.newSession()
         }
@@ -620,8 +620,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     withHiveExceptionHandling(client.listFunctions(db, pattern))
   }
 
-  def closeCurrent(): Unit = {
-    Hive.closeCurrent()
+  def close(): Unit = synchronized {
+    SnappyStoreHiveCatalog.closeHive(client)
   }
-
 }
