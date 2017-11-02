@@ -143,9 +143,9 @@ The system is started and you may fire queries on the snappy-shell to check the 
 For example:
 
 ``` 
-snappy-sql
->SnappyData version 1.0.0
-snappy> connect client '127.0.0.1:1527';
+snappy-sql rowstore
+>gfxd version 1.6.0 
+gfxd> connect client '127.0.0.1:1527';
 Using CONNECTION0
 snappy> show tables;
 TABLE_SCHEM           |TABLE_NAME                     |TABLE_TYPE  |REMARKS            
