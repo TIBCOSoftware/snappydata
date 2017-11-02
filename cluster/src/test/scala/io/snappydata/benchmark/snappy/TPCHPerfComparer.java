@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.benchmark.snappy;
 
 import java.io.File;
@@ -18,9 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Created by kishor on 13/10/17.
- */
 public class TPCHPerfComparer {
 
   public static void main(String[] args) {
@@ -38,7 +51,6 @@ public class TPCHPerfComparer {
     //treat first value are base and divide subsequent values with this base value and plot values
 
     Path p = Paths.get(args[0]);
-    System.out.println("KBKBKB : Path : " + p.getFileName().toString());
     final int maxDepth = 4;
     List<String> errorList = new ArrayList<String>();
     try {
@@ -124,7 +136,7 @@ public class TPCHPerfComparer {
               }else{
                 System.out.print("   ");
                 reportPrintStream.print("   ");
-                if(perf < -1.15){
+                if(perf < -1.10){
                   errorList.add("For Query "+ i + ", It is observed that revision #" + whichRevPerfDown +"'s performance degraded by "+ perf);
                 }
               }
