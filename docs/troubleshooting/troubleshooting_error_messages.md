@@ -44,7 +44,7 @@ XCL54.T Query/DML/DDL '{0}' canceled due to low memory on member '{1}'. Try redu
 
 <diagnosis> **Diagnosis:**</br>
 This error message is reported when a system runs on low available memory. In such cases, the queries may get aborted and an error is reported to prevent the server from crashing due to low available memory.</br>
-Once the heap memory usage falls below [critical-heap-percentage](../configuring_cluster/property_description.md) the queries run successfully.
+Once the heap memory usage falls below [critical-heap-percentage](../configuring_cluster/property_description.md#critical-heap-percentage) the queries run successfully.
 </diagnosis>
 
 <action> **Solution:** </br>

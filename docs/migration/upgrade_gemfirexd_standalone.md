@@ -1,6 +1,6 @@
-# Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.5
+# Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0.0
 
-In this document you can find information on how to manually upgrade GemFire XD 1.4.x to SnappyData 0.6.1 / RowStore 1.5. It is a step-by-step guide for configuring and customizing your system. This guide assumes you have a basic understanding of your Linux system.
+In this document you can find information on how to manually upgrade GemFire XD 1.4.x to SnappyData 1.0.0/RowStore 1.6. It is a step-by-step guide for configuring and customizing your system. This guide assumes you have a basic understanding of your Linux system.
 
 * [Prerequisites](#pre-req)
 
@@ -8,9 +8,9 @@ In this document you can find information on how to manually upgrade GemFire XD 
 
 ## Prerequisites<a id="pre-req"></a>
 
--   Download the distribution file from the [SnappyData Release page (snappydata-0.6.1)](https://github.com/SnappyDataInc/snappydata/releases)
--   Ensure that before moving into production, you have tested your development systems thoroughly with the new version
+-   Download the distribution file from the [SnappyData Release page (snappydata-1.0.0)](https://github.com/SnappyDataInc/snappydata/releases)
 
+-   Ensure that before moving into production, you have tested your development systems thoroughly with the new version
 
 ## Upgrade Process<a id="upgrade"></a>
 
@@ -46,16 +46,16 @@ Here `node1-server` and `node2-server` are the data directories of GemFire XD se
 
 <a id="Step2"></a>
 ### Step 2: Downloading and Extracting Product Distribution
-1. Download the distribution binary file (snappydata-0.6.1/RowStore1.5.2) from the SnappyData Release page(if not done already), and extract the contents of the file to a suitable location on your computer.
+1. Download the distribution binary file (snappydata-1.0.0/RowStore1.6.0) from the SnappyData Release page(if not done already), and extract the contents of the file to a suitable location on your computer.
 For example for Linux:
 
-		$ unzip snappydata-0.6.1-bin.zip -d <path_to_product>
+		$ unzip snappydata-1.0.0-bin.zip -d <path_to_product>
 
 	Here the <path_to_product> is the directory where you want to install the product. Repeat this step to install RowStore on each different computer where you want to run a SnappyData RowStore member. Alternatively, SnappyData RowStore can also be installed on a NFS location accessible to all members.
 
-2. If the `PATH` variable is set to the path of GemFire XD, ensure that you update it to the `snappydata-0.6.1-bin`. Add the SnappyData RowStore **bin** and **sbin** directories to your path, as described below:
+2. If the `PATH` variable is set to the path of GemFire XD, ensure that you update it to the `snappydata-1.0.0-bin`. Add the SnappyData RowStore **bin** and **sbin** directories to your path, as described below:
 
-	    $ export PATH=$PATH:/path_to_product/snappydata-0.6.1-bin/bin:/path_to_product/snappydata-0.6.1-bin/sbin
+	    $ export PATH=$PATH:/path_to_product/snappydata-1.0.0-bin/bin:/path_to_product/snappydata-1.0.0-bin/sbin
 
     
 <a id="Step3"></a>
@@ -82,7 +82,7 @@ These configuration files contain hostname of the node where a locator/server is
 
 **To configure the locators:**
 
-1. In the **<path_to_product>/snappydata-0.6.1-bin/conf** directory, make a copy of the **locators.template**, and rename it to **locators**.
+1. In the **<path_to_product>/snappydata-1.0.0-bin/conf** directory, make a copy of the **locators.template**, and rename it to **locators**.
 
 2. Edit the locators file to set it to the previous location of the GemFire XD locator (using the -dir option)
 
@@ -95,7 +95,7 @@ These configuration files contain hostname of the node where a locator/server is
 
 **To configure the servers:**
 
-1. In **<path_to_product>/snappydata-0.6.1-bin/conf**, make a copy of the **servers.template** file, and rename it to **servers**.
+1. In **<path_to_product>/snappydata-1.0.0-bin/conf**, make a copy of the **servers.template** file, and rename it to **servers**.
 2. Edit the servers file to set it to the previous location of the GemFire XD server (using the -dir option). You can use `-server-group` option to configure server groups.
 
 	    localhost -dir=<log-dir>/snappydata/server -server-groups=cache
@@ -139,12 +139,12 @@ SnappyData Leader pid: 0 status: stopped
 
 <a id="Step4"></a>
 ### Step 4: Verifying Upgrade is Successful 
-The system is started and you may fire queries on the `snappy-shell` to check the status of the upgrade. The `gfxd` shell is replaced by the `snappy-shell` command in SnappyData.
+The system is started and you may fire queries on the snappy-shell to check the status of the upgrade. The `gfxd` shell is replaced by the `snappy-sql` command in SnappyData.
 For example:
 
 ``` 
-snappy-shell
->SnappyData version 1.5.0-SNAPSHOT
+snappy-sql
+>SnappyData version 1.0.0
 snappy> connect client '127.0.0.1:1527';
 Using CONNECTION0
 snappy> show tables;

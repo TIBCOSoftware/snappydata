@@ -20,13 +20,13 @@ scala> val airlineDF = snappy.table("airline").show
 scala> val resultset = snappy.sql("select * from airline")
 ```
 
-Any Spark application can also use the SnappyData as store and Spark as a computational engine by providing an extra `spark.snappydata.connection` property in the conf.
+Any Spark application can also use the SnappyData as store and Spark as a computational engine by providing the `spark.snappydata.connection` property as mentioned below:
 
-```scala
+```java
 // Start the Spark standalone cluster from SnappyData base directory
 $ sbin/start-all.sh 
 // Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort --conf  $SNAPPY_HOME/examples/jars/quickstart.jar
 
 // The results can be seen on the command line.
 ```

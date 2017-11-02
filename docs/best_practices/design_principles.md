@@ -43,7 +43,7 @@ By identifying entity groups and using those groups as the basis for SnappyData 
 If you have an existing database design that you want to deploy to SnappyData, translate the entity-relationship model into a physical design that is optimized for SnappyData design principles.
 
 ## Guidelines for Adapting a Database to SnappyData
-This example shows tables from the Microsoft [Northwind Traders sample database](http://msdn.microsoft.com/en-us/library/aa276825(SQL.80).aspx).
+This example shows tables from the Microsoft [Northwind Traders sample database](https://www.microsoft.com/en-us/download/details.aspx?id=23654).
 
 In order to adapt this schema for use in SnappyData, follow the basic steps outlined in [Design Principles of Scalable, Partition-Aware Databases](#design-schema):
 
