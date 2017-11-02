@@ -349,7 +349,7 @@ final class DefaultSource extends MutableRelationProvider {
       catalog.registerDataSourceTable(
         catalog.newQualifiedTableName(tableName), None, Array.empty[String],
         classOf[execution.row.DefaultSource].getCanonicalName,
-        options, relation)
+        options, Some(relation))
       
       data match {
         case Some(plan) =>

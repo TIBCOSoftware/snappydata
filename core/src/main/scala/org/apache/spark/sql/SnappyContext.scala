@@ -28,6 +28,7 @@ import scala.reflect.runtime.universe.TypeTag
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
+import org.apache.hadoop.hive.ql.metadata.Hive
 
 import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -42,7 +43,7 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedObjectCache
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappySharedState}
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
@@ -84,7 +85,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   self =>
 
   protected[spark] def this(sc: SparkContext) {
-    this(new SnappySession(sc, None))
+    this(new SnappySession(sc))
   }
 
   override def newSession(): SnappyContext =
@@ -810,6 +811,7 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
+  @volatile private[this] var _sharedState: SnappySharedState = _
 
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
@@ -1061,12 +1063,15 @@ object SnappyContext extends Logging {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
           initMemberBlockMap(sc)
+          _sharedState = SnappySharedState.create(sc)
           _globalClear = session.snappyContextFunctions.clearStatic()
           _globalSNContextInitialized = true
         }
       }
     }
   }
+
+  private[sql] def sharedState: SnappySharedState = _sharedState
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
@@ -1103,6 +1108,7 @@ object SnappyContext extends Logging {
       // clear static objects on the driver
       clearStaticArtifacts()
 
+      _sharedState = null
       if (_globalClear ne null) {
         _globalClear()
         _globalClear = null
@@ -1110,7 +1116,7 @@ object SnappyContext extends Logging {
       SnappyTableStatsProviderService.stop()
 
       // clear current hive catalog connection
-      SnappyStoreHiveCatalog.closeCurrent()
+      Hive.closeCurrent()
       if (ExternalStoreUtils.isLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
@@ -1147,6 +1153,26 @@ object SnappyContext extends Logging {
       else providerName)
   }
 
+  /**
+   * Check if given provider is builtin (including qualified names) and return
+   * the short name and a flag indicating whether provider is a builtin or not.
+   */
+  def getBuiltInProvider(providerName: String): (String, Boolean) = {
+    if (builtinSources.contains(providerName)) {
+      (providerName, true)
+    } else {
+      // check in values too
+      val fullProvider = if (providerName.endsWith(".DefaultSource")) providerName
+      else providerName + ".DefaultSource"
+      builtinSources.collectFirst {
+        case (p, c) if c == providerName ||
+            ((fullProvider ne providerName) && c == fullProvider) => p
+      } match {
+        case Some(p) => (p, true)
+        case _ => (providerName, false)
+      }
+    }
+  }
 
   def flushSampleTables(): Unit = {
     val sampleRelations = _anySNContext.sessionState.catalog.

@@ -20,7 +20,9 @@ import java.sql.{Connection, DriverManager}
 import java.util.{Properties, TimeZone}
 
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
-import io.snappydata.benchmark.snappy.{SnappyAdapter, SnappyTPCH, TPCH, TPCH_Snappy}
+import io.snappydata.benchmark.TPCH_Queries
+import io.snappydata.benchmark.snappy.tpch.QueryExecutor
+import io.snappydata.benchmark.snappy.{SnappyAdapter, TPCH}
 import io.snappydata.{PlanTest, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
@@ -145,7 +147,8 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
       val (expectedAnswer, _) = qryProvider.execute(qNum, str => {
         snc.sql(str)
       })
-      val (newAnswer, df) = TPCH_Snappy.queryExecution(q, snc, false, false)
+      var queryToBeExecuted = TPCH_Queries.getQuery(q, false, true)
+      val (newAnswer, df) = QueryExecutor.queryExecution(q, queryToBeExecuted, snc, false)
       val isSorted = df.logicalPlan.collect { case s: Sort => s }.nonEmpty
       QueryTest.sameRows(expectedAnswer, newAnswer, isSorted).map { results =>
         s"""
@@ -266,11 +269,14 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
         "true")
     }
 
-    def evalSnappyMods(genPlan: Boolean) = TPCH_Snappy.queryExecution(qNum, snc, useIndex = false,
-      genPlan = genPlan)._1.foreach(_ => ())
+//    def evalSnappyMods(genPlan: Boolean) = TPCH_Snappy.queryExecution(qNum, snc, useIndex = false,
+//      genPlan = genPlan)._1.foreach(_ => ())
+
+    var queryToBeExecuted = TPCH_Queries.getQuery(qNum, false, true)
+    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(qNum, queryToBeExecuted, snc, false)
+        ._1.foreach(_ => ())
 
     def evalBaseTPCH = qryProvider.execute(query, executor)._1.foreach(_ => ())
-
 
     //    b.addCase(s"$qNum baseTPCH index = F", prepare = case1)(i => evalBaseTPCH)
     //    b.addCase(s"$qNum baseTPCH joinOrder = T", prepare = case2)(i => evalBaseTPCH)
