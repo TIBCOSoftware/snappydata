@@ -863,7 +863,7 @@ final class DefaultSource extends SchemaRelationProvider
         catalog.registerDataSourceTable(qualifiedTableName, Some(relation.schema),
           partitioningColumns.toArray,
           classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
-          options, relation)
+          options, Some(relation))
       }
       success = true
       relation

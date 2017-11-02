@@ -296,10 +296,6 @@ object SnappyParserConsts {
   final val numericSuffix: CharPredicate = CharPredicate('D', 'L')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
-  final val trueFn: () => Boolean = () => true
-
-  final val falseFn: () => Boolean = () => false
-
   final val reservedKeywords: mutable.Set[String] = mutable.Set[String]()
 
   final val allKeywords: mutable.Set[String] = mutable.Set[String]()
@@ -442,6 +438,7 @@ object SnappyParserConsts {
   final val PUT: Keyword = nonReservedKeyword("put")
   final val REFRESH: Keyword = nonReservedKeyword("refresh")
   final val REGEXP: Keyword = nonReservedKeyword("regexp")
+  final val REPLACE: Keyword = nonReservedKeyword("replace")
   final val RETURNS: Keyword = nonReservedKeyword("returns")
   final val RLIKE: Keyword = nonReservedKeyword("rlike")
   final val SEMI: Keyword = nonReservedKeyword("semi")
@@ -457,6 +454,7 @@ object SnappyParserConsts {
   final val UNCACHE: Keyword = nonReservedKeyword("uncache")
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")
+  final val VIEW: Keyword = nonReservedKeyword("view")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")
