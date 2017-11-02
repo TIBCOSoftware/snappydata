@@ -19,7 +19,10 @@ package org.apache.spark.sql
 import java.io._
 import java.util.TimeZone
 
-import io.snappydata.benchmark.snappy.{TPCH_Snappy, SnappyAdapter, TPCH}
+import io.snappydata.benchmark.TPCH_Queries
+import io.snappydata.benchmark.snappy.tpch.QueryExecutor
+import io.snappydata.benchmark.snappy.{SnappyAdapter, TPCH}
+
 import org.apache.spark.sql.catalyst.plans.logical.Sort
 import org.apache.spark.util.Benchmark
 
@@ -50,8 +53,11 @@ object DistIndexTestUtils {
         "true")
     }
 
-    def evalSnappyMods(genPlan: Boolean) = TPCH_Snappy.queryExecution(qNum, snc, useIndex = false,
-      genPlan = genPlan)._1.foreach(_ => ())
+    var queryToBeExecuted = TPCH_Queries.getQuery(qNum, false, true)
+    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(qNum, queryToBeExecuted, snc, false)
+        ._1.foreach(_ => ())
+//    def evalSnappyMods(genPlan: Boolean) = TPCH_Snappy.queryExecution(qNum, snc, useIndex = false,
+//      genPlan = genPlan)._1.foreach(_ => ())
 
     def evalBaseTPCH = qryProvider.execute(query, executor)
 
@@ -84,7 +90,9 @@ object DistIndexTestUtils {
         pw.println("Query String is : " + str)
         snc.sql(str)
       })
-      val (newAnswer, df) = TPCH_Snappy.queryExecution(q, snc, false, false)
+      var queryToBeExecuted = TPCH_Queries.getQuery(qNum.toString, false, true)
+      val (newAnswer, df) = QueryExecutor.queryExecution(qNum.toString, queryToBeExecuted, snc, false)
+      //val (newAnswer, df) = TPCH_Snappy.queryExecution(q, snc, false, false)
       newAnswer.foreach(pw.println)
       val isSorted = df.logicalPlan.collect { case s: Sort => s }.nonEmpty
       QueryTest.sameRows(expectedAnswer, newAnswer, isSorted).map { results =>
