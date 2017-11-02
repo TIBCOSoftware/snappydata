@@ -32,11 +32,13 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
+import org.apache.hadoop.hive.metastore.api.FieldSchema
+import org.apache.hadoop.hive.ql.metadata.Table
 
-import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
+import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -47,8 +49,9 @@ import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{StructType, _}
 import org.apache.spark.util.{Utils => SparkUtils}
+import org.apache.spark.{SparkContext, SparkException}
 
 /**
  * Utility methods used by external storage layers.
@@ -587,18 +590,39 @@ object ExternalStoreUtils {
     new JDBCSourceAsColumnarStore(connProperties, partitions, tableName, schema)
   }
 
-  def getTableSchema(
-      tableProps: java.util.Map[String, String]): Option[StructType] =
-    getTableSchema(tableProps.asScala)
+  // taken from HiveClientImpl.fromHiveColumn
+  def fromHiveColumn(hc: FieldSchema): StructField = {
+    val columnType = try {
+      CatalystSqlParser.parseDataType(hc.getType)
+    } catch {
+      case e: ParseException =>
+        throw new SparkException("Cannot recognize hive type string: " + hc.getType, e)
+    }
+
+    val metadata = new MetadataBuilder().putString(HIVE_TYPE_STRING, hc.getType).build()
+    val field = StructField(
+      name = hc.getName,
+      dataType = columnType,
+      nullable = true,
+      metadata = metadata)
+    Option(hc.getComment).map(field.withComment).getOrElse(field)
+  }
+
+  def getTableSchema(table: Table): StructType = {
+    getTableSchema(table.getParameters.asScala).getOrElse {
+      // Try to get from hive schema that separates partition columns from schema.
+      val partCols = table.getPartCols.asScala.map(fromHiveColumn)
+      StructType(table.getCols.asScala.map(fromHiveColumn) ++ partCols)
+    }
+  }
 
   def getTableSchema(
       tableProps: scala.collection.Map[String, String]): Option[StructType] =
     JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
       tableProps).map(StructType.fromString)
 
-  def getColumnMetadata(
-      schema: Option[StructType]): java.util.List[ExternalTableMetaData.Column] = {
-    schema.toList.flatMap(_.map { f =>
+  def getColumnMetadata(schema: StructType): java.util.List[ExternalTableMetaData.Column] = {
+    schema.toList.map { f =>
       val (dataType, typeName) = f.dataType match {
         case u: UserDefinedType[_] =>
           (Utils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
@@ -637,7 +661,7 @@ object ExternalStoreUtils {
             typeName.getOrElse(dataType.simpleString),
             precision, scale, precision, f.nullable)
       }
-    }).asJava
+    }.asJava
   }
 
   def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {

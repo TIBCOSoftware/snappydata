@@ -19,8 +19,6 @@ package io.snappydata.benchmark.snappy.tpch
 
 import java.io.{File, FileOutputStream, PrintStream}
 
-import io.snappydata.benchmark.snappy.TPCH_Snappy
-
 import org.apache.spark.sql.{SnappySession, SparkSession}
 
 /**
@@ -60,7 +58,7 @@ object QueryExecutionSmartConnector {
           threadNumber, isDynamic, warmUpIterations, actualRuns, avgPrintStream)
       }
     }
-    TPCH_Snappy.close
+    QueryExecutor.close
     sc.stop()
 
   }
