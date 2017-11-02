@@ -38,13 +38,14 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -1294,9 +1295,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val planOpt = try {
       Some(sessionCatalog.lookupRelation(tableIdent))
     } catch {
-      case tnfe: TableNotFoundException =>
-        if (ifExists) return else throw tnfe
-      case NonFatal(_) if !resolveRelation => None
+      case te@(_: TableNotFoundException | _: SQLException | _: NoSuchTableException) =>
+        if (ifExists) return else throw te
+      case NonFatal(e) if !resolveRelation => None
     }
     val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
 
