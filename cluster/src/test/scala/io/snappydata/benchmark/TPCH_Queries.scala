@@ -851,6 +851,42 @@ object TPCH_Queries {
 
   }
 
+  def getQuery10_ForPrepareStatement: String = {
+    // 1.DATE = 1993-10-01.
+    "select" +
+        "         C_CUSTKEY," +
+        "         C_NAME," +
+        "         sum(l_extendedprice * (1 - l_discount)) as revenue," +
+        "         C_ACCTBAL," +
+        "         n_name," +
+        "         C_ADDRESS," +
+        "         C_PHONE," +
+        "         C_COMMENT" +
+        " from" +
+        "         ORDERS," +
+        "         LINEITEM," +
+        "         CUSTOMER," +
+        "         NATION" +
+        " where" +
+        "         C_CUSTKEY = o_custkey" +
+        "         and l_orderkey = o_orderkey" +
+        "         and o_orderdate >= '1993-10-01'" +
+        "         and o_orderdate < add_months('1993-10-01', 3)" +
+        "         and l_returnflag = 'R'" +
+        "         and C_NATIONKEY = n_nationkey" +
+        " group by" +
+        "         C_CUSTKEY," +
+        "         C_NAME," +
+        "         C_ACCTBAL," +
+        "         C_PHONE," +
+        "         n_name," +
+        "         C_ADDRESS," +
+        "         C_COMMENT" +
+        " order by" +
+        "         revenue desc" +
+        " limit 20"
+  }
+
   def getQ10Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* DATE is the first day of a randomly selected month from the second
