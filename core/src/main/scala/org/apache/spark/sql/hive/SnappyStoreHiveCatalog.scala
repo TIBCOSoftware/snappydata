@@ -431,6 +431,13 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
+  def unregisterGlobalView(tableIdent: QualifiedTableName): Boolean = synchronized {
+    val schema = tableIdent.schemaName
+    if ((schema eq null) || schema == currentSchema || schema == globalTempViewManager.database) {
+      dropGlobalTempView(tableIdent.table)
+    } else false
+  }
+
   final def setSchema(schema: String): Unit = {
     this.currentSchema = schema
   }

@@ -1340,7 +1340,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
-          case _ => if (!isTempTable) {
+          case _ => if (!isTempTable && !sessionCatalog.unregisterGlobalView(tableIdent)) {
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
           }
         }
@@ -1349,7 +1349,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         sessionCatalog.unregisterTable(tableIdent)
       case _ =>
         // this is a table in smart connector remote call or a view
-        sessionCatalog.unregisterDataSourceTable(tableIdent, None)
+        if (!sessionCatalog.unregisterGlobalView(tableIdent)) {
+          sessionCatalog.unregisterDataSourceTable(tableIdent, None)
+        }
     }
   }
 
