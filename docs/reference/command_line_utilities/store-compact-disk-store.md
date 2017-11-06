@@ -20,7 +20,7 @@ Offline compaction runs essentially in the same way, but without the incoming CR
 
 !!!Note:
 	You must provide all of the directories in the disk store. If no oplog max size is specified, SnappyData uses the system default.</br> 
-Offline compaction can consume a large amount of memory. If you get a java.lang.OutOfMemory error while running this command, you made need to increase the heap size by setting the `-Xmx` and `-Xms` options in the JAVA_ARGS environment variable. [snappy Launcher Commands](../../reference/command_line_utilities/store-launcher.md) provides more information about setting Java options.
+Offline compaction can consume a large amount of memory. If you get a java.lang.OutOfMemory error while running this command, you made need to increase the heap size by setting the `-Xmx` and `-Xms` options in the JAVA_ARGS environment variable. [Command Line Utilites](../../reference/command_line_utilities/store-launcher.md) provides more information about setting Java options.
 
 </p>
 

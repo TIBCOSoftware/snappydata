@@ -16,7 +16,7 @@ IN PERCENTAGE REAL NOT NULL
 **PERCENTAGE**   
 The percentage of used heap space that triggers eviction on the local SnappyData data store.
 
-##Example
+## Example
 
 This command triggers eviction on any SnappyData member when the local member's heap usage reaches 90%:
 
