@@ -9,7 +9,7 @@ EXIT
 
 ## Description
 
-Causes the `snappy` application to complete and processing to halt. Issuing this command from within a file started with the [Run](../../reference/command_line_utilities/store-run/) command or on the command line causes the outermost input loop to halt.
+Causes the `snappy` application to complete and processing to halt. Issuing this command from within a file started with the [Run](run.md) command or on the command line causes the outermost input loop to halt.
 
 `snappy` exits when the Exit command is entered or if given a command file on the Java invocation line, when the end of the command file is reached.
 

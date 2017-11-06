@@ -1,6 +1,6 @@
 # Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0.0
 
-In this document you can find information on how to manually upgrade GemFire XD 1.4.x to SnappyData 1.0.0/RowStore 1.6. It is a step-by-step guide for configuring and customizing your system. This guide assumes you have a basic understanding of your Linux system.
+In this document, you can find information on how to manually upgrade GemFire XD 1.4.x to SnappyData 1.0.0/RowStore 1.6. It is a step-by-step guide for configuring and customizing your system. This guide assumes you have a basic understanding of your Linux system.
 
 * [Prerequisites](#pre-req)
 
@@ -46,12 +46,12 @@ Here `node1-server` and `node2-server` are the data directories of GemFire XD se
 
 <a id="Step2"></a>
 ### Step 2: Downloading and Extracting Product Distribution
-1. Download the distribution binary file (snappydata-1.0.0/RowStore1.6.0) from the SnappyData Release page(if not done already), and extract the contents of the file to a suitable location on your computer.
+1. Download the distribution binary file (snappydata-1.0.0/RowStore1.6.0) from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases/)(if not done already), and extract the contents of the file to a suitable location on your computer.
 For example for Linux:
 
 		$ unzip snappydata-1.0.0-bin.zip -d <path_to_product>
 
-	Here the <path_to_product> is the directory where you want to install the product. Repeat this step to install RowStore on each different computer where you want to run a SnappyData RowStore member. Alternatively, SnappyData RowStore can also be installed on a NFS location accessible to all members.
+	Here the <path_to_product> is the directory where you want to install the product. Repeat this step to install RowStore on each different computer where you want to run a SnappyData RowStore member. Alternatively, SnappyData RowStore can also be installed on an NFS location accessible to all members.
 
 2. If the `PATH` variable is set to the path of GemFire XD, ensure that you update it to the `snappydata-1.0.0-bin`. Add the SnappyData RowStore **bin** and **sbin** directories to your path, as described below:
 
@@ -74,9 +74,9 @@ SnappyData provides utility scripts to start/stop cluster (located in the **sbin
 
 <a id="Config"></a>
 #### Creating configuration files for SnappyData servers and locators
-In this step, you create configuration files for servers and locators and then use those to start the Snappydata RowStore cluster (locators and servers) using the backed up data directories.
+In this step, you create configuration files for servers and locators and then use those to start the SnappyData RowStore cluster (locators and servers) using the backed up data directories.
 
-If the NFS location is not accessible to all members, you need to follow the process of each machine. If passwordless SSH is setup, the cluster can be started from one host.
+If the NFS location is not accessible to all members, you need to follow the process of each machine. If passwordless SSH is set up, the cluster can be started from one host.
 
 These configuration files contain hostname of the node where a locator/server is to be started along with startup properties for it.
 
@@ -84,7 +84,7 @@ These configuration files contain hostname of the node where a locator/server is
 
 1. In the **<path_to_product>/snappydata-1.0.0-bin/conf** directory, make a copy of the **locators.template**, and rename it to **locators**.
 
-2. Edit the locators file to set it to the previous location of the GemFire XD locator (using the -dir option)
+2. Edit the locator file to set it to the previous location of the GemFire XD locator (using the -dir option)
 
 		localhost -dir=<log-dir>/snappydata/locator
 
@@ -108,9 +108,9 @@ These configuration files contain hostname of the node where a locator/server is
 	!!! Note
 		The `-heap-size` property replaces GemFire XD `-initial-heap` and/or `-max-heap` properties.  SnappyData no longer supports the `-initial-heap` and `-max-heap properties`.
 
-    In GemFire XD, if you are using a properties file (**gemfirexd.properties**) for configuring various properties such as authentication, please rename the file to **snappydata.properties**. Also the property prefix has been changed to **snappydata** instead of **gemfirexd**.
+    In GemFire XD, if you are using a properties file (**gemfirexd.properties**) for configuring various properties such as authentication, please rename the file to **snappydata.properties**. Also, the property prefix has been changed to **snappydata** instead of **gemfirexd**.
 
-    Alternatively, you may add these properties to above mentioned **conf/locators** and **conf/servers** files in front of each hostname.
+    Alternatively, you may add these properties to above-mentioned **conf/locators** and **conf/servers** files in front of each hostname.
     
 <a id="Start"></a>
 ### Starting the SnappyData RowStore Cluster 

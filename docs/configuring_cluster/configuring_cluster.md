@@ -27,7 +27,7 @@ You can refer to the **conf/locators.template** file for some examples.
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
 
 |Property|Description|
-|-|-|
+|-----|-----|
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
 |-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| 
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
