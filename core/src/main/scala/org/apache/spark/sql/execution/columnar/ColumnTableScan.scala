@@ -851,14 +851,19 @@ private[sql] final case class ColumnTableScan(
            |boolean $isNullVar = false;
            |if ($unchangedCode) {
            |  $numNullsVar = $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar);
-           |  if ($numNullsVar >= 0) $colAssign
-           |  else {
+           |  if ($numNullsVar >= 0) {
+           |    $colAssign
+           |    // TODO VB: Remove this
+           |    System.out.println("VB: Scan inserted " + $col);
+           |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
            |    $numNullsVar = -$numNullsVar;
            |  }
            |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
+           |  // TODO VB: Remove this
+           |  System.out.println("VB: Scan updated " + $col);
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;
