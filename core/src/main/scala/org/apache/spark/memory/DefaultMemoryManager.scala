@@ -39,10 +39,11 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       numBytes: Long,
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
-      shouldEvict: Boolean): Boolean = {
+      shouldEvict: Boolean): Boolean = synchronized {
     logDebug(s"Acquiring DefaultManager memory for $objectName $numBytes")
-    if (SparkEnv.get ne null) {
-      val success = SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
+    val env = SparkEnv.get
+    if (env ne null) {
+      val success = env.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
       memoryForObject.addTo(objectName -> memoryMode, numBytes)
       success
     } else {
@@ -55,15 +56,16 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
   override def dropStorageMemoryForObject(
       objectName: String,
       memoryMode: MemoryMode,
-      ignoreNumBytes: Long): Long = {
-    if (SparkEnv.get ne null) {
+      ignoreNumBytes: Long): Long = synchronized {
+    val env = SparkEnv.get
+    if (env ne null) {
       val key = objectName -> memoryMode
       val bytesToBeFreed = memoryForObject.getLong(key)
       val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
       logDebug(s"Dropping $managerId memory for $objectName =" +
           s" $numBytes (registered=$bytesToBeFreed)")
       if (numBytes > 0) {
-        SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
+        env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
         memoryForObject.removeAsLong(key)
       }
     }
@@ -73,10 +75,11 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
   override def releaseStorageMemoryForObject(
       objectName: String,
       numBytes: Long,
-      memoryMode: MemoryMode): Unit = {
+      memoryMode: MemoryMode): Unit = synchronized {
     logDebug(s"Releasing DefaultManager memory for $objectName $numBytes")
-    if (SparkEnv.get ne null) {
-      SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
+    val env = SparkEnv.get
+    if (env ne null) {
+      env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
       val key = objectName -> memoryMode
       if (memoryForObject.containsKey(key)) {
         if (memoryForObject.addTo(key, -numBytes) == numBytes) {
