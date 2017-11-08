@@ -75,7 +75,7 @@ private[sql] case class DropTableCommand(ifExists: Boolean,
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    snc.dropTable(catalog.newQualifiedTableName(tableIdent), ifExists, resolveRelation = false)
+    snc.dropTable(catalog.newQualifiedTableName(tableIdent), ifExists, resolveRelation = true)
     Seq.empty
   }
 }

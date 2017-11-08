@@ -214,6 +214,8 @@ final class ColumnPartitionResolver(tableName: TableName)
     Int.box(key.asInstanceOf[ColumnFormatKey].partitionId)
   }
 
+  override val getPartitioningColumns: Array[String] = Array("PARTITIONID")
+
   override def getPartitioningColumnsCount: Int = 1
 
   override def getMasterTable(rootMaster: Boolean): String = {
