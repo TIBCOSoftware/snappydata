@@ -20,7 +20,7 @@ package org.apache.spark.sql.store
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import io.snappydata.SnappyFunSuite
 
-import org.apache.spark.sql.{Row, SnappySession}
+import org.apache.spark.sql.{AnalysisException, Row, SnappySession}
 
 /**
  * Tests for temporary, global and persistent views.
@@ -108,6 +108,12 @@ class ViewTest extends SnappyFunSuite {
     assert(session2.sql(s"describe global_temp.viewOnTable").collect() === viewTempMeta)
     assert(session2.sql("select * from viewOnTable").collect() === expected)
 
+    try {
+      session.sql("drop table viewOnTable")
+      fail("expected drop table to fail for view")
+    } catch {
+      case _: AnalysisException => // expected
+    }
     // drop and check unavailability
     session.sql("drop view viewOnTable")
     assert(session.sessionCatalog.getGlobalTempView("viewOnTable").isEmpty)
@@ -151,7 +157,7 @@ class ViewTest extends SnappyFunSuite {
     assert(session2.sessionCatalog.tableExists("airlineView") === false)
 
     // drop and check unavailability
-    session.sql("drop view airlineView")
+    session.sql("drop table airlineView")
     assert(session.sessionCatalog.tableExists("airlineView") === false)
     assert(session2.sessionCatalog.tableExists("airlineView") === false)
 
@@ -179,6 +185,12 @@ class ViewTest extends SnappyFunSuite {
     assert(session2.sql("select count(*) from airlineView").collect()(0).getLong(0) ===
         airline.count())
 
+    try {
+      session.sql("drop table airlineView")
+      fail("expected drop table to fail for view")
+    } catch {
+      case _: AnalysisException => // expected
+    }
     // drop and check unavailability
     session.sql("drop view airlineView")
     assert(session.sessionCatalog.getGlobalTempView("airlineView").isEmpty)
@@ -226,6 +238,12 @@ class ViewTest extends SnappyFunSuite {
     assert(session2.sql(s"describe viewOnTable").collect() === viewMeta)
     assert(session2.sql("select * from viewOnTable").collect() === expectedResult)
 
+    try {
+      session.sql("drop table viewOnTable")
+      fail("expected drop table to fail for view")
+    } catch {
+      case _: AnalysisException => // expected
+    }
     // drop and check unavailability
     session2.sql("drop view viewOnTable")
     assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
