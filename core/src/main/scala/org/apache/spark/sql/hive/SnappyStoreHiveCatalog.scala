@@ -449,6 +449,20 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     tempTables.contains(tableIdent.table)
   }
 
+  /**
+   * Return whether a table with the specified name is a global temporary or persistent view.
+   */
+  private[sql] def isView(tableIdent: QualifiedTableName): Boolean = synchronized {
+    val schema = tableIdent.schemaName
+    if (((schema eq null) || schema == currentSchema || schema == globalTempViewManager.database)
+        && globalTempViewManager.get(tableIdent.table).isDefined) {
+      true
+    } else tableIdent.getTableOption(this) match {
+      case Some(t) if t.tableType == CatalogTableType.VIEW => true
+      case _ => false
+    }
+  }
+
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {
     tableIdent.getTableOption(this) match {
       case Some(table) =>
