@@ -19,7 +19,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.io.{DataInput, DataOutput}
 import java.nio.{ByteBuffer, ByteOrder}
-import java.util.concurrent.locks.LockSupport
 
 import com.gemstone.gemfire.cache.{DiskAccessException, EntryDestroyedException, EntryOperation, Region, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache._
@@ -458,10 +457,12 @@ class ColumnFormatValue extends SerializedDiskBuffer
         case channel: InputStreamChannel =>
           // order is BIG_ENDIAN by default
           val buffer = allocator.allocateForStorage(numBytes)
+          var numTries = 0
           do {
             if (channel.read(buffer) == 0) {
-              // wait for a bit before retrying
-              LockSupport.parkNanos(ClientSharedUtils.PARK_NANOS_FOR_READ_WRITE)
+              // wait for a bit after some retries (no timeout)
+              numTries += 1
+              ClientSharedUtils.parkThreadForAsyncOperationIfRequired(channel, 0L, numTries)
             }
           } while (buffer.hasRemaining)
           // move to the start of data
