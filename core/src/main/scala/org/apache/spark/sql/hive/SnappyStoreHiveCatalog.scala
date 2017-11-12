@@ -474,7 +474,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           snappySession.sessionState.sqlParser.parsePlan(viewText)
         } else {
           throw new IllegalStateException(
-            s"Unsupported table type ${table.tableType}")
+            s"Unsupported table type ${table.tableType} with properties: ${table.properties}")
         }
 
       case None => synchronized {
