@@ -360,11 +360,15 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def dropTable: Rule1[LogicalPlan] = rule {
-    DROP ~ (TABLE | VIEW) ~ ifExists ~ tableIdentifier ~> DropTable
+    DROP ~ (TABLE ~ push(false)) ~ ifExists ~ tableIdentifier ~> DropTableOrView
+  }
+
+  protected def dropView: Rule1[LogicalPlan] = rule {
+    DROP ~ (VIEW ~ push(true)) ~ ifExists ~ tableIdentifier ~> DropTableOrView
   }
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {
-    TRUNCATE ~ TABLE ~ ifExists ~ tableIdentifier ~> TruncateTable
+    TRUNCATE ~ TABLE ~ ifExists ~ tableIdentifier ~> TruncateManagedTable
   }
 
   protected def alterTableAddColumn: Rule1[LogicalPlan] = rule {
@@ -632,7 +636,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describeTable | refreshTable | dropTable | truncateTable |
-    createView | createTempViewUsing |
+    createView | createTempViewUsing | dropView |
     alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
     createIndex | dropIndex | createFunction | dropFunction | show
   }
@@ -666,9 +670,10 @@ case class CreateTableUsingSelect(
     query: LogicalPlan,
     isBuiltIn: Boolean) extends Command
 
-case class DropTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
+case class DropTableOrView(isView: Boolean, ifExists: Boolean,
+    tableIdent: TableIdentifier) extends Command
 
-case class TruncateTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
+case class TruncateManagedTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
 
 case class AlterTableAddColumn(tableIdent: TableIdentifier, addColumn: StructField)
     extends Command
