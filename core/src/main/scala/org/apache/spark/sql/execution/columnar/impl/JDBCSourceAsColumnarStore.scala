@@ -279,7 +279,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setLong(1, batchId)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, ColumnFormatEntry.DELETE_MASK_COL_INDEX)
-            blob = new ClientBlob(buffer, true)
+            blob = new ClientBlob(buffer)
             stmt.setBlob(4, blob)
             stmt.addBatch()
 
@@ -287,7 +287,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setLong(1, batchId)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
-            blob = new ClientBlob(statsBuffer, true)
+            blob = new ClientBlob(statsBuffer)
             stmt.setBlob(4, blob)
             stmt.addBatch()
 
@@ -417,7 +417,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setLong(1, batchId)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, columnIndex)
-            val blob = new ClientBlob(buffer, true)
+            val blob = new ClientBlob(buffer)
             stmt.setBlob(4, blob)
             index += 1
             stmt.addBatch()
@@ -429,7 +429,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           stmt.setInt(3, statRowIndex)
           val allocator = GemFireCacheImpl.getCurrentBufferAllocator
           val statsBuffer = createStatsBuffer(batch.statsData, allocator)
-          stmt.setBlob(4, new ClientBlob(statsBuffer, true))
+          stmt.setBlob(4, new ClientBlob(statsBuffer))
           stmt.addBatch()
 
           stmt.executeBatch()
@@ -738,10 +738,10 @@ final class SmartConnectorColumnRDD(
     private var tableName: String,
     private var requiredColumns: Array[String],
     private var connProperties: ConnectionProperties,
-    private val schema: StructType,
+    private var schema: StructType,
     @transient private val store: ExternalStore,
-    val parts: Array[Partition],
-    val relDestroyVersion: Int = -1)
+    private val parts: Array[Partition],
+    private var relDestroyVersion: Int = -1)
     extends RDDKryo[Any](session.sparkContext, Nil)
         with KryoSerializable {
 
@@ -805,6 +805,8 @@ final class SmartConnectorColumnRDD(
       output.writeString(column)
     }
     ConnectionPropertiesSerializer.write(kryo, output, connProperties)
+    StructTypeSerializer.write(kryo, output, schema)
+    output.writeVarInt(relDestroyVersion, false)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
@@ -814,7 +816,8 @@ final class SmartConnectorColumnRDD(
     val numColumns = input.readVarInt(true)
     requiredColumns = Array.fill(numColumns)(input.readString())
     connProperties = ConnectionPropertiesSerializer.read(kryo, input)
-
+    schema = StructTypeSerializer.read(kryo, input, c = null)
+    relDestroyVersion = input.readVarInt(false)
   }
 }
 
