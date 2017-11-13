@@ -710,9 +710,11 @@ private[sql] final case class ColumnTableScan(
            |if ($inputIsRow) {
            |  $columnBatchIdTerm = $invalidUUID;
            |  $bucketIdTerm = -1; // not required for row buffer
+           |  System.out.println("VB: Batch-id=-1 Bucket-id=-1");
            |} else {
            |  $columnBatchIdTerm = $colInput.getCurrentBatchId();
            |  $bucketIdTerm = $colInput.getCurrentBucketId();
+           |  // System.out.println("VB: Batch-id=" + $columnBatchIdTerm + "Bucket-id=" + $bucketIdTerm");
            |}
         """.stripMargin,
         // ordinalId is the last column in the row buffer table (exclude virtual columns)
@@ -730,6 +732,7 @@ private[sql] final case class ColumnTableScan(
       case _ => ""
     }
     val consumeCode = consume(ctx, columnsInput).trim
+    val isCaseOfUpdateValue = ordinalIdTerm ne null
 
     s"""
        |// Combined iterator for column batches from column table
@@ -743,11 +746,22 @@ private[sql] final case class ColumnTableScan(
        |    $batchConsume
        |    $deletedDeclaration
        |    final int $numRows = $numBatchRows$deletedCountCheck;
-       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
-       |         $batchOrdinal++) {
+       |    boolean doneWithThisLoop = false;
+       |    boolean isCaseOfUpdate = $isCaseOfUpdateValue;
+       |    int deltaOrdinalAdd  = 0;
+       |    int lastOrdinalIdValue = 0;
+       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows && !doneWithThisLoop;) {
+       |      boolean gotRowFromUpdate = false;
        |      $deletedCheck
        |      $assignOrdinalId
        |      $consumeCode
+       |      boolean doLoopBack = !isCaseOfUpdate && gotRowFromUpdate;
+       |      //System.out.println("VB: beforeStop doLoopBack=" + doLoopBack
+       |      //    + " ,isCaseOfUpdate=" + isCaseOfUpdate
+       |      //    + " ,gotRowFromUpdate=" + gotRowFromUpdate);
+       |      if (doLoopBack) {
+       |         continue;
+       |      }
        |      if (shouldStop()) {
        |        $beforeStop
        |        // increment index for return
@@ -755,6 +769,12 @@ private[sql] final case class ColumnTableScan(
        |        // update the numNulls
        |        ${numNullsUpdateCode.toString()}
        |        return;
+       |      }
+       |      //System.out.println("VB: increaseOrdinal=" + !doLoopBack
+       |      //     + " ,isCaseOfUpdate=" + isCaseOfUpdate
+       |      //     + " ,gotRowFromUpdate=" + gotRowFromUpdate);
+       |      if (!doLoopBack) {
+       |        $batchOrdinal++;
        |      }
        |    }
        |    $buffers = null;
@@ -841,7 +861,8 @@ private[sql] final case class ColumnTableScan(
     }
     updatedAssign = s"$col = $updateDecoder.getCurrentDeltaBuffer().$updatedAssign;"
 
-    val unchangedCode = s"$updateDecoder == null || $updateDecoder.unchanged($batchOrdinal)"
+    val unchangedCode = s"$updateDecoder == null ||" +
+        s"$updateDecoder.unchanged($batchOrdinal, isCaseOfUpdate)"
     if (attr.nullable) {
       val isNullVar = ctx.freshName("isNull")
       val defaultValue = ctx.defaultValue(jt)
@@ -854,7 +875,9 @@ private[sql] final case class ColumnTableScan(
            |  if ($numNullsVar >= 0) {
            |    $colAssign
            |    // TODO VB: Remove this
-           |    System.out.println("VB: Scan inserted " + $col);
+           |    System.out.println("VB: Scan [inserted] " + $col
+           |    + " ,scan_batchOrdinal=" + scan_batchOrdinal
+           |    + " ,scan_numRows=" + scan_numRows);
            |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
@@ -862,8 +885,11 @@ private[sql] final case class ColumnTableScan(
            |  }
            |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
+           |  gotRowFromUpdate = true;
            |  // TODO VB: Remove this
-           |  System.out.println("VB: Scan updated " + $col);
+           |  System.out.println("VB: Scan [updated] " + $col
+           |  + " ,scan_batchOrdinal=" + scan_batchOrdinal
+           |  + " ,scan_numRows=" + scan_numRows);
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;

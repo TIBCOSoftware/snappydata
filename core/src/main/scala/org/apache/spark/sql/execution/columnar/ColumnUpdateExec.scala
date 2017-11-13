@@ -209,7 +209,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
+      s"$function($batchOrdinal, (int)$ordinalIdVar + 1000 + deltaOrdinalAdd," +
+          s"${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
@@ -253,6 +254,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
        |    $finishUpdate($batchIdVar, $bucketVar, $numRowsVar);
        |  }
        |  // write to the encoders
+       |  if (lastOrdinalIdValue == (int)scan_ordinalId) {
+       |    deltaOrdinalAdd++;
+       |  } else {
+       |    deltaOrdinalAdd = 0;
+       |    lastOrdinalIdValue = (int)scan_ordinalId;
+       |  }
        |  $callEncoders
        |  $batchOrdinal++;
        |} else {

@@ -187,9 +187,18 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     false
   }
 
-  final def unchanged(ordinal: Int): Boolean = {
-    if (nextUpdatedPosition > ordinal) true
-    else skipUntil(ordinal)
+  final def unchanged(ordinal: Int, isCaseOfUpdate: Boolean): Boolean = {
+    if (isCaseOfUpdate) {
+      // Original
+      if (nextUpdatedPosition > ordinal) true
+      else skipUntil(ordinal)
+    } else {
+      if (nextUpdatedPosition - 1000 - ordinal < 5) {
+        currentDeltaBuffer = nextDeltaBuffer
+        nextUpdatedPosition = moveToNextUpdatedPosition(ordinal)
+        false
+      } else true
+    }
   }
 
   def readNotNull: Boolean
