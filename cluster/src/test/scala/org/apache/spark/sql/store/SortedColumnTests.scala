@@ -124,19 +124,75 @@ class SortedColumnTests extends ColumnTablesTestBase {
 
     def testBasicInsert(session: SnappySession): Unit = {
       // session.conf.set(Property.ColumnBatchSize.name, "10k")
-      session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
+      session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
 
-      val numElements = 50000
+      val numElements = 500
 
       session.sql("drop table if exists updateTable")
 
       session.sql("create table updateTable (id int, addr string, status boolean) " +
-          "using column options(buckets '5', partition_by 'addr')")
+          "using column options(buckets '1', partition_by 'id')")
 
       session.range(numElements).filter(_  % 10 < 6).selectExpr("id",
         "concat('addr', cast(id as string))",
         "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
 
+      val rs1 = session.sql("select * from updateTable").collect()
+      assert(rs1.length === 300)
+
+      // scalastyle:off println
+      println("")
+      println("Done with first set of insert")
+      println("")
+      // scalastyle:on println
+
+
+      try {
+        // Final value should not exceed 495
+        val rsAfterFilter = session.range(numElements - 5).filter(_  % 10 > 5)
+        val cnt = rsAfterFilter.count()
+        val rs2 = rsAfterFilter.selectExpr("id",
+          "concat('addr', cast(id as string))",
+          "case when (id % 2) = 0 then true else false end").collect()
+        assert(rs2.length === 196)
+
+        rs2.foreach(rs => {
+          val idU = rs.getLong(0)
+          val addrU = rs.getString(1)
+          val statusU = rs.getBoolean(2)
+          val rs3 = session.sql(s"update updateTable set " +
+              s" id = $idU, " +
+              s" addr = '$addrU', " +
+              s" status = $statusU " +
+              s" where (id = $idU)").collect()
+          assert(rs3.map(_.getLong(0)).sum >= 0)
+        })
+      } catch {
+        case t: Throwable =>
+          logError(t.getMessage, t)
+          throw t
+      }
+
+      // scalastyle:off println
+      println("")
+      println("Done with first set of update.")
+      println("")
+      // scalastyle:on println
+
+//      session.range(numElements).filter(_  % 10 > 5).selectExpr("id",
+//        "concat('addr', cast(id as string))",
+//        "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
+
+      val rs2 = session.sql("select * from updateTable").collect()
+      // assert(rs2.length === 500)
+
+      // scalastyle:off println
+      println("")
+      println("Number of rows after update = " + rs2.length)
+      println("")
+      // scalastyle:on println
+
+      /*
       var res = session.sql("select count(*) from updateTable").collect()
       assert(res.length === 1)
       assert(res(0).getLong(0) === 30000)
@@ -154,6 +210,9 @@ class SortedColumnTests extends ColumnTablesTestBase {
         "concat('addr', cast(id as string))",
         "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
 
+      val res_count = session.sql("select * from updateTable").count()
+      assert(res_count === 50000)
+
       res = session.sql("select count(*) from updateTable").collect()
       assert(res.length === 1)
       assert(res(0).getLong(0) === 50000)
@@ -163,6 +222,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
       assert(res(0).getInt(0) === 39)
       assert(res(0).getString(1) === "addr39")
       assert(res(0).getBoolean(2) === false)
+      */
 
       session.sql("drop table updateTable")
 
