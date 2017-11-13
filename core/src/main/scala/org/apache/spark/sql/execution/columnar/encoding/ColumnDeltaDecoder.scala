@@ -48,20 +48,20 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     // initialize the start and end of mutated positions
     positionCursor = cursor + 8
 
-    positionEndCursor = positionCursor + (numPositions << 2)
+    positionEndCursor = positionCursor + (numPositions << 3)
     // round to nearest word to get data start position
     ((positionEndCursor + 7) >> 3) << 3
   }
 
-  private[encoding] def moveToNextPosition(): Int = {
+  private[encoding] def moveToNextPosition(): Long = {
     val cursor = positionCursor
     if (cursor < positionEndCursor) {
-      positionCursor += 4
-      ColumnEncoding.readInt(deltaBytes, cursor)
+      positionCursor += 8
+      ColumnEncoding.readLong(deltaBytes, cursor)
     } else {
       // convention used by ColumnDeltaDecoder to denote the end
       // which is greater than everything so will never get selected
-      Int.MaxValue
+      Long.MaxValue
     }
   }
 
