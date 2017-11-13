@@ -117,7 +117,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
      SparkRadixSort            0 /    0         82.3          12.2      15.6X
      RadixSort                 1 /    1         16.6          60.1       3.2X
    */
-  private[this] var positionsArray: Array[Int] = _
+  private[this] var positionsArray: Array[Long] = _
   /**
    * Relative index of the current delta i.e. 1st delta is 0, 2nd delta is 1 and so on.
    * so on. Initialized to -1 so that pre-increment in write initializes to 0 and the
@@ -152,7 +152,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     this.dataType = dataType
     this.allocator = allocator
     this.maxSize = initSize
-    positionsArray = new Array[Int](initSize)
+    positionsArray = new Array[Long](initSize)
     realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
     val cursor = realEncoder.initialize(dataType, nullable,
       initSize, withHeader, allocator, minBufferSize)
@@ -187,11 +187,11 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   override protected[sql] def initializeNulls(initSize: Int): Int =
     realEncoder.initializeNulls(initSize)
 
-  def setUpdatePosition(position: Int): Unit = {
+  def setUpdatePosition(position: Long): Unit = {
     // sorted on LSB so position goes in LSB
     positionIndex += 1
     if (positionIndex == maxSize) {
-      val newPositionsArray = new Array[Int](maxSize << 1)
+      val newPositionsArray = new Array[Long](maxSize << 1)
       System.arraycopy(positionsArray, 0, newPositionsArray, 0, maxSize)
       maxSize <<= 1
       positionsArray = newPositionsArray
@@ -271,7 +271,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   }
 
   private def writeHeader(columnBytes: AnyRef, cursor: Long, numNullWords: Int,
-      numBaseRows: Int, positions: Array[Int], numDeltas: Int): Long = {
+      numBaseRows: Int, positions: Array[Long], numDeltas: Int): Long = {
     var deltaCursor = cursor
     // typeId
     ColumnEncoding.writeInt(columnBytes, deltaCursor, typeId)
@@ -292,8 +292,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     deltaCursor += 4
     var i = 0
     while (i < numDeltas) {
-      ColumnEncoding.writeInt(columnBytes, deltaCursor, positions(i))
-      deltaCursor += 4
+      ColumnEncoding.writeLong(columnBytes, deltaCursor, positions(i))
+      deltaCursor += 8
       i += 1
     }
     // pad to nearest word boundary before writing encoded data
@@ -310,7 +310,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // read the positions
     tmpNumPositions = ColumnEncoding.readInt(columnBytes, cursor + 4)
     tmpPositionCursor = cursor + 8
-    val positionEndCursor = tmpPositionCursor + (tmpNumPositions << 2)
+    val positionEndCursor = tmpPositionCursor + (tmpNumPositions << 3)
     // round to nearest word to get data start position
     ((positionEndCursor + 7) >> 3) << 3
   }
@@ -380,19 +380,19 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       numPositions2 = tmpNumPositions
       positionCursor2 = tmpPositionCursor
       maxSize = numPositions1 + numPositions2
-      positionsArray = new Array[Int](maxSize)
+      positionsArray = new Array[Long](maxSize)
     } else {
       positionIndex = 0
       maxSize = 0
       positionsArray = null
     }
 
-    var position1 = ColumnEncoding.readInt(columnBytes1, positionCursor1)
-    positionCursor1 += 4
-    var position2 = 0
+    var position1 = ColumnEncoding.readLong(columnBytes1, positionCursor1)
+    positionCursor1 += 8
+    var position2 = 0L
     if (existingIsDelta) {
-      position2 = ColumnEncoding.readInt(columnBytes2, positionCursor2)
-      positionCursor2 += 4
+      position2 = ColumnEncoding.readLong(columnBytes2, positionCursor2)
+      positionCursor2 += 8
     }
     var relativePosition1 = 0
     var relativePosition2 = 0
@@ -413,8 +413,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         relativePosition2 += 1
         if (relativePosition2 < numPositions2) {
           if (existingIsDelta) {
-            position2 = ColumnEncoding.readInt(columnBytes2, positionCursor2)
-            positionCursor2 += 4
+            position2 = ColumnEncoding.readLong(columnBytes2, positionCursor2)
+            positionCursor2 += 8
           } else {
             position2 += 1
           }
@@ -432,8 +432,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
           columnBytes1, writer, cursor, encoderOrdinal)
         relativePosition1 += 1
         if (relativePosition1 < numPositions1) {
-          position1 = ColumnEncoding.readInt(columnBytes1, positionCursor1)
-          positionCursor1 += 4
+          position1 = ColumnEncoding.readLong(columnBytes1, positionCursor1)
+          positionCursor1 += 8
         } else {
           doProcess = false
         }
@@ -441,25 +441,25 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     }
     // consume any remaining (slight inefficiency of reading first positions again
     //   but doing that for code clarity)
-    positionCursor1 -= 4
+    positionCursor1 -= 8
     while (relativePosition1 < numPositions1) {
       encoderOrdinal += 1
       // set next update position to be from first
       if (existingIsDelta) {
-        positionsArray(encoderOrdinal) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
-        positionCursor1 += 4
+        positionsArray(encoderOrdinal) = ColumnEncoding.readLong(columnBytes1, positionCursor1)
+        positionCursor1 += 8
       }
       cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
         columnBytes1, writer, cursor, encoderOrdinal)
       relativePosition1 += 1
     }
-    positionCursor2 -= 4
+    positionCursor2 -= 8
     while (relativePosition2 < numPositions2) {
       encoderOrdinal += 1
       // set next update position to be from second
       if (existingIsDelta) {
-        positionsArray(encoderOrdinal) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
-        positionCursor2 += 4
+        positionsArray(encoderOrdinal) = ColumnEncoding.readLong(columnBytes2, positionCursor2)
+        positionCursor2 += 8
       }
       cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
         columnBytes2, writer, cursor, encoderOrdinal)
@@ -492,7 +492,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
     val numElements = encoderOrdinal + 1
     val positionsSize = if (existingIsDelta) {
-      4 /* numBaseRows */ + 4 /* numPositions */ + (numElements << 2)
+      4 /* numBaseRows */ + 4 /* numPositions */ + (numElements << 3)
     } else 0
     val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
         // round positions to nearest word as done by writeHeader; for the non-delta case,
@@ -545,7 +545,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
         (numNullWords << 3) /* header */ +
         // round positions to nearest word as done by writeHeader
-        4 /* numBaseRows */ + 4 /* numPositions */ + (numDeltas << 2) + 7) >> 3) << 3) +
+        4 /* numBaseRows */ + 4 /* numPositions */ + (numDeltas << 3) + 7) >> 3) << 3) +
         realEncoder.encodedSize(encoderCursor, dataBeginPosition)))
     realEncoder.setSource(buffer, releaseOld = false)
     val columnBytes = allocator.baseObject(buffer)
