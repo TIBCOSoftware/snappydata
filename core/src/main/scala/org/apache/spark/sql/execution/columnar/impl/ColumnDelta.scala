@@ -120,7 +120,7 @@ object ColumnDelta {
   /**
    * The initial size of delta column (the smallest delta in the hierarchy).
    */
-  val INIT_SIZE = 100
+  val INIT_SIZE = 1000 // Original 100
 
   /**
    * The maximum depth of the hierarchy of deltas for column starting with
