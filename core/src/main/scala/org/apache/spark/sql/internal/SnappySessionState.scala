@@ -314,8 +314,8 @@ class SnappySessionState(snappySession: SnappySession)
             }
             val colName = Utils.toUpperCase(c.name)
             if (nonUpdatableColumns.contains(colName)) {
-              throw new AnalysisException("Cannot update partitioning/key column " +
-                  s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
+//              throw new AnalysisException("Cannot update partitioning/key column " +
+//                  s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
             }
             // cast the update expressions if required
             val newExpr = if (attr.dataType.sameType(expr.dataType)) {
