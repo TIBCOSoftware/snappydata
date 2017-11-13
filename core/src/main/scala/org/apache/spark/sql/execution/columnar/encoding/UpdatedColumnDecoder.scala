@@ -31,11 +31,11 @@ import org.apache.spark.sql.types._
  * a nullable or non-nullable version as appropriate.
  */
 final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
-    delta1Position: Int, delta1: ColumnDeltaDecoder,
-    delta2Position: Int, delta2: ColumnDeltaDecoder,
-    delta3Position: Int, delta3: ColumnDeltaDecoder)
-    extends UpdatedColumnDecoderBase(decoder, field, delta1Position, delta1,
-      delta2Position, delta2, delta3Position, delta3) {
+    delta1Position: Long, delta1: ColumnDeltaDecoder,
+    delta2Position: Long, delta2: ColumnDeltaDecoder,
+    delta3Position: Long, delta3: ColumnDeltaDecoder)
+    extends UpdatedColumnDecoderBase(decoder, field,
+      delta1Position, delta1, delta2Position, delta2, delta3Position, delta3) {
 
   protected def nullable: Boolean = false
 
@@ -46,11 +46,11 @@ final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
  * Nullable version of [[UpdatedColumnDecoder]].
  */
 final class UpdatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructField,
-    delta1Position: Int, delta1: ColumnDeltaDecoder,
-    delta2Position: Int, delta2: ColumnDeltaDecoder,
-    delta3Position: Int, delta3: ColumnDeltaDecoder)
-    extends UpdatedColumnDecoderBase(decoder, field, delta1Position, delta1,
-      delta2Position, delta2, delta3Position, delta3) {
+    delta1Position: Long, delta1: ColumnDeltaDecoder,
+    delta2Position: Long, delta2: ColumnDeltaDecoder,
+    delta3Position: Long, delta3: ColumnDeltaDecoder)
+    extends UpdatedColumnDecoderBase(decoder, field,
+      delta1Position, delta1, delta2Position, delta2, delta3Position, delta3) {
 
   protected def nullable: Boolean = true
 
@@ -65,21 +65,21 @@ object UpdatedColumnDecoder {
     // positions are initialized at max so that they always are greater
     // than a valid index
 
-    var delta1Position = Int.MaxValue
+    var delta1Position = Long.MaxValue
     val delta1 = if (delta1Buffer ne null) {
       val d = new ColumnDeltaDecoder(delta1Buffer, field)
       delta1Position = d.moveToNextPosition()
       d
     } else null
 
-    var delta2Position = Int.MaxValue
+    var delta2Position = Long.MaxValue
     val delta2 = if (delta2Buffer ne null) {
       val d = new ColumnDeltaDecoder(delta2Buffer, field)
       delta2Position = d.moveToNextPosition()
       d
     } else null
 
-    var delta3Position = Int.MaxValue
+    var delta3Position = Long.MaxValue
     val delta3 = if (delta3Buffer ne null) {
       val d = new ColumnDeltaDecoder(delta3Buffer, field)
       delta3Position = d.moveToNextPosition()
@@ -99,15 +99,15 @@ object UpdatedColumnDecoder {
 }
 
 abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructField,
-    private final var delta1Position: Int, delta1: ColumnDeltaDecoder,
-    private final var delta2Position: Int, delta2: ColumnDeltaDecoder,
-    private final var delta3Position: Int, delta3: ColumnDeltaDecoder) {
+    private final var delta1Position: Long, delta1: ColumnDeltaDecoder,
+    private final var delta2Position: Long, delta2: ColumnDeltaDecoder,
+    private final var delta3Position: Long, delta3: ColumnDeltaDecoder) {
 
   protected def nullable: Boolean
 
   protected final var nextDeltaBuffer: ColumnDeltaDecoder = _
   protected final var currentDeltaBuffer: ColumnDeltaDecoder = _
-  protected final var nextUpdatedPosition: Int = moveToNextUpdatedPosition(-1)
+  protected final var nextUpdatedPosition: Long = moveToNextUpdatedPosition(-1, false)
 
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
@@ -115,8 +115,8 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     if (!nullable || delta.readNotNull) delta.nextNonNullOrdinal()
   }
 
-  protected final def moveToNextUpdatedPosition(ordinal: Int): Int = {
-    var next = Int.MaxValue
+  protected final def moveToNextUpdatedPosition(ordinal: Int, isCaseOfUpdate: Boolean): Long = {
+    var next = Long.MaxValue
     var movedIndex = -1
 
     // first delta is the lowest in hierarchy and overrides others
@@ -169,7 +169,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     next
   }
 
-  private def skipUntil(ordinal: Int): Boolean = {
+  private def skipUntil(ordinal: Int, isCaseOfUpdate: Boolean): Boolean = {
     var nextUpdated = nextUpdatedPosition
     // check if ordinal has moved ahead of updated cursor
     if (nextUpdated < ordinal) {
@@ -177,13 +177,13 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
         // skip the position in current delta
         skipUpdatedPosition(nextDeltaBuffer)
         // update the cursor and keep on till ordinal is not reached
-        nextUpdated = moveToNextUpdatedPosition(nextUpdated)
+        nextUpdated = moveToNextUpdatedPosition(nextUpdated.toInt, isCaseOfUpdate)
       } while (nextUpdated < ordinal)
       nextUpdatedPosition = nextUpdated
       if (nextUpdated > ordinal) return true
     }
     currentDeltaBuffer = nextDeltaBuffer
-    nextUpdatedPosition = moveToNextUpdatedPosition(ordinal)
+    nextUpdatedPosition = moveToNextUpdatedPosition(ordinal, isCaseOfUpdate)
     false
   }
 
@@ -191,11 +191,11 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     if (isCaseOfUpdate) {
       // Original
       if (nextUpdatedPosition > ordinal) true
-      else skipUntil(ordinal)
+      else skipUntil(ordinal, isCaseOfUpdate)
     } else {
       if (nextUpdatedPosition - 1000 - ordinal < 5) {
         currentDeltaBuffer = nextDeltaBuffer
-        nextUpdatedPosition = moveToNextUpdatedPosition(ordinal)
+        nextUpdatedPosition = moveToNextUpdatedPosition(ordinal, isCaseOfUpdate)
         false
       } else true
     }
