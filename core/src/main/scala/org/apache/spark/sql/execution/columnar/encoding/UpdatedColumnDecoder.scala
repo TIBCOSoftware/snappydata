@@ -116,6 +116,46 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition(ordinal: Int, isCaseOfUpdate: Boolean): Long = {
+    if (isCaseOfUpdate) {
+      moveToNextUpdatedPosition(ordinal)
+    } else {
+      var next0 = Long.MaxValue
+      var next1 = Long.MaxValue
+      var next2 = Long.MaxValue
+      var movedIndex = -1
+
+      if (delta1Position < next0) {
+        next0 = delta1Position
+        movedIndex = 0
+      }
+      if (delta2Position < next1 && (nextUpdatedPosition >> 32).toInt == ordinal) {
+        next1 = delta2Position
+        movedIndex = 1
+      }
+      if (delta3Position < next2 && (nextUpdatedPosition >> 32).toInt == ordinal) {
+        next2 = delta3Position
+        movedIndex = 2
+      }
+
+      movedIndex match {
+        case 0 =>
+          delta1Position = delta1.moveToNextPosition()
+          nextDeltaBuffer = delta1
+          next0
+        case 1 =>
+          delta2Position = delta2.moveToNextPosition()
+          nextDeltaBuffer = delta2
+          next1
+        case 2 =>
+          delta3Position = delta3.moveToNextPosition()
+          nextDeltaBuffer = delta3
+          next2
+        case _ => -1
+      }
+    }
+  }
+
+  private final def moveToNextUpdatedPosition(ordinal: Int): Long = {
     var next = Long.MaxValue
     var movedIndex = -1
 
@@ -193,7 +233,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
       if (nextUpdatedPosition > ordinal) true
       else skipUntil(ordinal, isCaseOfUpdate)
     } else {
-      if (nextUpdatedPosition - 1000 - ordinal < 5) {
+      if ((nextUpdatedPosition >> 32).toInt == ordinal) {
         currentDeltaBuffer = nextDeltaBuffer
         nextUpdatedPosition = moveToNextUpdatedPosition(ordinal, isCaseOfUpdate)
         false

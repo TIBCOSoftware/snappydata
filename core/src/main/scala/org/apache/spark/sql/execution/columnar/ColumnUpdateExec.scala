@@ -201,7 +201,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
-           |private void $function(int $ordinal, int $ordinalIdVar,
+           |private void $function(int $ordinal, long $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
            |  $encoderTerm.setUpdatePosition($ordinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
@@ -209,7 +209,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal, (int)$ordinalIdVar + 1000 + deltaOrdinalAdd," +
+      s"$function($batchOrdinal," +
+          s"(long)$ordinalIdVar << 32 | System.currentTimeMillis() & 0xFFFFFFFFL," +
           s"${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
@@ -254,12 +255,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
        |    $finishUpdate($batchIdVar, $bucketVar, $numRowsVar);
        |  }
        |  // write to the encoders
-       |  if (lastOrdinalIdValue == (int)scan_ordinalId) {
-       |    deltaOrdinalAdd++;
-       |  } else {
-       |    deltaOrdinalAdd = 0;
-       |    lastOrdinalIdValue = (int)scan_ordinalId;
-       |  }
        |  $callEncoders
        |  $batchOrdinal++;
        |} else {
