@@ -8,7 +8,7 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an "AS  IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
  * implied. See the License for the specific language governing
  * permissions and limitations under the License. See accompanying
@@ -43,9 +43,11 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     logDebug(s"Acquiring DefaultManager memory for $objectName $numBytes")
     val env = SparkEnv.get
     if (env ne null) {
-      val success = env.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
-      memoryForObject.addTo(objectName -> memoryMode, numBytes)
-      success
+      env.memoryManager.synchronized {
+        val success = env.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
+        memoryForObject.addTo(objectName -> memoryMode, numBytes)
+        success
+      }
     } else {
       true
     }
@@ -56,17 +58,19 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
   override def dropStorageMemoryForObject(
       objectName: String,
       memoryMode: MemoryMode,
-      ignoreNumBytes: Long): Long = synchronized {
+      ignoreNumBytes: Long): Long = {
     val env = SparkEnv.get
     if (env ne null) {
-      val key = objectName -> memoryMode
-      val bytesToBeFreed = memoryForObject.getLong(key)
-      val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
-      logDebug(s"Dropping $managerId memory for $objectName =" +
-          s" $numBytes (registered=$bytesToBeFreed)")
-      if (numBytes > 0) {
-        env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
-        memoryForObject.removeAsLong(key)
+      env.memoryManager.synchronized {
+        val key = objectName -> memoryMode
+        val bytesToBeFreed = memoryForObject.getLong(key)
+        val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
+        logDebug(s"Dropping $managerId memory for $objectName =" +
+            s" $numBytes (registered=$bytesToBeFreed)")
+        if (numBytes > 0) {
+          env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
+          memoryForObject.removeAsLong(key)
+        }
       }
     }
     0L
@@ -75,15 +79,17 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
   override def releaseStorageMemoryForObject(
       objectName: String,
       numBytes: Long,
-      memoryMode: MemoryMode): Unit = synchronized {
+      memoryMode: MemoryMode): Unit = {
     logDebug(s"Releasing DefaultManager memory for $objectName $numBytes")
     val env = SparkEnv.get
     if (env ne null) {
-      env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
-      val key = objectName -> memoryMode
-      if (memoryForObject.containsKey(key)) {
-        if (memoryForObject.addTo(key, -numBytes) == numBytes) {
-          memoryForObject.removeAsLong(key)
+      env.memoryManager.synchronized {
+        env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
+        val key = objectName -> memoryMode
+        if (memoryForObject.containsKey(key)) {
+          if (memoryForObject.addTo(key, -numBytes) == numBytes) {
+            memoryForObject.removeAsLong(key)
+          }
         }
       }
     }
@@ -97,9 +103,24 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
   override def getExecutionPoolSize(memoryMode: MemoryMode): Long = 0L
 
-  override def getOffHeapMemory(objectName: String): Long = 0L
+  override def getOffHeapMemory(objectName: String): Long = {
+    val env = SparkEnv.get
+    if (env ne null) {
+      env.memoryManager.synchronized {
+        memoryForObject.getLong(objectName -> MemoryMode.OFF_HEAP)
+      }
+    }
+    0L
+  }
 
-  override def hasOffHeap: Boolean = false
+  override def hasOffHeap: Boolean = {
+    val env = SparkEnv.get
+    if (env ne null) {
+      env.memoryManager.tungstenMemoryMode eq MemoryMode.OFF_HEAP
+    }
+    false
+  }
+
 
   override def logStats(): Unit = logInfo("No stats for NoOpSnappyMemoryManager")
 
@@ -112,8 +133,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
   override def close(): Unit = {}
 
-  /**
-    * Clears the internal map
-    */
-  override def clear(): Unit = {}
+  override def clear(): Unit = {
+    memoryForObject.clear()
+  }
 }
