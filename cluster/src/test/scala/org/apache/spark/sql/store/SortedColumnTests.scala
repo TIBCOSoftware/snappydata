@@ -184,7 +184,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
 //        "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
 
       val rs2 = session.sql("select * from updateTable").collect()
-      // assert(rs2.length === 500)
+      assert(rs2.length === 496)
 
       // scalastyle:off println
       println("")
