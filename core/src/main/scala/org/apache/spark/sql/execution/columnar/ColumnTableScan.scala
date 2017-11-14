@@ -748,8 +748,6 @@ private[sql] final case class ColumnTableScan(
        |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    boolean doneWithThisLoop = false;
        |    boolean isCaseOfUpdate = $isCaseOfUpdateValue;
-       |    int deltaOrdinalAdd  = 0;
-       |    int lastOrdinalIdValue = 0;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows && !doneWithThisLoop;) {
        |      boolean gotRowFromUpdate = false;
        |      $deletedCheck
