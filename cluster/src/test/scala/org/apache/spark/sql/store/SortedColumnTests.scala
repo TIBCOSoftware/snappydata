@@ -185,6 +185,9 @@ class SortedColumnTests extends ColumnTablesTestBase {
 
       val rs2 = session.sql("select * from updateTable").collect()
       assert(rs2.length === 496)
+      def sorted(l: List[Row]) = l.isEmpty ||
+          l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
+      assert(sorted(rs2.toList))
 
       // scalastyle:off println
       println("")
