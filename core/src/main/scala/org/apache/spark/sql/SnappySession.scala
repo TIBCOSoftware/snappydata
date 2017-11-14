@@ -38,7 +38,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 
@@ -1295,9 +1294,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val planOpt = try {
       Some(sessionCatalog.lookupRelation(tableIdent))
     } catch {
-      case te@(_: TableNotFoundException | _: SQLException | _: NoSuchTableException) =>
-        if (ifExists) return else throw te
-      case NonFatal(e) if !resolveRelation => None
+      case e@(_: TableNotFoundException | _: SQLException | _: NoSuchTableException) =>
+        if (ifExists) return else throw e
+      case NonFatal(_) if !resolveRelation => None
     }
     val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
 

@@ -62,7 +62,12 @@ final class ColumnFormatEncoder extends RowEncoder {
       partitionId = row(1).getInt, columnIndex = row(2).getInt)
     // transfer buffer from BufferedBlob as is, or copy for others
     val columnBuffer = row(3).getObject match {
-      case blob: BufferedBlob => blob.getAsLastChunk.chunk
+      case blob: BufferedBlob =>
+        // the chunk can never be a ByteBufferReference in this case and
+        // the internal buffer will now be owned by ColumnFormatValue
+        val chunk = blob.getAsLastChunk
+        assert(!chunk.isSetChunkReference)
+        chunk.chunk
       case blob: Blob => ByteBuffer.wrap(blob.getBytes(1, blob.length().toInt))
     }
     columnBuffer.rewind()
