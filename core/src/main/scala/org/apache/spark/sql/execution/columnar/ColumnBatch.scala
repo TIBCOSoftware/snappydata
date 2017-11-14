@@ -313,7 +313,12 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           val colBlob = colIter.getBlob(1)
           val position = colIter.getInt(2)
           val colBuffer = colBlob match {
-            case blob: BufferedBlob => blob.getAsLastChunk.chunk
+            case blob: BufferedBlob =>
+              // the chunk can never be a ByteBufferReference in this case and
+              // the internal buffer will now be owned by ColumnFormatValue
+              val chunk = blob.getAsLastChunk
+              assert(!chunk.isSetChunkReference)
+              chunk.chunk
             case blob => ByteBuffer.wrap(blob.getBytes(
               1, blob.length().asInstanceOf[Int]))
           }
@@ -382,7 +387,12 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
     val statsBlob = rs.getBlob(1)
     val statsBuffer = statsBlob match {
-      case blob: BufferedBlob => blob.getAsLastChunk.chunk
+      case blob: BufferedBlob =>
+        // the chunk can never be a ByteBufferReference in this case and
+        // the internal buffer will now be owned by ColumnFormatValue
+        val chunk = blob.getAsLastChunk
+        assert(!chunk.isSetChunkReference)
+        chunk.chunk
       case blob => ByteBuffer.wrap(blob.getBytes(
         1, blob.length().asInstanceOf[Int]))
     }
