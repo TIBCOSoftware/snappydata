@@ -209,9 +209,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal," +
-          s"(long)$ordinalIdVar << 32 | System.currentTimeMillis() & 0xFFFFFFFFL," +
-          s"${ev.isNull}, ${ev.value});"
+      s"$function($batchOrdinal," + s"(long)$ordinalIdVar << 32, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
