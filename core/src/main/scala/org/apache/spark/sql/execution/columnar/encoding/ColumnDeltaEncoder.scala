@@ -399,17 +399,21 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var encoderOrdinal = -1
 
     var doProcess = numPositions1 > 0 && numPositions2 > 0
+    val noDuplicateElimination = true // TODO VB: true for now
     while (doProcess) {
       encoderOrdinal += 1
       val areEqual = position1 == position2
       val isGreater = position1 > position2
       if (isGreater || areEqual) {
         // set next update position to be from second
-        if (existingIsDelta && !areEqual) positionsArray(encoderOrdinal) = position2
+        if (if (noDuplicateElimination) existingIsDelta else existingIsDelta && !areEqual) {
+          positionsArray(encoderOrdinal) = position2
+        }
         // consume data at position2 and move it if position2 is smaller
         // else if they are equal then newValue gets precedence
         cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
-          columnBytes2, writer, cursor, encoderOrdinal, doWrite = !areEqual)
+          columnBytes2, writer, cursor, encoderOrdinal,
+          doWrite = if (noDuplicateElimination) true else !areEqual)
         relativePosition2 += 1
         if (relativePosition2 < numPositions2) {
           if (existingIsDelta) {
@@ -424,7 +428,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       }
       // if the two are equal then keep the more recent delta from first
       // write for the second was skipped in the first block above
-      if (!isGreater) {
+      if (if (noDuplicateElimination) !isGreater && !areEqual else !isGreater) {
         // set next update position to be from first
         if (existingIsDelta) positionsArray(encoderOrdinal) = position1
         // consume data at position1 and move it
