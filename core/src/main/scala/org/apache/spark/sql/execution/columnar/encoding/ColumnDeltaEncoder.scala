@@ -188,7 +188,6 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     realEncoder.initializeNulls(initSize)
 
   def setUpdatePosition(position: Int): Unit = {
-    assert(position > 1000) // TODO VB: Remove
     // sorted on LSB so position goes in LSB
     positionIndex += 1
     if (positionIndex == maxSize) {
@@ -400,7 +399,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var encoderOrdinal = -1
     var doProcess = numPositions1 > 0 && numPositions2 > 0
     val noDuplicateElimination = true // TODO VB: true for now
-    def isEqualOrGreater(p1: Int, p2: Int) : (Boolean, Boolean) = (p1 == p2, p1 > p2)
+    def isEqualOrGreater(p1: Int, p2: Int) : (Boolean, Boolean) = if (noDuplicateElimination) {
+      (p1.abs == p2.abs, p1.abs > p2.abs)
+    } else (p1 == p2, p1 > p2)
     while (doProcess) {
       encoderOrdinal += 1
       val (areEqual: Boolean, isGreater: Boolean) = isEqualOrGreater(position1, position2)

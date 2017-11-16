@@ -203,7 +203,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
         s"""
            |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
-           |  $encoderTerm.setUpdatePosition($ordinalIdVar + 1000); // Negative value if insert
+           |  $encoderTerm.setUpdatePosition(-$ordinalIdVar); // Negative value if insert
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
                 cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
