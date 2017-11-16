@@ -31,11 +31,11 @@ import org.apache.spark.sql.types._
  * a nullable or non-nullable version as appropriate.
  */
 final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
-    delta1Position: Long, delta1: ColumnDeltaDecoder,
-    delta2Position: Long, delta2: ColumnDeltaDecoder,
-    delta3Position: Long, delta3: ColumnDeltaDecoder)
-    extends UpdatedColumnDecoderBase(decoder, field,
-      delta1Position, delta1, delta2Position, delta2, delta3Position, delta3) {
+    delta1Position: Int, delta1: ColumnDeltaDecoder,
+    delta2Position: Int, delta2: ColumnDeltaDecoder,
+    delta3Position: Int, delta3: ColumnDeltaDecoder)
+    extends UpdatedColumnDecoderBase(decoder, field, delta1Position, delta1,
+      delta2Position, delta2, delta3Position, delta3) {
 
   protected def nullable: Boolean = false
 
@@ -46,11 +46,11 @@ final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
  * Nullable version of [[UpdatedColumnDecoder]].
  */
 final class UpdatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructField,
-    delta1Position: Long, delta1: ColumnDeltaDecoder,
-    delta2Position: Long, delta2: ColumnDeltaDecoder,
-    delta3Position: Long, delta3: ColumnDeltaDecoder)
-    extends UpdatedColumnDecoderBase(decoder, field,
-      delta1Position, delta1, delta2Position, delta2, delta3Position, delta3) {
+    delta1Position: Int, delta1: ColumnDeltaDecoder,
+    delta2Position: Int, delta2: ColumnDeltaDecoder,
+    delta3Position: Int, delta3: ColumnDeltaDecoder)
+    extends UpdatedColumnDecoderBase(decoder, field, delta1Position, delta1,
+      delta2Position, delta2, delta3Position, delta3) {
 
   protected def nullable: Boolean = true
 
@@ -65,21 +65,21 @@ object UpdatedColumnDecoder {
     // positions are initialized at max so that they always are greater
     // than a valid index
 
-    var delta1Position = Long.MaxValue
+    var delta1Position = Int.MaxValue
     val delta1 = if (delta1Buffer ne null) {
       val d = new ColumnDeltaDecoder(delta1Buffer, field)
       delta1Position = d.moveToNextPosition()
       d
     } else null
 
-    var delta2Position = Long.MaxValue
+    var delta2Position = Int.MaxValue
     val delta2 = if (delta2Buffer ne null) {
       val d = new ColumnDeltaDecoder(delta2Buffer, field)
       delta2Position = d.moveToNextPosition()
       d
     } else null
 
-    var delta3Position = Long.MaxValue
+    var delta3Position = Int.MaxValue
     val delta3 = if (delta3Buffer ne null) {
       val d = new ColumnDeltaDecoder(delta3Buffer, field)
       delta3Position = d.moveToNextPosition()
@@ -99,15 +99,15 @@ object UpdatedColumnDecoder {
 }
 
 abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructField,
-    private final var delta1Position: Long, delta1: ColumnDeltaDecoder,
-    private final var delta2Position: Long, delta2: ColumnDeltaDecoder,
-    private final var delta3Position: Long, delta3: ColumnDeltaDecoder) {
+    private final var delta1Position: Int, delta1: ColumnDeltaDecoder,
+    private final var delta2Position: Int, delta2: ColumnDeltaDecoder,
+    private final var delta3Position: Int, delta3: ColumnDeltaDecoder) {
 
   protected def nullable: Boolean
 
   protected final var nextDeltaBuffer: ColumnDeltaDecoder = _
   protected final var currentDeltaBuffer: ColumnDeltaDecoder = _
-  protected final var nextUpdatedPosition: Long = moveToNextUpdatedPosition(-1, false)
+  protected final var nextUpdatedPosition: Int = Int.MinValue
 
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
@@ -115,48 +115,38 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     if (!nullable || delta.readNotNull) delta.nextNonNullOrdinal()
   }
 
-  protected final def moveToNextUpdatedPosition(ordinal: Int, isCaseOfUpdate: Boolean): Long = {
-    if (isCaseOfUpdate) {
-      moveToNextUpdatedPosition(ordinal)
-    } else {
-      var next0 = Long.MaxValue
-      var next1 = Long.MaxValue
-      var next2 = Long.MaxValue
-      var movedIndex = -1
-
-      if (delta1Position < next0) {
-        next0 = delta1Position
-        movedIndex = 0
-      }
-      if (delta2Position < next1 && (nextUpdatedPosition >> 32).toInt == ordinal) {
-        next1 = delta2Position
-        movedIndex = 1
-      }
-      if (delta3Position < next2 && (nextUpdatedPosition >> 32).toInt == ordinal) {
-        next2 = delta3Position
-        movedIndex = 2
-      }
-
-      movedIndex match {
-        case 0 =>
-          delta1Position = delta1.moveToNextPosition()
-          nextDeltaBuffer = delta1
-          next0
-        case 1 =>
-          delta2Position = delta2.moveToNextPosition()
-          nextDeltaBuffer = delta2
-          next1
-        case 2 =>
-          delta3Position = delta3.moveToNextPosition()
-          nextDeltaBuffer = delta3
-          next2
-        case _ => -1
-      }
-    }
+  protected final def moveToNextUpdatedPosition1(ordinal: Int): Boolean = {
+    if (delta1Position < Int.MaxValue && delta1Position - 1000 == ordinal) {
+      nextUpdatedPosition = delta1Position
+      delta1Position = delta1.moveToNextPosition()
+      nextDeltaBuffer = delta1
+      currentDeltaBuffer = nextDeltaBuffer
+      true
+    } else false
   }
 
-  private final def moveToNextUpdatedPosition(ordinal: Int): Long = {
-    var next = Long.MaxValue
+  protected final def moveToNextUpdatedPosition2(ordinal: Int): Boolean = {
+    if (delta2Position < Int.MaxValue && delta2Position - 1000 == ordinal) {
+      nextUpdatedPosition = delta2Position
+      delta2Position = delta2.moveToNextPosition()
+      nextDeltaBuffer = delta2
+      currentDeltaBuffer = nextDeltaBuffer
+      true
+    } else false
+  }
+
+  protected final def moveToNextUpdatedPosition3(ordinal: Int): Boolean = {
+    if (delta3Position < Int.MaxValue && delta3Position - 1000 == ordinal) {
+      nextUpdatedPosition = delta3Position
+      delta3Position = delta3.moveToNextPosition()
+      nextDeltaBuffer = delta3
+      currentDeltaBuffer = nextDeltaBuffer
+      true
+    } else false
+  }
+
+  private final def moveToNextUpdatedPosition(ordinal: Int): Int = {
+    var next = Int.MaxValue
     var movedIndex = -1
 
     // first delta is the lowest in hierarchy and overrides others
@@ -209,7 +199,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     next
   }
 
-  private def skipUntil(ordinal: Int, isCaseOfUpdate: Boolean): Boolean = {
+  private def skipUntil(ordinal: Int): Boolean = {
     var nextUpdated = nextUpdatedPosition
     // check if ordinal has moved ahead of updated cursor
     if (nextUpdated < ordinal) {
@@ -217,27 +207,32 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
         // skip the position in current delta
         skipUpdatedPosition(nextDeltaBuffer)
         // update the cursor and keep on till ordinal is not reached
-        nextUpdated = moveToNextUpdatedPosition(nextUpdated.toInt, isCaseOfUpdate)
+        nextUpdated = moveToNextUpdatedPosition(nextUpdated)
       } while (nextUpdated < ordinal)
       nextUpdatedPosition = nextUpdated
       if (nextUpdated > ordinal) return true
     }
     currentDeltaBuffer = nextDeltaBuffer
-    nextUpdatedPosition = moveToNextUpdatedPosition(ordinal, isCaseOfUpdate)
+    nextUpdatedPosition = moveToNextUpdatedPosition(ordinal)
     false
   }
 
   final def unchanged(ordinal: Int, isCaseOfUpdate: Boolean): Boolean = {
     if (isCaseOfUpdate) {
+      if (nextUpdatedPosition == Int.MinValue) {
+        nextUpdatedPosition = moveToNextUpdatedPosition(-1)
+      }
       // Original
       if (nextUpdatedPosition > ordinal) true
-      else skipUntil(ordinal, isCaseOfUpdate)
+      else skipUntil(ordinal)
     } else {
-      if ((nextUpdatedPosition >> 32).toInt == ordinal) {
-        currentDeltaBuffer = nextDeltaBuffer
-        nextUpdatedPosition = moveToNextUpdatedPosition(ordinal, isCaseOfUpdate)
-        false
-      } else true
+      if (nextUpdatedPosition == Int.MinValue) {
+        nextUpdatedPosition = Int.MaxValue
+      }
+      if (moveToNextUpdatedPosition1(ordinal)) return false
+      if (moveToNextUpdatedPosition2(ordinal)) return false
+      if (moveToNextUpdatedPosition3(ordinal)) return false
+      true
     }
   }
 

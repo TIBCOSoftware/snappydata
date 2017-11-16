@@ -201,15 +201,15 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
-           |private void $function(int $ordinal, long $ordinalIdVar,
+           |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
-           |  $encoderTerm.setUpdatePosition($ordinalIdVar);
+           |  $encoderTerm.setUpdatePosition($ordinalIdVar + 1000); // Negative value if insert
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
                 cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal," + s"(long)$ordinalIdVar << 32, ${ev.isNull}, ${ev.value});"
+      s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
