@@ -399,11 +399,13 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var encoderOrdinal = -1
 
     var doProcess = numPositions1 > 0 && numPositions2 > 0
+
     val noDuplicateElimination = true // TODO VB: true for now
+    def isEqualOrGreater(p1: Long, p2: Long) : (Boolean, Boolean) = (p1 == p2, p1 > p2)
+
     while (doProcess) {
       encoderOrdinal += 1
-      val areEqual = position1 == position2
-      val isGreater = position1 > position2
+      val (areEqual: Boolean, isGreater: Boolean) = isEqualOrGreater(position1, position2)
       if (isGreater || areEqual) {
         // set next update position to be from second
         if (if (noDuplicateElimination) existingIsDelta else existingIsDelta && !areEqual) {
