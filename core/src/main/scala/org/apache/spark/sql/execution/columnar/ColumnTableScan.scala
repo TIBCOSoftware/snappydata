@@ -404,6 +404,7 @@ private[sql] final case class ColumnTableScan(
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
     val lastRowFromDelta = ctx.freshName("lastRowFromDelta")
+    val isCaseOfUpdate = ctx.freshName("isCaseOfUpdate")
     val deletedDecoder = s"${batch}Deleted"
     val deletedDecoderLocal = s"${deletedDecoder}Local"
     var deletedDeclaration = ""
@@ -560,10 +561,12 @@ private[sql] final case class ColumnTableScan(
 
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName, lastRowFromDelta)
+          bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName, lastRowFromDelta,
+          isCaseOfUpdate)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDelta)
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDelta,
+          isCaseOfUpdate)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -731,7 +734,6 @@ private[sql] final case class ColumnTableScan(
       case _ => ""
     }
     val consumeCode = consume(ctx, columnsInput).trim
-    val isCaseOfUpdateValue = ordinalIdTerm ne null
 
     s"""
        |// Combined iterator for column batches from column table
@@ -745,11 +747,10 @@ private[sql] final case class ColumnTableScan(
        |    $batchConsume
        |    $deletedDeclaration
        |    final int $numRows = $numBatchRows$deletedCountCheck;
-       |    boolean doneWithThisLoop = false;
-       |    boolean isCaseOfUpdate = $isCaseOfUpdateValue;
+       |    // TODO VB: Temporary variable. Must go away
+       |    boolean $isCaseOfUpdate = ${ordinalIdTerm ne null};
        |    boolean $lastRowFromDelta = false;
-       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows && !doneWithThisLoop;
-       |         $batchOrdinal++) {
+       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows; $batchOrdinal++) {
        |      if ($lastRowFromDelta) {
        |        $lastRowFromDelta = false;
        |        $batchOrdinal--;
@@ -757,14 +758,19 @@ private[sql] final case class ColumnTableScan(
        |      $deletedCheck
        |      $assignOrdinalId
        |      $consumeCode
-       |      boolean doLoopBack = !isCaseOfUpdate && $lastRowFromDelta;
-       |      if (shouldStop() && !doLoopBack) {
+       |      if (!$isCaseOfUpdate && $lastRowFromDelta) {
+       |        continue; // loopback
+       |      }
+       |      if (shouldStop()) {
        |        $beforeStop
        |        // increment index for return
        |        $batchIndex = $batchOrdinal + 1;
        |        // update the numNulls
        |        ${numNullsUpdateCode.toString()}
        |        return;
+       |      }
+       |      if ($isCaseOfUpdate) {
+       |        $batchOrdinal = $numRows;
        |      }
        |    }
        |    $buffers = null;
@@ -796,7 +802,7 @@ private[sql] final case class ColumnTableScan(
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String,
-      lastRowFromDelta: String): ExprCode = {
+      lastRowFromDelta: String, isCaseOfUpdate: String): ExprCode = {
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
@@ -855,7 +861,7 @@ private[sql] final case class ColumnTableScan(
     updatedAssign = s"$col = $updateDecoder.getCurrentDeltaBuffer().$updatedAssign;"
 
     val unchangedCode = s"$updateDecoder == null ||" +
-        s"$updateDecoder.unchanged($batchOrdinal, isCaseOfUpdate)"
+        s"$updateDecoder.unchanged($batchOrdinal, $isCaseOfUpdate)"
     if (attr.nullable) {
       val isNullVar = ctx.freshName("isNull")
       val defaultValue = ctx.defaultValue(jt)

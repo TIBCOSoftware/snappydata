@@ -164,7 +164,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
               s" id = $idU, " +
               s" addr = '$addrU', " +
               s" status = $statusU " +
-              s" where (id = $idU)").collect()
+              s" where (id > $idU)").collect()
           assert(rs3.map(_.getLong(0)).sum >= 0)
         })
       } catch {
