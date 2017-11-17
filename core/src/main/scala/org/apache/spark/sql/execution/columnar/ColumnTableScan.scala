@@ -403,6 +403,7 @@ private[sql] final case class ColumnTableScan(
     val buffers = s"${batch}Buffers"
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
+    val lastRowFromDelta = ctx.freshName("lastRowFromDelta")
     val deletedDecoder = s"${batch}Deleted"
     val deletedDecoderLocal = s"${deletedDecoder}Local"
     var deletedDeclaration = ""
@@ -559,10 +560,10 @@ private[sql] final case class ColumnTableScan(
 
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName)
+          bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName, lastRowFromDelta)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDelta)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -710,11 +711,9 @@ private[sql] final case class ColumnTableScan(
            |if ($inputIsRow) {
            |  $columnBatchIdTerm = $invalidUUID;
            |  $bucketIdTerm = -1; // not required for row buffer
-           |  System.out.println("VB: Batch-id=-1 Bucket-id=-1");
            |} else {
            |  $columnBatchIdTerm = $colInput.getCurrentBatchId();
            |  $bucketIdTerm = $colInput.getCurrentBucketId();
-           |  // System.out.println("VB: Batch-id=" + $columnBatchIdTerm + "Bucket-id=" + $bucketIdTerm");
            |}
         """.stripMargin,
         // ordinalId is the last column in the row buffer table (exclude virtual columns)
@@ -748,31 +747,24 @@ private[sql] final case class ColumnTableScan(
        |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    boolean doneWithThisLoop = false;
        |    boolean isCaseOfUpdate = $isCaseOfUpdateValue;
-       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows && !doneWithThisLoop;) {
-       |      boolean gotRowFromUpdate = false;
+       |    boolean $lastRowFromDelta = false;
+       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows && !doneWithThisLoop;
+       |         $batchOrdinal++) {
+       |      if ($lastRowFromDelta) {
+       |        $lastRowFromDelta = false;
+       |        $batchOrdinal--;
+       |      }
        |      $deletedCheck
        |      $assignOrdinalId
        |      $consumeCode
-       |      boolean doLoopBack = !isCaseOfUpdate && gotRowFromUpdate;
-       |      //System.out.println("VB: beforeStop doLoopBack=" + doLoopBack
-       |      //    + " ,isCaseOfUpdate=" + isCaseOfUpdate
-       |      //    + " ,gotRowFromUpdate=" + gotRowFromUpdate);
-       |      if (doLoopBack) {
-       |         continue;
-       |      }
-       |      if (shouldStop()) {
+       |      boolean doLoopBack = !isCaseOfUpdate && $lastRowFromDelta;
+       |      if (shouldStop() && !doLoopBack) {
        |        $beforeStop
        |        // increment index for return
        |        $batchIndex = $batchOrdinal + 1;
        |        // update the numNulls
        |        ${numNullsUpdateCode.toString()}
        |        return;
-       |      }
-       |      //System.out.println("VB: increaseOrdinal=" + !doLoopBack
-       |      //     + " ,isCaseOfUpdate=" + isCaseOfUpdate
-       |      //     + " ,gotRowFromUpdate=" + gotRowFromUpdate);
-       |      if (!doLoopBack) {
-       |        $batchOrdinal++;
        |      }
        |    }
        |    $buffers = null;
@@ -799,9 +791,12 @@ private[sql] final case class ColumnTableScan(
     }
   }
 
+  // TODO: VB Fix scalastyle issue
+  // scalastyle:off
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
-      numNullsVar: String, attr: Attribute, weightVar: String): ExprCode = {
+      numNullsVar: String, attr: Attribute, weightVar: String,
+      lastRowFromDelta: String): ExprCode = {
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
@@ -873,21 +868,23 @@ private[sql] final case class ColumnTableScan(
            |  if ($numNullsVar >= 0) {
            |    $colAssign
            |    // TODO VB: Remove this
-           |    System.out.println("VB: Scan [inserted] " + $col
-           |    + " ,scan_batchOrdinal=" + scan_batchOrdinal
-           |    + " ,scan_numRows=" + scan_numRows);
+           |    System.out.println("VB: Scan [inserted] " + $col +
+           |    " ,scan_batchOrdinal=" + scan_batchOrdinal +
+           |    " ,scan_lastRowFromDelta=" + scan_lastRowFromDelta +
+           |    " ,scan_numRows=" + scan_numRows);
            |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
            |    $numNullsVar = -$numNullsVar;
            |  }
            |} else if ($updateDecoder.readNotNull()) {
+           |  $lastRowFromDelta = true;
            |  $updatedAssign
-           |  gotRowFromUpdate = true;
            |  // TODO VB: Remove this
-           |  System.out.println("VB: Scan [updated] " + $col
-           |  + " ,scan_batchOrdinal=" + scan_batchOrdinal
-           |  + " ,scan_numRows=" + scan_numRows);
+           |  System.out.println("VB: Scan [updated] " + $col +
+           |  " ,scan_batchOrdinal=" + scan_batchOrdinal +
+           |  " ,scan_lastRowFromDelta=" + scan_lastRowFromDelta +
+           |  " ,scan_numRows=" + scan_numRows);
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;
@@ -907,6 +904,7 @@ private[sql] final case class ColumnTableScan(
       ExprCode(code, "false", col)
     }
   }
+  // scalastyle:on
 }
 
 /**
