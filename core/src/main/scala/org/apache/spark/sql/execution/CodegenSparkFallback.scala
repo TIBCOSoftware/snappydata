@@ -22,7 +22,8 @@ import com.gemstone.gemfire.SystemFailure
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
+import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.internal.CodeGenerationException
 
 /**
@@ -33,8 +34,15 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   override def output: Seq[Attribute] = child.output
 
+  override def outputPartitioning: Partitioning = child.outputPartitioning
+
+  override def outputOrdering: Seq[SortOrder] = child.outputOrdering
+
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
     try {
+      val pool = plan.sqlContext.sparkSession.asInstanceOf[SnappySession].
+        sessionState.conf.activeSchedulerPool
+      sparkContext.setLocalProperty("spark.scheduler.pool", pool)
       f(plan)
     } catch {
       case t: Throwable =>
@@ -109,15 +117,15 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
       builder: StringBuilder, verbose: Boolean, prefix: String): StringBuilder =
     child.generateTreeString(depth, lastChildren, builder, verbose, prefix)
 
-  override def children: Seq[SparkPlan] = child.children
+  // override def children: Seq[SparkPlan] = child.children
 
-  override private[sql] def metrics = child.metrics
+  // override private[sql] def metrics = child.metrics
 
-  override private[sql] def metadata = child.metadata
+  // override private[sql] def metadata = child.metadata
 
-  override def subqueries: Seq[SparkPlan] = child.subqueries
+  // override def subqueries: Seq[SparkPlan] = child.subqueries
 
-  override def nodeName: String = child.nodeName
+  override def nodeName: String = "CollectResults"
 
-  override def simpleString: String = child.simpleString
+  override def simpleString: String = "CollectResults"
 }

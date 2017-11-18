@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,7 +27,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAns
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -71,7 +71,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  object LocalJoinStrategies extends Strategy {
+  object HashJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
@@ -158,7 +158,7 @@ private[sql] trait SnappyStrategies {
         case PhysicalOperation(_, _, r@LogicalRelation(
         scan: PartitionedDataSourceScan, _, _)) =>
           // send back numPartitions=1 for replicated table since collocated
-          if (scan.numBuckets == 1) return (Nil, Nil, 1)
+          if (!scan.isPartitioned) return (Nil, Nil, 1)
 
           // use case-insensitive resolution since partitioning columns during
           // creation could be using the same as opposed to during scan
@@ -290,8 +290,7 @@ private[sql] object JoinStrategy {
   def canLocalJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalOperation(_, _, LogicalRelation(
-      t: PartitionedDataSourceScan, _, _)) =>
-        t.numBuckets == 1
+      t: PartitionedDataSourceScan, _, _)) => !t.isPartitioned
       case PhysicalOperation(_, _, Join(left, right, _, _)) =>
         // If join is a result of join of replicated tables, this
         // join result should also be a local join with any other table
@@ -659,9 +658,14 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
       }
 
     case t: TableExec =>
-      if (t.partitioned &&
-          t.child.outputPartitioning.numPartitions != t.numBuckets) {
+      val addShuffle = if (t.partitioned) {
         // force shuffle when inserting into a table with different partitions
+        t.child.outputPartitioning match {
+          case OrderlessHashPartitioningExtract(_, _, _, _, buckets) => buckets != t.numBuckets
+          case p => p.numPartitions != t.numBuckets
+        }
+      } else false
+      if (addShuffle) {
         t.withNewChildren(Seq(ShuffleExchange(HashPartitioning(
           t.requiredChildDistribution.head.asInstanceOf[ClusteredDistribution]
               .clustering, t.numBuckets), t.child)))
@@ -670,9 +674,9 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
 }
 
 /**
-  * Rule to collapse the partial and final aggregates if the grouping keys
-  * match or are superset of the child distribution.
-  */
+ * Rule to insert a helper plan to collect information for other entities
+ * like parameterized literals.
+ */
 case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     extends Rule[SparkPlan] {
   private def addFallback(plan: SparkPlan): SparkPlan = {

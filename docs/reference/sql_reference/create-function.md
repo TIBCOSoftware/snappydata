@@ -1,4 +1,4 @@
-# Create Function
+# CREATE FUNCTION
 
 ```
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'

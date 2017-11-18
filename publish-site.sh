@@ -55,6 +55,7 @@ mkdocs build --clean
 # Copy the generated scala docs inside the site folder. 
 mkdir site/apidocs
 cp -R build-artifacts/scala-2.11/docs/* site/apidocs/
+
 #mkdocs gh-deploy
 
 # remove extra files added to docs

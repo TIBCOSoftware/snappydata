@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,10 +18,10 @@ package org.apache.spark.sql.sources
 
 import java.util.Properties
 
-import scala.collection.mutable
-
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -38,14 +38,16 @@ abstract class MutableRelationProvider
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String,
       data: Option[LogicalPlan]): JDBCMutableRelation = {
-    val parameters = new mutable.HashMap[String, String]
-    parameters ++= options
+    val parameters = new CaseInsensitiveMutableHashMap(options)
     val partitionColumn = parameters.remove("partitioncolumn")
     val lowerBound = parameters.remove("lowerbound")
     val upperBound = parameters.remove("upperbound")
     val numPartitions = parameters.remove("numpartitions")
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
+    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+    val qualifiedTableName = catalog.newQualifiedTableName(table)
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(sqlContext.sparkSession), parameters)
 
@@ -63,13 +65,13 @@ abstract class MutableRelationProvider
         numPartitions.get.toInt)
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
-    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
+    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(qualifiedTableName.toString,
+      sqlContext.conf)
     var success = false
-    val relation = JDBCMutableRelation(connProperties,
-      tableName,
-      getClass.getCanonicalName, mode, schema, parts, options, sqlContext)
+    val relation = JDBCMutableRelation(connProperties, tableName,
+      getClass.getCanonicalName, mode, schema, parts, tableOptions, sqlContext)
     try {
-      relation.tableSchema = relation.createTable(mode)
+      relation.createTable(mode)
 
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       data match {
@@ -81,7 +83,7 @@ abstract class MutableRelationProvider
       catalog.registerDataSourceTable(
         catalog.newQualifiedTableName(tableName), None, Array.empty[String],
         classOf[org.apache.spark.sql.row.DefaultSource].getCanonicalName,
-        options, relation)
+        tableOptions, Some(relation))
       success = true
       relation
     } finally {

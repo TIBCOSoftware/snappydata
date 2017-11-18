@@ -36,8 +36,8 @@ class MapTest extends SnappyFunSuite {
   private val DELETE = 3
 
   test("open hash set comparison") {
-    val numEntries = 5000000
-    val numOperations = 5000000
+    val numEntries = 1000000
+    val numOperations = 1000000
     val numIterations = 10
 
     val oset1 = new THashSet(numEntries, 0.6f)

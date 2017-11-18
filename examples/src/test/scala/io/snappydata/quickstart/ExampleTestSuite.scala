@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -63,8 +63,16 @@ class ExampleTestSuite extends SnappyTestRunner {
       appJar = s"$snappyHome/quickstart/python/CreateTable.py")
   }
 
+  test("KMeans in Python"){
+    SparkSubmit("KMeansWeather", appClass = "", None,
+      confs = Seq.empty[String],
+      appJar = s"$snappyHome/quickstart/python/KMeansWeather.py")
+  }
+
   test("QuickStart.scala script"){
-    SparkShell(Seq.empty[String], "--driver-memory=4g --driver-java-options=\"-XX:+UseConcMarkSweepGC\" \"-XX:+UseParNewGC\" \"-XX:+CMSClassUnloadingEnabled\" \"-XX:MaxNewSize=1g\" ",
+    SparkShell(Seq.empty[String], "--driver-memory=4g --driver-java-options=" +
+      "\"-XX:+UseConcMarkSweepGC\" \"-XX:+UseParNewGC\" \"-XX:+CMSClassUnloadingEnabled\"" +
+      " \"-XX:MaxNewSize=1g\"",
       scriptFile = s"$snappyHome/quickstart/scripts/Quickstart.scala")
   }
 
@@ -118,7 +126,9 @@ class ExampleTestSuite extends SnappyTestRunner {
       s"insert into SNAPPY_COL_TABLE VALUES(2,2);",
       "exit;"))
 
-    RunExample("SmartConnectorExample", "snappydata.SmartConnectorExample")
+    RunExample("SmartConnectorExample",
+      "snappydata.SmartConnectorExample",
+      Seq("spark.snappydata.connection=localhost:1527"))
   }
 
   test("StreamingExample") {

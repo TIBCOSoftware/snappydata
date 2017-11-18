@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -19,5 +19,15 @@
 # should not be executable directly
 # also should not be passed any arguments, since we need original $*
 
-# resolve links - $0 may be a softlink
-export SNAPPY_HOME="${SPARK_HOME}"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+
+if [ -z "$SNAPPY_HOME" ]; then
+  if [ -z "$SPARK_HOME" ]; then
+    export SPARK_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
+  fi
+  export SNAPPY_HOME="${SPARK_HOME}"
+elif [ -z "$SPARK_HOME" ]; then
+  export SPARK_HOME="${SNAPPY_HOME}"
+fi

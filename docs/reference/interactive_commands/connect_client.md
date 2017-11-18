@@ -1,7 +1,5 @@
 # connect client
 
-Using the JDBC SnappyData S thin client driver, connects to a SnappyData member indicated by the *host:port* values.
-
 ## Syntax
 
 ``` pre
@@ -21,10 +19,10 @@ All further commands are processed against the new, current connection.
 ## Example
 
 ``` pre
-SnappyData version 0.9
+SnappyData version 1.0.0 
 snappy> connect client 'localhost:1527' as clientConnection;
 snappy> show connections;
-CLIENTCONNECTION* -     jdbc:snappydata://localhost:1527/
+CLIENTCONNECTION* -     jdbc:snappydata:thrift://localhost[1527]
 * = current connection
 ```
 

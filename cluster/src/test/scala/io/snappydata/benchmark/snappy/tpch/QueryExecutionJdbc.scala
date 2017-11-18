@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,7 +19,7 @@ package io.snappydata.benchmark.snappy.tpch
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{DriverManager, PreparedStatement}
 
-import io.snappydata.benchmark.snappy.TPCH_Snappy
+import io.snappydata.benchmark.TPCH_Queries
 
 object QueryExecutionJdbc {
 
@@ -266,7 +266,7 @@ object QueryExecutionJdbc {
     avgPrintStream.close()
     avgFileStream.close()
 
-    TPCH_Snappy.close
+    QueryExecutor.close
 
   }
 }

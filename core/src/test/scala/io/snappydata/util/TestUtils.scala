@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,6 +15,9 @@
  * LICENSE file.
  */
 package io.snappydata.util
+
+import io.snappydata.Constant
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
 
 import scala.collection.mutable
 
@@ -74,6 +77,31 @@ object TestUtils {
     }
   }
 
+  def dropAllFunctions(snc: => SnappyContext): Unit = {
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      val snc = SnappyContext(sc)
+      try {
+
+        val catalog = snc.sessionState.catalog
+
+        catalog.listFunctions(Constant.DEFAULT_SCHEMA).map(_._1).foreach { func =>
+          if (func.database.isDefined) {
+            catalog.dropFunction(func, ignoreIfNotExists = false)
+          } else {
+            catalog.dropTempFunction(func.funcName, ignoreIfNotExists = false)
+          }
+        }
+
+        catalog.clearTempTables()
+        catalog.destroyAndRegisterBuiltInFunctions()
+
+      } catch {
+        case t: Throwable => t.printStackTrace()
+      }
+
+    }
+  }
   private def checkColocatedByList(colocated: java.util.List[PartitionedRegion],
       allRegions: mutable.Set[String]): Boolean = {
     val itr = colocated.iterator()

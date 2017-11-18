@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,18 +18,15 @@
 package org.apache.spark.sql
 
 
-import scala.collection.mutable.ArrayBuffer
 import java.io.File
-import java.util.Date
+
 import scala.util.Try
 
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
-import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -38,15 +35,16 @@ import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.datasources.{CreateTableUsing, DataSource, RefreshTable}
+import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, RefreshTable}
 import org.apache.spark.sql.sources.ExternalSchemaRelationProvider
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
-import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
+import org.apache.spark.streaming._
 
-abstract class SnappyDDLParser(session: SnappySession)
+abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
+
   final def ALL: Rule0 = rule { keyword(Consts.ALL) }
   final def AND: Rule0 = rule { keyword(Consts.AND) }
   final def AS: Rule0 = rule { keyword(Consts.AS) }
@@ -101,16 +99,22 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
 
   // non-reserved keywords
+  final def ADD: Rule0 = rule { keyword(Consts.ADD) }
+  final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
+  final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
+  final def FETCH: Rule0 = rule { keyword(Consts.FETCH) }
+  final def FIRST: Rule0 = rule { keyword(Consts.FIRST) }
+  final def FN: Rule0 = rule { keyword(Consts.FN) }
   final def FULL: Rule0 = rule { keyword(Consts.FULL) }
   final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
   final def FUNCTIONS: Rule0 = rule { keyword(Consts.FUNCTIONS) }
@@ -120,15 +124,20 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
   final def INIT: Rule0 = rule { keyword(Consts.INIT) }
   final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
+  final def LAST: Rule0 = rule { keyword(Consts.LAST) }
   final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
+  final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
+  final def ONLY: Rule0 = rule { keyword(Consts.ONLY) }
   final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
   final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
   final def PARTITION: Rule0 = rule { keyword(Consts.PARTITION) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
+  final def REPLACE: Rule0 = rule { keyword(Consts.REPLACE) }
+  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
@@ -142,8 +151,8 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
-  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
-  final def FN: Rule0 = rule { keyword(Consts.FN) }
+  final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
+  final def VIEW: Rule0 = rule { keyword(Consts.VIEW) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -183,20 +192,29 @@ abstract class SnappyDDLParser(session: SnappySession)
   final type TableEnd = (Option[String], Option[Map[String, String]],
       Option[LogicalPlan])
 
-  protected def createTable: Rule1[LogicalPlan] = rule {
-    CREATE ~ (EXTERNAL ~> trueFn | TEMPORARY ~> falseFn).? ~ TABLE ~
-        (IF ~ NOT ~ EXISTS ~> trueFn).? ~ tableIdentifier ~
-        tableEnd ~> { (te: Any, notExists: Any, tableIdent: TableIdentifier,
-        schemaStr: StringBuilder, remaining: TableEnd) =>
+  protected final def ifNotExists: Rule1[Boolean] = rule {
+    (IF ~ NOT ~ EXISTS ~ push(true)).? ~> ((o: Any) => o != None)
+  }
 
-      val tempOrExternal = te.asInstanceOf[Option[Boolean]]
-      val ifNotExists = notExists.asInstanceOf[Option[Boolean]]
+  protected final def ifExists: Rule1[Boolean] = rule {
+    (IF ~ EXISTS ~ push(true)).? ~> ((o: Any) => o != None)
+  }
+
+  protected final def identifierWithComment: Rule1[(String, Option[String])] = rule {
+    identifier ~ (COMMENT ~ stringLiteral).? ~>
+        ((id: String, cm: Any) => id -> cm.asInstanceOf[Option[String]])
+  }
+
+  protected def createTable: Rule1[LogicalPlan] = rule {
+    CREATE ~ (EXTERNAL ~ push(true)).? ~ TABLE ~ ifNotExists ~
+        tableIdentifier ~ tableEnd ~> { (external: Any, allowExisting: Boolean,
+        tableIdent: TableIdentifier, schemaStr: StringBuilder, remaining: TableEnd) =>
+
       val options = remaining._2.getOrElse(Map.empty[String, String])
-      val provider = remaining._1.getOrElse(SnappyContext.DEFAULT_SOURCE)
-      val allowExisting = ifNotExists.isDefined
+      val provider = remaining._1.getOrElse(Consts.DEFAULT_SOURCE)
       val schemaString = schemaStr.toString().trim
 
-      val hasExternalSchema = if (tempOrExternal.isDefined) false
+      val hasExternalSchema = if (external != None) false
       else {
         // check if provider class implements ExternalSchemaRelationProvider
         try {
@@ -224,36 +242,25 @@ abstract class SnappyDDLParser(session: SnappySession)
         case Some(queryPlan) =>
           // When IF NOT EXISTS clause appears in the query,
           // the save mode will be ignore.
-          val mode = if (allowExisting) SaveMode.Ignore
-          else SaveMode.ErrorIfExists
-          tempOrExternal match {
-            case None =>
-              CreateMetastoreTableUsingSelect(tableIdent, None,
-                userSpecifiedSchema, schemaDDL, provider, temporary = false,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
+          val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+          external match {
             case Some(true) =>
-              CreateMetastoreTableUsingSelect(tableIdent, None,
-                userSpecifiedSchema, schemaDDL, provider, temporary = false,
+              CreateTableUsingSelect(tableIdent, None,
+                userSpecifiedSchema, schemaDDL, provider,
                 Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
-            case Some(false) if remaining._1.isEmpty && remaining._2.isEmpty =>
-              CreateMetastoreTableUsingSelect(tableIdent, None,
-                userSpecifiedSchema, schemaDDL, provider, temporary = true,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
-            case Some(_) => throw Utils.analysisException(
-              "CREATE TEMPORARY TABLE ... USING ... does not allow AS query")
+            case _ =>
+              CreateTableUsingSelect(tableIdent, None,
+                userSpecifiedSchema, schemaDDL, provider,
+                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
           }
         case None =>
-          tempOrExternal match {
-            case None =>
-              CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
-                schemaDDL, provider, allowExisting, options, isBuiltIn = true)
+          external match {
             case Some(true) =>
-              CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
+              CreateTableUsing(tableIdent, None, userSpecifiedSchema,
                 schemaDDL, provider, allowExisting, options, isBuiltIn = false)
-            case Some(false) =>
-              CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-                temporary = true, options, Array.empty[String], None,
-                allowExisting, managedIfNoPath = false)
+            case _ =>
+              CreateTableUsing(tableIdent, None, userSpecifiedSchema,
+                schemaDDL, provider, allowExisting, options, isBuiltIn = true)
           }
       }
     }
@@ -283,7 +290,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def createIndex: Rule1[LogicalPlan] = rule {
-    (CREATE ~ (GLOBAL ~ HASH ~> falseFn | UNIQUE ~> trueFn).? ~ INDEX) ~
+    (CREATE ~ (GLOBAL ~ HASH ~ push(false) | UNIQUE ~ push(true)).? ~ INDEX) ~
         tableIdentifier ~ ON ~ tableIdentifier ~
         colsWithDirection ~ (OPTIONS ~ options).? ~> {
       (indexType: Any, indexName: TableIdentifier, tableName: TableIdentifier,
@@ -301,25 +308,81 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
+  protected final def globalOrTemporary: Rule1[Boolean] = rule {
+    (GLOBAL ~ push(true)).? ~ TEMPORARY ~> ((g: Any) => g != None)
+  }
+
+  protected def createView: Rule1[LogicalPlan] = rule {
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ (globalOrTemporary.? ~ VIEW |
+        globalOrTemporary ~ TABLE) ~ ifNotExists ~ tableIdentifier ~
+        ('(' ~ ws ~ (identifierWithComment + commaSep) ~ ')' ~ ws).? ~
+        (COMMENT ~ stringLiteral).? ~ AS ~ capture(query) ~> { (replace: Any, gt: Any,
+        allowExisting: Boolean, table: TableIdentifier, cols: Any, comment: Any,
+        plan: LogicalPlan, queryStr: String) =>
+
+      val viewType = gt match {
+        case Some(true) | true => GlobalTempView
+        case Some(false) | false => LocalTempView
+        case _ => PersistedView
+      }
+      val userCols = cols.asInstanceOf[Option[Seq[(String, Option[String])]]] match {
+        case Some(seq) => seq
+        case None => Seq.empty
+      }
+      CreateViewCommand(
+        name = table,
+        userSpecifiedColumns = userCols,
+        comment = comment.asInstanceOf[Option[String]],
+        properties = Map.empty,
+        originalText = Option(queryStr),
+        child = plan,
+        allowExisting = allowExisting,
+        replace = replace != None,
+        viewType = viewType)
+    }
+  }
+
+  protected def createTempViewUsing: Rule1[LogicalPlan] = rule {
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW | TABLE) ~
+        tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
+        (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, tableIdent: TableIdentifier,
+        schema: Any, provider: String, options: Any) => CreateTempViewUsing(
+      tableIdent = tableIdent,
+      userSpecifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]].map(StructType(_)),
+      replace = replace != None,
+      global = global,
+      provider = provider,
+      options = options.asInstanceOf[Option[Map[String, String]]].getOrElse(Map.empty)))
+  }
+
   protected def dropIndex: Rule1[LogicalPlan] = rule {
-    DROP ~ INDEX ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~>
-        ((ifExists: Any, indexName: TableIdentifier) => DropIndex(indexName,
-          ifExists.asInstanceOf[Option[Boolean]].isDefined))
+    DROP ~ INDEX ~ ifExists ~ tableIdentifier ~> DropIndex
   }
 
   protected def dropTable: Rule1[LogicalPlan] = rule {
-    DROP ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~> DropTable
+    DROP ~ (TABLE ~ push(false)) ~ ifExists ~ tableIdentifier ~> DropTableOrView
+  }
+
+  protected def dropView: Rule1[LogicalPlan] = rule {
+    DROP ~ (VIEW ~ push(true)) ~ ifExists ~ tableIdentifier ~> DropTableOrView
   }
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {
-    TRUNCATE ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~> TruncateTable
+    TRUNCATE ~ TABLE ~ ifExists ~ tableIdentifier ~> TruncateManagedTable
+  }
+
+  protected def alterTableAddColumn: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ ADD  ~ COLUMN.? ~ column  ~> AlterTableAddColumn
+  }
+
+  protected def alterTableDropColumn: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ DROP  ~ COLUMN.? ~ qualifiedName ~> AlterTableDropColumn
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
-    CREATE ~ STREAM ~ TABLE ~ (IF ~ NOT ~ EXISTS ~> trueFn).? ~
-        tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
-        OPTIONS ~ options ~> {
-      (ifNotExists: Any, streamIdent: TableIdentifier, schema: Any,
+    CREATE ~ STREAM ~ TABLE ~ ifNotExists ~ tableIdentifier ~ tableSchema.? ~
+        USING ~ qualifiedName ~ OPTIONS ~ options ~> {
+      (allowExisting: Boolean, streamIdent: TableIdentifier, schema: Any,
           pname: String, opts: Map[String, String]) =>
         val specifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]]
             .map(fields => StructType(fields))
@@ -332,9 +395,8 @@ abstract class SnappyDDLParser(session: SnappySession)
         }
         // provider has already been resolved, so isBuiltIn==false allows
         // for both builtin as well as external implementations
-        CreateMetastoreTableUsing(streamIdent, None, specifiedSchema, None,
-          provider, ifNotExists.asInstanceOf[Option[Boolean]].isDefined,
-          opts, isBuiltIn = false)
+        CreateTableUsing(streamIdent, None, specifiedSchema, None,
+          provider, allowExisting, opts, isBuiltIn = false)
     }
   }
 
@@ -344,14 +406,14 @@ abstract class SnappyDDLParser(session: SnappySession)
       resourceType match {
         case "jar" =>
           FunctionResource(FunctionResourceType.fromString(resourceType), path)
-        case other =>
+        case _ =>
           throw Utils.analysisException(s"CREATE FUNCTION with resource type '$resourceType'")
       }
     }
   }
 
-  def checkExists(resource: FunctionResource) = {
-    if(!new File(resource.uri).exists()){
+  def checkExists(resource: FunctionResource): Unit = {
+    if (!new File(resource.uri).exists()) {
       throw new AnalysisException(s"No file named ${resource.uri} exists")
     }
   }
@@ -366,15 +428,15 @@ abstract class SnappyDDLParser(session: SnappySession)
    * }}}
    */
   protected def createFunction: Rule1[LogicalPlan] = rule {
-    CREATE ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ functionIdentifier ~ AS ~
+    CREATE ~ (TEMPORARY ~ push(true)).? ~ FUNCTION ~ functionIdentifier ~ AS ~
         qualifiedName ~ RETURNS ~ columnDataType ~ USING ~ resourceType ~>
         { (te: Any, functionIdent: FunctionIdentifier, className: String,
             t: DataType, funcResource : FunctionResource) =>
 
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = Seq(funcResource)
-          funcResources.foreach(checkExists(_))
-          val classNameWithType  = className + "__"+ t.catalogString
+          funcResources.foreach(checkExists)
+          val classNameWithType = className + "__" + t.catalogString
           CreateFunctionCommand(
             functionIdent.database,
             functionIdent.funcName,
@@ -394,21 +456,20 @@ abstract class SnappyDDLParser(session: SnappySession)
    * }}}
    */
   protected def dropFunction: Rule1[LogicalPlan] = rule {
-    DROP ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ (IF ~ EXISTS ~> trueFn).? ~ functionIdentifier ~>
-        ((te: Any, ifExists: Any, functionIdent: FunctionIdentifier) =>  DropFunctionCommand(
+    DROP ~ (TEMPORARY ~ push(true)).? ~ FUNCTION ~ ifExists ~ functionIdentifier ~>
+        ((te: Any, ifExists: Boolean, functionIdent: FunctionIdentifier) => DropFunctionCommand(
           functionIdent.database,
           functionIdent.funcName,
-          ifExists = ifExists.asInstanceOf[Option[Boolean]].isDefined,
+          ifExists = ifExists,
           isTemp = te.asInstanceOf[Option[Boolean]].isDefined))
   }
-
 
   protected def streamContext: Rule1[LogicalPlan] = rule {
     STREAMING ~ (
         INIT ~ durationUnit ~> ((batchInterval: Duration) =>
-          SnappyStreamingActionsCommand(0, Some(batchInterval))) |
-        START ~> (() => SnappyStreamingActionsCommand(1, None)) |
-        STOP ~> (() => SnappyStreamingActionsCommand(2, None))
+          SnappyStreamingActions(0, Some(batchInterval))) |
+        START ~> (() => SnappyStreamingActions(1, None)) |
+        STOP ~> (() => SnappyStreamingActions(2, None))
     )
   }
 
@@ -418,9 +479,9 @@ abstract class SnappyDDLParser(session: SnappySession)
    *   column_type,comment
    */
   protected def describeTable: Rule1[LogicalPlan] = rule {
-    DESCRIBE ~ (EXTENDED ~> trueFn).? ~ tableIdentifier ~>
+    DESCRIBE ~ (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
         ((extended: Any, tableIdent: TableIdentifier) =>
-          DescribeTable(tableIdent, Map.empty[String, String], extended
+          DescribeTableCommand(tableIdent, Map.empty[String, String], extended
               .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
   }
 
@@ -429,7 +490,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def cache: Rule1[LogicalPlan] = rule {
-    CACHE ~ (LAZY ~> trueFn).? ~ TABLE ~ tableIdentifier ~
+    CACHE ~ (LAZY ~ push(true)).? ~ TABLE ~ tableIdentifier ~
         (AS ~ query).? ~> ((isLazy: Any, tableIdent: TableIdentifier,
         plan: Any) => CacheTableCommand(tableIdent,
       plan.asInstanceOf[Option[LogicalPlan]],
@@ -437,7 +498,9 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def uncache: Rule1[LogicalPlan] = rule {
-    UNCACHE ~ TABLE ~ tableIdentifier ~> UncacheTableCommand |
+    UNCACHE ~ TABLE ~ ifExists ~ tableIdentifier ~>
+        ((ifExists: Boolean, tableIdent: TableIdentifier) =>
+          UncacheTableCommand(tableIdent, ifExists)) |
     CLEAR ~ CACHE ~> (() => ClearCacheCommand)
   }
 
@@ -490,11 +553,8 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
-
-
-
   protected def desc: Rule1[LogicalPlan] = rule {
-    DESCRIBE ~ FUNCTION ~ (EXTENDED ~> trueFn).? ~
+    DESCRIBE ~ FUNCTION ~ (EXTENDED ~ push(true)).? ~
         functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
       DescribeFunctionCommand(name,
         extended.asInstanceOf[Option[Boolean]].isDefined))
@@ -535,12 +595,12 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def column: Rule1[StructField] = rule {
-    identifier ~ columnDataType ~ ((NOT ~> trueFn).? ~ NULL).? ~
+    identifier ~ columnDataType ~ ((NOT ~ push(true)).? ~ NULL).? ~
         (COMMENT ~ stringLiteral).? ~> { (columnName: String,
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharType(size, baseType) =>
+        case CharStringType(size, baseType) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
               .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
           (StringType, false)
@@ -576,7 +636,9 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describeTable | refreshTable | dropTable | truncateTable |
-    createStream | streamContext | createIndex | dropIndex | createFunction | dropFunction | show
+    createView | createTempViewUsing | dropView |
+    alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
+    createIndex | dropIndex | createFunction | dropFunction | show
   }
 
   protected def query: Rule1[LogicalPlan]
@@ -586,7 +648,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def newInstance(): SnappyDDLParser
 }
 
-private[sql] case class CreateMetastoreTableUsing(
+case class CreateTableUsing(
     tableIdent: TableIdentifier,
     baseTable: Option[TableIdentifier],
     userSpecifiedSchema: Option[StructType],
@@ -594,102 +656,36 @@ private[sql] case class CreateMetastoreTableUsing(
     provider: String,
     allowExisting: Boolean,
     options: Map[String, String],
-    isBuiltIn: Boolean) extends ExecuteCommand {
+    isBuiltIn: Boolean) extends Command
 
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    snc.createTable(snc.sessionState.catalog
-        .newQualifiedTableName(tableIdent), provider, userSpecifiedSchema,
-      schemaDDL, mode, snc.addBaseTableOption(baseTable, options), isBuiltIn)
-    Seq.empty
-  }
-}
-
-private[sql] case class CreateMetastoreTableUsingSelect(
+case class CreateTableUsingSelect(
     tableIdent: TableIdentifier,
     baseTable: Option[TableIdentifier],
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
-    temporary: Boolean,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
     query: LogicalPlan,
-    isBuiltIn: Boolean) extends ExecuteCommand {
+    isBuiltIn: Boolean) extends Command
 
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    if (temporary) {
-      // the equivalent of a registerTempTable of a DataFrame
-      if (tableIdent.database.isDefined) {
-        throw Utils.analysisException(
-          s"Temporary table '$tableIdent' should not have specified a database")
-      }
-      Dataset.ofRows(session, query).createTempView(tableIdent.table)
-    } else {
-      snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
-        userSpecifiedSchema, schemaDDL, partitionColumns, mode,
-        snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
-    }
-    Seq.empty
-  }
-}
+case class DropTableOrView(isView: Boolean, ifExists: Boolean,
+    tableIdent: TableIdentifier) extends Command
 
-private[sql] case class DropTable(ifExists: Any,
-    tableIdent: TableIdentifier) extends ExecuteCommand {
+case class TruncateManagedTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
 
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    snc.dropTable(catalog.newQualifiedTableName(tableIdent),
-      ifExists.asInstanceOf[Option[Boolean]].isDefined)
-    Seq.empty
-  }
-}
+case class AlterTableAddColumn(tableIdent: TableIdentifier, addColumn: StructField)
+    extends Command
 
-private[sql] case class TruncateTable(ifExists: Any,
-    tableIdent: TableIdentifier) extends ExecuteCommand {
+case class AlterTableDropColumn(tableIdent: TableIdentifier, column: String) extends Command
 
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
-      ifExists.asInstanceOf[Option[Boolean]].isDefined,
-      ignoreIfUnsupported = false)
-    Seq.empty
-  }
-}
-
-private[sql] case class CreateIndex(indexName: TableIdentifier,
+case class CreateIndex(indexName: TableIdentifier,
     baseTable: TableIdentifier,
     indexColumns: Map[String, Option[SortDirection]],
-    options: Map[String, String]) extends ExecuteCommand {
+    options: Map[String, String]) extends Command
 
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    val tableIdent = catalog.newQualifiedTableName(baseTable)
-    val indexIdent = catalog.newQualifiedTableName(indexName)
-    snc.createIndex(indexIdent, tableIdent, indexColumns, options)
-    Seq.empty
-  }
-}
-
-private[sql] case class DropIndex(
-    indexName: TableIdentifier,
-    ifExists: Boolean) extends ExecuteCommand {
-
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    val indexIdent = catalog.newQualifiedTableName(indexName)
-    snc.dropIndex(indexIdent, ifExists)
-    Seq.empty
-  }
-}
+case class DropIndex(ifExists: Boolean, indexName: TableIdentifier) extends Command
 
 case class DMLExternalTable(
     tableName: TableIdentifier,
@@ -698,51 +694,11 @@ case class DMLExternalTable(
     extends LeafNode with Command {
 
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
+
   override lazy val resolved: Boolean = query.resolved
-  override def output: Seq[Attribute] = Seq.empty
+  override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
 }
 
-private[sql] case class SetSchema(schemaName: String) extends ExecuteCommand {
-  override def run(sparkSession: SparkSession): Seq[Row] = {
-    sparkSession.asInstanceOf[SnappySession].setSchema(schemaName)
-    Seq.empty[Row]
-  }
-}
+case class SetSchema(schemaName: String) extends Command
 
-private[sql] case class SnappyStreamingActionsCommand(action: Int,
-    batchInterval: Option[Duration]) extends ExecuteCommand {
-
-  override def run(session: SparkSession): Seq[Row] = {
-
-    def creatingFunc(): SnappyStreamingContext = {
-      // batchInterval will always be defined when action == 0
-      new SnappyStreamingContext(session.sparkContext, batchInterval.get)
-    }
-
-    action match {
-      case 0 =>
-        val ssc = SnappyStreamingContext.getInstance()
-        ssc match {
-          case Some(x) => // TODO .We should create a named Streaming
-          // Context and check if the configurations match
-          case None => SnappyStreamingContext.getActiveOrCreate(creatingFunc)
-        }
-      case 1 =>
-        val ssc = SnappyStreamingContext.getInstance()
-        ssc match {
-          case Some(x) => x.start()
-          case None => throw Utils.analysisException(
-            "Streaming Context has not been initialized")
-        }
-      case 2 =>
-        val ssc = SnappyStreamingContext.getActive
-        ssc match {
-          case Some(strCtx) => strCtx.stop(stopSparkContext = false,
-            stopGracefully = true)
-          case None => // throw Utils.analysisException(
-          // "There is no running Streaming Context to be stopped")
-        }
-    }
-    Seq.empty[Row]
-  }
-}
+case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command

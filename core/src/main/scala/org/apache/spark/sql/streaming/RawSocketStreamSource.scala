@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -36,9 +36,9 @@ final class RawSocketStreamSource extends StreamPlanProvider {
 
 final class RawSocketStreamRelation(
     @transient override val sqlContext: SQLContext,
-    options: Map[String, String],
+    opts: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options) {
+    extends StreamBaseRelation(opts) {
 
   val hostname: String = options("hostname")
   val port: Int = options.get("port").map(_.toInt).get

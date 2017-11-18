@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -20,19 +20,23 @@
 # Start all snappy daemons - locator, lead and server on the nodes specified in the
 # conf/locators, conf/leads and conf/servers files repsectively
 
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
 
 # Load the Spark configuration
-. "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
 
 # Start Locators
-"$sbin"/snappy-locators.sh status
+"$sbin"/snappy-locators.sh status "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh status
+"$sbin"/snappy-servers.sh status "$@"
 
 # Start Leads
-"$sbin"/snappy-leads.sh status
+if [ "$1" != "rowstore" ]; then
+  "$sbin"/snappy-leads.sh status "$@"
+fi

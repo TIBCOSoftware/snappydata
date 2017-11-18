@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,7 +20,7 @@ package org.apache.spark.sql.hive
 import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable, FunctionResource}
+import org.apache.spark.sql.catalyst.catalog.CatalogFunction
 import org.apache.spark.sql.hive.client.HiveClient
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 
@@ -34,13 +34,15 @@ private[spark] class SnappyConnectorExternalCatalog(var cl: HiveClient,
     val className = funcDefinition.className
     // contains only one URI
     val jarURI = funcDefinition.resources.head.uri
-    val sessionCatalog = SnappyContext(null: SparkContext).snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
+    val sessionCatalog = SnappyContext(null: SparkContext).snappySession
+        .sessionCatalog.asInstanceOf[ConnectorCatalog]
     sessionCatalog.connectorHelper.executeCreateUDFStatement(db, functionName, className, jarURI)
     SnappySession.clearAllCache()
   }
 
   override def dropFunction(db: String, name: String): Unit = {
-    val sessionCatalog = SnappyContext(null: SparkContext).snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
+    val sessionCatalog = SnappyContext(null: SparkContext).snappySession
+        .sessionCatalog.asInstanceOf[ConnectorCatalog]
     sessionCatalog.connectorHelper.executeDropUDFStatement(db, name)
     SnappySession.clearAllCache()
   }

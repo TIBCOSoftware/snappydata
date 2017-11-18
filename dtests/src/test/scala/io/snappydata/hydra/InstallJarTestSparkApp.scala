@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,7 +18,7 @@ package io.snappydata.hydra
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import io.snappydata.hydra.installJar.TestUtils
+import io.snappydata.hydra.installJar.InstallJarTestUtils
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -47,7 +47,7 @@ object InstallJarTestSparkApp {
       pw.flush()
       val numServers: Int = args(1).toInt
       val expectedException: Boolean = args(2).toBoolean
-      TestUtils.verify(snc, args(0), pw, numServers, expectedException)
+      InstallJarTestUtils.verify(snc, args(0), pw, numServers, expectedException)
       pw.println("****** DynamicJarLoadingJob finished ******")
     } match {
       case Success(v) => pw.close()

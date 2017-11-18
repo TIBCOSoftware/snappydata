@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -112,7 +112,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
         columnBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
@@ -157,7 +157,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
         columnBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
@@ -195,6 +195,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
   }
 
   test("Test ShadowTable with 1 bucket, single insert") {
+    Property.ColumnMaxDeltaRows.set(snc.conf, 4)
     snc.sql("DROP TABLE IF EXISTS COLUMNTABLE7")
     snc.dropTable("COLUMNTABLE7", ifExists = true)
     snc.sql("CREATE TABLE COLUMNTABLE7(Key1 INT ,Value INT) " +
@@ -207,7 +208,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
         columnBatchTableName("COLUMNTABLE7").toUpperCase()
       , true).asInstanceOf[PartitionedRegion]
 

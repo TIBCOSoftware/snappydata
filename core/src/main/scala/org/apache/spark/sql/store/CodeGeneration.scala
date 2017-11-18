@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,7 +19,6 @@ package org.apache.spark.sql.store
 import java.sql.PreparedStatement
 import java.util.Collections
 
-import scala.collection.JavaConverters._
 import scala.util.hashing.MurmurHash3
 
 import com.gemstone.gemfire.internal.InternalDataSerializer
@@ -33,9 +32,8 @@ import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.MutableRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, ExprCode, GeneratedClass}
-import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
+import org.apache.spark.sql.catalyst.expressions.codegen._
+import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
 import org.apache.spark.sql.execution.columnar.{ColumnWriter, ExternalStoreUtils}
@@ -54,6 +52,10 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  * (and using some other lookup key than the code string)
  */
 object CodeGeneration extends Logging {
+
+  override def logInfo(msg: => String): Unit = super.logInfo(msg)
+
+  override def logDebug(msg: => String): Unit = super.logDebug(msg)
 
   /**
    * A loading cache of generated <code>GeneratedStatement</code>s.
@@ -124,13 +126,16 @@ object CodeGeneration extends Logging {
       }
     })
 
-  private[this] def getColumnSetterFragment(col: Int, dataType: DataType,
+  def getColumnSetterFragment(col: Int, dataType: DataType,
       dialect: JdbcDialect, ev: ExprCode, stmt: String, schema: String,
       ctx: CodegenContext): String = {
     val timeUtilsClass = DateTimeUtils.getClass.getName.replace("$", "")
     val encoderClass = classOf[UncompressedEncoder].getName
     val utilsClass = classOf[ClientSharedUtils].getName
-    val nonNullCode = dataType match {
+    val serArrayClass = classOf[SerializedArray].getName
+    val serMapClass = classOf[SerializedMap].getName
+    val serRowClass = classOf[SerializedRow].getName
+    val nonNullCode = Utils.getSQLDataType(dataType) match {
       case IntegerType => s"$stmt.setInt(${col + 1}, ${ev.value});"
       case LongType => s"$stmt.setLong(${col + 1}, ${ev.value});"
       case DoubleType => s"$stmt.setDouble(${col + 1}, ${ev.value});"
@@ -155,12 +160,16 @@ object CodeGeneration extends Logging {
           s"$encoderVar = new $encoderClass();")
         s"""
            |final ArrayData $arr = ${ev.value};
-           |final $encoderClass $encoder = $encoderVar;
-           |long $cursor = $encoder.initialize($schema[$col], 1, false);
-           |${ColumnWriter.genCodeArrayWrite(ctx, a, encoder, cursor,
-              arr, "0")}
-           |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |if ($arr instanceof $serArrayClass) {
+           |  $stmt.setBytes(${col + 1}, (($serArrayClass)$arr).toBytes());
+           |} else {
+           |  final $encoderClass $encoder = $encoderVar;
+           |  long $cursor = $encoder.initialize($schema[$col], 1, false);
+           |  ${ColumnWriter.genCodeArrayWrite(ctx, a, encoder, cursor,
+                arr, "0")}
+           |  // finish and set the bytes into the statement
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |}
         """.stripMargin
       case m: MapType =>
         val encoderVar = ctx.freshName("encoderObj")
@@ -171,11 +180,15 @@ object CodeGeneration extends Logging {
           s"$encoderVar = new $encoderClass();")
         s"""
            |final MapData $map = ${ev.value};
-           |final $encoderClass $encoder = $encoderVar;
-           |long $cursor = $encoder.initialize($schema[$col], 1, false);
-           |${ColumnWriter.genCodeMapWrite(ctx, m, encoder, cursor, map, "0")}
-           |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |if ($map instanceof $serMapClass) {
+           |  $stmt.setBytes(${col + 1}, (($serMapClass)$map).toBytes());
+           |} else {
+           |  final $encoderClass $encoder = $encoderVar;
+           |  long $cursor = $encoder.initialize($schema[$col], 1, false);
+           |  ${ColumnWriter.genCodeMapWrite(ctx, m, encoder, cursor, map, "0")}
+           |  // finish and set the bytes into the statement
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |}
         """.stripMargin
       case s: StructType =>
         val encoderVar = ctx.freshName("encoderObj")
@@ -186,12 +199,16 @@ object CodeGeneration extends Logging {
           s"$encoderVar = new $encoderClass();")
         s"""
            |final InternalRow $struct = ${ev.value};
-           |final $encoderClass $encoder = $encoderVar;
-           |long $cursor = $encoder.initialize($schema[$col], 1, false);
-           |${ColumnWriter.genCodeStructWrite(ctx, s, encoder, cursor,
-              struct, "0")}
-           |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |if ($struct instanceof $serRowClass) {
+           |  $stmt.setBytes(${col + 1}, (($serRowClass)$struct).toBytes());
+           |} else {
+           |  final $encoderClass $encoder = $encoderVar;
+           |  long $cursor = $encoder.initialize($schema[$col], 1, false);
+           |  ${ColumnWriter.genCodeStructWrite(ctx, s, encoder, cursor,
+                struct, "0")}
+           |  // finish and set the bytes into the statement
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |}
         """.stripMargin
       case _ =>
         s"$stmt.setObject(${col + 1}, ${ev.value});"
@@ -219,8 +236,7 @@ object CodeGeneration extends Logging {
       classOf[Decimal].getName,
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
-      classOf[MapData].getName,
-      classOf[MutableRow].getName)
+      classOf[MapData].getName)
 
   def getRowSetterFragment(schema: Array[StructField],
       dialect: JdbcDialect, row: String, stmt: String,
@@ -327,12 +343,18 @@ object CodeGeneration extends Logging {
     val fieldVar = ctx.freshName("field")
     val dosVar = ctx.freshName("dos")
     val utilsClass = classOf[ClientSharedUtils].getName
-    val typeConversion = dataType match {
+    val serArrayClass = classOf[SerializedArray].getName
+    val serMapClass = classOf[SerializedMap].getName
+    val serRowClass = classOf[SerializedRow].getName
+    val typeConversion = Utils.getSQLDataType(dataType) match {
       case a: ArrayType =>
         val arr = ctx.freshName("arr")
         val cursor = ctx.freshName("cursor")
         s"""
            |final ArrayData $arr = (ArrayData)$inputVar;
+           |if ($arr instanceof $serArrayClass) {
+           |  return (($serArrayClass)$arr).toBytes();
+           |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
            |${ColumnWriter.genCodeArrayWrite(ctx, a, encoderVar, cursor,
               arr, "0")}
@@ -349,6 +371,9 @@ object CodeGeneration extends Logging {
         val cursor = ctx.freshName("cursor")
         s"""
            |final MapData $map = (MapData)$inputVar;
+           |if ($map instanceof $serMapClass) {
+           |  return (($serMapClass)$map).toBytes();
+           |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
            |${ColumnWriter.genCodeMapWrite(ctx, m, encoderVar, cursor,
               map, "0")}
@@ -365,6 +390,9 @@ object CodeGeneration extends Logging {
         val cursor = ctx.freshName("cursor")
         s"""
            |final InternalRow $struct = (InternalRow)$inputVar;
+           |if ($struct instanceof $serRowClass) {
+           |  return (($serRowClass)$struct).toBytes();
+           |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
            |${ColumnWriter.genCodeStructWrite(ctx, s, encoderVar, cursor,
               struct, "0")}
@@ -390,8 +418,7 @@ object CodeGeneration extends Logging {
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
       classOf[MapData].getName,
-      classOf[InternalDataSerializer].getName,
-      classOf[MutableRow].getName))
+      classOf[InternalDataSerializer].getName))
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
@@ -412,12 +439,6 @@ object CodeGeneration extends Logging {
     val result = cache.get(new ExecuteKey(name, schema, dialect))
     result.executeStatement(stmt, multipleRows, rows, batchSize, schema)
   }
-
-  def executeUpdate(name: String, stmt: PreparedStatement,
-      rows: Iterator[InternalRow], multipleRows: Boolean, batchSize: Int,
-      schema: Array[StructField], dialect: JdbcDialect): Int =
-    executeUpdate(name, stmt, rows.asJava, multipleRows, batchSize,
-      schema, dialect)
 
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],

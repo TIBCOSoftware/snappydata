@@ -93,9 +93,7 @@ def createPartitionedTableUsingAPI(snappy):
 
 
 if __name__ == "__main__":
-    conf = SparkConf().setAppName('Python Example').setMaster("local[*]")
-    sc = SparkContext(conf=conf)
-    # get the SnappyContext
+    sc = SparkContext('local[*]', 'Python Example')
     snappy = SnappySession(sc)
     main(snappy)
 

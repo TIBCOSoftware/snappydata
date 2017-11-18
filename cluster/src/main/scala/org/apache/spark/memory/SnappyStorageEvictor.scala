@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -65,7 +65,8 @@ class SnappyStorageEvictor extends Logging {
 
   @throws(classOf[Exception])
   def evictRegionData(bytesRequired: Long, offHeap: Boolean): Long = {
-    val cache = GemFireCacheImpl.getExisting
+    val cache = GemFireCacheImpl.getInstance()
+    if (cache eq null) return 0L
 
     // check if offHeap has been configured
     val hasOffHeap = cache.getMemorySize > 0
@@ -83,7 +84,7 @@ class SnappyStorageEvictor extends Logging {
           val region = regionSet(i)
           try {
             val bytesEvicted = region.entries.asInstanceOf[AbstractLRURegionMap]
-                .centralizedLruUpdateCallback(offHeap)
+                .centralizedLruUpdateCallback(offHeap, true)
             if (bytesEvicted == 0) {
               regionSet.remove(i)
             } else {

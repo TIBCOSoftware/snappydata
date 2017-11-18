@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,16 +16,18 @@
  */
 package io.snappydata.gemxd
 
+import java.io.InputStream
 import java.util.{Iterator => JIterator}
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.ByteArrayDataInput
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.Version
+import com.gemstone.gemfire.internal.{ByteArrayDataInput, ClassPathLoader, GemFireVersion}
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{SnappyEmbeddedTableStatsProviderService, SnappyTableStatsProviderService}
+import io.snappydata.SnappyEmbeddedTableStatsProviderService
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
@@ -59,7 +61,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     else {
       Some(driverUrl)
     }
-    logInfo(s"invoking startOrTransmute with. $url")
+    logInfo(s"invoking startOrTransmute with $url")
     ExecutorInitiator.startOrTransmuteExecutor(url, driverDM)
   }
 
@@ -117,5 +119,17 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def publishColumnTableStats(): Unit = {
     SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
+  }
+
+  override def getClusterType: String = {
+    GemFireCacheImpl.setGFXDSystem(true)
+    // AQP version if available
+    val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
+      classOf[SnappyDataVersion], SnappyDataVersion.AQP_VERSION_PROPERTIES)
+    if (is ne null) {
+      GemFireVersion.getInstance(classOf[SnappyDataVersion], SnappyDataVersion
+          .AQP_VERSION_PROPERTIES)
+    }
+    GemFireVersion.getClusterType
   }
 }

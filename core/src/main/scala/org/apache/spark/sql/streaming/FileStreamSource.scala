@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -34,9 +34,9 @@ final class FileStreamSource extends StreamPlanProvider {
 
 final class FileStreamRelation(
     @transient override val sqlContext: SQLContext,
-    options: Map[String, String],
+    opts: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options) {
+    extends StreamBaseRelation(opts) {
 
   // HDFS directory to monitor for new file
   val DIRECTORY = "directory"

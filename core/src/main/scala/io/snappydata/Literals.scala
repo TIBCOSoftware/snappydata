@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,8 +18,7 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
-import com.gemstone.gemfire.distributed.internal.DistributionConfig
-import com.gemstone.gemfire.internal.snappy.StoreCallbacks
+import com.gemstone.gemfire.internal.shared.SystemProperties
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
@@ -46,7 +45,7 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = DistributionConfig.SNAPPY_PREFIX
+  val STORE_PROPERTY_PREFIX = SystemProperties.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 
@@ -78,12 +77,19 @@ object Constant {
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 20000
 
   // Internal Column table store schema
-  final val SHADOW_SCHEMA_NAME = StoreCallbacks.SHADOW_SCHEMA_NAME
+  final val SHADOW_SCHEMA_NAME = SystemProperties.SHADOW_SCHEMA_NAME
 
   // Internal Column table store suffix
-  final val SHADOW_TABLE_SUFFIX = StoreCallbacks.SHADOW_TABLE_SUFFIX
+  final val SHADOW_TABLE_SUFFIX = SystemProperties.SHADOW_TABLE_SUFFIX
 
-  final val SHADOW_SCHEMA_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_SEPARATOR
+  final val SHADOW_SCHEMA_SEPARATOR = SystemProperties.SHADOW_SCHEMA_SEPARATOR
+
+  final val SHADOW_SCHEMA_NAME_WITH_PREFIX: String = "." + SHADOW_SCHEMA_NAME
+
+  final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR =
+    SystemProperties.SHADOW_SCHEMA_NAME_WITH_SEPARATOR
+
+  final val COLUMN_TABLE_INDEX_PREFIX = "SNAPPYSYS_INDEX____"
 
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
@@ -93,8 +99,6 @@ object Constant {
   // should be started
   val ZEPPELIN_INTERPRETER_PORT = "zeppelin.interpreter.port"
 
-  val DEFAULT_CACHE_TIMEOUT_SECS = 10
-
   val CHAR_TYPE_BASE_PROP = "base"
 
   val CHAR_TYPE_SIZE_PROP = "size"
@@ -102,6 +106,12 @@ object Constant {
   val MAX_VARCHAR_SIZE = 32672
 
   val MAX_CHAR_SIZE = 254
+
+  /**
+   * Limit the maximum number of rows in a column batch (applied before
+   * [[Property.ColumnBatchSize]] property).
+   */
+  val MAX_ROWS_IN_BATCH = 200000
 
   val DEFAULT_SERIALIZER = "org.apache.spark.serializer.PooledKryoSerializer"
 
@@ -117,6 +127,26 @@ object Constant {
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
+
+  // -10 in sequence will mean all arguments, -1 will mean all odd argument and
+  // -2 will mean all even arguments.
+  // @TODO check whether function like named_struct, ntile etc. can ever
+  // come in the where clause of a query. Right now Tokenization is done
+  // for constants in where clause only.
+  val FOLDABLE_FUNCTIONS: Map[String, Seq[Int]] = Map("ROUND" -> Seq(1),
+    "BROUND" -> Seq(1), "PERCENTILE" -> Seq(1), "STACK" -> Seq(0),
+    "NTILE" -> Seq(0), "STR_TO_MAP" -> Seq(1, 2), "NAMED_STRUCT" -> Seq(-1),
+    "REFLECT" -> Seq(0, 1), "JAVA_METHOD" -> Seq(0, 1), "XPATH" -> Seq(1),
+    "XPATH_BOOLEAN" -> Seq(1), "XPATH_DOUBLE" -> Seq(1),
+    "XPATH_NUMBER" -> Seq(1), "XPATH_FLOAT" -> Seq(1),
+    "XPATH_INT" -> Seq(1), "XPATH_LONG" -> Seq(1),
+    "XPATH_SHORT" -> Seq(1), "XPATH_STRING" -> Seq(1),
+    "PERCENTILE_APPROX" -> Seq(1, 2), "APPROX_PERCENTILE" -> Seq(1, 2),
+    "TRANSLATE" -> Seq(1, 2), "UNIX_TIMESTAMP" -> Seq(1),
+    "TO_UNIX_TIMESTAMP" -> Seq(1), "FROM_UNIX_TIMESTAMP" -> Seq(1),
+    "TO_UTC_TIMESTAMP" -> Seq(1), "FROM_UTC_TIMESTAMP" -> Seq(1),
+    "TRUNC" -> Seq(1), "NEXT_DAY" -> Seq(1),
+    "LIKE" -> Seq(1), "RLIKE" -> Seq(1))
 }
 
 /**
@@ -185,32 +215,20 @@ object Property extends Enumeration {
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
      "JDBC driver. This will be used to form a JDBC URL of the form " +
-     "\"jdbc:snappydata://host:clientPort/\". It is recommended that hostname " +
-     "and client port of the locator be specified for this.",
-     None, Constant.SPARK_PREFIX)
+     "\"jdbc:snappydata://host:clientPort/\" (or use the form \"host[clientPort]\"). " +
+     "It is recommended that hostname and client port of the locator " +
+     "be specified for this.", None, Constant.SPARK_PREFIX)
 
-  val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
-    "Enabled in SnappyData embedded cluster and disabled for other " +
-        "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
+  val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
+    s"Number of query plans that will be cached.", Some(3000))
 
-  val MetaStoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore.dbUrl",
-    "An explicit JDBC URL to use for external meta-data storage. " +
-        "Normally this is set to use the SnappyData store by default and " +
-        "should not be touched unless there are special requirements. " +
-        "Use with caution since an incorrect configuration can result in " +
-        "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
-
-  val MetaStoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore.dbDriver",
-    s"Explicit JDBC driver class for ${MetaStoreDBURL.name} setting.",
-    None, Constant.SPARK_PREFIX)
-
-  val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.batchSize",
+  val ColumnBatchSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +
-        "store. When inserting data into the column storage this is " +
-        "the unit (in bytes) that will be used to split the data into chunks " +
-        "for efficient storage and retrieval. It can also be set for each table " +
-        s"using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
-        "create table DDL.", Some(24 * 1024 * 1024))
+        "store. When inserting data into the column storage this is the unit " +
+        "(in bytes or k/m/g suffixes for units) that will be used to split the data " +
+        "into chunks for efficient storage and retrieval. It can also be set for each " +
+        s"table using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
+        "create table DDL. Maximum allowed size is 2GB.", Some("24m"))
 
   val ColumnMaxDeltaRows = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.maxDeltaRows",
     "The maximum number of rows that can be in the delta buffer of a column table. " +
@@ -238,13 +256,32 @@ object Property extends Enumeration {
         "and not the output size. Set this only if there are known to be queries " +
         "that can return very large number of rows in aggregation results. " +
         "Default value is 0b meaning no limit on the size so the optimized " +
-        "hash aggregation is always used.", Some("0b"))
+        "hash aggregation is always used.", Some("0"))
+
+  val ForceLinkPartitionsToBuckets: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}linkPartitionsToBuckets",
+    "Property to always treat each bucket as separate partition in column/row table scans. " +
+        "When unset or set to false, SnappyData will try to create only " +
+        "as many partitions as executor cores clubbing multiple buckets " +
+        "into each partition when possible.", Some(false), Constant.SPARK_PREFIX)
+
+  val PreferPrimariesInQuery: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}preferPrimaries",
+    "Property to prefer using primary buckets in queries. This reduces " +
+        "scalability of queries in the interest of reduced memory usage for " +
+        "secondary buckets. Default is false.", Some(false), Constant.SPARK_PREFIX)
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +
         "optimizer choice during query planning. Default is turned off.",
     Some(false), Constant.SPARK_PREFIX)
+
+  val SchedulerPool = SQLVal[String](
+    s"${Constant.PROPERTY_PREFIX}scheduler.pool",
+    "Property to set the scheduler pool for the current session. This property can " +
+      "be used to assign queries to different pools for improving " +
+      "throughput of specific queries.", Some("default"))
 
   val FlushReservoirThreshold = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
     "Reservoirs of sample table will be flushed and stored in columnar format if sampling is done" +

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,7 +30,7 @@ import org.apache.spark.scheduler._
  */
 class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
-  val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   SnappyClusterManager.init(this)
 
@@ -61,7 +61,6 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
       logger.info(s"setting from url $prop with $value")
       sc.conf.set(prop, value)
-      sc.conf.set(Property.Embedded.name, "true")
     }
     new SnappyTaskSchedulerImpl(sc)
   }

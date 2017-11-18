@@ -23,15 +23,20 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import org.apache.hadoop.hive.metastore.api.{FieldSchema, Table}
+import org.apache.hadoop.hive.metastore.api.FieldSchema
+import org.apache.hadoop.hive.ql.metadata.Table
 
+import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.catalog.{CatalogColumn, CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.catalyst.parser.ParseException
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamBaseRelation
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{MetadataBuilder, StructField, StructType}
 import org.apache.spark.sql.{AnalysisException, SaveMode, SmartConnectorHelper}
 
 trait ConnectorCatalog extends SnappyStoreHiveCatalog {
@@ -65,7 +70,9 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
     val cacheLoader = new CacheLoader[QualifiedTableName,
         (LogicalRelation, CatalogTable, RelationInfo)]() {
       override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
-        logDebug(s"Creating new cached data source for $in")
+        // table names are always case-insensitive in hive
+        val qualifiedName = Utils.toUpperCase(in.toString)
+        logDebug(s"Creating new cached data source for $qualifiedName")
 
         // val (hiveTable: Table, relationInfo: RelationInfo) =
         //   SmartConnectorHelper.getHiveTableAndMetadata(in)
@@ -73,14 +80,18 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
           connectorHelper.getHiveTableAndMetadata(in)
 
         //        val table: CatalogTable = in.getTable(client)
-        val table: CatalogTable = getCatalogTable(
-          new org.apache.hadoop.hive.ql.metadata.Table(hiveTable)).get
+        val table: CatalogTable = getCatalogTable(hiveTable).get
 
         val userSpecifiedSchema = ExternalStoreUtils.getTableSchema(
           table.properties)
-        val partitionColumns = table.partitionColumns.map(_.name)
+        val partitionColumns = table.partitionSchema.map(_.name)
         val provider = table.properties(SnappyStoreHiveCatalog.HIVE_PROVIDER)
-        val options = table.storage.serdeProperties
+        var options: Map[String, String] = new CaseInsensitiveMap(table.storage.properties)
+        // add dbtable property if not present
+        val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+        if (!options.contains(dbtableProp)) {
+          options += dbtableProp -> qualifiedName
+        }
         val relation = JdbcExtendedUtils.readSplitProperty(
           JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
@@ -102,7 +113,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
             }
 
             dependentRelations.foreach(rel => {
-              DependencyCatalog.addDependent(in.toString, rel)
+              DependencyCatalog.addDependent(qualifiedName, rel)
             })
           case _ => // Do nothing
         }
@@ -123,7 +134,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
       // Note: Hive separates partition columns and the schema, but for us the
       // partition columns are part of the schema
       val partCols = h.getPartCols.asScala.map(fromHiveColumn)
-      val schema = h.getCols.asScala.map(fromHiveColumn) ++ partCols
+      val schema = StructType(h.getCols.asScala.map(fromHiveColumn) ++ partCols)
 
       // Skew spec, storage handler, and bucketing info can't be mapped to CatalogTable (yet)
       val unsupportedFeatures = ArrayBuffer.empty[String]
@@ -156,9 +167,9 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
         },
         schema = schema,
         partitionColumnNames = partCols.map(_.name),
-        sortColumnNames = Seq(), // TODO: populate this
-        bucketColumnNames = h.getBucketCols.asScala,
-        numBuckets = h.getNumBuckets,
+        // We can not populate bucketing information for Hive tables as Spark SQL has a different
+        // implementation of hash function from Hive.
+        bucketSpec = None,
         owner = h.getOwner,
         createTime = h.getTTable.getCreateTime.toLong * 1000,
         lastAccessTime = h.getLastAccessTime.toLong * 1000,
@@ -168,22 +179,35 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
           outputFormat = Option(h.getOutputFormatClass).map(_.getName),
           serde = Option(h.getSerializationLib),
           compressed = h.getTTable.getSd.isCompressed,
-          serdeProperties = Option(h.getTTable.getSd.getSerdeInfo.getParameters)
-              .map(_.asScala.toMap).orNull
+          properties = Option(h.getTTable.getSd.getSerdeInfo.getParameters)
+            .map(_.asScala.toMap).orNull
         ),
-        properties = properties,
+        // For EXTERNAL_TABLE, the table properties has a particular field "EXTERNAL". This is added
+        // in the function toHiveTable.
+        properties = properties.filter(kv => kv._1 != "comment" && kv._1 != "EXTERNAL"),
+        comment = properties.get("comment"),
         viewOriginalText = Option(h.getViewOriginalText),
         viewText = Option(h.getViewExpandedText),
         unsupportedFeatures = unsupportedFeatures)
     }
   }
 
-  private def fromHiveColumn(hc: FieldSchema): CatalogColumn = {
-    CatalogColumn(
+  private def fromHiveColumn(hc: FieldSchema): StructField = {
+    val columnType = try {
+      snappySession.sessionState.sqlParser.parseDataType(hc.getType)
+    } catch {
+      case e: ParseException =>
+        throw new SparkException("Cannot recognize hive type string: " + hc.getType, e)
+    }
+
+    // the key below should match the key used by HiveClientImpl in MetadataBuilder
+    val metadata = new MetadataBuilder().putString("HIVE_TYPE_STRING", hc.getType).build()
+    val field = StructField(
       name = hc.getName,
-      dataType = hc.getType,
+      dataType = columnType,
       nullable = true,
-      comment = Option(hc.getComment))
+      metadata = metadata)
+    Option(hc.getComment).map(field.withComment).getOrElse(field)
   }
 
   override def registerDataSourceTable(
@@ -192,7 +216,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
       partitionColumns: Array[String],
       provider: String,
       options: Map[String, String],
-      relation: BaseRelation): Unit = {
+      relation: Option[BaseRelation]): Unit = {
     // no op
   }
 
@@ -206,6 +230,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
 }
 
 case class RelationInfo(numBuckets: Int = 1,
+    isPartitioned: Boolean = false,
     partitioningCols: Seq[String] = Seq.empty,
     indexCols: Array[String] = Array.empty,
     pkCols: Array[String] = Array.empty,

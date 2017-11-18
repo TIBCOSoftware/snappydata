@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,32 +23,35 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
+import scala.reflect.runtime.universe.TypeTag
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, Property, SnappyTableStatsProviderService}
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
+import org.apache.hadoop.hive.ql.metadata.Hive
 
+import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedObjectCache
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappySharedState}
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.{SnappyParserConsts => ParserConsts}
 import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{Logging, SparkConf, SparkContext, SparkEnv, SparkException}
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -83,7 +86,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   self =>
 
   protected[spark] def this(sc: SparkContext) {
-    this(new SnappySession(sc, None))
+    this(new SnappySession(sc))
   }
 
   override def newSession(): SnappyContext =
@@ -111,7 +114,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   @DeveloperApi
   def saveStream[T](stream: DStream[T],
       aqpTables: Seq[String],
-      transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: u.TypeTag[T]) {
+      transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: TypeTag[T]) {
     snappySession.saveStream(stream, aqpTables, transformer)
   }
 
@@ -127,6 +130,30 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   def appendToTempTableCache(df: DataFrame, table: String,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK): Unit = {
     snappySession.appendToTempTableCache(df, table, storageLevel)
+  }
+
+  /**
+    * alter table adds/drops provided column, only supprted for row tables.
+    * For adding a column isAddColumn should be true, else it will be drop column
+    * @param tableName
+    * @param isAddColumn
+    * @param column
+    */
+  def alterTable(tableName: String, isAddColumn: Boolean,
+                 column: StructField): Unit = {
+    snappySession.alterTable(tableName, isAddColumn, column)
+  }
+
+  /**
+    * alter table adds/drops provided column, only supprted for row tables.
+    * For adding a column isAddColumn should be true, else it will be drop column
+    * @param tableIdent
+    * @param isAddColumn
+    * @param column
+    */
+  private[sql] def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
+                              column: StructField): Unit = {
+    snappySession.alterTable(tableIdent, isAddColumn, column)
   }
 
   /**
@@ -304,6 +331,15 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     createApproxTSTopK(topKName, Option(baseTable), keyColumnName,
       topkOptions.asScala.toMap, allowExisting)
   }
+
+   /**
+    * :: Experimental ::
+    * Creates a [[DataFrame]] from an RDD of Product (e.g. case classes, tuples).
+    * This method handles generic array datatype like Array[Decimal]
+    */
+   def createDataFrameUsingRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+     snappySession.createDataFrameUsingRDD(rdd)
+   }
 
   /**
    * Creates a SnappyData managed table. Any relation providers
@@ -621,13 +657,10 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     snappySession.sqlUncached(sqlText)
 
   /**
-   * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * A user can insert a DataFrame using foreachPartition...
-   * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.insert
-   *            ("MyTable", x.toSeq)
-   *         )
-   * }}}
+    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
+    * {{{
+    *        snc.insert(tableName, dataDF.collect(): _*)
+    * }}}
    * @param tableName
    * @param rows
    * @return number of rows inserted
@@ -639,11 +672,9 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * A user can insert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.insert
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+   *        snc.insert(tableName, rows)
    * }}}
    *
    * @param tableName
@@ -657,11 +688,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * upsert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.put
-   *            ("MyTable", x.toSeq)
-   *         )
+   *         snSession.put(tableName, dataDF.collect(): _*)
    * }}}
    * @param tableName
    * @param rows
@@ -713,11 +741,9 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * upsert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.put
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+   *         snSession.put(tableName, rows)
    * }}}
    *
    * @param tableName
@@ -786,26 +812,23 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
+  @volatile private[this] var _sharedState: SnappySharedState = _
 
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
 
-  val COLUMN_SOURCE = "column"
-  val ROW_SOURCE = "row"
   val SAMPLE_SOURCE = "column_sample"
   val TOPK_SOURCE = "approx_topk"
 
-  val DEFAULT_SOURCE = ROW_SOURCE
   val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
     classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     classOf[execution.row.DefaultSource].getCanonicalName,
     "org.apache.spark.sql.sampling.DefaultSource"
   )
   private val builtinSources = new CaseInsensitiveMap(Map(
-    "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
-    ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
+    ParserConsts.COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
+    ParserConsts.ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
@@ -997,7 +1020,7 @@ object SnappyContext extends Logging {
   }
 
   private def resolveClusterMode(sc: SparkContext): ClusterMode = {
-    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+    val mode = if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
         throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
             " from SnappyData tools package")
@@ -1006,35 +1029,32 @@ object SnappyContext extends Logging {
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
     } else {
       val conf = sc.conf
-      val embedded = Property.Embedded.getOption(conf).exists(_.toBoolean)
       Property.Locators.getOption(conf).collectFirst {
         case s if !s.isEmpty =>
-          val url = "locators=" + s + ";mcast-port=0"
-          if (embedded) ExternalEmbeddedMode(sc, url)
-//          else SplitClusterMode(sc, url)
-          else throw new SparkException(
-          s"Invalid configuration parameter ${Property.Locators}. " +
-              s"Use paramater ${Property.SnappyConnection} for smart connector mode")
+          throw new SparkException(s"Invalid configuration parameter ${Property.Locators}. " +
+              s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
-          val url = "mcast-port=" + s
-          if (embedded) ExternalEmbeddedMode(sc, url)
-          else SplitClusterMode(sc, url)
+          throw new SparkException("Invalid configuration parameter mcast-port. " +
+                s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
         case hostPort if !hostPort.isEmpty =>
-          val p = hostPort.split(":")
-          if (p.length != 2 ) {
-            throw new SparkException("Invalid \"host:clientPort\" pattern specified")
+          val portHolder = new Array[Int](1)
+          val host = SharedUtils.getHostPort(hostPort, portHolder)
+          val clientPort = portHolder(0)
+          if (clientPort == 0) {
+            throw new SparkException(
+              s"Invalid 'host:port' (or 'host[port]') pattern specified: $hostPort")
           }
-          val host = p(0)
-          val clientPort = p(1).toInt
-          val url = Constant.DEFAULT_THIN_CLIENT_URL + s"$host:$clientPort/"
+          val url = s"${Constant.DEFAULT_THIN_CLIENT_URL}$host[$clientPort]/"
           ThinClientConnectorMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
       }
     }
+    logInfo(s"Initializing SnappyData in cluster mode: $mode")
+    mode
   }
 
   private[sql] def initGlobalSnappyContext(sc: SparkContext,
@@ -1045,12 +1065,15 @@ object SnappyContext extends Logging {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
           initMemberBlockMap(sc)
+          _sharedState = SnappySharedState.create(sc)
           _globalClear = session.snappyContextFunctions.clearStatic()
           _globalSNContextInitialized = true
         }
       }
     }
   }
+
+  private[sql] def sharedState: SnappySharedState = _sharedState
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
@@ -1068,15 +1091,8 @@ object SnappyContext extends Logging {
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
         SnappyTableStatsProviderService.start(sc)
         ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
-      case SplitClusterMode(_, _) =>
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyTableStatsProviderService.start(sc)
       case ThinClientConnectorMode(_, url) =>
         SnappyTableStatsProviderService.start(sc, url)
-      case ExternalEmbeddedMode(_, url) =>
-        SnappyContext.urlToConf(url, sc)
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyTableStatsProviderService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
@@ -1094,6 +1110,7 @@ object SnappyContext extends Logging {
       // clear static objects on the driver
       clearStaticArtifacts()
 
+      _sharedState = null
       if (_globalClear ne null) {
         _globalClear()
         _globalClear = null
@@ -1101,8 +1118,8 @@ object SnappyContext extends Logging {
       SnappyTableStatsProviderService.stop()
 
       // clear current hive catalog connection
-      SnappyStoreHiveCatalog.closeCurrent()
-      if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
+      Hive.closeCurrent()
+      if (ExternalStoreUtils.isLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
       MemoryManagerCallback.resetMemoryManager()
@@ -1138,6 +1155,26 @@ object SnappyContext extends Logging {
       else providerName)
   }
 
+  /**
+   * Check if given provider is builtin (including qualified names) and return
+   * the short name and a flag indicating whether provider is a builtin or not.
+   */
+  def getBuiltInProvider(providerName: String): (String, Boolean) = {
+    if (builtinSources.contains(providerName)) {
+      (providerName, true)
+    } else {
+      // check in values too
+      val fullProvider = if (providerName.endsWith(".DefaultSource")) providerName
+      else providerName + ".DefaultSource"
+      builtinSources.collectFirst {
+        case (p, c) if c == providerName ||
+            ((fullProvider ne providerName) && c == fullProvider) => p
+      } match {
+        case Some(p) => (p, true)
+        case _ => (providerName, false)
+      }
+    }
+  }
 
   def flushSampleTables(): Unit = {
     val sampleRelations = _anySNContext.sessionState.catalog.
@@ -1162,6 +1199,11 @@ object SnappyContext extends Logging {
 abstract class ClusterMode {
   val sc: SparkContext
   val url: String
+  val description: String = "Cluster mode"
+
+  override def toString: String = {
+    s"$description: sc = $sc, url = $url"
+  }
 }
 
 final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
@@ -1207,20 +1249,11 @@ final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
  * Spark driver that also hosts a job-server and GemFireXD accessor.
  */
 case class SnappyEmbeddedMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Embedded cluster mode"
+}
 
 /**
- * This is for the two cluster mode: one is the normal snappy cluster, and
- * this one is a separate local/Spark/Yarn/Mesos cluster fetching data from
- * the snappy cluster on demand that just remains like an external datastore.
- */
-case class SplitClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
-
-/**
- * Similar to SplitClusterMode but this will use thin client driver for making
- * connections to Snappy cluster.
- *
  * This is for the two cluster mode: one is
  * the normal snappy cluster, and this one is a separate local/Spark/Yarn/Mesos
  * cluster fetching data from the snappy cluster on demand that just
@@ -1228,27 +1261,26 @@ case class SplitClusterMode(override val sc: SparkContext,
  *
  */
 case class ThinClientConnectorMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
-
-/**
- * This is for the "old-way" of starting GemFireXD inside an existing
- * Spark/Yarn cluster where cluster nodes themselves boot up as GemXD cluster.
- */
-case class ExternalEmbeddedMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Smart connector mode"
+}
 
 /**
  * The local mode which hosts the data, executor, driver
  * (and optionally even jobserver) all in the same node.
  */
 case class LocalMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Local mode"
+}
 
 /**
  * A regular Spark/Yarn/Mesos or any other non-snappy cluster.
  */
 case class ExternalClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "External cluster mode"
+}
 
 class TableNotFoundException(message: String, cause: Option[Throwable] = None)
     extends AnalysisException(message) with Serializable

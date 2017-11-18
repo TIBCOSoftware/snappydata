@@ -1,0 +1,161 @@
+# entries for basic LDAP authentication first
+
+dn: uid=gemfire1,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire1
+sn: GEMFIRE1
+givenName: Gemfire1
+cn: GEMFIRE1
+displayName: GEMFIRE1
+userPassword:: e1NTSEF9NFRnV3RwNXE0UExyU3RaK2h0blVYREdXWUlodUNlWEg=
+
+dn: uid=gemfire2,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire2
+sn: GEMFIRE2
+givenName: Gemfire2
+cn: GEMFIRE2
+displayName: GEMFIRE2
+userPassword:: e1NTSEF9MHUrVDJJbkZaV2x5VnVtMEVreG91bHNoN09WcXNDQk0=
+
+dn: uid=gemfire3,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire3
+sn: GEMFIRE3
+givenName: Gemfire3
+cn: GEMFIRE3
+displayName: GEMFIRE3
+userPassword:: e1NTSEF9V2p1ZFZNR2E0akhLREhoN1NyVnV3NmE4UWU1SSs0N2E=
+
+dn: uid=gemfire4,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire4
+sn: GEMFIRE4
+givenName: Gemfire4
+cn: GEMFIRE4
+displayName: GEMFIRE4
+userPassword:: e1NTSEF9OCtHV3p6SHZWakpTTThyaU1ET3BkY3RLaUd1cmZiMVY=
+
+dn: uid=gemfire5,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire5
+sn: GEMFIRE5
+givenName: Gemfire5
+cn: GEMFIRE5
+displayName: GEMFIRE5
+userPassword:: e1NTSEF9bUhkU1grdkhPRzhPY09VblhjdWFBYUJMYjE4R1dScWc=
+
+dn: uid=gemfire6,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire6
+sn: GEMFIRE6
+givenName: Gemfire6
+cn: GEMFIRE6
+displayName: GEMFIRE6
+userPassword:: e1NTSEF9RTFzYlRWbDVRaE5JZGpPam1mZ1k1bEpYZUo0SjBoZUY=
+
+dn: uid=gemfire7,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire7
+sn: GEMFIRE7
+givenName: Gemfire7
+cn: GEMFIRE7
+displayName: GEMFIRE7
+userPassword:: e1NTSEF9NjhlalExZmJWK2pCWjArdjdacjBjb2tUTEc4VURDSWY=
+
+dn: uid=gemfire8,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire8
+sn: GEMFIRE8
+givenName: Gemfire8
+cn: GEMFIRE8
+displayName: GEMFIRE8
+userPassword:: e1NTSEF9REFXRXVMSDhKUzVSdUhoYzdneURLQU5MRCtHSEhJWTk=
+
+dn: uid=gemfire9,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire9
+sn: GEMFIRE9
+givenName: Gemfire9
+cn: GEMFIRE9
+displayName: GEMFIRE9
+userPassword:: e1NTSEF9K2w3RXdsbnJXdnBCS0p3M1g4THVxejhicXhHYjBseDI=
+
+dn: uid=gemfire10,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+uid: gemfire10
+sn: GEMFIRE10
+givenName: Gemfire10
+cn: GEMFIRE10
+displayName: GEMFIRE10
+userPassword:: e1NTSEF9N0twb05LcVZnY2NDWHIxZG5EM01yRXdrSkxQMUxtbU0=
+
+# LDAP group entries
+
+dn: cn=gemGroup1,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: groupOfNames
+objectClass: top
+cn: gemGroup1
+gidNumber: 1001
+member: uid=gemfire1,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+member: uid=gemfire2,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+member: uid=gemfire3,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+
+dn: cn=gemGroup2,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: groupOfNames
+objectClass: top
+cn: gemGroup2
+gidNumber: 1002
+member: uid=gemfire3,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+member: uid=gemfire4,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+member: uid=gemfire5,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+
+dn: cn=gemGroup3,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: groupOfUniqueNames
+cn: gemGroup3
+gidNumber: 1003
+uniqueMember: uid=gemfire6,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+uniqueMember: uid=gemfire7,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+uniqueMember: uid=gemfire8,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+
+dn: cn=gemGroup4,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: groupOfNames
+cn: gemGroup4
+gidNumber: 1004
+member: uid=gemfire1,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+member: uid=gemfire3,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+member: uid=gemfire9,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+
+dn: cn=gemGroup5,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: groupOfUniqueNames
+objectClass: top
+cn: gemGroup5
+gidNumber: 1005
+uniqueMember: uid=gemfire7,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+uniqueMember: uid=gemfire4,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+uniqueMember: cn=gemGroup3,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+
+dn: cn=gemGroup6,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: groupOfNames
+cn: gemGroup6
+gidNumber: 1006
+member: uid=gemfire2,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+member: cn=gemGroup4,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+member: uid=gemfire6,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+
+dn: cn=gemGroup7,ou=ldapTesting,dc=pune,dc=gemstone,dc=com
+objectClass: groupOfNames
+cn: gemGroup7
+gidNumber: 1007
+member: 
+member:
