@@ -305,13 +305,11 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
       case buffers if buffers.size() > 1 => // already filled in
       case buffers =>
         hasUpdates = false
-        for (i <- 1 to totalColumns) {
-          ps.setLong(i, currentUUID)
-        }
+        ps.setLong(1, currentUUID)
         val colIter = ps.executeQuery()
         while (colIter.next()) {
-          val colBlob = colIter.getBlob(1)
-          val position = colIter.getInt(2)
+          val colBlob = colIter.getBlob(4)
+          val position = colIter.getInt(3)
           val colBuffer = colBlob match {
             case blob: BufferedBlob =>
               // the chunk can never be a ByteBufferReference in this case and
@@ -325,7 +323,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           colBlob.free()
           buffers.put(position, colBuffer)
           // check if this an update delta
-          if (!hasUpdates && position < ColumnFormatEntry.DELETE_MASK_COL_INDEX) {
+          if (position < ColumnFormatEntry.DELETE_MASK_COL_INDEX && !hasUpdates) {
             hasUpdates = true
           }
         }
@@ -333,7 +331,13 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   }
 
   def getColumnLob(columnIndex: Int): ByteBuffer = {
-    colBuffers.get(columnIndex + 1)
+    val buffer = colBuffers.get(columnIndex + 1)
+    if (buffer ne null) buffer
+    else {
+      // empty buffer indicates value removed from region
+      throw new EntryDestroyedException(s"Iteration on column=${columnIndex + 1} " +
+          s"bucket=$partitionId uuid=$currentUUID failed due to missing value")
+    }
   }
 
   def hasUpdatedColumns: Boolean = hasUpdates
@@ -381,11 +385,11 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   }
 
   override protected def getCurrentValue: ByteBuffer = {
-    currentUUID = rs.getLong(2)
+    currentUUID = rs.getLong(1)
     releaseColumns()
     // create a new map instead of clearing old one to help young gen GC
     colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
-    val statsBlob = rs.getBlob(1)
+    val statsBlob = rs.getBlob(4)
     val statsBuffer = statsBlob match {
       case blob: BufferedBlob =>
         // the chunk can never be a ByteBufferReference in this case and
