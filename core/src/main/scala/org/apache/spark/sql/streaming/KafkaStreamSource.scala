@@ -40,9 +40,9 @@ class KafkaStreamSource extends StreamPlanProvider {
 
 final class KafkaStreamRelation(
     @transient override val sqlContext: SQLContext,
-    options: Map[String, String],
+    opts: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options) {
+    extends StreamBaseRelation(opts) {
 
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
     t.split(";").map { s =>

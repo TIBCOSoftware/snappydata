@@ -172,11 +172,18 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val cacheLoader = new CacheLoader[QualifiedTableName,
         (LogicalRelation, CatalogTable, RelationInfo)]() {
       override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
-        logDebug(s"Creating new cached data source for $in")
+        // table names are always case-insensitive in hive
+        val qualifiedName = Utils.toUpperCase(in.toString)
+        logDebug(s"Creating new cached data source for $qualifiedName")
         val table = in.getTable(client)
         val partitionColumns = table.partitionSchema.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
-        val options = new CaseInsensitiveMap(table.storage.properties)
+        var options: Map[String, String] = new CaseInsensitiveMap(table.storage.properties)
+        // add dbtable property if not present
+        val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+        if (!options.contains(dbtableProp)) {
+          options += dbtableProp -> qualifiedName
+        }
         val userSpecifiedSchema = if (table.properties.contains(
           ExternalStoreUtils.USER_SPECIFIED_SCHEMA)) {
           ExternalStoreUtils.getTableSchema(table.properties)
@@ -202,7 +209,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             }
 
             dependentRelations.foreach(rel => {
-              DependencyCatalog.addDependent(in.toString, rel)
+              DependencyCatalog.addDependent(qualifiedName, rel)
             })
           case _ => // Do nothing
         }
@@ -587,22 +594,22 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
 
-        var newOptions = new CaseInsensitiveMutableHashMap(options)
-        options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+        val newOptions = new CaseInsensitiveMutableHashMap(options)
+        newOptions.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
           case Some(_) =>
           case None => newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
               ExternalStoreUtils.defaultColumnBatchSize(snappySession).toString)
             // mark this as transient since can change as per session configuration later
             newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE_TRANSIENT -> "true")
         }
-        options.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
+        newOptions.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
           case Some(_) =>
           case None => newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
               ExternalStoreUtils.defaultColumnMaxDeltaRows(snappySession).toString)
             // mark this as transient since can change as per session configuration later
             newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS_TRANSIENT -> "true")
         }
-        options.get(ExternalStoreUtils.COMPRESSION_CODEC) match {
+        newOptions.get(ExternalStoreUtils.COMPRESSION_CODEC) match {
           case Some(_) =>
           case None => newOptions += (ExternalStoreUtils.COMPRESSION_CODEC ->
               ExternalStoreUtils.defaultCompressionCodec(snappySession).toString)
