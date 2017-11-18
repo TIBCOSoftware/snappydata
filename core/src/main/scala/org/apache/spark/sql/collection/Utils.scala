@@ -61,7 +61,7 @@ import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark._
 
 object Utils {
 
@@ -815,8 +815,9 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     if (part.blockId.host != thisBlockId.host ||
         part.blockId.executorId != thisBlockId.executorId) {
-      throw new IllegalStateException(
-        s"Unexpected execution of $part on $thisBlockId")
+      // kill the task and force a retry
+      logWarning(s"Unexpected execution of $part on $thisBlockId")
+      throw new TaskKilledException
     }
 
     f(context, part)
@@ -987,11 +988,35 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-class ExecutorMultiBucketLocalShellPartition(override val index: Int,
-    val buckets: mutable.HashSet[Int],
-    val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
+final class SmartExecutorBucketPartition(private var _index: Int,
+    var hostList: mutable.ArrayBuffer[(String, String)])
+    extends Partition with KryoSerializable {
+
+  override def index: Int = _index
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    output.writeVarInt(_index, true)
+    val numHosts = hostList.length
+    output.writeVarInt(numHosts, true)
+    for ((host, url) <- hostList) {
+      output.writeString(host)
+      output.writeString(url)
+    }
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    _index = input.readVarInt(true)
+    val numHosts = input.readVarInt(true)
+    hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
+    for (_ <- 0 until numHosts) {
+      val host = input.readString()
+      val url = input.readString()
+      hostList += host -> url
+    }
+  }
+
   override def toString: String =
-    s"ExecutorMultiBucketLocalShellPartition($index, $buckets, $hostList"
+    s"SmartExecutorBucketPartition($index, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {

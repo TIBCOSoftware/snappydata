@@ -20,7 +20,7 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.nio.ByteBuffer
 import java.sql.Blob
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, RegionEntry}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.store.RowEncoder.PreProcessRow
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
@@ -36,9 +36,8 @@ import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
  */
 final class ColumnFormatEncoder extends RowEncoder {
 
-  override def toRow(entry: RegionEntry, value: AnyRef,
-      container: GemFireContainer): ExecRow = {
-    val batchKey = entry.getRawKey.asInstanceOf[ColumnFormatKey]
+  override def toRow(rawKey: Object, value: AnyRef, container: GemFireContainer): ExecRow = {
+    val batchKey = rawKey.asInstanceOf[ColumnFormatKey]
     val batchValue = value.asInstanceOf[ColumnFormatValue]
     // layout the same way as declared in ColumnFormatRelation
     val row = new ValueRow(5)
@@ -52,7 +51,9 @@ final class ColumnFormatEncoder extends RowEncoder {
 
   private def getUUID(row: Array[DataValueDescriptor]): Long = {
     val uuid = row(0).getLong
-    assert(BucketRegion.isValidUUID(uuid), s"Invalid batch UUID in ${row.mkString(" ; ")}")
+    if (!BucketRegion.isValidUUID(uuid)) {
+      throw new IllegalStateException(s"Invalid batch UUID in ${row.mkString(" ; ")}")
+    }
     uuid
   }
 
