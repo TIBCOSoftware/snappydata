@@ -74,7 +74,7 @@ object ServiceUtils {
     }
     // try hard to maintain executor_ locality
     if (!storePropNames.contains("spark.locality.wait.process")) {
-      storeProps.setProperty("spark.locality.wait.process", "30s")
+      storeProps.setProperty("spark.locality.wait.process", "20s")
     }
     storeProps
   }

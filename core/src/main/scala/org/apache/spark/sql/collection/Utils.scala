@@ -61,7 +61,7 @@ import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark._
 
 object Utils {
 
@@ -815,8 +815,9 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     if (part.blockId.host != thisBlockId.host ||
         part.blockId.executorId != thisBlockId.executorId) {
-      throw new IllegalStateException(
-        s"Unexpected execution of $part on $thisBlockId")
+      // kill the task and force a retry
+      logWarning(s"Unexpected execution of $part on $thisBlockId")
+      throw new TaskKilledException
     }
 
     f(context, part)
