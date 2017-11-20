@@ -1266,15 +1266,6 @@ case class ThinClientConnectorMode(override val sc: SparkContext,
 }
 
 /**
- * This is for the "old-way" of starting GemFireXD inside an existing
- * Spark/Yarn cluster where cluster nodes themselves boot up as GemXD cluster.
- */
-case class ExternalEmbeddedMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode {
-  override val description: String = "External embedded mode"
-}
-
-/**
  * The local mode which hosts the data, executor, driver
  * (and optionally even jobserver) all in the same node.
  */

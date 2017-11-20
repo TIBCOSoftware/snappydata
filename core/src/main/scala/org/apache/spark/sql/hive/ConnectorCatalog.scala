@@ -30,6 +30,8 @@ import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.catalyst.parser.ParseException
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtendedUtils, ParentRelation}
@@ -68,7 +70,9 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
     val cacheLoader = new CacheLoader[QualifiedTableName,
         (LogicalRelation, CatalogTable, RelationInfo)]() {
       override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
-        logDebug(s"Creating new cached data source for $in")
+        // table names are always case-insensitive in hive
+        val qualifiedName = Utils.toUpperCase(in.toString)
+        logDebug(s"Creating new cached data source for $qualifiedName")
 
         // val (hiveTable: Table, relationInfo: RelationInfo) =
         //   SmartConnectorHelper.getHiveTableAndMetadata(in)
@@ -82,7 +86,12 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
           table.properties)
         val partitionColumns = table.partitionSchema.map(_.name)
         val provider = table.properties(SnappyStoreHiveCatalog.HIVE_PROVIDER)
-        val options = table.storage.properties
+        var options: Map[String, String] = new CaseInsensitiveMap(table.storage.properties)
+        // add dbtable property if not present
+        val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+        if (!options.contains(dbtableProp)) {
+          options += dbtableProp -> qualifiedName
+        }
         val relation = JdbcExtendedUtils.readSplitProperty(
           JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
@@ -104,7 +113,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
             }
 
             dependentRelations.foreach(rel => {
-              DependencyCatalog.addDependent(in.toString, rel)
+              DependencyCatalog.addDependent(qualifiedName, rel)
             })
           case _ => // Do nothing
         }
