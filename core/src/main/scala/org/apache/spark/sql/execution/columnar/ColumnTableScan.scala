@@ -750,7 +750,8 @@ private[sql] final case class ColumnTableScan(
        |    // TODO VB: Temporary variable. Must go away
        |    boolean $isCaseOfUpdate = ${ordinalIdTerm ne null};
        |    boolean $lastRowFromDelta = false;
-       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows; $batchOrdinal++) {
+       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
+       |         $batchOrdinal++) {
        |      if ($lastRowFromDelta) {
        |        $lastRowFromDelta = false;
        |        $batchOrdinal--;
@@ -770,7 +771,7 @@ private[sql] final case class ColumnTableScan(
        |        return;
        |      }
        |      if ($isCaseOfUpdate) {
-       |        $batchOrdinal = $numRows;
+       |        $batchOrdinal = $numRows; // exit the loop
        |      }
        |    }
        |    $buffers = null;
