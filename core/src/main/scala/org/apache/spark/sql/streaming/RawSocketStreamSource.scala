@@ -36,9 +36,9 @@ final class RawSocketStreamSource extends StreamPlanProvider {
 
 final class RawSocketStreamRelation(
     @transient override val sqlContext: SQLContext,
-    options: Map[String, String],
+    opts: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options) {
+    extends StreamBaseRelation(opts) {
 
   val hostname: String = options("hostname")
   val port: Int = options.get("port").map(_.toInt).get

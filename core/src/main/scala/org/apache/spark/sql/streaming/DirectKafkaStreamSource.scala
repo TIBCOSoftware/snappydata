@@ -41,9 +41,9 @@ class DirectKafkaStreamSource extends StreamPlanProvider {
 
 final class DirectKafkaStreamRelation(
     @transient override val sqlContext: SQLContext,
-    options: Map[String, String],
+    opts: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options)
+    extends StreamBaseRelation(opts)
     with Logging with Serializable {
 
   val topicsSet = options("topics").split(",").toSet
