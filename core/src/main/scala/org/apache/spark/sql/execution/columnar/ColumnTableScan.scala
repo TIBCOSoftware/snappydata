@@ -417,6 +417,7 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("int", batchIndex, "")
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
+    ctx.addMutableState("boolean", isCaseOfUpdate, s"")
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -562,11 +563,11 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName, lastRowFromDelta,
-          isCaseOfUpdate)
+          isCaseOfUpdate, numRows)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDelta,
-          isCaseOfUpdate)
+          isCaseOfUpdate, numRows)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -748,7 +749,7 @@ private[sql] final case class ColumnTableScan(
        |    $deletedDeclaration
        |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    // TODO VB: Temporary variable. Must go away
-       |    boolean $isCaseOfUpdate = ${ordinalIdTerm ne null};
+       |    $isCaseOfUpdate = ${ordinalIdTerm ne null};
        |    boolean $lastRowFromDelta = false;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
@@ -803,7 +804,7 @@ private[sql] final case class ColumnTableScan(
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String,
-      lastRowFromDelta: String, isCaseOfUpdate: String): ExprCode = {
+      lastRowFromDelta: String, isCaseOfUpdate: String, numRows: String): ExprCode = {
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
@@ -876,9 +877,9 @@ private[sql] final case class ColumnTableScan(
            |    $colAssign
            |    // TODO VB: Remove this
            |    System.out.println("VB: Scan [inserted] " + $col +
-           |    " ,scan_batchOrdinal=" + scan_batchOrdinal +
-           |    " ,scan_lastRowFromDelta=" + scan_lastRowFromDelta +
-           |    " ,scan_numRows=" + scan_numRows);
+           |    " ,batchOrdinal=" + $batchOrdinal +
+           |    " ,lastRowFromDelta=" + $lastRowFromDelta +
+           |    " ,numRows=" + $numRows);
            |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
@@ -889,9 +890,9 @@ private[sql] final case class ColumnTableScan(
            |  $updatedAssign
            |  // TODO VB: Remove this
            |  System.out.println("VB: Scan [updated] " + $col +
-           |  " ,scan_batchOrdinal=" + scan_batchOrdinal +
-           |  " ,scan_lastRowFromDelta=" + scan_lastRowFromDelta +
-           |  " ,scan_numRows=" + scan_numRows);
+           |    " ,batchOrdinal=" + $batchOrdinal +
+           |    " ,lastRowFromDelta=" + $lastRowFromDelta +
+           |    " ,numRows=" + $numRows);
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;

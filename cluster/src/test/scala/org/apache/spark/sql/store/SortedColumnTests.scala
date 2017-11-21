@@ -131,7 +131,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
       session.sql("drop table if exists updateTable")
 
       session.sql("create table updateTable (id int, addr string, status boolean) " +
-          "using column options(buckets '1', partition_by 'id')")
+          "using column options(buckets '2', partition_by 'id')")
 
       session.range(numElements).filter(_  % 10 < 6).selectExpr("id",
         "concat('addr', cast(id as string))",
@@ -164,7 +164,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
               s" id = $idU, " +
               s" addr = '$addrU', " +
               s" status = $statusU " +
-              s" where (id > $idU)").collect()
+              s" where (id = $idU)").collect()
           assert(rs3.map(_.getLong(0)).sum >= 0)
         })
       } catch {
@@ -184,16 +184,17 @@ class SortedColumnTests extends ColumnTablesTestBase {
 //        "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
 
       val rs2 = session.sql("select * from updateTable").collect()
-      assert(rs2.length === 496)
-      def sorted(l: List[Row]) = l.isEmpty ||
-          l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
-      assert(sorted(rs2.toList))
-
       // scalastyle:off println
       println("")
       println("Number of rows after update = " + rs2.length)
       println("")
       // scalastyle:on println
+      assert(rs2.length === 496)
+
+      // Disable verifying rows in sorted order
+      // def sorted(l: List[Row]) = l.isEmpty ||
+      //    l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
+      // assert(sorted(rs2.toList))
 
       /*
       var res = session.sql("select count(*) from updateTable").collect()
