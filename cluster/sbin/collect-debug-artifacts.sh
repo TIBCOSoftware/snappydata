@@ -148,6 +148,7 @@ function check_configs {
     echo SNAPPY_HOME = "${SNAPPY_HOME}"
     echo OUTPUT_DIR = "${OUTPUT_DIR}"
     echo TAR_FILE = "${TAR_FILE}"
+    echo INVERT_PATTERNS = "${EGREP_INVERT_MATCH_PATTERNS}"
   fi
 
   if [ -z "${START_TIME}" ]; then
@@ -216,6 +217,7 @@ function collect_data {
     echo "arg6 verbose = ${VERBOSE}"
     echo "arg7 start epoch = ${START_EPOCH}"
     echo "arg8 end epoch = ${END_EPOCH}"
+    echo "arg9 invert pattern = ${EGREP_INVERT_MATCH_PATTERNS}"
   fi
 
   if [ "${DUMP_STACK}" != "1" ]; then
@@ -226,7 +228,7 @@ function collect_data {
   # Create the outdir with the same name on each remote and collect everything there.
   typeset -f | ssh $host "$(cat);collect_on_remote \"${wd}\" \"${NO_OF_STACK_DUMPS}\" \\
       \"${INTERVAL_BETWEEN_DUMPS}\" \"${GET_EVERYTHING}\" \"${collector_host}\" \\
-      \"${VERBOSE}\" \"${START_EPOCH}\" \"${END_EPOCH}\""
+      \"${VERBOSE}\" \"${START_EPOCH}\" \"${END_EPOCH}\" \"${EGREP_INVERT_MATCH_PATTERNS}\""
 }
 
 function collect_on_remote {
@@ -238,6 +240,7 @@ function collect_on_remote {
   verbose="$6"
   start_epoch="$7"
   end_epoch="$8"
+  invert_pattern="$9"
 
   # Create a .tmpcda dir if not exists else empty it
   tmp_dir="$data_dir/.tmpcda"
@@ -435,6 +438,20 @@ function collect_on_remote {
       echo "copied and returnval=${returnval}"
     fi
   done
+
+  # remove all unwanted lines from logs
+  if [ ! -z "${invert_pattern}" ] ; then
+    cd "${tmp_dir}"
+    for i in `ls *.log*`
+      do
+        invert_log_file_name=$i".inv"
+        egrep -v $invert_pattern $i > "$invert_log_file_name"
+        rm $i
+        if [ "${verbose}" = "1" ]; then
+          echo "Removing invert pattern lines from the log file $i"
+        fi
+      done
+  fi
 
   # gzip all the files so that rsync is fast
   cd "${tmp_dir}"
