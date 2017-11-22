@@ -24,7 +24,7 @@ import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
+import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
@@ -349,7 +349,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def notExpression: Rule1[Expression] = rule {
-    (NOT ~> falseFn).? ~ comparisonExpression ~> ((not: Any, e: Expression) =>
+    (NOT ~ push(true)).? ~ comparisonExpression ~> ((not: Any, e: Expression) =>
       if (not.asInstanceOf[Option[Boolean]].isEmpty) e else Not(e))
   }
 
@@ -377,7 +377,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
         invertibleExpression |
-        IS ~ (NOT ~> trueFn).? ~ NULL ~>
+        IS ~ (NOT ~ push(true)).? ~ NULL ~>
             ((e: Expression, not: Any) =>
               if (not.asInstanceOf[Option[Boolean]].isEmpty) IsNull(e)
               else IsNotNull(e)) |
@@ -615,7 +615,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
-    ((expression ~ sortDirection.? ~ (NULLS ~ (FIRST ~> trueFn | LAST ~> falseFn)).? ~>
+    ((expression ~ sortDirection.? ~ (NULLS ~ (FIRST ~ push(true) | LAST ~ push(false))).? ~>
         ((e: Expression, d: Any, n: Any) => (e, d, n))) + commaSep) ~> ((exps: Any) =>
       exps.asInstanceOf[Seq[(Expression, Option[SortDirection], Option[Boolean])]].map {
         case (child, d, n) =>
@@ -645,7 +645,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         RepartitionByExpression(e, l)))).? ~
     (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
         ((id: String, w: WindowSpec) => id -> w)) + commaSep)).? ~
-    (LIMIT ~ TOKENIZE_END ~ expression).? ~> { (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
+    ((LIMIT ~ TOKENIZE_END ~ expression) | fetchExpression).? ~> {
+      (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
       val withOrder = o.asInstanceOf[Option[LogicalPlan => LogicalPlan]]
           .map(_ (l)).getOrElse(l)
       val window = w.asInstanceOf[Option[Seq[(String, WindowSpec)]]].map { ws =>
@@ -667,6 +668,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       }.getOrElse(withOrder)
       e.asInstanceOf[Option[Expression]].map(Limit(_, window)).getOrElse(window)
     }
+  }
+
+  protected final def fetchExpression: Rule1[Expression] = rule {
+    FETCH ~ FIRST ~ TOKENIZE_END ~ expression ~ ((ROW|ROWS) ~ ONLY) ~> ((f: Expression) => f)
   }
 
   protected final def distributeBy: Rule1[LogicalPlan => LogicalPlan] = rule {
@@ -792,7 +797,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
             val n2str = if (n2.isEmpty) "" else s".${n2.get}"
             throw Utils.analysisException(s"invalid expression $n1$n2str(*)")
           }) |
-          (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
+          (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
             val f2 = n2.asInstanceOf[Option[String]]
             val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
@@ -864,8 +869,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected def select: Rule1[LogicalPlan] = rule {
-    SELECT ~ (DISTINCT ~> trueFn).? ~
-    (namedExpression + commaSep) ~
+    SELECT ~ (DISTINCT ~ push(true)).? ~
+    TOKENIZE_BEGIN ~ (namedExpression + commaSep) ~ TOKENIZE_END ~
     (FROM ~ relations).? ~
     (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     groupBy.? ~
@@ -1007,30 +1012,30 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   // Only when wholeStageEnabled try for tokenization. It should be true
   private val tokenizationDisabled = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
 
-  private var tokenize = !tokenizationDisabled && session.sessionState.conf.wholeStageEnabled
+  private var tokenize = false
 
-  private var isSelect = false
+  private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() =>
-      tokenize = !tokenizationDisabled && isSelect && session.sessionState.conf.wholeStageEnabled)
+    MATCH ~> (() => tokenize = !tokenizationDisabled && canTokenize &&
+        session.sessionState.conf.wholeStageEnabled)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
     MATCH ~> {() => tokenize = false}
   }
 
-  protected final def SET_SELECT: Rule0 = rule {
-    MATCH ~> (() => isSelect = true)
+  protected final def ENABLE_TOKENIZE: Rule0 = rule {
+    MATCH ~> (() => canTokenize = true)
   }
 
-  protected final def SET_NOSELECT: Rule0 = rule {
-    MATCH ~> (() => isSelect = false)
+  protected final def DISABLE_TOKENIZE: Rule0 = rule {
+    MATCH ~> (() => canTokenize = false)
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (SET_SELECT ~ (query.named("select") | insert | put | update | delete)) |
-        (SET_NOSELECT ~ (dmlOperation | ctes | ddl | set | cache | uncache | desc))
+    (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete)) |
+        (DISABLE_TOKENIZE ~ (dmlOperation | ctes | ddl | set | cache | uncache | desc))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {

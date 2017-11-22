@@ -5,12 +5,13 @@ To create a job that can be submitted through the job server, the job must imple
 **Scala**
 
 ```scala
-class SnappySampleJob implements SnappySQLJob {
+object SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
-  def runSnappyJob(snappy: SnappySession, jobConfig: Config): Any
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
 
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
-  def isValidJob(snappy: SnappySession, config: Config): SnappyJobValidation
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
+
 }
 ```
 
@@ -28,12 +29,12 @@ class SnappySampleJob extends SnappySQLJob {
 
 **Scala**
 ```scala
-class SnappyStreamingSampleJob implements SnappyStreamingJob {
+object SnappyStreamingSampleJob extends SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
-  def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any
+  override def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any = {
 
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
-  def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation
+  override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }
 ```
 

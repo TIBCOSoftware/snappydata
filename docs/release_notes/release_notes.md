@@ -44,13 +44,14 @@ The SnappyData team is pleased to announce the availability of SnappyData Releas
 - Several other performance improvements.
 
 <heading2> Select bug fixes and performance related fixes</heading2>
-There have been numerous bug fixes done as part of this release. Some of these are included below. For a more comprehensive list, see [ReleaseNotes.txt](https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt).
+
+There have been numerous bug fixes done as part of this release. Some of these are included below. For a more comprehensive list, see [ReleaseNotes](https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt).
 
 | Issue | Description |
-|--------|--------|
+|------|--------|
 |SNAP-1756|Fixed data inconsistency issues when a new node is joining the cluster and at the same time write operations are going on.|
-|SNAP-1377</br>SNAP-902|The product internally does retries on redundant copy of partitions on the event of a node failure|
-|SNAP-1893|Fixed the wrong status of locators on restarts. After cluster restart, snappy-status-all.sh used to show locators in waiting state even when the actual status changed to running|
-|SNAP-1426|Fixed the SnappyData Pulse freezing when loading data sets|
-|SNAP-1688</br>SNAP-1798|More accurate accounting of execution and storage memory|
-|SNAP-1714|Corrected case-sensitivity handling for query API calls|
+|SNAP -1377</br>SNAP -902|The product internally does retries on redundant copy of partitions on the event of a node failure|
+|SNAP -1893|Fixed the wrong status of locators on restarts. After cluster restart, snappy-status-all.sh used to show locators in waiting state even when the actual status changed to running|
+|SNAP -1426|Fixed the SnappyData Pulse freezing when loading data sets|
+|SNAP -1688</br>SNAP-1798|More accurate accounting of execution and storage memory|
+|SNAP&nbsp;-1714|Corrected case-sensitivity handling for query API calls|

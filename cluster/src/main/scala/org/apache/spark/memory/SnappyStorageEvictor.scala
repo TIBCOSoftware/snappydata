@@ -65,7 +65,8 @@ class SnappyStorageEvictor extends Logging {
 
   @throws(classOf[Exception])
   def evictRegionData(bytesRequired: Long, offHeap: Boolean): Long = {
-    val cache = GemFireCacheImpl.getExisting
+    val cache = GemFireCacheImpl.getInstance()
+    if (cache eq null) return 0L
 
     // check if offHeap has been configured
     val hasOffHeap = cache.getMemorySize > 0

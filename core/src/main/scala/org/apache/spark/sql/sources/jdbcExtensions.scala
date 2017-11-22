@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.types._
@@ -105,7 +106,7 @@ object JdbcExtendedUtils extends Logging {
     }
     val sb = new StringBuilder()
     schema.fields.foreach { field =>
-      val dataType = field.dataType
+      val dataType = Utils.getSQLDataType(field.dataType)
       val typeString: String =
         jdbcType(dataType, field.metadata).map(_.databaseTypeDefinition).getOrElse(
           dataType match {
