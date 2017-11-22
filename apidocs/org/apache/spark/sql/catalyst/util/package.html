@@ -241,7 +241,7 @@ runtime complexity compared to the original algorithm.
 that pays attention to the platform endianness and uses a consistent
 endian format (little-endian) so is suitable for storage.</p>
     </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SerializedMapextendsMapData"></a>
+      <a id="SerializedMapextendsMapDatawithExternalizablewithKryoSerializable"></a>
       <a id="SerializedMap:SerializedMap"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -249,10 +249,10 @@ endian format (little-endian) so is suitable for storage.</p>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SerializedMap.html"><span class="name">SerializedMap</span></a><span class="result"> extends <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></span>
+        <a href="SerializedMap.html"><span class="name">SerializedMap</span></a><span class="result"> extends <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a> with <span class="extype" name="java.io.Externalizable">Externalizable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@SerializedMapextendsMapData" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@SerializedMapextendsMapDatawithExternalizablewithKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

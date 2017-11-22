@@ -45,13 +45,11 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">CreateTableUsing</span><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="temporary">temporary: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="allowExisting">allowExisting: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="managedIfNoPath">managedIfNoPath: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">CreateTableUsing</span><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="schemaDDL">schemaDDL: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="allowExisting">allowExisting: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="isBuiltIn">isBuiltIn: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Used to represent the operation of create table using a data source.
-</p></div><dl class="paramcmts block"><dt class="param">allowExisting</dt><dd class="cmt"><p>If it is true, we will do nothing when the table already exists.
-                     If it is false, an exception will be thrown</p></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a>, <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a>, <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -90,8 +88,8 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="org.apache.spark.sql.CreateTableUsing#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],provider:String,temporary:Boolean,options:Map[String,String],partitionColumns:Array[String],bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec],allowExisting:Boolean,managedIfNoPath:Boolean):org.apache.spark.sql.CreateTableUsing"></a>
+              <ol><li name="org.apache.spark.sql.CreateTableUsing#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,baseTable:Option[org.apache.spark.sql.catalyst.TableIdentifier],userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],schemaDDL:Option[String],provider:String,allowExisting:Boolean,options:Map[String,String],isBuiltIn:Boolean):org.apache.spark.sql.CreateTableUsing"></a>
       <a id="&lt;init&gt;:CreateTableUsing"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,15 +97,14 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CreateTableUsing</span><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="temporary">temporary: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="allowExisting">allowExisting: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="managedIfNoPath">managedIfNoPath: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+        <span class="name">CreateTableUsing</span><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>, <span name="userSpecifiedSchema">userSpecifiedSchema: <span class="extype" name="scala.Option">Option</span>[<a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="schemaDDL">schemaDDL: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="allowExisting">allowExisting: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="isBuiltIn">isBuiltIn: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@&lt;init&gt;(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],provider:String,temporary:Boolean,options:Map[String,String],partitionColumns:Array[String],bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec],allowExisting:Boolean,managedIfNoPath:Boolean):org.apache.spark.sql.CreateTableUsing" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@&lt;init&gt;(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,baseTable:Option[org.apache.spark.sql.catalyst.TableIdentifier],userSpecifiedSchema:Option[org.apache.spark.sql.types.StructType],schemaDDL:Option[String],provider:String,allowExisting:Boolean,options:Map[String,String],isBuiltIn:Boolean):org.apache.spark.sql.CreateTableUsing" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">allowExisting</dt><dd class="cmt"><p>If it is true, we will do nothing when the table already exists.
-                     If it is false, an exception will be thrown</p></dd></dl></div>
+      
     </li></ol>
             </div>
 
@@ -186,7 +183,7 @@
     </span>
       <p class="shortcomment cmt">All the attributes that are used for this plan.</p><div class="fullcomment"><div class="comment cmt"><p>All the attributes that are used for this plan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsing#allowExisting" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.CreateTableUsing#allowExisting" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="allowExisting:Boolean"></a>
       <a id="allowExisting:Boolean"></a>
       <h4 class="signature">
@@ -202,8 +199,7 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">If it is true, we will do nothing when the table already exists.</p><div class="fullcomment"><div class="comment cmt"><p>If it is true, we will do nothing when the table already exists.
-                     If it is false, an exception will be thrown</p></div></div>
+      
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan#analyzed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="analyzed:Boolean"></a>
       <a id="analyzed:Boolean"></a>
@@ -301,19 +297,19 @@ pasted in the REPL to build an equivalent Tree.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsing#bucketSpec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec]"></a>
-      <a id="bucketSpec:Option[BucketSpec]"></a>
+    </li><li name="org.apache.spark.sql.CreateTableUsing#baseTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="baseTable:Option[org.apache.spark.sql.catalyst.TableIdentifier]"></a>
+      <a id="baseTable:Option[TableIdentifier]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">bucketSpec</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>
+        <span class="name">baseTable</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@baseTable:Option[org.apache.spark.sql.catalyst.TableIdentifier]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -803,6 +799,23 @@ For example, this can be used to show sub-queries.
     </span>
       <p class="shortcomment cmt">The set of all attributes that are input to this operator by its children.</p><div class="fullcomment"><div class="comment cmt"><p>The set of all attributes that are input to this operator by its children.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.CreateTableUsing#isBuiltIn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isBuiltIn:Boolean"></a>
+      <a id="isBuiltIn:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isBuiltIn</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@isBuiltIn:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isDebugEnabled:Boolean"></a>
       <a id="isDebugEnabled:Boolean"></a>
@@ -1128,23 +1141,6 @@ For example, this can be used to show sub-queries.
       <p class="shortcomment cmt">Creates a copy of this type of tree node after a transformation.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a copy of this type of tree node after a transformation.
 Must be overridden by child classes that have constructor arguments
 that are not present in the productIterator.</p></div><dl class="paramcmts block"><dt class="param">newArgs</dt><dd class="cmt"><p>the new product arguments.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsing#managedIfNoPath" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="managedIfNoPath:Boolean"></a>
-      <a id="managedIfNoPath:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">managedIfNoPath</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@managedIfNoPath:Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="map[A](f:BaseType=&gt;A):Seq[A]"></a>
       <a id="map[A]((LogicalPlan)⇒A):Seq[A]"></a>
@@ -1455,23 +1451,6 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
       <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
 Numbers for each node can be found in the <a href="catalyst/trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>This is a variant of <a href="catalyst/trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> that returns the node as BaseType (if the type matches).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsing#partitionColumns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="partitionColumns:Array[String]"></a>
-      <a id="partitionColumns:Array[String]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">partitionColumns</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@partitionColumns:Array[String]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#prettyJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyJson:String"></a>
       <a id="prettyJson:String"></a>
@@ -1785,6 +1764,23 @@ can do better should override this function.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.CreateTableUsing#schemaDDL" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="schemaDDL:Option[String]"></a>
+      <a id="schemaDDL:Option[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">schemaDDL</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@schemaDDL:Option[String]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#schemaString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="schemaString:String"></a>
       <a id="schemaString:String"></a>
@@ -1923,23 +1919,6 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@tableIdent:org.apache.spark.sql.catalyst.TableIdentifier" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.CreateTableUsing#temporary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="temporary:Boolean"></a>
-      <a id="temporary:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">temporary</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsing@temporary:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

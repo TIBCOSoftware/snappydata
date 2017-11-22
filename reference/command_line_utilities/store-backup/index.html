@@ -1161,29 +1161,21 @@
             
                 <li class="toctree-l3"><a href="#backup-and-restore">backup and restore</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#syntax">Syntax</a></li>
+                    <li><a class="toctree-l4" href="#syntax">Syntax</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#description">Description</a></li>
+                    <li><a class="toctree-l4" href="#description">Description</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#prerequisites-and-best-practices">Prerequisites and Best Practices</a></li>
+                    <li><a class="toctree-l4" href="#prerequisites-and-best-practices">Prerequisites and Best Practices</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#specifying-the-backup-directory">Specifying the Backup Directory</a></li>
+                    <li><a class="toctree-l4" href="#specifying-the-backup-directory">Specifying the Backup Directory</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#example">Example</a></li>
+                    <li><a class="toctree-l4" href="#example">Example</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#output-messages-from-snappy-backup">Output Messages from snappy backup</a></li>
+                    <li><a class="toctree-l4" href="#output-messages-from-snappy-backup">Output Messages from snappy backup</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#backup-directory-structure-and-its-contents">Backup Directory Structure and Its Contents</a></li>
+                    <li><a class="toctree-l4" href="#backup-directory-structure-and-its-contents">Backup Directory Structure and Its Contents</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#restoring-files">Restoring Files</a></li>
+                    <li><a class="toctree-l4" href="#restoring-files">Restoring Files</a></li>
                 
             
             </ul>
@@ -1687,8 +1679,6 @@
 <p class="admonition-title">Note</p>
 <p>SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed.</br> 
    If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.</p>
-</p>
-
 </div>
 <ul>
 <li>
@@ -1717,7 +1707,7 @@
 </li>
 </ul>
 <p><a id="syntax"></a></p>
-<h1 id="syntax">Syntax</h1>
+<h2 id="syntax">Syntax</h2>
 <p>Use the <code>-locator</code> option, on the command line to connect to the SnappyData cluster.</p>
 <pre><code class="pre">snappy backup [-baseline=&lt;baseline directory&gt;] &lt;target directory&gt; [-J-D&lt;vmprop&gt;=&lt;prop-value&gt;]
  &lt;-locators=&lt;addresses&gt;&gt; [-bind-address=&lt;address&gt;] [-&lt;prop-name&gt;=&lt;prop-value&gt;]*
@@ -1763,7 +1753,7 @@
 </tbody>
 </table>
 <p><a id="description"></a></p>
-<h1 id="description">Description</h1>
+<h2 id="description">Description</h2>
 <p>An online backup saves the following:</p>
 <ul>
 <li>
@@ -1777,7 +1767,7 @@
 </li>
 </ul>
 <p><a id="prereq"></a></p>
-<h1 id="prerequisites-and-best-practices">Prerequisites and Best Practices</h1>
+<h2 id="prerequisites-and-best-practices">Prerequisites and Best Practices</h2>
 <ul>
 <li>
 <p>Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.</p>
@@ -1796,7 +1786,7 @@
 </li>
 </ul>
 <p><a id="backup_directory"></a></p>
-<h1 id="specifying-the-backup-directory">Specifying the Backup Directory</h1>
+<h2 id="specifying-the-backup-directory">Specifying the Backup Directory</h2>
 <p>The directory you specify for backup can be used multiple times. Each backup first creates a top level directory for the backup, under the directory you specify, identified to the minute. You can use one of two formats:</p>
 <ul>
 <li>
@@ -1807,7 +1797,7 @@
 </li>
 </ul>
 <p><a id="example"></a></p>
-<h1 id="example">Example</h1>
+<h2 id="example">Example</h2>
 <p>Using a backup directory that is local to all host machines in the system:</p>
 <pre><code class="pre">snappy backup  ./snappyStoreBackupLocation
   -locators=localhost:10334
@@ -1826,7 +1816,7 @@ See also [Backing Up and Restoring Disk Stores](../../concepts/backup/backup_res
 <p>SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.</p></p>
 </div>
 <p><a id="output_messages"></a></p>
-<h1 id="output-messages-from-snappy-backup">Output Messages from snappy backup</h1>
+<h2 id="output-messages-from-snappy-backup">Output Messages from snappy backup</h2>
 <p>When you run <code>snappy backup</code>, it reports on the outcome of the operation.</p>
 <p>If any members were offline when you run <code>snappy backup</code>, you get this message:</p>
 <pre><code class="pre">The backup may be incomplete. The following disk
@@ -1856,7 +1846,7 @@ The backup may be incomplete. The following disk stores are not online:
 
 <p>A member that fails to complete its backup is noted in this ending status message and leaves the file INCOMPLETE_BACKUP in its highest level backup directory.</p>
 <p><a id="directory_structure"></a></p>
-<h1 id="backup-directory-structure-and-its-contents">Backup Directory Structure and Its Contents</h1>
+<h2 id="backup-directory-structure-and-its-contents">Backup Directory Structure and Its Contents</h2>
 <p>Below is the structure of files and directories backed up in a distributed system:</p>
 <pre><code class="pre"> 2011-05-02-18-10 /:
 pc15_8933_v10_10761_54522
@@ -1875,7 +1865,7 @@ BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
 </code></pre>
 
 <p><a id="restore_online_backup"></a></p>
-<h1 id="restoring-files">Restoring Files</h1>
+<h2 id="restoring-files">Restoring Files</h2>
 <p>The restore script (restore.sh restore.bat) copies files back to their original locations. You can do this manually if you wish:</p>
 <ol>
 <li>

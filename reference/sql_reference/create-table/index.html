@@ -1854,7 +1854,7 @@ The maximum number of rows that can be in the delta buffer of a column table for
 <p>If no column names are specified for the new table, then all the columns in the result of the query expression are used to create same-named columns in the new table, of the corresponding data type(s). If one or more column names are specified for the new table, the same number of columns must be present in the result of the query expression; the data types of those columns are used for the corresponding columns of the new table.</p>
 <p>Note that only the column names and datatypes from the queried table are used when creating the new table. Additional settings in the queried table, such as partitioning, replication, and persistence, are not duplicated. You can optionally specify partitioning, replication, and persistence configuration settings for the new table and those settings need not match the settings of the queried table.</p>
 <h3 id="example-create-table-using-spark-dataframe-api">Example: Create Table using Spark DataFrame API</h3>
-<p>For information on using the Apache Spark API, refer to <a href="../../../aqp/#using-the-spark-dataframe-api">Using the Spark DataFrame API</a>.</p>
+<p>For information on using the Apache Spark API, refer to <a href="../../../sde/running_queries/#using-the-spark-dataframe-api">Using the Spark DataFrame API</a>.</p>
 <p><a id="constraint"></a></p>
 <h3 id="constraint-only-for-row-tables">Constraint (only for Row Tables)</h3>
 <p>A CONSTRAINT clause is an optional part of a CREATE TABLE <!--or ALTER TABLE--> statement that defines a rule to which table data must conform.</p>

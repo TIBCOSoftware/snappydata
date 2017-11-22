@@ -1662,10 +1662,38 @@
                 <h1 id="configuring-logging">Configuring Logging</h1>
 <p>By default, log files for SnappyData members are created inside the working directory of the member. To change the log file directory, you can specify a property <code>-log-file</code> as the path of the directory, while starting a member. </p>
 <p>SnappyData uses <a href="http://logging.apache.org/log4j/">log4j</a> for logging.
-You can configure logging by copying the existing template file <code>log4j.properties.template</code> to the <strong>conf</strong> directory and renaming it to <code>log4j.properties</code>.</p>
+You can configure logging by copying the existing template file <strong>log4j.properties.template</strong> to the <strong>conf</strong> directory and renaming it to <strong>log4j.properties</strong>.</p>
 <p>For example, the following can be added to the <strong>log4j.properties</strong> file to change the logging level of the classes of Spark scheduler.</p>
 <pre><code class="pre">$ cat conf/log4j.properties 
 log4j.logger.org.apache.spark.scheduler=DEBUG
+</code></pre>
+
+<p>The default template uses a custom layout (io.snappydata.log4j.PatternLayout) that adds a thread ID at the end of thread name in the logs for the <code>%t</code> pattern.</p>
+<p>For example, the default pattern:</p>
+<pre><code>log4j.appender.file.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t %p %c{1}: %m%n
+</code></pre>
+
+<p>produces</p>
+<pre><code>17/11/07 16:42:05.115 IST serverConnector&lt;tid=0xe&gt; INFO snappystore: GemFire P2P Listener started on  tcp:///192.168.1.6:53116
+</code></pre>
+
+<p>This is the recommended PatternLayout to use for SnappyData logging. </p>
+<p>When using a custom <strong>log4j.properties</strong>, and the mentioned layout cannot be used or when using AsyncAppender, then a custom appender <code>ThreadIdAppender</code> has been provided that can be inserted as the first appender to get the same output.</p>
+<p><Heading3>Examples:</Heading3></p>
+<p><strong>When using the default PatternLayout in the log4j.properties file:</strong></p>
+<pre><code>log4j.rootCategory=INFO, file
+
+log4j.appender.file=org.apache.log4j.RollingFileAppender
+log4j.appender.file.layout=io.snappydata.log4j.PatternLayout
+</code></pre>
+
+<p><strong>When adding the custom appender</strong></p>
+<pre><code>log4j.rootCategory=INFO, threadId, file
+
+log4j.appender.threadId=io.snappydata.log4j.ThreadIdAppender
+
+log4j.appender.file=org.apache.log4j.RollingFileAppender
+log4j.appender.file.layout=org.apache.log4j.PatternLayout
 </code></pre>
 
 <h2 id="setting-log-level-at-runtime">Setting Log Level at Runtime</h2>

@@ -91,7 +91,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.SnappySession#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(sc:org.apache.spark.SparkContext):org.apache.spark.sql.SnappySession"></a>
+      <a id="&lt;init&gt;(_sc:org.apache.spark.SparkContext):org.apache.spark.sql.SnappySession"></a>
       <a id="&lt;init&gt;:SnappySession"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,27 +99,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SnappySession</span><span class="params">(<span name="sc">sc: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span>
+        <span class="name">SnappySession</span><span class="params">(<span name="_sc">_sc: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@&lt;init&gt;(sc:org.apache.spark.SparkContext):org.apache.spark.sql.SnappySession" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.SnappySession#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(sc:org.apache.spark.SparkContext,existingSharedState:Option[org.apache.spark.sql.hive.SnappySharedState]):org.apache.spark.sql.SnappySession"></a>
-      <a id="&lt;init&gt;:SnappySession"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
-      </span>
-      <span class="symbol">
-        <span class="name">SnappySession</span><span class="params">(<span name="sc">sc: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="existingSharedState">existingSharedState: <span class="extype" name="scala.Option">Option</span>[<a href="hive/SnappySharedState.html" class="extype" name="org.apache.spark.sql.hive.SnappySharedState">SnappySharedState</a>]</span>)</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@&lt;init&gt;(sc:org.apache.spark.SparkContext,existingSharedState:Option[org.apache.spark.sql.hive.SnappySharedState]):org.apache.spark.sql.SnappySession" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@&lt;init&gt;(_sc:org.apache.spark.SparkContext):org.apache.spark.sql.SnappySession" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -317,7 +300,7 @@ databases, tables, functions etc.
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.SparkSession#close" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.SnappySession#close" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="close():Unit"></a>
       <a id="close():Unit"></a>
       <h4 class="signature">
@@ -333,8 +316,7 @@ databases, tables, functions etc.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Synonym for <code>stop()</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Synonym for <code>stop()</code>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> → Closeable → AutoCloseable</dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Close the session which will be unusable after this call.</p><div class="fullcomment"><div class="comment cmt"><p>Close the session which will be unusable after this call.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a> → <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> → Closeable → AutoCloseable</dd></dl></div>
     </li><li name="org.apache.spark.sql.SparkSession#conf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="conf:org.apache.spark.sql.RuntimeConfig"></a>
       <a id="conf:RuntimeConfig"></a>
@@ -1132,9 +1114,9 @@ snappyContext.createTable(tableName, <span class="lit">"column"</span>, dataDF.s
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Drop a SnappyData table created by a call to SnappyContext.createTable,
-createExternalTable or registerTempTable.</p><div class="fullcomment"><div class="comment cmt"><p>Drop a SnappyData table created by a call to SnappyContext.createTable,
-createExternalTable or registerTempTable.
+      <p class="shortcomment cmt">Drop a SnappyData table created by a call to SnappySession.createTable,
+Catalog.createExternalTable or Dataset.createOrReplaceTempView.</p><div class="fullcomment"><div class="comment cmt"><p>Drop a SnappyData table created by a call to SnappySession.createTable,
+Catalog.createExternalTable or Dataset.createOrReplaceTempView.
 </p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>table to be dropped</p></dd><dt class="param">ifExists</dt><dd class="cmt"><p>attempt drop only if the table exists</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SparkSession#emptyDataFrame" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="emptyDataFrame:org.apache.spark.sql.DataFrame"></a>
@@ -2204,6 +2186,23 @@ functions, and everything else that accepts a <a href="internal/SQLConf.html" cl
     </span>
       <p class="shortcomment cmt">Set current database/schema.</p><div class="fullcomment"><div class="comment cmt"><p>Set current database/schema.
 </p></div><dl class="paramcmts block"><dt class="param">schemaName</dt><dd class="cmt"><p>schema name which goes in the catalog</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappySession#snappyParser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="snappyParser:org.apache.spark.sql.SnappyParser"></a>
+      <a id="snappyParser:SnappyParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">snappyParser</span><span class="result">: <a href="SnappyParser.html" class="extype" name="org.apache.spark.sql.SnappyParser">SnappyParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@snappyParser:org.apache.spark.sql.SnappyParser" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.SparkSession#sparkContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sparkContext:org.apache.spark.SparkContext"></a>
       <a id="sparkContext:SparkContext"></a>

@@ -276,18 +276,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.SmartConnectorHelper#dropTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="dropTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName,ifExists:Boolean):Unit"></a>
-      <a id="dropTable(QualifiedTableName,Boolean):Unit"></a>
+      <a id="dropTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName,ifExists:Boolean,isExternal:Boolean):Unit"></a>
+      <a id="dropTable(QualifiedTableName,Boolean,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dropTable</span><span class="params">(<span name="tableIdent">tableIdent: <a href="hive/QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="ifExists">ifExists: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">dropTable</span><span class="params">(<span name="tableIdent">tableIdent: <a href="hive/QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>, <span name="ifExists">ifExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isExternal">isExternal: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SmartConnectorHelper@dropTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName,ifExists:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SmartConnectorHelper@dropTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName,ifExists:Boolean,isExternal:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -401,7 +401,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.SmartConnectorHelper#getHiveTableAndMetadata" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getHiveTableAndMetadata(in:org.apache.spark.sql.hive.QualifiedTableName):(org.apache.hadoop.hive.metastore.api.Table,org.apache.spark.sql.hive.RelationInfo)"></a>
+      <a id="getHiveTableAndMetadata(in:org.apache.spark.sql.hive.QualifiedTableName):(org.apache.hadoop.hive.ql.metadata.Table,org.apache.spark.sql.hive.RelationInfo)"></a>
       <a id="getHiveTableAndMetadata(QualifiedTableName):(Table,RelationInfo)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -409,10 +409,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getHiveTableAndMetadata</span><span class="params">(<span name="in">in: <a href="hive/QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: (<span class="extype" name="org.apache.hadoop.hive.metastore.api.Table">Table</span>, <a href="hive/RelationInfo.html" class="extype" name="org.apache.spark.sql.hive.RelationInfo">RelationInfo</a>)</span>
+        <span class="name">getHiveTableAndMetadata</span><span class="params">(<span name="in">in: <a href="hive/QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a></span>)</span><span class="result">: (<span class="extype" name="org.apache.hadoop.hive.ql.metadata.Table">Table</span>, <a href="hive/RelationInfo.html" class="extype" name="org.apache.spark.sql.hive.RelationInfo">RelationInfo</a>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SmartConnectorHelper@getHiveTableAndMetadata(in:org.apache.spark.sql.hive.QualifiedTableName):(org.apache.hadoop.hive.metastore.api.Table,org.apache.spark.sql.hive.RelationInfo)" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SmartConnectorHelper@getHiveTableAndMetadata(in:org.apache.spark.sql.hive.QualifiedTableName):(org.apache.hadoop.hive.ql.metadata.Table,org.apache.spark.sql.hive.RelationInfo)" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -664,7 +664,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">logName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SmartConnectorHelper@logName:String" title="Permalink" target="_top">

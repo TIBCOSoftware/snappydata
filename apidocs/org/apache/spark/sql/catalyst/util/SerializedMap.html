@@ -45,7 +45,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SerializedMap</span><span class="result"> extends <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></span>
+        <span class="name">SerializedMap</span><span class="result"> extends <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a> with <span class="extype" name="java.io.Externalizable">Externalizable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4>
       
@@ -54,7 +54,7 @@ that pays attention to the platform endianness and uses a consistent endian
 format (little-endian) so is suitable for storage.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <span class="extype" name="java.io.Externalizable">Externalizable</span>, <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -72,7 +72,7 @@ format (little-endian) so is suitable for storage.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.catalyst.util.SerializedMap"><span>SerializedMap</span></li><li class="in" name="org.apache.spark.sql.catalyst.util.MapData"><span>MapData</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.catalyst.util.SerializedMap"><span>SerializedMap</span></li><li class="in" name="com.esotericsoftware.kryo.KryoSerializable"><span>KryoSerializable</span></li><li class="in" name="java.io.Externalizable"><span>Externalizable</span></li><li class="in" name="org.apache.spark.sql.catalyst.util.MapData"><span>MapData</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -504,6 +504,51 @@ format (little-endian) so is suitable for storage.
     </span>
       <p class="shortcomment cmt">Update this SerializedMap to point to different backing data.</p><div class="fullcomment"><div class="comment cmt"><p>Update this SerializedMap to point to different backing data.
 </p></div><dl class="paramcmts block"><dt class="param">baseObject</dt><dd class="cmt"><p>the base object</p></dd><dt class="param">baseOffset</dt><dd class="cmt"><p>the offset within the base object</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap#read" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="read(kryo:com.esotericsoftware.kryo.Kryo,in:com.esotericsoftware.kryo.io.Input):Unit"></a>
+      <a id="read(Kryo,Input):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">read</span><span class="params">(<span name="kryo">kryo: <span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span></span>, <span name="in">in: <span class="extype" name="com.esotericsoftware.kryo.io.Input">Input</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedMap@read(kryo:com.esotericsoftware.kryo.Kryo,in:com.esotericsoftware.kryo.io.Input):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedMap">SerializedMap</a> → KryoSerializable</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap#readExternal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="readExternal(in:java.io.ObjectInput):Unit"></a>
+      <a id="readExternal(ObjectInput):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readExternal</span><span class="params">(<span name="in">in: <span class="extype" name="java.io.ObjectInput">ObjectInput</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedMap@readExternal(in:java.io.ObjectInput):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedMap">SerializedMap</a> → Externalizable</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[java.io.IOException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[ClassNotFoundException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -521,7 +566,24 @@ format (little-endian) so is suitable for storage.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap#toBytes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toBytes:Array[Byte]"></a>
+      <a id="toBytes:Array[Byte]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toBytes</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedMap@toBytes:Array[Byte]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the underlying bytes for this row.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -530,14 +592,14 @@ format (little-endian) so is suitable for storage.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedMap@toString():String" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedMap">SerializedMap</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap#valueArray" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="valueArray():org.apache.spark.sql.catalyst.util.SerializedArray"></a>
       <a id="valueArray():SerializedArray"></a>
@@ -624,6 +686,46 @@ format (little-endian) so is suitable for storage.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap#write" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="write(kryo:com.esotericsoftware.kryo.Kryo,out:com.esotericsoftware.kryo.io.Output):Unit"></a>
+      <a id="write(Kryo,Output):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">write</span><span class="params">(<span name="kryo">kryo: <span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span></span>, <span name="out">out: <span class="extype" name="com.esotericsoftware.kryo.io.Output">Output</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedMap@write(kryo:com.esotericsoftware.kryo.Kryo,out:com.esotericsoftware.kryo.io.Output):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedMap">SerializedMap</a> → KryoSerializable</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap#writeExternal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="writeExternal(out:java.io.ObjectOutput):Unit"></a>
+      <a id="writeExternal(ObjectOutput):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">writeExternal</span><span class="params">(<span name="out">out: <span class="extype" name="java.io.ObjectOutput">ObjectOutput</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedMap@writeExternal(out:java.io.ObjectOutput):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedMap">SerializedMap</a> → Externalizable</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[java.io.IOException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li></ol>
             </div>
 
@@ -633,7 +735,11 @@ format (little-endian) so is suitable for storage.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.catalyst.util.MapData">
+        <div class="parent" name="com.esotericsoftware.kryo.KryoSerializable">
+              <h3>Inherited from <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></h3>
+            </div><div class="parent" name="java.io.Externalizable">
+              <h3>Inherited from <span class="extype" name="java.io.Externalizable">Externalizable</span></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.util.MapData">
               <h3>Inherited from <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></h3>
             </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>

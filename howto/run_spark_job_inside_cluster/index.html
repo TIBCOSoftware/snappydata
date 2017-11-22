@@ -207,7 +207,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-run-spark-code-inside-the-cluster">How to run Spark Code inside the Cluster</a></li>
+                <li class="toctree-l3"><a href="#how-to-run-spark-job-inside-the-cluster">How to Run Spark Job inside the Cluster</a></li>
                 
             
             </ul>
@@ -1654,7 +1654,7 @@
             <div class="section">
               
                 <p><a id="howto-job"></a></p>
-<h1 id="how-to-run-spark-code-inside-the-cluster">How to run Spark Code inside the Cluster</h1>
+<h1 id="how-to-run-spark-job-inside-the-cluster">How to Run Spark Job inside the Cluster</h1>
 <p>Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.</p>
 <p><strong>Implementing a Job</strong>: 
 A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the <code>runSnappyJob</code> method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>
@@ -1682,9 +1682,21 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 &lt;/dependency&gt;
 </code></pre>
 
+<pre><code class="scala">&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11 --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
+    &lt;artifactId&gt;snappydata-core_2.11&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
 <p><strong>Example: SBT dependency</strong>:</p>
 <pre><code class="scala">// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;1.0.0&quot;
+</code></pre>
+
+<pre><code class="scala">// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-core_2.11&quot; % &quot;1.0.0&quot;
 </code></pre>
 
 <p><strong>Running the Job</strong>: 

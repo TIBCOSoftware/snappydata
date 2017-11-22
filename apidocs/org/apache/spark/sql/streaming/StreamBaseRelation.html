@@ -92,7 +92,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.streaming.StreamBaseRelation#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(options:Map[String,String]):org.apache.spark.sql.streaming.StreamBaseRelation"></a>
+      <a id="&lt;init&gt;(opts:Map[String,String]):org.apache.spark.sql.streaming.StreamBaseRelation"></a>
       <a id="&lt;init&gt;:StreamBaseRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">StreamBaseRelation</span><span class="params">(<span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
+        <span class="name">StreamBaseRelation</span><span class="params">(<span name="opts">opts: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamBaseRelation@&lt;init&gt;(options:Map[String,String]):org.apache.spark.sql.streaming.StreamBaseRelation" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamBaseRelation@&lt;init&gt;(opts:Map[String,String]):org.apache.spark.sql.streaming.StreamBaseRelation" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -653,7 +653,7 @@ dropping the external table that this relation represents.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">logName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamBaseRelation@logName:String" title="Permalink" target="_top">
@@ -803,6 +803,23 @@ of Spark SQL should leave this as true.</p></span></dd></dl></div>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamBaseRelation#options" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="options:org.apache.spark.sql.catalyst.util.CaseInsensitiveMap"></a>
+      <a id="options:CaseInsensitiveMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">options</span><span class="result">: <a href="../catalyst/util/CaseInsensitiveMap.html" class="extype" name="org.apache.spark.sql.catalyst.util.CaseInsensitiveMap">CaseInsensitiveMap</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.StreamBaseRelation@options:org.apache.spark.sql.catalyst.util.CaseInsensitiveMap" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.StreamBaseRelation#recoverDependentRelations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="recoverDependentRelations(properties:Map[String,String]):Unit"></a>
       <a id="recoverDependentRelations(Map[String,String]):Unit"></a>

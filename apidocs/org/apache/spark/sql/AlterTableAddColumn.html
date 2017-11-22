@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>CreateTableUsingAsSelect - snappydata_2.11 1.0.0 API - org.apache.spark.sql.CreateTableUsingAsSelect</title>
-          <meta name="description" content="CreateTableUsingAsSelect - snappydata 2.11 1.0.0 API - org.apache.spark.sql.CreateTableUsingAsSelect" />
-          <meta name="keywords" content="CreateTableUsingAsSelect snappydata 2.11 1.0.0 API org.apache.spark.sql.CreateTableUsingAsSelect" />
+          <title>AlterTableAddColumn - snappydata_2.11 1.0.0 API - org.apache.spark.sql.AlterTableAddColumn</title>
+          <meta name="description" content="AlterTableAddColumn - snappydata 2.11 1.0.0 API - org.apache.spark.sql.AlterTableAddColumn" />
+          <meta name="keywords" content="AlterTableAddColumn snappydata 2.11 1.0.0 API org.apache.spark.sql.AlterTableAddColumn" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -16,7 +16,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../index.html';
-            var hash = 'org.apache.spark.sql.CreateTableUsingAsSelect';
+            var hash = 'org.apache.spark.sql.AlterTableAddColumn';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -30,10 +30,10 @@
       <div id="definition">
         <img alt="Class" src="../../../../lib/class_big.png" />
         <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
-        <h1>CreateTableUsingAsSelect</h1><h3><span class="morelinks"><div>Related Doc:
+        <h1>AlterTableAddColumn</h1><h3><span class="morelinks"><div>Related Doc:
             <a href="package.html" class="extype" name="org.apache.spark.sql">package sql</a>
           </div></span></h3><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -45,12 +45,11 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">CreateTableUsingAsSelect</span><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="mode">mode: <a href="SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">AlterTableAddColumn</span><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="addColumn">addColumn: <a href="types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A node used to support CTAS statements and saveAsTable for the data source API.
-</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a>, <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a>, <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -70,7 +69,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.CreateTableUsingAsSelect"><span>CreateTableUsingAsSelect</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.Command"><span>Command</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode"><span>LeafNode</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"><span>LogicalPlan</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.AlterTableAddColumn"><span>AlterTableAddColumn</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.Command"><span>Command</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode"><span>LeafNode</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"><span>LogicalPlan</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -89,19 +88,19 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="org.apache.spark.sql.CreateTableUsingAsSelect#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,provider:String,partitionColumns:Array[String],bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec],mode:org.apache.spark.sql.SaveMode,options:Map[String,String],query:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.CreateTableUsingAsSelect"></a>
-      <a id="&lt;init&gt;:CreateTableUsingAsSelect"></a>
+              <ol><li name="org.apache.spark.sql.AlterTableAddColumn#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,addColumn:org.apache.spark.sql.types.StructField):org.apache.spark.sql.AlterTableAddColumn"></a>
+      <a id="&lt;init&gt;:AlterTableAddColumn"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CreateTableUsingAsSelect</span><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionColumns">partitionColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="bucketSpec">bucketSpec: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>, <span name="mode">mode: <a href="SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="query">query: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span>
+        <span class="name">AlterTableAddColumn</span><span class="params">(<span name="tableIdent">tableIdent: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="addColumn">addColumn: <a href="types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@&lt;init&gt;(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,provider:String,partitionColumns:Array[String],bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec],mode:org.apache.spark.sql.SaveMode,options:Map[String,String],query:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.CreateTableUsingAsSelect" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@&lt;init&gt;(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,addColumn:org.apache.spark.sql.types.StructField):org.apache.spark.sql.AlterTableAddColumn" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -127,7 +126,7 @@
         <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@!=(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -144,7 +143,7 @@
         <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@##():Int" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@##():Int" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -161,11 +160,28 @@
         <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@==(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@==(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.AlterTableAddColumn#addColumn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addColumn:org.apache.spark.sql.types.StructField"></a>
+      <a id="addColumn:StructField"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addColumn</span><span class="result">: <a href="types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@addColumn:org.apache.spark.sql.types.StructField" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#allAttributes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="allAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSeq"></a>
       <a id="allAttributes:AttributeSeq"></a>
@@ -178,7 +194,7 @@
         <span class="name">allAttributes</span><span class="result">: <a href="catalyst/expressions/package$$AttributeSeq.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSeq">AttributeSeq</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@allAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSeq" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@allAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSeq" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -196,7 +212,7 @@
         <span class="name">analyzed</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@analyzed:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@analyzed:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -217,7 +233,7 @@ have already been analyzed, and can be reset by transformations.
         <span class="name">apply</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -238,7 +254,7 @@ to the physical plan node it is referencing.
         <span class="name">argString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@argString:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@argString:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -255,7 +271,7 @@ to the physical plan node it is referencing.
         <span class="name">asCode</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@asCode:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@asCode:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -276,28 +292,11 @@ pasted in the REPL to build an equivalent Tree.
         <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@asInstanceOf[T0]:T0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#bucketSpec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec]"></a>
-      <a id="bucketSpec:Option[BucketSpec]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">bucketSpec</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/catalog/BucketSpec.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.BucketSpec">BucketSpec</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@bucketSpec:Option[org.apache.spark.sql.catalyst.catalog.BucketSpec]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan#canonicalized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="canonicalized:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
       <a id="canonicalized:LogicalPlan"></a>
@@ -310,7 +309,7 @@ pasted in the REPL to build an equivalent Tree.
         <span class="name">canonicalized</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@canonicalized:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@canonicalized:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -328,7 +327,7 @@ pasted in the REPL to build an equivalent Tree.
         <span class="name">children</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@children:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@children:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -347,7 +346,7 @@ Children should not change. Immutability required for containsChild optimization
         <span class="name">childrenResolved</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@childrenResolved:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@childrenResolved:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -365,7 +364,7 @@ Children should not change. Immutability required for containsChild optimization
         <span class="name">cleanArgs</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@cleanArgs:Seq[Any]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@cleanArgs:Seq[Any]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -382,7 +381,7 @@ Children should not change. Immutability required for containsChild optimization
         <span class="name">cleanExpression</span><span class="params">(<span name="e">e: <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@cleanExpression(e:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@cleanExpression(e:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -399,7 +398,7 @@ Children should not change. Immutability required for containsChild optimization
         <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@clone():Object" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@clone():Object" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -422,7 +421,7 @@ Children should not change. Immutability required for containsChild optimization
         <span class="name">collect</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="pf">pf: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collect.B">B</span>]</span>)</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collect.B">B</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@collect[B](pf:PartialFunction[BaseType,B]):Seq[B]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@collect[B](pf:PartialFunction[BaseType,B]):Seq[B]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -442,7 +441,7 @@ tree on which the function is defined.
         <span class="name">collectFirst</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="pf">pf: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collectFirst.B">B</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.collectFirst.B">B</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@collectFirst[B](pf:PartialFunction[BaseType,B]):Option[B]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@collectFirst[B](pf:PartialFunction[BaseType,B]):Option[B]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -462,7 +461,7 @@ is defined (pre-order), and applies the partial function to it.
         <span class="name">collectLeaves</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@collectLeaves():Seq[BaseType]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@collectLeaves():Seq[BaseType]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -480,7 +479,7 @@ is defined (pre-order), and applies the partial function to it.
         <span class="name">constraints</span><span class="result">: <a href="catalyst/expressions/ExpressionSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionSet">ExpressionSet</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@constraints:org.apache.spark.sql.catalyst.expressions.ExpressionSet" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@constraints:org.apache.spark.sql.catalyst.expressions.ExpressionSet" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -500,7 +499,7 @@ evaluate to <code>true</code> for all rows produced.
         <span class="name">containsChild</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@containsChild:Set[org.apache.spark.sql.catalyst.trees.TreeNode[_]]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@containsChild:Set[org.apache.spark.sql.catalyst.trees.TreeNode[_]]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -517,7 +516,7 @@ evaluate to <code>true</code> for all rows produced.
         <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -534,7 +533,7 @@ evaluate to <code>true</code> for all rows produced.
         <span class="name">expressions</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@expressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -551,7 +550,7 @@ evaluate to <code>true</code> for all rows produced.
         <span class="name">fastEquals</span><span class="params">(<span name="other">other: <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@fastEquals(other:org.apache.spark.sql.catalyst.trees.TreeNode[_]):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@fastEquals(other:org.apache.spark.sql.catalyst.trees.TreeNode[_]):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -571,7 +570,7 @@ generating case class <code>equals</code> methods
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@finalize():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@finalize():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -594,7 +593,7 @@ generating case class <code>equals</code> methods
         <span class="name">find</span><span class="params">(<span name="f">f: (<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@find(f:BaseType=&gt;Boolean):Option[BaseType]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@find(f:BaseType=&gt;Boolean):Option[BaseType]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -613,7 +612,7 @@ The condition is recursively applied to this node and all of its children (pre-o
         <span class="name">flatMap</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="f">f: (<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <a href="../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.flatMap.A">A</span>]</span>)</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.flatMap.A">A</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@flatMap[A](f:BaseType=&gt;TraversableOnce[A]):Seq[A]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@flatMap[A](f:BaseType=&gt;TraversableOnce[A]):Seq[A]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -633,7 +632,7 @@ resulting collections.
         <span class="name">foreach</span><span class="params">(<span name="f">f: (<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@foreach(f:BaseType=&gt;Unit):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@foreach(f:BaseType=&gt;Unit):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -650,7 +649,7 @@ resulting collections.
         <span class="name">foreachUp</span><span class="params">(<span name="f">f: (<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@foreachUp(f:BaseType=&gt;Unit):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@foreachUp(f:BaseType=&gt;Unit):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -667,7 +666,7 @@ resulting collections.
         <span class="name">generateTreeString</span><span class="params">(<span name="depth">depth: <span class="extype" name="scala.Int">Int</span></span>, <span name="lastChildren">lastChildren: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>, <span name="builder">builder: <a href="../../../../scala/package.html#StringBuilder=StringBuilder" class="extmbr" name="scala.StringBuilder">StringBuilder</a></span>, <span name="verbose">verbose: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;&quot;</span></span>)</span><span class="result">: <a href="../../../../scala/package.html#StringBuilder=StringBuilder" class="extmbr" name="scala.StringBuilder">StringBuilder</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@generateTreeString(depth:Int,lastChildren:Seq[Boolean],builder:StringBuilder,verbose:Boolean,prefix:String):StringBuilder" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@generateTreeString(depth:Int,lastChildren:Seq[Boolean],builder:StringBuilder,verbose:Boolean,prefix:String):StringBuilder" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -687,7 +686,7 @@ depth <code>i + 1</code> is the last child of its own parent node.  The depth of
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@getClass():Class[_]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@getClass():Class[_]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -704,7 +703,7 @@ depth <code>i + 1</code> is the last child of its own parent node.  The depth of
         <span class="name">getRelevantConstraints</span><span class="params">(<span name="constraints">constraints: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@getRelevantConstraints(constraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@getRelevantConstraints(constraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -724,7 +723,7 @@ appear in the <a href="catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@hashCode():Int" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@hashCode():Int" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -741,12 +740,12 @@ appear in the <a href="catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.
         <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#innerChildren" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#innerChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="innerChildren:Seq[org.apache.spark.sql.catalyst.plans.QueryPlan[_]]"></a>
       <a id="innerChildren:Seq[QueryPlan[_]]"></a>
       <h4 class="signature">
@@ -758,13 +757,13 @@ appear in the <a href="catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.
         <span class="name">innerChildren</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[_]]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@innerChildren:Seq[org.apache.spark.sql.catalyst.plans.QueryPlan[_]]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@innerChildren:Seq[org.apache.spark.sql.catalyst.plans.QueryPlan[_]]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">All the nodes that should be shown as a inner nested tree of this node.</p><div class="fullcomment"><div class="comment cmt"><p>All the nodes that should be shown as a inner nested tree of this node.
 For example, this can be used to show sub-queries.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.CreateTableUsingAsSelect">CreateTableUsingAsSelect</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#inputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="inputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="inputSet:AttributeSet"></a>
@@ -777,7 +776,7 @@ For example, this can be used to show sub-queries.
         <span class="name">inputSet</span><span class="result">: <a href="catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@inputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@inputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -795,7 +794,7 @@ For example, this can be used to show sub-queries.
         <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@isDebugEnabled:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@isDebugEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -812,7 +811,7 @@ For example, this can be used to show sub-queries.
         <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@isInfoEnabled:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@isInfoEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -829,7 +828,7 @@ For example, this can be used to show sub-queries.
         <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -846,7 +845,7 @@ For example, this can be used to show sub-queries.
         <span class="name">isStreaming</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@isStreaming:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@isStreaming:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -863,7 +862,7 @@ For example, this can be used to show sub-queries.
         <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@isTraceEnabled:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@isTraceEnabled:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -880,7 +879,7 @@ For example, this can be used to show sub-queries.
         <span class="name">jsonFields</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="org.json4s.JsonAST.JField">JField</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@jsonFields:List[org.json4s.JsonAST.JField]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@jsonFields:List[org.json4s.JsonAST.JField]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -897,7 +896,7 @@ For example, this can be used to show sub-queries.
         <span class="name">log</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@log:org.slf4j.Logger" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@log:org.slf4j.Logger" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -914,7 +913,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -931,7 +930,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -948,7 +947,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -965,7 +964,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -982,7 +981,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -999,7 +998,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1016,7 +1015,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logName:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logName:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1033,7 +1032,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1050,7 +1049,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1067,7 +1066,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1084,7 +1083,7 @@ For example, this can be used to show sub-queries.
         <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1101,7 +1100,7 @@ For example, this can be used to show sub-queries.
         <span class="name">makeCopy</span><span class="params">(<span name="newArgs">newArgs: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@makeCopy(newArgs:Array[AnyRef]):BaseType" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@makeCopy(newArgs:Array[AnyRef]):BaseType" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1120,7 +1119,7 @@ that are not present in the productIterator.</p></div><dl class="paramcmts block
         <span class="name">map</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="f">f: (<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.map.A">A</span></span>)</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.map.A">A</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@map[A](f:BaseType=&gt;A):Seq[A]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@map[A](f:BaseType=&gt;A):Seq[A]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1139,7 +1138,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
         <span class="name">mapChildren</span><span class="params">(<span name="f">f: (<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@mapChildren(f:BaseType=&gt;BaseType):BaseType" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@mapChildren(f:BaseType=&gt;BaseType):BaseType" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1147,17 +1146,17 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#mapExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mapExpressions(f:org.apache.spark.sql.catalyst.expressions.Expression=&gt;org.apache.spark.sql.catalyst.expressions.Expression):QueryPlan.this.type"></a>
-      <a id="mapExpressions((Expression)⇒Expression):CreateTableUsingAsSelect.this.type"></a>
+      <a id="mapExpressions((Expression)⇒Expression):AlterTableAddColumn.this.type"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mapExpressions</span><span class="params">(<span name="f">f: (<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>) ⇒ <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.CreateTableUsingAsSelect">CreateTableUsingAsSelect</a>.this.type</span>
+        <span class="name">mapExpressions</span><span class="params">(<span name="f">f: (<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>) ⇒ <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.AlterTableAddColumn">AlterTableAddColumn</a>.this.type</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@mapExpressions(f:org.apache.spark.sql.catalyst.expressions.Expression=&gt;org.apache.spark.sql.catalyst.expressions.Expression):QueryPlan.this.type" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@mapExpressions(f:org.apache.spark.sql.catalyst.expressions.Expression=&gt;org.apache.spark.sql.catalyst.expressions.Expression):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1177,7 +1176,7 @@ query operator based on the mapped expressions.
         <span class="name">mapProductIterator</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator.B">B</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator.B">B</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator.B">B</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@mapProductIterator[B](f:Any=&gt;B)(implicitevidence$1:scala.reflect.ClassTag[B]):Array[B]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@mapProductIterator[B](f:Any=&gt;B)(implicitevidence$1:scala.reflect.ClassTag[B]):Array[B]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1195,7 +1194,7 @@ query operator based on the mapped expressions.
         <span class="name">maxRows</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Long">Long</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@maxRows:Option[Long]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@maxRows:Option[Long]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1214,7 +1213,7 @@ Any operator that can push through a Limit should override this function (e.g., 
         <span class="name">missingInput</span><span class="result">: <a href="catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@missingInput:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@missingInput:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1222,23 +1221,6 @@ Any operator that can push through a Limit should override this function (e.g., 
 Subclasses should override this method if they produce attributes internally as it is used by
 assertions designed to prevent the construction of invalid plans.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#mode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mode:org.apache.spark.sql.SaveMode"></a>
-      <a id="mode:SaveMode"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">mode</span><span class="result">: <a href="SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@mode:org.apache.spark.sql.SaveMode" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -1251,7 +1233,7 @@ assertions designed to prevent the construction of invalid plans.
         <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1268,7 +1250,7 @@ assertions designed to prevent the construction of invalid plans.
         <span class="name">nodeName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@nodeName:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@nodeName:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1287,7 +1269,7 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
         <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@notify():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@notify():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1304,7 +1286,7 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
         <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@notifyAll():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@notifyAll():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1321,7 +1303,7 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
         <span class="name">numberedTreeString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@numberedTreeString:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@numberedTreeString:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1329,23 +1311,6 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
 The numbers can be used with <a href="catalyst/trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">TreeNode.apply</a> to easily access specific subtrees.</p><p>The numbers are based on depth-first traversal of the tree (with innerChildren traversed first
 before children).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#options" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="options:Map[String,String]"></a>
-      <a id="options:Map[String,String]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">options</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@options:Map[String,String]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#origin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="origin:org.apache.spark.sql.catalyst.trees.Origin"></a>
       <a id="origin:Origin"></a>
@@ -1358,7 +1323,7 @@ before children).
         <span class="name">origin</span><span class="result">: <a href="catalyst/trees/Origin.html" class="extype" name="org.apache.spark.sql.catalyst.trees.Origin">Origin</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@origin:org.apache.spark.sql.catalyst.trees.Origin" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@origin:org.apache.spark.sql.catalyst.trees.Origin" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1375,7 +1340,7 @@ before children).
         <span class="name">otherCopyArgs</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@otherCopyArgs:Seq[AnyRef]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@otherCopyArgs:Seq[AnyRef]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1393,7 +1358,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <span class="name">output</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1410,7 +1375,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <span class="name">outputSet</span><span class="result">: <a href="catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1428,30 +1393,13 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <span class="name">p</span><span class="params">(<span name="number">number: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@p(number:Int):BaseType" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@p(number:Int):BaseType" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Returns the tree node at the specified number, used primarily for interactive debugging.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the tree node at the specified number, used primarily for interactive debugging.
 Numbers for each node can be found in the <a href="catalyst/trees/TreeNode.html#numberedTreeString:String" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString">numberedTreeString</a>.</p><p>This is a variant of <a href="catalyst/trees/TreeNode.html#apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]" class="extmbr" name="org.apache.spark.sql.catalyst.trees.TreeNode#apply">apply</a> that returns the node as BaseType (if the type matches).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#partitionColumns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="partitionColumns:Array[String]"></a>
-      <a id="partitionColumns:Array[String]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">partitionColumns</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@partitionColumns:Array[String]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#prettyJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyJson:String"></a>
       <a id="prettyJson:String"></a>
@@ -1464,7 +1412,7 @@ Numbers for each node can be found in the <a href="catalyst/trees/TreeNode.html#
         <span class="name">prettyJson</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@prettyJson:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@prettyJson:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1481,7 +1429,7 @@ Numbers for each node can be found in the <a href="catalyst/trees/TreeNode.html#
         <span class="name">printSchema</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@printSchema():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@printSchema():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1498,46 +1446,12 @@ Numbers for each node can be found in the <a href="catalyst/trees/TreeNode.html#
         <span class="name">producedAttributes</span><span class="result">: <a href="catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@producedAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@producedAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">The set of all attributes that are produced by this node.</p><div class="fullcomment"><div class="comment cmt"><p>The set of all attributes that are produced by this node.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#provider" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="provider:String"></a>
-      <a id="provider:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">provider</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@provider:String" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#query" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="query:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
-      <a id="query:LogicalPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">query</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@query:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#references" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="references:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="references:AttributeSet"></a>
@@ -1550,7 +1464,7 @@ Numbers for each node can be found in the <a href="catalyst/trees/TreeNode.html#
         <span class="name">references</span><span class="result">: <a href="catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@references:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@references:org.apache.spark.sql.catalyst.expressions.AttributeSet" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1569,7 +1483,7 @@ include attributes that are implicitly referenced by being passed through to the
         <span class="name">refresh</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@refresh():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@refresh():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1587,7 +1501,7 @@ include attributes that are implicitly referenced by being passed through to the
         <span class="name">resolve</span><span class="params">(<span name="nameParts">nameParts: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="input">input: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="resolver">resolver: <a href="catalyst/analysis/package.html#Resolver=(String,String)=&gt;Boolean" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.Resolver">Resolver</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@resolve(nameParts:Seq[String],input:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Option[org.apache.spark.sql.catalyst.expressions.NamedExpression]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@resolve(nameParts:Seq[String],input:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Option[org.apache.spark.sql.catalyst.expressions.NamedExpression]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1604,7 +1518,7 @@ include attributes that are implicitly referenced by being passed through to the
         <span class="name">resolve</span><span class="params">(<span name="nameParts">nameParts: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="resolver">resolver: <a href="catalyst/analysis/package.html#Resolver=(String,String)=&gt;Boolean" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.Resolver">Resolver</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@resolve(nameParts:Seq[String],resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Option[org.apache.spark.sql.catalyst.expressions.NamedExpression]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@resolve(nameParts:Seq[String],resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Option[org.apache.spark.sql.catalyst.expressions.NamedExpression]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1625,7 +1539,7 @@ LogicalPlan. The attribute is expressed as string in the following form:
         <span class="name">resolve</span><span class="params">(<span name="schema">schema: <a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="resolver">resolver: <a href="catalyst/analysis/package.html#Resolver=(String,String)=&gt;Boolean" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.Resolver">Resolver</a></span>)</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@resolve(schema:org.apache.spark.sql.types.StructType,resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Seq[org.apache.spark.sql.catalyst.expressions.Attribute]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@resolve(schema:org.apache.spark.sql.types.StructType,resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Seq[org.apache.spark.sql.catalyst.expressions.Attribute]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1645,7 +1559,7 @@ unresolved <span class="extype" name="Attribute">Attribute</span>s.
         <span class="name">resolveChildren</span><span class="params">(<span name="nameParts">nameParts: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="resolver">resolver: <a href="catalyst/analysis/package.html#Resolver=(String,String)=&gt;Boolean" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.Resolver">Resolver</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@resolveChildren(nameParts:Seq[String],resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Option[org.apache.spark.sql.catalyst.expressions.NamedExpression]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@resolveChildren(nameParts:Seq[String],resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Option[org.apache.spark.sql.catalyst.expressions.NamedExpression]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1666,7 +1580,7 @@ as string in the following form: <code>[scope].AttributeName.[nested].[fields]..
         <span class="name">resolveExpressions</span><span class="params">(<span name="r">r: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@resolveExpressions(r:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@resolveExpressions(r:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1686,7 +1600,7 @@ been analyzed.
         <span class="name">resolveOperators</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@resolveOperators(rule:PartialFunction[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@resolveOperators(rule:PartialFunction[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1708,7 +1622,7 @@ been marked as analyzed.
         <span class="name">resolveQuoted</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="resolver">resolver: <a href="catalyst/analysis/package.html#Resolver=(String,String)=&gt;Boolean" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.Resolver">Resolver</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@resolveQuoted(name:String,resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Option[org.apache.spark.sql.catalyst.expressions.NamedExpression]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@resolveQuoted(name:String,resolver:org.apache.spark.sql.catalyst.analysis.Resolver):Option[org.apache.spark.sql.catalyst.expressions.NamedExpression]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1718,7 +1632,7 @@ don't split the name parts quoted by backticks, for example,
 don't split the name parts quoted by backticks, for example,
 <code>ab.cd</code>.<code>efg</code> should be split into two parts &quot;ab.cd&quot; and &quot;efg&quot;.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#resolved" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan#resolved" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="resolved:Boolean"></a>
       <a id="resolved:Boolean"></a>
       <h4 class="signature">
@@ -1730,7 +1644,7 @@ don't split the name parts quoted by backticks, for example,
         <span class="name">resolved</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@resolved:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@resolved:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1740,7 +1654,7 @@ and false if it still contains any unresolved placeholders. Implementations of L
 can override this (e.g.
 <a href="catalyst/analysis/UnresolvedRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedRelation">UnresolvedRelation</a>
 should return <code>false</code>).
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.CreateTableUsingAsSelect">CreateTableUsingAsSelect</a> → <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#sameResult" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sameResult(plan:PlanType):Boolean"></a>
       <a id="sameResult(LogicalPlan):Boolean"></a>
@@ -1753,7 +1667,7 @@ should return <code>false</code>).
         <span class="name">sameResult</span><span class="params">(<span name="plan">plan: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@sameResult(plan:PlanType):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@sameResult(plan:PlanType):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1777,7 +1691,7 @@ can do better should override this function.
         <span class="name">schema</span><span class="result">: <a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@schema:org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@schema:org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1794,7 +1708,7 @@ can do better should override this function.
         <span class="name">schemaString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@schemaString:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@schemaString:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1811,7 +1725,7 @@ can do better should override this function.
         <span class="name">simpleString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@simpleString:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@simpleString:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1828,7 +1742,7 @@ can do better should override this function.
         <span class="name">statePrefix</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@statePrefix:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@statePrefix:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1846,7 +1760,7 @@ can do better should override this function.
         <span class="name">statistics</span><span class="result">: <a href="catalyst/plans/logical/Statistics.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Statistics">Statistics</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@statistics:org.apache.spark.sql.catalyst.plans.logical.Statistics" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@statistics:org.apache.spark.sql.catalyst.plans.logical.Statistics" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1866,7 +1780,7 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
         <span class="name">stringArgs</span><span class="result">: <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@stringArgs:Iterator[Any]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@stringArgs:Iterator[Any]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1884,7 +1798,7 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
         <span class="name">subqueries</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@subqueries:Seq[PlanType]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@subqueries:Seq[PlanType]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1902,12 +1816,12 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
         <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.CreateTableUsingAsSelect#tableIdent" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.AlterTableAddColumn#tableIdent" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="tableIdent:org.apache.spark.sql.catalyst.TableIdentifier"></a>
       <a id="tableIdent:TableIdentifier"></a>
       <h4 class="signature">
@@ -1919,7 +1833,7 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
         <span class="name">tableIdent</span><span class="result">: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@tableIdent:org.apache.spark.sql.catalyst.TableIdentifier" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@tableIdent:org.apache.spark.sql.catalyst.TableIdentifier" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1936,7 +1850,7 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
         <span class="name">toJSON</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@toJSON:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@toJSON:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1953,7 +1867,7 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
         <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@toString():String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@toString():String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1970,7 +1884,7 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
         <span class="name">transform</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@transform(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@transform(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1981,17 +1895,17 @@ transformDown or transformUp should be used.
 </p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function use to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformAllExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformAllExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type"></a>
-      <a id="transformAllExpressions(PartialFunction[Expression,Expression]):CreateTableUsingAsSelect.this.type"></a>
+      <a id="transformAllExpressions(PartialFunction[Expression,Expression]):AlterTableAddColumn.this.type"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformAllExpressions</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.CreateTableUsingAsSelect">CreateTableUsingAsSelect</a>.this.type</span>
+        <span class="name">transformAllExpressions</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.AlterTableAddColumn">AlterTableAddColumn</a>.this.type</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@transformAllExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@transformAllExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2011,7 +1925,7 @@ and all its children.
         <span class="name">transformDown</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@transformDown(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2021,17 +1935,17 @@ children (pre-order). When <code>rule</code> does not apply to a given node it i
 </p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the function used to transform this nodes children</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type"></a>
-      <a id="transformExpressions(PartialFunction[Expression,Expression]):CreateTableUsingAsSelect.this.type"></a>
+      <a id="transformExpressions(PartialFunction[Expression,Expression]):AlterTableAddColumn.this.type"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformExpressions</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.CreateTableUsingAsSelect">CreateTableUsingAsSelect</a>.this.type</span>
+        <span class="name">transformExpressions</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.AlterTableAddColumn">AlterTableAddColumn</a>.this.type</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@transformExpressions(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2041,17 +1955,17 @@ transformExpressionsDown or transformExpressionsUp should be used.
 </p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the rule to be applied to every expression in this operator.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressionsDown" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformExpressionsDown(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type"></a>
-      <a id="transformExpressionsDown(PartialFunction[Expression,Expression]):CreateTableUsingAsSelect.this.type"></a>
+      <a id="transformExpressionsDown(PartialFunction[Expression,Expression]):AlterTableAddColumn.this.type"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformExpressionsDown</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.CreateTableUsingAsSelect">CreateTableUsingAsSelect</a>.this.type</span>
+        <span class="name">transformExpressionsDown</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.AlterTableAddColumn">AlterTableAddColumn</a>.this.type</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@transformExpressionsDown(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@transformExpressionsDown(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2059,17 +1973,17 @@ transformExpressionsDown or transformExpressionsUp should be used.
 </p></div><dl class="paramcmts block"><dt class="param">rule</dt><dd class="cmt"><p>the rule to be applied to every expression in this operator.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#transformExpressionsUp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transformExpressionsUp(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type"></a>
-      <a id="transformExpressionsUp(PartialFunction[Expression,Expression]):CreateTableUsingAsSelect.this.type"></a>
+      <a id="transformExpressionsUp(PartialFunction[Expression,Expression]):AlterTableAddColumn.this.type"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transformExpressionsUp</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.CreateTableUsingAsSelect">CreateTableUsingAsSelect</a>.this.type</span>
+        <span class="name">transformExpressionsUp</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.AlterTableAddColumn">AlterTableAddColumn</a>.this.type</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@transformExpressionsUp(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@transformExpressionsUp(rule:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):QueryPlan.this.type" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2087,7 +2001,7 @@ transformExpressionsDown or transformExpressionsUp should be used.
         <span class="name">transformUp</span><span class="params">(<span name="rule">rule: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@transformUp(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@transformUp(rule:PartialFunction[BaseType,BaseType]):BaseType" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2108,7 +2022,7 @@ unchanged.
         <span class="name">treeString</span><span class="params">(<span name="verbose">verbose: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@treeString(verbose:Boolean):String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@treeString(verbose:Boolean):String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2125,7 +2039,7 @@ unchanged.
         <span class="name">treeString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@treeString:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@treeString:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2142,7 +2056,7 @@ unchanged.
         <span class="name">validConstraints</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@validConstraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@validConstraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2164,7 +2078,7 @@ canonicalized and filtered automatically to contain only those attributes that a
         <span class="name">verboseString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@verboseString:String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@verboseString:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2181,7 +2095,7 @@ canonicalized and filtered automatically to contain only those attributes that a
         <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@wait():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@wait():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2204,7 +2118,7 @@ canonicalized and filtered automatically to contain only those attributes that a
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2227,7 +2141,7 @@ canonicalized and filtered automatically to contain only those attributes that a
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@wait(x$1:Long):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@wait(x$1:Long):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2250,7 +2164,7 @@ canonicalized and filtered automatically to contain only those attributes that a
         <span class="name">withNewChildren</span><span class="params">(<span name="newChildren">newChildren: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>)</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CreateTableUsingAsSelect@withNewChildren(newChildren:Seq[BaseType]):BaseType" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.AlterTableAddColumn@withNewChildren(newChildren:Seq[BaseType]):BaseType" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

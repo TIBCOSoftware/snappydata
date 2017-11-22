@@ -1688,10 +1688,10 @@ USING csv OPTIONS (path '../../quickstart/src/main/resources/customer.csv');
 </code></pre>
 
 <p>You can also load data from AWS S3, as given in the example below:</p>
-<pre><code>CREATE EXTERNAL TABLE NYCTAXI USINg parquet OPTIONS(path 's3a://&lt;AWS_SECRET_KEY&gt;:&lt;AWS_SECRET_ID&gt;@&lt;folder&gt;/&lt;data&gt;');
+<pre><code>CREATE EXTERNAL TABLE NYCTAXI USING parquet OPTIONS(path 's3a://&lt;AWS_SECRET_KEY&gt;:&lt;AWS_SECRET_ID&gt;@&lt;folder&gt;/&lt;data&gt;');
 </code></pre>
 
-<p>For more information on loading data from AWS, refer <a href="../../../aqp_aws/#loading-data-from-aws-s3">Loading Data from AWS S3</a>.</p>
+<p>For more information on loading data from AWS, refer <a href="../../../isight/quick_start_steps/#dataAWSS3">Loading Data from AWS S3</a>.</p>
               
             </div>
           </div>

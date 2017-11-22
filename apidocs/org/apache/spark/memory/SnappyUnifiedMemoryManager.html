@@ -47,7 +47,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SnappyUnifiedMemoryManager</span><span class="result"> extends <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span> with <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></span>
+        <span class="name">SnappyUnifiedMemoryManager</span><span class="result"> extends <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span> with <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> with <a href="../sql/execution/columnar/impl/StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a></span>
       </span>
       </h4>
       
@@ -60,7 +60,7 @@ If the critical and eviction events are not set, it asks the UnifiedMemoryManage
 to allocate the space.
 </p></div><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a>, <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span>, <span class="extype" name="org.apache.spark.memory.MemoryManager">MemoryManager</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../sql/execution/columnar/impl/StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a>, <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span>, <span class="extype" name="org.apache.spark.memory.MemoryManager">MemoryManager</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -78,7 +78,7 @@ to allocate the space.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.memory.SnappyUnifiedMemoryManager"><span>SnappyUnifiedMemoryManager</span></li><li class="in" name="org.apache.spark.memory.StoreUnifiedManager"><span>StoreUnifiedManager</span></li><li class="in" name="org.apache.spark.memory.UnifiedMemoryManager"><span>UnifiedMemoryManager</span></li><li class="in" name="org.apache.spark.memory.MemoryManager"><span>MemoryManager</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.memory.SnappyUnifiedMemoryManager"><span>SnappyUnifiedMemoryManager</span></li><li class="in" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback"><span>StoreCallback</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.memory.StoreUnifiedManager"><span>StoreUnifiedManager</span></li><li class="in" name="org.apache.spark.memory.UnifiedMemoryManager"><span>UnifiedMemoryManager</span></li><li class="in" name="org.apache.spark.memory.MemoryManager"><span>MemoryManager</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -866,6 +866,23 @@ to run time manager.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#logStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="logStats(tag:String):Unit"></a>
+      <a id="logStats(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logStats</span><span class="params">(<span name="tag">tag: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@logStats(tag:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#logStats" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logStats():Unit"></a>
       <a id="logStats():Unit"></a>
@@ -1493,7 +1510,13 @@ sun.misc.Unsafe.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.memory.StoreUnifiedManager">
+        <div class="parent" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">
+              <h3>Inherited from <a href="../sql/execution/columnar/impl/StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a></h3>
+            </div><div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="org.apache.spark.memory.StoreUnifiedManager">
               <h3>Inherited from <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></h3>
             </div><div class="parent" name="org.apache.spark.memory.UnifiedMemoryManager">
               <h3>Inherited from <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span></h3>
