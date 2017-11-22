@@ -1,5 +1,5 @@
 <a id="howto-stopcluster"></a>
-# How to stop the SnappyData Cluster
+# How to Stop a SnappyData Cluster
 
 You can stop the cluster using the `sbin/snappy-stop-all.sh` command:
 

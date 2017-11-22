@@ -1,5 +1,5 @@
 <a id="howto-startcluster"></a>
-# How to start a SnappyData Cluster
+# How to Start a SnappyData Cluster
 ## Start SnappyData Cluster on a single machine
 
 If you have [downloaded and extracted](../install.md) the SnappyData product distribution, navigate to the SnappyData product root directory.

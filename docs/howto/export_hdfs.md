@@ -1,4 +1,4 @@
-# How to Export and Restore Table Data Using HDFS
+# How to Export and Restore Table Data using HDFS
 
 In SnappyData, table data is stored in memory and on disk (depending on the configuration). As SnappyData supports Spark APIs, table data can be exported to HDFS using Spark APIs. This can be used to backup your tables to HDFS. 
 
