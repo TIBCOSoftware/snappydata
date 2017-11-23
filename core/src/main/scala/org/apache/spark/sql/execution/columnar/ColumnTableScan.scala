@@ -563,11 +563,11 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName, lastRowFromDelta,
-          isCaseOfUpdate, numRows)
+          isCaseOfUpdate, numRows, colInput, inputIsRow)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDelta,
-          isCaseOfUpdate, numRows)
+          isCaseOfUpdate, numRows, colInput, inputIsRow)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -803,8 +803,8 @@ private[sql] final case class ColumnTableScan(
   // scalastyle:off
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
-      numNullsVar: String, attr: Attribute, weightVar: String,
-      lastRowFromDelta: String, isCaseOfUpdate: String, numRows: String): ExprCode = {
+      numNullsVar: String, attr: Attribute, weightVar: String, lastRowFromDelta: String,
+      isCaseOfUpdate: String, numRows: String, colInput: String, inputIsRow: String): ExprCode = {
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
@@ -879,6 +879,9 @@ private[sql] final case class ColumnTableScan(
            |    System.out.println("VB: Scan [inserted] " + $col +
            |    " ,batchOrdinal=" + $batchOrdinal +
            |    " ,lastRowFromDelta=" + $lastRowFromDelta +
+           |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
+           |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
+           |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,numRows=" + $numRows);
            |  } else {
            |    $col = $defaultValue;
@@ -892,6 +895,9 @@ private[sql] final case class ColumnTableScan(
            |  System.out.println("VB: Scan [updated] " + $col +
            |    " ,batchOrdinal=" + $batchOrdinal +
            |    " ,lastRowFromDelta=" + $lastRowFromDelta +
+           |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
+           |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
+           |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,numRows=" + $numRows);
            |} else {
            |  $col = $defaultValue;
