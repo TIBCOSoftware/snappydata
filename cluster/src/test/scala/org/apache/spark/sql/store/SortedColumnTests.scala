@@ -16,7 +16,6 @@
  */
 
 package org.apache.spark.sql.store
-
 import io.snappydata.Property
 
 import org.apache.spark.{Logging, SparkConf}
@@ -63,21 +62,18 @@ class SortedColumnTests extends ColumnTablesTestBase {
       session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
 
       val numElements = 551
+      val tableName1 = "APP.colDeltaTable"
 
-      session.sql("drop table if exists colDeltaTable")
+      session.sql(s"drop table if exists $tableName1")
 
-      session.sql("create table colDeltaTable (id int, addr string, status boolean) " +
+      session.sql(s"create table $tableName1 (id int, addr string, status boolean) " +
           "using column options(buckets '2', partition_by 'id')")
 
-      session.range(numElements).filter(_  % 10 < 6).selectExpr("id",
-        "concat('addr', cast(id as string))",
-        "case when (id % 2) = 0 then true else false end").write.insertInto("colDeltaTable")
-
-      def upsert(rs1: Array[Row], callCount: Int): Unit = rs1.foreach(rs => {
+      def upsert(rs1: Array[Row]): Unit = rs1.foreach(rs => {
         val idU = rs.getLong(0)
         val addrU = rs.getString(1)
         val statusU = rs.getBoolean(2)
-        val rs2 = session.sql(s"update colDeltaTable set " +
+        val rs2 = session.sql(s"update $tableName1 set " +
             s" id = $idU, " +
             s" addr = '$addrU', " +
             s" status = $statusU " +
@@ -85,33 +81,30 @@ class SortedColumnTests extends ColumnTablesTestBase {
         // scalastyle:off println
         println("")
         println(s"upsert: $idU update-count = " + rs2.map(_.getLong(0)).sum)
-        println("")
         // scalastyle:on println
         if (rs2.map(_.getLong(0)).sum == 0) {
-          val rs3 = session.sql(s"insert into colDeltaTable values ( " +
+          val rs3 = session.sql(s"insert into $tableName1 values ( " +
               s" $idU, " +
               s" '$addrU', " +
               s" $statusU " +
               s" )").collect()
           assert(rs3.map(_.getInt(0)).sum > 0)
-        } else assert(callCount > 1, callCount)
-
+        }
         // scalastyle:off println
-        println("")
         println(s"upsert: $idU done")
         println("")
         // scalastyle:on println
       })
 
       def callUpsert(rsAfterFilter: Dataset[java.lang.Long],
-          assertCount: Int, callCount: Int) : Unit = {
+          assertCount: Int, callCount: Int, tableName: String) : Unit = {
         val cnt = rsAfterFilter.count()
         assert(cnt == assertCount)
         val rs1 = rsAfterFilter.selectExpr("id",
           "concat('addr', cast(id as string))",
           "case when (id % 2) = 0 then true else false end").collect()
         assert(rs1.length === assertCount, rs1.length)
-        upsert(rs1, callCount)
+        upsert(rs1)
         // scalastyle:off println
         println("")
         println(s"callUpsert: Done $callCount")
@@ -120,20 +113,34 @@ class SortedColumnTests extends ColumnTablesTestBase {
       }
 
       def verifyTotalRows(assertCount: Int, callCount: Int) : Unit = {
-        val rs1 = session.sql("select * from colDeltaTable").collect()
+        val rs1 = session.sql(s"select * from $tableName1").collect()
         // scalastyle:off println
         println("")
-        println(s"verifyTotalRows $callCount = " + rs1.length)
+        println(s"verifyTotalRows callCount=$callCount = " + rs1.length)
         println("")
         // scalastyle:on println
+        var i = 0
+        rs1.foreach(r => {
+          // scalastyle:off println
+          println(s"verifyTotalRows : " + i + " = " + r.getInt(0))
+          // scalastyle:on println
+          i = i + 1
+        })
         assert(rs1.length === assertCount, rs1.length)
+//        if (callCount == 1) {
+//          val sortedVals = rs1.map(_.getInt(0)).sortWith((i, j) => i == j)
+//          (0 until assertCount) foreach(i => println("sorted " + i + " = " + sortedVals(i)))
+//          (0 until assertCount) foreach(i => assert(sortedVals(i) == i, i))
+//        }
       }
 
       try {
+        session.range(numElements).filter(_  % 10 < 6).selectExpr("id",
+          "concat('addr', cast(id as string))",
+          "case when (id % 2) = 0 then true else false end").write.insertInto("colDeltaTable")
         val num2ndPhase = 220
-        // callUpsert(session.range(numElements).filter(_ % 10 < 6), numElements - num2ndPhase, 1)
         verifyTotalRows(numElements - num2ndPhase, 1)
-        callUpsert(session.range(numElements).filter(_ % 10 > 5), 220, 2)
+        callUpsert(session.range(numElements).filter(_ % 10 > 5), num2ndPhase, 2, tableName1)
         verifyTotalRows(numElements, 2)
       } catch {
         case t: Throwable =>
@@ -146,7 +153,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
       //    l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
       // assert(sorted(rs2.toList))
 
-      session.sql("drop table colDeltaTable")
+      session.sql(s"drop table $tableName1")
       session.conf.unset(Property.ColumnBatchSize.name)
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
     }
