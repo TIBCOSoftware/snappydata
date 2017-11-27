@@ -221,9 +221,6 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     if (isCaseOfUpdate) {
       if (nextUpdatedPosition == Int.MinValue) {
         nextUpdatedPosition = moveToNextUpdatedPosition(-1)
-//        if (nextUpdatedPosition <= 0) {
-//          nextUpdatedPosition = Int.MaxValue
-//        }
       }
       // Original
       if (nextUpdatedPosition > ordinal) true
