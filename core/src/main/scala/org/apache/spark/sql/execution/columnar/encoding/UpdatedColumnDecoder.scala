@@ -116,7 +116,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition1(ordinal: Int): Boolean = {
-    if (delta1Position.abs < Int.MaxValue && delta1Position.abs == ordinal) {
+    if (delta1Position.abs - 1 < Int.MaxValue && delta1Position.abs - 1 == ordinal) {
       nextUpdatedPosition = delta1Position
       delta1Position = delta1.moveToNextPosition()
       nextDeltaBuffer = delta1
@@ -126,7 +126,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition2(ordinal: Int): Boolean = {
-    if (delta2Position.abs < Int.MaxValue && delta2Position.abs == ordinal) {
+    if (delta2Position.abs - 1 < Int.MaxValue && delta2Position.abs - 1== ordinal) {
       nextUpdatedPosition = delta2Position
       delta2Position = delta2.moveToNextPosition()
       nextDeltaBuffer = delta2
@@ -136,7 +136,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition3(ordinal: Int): Boolean = {
-    if (delta3Position.abs < Int.MaxValue && delta3Position.abs == ordinal) {
+    if (delta3Position.abs - 1 < Int.MaxValue && delta3Position.abs - 1 == ordinal) {
       nextUpdatedPosition = delta3Position
       delta3Position = delta3.moveToNextPosition()
       nextDeltaBuffer = delta3
@@ -221,9 +221,9 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     if (isCaseOfUpdate) {
       if (nextUpdatedPosition == Int.MinValue) {
         nextUpdatedPosition = moveToNextUpdatedPosition(-1)
-        if (nextUpdatedPosition <= 0) {
-          nextUpdatedPosition = Int.MaxValue
-        }
+//        if (nextUpdatedPosition <= 0) {
+//          nextUpdatedPosition = Int.MaxValue
+//        }
       }
       // Original
       if (nextUpdatedPosition > ordinal) true
