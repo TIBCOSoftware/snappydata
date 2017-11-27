@@ -387,7 +387,7 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState(iteratorClass, input,
       if (isForSampleReservoirAsRegion) s"$input = $rowInputSRR;"
       else s"$input = $rowInput;")
-    ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true; // inputIsRow")
+    ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
 
     ctx.currentVars = null
     val encodingClass = ColumnEncoding.encodingClassName
@@ -760,7 +760,7 @@ private[sql] final case class ColumnTableScan(
        |      $deletedCheck
        |      $assignOrdinalId
        |      $consumeCode
-       |      if (!$isCaseOfUpdate && !$inputIsRow && $lastRowFromDelta) {
+       |      if (!$isCaseOfUpdate && $lastRowFromDelta) {
        |        continue; // loopback
        |      }
        |      if (shouldStop()) {
@@ -771,7 +771,7 @@ private[sql] final case class ColumnTableScan(
        |        ${numNullsUpdateCode.toString()}
        |        return;
        |      }
-       |      if ($isCaseOfUpdate && !$inputIsRow) {
+       |      if ($isCaseOfUpdate) {
        |        $batchOrdinal = $numRows; // exit the loop
        |      }
        |    }
@@ -882,7 +882,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
-           |    " ,inputIsRow=" + $inputIsRow +
            |    " ,numRows=" + $numRows);
            |  } else {
            |    $col = $defaultValue;
@@ -899,7 +898,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
-           |    " ,inputIsRow=" + $inputIsRow +
            |    " ,numRows=" + $numRows);
            |} else {
            |  $col = $defaultValue;
