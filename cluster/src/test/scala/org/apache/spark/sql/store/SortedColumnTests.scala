@@ -16,6 +16,8 @@
  */
 
 package org.apache.spark.sql.store
+import scala.collection.mutable
+
 import io.snappydata.Property
 
 import org.apache.spark.{Logging, SparkConf}
@@ -120,12 +122,27 @@ class SortedColumnTests extends ColumnTablesTestBase {
         println("")
         // scalastyle:on println
         var i = 0
+        val allRows = mutable.SortedSet[Int]()
+        if (callCount == 2) {
+          List.range(0, numElements).foreach(allRows += _)
+        }
         rs1.foreach(r => {
+          val firstRow = r.getInt(0)
           // scalastyle:off println
-          println(s"verifyTotalRows : " + i + " = " + r.getInt(0))
+          println(s"verifyTotalRows : " + i + " = " + firstRow)
           // scalastyle:on println
           i = i + 1
+          if (callCount == 2) {
+            if (allRows.contains(firstRow)) {
+              allRows.remove(firstRow)
+            }
+          }
         })
+        if (callCount == 2) {
+          // scalastyle:off println
+          println(s"verifyTotalRows Remaining: " + allRows)
+          // scalastyle:on println
+        }
         assert(rs1.length === assertCount, rs1.length)
 //        if (callCount == 1) {
 //          val sortedVals = rs1.map(_.getInt(0)).sortWith((i, j) => i == j)
