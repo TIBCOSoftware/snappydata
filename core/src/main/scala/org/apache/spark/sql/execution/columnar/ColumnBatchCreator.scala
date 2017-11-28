@@ -62,8 +62,6 @@ final class ColumnBatchCreator(
       }
       val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
       memHeapScanController.setAddRegionAndKey()
-      // TODO VB: Only highlight need for partitioning column for sorting that do not work and
-      // thus have customized sorting. Must be removed.
       object keyOrdering extends Ordering[CompactCompositeKey] {
         def compare(a: CompactCompositeKey, b: CompactCompositeKey) = {
           val first = a.getKeyColumn(0).asInstanceOf[SQLInteger].getInt
@@ -110,7 +108,11 @@ final class ColumnBatchCreator(
             partitionColumnAliases = Seq.empty, baseRelation = null, caseSensitive = true)
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
-          val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
+          val tableInfo = row.getRowFormatter.container.getExtraTableInfo
+          // TODO VB: Only highlight need for partitioning column for sorting
+          // Currently this do not work and thus have customized sorting. Must be removed.
+          var partitionColumns: Seq[String] = tableInfo.getPrimaryKeyColumnNames
+          val insertPlan = ColumnInsertExec(tableScan, partitionColumns, Seq.empty,
             numBuckets = -1, isPartitioned = false, None, (-bufferRegion.getColumnBatchSize, -1,
                 Property.CompressionCodec.defaultValue.get), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)

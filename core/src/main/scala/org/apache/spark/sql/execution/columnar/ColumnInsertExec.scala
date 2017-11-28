@@ -22,12 +22,13 @@ import io.snappydata.{Constant, Property}
 
 import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal, SortOrder}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.util.TaskCompletionListener
 
@@ -84,6 +85,19 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   override protected def opType: String = "Inserted"
 
   override protected def isInsert: Boolean = true
+
+  // Require per-partition sort on partitioning column
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] = if (partitionExpressions.nonEmpty) {
+    // Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(partitionExpressions.head.toAttribute)))
+    // For partitionColumns find the matching child columns
+    val schema = tableSchema
+    val childOutput = child.output
+    // for inserts the column names can be different and need to match
+    // by index else search in child output by name
+    val childPartitioningAttributes = partitionColumns.map(partColumn =>
+      childOutput(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))
+    Seq(childPartitioningAttributes.map(cpa => StoreUtils.getColumnUpdateDeleteOrdering(cpa)))
+  } else super.requiredChildOrdering
 
   /** Frequency of rows to check for total size exceeding batch size. */
   private val (checkFrequency, checkMask) = {
