@@ -16,15 +16,12 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.util
-
 import scala.collection.AbstractIterator
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
-import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, CompactCompositeKey, CompactExecRow}
+import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
-import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger}
 import io.snappydata.Property
 
 import org.apache.spark.Logging
@@ -47,7 +44,7 @@ final class ColumnBatchCreator(
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
       batchID: Long, bucketID: Int,
-      dependents: Seq[ExternalTableMetaData]): java.util.TreeSet[AnyRef] = {
+      dependents: Seq[ExternalTableMetaData]): java.util.HashSet[AnyRef] = {
     var connectedExternalStore: ConnectedExternalStore = null
     var success: Boolean = false
     try {
@@ -62,41 +59,20 @@ final class ColumnBatchCreator(
       }
       val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
       memHeapScanController.setAddRegionAndKey()
-      object keyOrdering extends Ordering[CompactCompositeKey] {
-        def compare(a: CompactCompositeKey, b: CompactCompositeKey) = {
-          val first = a.getKeyColumn(0).asInstanceOf[SQLInteger].getInt
-          val second = b.getKeyColumn(0).asInstanceOf[SQLInteger].getInt
-          first compareTo second
-        }
-      }
-      val keySet = new java.util.TreeSet[CompactCompositeKey](keyOrdering)
-      val rowMap = new util.HashMap[CompactCompositeKey, AbstractCompactExecRow]()
-      var keySetIterator: util.Iterator[CompactCompositeKey] = null
+      val keySet = new java.util.HashSet[AnyRef]
       val execRows = new AbstractIterator[AbstractCompactExecRow] {
 
-        def hasNext: Boolean = if (keySetIterator == null) true else keySetIterator.hasNext
+        var hasNext: Boolean = memHeapScanController.next()
 
         override def next(): AbstractCompactExecRow = {
-          if (keySetIterator == null) {
-            while (memHeapScanController.next()) {
-              memHeapScanController.fetch(row)
-              val key = row.getAllRegionAndKeyInfo.first().getKey.asInstanceOf[CompactCompositeKey]
-              keySet.add(key)
-              val value = new CompactExecRow()
-              value.setRowFormatter(row.getRowFormatter)
-              value.setRowArray(row)
-              rowMap.put(key, value)
-            }
-            if (keySet.size() < 1) {
-              throw new NoSuchElementException()
-            }
-            keySetIterator = keySet.iterator()
-          }
-          val key = keySetIterator.next()
-          if (!rowMap.containsKey(key)) {
+          if (hasNext) {
+            memHeapScanController.fetch(row)
+            keySet.add(row.getAllRegionAndKeyInfo.first().getKey)
+            hasNext = memHeapScanController.next()
+            row
+          } else {
             throw new NoSuchElementException()
           }
-          rowMap.get(key)
         }
       }
       try {
@@ -108,11 +84,7 @@ final class ColumnBatchCreator(
             partitionColumnAliases = Seq.empty, baseRelation = null, caseSensitive = true)
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
-          val tableInfo = row.getRowFormatter.container.getExtraTableInfo
-          // TODO VB: Only highlight need for partitioning column for sorting
-          // Currently this do not work and thus have customized sorting. Must be removed.
-          var partitionColumns: Seq[String] = tableInfo.getPrimaryKeyColumnNames
-          val insertPlan = ColumnInsertExec(tableScan, partitionColumns, Seq.empty,
+          val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
             numBuckets = -1, isPartitioned = false, None, (-bufferRegion.getColumnBatchSize, -1,
                 Property.CompressionCodec.defaultValue.get), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)
@@ -141,7 +113,7 @@ final class ColumnBatchCreator(
         while (iter.hasNext) {
           iter.next() // ignore result which is number of inserted rows
         }
-        keySet.asInstanceOf[java.util.TreeSet[AnyRef]]
+        keySet
       } finally {
         sc.close()
         success = true
