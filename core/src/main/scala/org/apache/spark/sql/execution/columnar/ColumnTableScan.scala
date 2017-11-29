@@ -728,7 +728,12 @@ private[sql] final case class ColumnTableScan(
            |  $ordinalIdTerm = $rs.getLong(
            |    ${if (embedded) relationSchema.length - 3 else output.length - 3});
            |} else {
-           |  $ordinalIdTerm = -$batchOrdinal -1;
+           |  if ($isCaseOfSortedInsert) {
+           |    $ordinalIdTerm = (long)$batchOrdinal << 32;
+           |  } else {
+           |    // isCaseOfUpdate. Take care of negative integers, if needed.
+           |    $ordinalIdTerm = (long)$batchOrdinal << 32 | Integer.MAX_VALUE & 0xFFFFFFFFL;
+           |  }
            |}
         """.stripMargin)
     else ("", "")

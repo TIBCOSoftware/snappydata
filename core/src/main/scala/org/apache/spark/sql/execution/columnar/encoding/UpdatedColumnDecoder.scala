@@ -116,7 +116,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition1(ordinal: Int): Boolean = {
-    if (delta1Position.abs - 1 == ordinal) {
+    if ((delta1Position >> 32).toInt == ordinal && delta1Position.toInt == 0) {
       delta1Position = delta1.moveToNextPosition()
       nextDeltaBuffer = delta1
       currentDeltaBuffer = nextDeltaBuffer
@@ -125,7 +125,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition2(ordinal: Int): Boolean = {
-    if (delta2Position.abs - 1 == ordinal) {
+    if ((delta2Position >> 32).toInt == ordinal && delta2Position.toInt == 0) {
       delta2Position = delta2.moveToNextPosition()
       nextDeltaBuffer = delta2
       currentDeltaBuffer = nextDeltaBuffer
@@ -134,7 +134,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition3(ordinal: Int): Boolean = {
-    if (delta3Position.abs - 1 == ordinal) {
+    if ((delta3Position >> 32).toInt == ordinal && delta3Position.toInt == 0) {
       delta3Position = delta3.moveToNextPosition()
       nextDeltaBuffer = delta3
       currentDeltaBuffer = nextDeltaBuffer
