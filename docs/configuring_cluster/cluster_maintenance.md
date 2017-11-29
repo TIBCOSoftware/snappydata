@@ -6,7 +6,7 @@ SnappyData provides a variety of methods for performing system maintenance.
 
 Cluster maintenance involves:
 
-## [Starting a cluster](#howto/start_snappy_cluster.md)
+## [Starting a cluster](../howto/start_snappy_cluster.md)
 
 * with one locator, lead and server
 

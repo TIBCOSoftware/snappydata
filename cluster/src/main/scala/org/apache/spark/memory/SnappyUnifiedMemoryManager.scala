@@ -22,6 +22,7 @@ import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.internal.shared.BufferAllocator
@@ -32,6 +33,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.collection.ObjectLongHashMap
 
+import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 import org.apache.spark.storage.BlockId
 import org.apache.spark.util.Utils
 import org.apache.spark.{Logging, SparkConf}
@@ -59,7 +61,7 @@ class SnappyUnifiedMemoryManager private[memory](
     maxHeapMemory,
     (maxHeapMemory * conf.getDouble("spark.memory.storageFraction",
       SnappyUnifiedMemoryManager.DEFAULT_STORAGE_FRACTION)).toLong,
-    numCores) with StoreUnifiedManager {
+    numCores) with StoreUnifiedManager with StoreCallback {
 
   self =>
 
@@ -264,10 +266,12 @@ class SnappyUnifiedMemoryManager private[memory](
 
   override def hasOffHeap: Boolean = tungstenMemoryMode eq MemoryMode.OFF_HEAP
 
-  override def logStats(): Unit = synchronized {
+  override def logStats(): Unit = logStats("")
+
+  def logStats(tag: String): Unit = synchronized {
     val memoryLog = new StringBuilder
     val separator = "\n\t\t"
-    memoryLog.append(s"$managerId ${this} stats:")
+    memoryLog.append(s"$tag$managerId ${this} stats:")
     memoryLog.append(separator).append("Storage Used = ")
         .append(onHeapStorageMemoryPool.memoryUsed)
         .append(" (size=").append(onHeapStorageMemoryPool.poolSize).append(')')
@@ -336,9 +340,10 @@ class SnappyUnifiedMemoryManager private[memory](
   def tryExplicitGC(): Unit = {
     // check if explicit GC should be invoked
     if (canUseExplicitGC) {
-      logInfo("Invoking explicit GC before failing storage allocation request")
+      logStats("Invoking explicit GC before failing storage allocation request: ")
       System.gc()
       System.runFinalization()
+      logStats("Stats after explicit GC: ")
     }
     UnsafeHolder.releasePendingReferences()
   }
@@ -618,7 +623,10 @@ class SnappyUnifiedMemoryManager private[memory](
         var couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         // run old map GC task explicitly before failing with low memory
         if (!couldEvictSomeData) {
-          Misc.getGemFireCache.runOldEntriesCleanerThread()
+          val cache = Misc.getGemFireCacheNoThrow
+          if (cache ne null) {
+            cache.runOldEntriesCleanerThread()
+          }
           couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         }
         // for off-heap try harder before giving up since pending references
@@ -803,14 +811,27 @@ object SnappyUnifiedMemoryManager extends Logging {
     val cache = Misc.getGemFireCacheNoThrow
     val memorySize = if (cache ne null) {
       cache.getMemorySize
-    } else { // for local mode testing
-      val size = conf.getSizeAsBytes(Constant.STORE_PROPERTY_PREFIX +
+    } else { // for local mode
+      var size = conf.getSizeAsBytes(Constant.STORE_PROPERTY_PREFIX +
           DistributionConfig.MEMORY_SIZE_NAME, "0b")
       if (size == 0) {
         // try with additional "spark." prefix
-        conf.getSizeAsBytes("spark." + Constant.STORE_PROPERTY_PREFIX +
+        size = conf.getSizeAsBytes("spark." + Constant.STORE_PROPERTY_PREFIX +
             DistributionConfig.MEMORY_SIZE_NAME, "0b")
-      } else size
+      }
+      if (size > 0) {
+        // try to load managed allocator
+        try {
+          val clazz = Utils.classForName(
+            "com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator")
+          clazz.getDeclaredMethod("instance").invoke(null)
+        } catch {
+          case NonFatal(e) =>
+            logError("Failed to load managed buffer allocator in SnappyData OSS." +
+                s"Temporary scan buffers will be unaccounted DirectByteBuffers: $e")
+        }
+      }
+      size
     }
     if (memorySize > 0) {
       // set Spark's off-heap properties

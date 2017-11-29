@@ -5,6 +5,7 @@ This section provides a complete description of the Structured Query Language (S
 The following topics are covered in this section:
 
 **CREATE STATEMENTS**</br>
+
  - **[CREATE DISKSTORE](reference/sql_reference/create-diskstore.md)**</br>
  - **[CREATE FUNCTION](reference/sql_reference/create-function.md)**</br>
  - **[CREATE INDEX](reference/sql_reference/create-index.md)**</br>
@@ -15,11 +16,16 @@ The following topics are covered in this section:
  - **[CREATE SAMPLE TABLE](reference/sql_reference/create-sample-table.md)**</br>
  - **[CREATE STREAM TABLE](reference/sql_reference/create-stream-table.md)** 
 
+-----
+
 **DROP STATEMENTS**</br>
- - ** [DROP DISKSTORE](reference/sql_reference/drop-diskstore.md)**</br>
- - ** [DROP FUNCTION](reference/sql_reference/drop-function.md)**</br>
- - ** [DROP INDEX](reference/sql_reference/drop-index.md)**</br>
- - ** [DROP TABLE](reference/sql_reference/drop-table.md)**
+
+ - **[DROP DISKSTORE](reference/sql_reference/drop-diskstore.md)**</br>
+ - **[DROP FUNCTION](reference/sql_reference/drop-function.md)**</br>
+ - **[DROP INDEX](reference/sql_reference/drop-index.md)**</br>
+ - **[DROP TABLE](reference/sql_reference/drop-table.md)**
+
+-----
 
 * **[DELETE](reference/sql_reference/delete.md)** </br>
 * **[INSERT](reference/sql_reference/insert.md)**</br>

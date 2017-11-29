@@ -37,7 +37,7 @@ trait Logging {
   @transient private[this] var levelFlags: Int = _
 
   // Method to get the logger name for this object
-  protected def logName = {
+  protected def logName: String = {
     // Ignore trailing $'s in the class names for Scala objects
     this.getClass.getName.stripSuffix("$")
   }
@@ -205,6 +205,6 @@ private object Logging {
       bridgeClass.getMethod("install").invoke(null)
     }
   } catch {
-    case e: ClassNotFoundException => // can't log anything yet so just fail silently
+    case _: ClassNotFoundException => // can't log anything yet so just fail silently
   }
 }

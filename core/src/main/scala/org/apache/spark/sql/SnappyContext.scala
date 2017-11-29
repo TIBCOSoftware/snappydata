@@ -26,6 +26,7 @@ import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.metadata.Hive
@@ -1038,13 +1039,14 @@ object SnappyContext extends Logging {
                 s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
         case hostPort if !hostPort.isEmpty =>
-          val p = hostPort.split(":")
-          if (p.length != 2 ) {
-            throw new SparkException("Invalid \"host:clientPort\" pattern specified")
+          val portHolder = new Array[Int](1)
+          val host = SharedUtils.getHostPort(hostPort, portHolder)
+          val clientPort = portHolder(0)
+          if (clientPort == 0) {
+            throw new SparkException(
+              s"Invalid 'host:port' (or 'host[port]') pattern specified: $hostPort")
           }
-          val host = p(0)
-          val clientPort = p(1).toInt
-          val url = Constant.DEFAULT_THIN_CLIENT_URL + s"$host:$clientPort/"
+          val url = s"${Constant.DEFAULT_THIN_CLIENT_URL}$host[$clientPort]/"
           ThinClientConnectorMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
@@ -1261,15 +1263,6 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
 case class ThinClientConnectorMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode {
   override val description: String = "Smart connector mode"
-}
-
-/**
- * This is for the "old-way" of starting GemFireXD inside an existing
- * Spark/Yarn cluster where cluster nodes themselves boot up as GemXD cluster.
- */
-case class ExternalEmbeddedMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode {
-  override val description: String = "External embedded mode"
 }
 
 /**
