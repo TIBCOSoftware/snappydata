@@ -31,7 +31,7 @@ public class HikariConnectionPool {
   private static HikariDataSource datasource;
 
   private HikariConnectionPool() {
-    Log.getLogWriter().info("[Sonal] Creating instance of HikariConnectionPool");
+    Log.getLogWriter().info(" Creating instance of HikariConnectionPool");
     String url = SnappyConnectionPoolPrms.getUrl() + SnappyTest.validateLocatorEndpointData().get
         (0);
     PoolProperties p = new PoolProperties();

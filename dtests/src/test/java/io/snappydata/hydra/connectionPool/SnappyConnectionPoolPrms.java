@@ -22,9 +22,7 @@ import hydra.TestConfig;
 
 public class SnappyConnectionPoolPrms extends BasePrms {
 
-  public static Long useTomcatConnPool;
-
-  public static Long useHikariConnPool;
+  public static Long useConnPool;
 
   public static Long url;
 
@@ -77,27 +75,18 @@ public class SnappyConnectionPoolPrms extends BasePrms {
     return TestConfig.tasktab().intAt(key, TestConfig.tab().intAt(key, 10000));
   }
 
-  public static int getConnPoolType(){
+  public static int getConnPoolType() {
     // 0 - HikariConnPool
     // 1 - TomcatConnPool
-    Long key = useHikariConnPool;
-    boolean useHikari = TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key,
-        false));
-    if(useHikari)
+    // -1 - dont use connection pool
+    Long key = useConnPool;
+    String connPoolType = TestConfig.tasktab().stringAt(key, TestConfig.tab().stringAt(key, ""));
+    if (connPoolType.equalsIgnoreCase("Hikari"))
       return 0;
-    else {
-      boolean useTomcat = TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key,
-          false));
-      if(useTomcat)
-        return 1;
-      else
-        return -1; //don't use connection pool
-    }
-  }
-
-  public static boolean getLoadDataInParts(){
-    Long key = useTomcatConnPool;
-    return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
+    else if (connPoolType.equalsIgnoreCase("Tomcat"))
+      return 1;
+    else
+      return -1; //don't use connection pool
   }
 
   static {
