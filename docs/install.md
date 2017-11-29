@@ -35,18 +35,19 @@ For more information on the capabilities of the Community and Enterprise edition
 
 	* ODBC INSTALLERS
 
-<heading2> Installation Options</heading2>
+<heading2>Installation Options</heading2>
 
-<heading3> Prerequisites </heading3>
+<heading3>Prerequisites</heading3>
+
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
 The following installation options are available:
 
-* [Install On-Premise](install/install_on_premise.md)
+* [Install On-Premise](install/install_on_premise.md) <a id="install-on-premise"></a>
 
-* [Setting up Cluster on Amazon Web Services (AWS)](install/setting_up_cluster_on_amazon_web_services.md)
+* [Setting up Cluster on Amazon Web Services (AWS)](install/setting_up_cluster_on_amazon_web_services.md) <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 
-* [Building from Source](install/building_from_source.md)
+* [Building from Source](install/building_from_source.md)<a id="building-from-source"></a>
 
 !!! Note:  
 	**Configuring the limit for open files and threads/processes** </br> 

@@ -29,6 +29,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, DynamicReplacableConstant, Expression, SortDirection, SpecificInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -588,13 +589,12 @@ class ColumnFormatRelation(
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val indexTblName = snappySession.getIndexTable(indexIdent).toString()
-    val caseInsensitiveMap = new CaseInsensitiveMutableHashMap(tableRelation.origOptions)
-    val tempOptions = caseInsensitiveMap.filterNot(pair => {
+    val tempOptions = tableRelation.origOptions.filterNot(pair => {
       pair._1.equalsIgnoreCase(StoreUtils.PARTITION_BY) ||
           pair._1.equalsIgnoreCase(StoreUtils.COLOCATE_WITH) ||
           pair._1.equalsIgnoreCase(JdbcExtendedUtils.DBTABLE_PROPERTY) ||
           pair._1.equalsIgnoreCase(ExternalStoreUtils.INDEX_NAME)
-    }).toMap + (StoreUtils.PARTITION_BY -> indexColumns.keys.mkString(",")) +
+    }) + (StoreUtils.PARTITION_BY -> indexColumns.keys.mkString(",")) +
         (StoreUtils.GEM_INDEXED_TABLE -> tableIdent.toString) +
         (JdbcExtendedUtils.DBTABLE_PROPERTY -> indexTblName)
 
@@ -781,6 +781,7 @@ final class DefaultSource extends SchemaRelationProvider
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
+    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)
@@ -828,7 +829,7 @@ final class DefaultSource extends SchemaRelationProvider
       partitions, tableName, schema)
 
     // create an index relation if it is an index table
-    val baseTable = options.get(StoreUtils.GEM_INDEXED_TABLE)
+    val baseTable = parameters.get(StoreUtils.GEM_INDEXED_TABLE)
     val relation = baseTable match {
       case Some(btable) => new IndexColumnFormatRelation(
         tableName,
@@ -837,7 +838,7 @@ final class DefaultSource extends SchemaRelationProvider
         schema,
         schemaExtension,
         ddlExtensionForShadowTable,
-        options,
+        tableOptions,
         externalStore,
         partitioningColumns,
         sqlContext,
@@ -849,12 +850,12 @@ final class DefaultSource extends SchemaRelationProvider
         schema,
         schemaExtension,
         ddlExtensionForShadowTable,
-        options,
+        tableOptions,
         externalStore,
         partitioningColumns,
         sqlContext)
     }
-    val isRelationforSample = options.get(ExternalStoreUtils.RELATION_FOR_SAMPLE)
+    val isRelationforSample = parameters.get(ExternalStoreUtils.RELATION_FOR_SAMPLE)
         .exists(_.toBoolean)
 
     try {
@@ -863,7 +864,7 @@ final class DefaultSource extends SchemaRelationProvider
         catalog.registerDataSourceTable(qualifiedTableName, Some(relation.schema),
           partitioningColumns.toArray,
           classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
-          options, relation)
+          tableOptions, Some(relation))
       }
       success = true
       relation
@@ -874,6 +875,7 @@ final class DefaultSource extends SchemaRelationProvider
       }
     }
   }
+
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
 

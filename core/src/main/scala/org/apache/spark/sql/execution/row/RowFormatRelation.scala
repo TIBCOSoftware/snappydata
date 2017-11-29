@@ -29,6 +29,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
@@ -164,14 +165,13 @@ class RowFormatRelation(
     (rdd, Nil)
   }
 
-  def relInfo: RelationInfo = {
+  @transient private lazy val relInfo: RelationInfo = {
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
-      case _ =>
-         RelationInfo(numBuckets, isPartitioned, partitionColumns, Array.empty[String],
-           Array.empty[String], Array.empty[Partition], -1)
+      case m => throw new UnsupportedOperationException(
+        s"SnappyData table scan not supported in mode: $m")
     }
   }
 
@@ -322,6 +322,7 @@ final class DefaultSource extends MutableRelationProvider {
     ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters,
       forManagedTable = true, forColumnTable = false)
+    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"
@@ -340,7 +341,7 @@ final class DefaultSource extends MutableRelationProvider {
       mode,
       schemaExtension,
       Array[Partition](JDBCPartition(null, 0)),
-      options,
+      tableOptions,
       sqlContext)
     try {
       relation.createTable(mode)
@@ -349,7 +350,7 @@ final class DefaultSource extends MutableRelationProvider {
       catalog.registerDataSourceTable(
         catalog.newQualifiedTableName(tableName), None, Array.empty[String],
         classOf[execution.row.DefaultSource].getCanonicalName,
-        options, relation)
+        tableOptions, Some(relation))
       
       data match {
         case Some(plan) =>

@@ -168,7 +168,7 @@ object HiveMetastoreClientAccessDUnitTest extends Logging {
         .set(Property.Locators.name, locStr)
 
     if (setMaster != null) {
-      conf.setMaster(setMaster).set(Property.Embedded.name, "true")
+      conf.setMaster(setMaster)
     }
 
     val sc = new org.apache.spark.SparkContext(conf)

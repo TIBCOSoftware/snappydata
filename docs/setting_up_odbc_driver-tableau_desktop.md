@@ -80,6 +80,6 @@ To connect the Tableau Desktop to the SnappyData Server:
 
 7. In the **Worksheets** tab, click **sheet** to start the analysis.</br> 
 
-8. On this screen, you can click and drag a field from the **Dimensions** area to** Rows** or **Columns**.</br> Refer to the Tableau documentation for more information on data visualization.
+8. On this screen, you can click and drag a field from the **Dimensions** area to **Rows** or **Columns**.</br> Refer to the Tableau documentation for more information on data visualization.
 
 

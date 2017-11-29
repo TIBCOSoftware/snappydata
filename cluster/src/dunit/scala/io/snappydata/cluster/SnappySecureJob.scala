@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.cluster
 
 import java.io.{FileOutputStream, PrintWriter}
@@ -10,6 +27,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.streaming.SnappyStreamingJob
 import org.apache.spark.streaming.SnappyStreamingContext
 
+// scalastyle:off println
 class SnappySecureJob extends SnappySQLJob {
   private val colTable = "JOB_COLTABLE"
   private val rowTable = "JOB_ROWTABLE"
@@ -24,7 +42,7 @@ class SnappySecureJob extends SnappySQLJob {
   case class Data(PS_PARTKEY: Int, PS_SUPPKEY: Int,
       PS_AVAILQTY: Int, PS_SUPPLYCOST: BigDecimal)
 
-  def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
+  def getCurrentDirectory: String = new java.io.File(".").getCanonicalPath
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val file = jobConfig.getString(outputFile)
@@ -172,7 +190,7 @@ class SnappySecureJob extends SnappySQLJob {
     val grantedOp = config.getString(opCode)
 
     val opCodeToSQLs = Map("select" -> Seq(s"SELECT * FROM $otherColTab",
-        s"SELECT * FROM $otherRowTab"),
+      s"SELECT * FROM $otherRowTab"),
       "insert" -> Seq(s"INSERT INTO $otherColTab VALUES (1, 'ONE', 1.1)",
         s"INSERT INTO $otherRowTab VALUES (1, 'ONE', 1.1)"),
       "update" -> Seq(s"UPDATE $otherColTab SET COL1 = 100 WHERE COL1 = 1",
@@ -196,9 +214,11 @@ class SnappySecureJob extends SnappySQLJob {
           assert(false, s"Should have failed $s")
         } catch {
           case t: Throwable if (t.getMessage.contains(s"does not have ${op.toUpperCase} " +
-              s"permission on") || t.getMessage.contains(s"does not have SELECT permission on")) =>
+              s"permission on") ||
+              t.getMessage.contains(s"does not have SELECT permission on")) ||
+              t.getMessage.contains("42502") =>
             pw.println(s"Found expected exception for $s")
-            // t.getStackTrace.foreach(s => pw.println(s"${t.getMessage}\n  ${s.toString}"))
+          // t.getStackTrace.foreach(s => pw.println(s"${t.getMessage}\n  ${s.toString}"))
           case t: Throwable => pw.println(s"UNEXPECTED ERROR FOR $s:\n[${t.getMessage}]")
             t.getStackTrace.foreach(s => pw.println(s"  ${s.toString}"))
             throw t

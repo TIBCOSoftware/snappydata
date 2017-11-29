@@ -2,13 +2,13 @@
 
 To set up the SnappyData Cloud Cluster follow these easy steps that can get you started quickly:
 
-1. [Setting up SnappyData Cloud Cluster](#SettingUp)
+* **Deploying SnappyData Cloud Cluster**
 
-	* [Deploying SnappyData Cloud Cluster with SnappyData CloudBuilder](#DeployingClusterCloudFormation)
+	* [Deploying SnappyData Cloud Cluster using SnappyData CloudBuilder](#DeployingClusterCloudFormation)
 
-	* [Deploying SnappyData Cloud Cluster on AWS using Scripts](#DeployingClusterScript)
+	* [Deploying SnappyData Cloud Cluster on AWS using scripts](#DeployingClusterScript)
 
-2. [Using Apache Zeppelin](#LoggingZeppelin)	
+* [Using Apache Zeppelin](#LoggingZeppelin)	
 
 	* [Using Predefined Notebook](#predefinednotebook)
 
@@ -18,12 +18,9 @@ To set up the SnappyData Cloud Cluster follow these easy steps that can get you 
 
 4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
 
-<a id="SettingUp"></a><a id="DeployingClusterCloudFormation"></a>
-
-## Deploying SnappyData Cloud Cluster with SnappyData CloudBuilder
 This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the SnappyData CloudBuilder and using a script.
 
-### Prerequisites
+## Prerequisites
 Before you begin:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources with CloudFormation
@@ -32,25 +29,26 @@ Before you begin:
 
 * Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 
-
+<a id="DeployingClusterCloudFormation"></a>
+## Deploying SnappyData Cloud Cluster with SnappyData CloudBuilder
 SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.
 
 It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running four processes (locator, lead, a data server and an Apache Zeppelin server) on it.
 
 This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started! 
 
-### Step 1: Launch the [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder)
+### Step 1: Launch [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder)
 
 ### Step 2: Define your Cluster
 #### Community Edition users
 
-1. **Pick your version**</br> Select the **Community** option.
+1. **Pick your version**</br> Select the **Community** option. </br>
 	![STEP](../Images/cloudbuilder_community_version.png)
 
-2. **Pick your Instance**</br>Select an instance based on the capacity that you require.
+2. **Pick your Instance**</br>Select an instance based on the capacity that you require.</br>
 	![STEP](../Images/cloudbuilder_community_instance.png)
 
-3. **Enter your email**: Provide your email address. 
+3. **Enter your email**: Provide your email address. </br>
 	![STEP](../Images/cloudbuilder_community_email.png)
 
 4. Click **Generate**. 
@@ -64,9 +62,9 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 2. **Make Locators & Leads Highly Available?**</br>
 
-	* **Select HA/Non-HA for the [Locators](../architecture/cluster_architecture.md)** 
+	* **Select HA/Non-HA for the [Locators](../best_practices/ha_considerations.md)** 
 
-	* **Select HA/Non-HA for the [Leads](../architecture/cluster_architecture.md)**. </br> Currently, Amazon Elastic Block Storage (EBS) is provided.
+	* **Select HA/Non-HA for the [Leads](../best_practices/ha_considerations.md)** </br> Currently, Amazon Elastic Block Storage (EBS) is provided.
 
 	![STEP](../Images/cloudbuilder_enterprise_locator_lead_ha.png)
 
@@ -78,7 +76,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 	![STEP](../Images/cloudbuilder_enterprise_memory.png)
 
-4. **Recommended Cluster**: Select an instance based on the capacity that you require.
+4. **Recommended Cluster**: Select an instance based on the required capacity.
 
 	* **Add servers to support high availability?**: Select this option to add servers to support high availability.
 
@@ -98,7 +96,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 <a id="region"></a>
 ### Step 3: Select the Region and Launch your Cluster
-1. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
+1. On this page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
 
     !!! Note
 
@@ -109,6 +107,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
     ![STEP](../Images/cloudbuilder_selectedregion.png)
 
 2. On the **Select Template** page, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
+
 	![STEP](../Images/aws_selecttemplate.png)
 
 3. On the **Specify Details** page:
@@ -120,7 +119,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
     
     * **KeyPairName**: Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. Refer to the Amazon documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 
-    * **VPCID**: From the drop-down list, select the Virtual Private Cloud (VPC) ID that is set as default. Your instances are launched within this VPC.</br> Click **Next** to continue.
+    * **VPCID**: From the drop-down list, select *default* Virtual Private Cloud (VPC) ID of your selected region. Your instances are launched within this VPC.</br> Click **Next** to continue.
     
     ![STEP](../Images/cloudbuilder_create_stack.png)
 
@@ -217,6 +216,7 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 
 
 !!! Note
+
     * 	The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.
 
 	* 	You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.
@@ -319,9 +319,11 @@ SnappyContext is injected in this interpreter and can be accessed using variable
 <a id="predefinednotebook"></a>
 
 ## Using Predefined Notebooks
-SnappyData provides you predefined notebooks **NYCTAXI Analytics** and **Airline Data Analytics** which contains definitions that are stored in a single file. 
 
-When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result. 
+SnappyData provides predefined notebooks which contains definitions that are stored in a single file. </br>
+The overview notebook provides a brief introduction to the SnappyData product features. It also provides  additional predefined notebooks, Quickstart, Performance, NYC TAXI Analytics and Airline Data Analytics.
+
+When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result.
 
 <a id="Creatingnotebook"></a>
 
@@ -329,9 +331,9 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 
 1. Log on to Apache Zeppelin, create a notebook and insert a new paragraph.
 
-2. Use `%snappydata.spark` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
+2. [Bind the interpreter by setting the default interpreter](../howto/use_apache_zeppelin_with_snappydata.md#additional-settings). Use `%snappydata.spark` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
 
-3. Download a dataset you want to use and create tables as mentioned below
+3. Download a data set you want to use and create tables as mentioned below
 
 ### Examples of Queries and Results
 This section provides you with examples you can use in a paragraph.

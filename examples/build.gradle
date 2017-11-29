@@ -47,7 +47,7 @@ if (rootProject.hasProperty('enablePublish')) {
   }
 }
 
-task productExamples(dependsOn: 'jar') << {
+task productExamples(dependsOn: 'jar') { doLast {
   copy {
     from 'src/main/python/*'
     into "${buildDir}" }
@@ -61,7 +61,7 @@ task productExamples(dependsOn: 'jar') << {
     include "${project.jar.archiveName}"
     rename { filename -> exampleArchiveName }
   }
-}
+} }
 
 scalaTest {
   dependsOn ':cleanScalaTest'
@@ -69,7 +69,6 @@ scalaTest {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)
   }
-  testOutput '/dev/tty'
   doLast {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)

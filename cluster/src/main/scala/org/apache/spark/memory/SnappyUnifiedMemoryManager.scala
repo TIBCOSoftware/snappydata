@@ -22,6 +22,7 @@ import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.internal.shared.BufferAllocator
@@ -29,8 +30,10 @@ import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, Unsaf
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.pivotal.gemfirexd.internal.engine.Misc
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
+import io.snappydata.Constant
+import io.snappydata.collection.ObjectLongHashMap
 
+import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 import org.apache.spark.storage.BlockId
 import org.apache.spark.util.Utils
 import org.apache.spark.{Logging, SparkConf}
@@ -58,7 +61,7 @@ class SnappyUnifiedMemoryManager private[memory](
     maxHeapMemory,
     (maxHeapMemory * conf.getDouble("spark.memory.storageFraction",
       SnappyUnifiedMemoryManager.DEFAULT_STORAGE_FRACTION)).toLong,
-    numCores) with StoreUnifiedManager {
+    numCores) with StoreUnifiedManager with StoreCallback {
 
   self =>
 
@@ -99,15 +102,14 @@ class SnappyUnifiedMemoryManager private[memory](
   private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
   @volatile private var _memoryForObjectMap:
-    Object2LongOpenHashMap[(String, MemoryMode)] = _
+    ObjectLongHashMap[(String, MemoryMode)] = _
 
-  private[memory] def memoryForObject: Object2LongOpenHashMap[(String, MemoryMode)] = {
+  private[memory] def memoryForObject: ObjectLongHashMap[(String, MemoryMode)] = {
     val memoryMap = _memoryForObjectMap
     if (memoryMap eq null) synchronized {
       val memoryMap = _memoryForObjectMap
       if (memoryMap eq null) {
-        _memoryForObjectMap = new Object2LongOpenHashMap[(String, MemoryMode)]()
-        _memoryForObjectMap.defaultReturnValue(0L)
+        _memoryForObjectMap = ObjectLongHashMap.withExpectedSize[(String, MemoryMode)](16)
         // transfer the memory map from tempMemoryManager on first use
         if (!bootManager) {
           logInfo(s"Allocating boot time memory to $managerId ")
@@ -118,10 +120,10 @@ class SnappyUnifiedMemoryManager private[memory](
           if (bootTimeMap ne null) {
             // Not null only for cluster mode. In local mode
             // as Spark is booted first temp memory manager is not used
-            bootTimeMap.object2LongEntrySet().iterator().asScala foreach { entry =>
+            bootTimeMap.entrySet().iterator().asScala foreach { entry =>
               val (objectName, mode) = entry.getKey
               acquireStorageMemoryForObject(objectName,
-                MemoryManagerCallback.storageBlockId, entry.getLongValue, mode, null,
+                MemoryManagerCallback.storageBlockId, entry.getValue, mode, null,
                 shouldEvict = true)
               // TODO: SW: if above fails then this should throw exception
               // and _memoryForObjectMap made null again?
@@ -159,11 +161,11 @@ class SnappyUnifiedMemoryManager private[memory](
 
       val bootManagerMap = bootManager.memoryForObject
       val memoryForObject = self.memoryForObject
-      memoryForObject.object2LongEntrySet().iterator().asScala foreach { entry =>
+      memoryForObject.entrySet().iterator().asScala foreach { entry =>
         val (objectName, memoryMode) = entry.getKey
         if (!objectName.equals(SPARK_CACHE) &&
             !objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
-          bootManagerMap.addTo(objectName -> memoryMode, entry.getLongValue)
+          bootManagerMap.addTo(objectName -> memoryMode, entry.getValue)
         }
       }
       clear()
@@ -264,10 +266,12 @@ class SnappyUnifiedMemoryManager private[memory](
 
   override def hasOffHeap: Boolean = tungstenMemoryMode eq MemoryMode.OFF_HEAP
 
-  override def logStats(): Unit = synchronized {
+  override def logStats(): Unit = logStats("")
+
+  def logStats(tag: String): Unit = synchronized {
     val memoryLog = new StringBuilder
     val separator = "\n\t\t"
-    memoryLog.append(s"$managerId ${this} stats:")
+    memoryLog.append(s"$tag$managerId ${this} stats:")
     memoryLog.append(separator).append("Storage Used = ")
         .append(onHeapStorageMemoryPool.memoryUsed)
         .append(" (size=").append(onHeapStorageMemoryPool.poolSize).append(')')
@@ -286,12 +290,12 @@ class SnappyUnifiedMemoryManager private[memory](
           .append(" (size=").append(offHeapExecutionMemoryPool.poolSize).append(')')
     }
     val memoryForObject = self.memoryForObject
-    if (!memoryForObject.isEmpty) {
+    if (memoryForObject.size() > 0) {
       memoryLog.append("\n\t").append("Objects:\n")
-      val objects = memoryForObject.object2LongEntrySet().iterator()
+      val objects = memoryForObject.entrySet().iterator()
       while (objects.hasNext) {
         val o = objects.next()
-        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getLongValue)
+        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getValue)
       }
     }
     logInfo(memoryLog.toString())
@@ -336,9 +340,10 @@ class SnappyUnifiedMemoryManager private[memory](
   def tryExplicitGC(): Unit = {
     // check if explicit GC should be invoked
     if (canUseExplicitGC) {
-      logInfo("Invoking explicit GC before failing storage allocation request")
+      logStats("Invoking explicit GC before failing storage allocation request: ")
       System.gc()
       System.runFinalization()
+      logStats("Stats after explicit GC: ")
     }
     UnsafeHolder.releasePendingReferences()
   }
@@ -618,7 +623,10 @@ class SnappyUnifiedMemoryManager private[memory](
         var couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         // run old map GC task explicitly before failing with low memory
         if (!couldEvictSomeData) {
-          Misc.getGemFireCache.runOldEntriesCleanerThread()
+          val cache = Misc.getGemFireCacheNoThrow
+          if (cache ne null) {
+            cache.runOldEntriesCleanerThread()
+          }
           couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         }
         // for off-heap try harder before giving up since pending references
@@ -684,7 +692,7 @@ class SnappyUnifiedMemoryManager private[memory](
     val memoryForObject = self.memoryForObject
     if (memoryForObject.containsKey(key)) {
       if (memoryForObject.addTo(key, -numBytes) == numBytes) {
-        memoryForObject.removeLong(key)
+        memoryForObject.removeAsLong(key)
       }
     }
   }
@@ -705,7 +713,7 @@ class SnappyUnifiedMemoryManager private[memory](
       super.releaseStorageMemory(numBytes, memoryMode)
       val offHeap = memoryMode eq MemoryMode.OFF_HEAP
       wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
-      memoryForObject.removeLong(key)
+      memoryForObject.removeAsLong(key)
     }
     bytesToBeFreed
   }
@@ -723,7 +731,7 @@ class SnappyUnifiedMemoryManager private[memory](
         true
       } else false
     })
-    clearList.foreach(key => memoryForObject.removeLong(key))
+    clearList.foreach(key => memoryForObject.removeAsLong(key))
   }
 
   // Recovery is a special case. If any of the storage pool has reached 90% of
@@ -803,14 +811,27 @@ object SnappyUnifiedMemoryManager extends Logging {
     val cache = Misc.getGemFireCacheNoThrow
     val memorySize = if (cache ne null) {
       cache.getMemorySize
-    } else { // for local mode testing
-      val size = conf.getSizeAsBytes(DistributionConfig.SNAPPY_PREFIX +
+    } else { // for local mode
+      var size = conf.getSizeAsBytes(Constant.STORE_PROPERTY_PREFIX +
           DistributionConfig.MEMORY_SIZE_NAME, "0b")
       if (size == 0) {
         // try with additional "spark." prefix
-        conf.getSizeAsBytes("spark." + DistributionConfig.SNAPPY_PREFIX +
+        size = conf.getSizeAsBytes("spark." + Constant.STORE_PROPERTY_PREFIX +
             DistributionConfig.MEMORY_SIZE_NAME, "0b")
-      } else size
+      }
+      if (size > 0) {
+        // try to load managed allocator
+        try {
+          val clazz = Utils.classForName(
+            "com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator")
+          clazz.getDeclaredMethod("instance").invoke(null)
+        } catch {
+          case NonFatal(e) =>
+            logError("Failed to load managed buffer allocator in SnappyData OSS." +
+                s"Temporary scan buffers will be unaccounted DirectByteBuffers: $e")
+        }
+      }
+      size
     }
     if (memorySize > 0) {
       // set Spark's off-heap properties

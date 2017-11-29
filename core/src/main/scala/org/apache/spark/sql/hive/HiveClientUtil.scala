@@ -22,9 +22,8 @@ import java.util.Properties
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.impl.SnappyHiveCatalog
@@ -126,7 +125,8 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
    * meta-store that is configured in the hive-site.xml file.
    */
   private def newClientWithLogSetting(): HiveClient = {
-    val currentLevel = ClientSharedUtils.converToJavaLogLevel(LogManager.getRootLogger.getLevel)
+    val currentLevel = ClientSharedUtils.convertToJavaLogLevel(
+      LogManager.getRootLogger.getLevel)
     try {
       ifSmartConn(() => {
         val props = new Properties()
@@ -136,7 +136,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
       })
       val hc = newClient()
       // Perform some action to hit other paths that could throw warning messages.
-      ifSmartConn(() => {hc.getTableOption(Misc.SNAPPY_HIVE_METASTORE, "DBS")})
+      ifSmartConn(() => {hc.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS")})
       hc
     } finally { // reset log config
       ifSmartConn(() => {
@@ -152,7 +152,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     }
   }
 
-  private def newClient(): HiveClient = {
+  private def newClient(): HiveClient = SnappyHiveCatalog.hiveClientSync.synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
     // We instantiate a HiveConf here to read in the hive-site.xml file and
@@ -174,11 +174,12 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     }
     var logURL = dbURL
     val secureDbURL = if (user.isDefined && password.isDefined) {
-      logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";user=" + user.get
+      logURL = dbURL + ";default-schema=" + SystemProperties.SNAPPY_HIVE_METASTORE +
+          ";user=" + user.get
       logURL + ";password=" + password.get + ";"
     } else {
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        Misc.SNAPPY_HIVE_METASTORE)
+        SystemProperties.SNAPPY_HIVE_METASTORE)
       dbURL
     }
     logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
@@ -277,8 +278,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
 
   private def resolveMetaStoreDBProps(): (String, String) = {
     SnappyContext.getClusterMode(sparkContext) match {
-      case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
-           LocalMode(_, _) =>
+      case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
         (ExternalStoreUtils.defaultStoreURL(Some(sparkContext)) +
             ";disable-streaming=true;default-persistent=true;skip-constraint-checks=true;",
             Constant.JDBC_EMBEDDED_DRIVER)
