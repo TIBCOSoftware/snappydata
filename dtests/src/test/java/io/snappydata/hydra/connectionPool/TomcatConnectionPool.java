@@ -32,7 +32,7 @@ public class TomcatConnectionPool {
   public DataSource datasource;
 
   private TomcatConnectionPool() {
-    Log.getLogWriter().info("[Sonal] Creating instance of TomcatConnectionPool");
+    Log.getLogWriter().info("Creating instance of TomcatConnectionPool");
     PoolProperties p = new PoolProperties();
     String url = SnappyConnectionPoolPrms.getUrl() + SnappyTest.validateLocatorEndpointData().get
         (0);
