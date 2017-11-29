@@ -214,8 +214,8 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     false
   }
 
-  final def unchanged(ordinal: Int, isCaseOfUpdate: Boolean): Boolean = {
-    if (isCaseOfUpdate) {
+  final def unchanged(ordinal: Int, isCaseOfSortedInsert: Boolean): Boolean = {
+    if (isCaseOfSortedInsert) {
       if (nextUpdatedPosition == Long.MaxValue) {
         nextUpdatedPosition = moveToNextUpdatedPosition(-1)
       }
