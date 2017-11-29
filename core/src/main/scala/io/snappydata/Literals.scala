@@ -215,9 +215,9 @@ object Property extends Enumeration {
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
      "JDBC driver. This will be used to form a JDBC URL of the form " +
-     "\"jdbc:snappydata://host:clientPort/\". It is recommended that hostname " +
-     "and client port of the locator be specified for this.",
-     None, Constant.SPARK_PREFIX)
+     "\"jdbc:snappydata://host:clientPort/\" (or use the form \"host[clientPort]\"). " +
+     "It is recommended that hostname and client port of the locator " +
+     "be specified for this.", None, Constant.SPARK_PREFIX)
 
   val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
     s"Number of query plans that will be cached.", Some(3000))

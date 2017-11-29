@@ -25,8 +25,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import com.gemstone.gemfire.cache.PartitionAttributes;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
+import com.gemstone.gemfire.internal.cache.GemfireCacheHelper;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 import com.pivotal.gemfirexd.Attribute;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
@@ -63,17 +65,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   public SnappyHiveCatalog() {
     final ThreadGroup hmsThreadGroup = LogWriterImpl.createThreadGroup(
         THREAD_GROUP_NAME, Misc.getI18NLogWriter());
-    ThreadFactory hmsClientThreadFactory = new ThreadFactory() {
-      private int next = 0;
-
-      @SuppressWarnings("NullableProblems")
-      public Thread newThread(Runnable command) {
-        Thread t = new Thread(hmsThreadGroup, command, "HiveMetaStore Client-"
-            + next++);
-        t.setDaemon(true);
-        return t;
-      }
-    };
+    ThreadFactory hmsClientThreadFactory = GemfireCacheHelper.createThreadFactory(
+        hmsThreadGroup, "HiveMetaStore Client");
     hmsQueriesExecutorService = Executors.newFixedThreadPool(1, hmsClientThreadFactory);
     // just run a task to initialize the HMC for the thread.
     // Assumption is that this should be outside any lock
@@ -380,8 +373,17 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           @SuppressWarnings("unchecked")
           Map<String, String> parameters = new CaseInsensitiveMap(
               table.getSd().getSerdeInfo().getParameters());
-          int partitions = ExternalStoreUtils.getAndSetTotalPartitions(
-              parameters, true);
+          String parts = parameters.get(ExternalStoreUtils.BUCKETS());
+          // get the partitions from the actual table if not in catalog
+          int partitions;
+          if (parts != null) {
+            partitions = Integer.parseInt(parts);
+          } else {
+            PartitionAttributes pattrs = Misc.getRegionForTableByPath(
+                fullyQualifiedName, true)
+                .getAttributes().getPartitionAttributes();
+            partitions = pattrs != null ? pattrs.getTotalNumBuckets() : 1;
+          }
           Object value = parameters.get(StoreUtils.GEM_INDEXED_TABLE());
           String baseTable = value != null ? value.toString() : "";
           String dmls = JdbcExtendedUtils.

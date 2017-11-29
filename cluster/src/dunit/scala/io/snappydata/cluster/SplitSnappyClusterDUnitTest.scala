@@ -66,6 +66,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testCreateTablesFromOtherTables(): Unit = {
+    // stop a network server to test remote fetch
+    vm0.invoke(classOf[ClusterManagerTestBase], "stopNetworkServers")
     vm3.invoke(getClass, "createTablesFromOtherTablesTest",
       startArgs :+
           Int.box(locatorClientPort))

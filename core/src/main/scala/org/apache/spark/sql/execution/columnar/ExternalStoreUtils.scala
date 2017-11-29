@@ -39,6 +39,7 @@ import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -58,16 +59,25 @@ import org.apache.spark.{SparkContext, SparkException}
  */
 object ExternalStoreUtils {
 
-  private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) =
-    Option(SnappyContext.globalSparkContext).map(_.schedulerBackend) match {
+  private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) = {
+    val sc = Option(SnappyContext.globalSparkContext)
+    sc.map(_.schedulerBackend) match {
       case Some(local: LocalSchedulerBackend) =>
         // apply a max limit of 64 in local mode since there is not much
         // scaling to be had beyond that on most processors
         val result = math.min(64, math.max(local.totalCores << 1, 8)).toString
         // use same number of partitions for sample table in local mode
         (result, result)
-      case _ => ("128", "64")
+      case _ => sc.flatMap(s => Property.Locators.getOption(s.conf).map(Utils.toLowerCase)) match {
+        // reduce defaults for localhost-only cluster too
+        case Some(s) if s.startsWith("localhost:") || s.startsWith("localhost[") ||
+            s.startsWith("127.0.0.1") || s.startsWith("::1[") =>
+          val result = math.min(64, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
+          (result, result)
+        case _ => ("128", "64")
+      }
     }
+  }
 
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
@@ -183,7 +193,7 @@ object ExternalStoreUtils {
         case None => // Do nothing
       }
     })
-    optMap.toMap
+    new CaseInsensitiveMap(optMap.toMap)
   }
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
@@ -484,13 +494,6 @@ object ExternalStoreUtils {
   final val PARTITION_BY = "PARTITION_BY"
   final val REPLICATE = "REPLICATE"
   final val BUCKETS = "BUCKETS"
-
-  def getAndSetTotalPartitions(parameters: java.util.Map[String, String],
-      forManagedTable: Boolean): Int = {
-    // noinspection RedundantDefaultArgument
-    getAndSetTotalPartitions(None, parameters.asScala,
-      forManagedTable, forColumnTable = true, forSampleTable = false)
-  }
 
   def getAndSetTotalPartitions(sparkContext: Option[SparkContext],
       parameters: mutable.Map[String, String],

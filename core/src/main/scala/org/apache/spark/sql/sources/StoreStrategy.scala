@@ -69,11 +69,11 @@ object StoreStrategy extends Strategy {
         userSpecifiedSchema, schemaDDL, provider, partitionColumns, mode,
         options, query, isBuiltIn)) :: Nil
 
-    case DropTable(ifExists, tableIdent) =>
-      ExecutedCommandExec(DropTableCommand(ifExists, tableIdent)) :: Nil
+    case DropTableOrView(isView: Boolean, ifExists, tableIdent) =>
+      ExecutedCommandExec(DropTableOrViewCommand(isView, ifExists, tableIdent)) :: Nil
 
-    case TruncateTable(ifExists, tableIdent) =>
-      ExecutedCommandExec(TruncateTableCommand(ifExists, tableIdent)) :: Nil
+    case TruncateManagedTable(ifExists, tableIdent) =>
+      ExecutedCommandExec(TruncateManagedTableCommand(ifExists, tableIdent)) :: Nil
 
     case AlterTableAddColumn(tableIdent, addColumn) =>
       ExecutedCommandExec(AlterTableAddColumnCommand(tableIdent, addColumn)) :: Nil

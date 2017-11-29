@@ -49,6 +49,8 @@ import org.apache.spark.util.Benchmark
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
+  private val cores = math.min(8, Runtime.getRuntime.availableProcessors())
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     stopAll()
@@ -61,7 +63,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
   override protected def newSparkConf(
       addOn: SparkConf => SparkConf = null): SparkConf = {
-    val cores = math.min(8, Runtime.getRuntime.availableProcessors())
     val conf = new SparkConf()
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")
@@ -116,7 +117,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val benchmark = new Benchmark("Cache random keys", size)
     val sparkSession = this.sparkSession
     val snappySession = this.snappySession
-    if (GemFireCacheImpl.hasNewOffHeap) {
+    if (GemFireCacheImpl.getCurrentBufferAllocator.isDirect) {
       logInfo("ColumnCacheBenchmark: using off-heap for performance comparison")
     } else {
       logInfo("ColumnCacheBenchmark: using heap for performance comparison")
@@ -151,8 +152,8 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           sparkSession.catalog.cacheTable("test")
         } else if (snappy) {
           snappySession.sql("drop table if exists test")
-          snappySession.sql(
-            "create table test (id bigint not null, k double not null) using column")
+          snappySession.sql("create table test (id bigint not null, k double not null) " +
+              s"using column options(buckets '$cores')")
           testDF2.write.insertInto("test")
         }
         if (snappy) {

@@ -44,7 +44,7 @@ import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsP
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -1294,8 +1294,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val planOpt = try {
       Some(sessionCatalog.lookupRelation(tableIdent))
     } catch {
-      case tnfe: TableNotFoundException =>
-        if (ifExists) return else throw tnfe
+      case e@(_: TableNotFoundException | _: SQLException | _: NoSuchTableException) =>
+        if (ifExists) return else throw e
       case NonFatal(_) if !resolveRelation => None
     }
     val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)

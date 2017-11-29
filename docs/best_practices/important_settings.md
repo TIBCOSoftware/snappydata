@@ -12,8 +12,6 @@ This section provides guidelines for configuring the following important setting
 
 * [Operating System Settings](#os_setting)
 
-* [Table Memory Requirements](#table-memory)
-
 * [SnappyData Smart Connector mode and Local mode Settings](#smartconnector-local-settings)
 
 <a id="buckets"></a>
