@@ -405,6 +405,7 @@ private[sql] final case class ColumnTableScan(
     val batchOrdinal = ctx.freshName("batchOrdinal")
     val thisRowFromDelta = ctx.freshName("thisRowFromDelta")
     val isCaseOfUpdate = ctx.freshName("isCaseOfUpdate")
+    val isCaseOfSortedInsert = ctx.freshName("isCaseOfSortedInsert")
     val deletedDecoder = s"${batch}Deleted"
     val deletedDecoderLocal = s"${deletedDecoder}Local"
     var deletedDeclaration = ""
@@ -417,7 +418,7 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("int", batchIndex, "")
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
-    ctx.addMutableState("boolean", isCaseOfUpdate, s"")
+    ctx.addMutableState("boolean", isCaseOfSortedInsert, s"")
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -563,11 +564,11 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName, thisRowFromDelta,
-          isCaseOfUpdate, numRows, colInput, inputIsRow)
+          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDelta,
-          isCaseOfUpdate, numRows, colInput, inputIsRow)
+          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -749,7 +750,12 @@ private[sql] final case class ColumnTableScan(
        |    $deletedDeclaration
        |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    // TODO VB: Temporary variable. Must go away
-       |    $isCaseOfUpdate = ${ordinalIdTerm ne null};
+       |    boolean $isCaseOfUpdate = ${ordinalIdTerm ne null};
+       |    if ($isCaseOfUpdate) {
+       |      $isCaseOfSortedInsert = ${ColumnTableScan.isCaseOfSortedInsertValue};
+       |    } else {
+       |      $isCaseOfSortedInsert = false;
+       |    }
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      boolean $thisRowFromDelta = false;
@@ -758,7 +764,7 @@ private[sql] final case class ColumnTableScan(
        |      $consumeCode
        |      if (shouldStop()) {
        |        $beforeStop
-       |        if ($isCaseOfUpdate || !$thisRowFromDelta) {
+       |        if ($isCaseOfSortedInsert || !$thisRowFromDelta) {
        |          // increment index for return
        |          $batchIndex = $batchOrdinal + 1;
        |        }
@@ -766,7 +772,7 @@ private[sql] final case class ColumnTableScan(
        |        ${numNullsUpdateCode.toString()}
        |        return;
        |      }
-       |      if ($isCaseOfUpdate) {
+       |      if ($isCaseOfSortedInsert) {
        |        $batchOrdinal = $numRows; // exit the loop
        |      }
        |    }
@@ -799,7 +805,8 @@ private[sql] final case class ColumnTableScan(
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, thisRowFromDelta: String,
-      isCaseOfUpdate: String, numRows: String, colInput: String, inputIsRow: String): ExprCode = {
+      isCaseOfUpdate: String, isCaseOfSortedInsert: String, numRows: String, colInput: String,
+      inputIsRow: String): ExprCode = {
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
@@ -858,7 +865,7 @@ private[sql] final case class ColumnTableScan(
     updatedAssign = s"$col = $updateDecoder.getCurrentDeltaBuffer().$updatedAssign;"
 
     val unchangedCode = s"$updateDecoder == null ||" +
-        s"$updateDecoder.unchanged($batchOrdinal, $isCaseOfUpdate)"
+        s"$updateDecoder.unchanged($batchOrdinal, $isCaseOfSortedInsert)"
     if (attr.nullable) {
       val isNullVar = ctx.freshName("isNull")
       val defaultValue = ctx.defaultValue(jt)
@@ -877,6 +884,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
+           |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,numRows=" + $numRows);
            |  } else {
            |    $col = $defaultValue;
@@ -893,6 +901,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
+           |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,numRows=" + $numRows);
            |} else {
            |  $col = $defaultValue;
@@ -914,6 +923,11 @@ private[sql] final case class ColumnTableScan(
     }
   }
   // scalastyle:on
+}
+
+object ColumnTableScan {
+  // TODO VB: Temporary, remove this
+  var isCaseOfSortedInsertValue: Boolean = true
 }
 
 /**

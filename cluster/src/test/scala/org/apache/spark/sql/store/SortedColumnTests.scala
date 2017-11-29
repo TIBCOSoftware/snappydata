@@ -22,6 +22,7 @@ import io.snappydata.Property
 
 import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.{Dataset, Row, SnappySession}
 
 /**
@@ -78,17 +79,24 @@ class SortedColumnTests extends ColumnTablesTestBase {
         val idU = rs.getLong(0)
         val addrU = rs.getString(1)
         val statusU = rs.getBoolean(2)
-        val rs2 = session.sql(s"update colDeltaTable set " +
-            s" id = $idU, " +
-            s" addr = '$addrU', " +
-            s" status = $statusU " +
-            s" where (id = $idU)").collect()
-        // scalastyle:off println
-        println("")
-        println(s"upsert: $idU update-count = " + rs2.map(_.getLong(0)).sum)
-        println("")
+        var update_count: Long = 0
+        try {
+          ColumnTableScan.isCaseOfSortedInsertValue = true
+          val rs2 = session.sql(s"update colDeltaTable set " +
+              s" id = $idU, " +
+              s" addr = '$addrU', " +
+              s" status = $statusU " +
+              s" where (id = $idU)").collect()
+          update_count = rs2.map(_.getLong(0)).sum
+          // scalastyle:off println
+          println("")
+          println(s"upsert: $idU update-count = " + update_count)
+          println("")
+        } finally {
+          ColumnTableScan.isCaseOfSortedInsertValue = false
+        }
         // scalastyle:on println
-        if (rs2.map(_.getLong(0)).sum == 0) {
+        if (update_count == 0) {
           val rs3 = session.sql(s"insert into colDeltaTable values ( " +
               s" $idU, " +
               s" '$addrU', " +
