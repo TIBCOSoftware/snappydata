@@ -199,6 +199,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val encoderTerm = s"$deltaEncoders[$i]"
       val cursorTerm = s"$cursors[$i]"
       val ev = updateInput(i)
+      val lowOrderBatchOrdinalValue =
+        ctx.mutableStates.filter(_._2.contains("lowOrderBatchOrdinal")).map(_._2)
       ctx.addNewFunction(function,
         s"""
            |private void $function(int $ordinal, long $ordinalIdVar,
@@ -208,8 +210,11 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
                 cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
         """.stripMargin)
-      // code for invoking the function
-      s"$function($batchOrdinal, (long)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
+      // code for invoking the function.
+      // Take care of negative integer (while converting to long) if needed
+      s"""$function($batchOrdinal, $ordinalIdVar | ${lowOrderBatchOrdinalValue.head} & 0xFFFFFFFFL,
+         |   ${ev.isNull}, ${ev.value});
+        """.stripMargin
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
