@@ -107,7 +107,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   protected final var nextDeltaBuffer: ColumnDeltaDecoder = _
   protected final var currentDeltaBuffer: ColumnDeltaDecoder = _
-  protected final var nextUpdatedPosition: Long = Long.MinValue
+  protected final var nextUpdatedPosition: Long = Long.MaxValue
 
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
@@ -116,8 +116,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition1(ordinal: Int): Boolean = {
-    if (delta1Position.abs - 1 < Long.MaxValue && delta1Position.abs - 1 == ordinal) {
-      nextUpdatedPosition = delta1Position
+    if (delta1Position.abs - 1 == ordinal) {
       delta1Position = delta1.moveToNextPosition()
       nextDeltaBuffer = delta1
       currentDeltaBuffer = nextDeltaBuffer
@@ -126,8 +125,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition2(ordinal: Int): Boolean = {
-    if (delta2Position.abs - 1 < Long.MaxValue && delta2Position.abs - 1 == ordinal) {
-      nextUpdatedPosition = delta2Position
+    if (delta2Position.abs - 1 == ordinal) {
       delta2Position = delta2.moveToNextPosition()
       nextDeltaBuffer = delta2
       currentDeltaBuffer = nextDeltaBuffer
@@ -136,8 +134,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def moveToNextUpdatedPosition3(ordinal: Int): Boolean = {
-    if (delta3Position.abs - 1 < Long.MaxValue && delta3Position.abs - 1 == ordinal) {
-      nextUpdatedPosition = delta3Position
+    if (delta3Position.abs - 1 == ordinal) {
       delta3Position = delta3.moveToNextPosition()
       nextDeltaBuffer = delta3
       currentDeltaBuffer = nextDeltaBuffer
@@ -219,16 +216,13 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   final def unchanged(ordinal: Int, isCaseOfUpdate: Boolean): Boolean = {
     if (isCaseOfUpdate) {
-      if (nextUpdatedPosition == Long.MinValue) {
+      if (nextUpdatedPosition == Long.MaxValue) {
         nextUpdatedPosition = moveToNextUpdatedPosition(-1)
       }
       // Original
       if (nextUpdatedPosition > ordinal) true
       else skipUntil(ordinal)
     } else {
-      if (nextUpdatedPosition == Long.MinValue) {
-        nextUpdatedPosition = Long.MaxValue
-      }
       if (moveToNextUpdatedPosition1(ordinal)) return false
       if (moveToNextUpdatedPosition2(ordinal)) return false
       if (moveToNextUpdatedPosition3(ordinal)) return false
