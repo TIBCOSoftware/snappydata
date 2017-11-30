@@ -201,7 +201,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
-           |private void $function(int $ordinal, long $ordinalIdVar,
+           |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
            |  $encoderTerm.setUpdatePosition($ordinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
@@ -209,7 +209,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal, (long)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
+      s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
