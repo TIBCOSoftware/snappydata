@@ -242,7 +242,7 @@ class RowFormatRelation(
   }
 
   private def getColumnStr(colWithDirection: (String, Option[SortDirection])): String = {
-    colWithDirection._1 + " " + (colWithDirection._2 match {
+    "\"" + colWithDirection._1 + "\" " + (colWithDirection._2 match {
       case Some(Ascending) => "ASC"
       case Some(Descending) => "DESC"
       case None => ""
@@ -332,7 +332,7 @@ final class DefaultSource extends MutableRelationProvider {
       Some(sqlContext.sparkSession), parameters)
 
     StoreUtils.validateConnProps(parameters)
-    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
+    val tableName = SnappyStoreHiveCatalog.processIdentifier(table, sqlContext.conf)
     var success = false
     val relation = new RowFormatRelation(connProperties,
       tableName,

@@ -134,15 +134,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   /**
    * Format table name, taking into account case sensitivity.
    */
-  override def formatTableName(name: String): String = {
-    SnappyStoreHiveCatalog.processTableIdentifier(name, sqlConf)
-  }
+  override def formatTableName(name: String): String = formatName(name)
 
   /**
    * Format database name, taking into account case sensitivity.
    */
-  override def formatDatabaseName(name: String): String = {
-    SnappyStoreHiveCatalog.processTableIdentifier(name, sqlConf)
+  override def formatDatabaseName(name: String): String = formatName(name)
+
+  private[sql] def formatName(name: String): String = {
+    SnappyStoreHiveCatalog.processIdentifier(name, sqlConf)
   }
 
   // TODO: SW: cleanup this schema/database stuff
@@ -1090,11 +1090,11 @@ object SnappyStoreHiveCatalog {
     })
 
 
-  def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
+  def processIdentifier(identifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {
-      tableIdentifier
+      identifier
     } else {
-      Utils.toUpperCase(tableIdentifier)
+      Utils.toUpperCase(identifier)
     }
   }
 
