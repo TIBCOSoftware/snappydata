@@ -404,10 +404,8 @@ private[sql] final case class ColumnTableScan(
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
     val thisRowFromDelta = ctx.freshName("thisRowFromDelta")
-    val count_repeated_batchOrdinal = ctx.freshName("count_repeated_batchOrdinal")
     val isCaseOfUpdate = ctx.freshName("isCaseOfUpdate")
     val isCaseOfSortedInsert = ctx.freshName("isCaseOfSortedInsert")
-    val lowOrderBatchOrdinal = ctx.freshName("lowOrderBatchOrdinal")
     val deletedDecoder = s"${batch}Deleted"
     val deletedDecoderLocal = s"${deletedDecoder}Local"
     var deletedDeclaration = ""
@@ -421,7 +419,6 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
     ctx.addMutableState("boolean", isCaseOfSortedInsert, s"")
-    ctx.addMutableState("int", lowOrderBatchOrdinal, s"$lowOrderBatchOrdinal = 0;")
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -567,13 +564,11 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName, thisRowFromDelta,
-          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, ordinalIdTerm,
-          lowOrderBatchOrdinal, count_repeated_batchOrdinal)
+          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDelta,
-          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, ordinalIdTerm,
-          lowOrderBatchOrdinal, count_repeated_batchOrdinal)
+          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -728,9 +723,18 @@ private[sql] final case class ColumnTableScan(
         """.stripMargin,
         // ordinalId is the last column in the row buffer table (exclude virtual columns)
         s"""
-           |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(
-           |    ${if (embedded) relationSchema.length - 3 else output.length - 3}) :
-           |    (long)$batchOrdinal << 32;
+           |final long $ordinalIdTerm;
+           |if ($inputIsRow) {
+           |  $ordinalIdTerm = $rs.getLong(
+           |    ${if (embedded) relationSchema.length - 3 else output.length - 3});
+           |} else {
+           |  if ($isCaseOfSortedInsert) {
+           |    $ordinalIdTerm = (long)$batchOrdinal << 32;
+           |  } else {
+           |    // isCaseOfUpdate. Take care of negative integers, if needed.
+           |    $ordinalIdTerm = (long)$batchOrdinal << 32 | Integer.MAX_VALUE & 0xFFFFFFFFL;
+           |  }
+           |}
         """.stripMargin)
     else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
@@ -765,16 +769,8 @@ private[sql] final case class ColumnTableScan(
        |    } else {
        |      $isCaseOfSortedInsert = false;
        |    }
-       |    int last_$batchOrdinal = -1;
-       |    int $count_repeated_batchOrdinal = 1;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows; $batchOrdinal++) {
        |      boolean $thisRowFromDelta = false;
-       |      if (last_$batchOrdinal == $batchOrdinal) {
-       |        $count_repeated_batchOrdinal++;
-       |      } else {
-       |        last_$batchOrdinal = $batchOrdinal;
-       |        $count_repeated_batchOrdinal = 1;
-       |      }
        |      $deletedCheck
        |      $assignOrdinalId
        |      $consumeCode
@@ -822,8 +818,7 @@ private[sql] final case class ColumnTableScan(
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, thisRowFromDelta: String,
       isCaseOfUpdate: String, isCaseOfSortedInsert: String, numRows: String, colInput: String,
-      inputIsRow: String, ordinalIdTerm: String, lowOrderBatchOrdinal: String,
-      count_repeated_batchOrdinal: String): ExprCode = {
+      inputIsRow: String): ExprCode = {
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
@@ -894,12 +889,6 @@ private[sql] final case class ColumnTableScan(
            |  $numNullsVar = $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar);
            |  if ($numNullsVar >= 0) {
            |    $colAssign
-           |    if ($isCaseOfUpdate) {
-           |      $lowOrderBatchOrdinal = Integer.MAX_VALUE;
-           |    } else {
-           |      // $isCaseOfSortedInsert
-           |      $lowOrderBatchOrdinal = 0;
-           |    }
            |    // TODO VB: Remove this
            |    System.out.println("VB: Scan [inserted] " + $col +
            |    " ,batchOrdinal=" + $batchOrdinal +
@@ -908,7 +897,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
-           |    " ,lowOrderBatchOrdinal=" + $lowOrderBatchOrdinal +
            |    " ,numRows=" + $numRows);
            |  } else {
            |    $col = $defaultValue;
@@ -918,12 +906,6 @@ private[sql] final case class ColumnTableScan(
            |} else if ($updateDecoder.readNotNull()) {
            |  $thisRowFromDelta = true;
            |  $updatedAssign
-           |  if ($isCaseOfUpdate) {
-           |    $lowOrderBatchOrdinal = $count_repeated_batchOrdinal;
-           |  } else {
-           |    // $isCaseOfSortedInsert
-           |    $lowOrderBatchOrdinal = 0;
-           |  }
            |  // TODO VB: Remove this
            |  System.out.println("VB: Scan [updated] " + $col +
            |    " ,batchOrdinal=" + $batchOrdinal +
@@ -932,7 +914,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
-           |    " ,lowOrderBatchOrdinal=" + $lowOrderBatchOrdinal +
            |    " ,numRows=" + $numRows);
            |} else {
            |  $col = $defaultValue;
