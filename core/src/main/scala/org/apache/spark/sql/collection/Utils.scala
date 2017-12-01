@@ -669,7 +669,7 @@ object Utils {
   private[this] val COMPRESSION_HEADER_SIZE = 8
   private[this] val MIN_COMPRESSION_RATIO = 0.75
   /** minimum size of buffer that will be considered for compression */
-  private[sql] val MIN_COMPRESSION_SIZE = 8192
+  private[sql] val MIN_COMPRESSION_SIZE = 2048
 
   private def writeCompressionHeader(codecId: Int,
       uncompressedLen: Int, buffer: ByteBuffer): Unit = {

@@ -58,9 +58,6 @@ object ColumnFormatEntry {
     GfxdDataSerializable.registerSqlSerializable(classOf[ColumnDeleteDelta])
   }
 
-  /** minimum size of buffer that will be considered for compression */
-  private[columnar] val MIN_COMPRESSION_SIZE = 8192
-
   /**
    * max number of consecutive compressions after which buffer will be
    * replaced with compressed one in memory
@@ -68,16 +65,6 @@ object ColumnFormatEntry {
   private[columnar] val MAX_CONSECUTIVE_COMPRESSIONS = 2
 
   private[columnar] def alignedSize(size: Int) = ((size + 7) >>> 3) << 3
-
-  private[columnar] def writeValueSerializationHeader(
-      channel: OutputStreamChannel, gfxdId: Byte, size: Int): Unit = {
-    // write the typeId + classId and size
-    channel.write(DSCODE.DS_FIXED_ID_BYTE)
-    channel.write(DataSerializableFixedID.GFXD_TYPE)
-    channel.write(gfxdId)
-    channel.write(0.toByte) // padding
-    channel.writeInt(size)
-  }
 
   val STATROW_COL_INDEX: Int = -1
 
@@ -517,16 +504,17 @@ class ColumnFormatValue extends SerializedDiskBuffer
   }
 
   override final def write(channel: OutputStreamChannel): Unit = {
+    // write the pre-serialized buffer as is
+    // Oplog layer will get compressed form by calling getValueRetain(false, true)
     val buffer = getBufferRetain
     try {
-      val numBytes = buffer.remaining()
-      // large buffers should never be written as such
-      if (numBytes >= ColumnFormatEntry.MIN_COMPRESSION_SIZE) {
-        throw new IllegalStateException(
-          s"unexpected call to write(channel) with buffer size = $numBytes")
-      }
       // first write the serialization header
-      ColumnFormatEntry.writeValueSerializationHeader(channel, getGfxdID, buffer.limit())
+      // write the typeId + classId and size
+      channel.write(DSCODE.DS_FIXED_ID_BYTE)
+      channel.write(DataSerializableFixedID.GFXD_TYPE)
+      channel.write(getGfxdID)
+      channel.write(0.toByte) // padding
+      channel.writeInt(buffer.limit())
 
       // no need to change position back since this is a duplicate ByteBuffer
       write(channel, buffer)
