@@ -160,8 +160,9 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
     else region.get(key)
     if (value ne null) {
-      val columnValue = value.asInstanceOf[ColumnFormatValue]
-      val buffer = columnValue.getBufferRetain
+      val columnValue = value.asInstanceOf[ColumnFormatValue].getValueRetain(
+        decompress = true, compress = false)
+      val buffer = columnValue.getBuffer
       if (buffer.remaining() > 0) {
         currentColumns += columnValue
         return buffer
@@ -254,8 +255,9 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
             // NonLocalRegionEntry where RegionEntryContext arg is not required
             val v = re.getValue(currentBucketRegion)
             if (v ne null ) {
-              val columnValue = v.asInstanceOf[ColumnFormatValue]
-              val buffer = columnValue.getBufferRetain
+              val columnValue = v.asInstanceOf[ColumnFormatValue].getValueRetain(
+                decompress = true, compress = true)
+              val buffer = columnValue.getBuffer
               // empty buffer indicates value removed from region
               if (buffer.remaining() > 0) {
                 currentKeyPartitionId = key.partitionId
