@@ -83,25 +83,17 @@ class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Lo
     }
   }
 
-  def getANetConnection(netPort: Int,
-      useGemXDURL: Boolean = false): Connection = {
+  def getANetConnection(netPort: Int): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
-    var url: String = null
-    if (useGemXDURL) {
-      url = "jdbc:gemfirexd://localhost:" + netPort + "/"
-    } else {
-      url = "jdbc:snappydata://localhost:" + netPort + "/"
-    }
-
-    DriverManager.getConnection(url)
+    DriverManager.getConnection("jdbc:gemfirexd://localhost:" + netPort + "/")
   }
 
   /*
    * Basic test to make sure that SnappyData rowstore mode works
    */
   def testRowStoreCluster(): Unit = {
-    val conn = getANetConnection(netPort, useGemXDURL = true)
+    val conn = getANetConnection(netPort)
     val s = conn.createStatement()
     try {
       s.execute("CREATE TABLE T1(COL1 INT, COL2 INT) PERSISTENT REPLICATE")
