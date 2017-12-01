@@ -30,18 +30,20 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.internal.shared.BufferAllocator
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{Constant, ToolsCallback}
 import net.jpountz.lz4.LZ4Factory
 import org.apache.commons.math3.distribution.NormalDistribution
+import org.slf4j.LoggerFactory
 import org.xerial.snappy.Snappy
 
 import org.apache.spark._
 import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
-import org.apache.spark.memory.TaskMemoryManager
+import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
@@ -681,6 +683,28 @@ object Utils {
     buffer.putInt(4, uncompressedLen)
   }
 
+  private def allocateExecutionMemory(size: Int, owner: String,
+      allocator: BufferAllocator): ByteBuffer = {
+    if (allocator.isManagedDirect) {
+      val context = TaskContext.get()
+      if (context ne null) {
+        val memoryManager = context.taskMemoryManager()
+        val totalSize = UnsafeHolder.getAllocationSize(size) +
+            DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
+        val consumer = new DefaultMemoryConsumer(memoryManager, MemoryMode.OFF_HEAP)
+        if (consumer.acquireMemory(totalSize) < totalSize) {
+          consumer.freeMemory(consumer.getUsed)
+          throw DirectBufferAllocator.instance().lowMemoryException(owner, totalSize)
+        }
+        return allocator.allocateCustom(totalSize, new UnsafeHolder.FreeMemoryFactory {
+          override def newFreeMemory(address: Long, size: Int): ExecutionFreeMemory =
+            new ExecutionFreeMemory(consumer, address)
+        })
+      }
+    }
+    allocator.allocate(size, owner)
+  }
+
   def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
       allocator: BufferAllocator, forStorage: Boolean): ByteBuffer = {
     if (len < MIN_COMPRESSION_SIZE) return input
@@ -692,13 +716,15 @@ object Utils {
         val maxLength = compressor.maxCompressedLength(len)
         val maxTotal = maxLength + COMPRESSION_HEADER_SIZE
         result = (if (forStorage) allocator.allocateForStorage(maxTotal)
-        else allocator.allocate(maxTotal, "COMPRESSOR")).order(ByteOrder.LITTLE_ENDIAN)
+        else allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator))
+            .order(ByteOrder.LITTLE_ENDIAN)
         compressor.compress(input, input.position(), len,
           result, COMPRESSION_HEADER_SIZE, maxLength)
       case CompressionCodecId.SNAPPY_ID =>
         val maxTotal = Snappy.maxCompressedLength(len) + COMPRESSION_HEADER_SIZE
         result = (if (forStorage) allocator.allocateForStorage(maxTotal)
-        else allocator.allocate(maxTotal, "COMPRESSOR")).order(ByteOrder.LITTLE_ENDIAN)
+        else allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator))
+            .order(ByteOrder.LITTLE_ENDIAN)
         if (input.isDirect) {
           result.position(COMPRESSION_HEADER_SIZE)
           Snappy.compress(input, result)
@@ -742,7 +768,8 @@ object Utils {
     val codecId = -input.getInt
     val outputLen = input.getInt
     val result = (if (forStorage) allocator.allocateForStorage(outputLen)
-    else allocator.allocate(outputLen, "DECOMPRESSOR")).order(ByteOrder.LITTLE_ENDIAN)
+    else allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator))
+        .order(ByteOrder.LITTLE_ENDIAN)
     codecId match {
       case CompressionCodecId.LZ4_ID =>
         LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
@@ -1121,5 +1148,44 @@ object OrderlessHashPartitioningExtract {
     if (callbacks ne null) {
       callbacks.checkOrderlessHashPartitioning(partitioning)
     } else None
+  }
+}
+
+final class DefaultMemoryConsumer(taskMemoryManager: TaskMemoryManager,
+    mode: MemoryMode = MemoryMode.ON_HEAP)
+    extends MemoryConsumer(taskMemoryManager, taskMemoryManager.pageSizeBytes(), mode) {
+
+  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
+
+  override def getUsed: Long = this.used
+}
+
+final class ExecutionFreeMemory(consumer: DefaultMemoryConsumer,
+    address: Long) extends UnsafeHolder.FreeMemory(address) {
+
+  override protected def objectName(): String = BufferAllocator.EXECUTION
+
+  override def run() {
+    val address = tryFree()
+    if (address != 0) {
+      UnsafeHolder.getUnsafe.freeMemory(address)
+      releaseExecutionMemory()
+    }
+  }
+
+  def releaseExecutionMemory(): Unit = {
+    try {
+      // release from execution pool
+      consumer.freeMemory(consumer.getUsed)
+    } catch {
+      case t: Throwable => // ignore exceptions
+        SystemFailure.checkFailure()
+        try {
+          val logger = LoggerFactory.getLogger(getClass)
+          logger.error("ExecutionFreeMemory unexpected exception", t)
+        } catch {
+          case _: Throwable => // ignore if even logging failed
+        }
+    }
   }
 }

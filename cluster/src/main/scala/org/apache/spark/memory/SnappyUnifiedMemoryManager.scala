@@ -18,7 +18,7 @@ package org.apache.spark.memory
 
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Consumer
+import java.util.function.BiConsumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -33,6 +33,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.collection.ObjectLongHashMap
 
+import org.apache.spark.sql.collection.ExecutionFreeMemory
 import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 import org.apache.spark.storage.BlockId
 import org.apache.spark.util.Utils
@@ -307,8 +308,8 @@ class SnappyUnifiedMemoryManager private[memory](
     val mode = MemoryMode.OFF_HEAP
     val totalSize = capacity + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
     val toOwner = DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER
-    val changeOwner = new Consumer[String] {
-      override def accept(fromOwner: String): Unit = {
+    val changeOwner = new BiConsumer[String, AnyRef] {
+      override def accept(fromOwner: String, runnable: AnyRef): Unit = {
         if (fromOwner ne null) {
           val memoryForObject = self.memoryForObject
           // "from" was changed to "to"
@@ -327,6 +328,11 @@ class SnappyUnifiedMemoryManager private[memory](
             totalSize, MemoryMode.OFF_HEAP, shouldEvict = true)) {
             throw DirectBufferAllocator.instance().lowMemoryException(
               "changeToStorage", totalSize)
+          }
+          // release from execution pool if using execution allocator
+          runnable match {
+            case r: ExecutionFreeMemory => r.releaseExecutionMemory()
+            case _ =>
           }
         } else throw new IllegalStateException(
           s"ByteBuffer Cleaner does not match expected source $fromOwner")

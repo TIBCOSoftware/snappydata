@@ -42,7 +42,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{Literal, LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{DefaultMemoryConsumer, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
@@ -483,13 +483,9 @@ object CachedDataFrame
         // We will ensure that sufficient memory is available by reserving
         // four times as Kryo serialization will expand its buffer accordingly
         // and transport layer can create another copy.
-        if (context != null) {
+        if (context ne null) {
           // TODO why driver is calling this code with context null ?
-          val memoryConsumer = new MemoryConsumer(context.taskMemoryManager()) {
-            override def spill(size: Long, trigger: MemoryConsumer): Long = {
-              0L
-            }
-          }
+          val memoryConsumer = new DefaultMemoryConsumer(context.taskMemoryManager())
           // TODO Remove the 4 times check once SNAP-1759 is fixed
           val required = 4L * memSize
           val granted = memoryConsumer.acquireMemory(4L * memSize)
