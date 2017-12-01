@@ -75,12 +75,10 @@ public class SnappyConnectionPoolPrms extends BasePrms {
     return TestConfig.tasktab().intAt(key, TestConfig.tab().intAt(key, 10000));
   }
 
-  public static int getConnPoolType() {
+  public static int getConnPoolType(String connPoolType) {
     // 0 - HikariConnPool
     // 1 - TomcatConnPool
     // -1 - dont use connection pool
-    Long key = useConnPool;
-    String connPoolType = TestConfig.tasktab().stringAt(key, TestConfig.tab().stringAt(key, ""));
     if (connPoolType.equalsIgnoreCase("Hikari"))
       return 0;
     else if (connPoolType.equalsIgnoreCase("Tomcat"))

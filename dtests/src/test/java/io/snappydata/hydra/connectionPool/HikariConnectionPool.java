@@ -27,8 +27,8 @@ import org.apache.tomcat.jdbc.pool.PoolProperties;
 
 public class HikariConnectionPool {
 
-  private static HikariConnectionPool connPoolInstance = null;
-  private static HikariDataSource datasource;
+  public static HikariConnectionPool connPoolInstance = null;
+  public static HikariDataSource datasource;
 
   private HikariConnectionPool() {
     Log.getLogWriter().info(" Creating instance of HikariConnectionPool");
@@ -40,18 +40,19 @@ public class HikariConnectionPool {
     jdbcConfig.setPoolName(SnappyConnectionPoolPrms.getPoolName());
     jdbcConfig.setMaximumPoolSize(SnappyConnectionPoolPrms.getInitialSize());
     jdbcConfig.setJdbcUrl(url);
+    jdbcConfig.setDriverClassName(SnappyConnectionPoolPrms.getDriver());
     jdbcConfig.setUsername(SnappyConnectionPoolPrms.getUsername());
     jdbcConfig.setPassword(SnappyConnectionPoolPrms.getPassword());
     datasource = new HikariDataSource(jdbcConfig);
   }
 
   public static HikariConnectionPool getInstance(){
-    if(connPoolInstance == null)
+    if (connPoolInstance == null) 
       connPoolInstance = new HikariConnectionPool();
     return connPoolInstance;
   }
 
-  public static Connection getConnection() {
+  public static synchronized Connection getConnection() {
     HikariConnectionPool connPool = HikariConnectionPool.getInstance();
     Connection conn = null;
     try {

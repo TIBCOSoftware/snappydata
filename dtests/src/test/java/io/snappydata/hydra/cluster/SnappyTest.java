@@ -122,6 +122,8 @@ public class SnappyTest implements Serializable {
   protected static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
 
   private Connection connection = null;
+  public static String connPool = TestConfig.tab().stringAt(SnappyConnectionPoolPrms.useConnPool, "");
+  public static int connPoolType = SnappyConnectionPoolPrms.getConnPoolType(connPool);
   private static HydraThreadLocal localconnection = new HydraThreadLocal();
 
   /**
@@ -1168,12 +1170,24 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
+  public static synchronized void setConnPoolType(){
+    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+      SnappyBB.getBB().getSharedMap().put("connPoolType", SnappyConnectionPoolPrms
+          .getConnPoolType(connPool));
+    connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
+  }
+
   /**
    * Gets Client connection.
    */
   public static Connection getLocatorConnection() throws SQLException {
     Connection conn = null;
-    int connPoolType = SnappyConnectionPoolPrms.getConnPoolType();
+
+    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+      setConnPoolType();
+    else 
+      connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
+    
     if(connPoolType == 0){
       conn = HikariConnectionPool.getConnection();
     } else if (connPoolType == 1){

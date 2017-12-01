@@ -20,7 +20,6 @@ package io.snappydata.hydra.connectionPool;
 
 
 import java.sql.Connection;
-
 import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.tomcat.jdbc.pool.DataSource;
@@ -28,7 +27,7 @@ import org.apache.tomcat.jdbc.pool.PoolProperties;
 
 public class TomcatConnectionPool {
 
-  private static TomcatConnectionPool connPoolInstance = null;
+  public static TomcatConnectionPool connPoolInstance = null;
   public DataSource datasource;
 
   private TomcatConnectionPool() {
@@ -47,12 +46,12 @@ public class TomcatConnectionPool {
   }
 
   public static TomcatConnectionPool getInstance(){
-    if(connPoolInstance == null)
+    if (connPoolInstance == null) 
       connPoolInstance = new TomcatConnectionPool();
     return connPoolInstance;
   }
 
-  public static Connection getConnection() {
+  public static synchronized Connection getConnection() {
     TomcatConnectionPool connPool = TomcatConnectionPool.getInstance();
     Connection conn = null;
     try {
