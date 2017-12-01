@@ -38,6 +38,7 @@ For more information on the capabilities of the Community and Enterprise edition
 <heading2>Installation Options</heading2>
 
 <heading3>Prerequisites</heading3>
+
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
 The following installation options are available:
