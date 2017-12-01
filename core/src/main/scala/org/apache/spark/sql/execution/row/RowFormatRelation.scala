@@ -132,8 +132,7 @@ class RowFormatRelation(
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val handledFilters = filters.filter(ExternalStoreUtils
-        .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
+    val handledFilters = filters.flatMap(ExternalStoreUtils.handledFilter(_, indexedColumns))
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
