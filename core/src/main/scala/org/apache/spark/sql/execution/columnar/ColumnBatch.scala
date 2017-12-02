@@ -257,7 +257,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
             val v = re.getValue(currentBucketRegion)
             if (v ne null ) {
               val columnValue = v.asInstanceOf[ColumnFormatValue].getValueRetain(
-                decompress = true, compress = true)
+                decompress = true, compress = false)
               val buffer = columnValue.getBuffer
               // empty buffer indicates value removed from region
               if (buffer.remaining() > 0) {
