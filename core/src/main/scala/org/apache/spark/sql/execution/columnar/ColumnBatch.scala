@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
@@ -302,6 +303,15 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 
   def getCurrentBucketId: Int = partitionId
 
+  private def decompress(buffer: ByteBuffer): ByteBuffer = {
+    val allocator = ColumnEncoding.getAllocator(buffer)
+    val result = Utils.codecDecompress(buffer, allocator)
+    if (result ne buffer) {
+      UnsafeHolder.releaseIfDirectBuffer(buffer)
+    }
+    result
+  }
+
   private def fillBuffers(): Unit = {
     colBuffers match {
       case buffers if buffers.size() > 1 => // already filled in
@@ -323,7 +333,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
               1, blob.length().asInstanceOf[Int]))
           }
           colBlob.free()
-          buffers.put(position, colBuffer)
+          buffers.put(position, decompress(colBuffer))
           // check if this an update delta
           if (position < ColumnFormatEntry.DELETE_MASK_COL_INDEX && !hasUpdates) {
             hasUpdates = true
@@ -404,7 +414,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     }
     statsBlob.free()
     // put the stats buffer to free on next() or close()
-    colBuffers.put(ColumnFormatEntry.DELTA_STATROW_COL_INDEX, statsBuffer)
+    colBuffers.put(ColumnFormatEntry.DELTA_STATROW_COL_INDEX, decompress(statsBuffer))
     statsBuffer
   }
 

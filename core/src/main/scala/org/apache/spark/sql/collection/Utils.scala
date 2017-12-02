@@ -683,7 +683,7 @@ object Utils {
     buffer.putInt(4, uncompressedLen)
   }
 
-  private def allocateExecutionMemory(size: Int, owner: String,
+  def allocateExecutionMemory(size: Int, owner: String,
       allocator: BufferAllocator): ByteBuffer = {
     if (allocator.isManagedDirect) {
       val context = TaskContext.get()
@@ -699,14 +699,14 @@ object Utils {
         return allocator.allocateCustom(totalSize, new UnsafeHolder.FreeMemoryFactory {
           override def newFreeMemory(address: Long, size: Int): ExecutionFreeMemory =
             new ExecutionFreeMemory(consumer, address)
-        })
+        }).order(ByteOrder.LITTLE_ENDIAN)
       }
     }
-    allocator.allocate(size, owner)
+    allocator.allocate(size, owner).order(ByteOrder.LITTLE_ENDIAN)
   }
 
   def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
-      allocator: BufferAllocator, forStorage: Boolean): ByteBuffer = {
+      allocator: BufferAllocator): ByteBuffer = {
     if (len < MIN_COMPRESSION_SIZE) return input
 
     var result: ByteBuffer = null
@@ -715,16 +715,12 @@ object Utils {
         val compressor = LZ4Factory.fastestInstance().fastCompressor()
         val maxLength = compressor.maxCompressedLength(len)
         val maxTotal = maxLength + COMPRESSION_HEADER_SIZE
-        result = (if (forStorage) allocator.allocateForStorage(maxTotal)
-        else allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator))
-            .order(ByteOrder.LITTLE_ENDIAN)
+        result = allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator)
         compressor.compress(input, input.position(), len,
           result, COMPRESSION_HEADER_SIZE, maxLength)
       case CompressionCodecId.SNAPPY_ID =>
         val maxTotal = Snappy.maxCompressedLength(len) + COMPRESSION_HEADER_SIZE
-        result = (if (forStorage) allocator.allocateForStorage(maxTotal)
-        else allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator))
-            .order(ByteOrder.LITTLE_ENDIAN)
+        result = allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator)
         if (input.isDirect) {
           result.position(COMPRESSION_HEADER_SIZE)
           Snappy.compress(input, result)
@@ -762,14 +758,12 @@ object Utils {
       output
   }
 
-  def codecDecompress(input: ByteBuffer, allocator: BufferAllocator,
-      forStorage: Boolean): ByteBuffer = {
+  def codecDecompress(input: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
     assert(input.order() eq ByteOrder.LITTLE_ENDIAN)
     val codecId = -input.getInt
+    if (codecId <= 0) return input
     val outputLen = input.getInt
-    val result = (if (forStorage) allocator.allocateForStorage(outputLen)
-    else allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator))
-        .order(ByteOrder.LITTLE_ENDIAN)
+    val result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
     codecId match {
       case CompressionCodecId.LZ4_ID =>
         LZ4Factory.fastestInstance().fastDecompressor().decompress(input,

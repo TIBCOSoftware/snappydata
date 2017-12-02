@@ -284,13 +284,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
   def setBuffer(buffer: ByteBuffer, codecId: Int,
       isCompressed: Boolean, changeOwnerToStorage: Boolean = true): Unit = synchronized {
     val columnBuffer = if (changeOwnerToStorage) {
-      val newBuffer = GemFireCacheImpl.getCurrentBufferAllocator
-          .transfer(buffer, DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
-      if (newBuffer.isDirect) {
-        MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
-          newBuffer, allowNonAllocator = true)
-      }
-      newBuffer
+      transferToStorage(buffer, GemFireCacheImpl.getCurrentBufferAllocator)
     } else buffer
     // reference count is required to be 1 at this point
     if (refCount != 1) {
@@ -299,6 +293,15 @@ class ColumnFormatValue extends SerializedDiskBuffer
     this.columnBuffer = columnBuffer.order(ByteOrder.LITTLE_ENDIAN)
     this.compressionCodecId = codecId.toByte
     this.decompressionState = if (isCompressed) 0 else 1
+  }
+
+  private def transferToStorage(buffer: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
+    val newBuffer = allocator.transfer(buffer, DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
+    if (allocator.isManagedDirect) {
+      MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
+        newBuffer, allowNonAllocator = true)
+    }
+    newBuffer
   }
 
   @GuardedBy("this")
@@ -406,19 +409,24 @@ class ColumnFormatValue extends SerializedDiskBuffer
         val isDirect = buffer.isDirect
         // replace underlying if either no other thread is holding a reference
         // or if this is a heap buffer
-        val forStorage = !isDirect || this.refCount == 1
-        val decompressed = Utils.codecDecompress(buffer,
-          GemFireCacheImpl.getCurrentBufferAllocator, forStorage)
+        val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+        val decompressed = Utils.codecDecompress(buffer, allocator)
         val newValue = copy(decompressed, isCompressed = false, changeOwnerToStorage = false)
-        if (forStorage) {
-          // update the statistics before changing "this"
-          if ((regionContext ne null) && !fromDisk) {
-            regionContext.updateMemoryStats(this, newValue)
+        if (!isDirect || this.refCount == 1) {
+          val updateStats = (regionContext ne null) && !fromDisk
+          if (updateStats && !isDirect) {
+            StoreCallbacksImpl.acquireStorageMemory(regionContext.getFullPath,
+              decompressed.capacity() - buffer.capacity(), buffer = null,
+              offHeap = false, shouldEvict = true)
           }
-          this.columnBuffer = decompressed
+          this.columnBuffer = transferToStorage(decompressed, allocator)
           this.decompressionState = 1
           if (isDirect) {
             UnsafeHolder.releaseDirectBuffer(buffer)
+          }
+          // update the statistics
+          if (updateStats) {
+            regionContext.updateMemoryStats(this, newValue)
           }
           this
         } else newValue
@@ -435,20 +443,34 @@ class ColumnFormatValue extends SerializedDiskBuffer
           // is holding a reference or this is a heap buffer)
           val maxCompressionsExceeded = this.decompressionState >
               ColumnFormatEntry.MAX_CONSECUTIVE_COMPRESSIONS
-          val forStorage = maxCompressionsExceeded && (!isDirect || this.refCount == 1)
-          val compressed = Utils.codecCompress(compressionCodecId, buffer, buffer.remaining(),
-            GemFireCacheImpl.getCurrentBufferAllocator, forStorage)
+          val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+          val compressed = Utils.codecCompress(compressionCodecId, buffer,
+            buffer.remaining(), allocator)
           if (compressed ne buffer) {
             val newValue = copy(compressed, isCompressed = true, changeOwnerToStorage = false)
-            if (forStorage) {
-              // update the statistics before changing "this"
-              if ((regionContext ne null) && !fromDisk) {
-                regionContext.updateMemoryStats(this, newValue)
-              }
-              this.columnBuffer = compressed
+            if (maxCompressionsExceeded && (!isDirect || this.refCount == 1)) {
+              // trim to size if there is wasted space
+              val size = compressed.limit()
+              val newBuffer = if (compressed.capacity() >= size + 32) {
+                val trimmed = allocator.allocateForStorage(size).order(ByteOrder.LITTLE_ENDIAN)
+                trimmed.put(compressed)
+                if (isDirect) {
+                  UnsafeHolder.releaseDirectBuffer(compressed)
+                }
+                trimmed
+              } else transferToStorage(compressed, allocator)
+              this.columnBuffer = newBuffer
               this.decompressionState = 0
               if (isDirect) {
                 UnsafeHolder.releaseDirectBuffer(buffer)
+              }
+              // update the statistics
+              if ((regionContext ne null) && !fromDisk) {
+                if (!isDirect) {
+                  StoreCallbacksImpl.releaseStorageMemory(regionContext.getFullPath,
+                    buffer.capacity() - newBuffer.capacity(), offHeap = false)
+                }
+                regionContext.updateMemoryStats(this, newValue)
               }
               this
             } else {
