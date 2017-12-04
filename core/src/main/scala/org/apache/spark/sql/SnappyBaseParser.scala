@@ -484,6 +484,7 @@ object SnappyParserConsts {
   final val ROLLUP: Keyword = nonReservedKeyword("rollup")
   final val GROUPING: Keyword = nonReservedKeyword("grouping")
   final val SETS: Keyword = nonReservedKeyword("sets")
+  final val WITHKEY: Keyword = nonReservedKeyword("WITHKEY")
 
   // datatypes are not reserved
   final val ARRAY: Keyword = nonReservedKeyword("array")

@@ -516,7 +516,7 @@ class ColumnFormatRelation(
     _externalStore,
     _partitioningColumns,
     _context)
-  with ParentRelation with DependentRelation {
+  with ParentRelation with DependentRelation with BulkPutRelation {
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
@@ -662,6 +662,15 @@ class ColumnFormatRelation(
 
   /** Name of this relation in the catalog. */
   override def name: String = table
+
+  /**
+    * Get a spark plan for puts. If the row is already present, it gets updated
+    * otherwise it gets inserted into the table represented by this relation.
+    * The result of SparkPlan execution should be a count of number of rows put.
+    */
+  override def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
+    ColumnPutIntoExec(insertPlan, updatePlan)
+  }
 }
 
 /**

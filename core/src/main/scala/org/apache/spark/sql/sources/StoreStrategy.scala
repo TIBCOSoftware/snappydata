@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
+import org.apache.spark.sql.internal.PutIntoColumnTable
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
 
 /**
@@ -105,11 +106,14 @@ object StoreStrategy extends Strategy {
     case d@DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand, d.output)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
+    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query, _) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
+    case PutIntoColumnTable(l@LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
+      ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
+
     case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
-    keyColumns, updateColumns, updateExpressions) =>
+    keyColumns, updateColumns, updateExpressions, _) =>
       ExecutePlan(u.getUpdatePlan(l, planLater(child), updateColumns,
         updateExpressions, keyColumns)) :: Nil
 
@@ -143,7 +147,7 @@ case class ExternalTableDMLCmd(
   override lazy val output: Seq[Attribute] = childOutput
 }
 
-case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
+case class PutIntoTable(table: LogicalPlan, child: LogicalPlan , condition : Option[Expression])
     extends LogicalPlan with TableMutationPlan {
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
@@ -189,7 +193,8 @@ final class Insert(
 
 case class Update(table: LogicalPlan, child: LogicalPlan,
     keyColumns: Seq[Attribute], updateColumns: Seq[Attribute],
-    updateExpressions: Seq[Expression]) extends LogicalPlan with TableMutationPlan {
+    updateExpressions: Seq[Expression],
+    putAll : Boolean = true) extends LogicalPlan with TableMutationPlan {
 
   assert(updateColumns.length == updateExpressions.length,
     s"Internal error: updateColumns=${updateColumns.length} " +

@@ -344,7 +344,7 @@ object JdbcExtendedUtils extends Logging {
     val plan = if (putInto) {
       PutIntoTable(
         table = UnresolvedRelation(tableIdent),
-        child = ds.logicalPlan)
+        child = ds.logicalPlan, None)
     } else {
       new Insert(
         table = UnresolvedRelation(tableIdent),
