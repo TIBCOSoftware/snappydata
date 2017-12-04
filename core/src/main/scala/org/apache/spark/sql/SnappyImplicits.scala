@@ -190,7 +190,7 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+        session.sessionState.catalog.newQualifiedTableName(tableName)), input, None))
           .executedPlan.executeCollect()
     }
 
