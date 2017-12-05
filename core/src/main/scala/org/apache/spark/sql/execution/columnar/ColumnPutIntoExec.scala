@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
@@ -37,4 +36,3 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
     updatePlan.execute()
   }
 }
-
