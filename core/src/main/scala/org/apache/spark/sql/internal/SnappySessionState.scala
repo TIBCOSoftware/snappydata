@@ -276,14 +276,6 @@ class SnappySessionState(snappySession: SnappySession)
           mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
           mutablePlan.get
       }
-      plan match {
-        case u@Update(table, child, _, _, _, putAll) if putAll =>
-          table match {
-            case lr@LogicalRelation(mutable: MutableRelation, _, _)
-              if mutable.table.equalsIgnoreCase(tableName) =>
-              mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
-          }
-      }
 
       mutablePlan match {
         case Some(sourcePlan) =>
@@ -347,13 +339,26 @@ class SnappySessionState(snappySession: SnappySession)
           val keyAttributeSet = AttributeSet(keyAttrs)
           val allReferences = newChild.references ++
               AttributeSet(newUpdateExprs.flatMap(_.references)) ++ keyAttributeSet
-          val childPlan = Project(newChild.output.filter(allReferences.contains), newChild)
 
-          u.copy(
-            table = relation,
+          val newChildPlan = Project(newChild.output.filter(allReferences.contains), newChild)
+
+          val childPlan = if (!u.putAll) {
+            val topJoin = newChild.collectFirst {
+              case j@Join(table, child, Inner, _) => j
+            }.getOrElse(throw new AnalysisException("PutAll based update" +
+                " operation is an internal opertaion should have an Inner Join at the top"))
+            Project(topJoin.left.output ++ topJoin.right.output, topJoin)
+          } else {
+            newChildPlan
+          }
+
+
+          val k = u.copy(
             child = childPlan,
             keyColumns = keyAttrs.map(_.toAttribute),
             updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
+          println(k)
+          k
         }
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
