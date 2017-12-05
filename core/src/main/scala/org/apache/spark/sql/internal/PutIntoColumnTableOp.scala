@@ -16,14 +16,10 @@
  */
 package org.apache.spark.sql.internal
 
-import java.util.UUID
-
-import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
-import org.apache.spark.sql.execution.command.{CreateViewCommand, LocalTempView}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.{Insert, MutableRelation, Update}
 import org.apache.spark.sql.types.{DataType, LongType}
@@ -47,7 +43,8 @@ class PutIntoColumnTableOp(sparkSession: SparkSession) {
         oldVersion.newInstance()
       case _ => table
     }
-
+    // hand coded query. So this assertion
+    assert(condition.isInstanceOf[EqualTo])
     val eq = condition.asInstanceOf[EqualTo]
     val rAttribute = eq.right.asInstanceOf[Attribute]
     val lAttribute = eq.left.asInstanceOf[Attribute]
@@ -56,17 +53,15 @@ class PutIntoColumnTableOp(sparkSession: SparkSession) {
     val tableSideCondition = newTable.output.filter(a => a.name.equals(tableAttribute.name)).head
     val newCondition = new EqualTo(queryAttribute, tableSideCondition)
     val notExists = Join(subQuery, newTable, LeftAnti, Some(newCondition))
-    // createGlobalTempView(tempID, innerJoin)
-    val tempPlan = notExists
-    // sparkSession.table(tempID).logicalPlan
+
     val keyColumns = getKeyColumns(table)
     val insertPlan = new Insert(table, Map.empty[String,
-      Option[String]], Project(subQuery.output, tempPlan),
+        Option[String]], Project(subQuery.output, notExists),
       OverwriteOptions(false), ifNotExists = false)
 
     val updateSubQuery = Join(table, subQuery, Inner, Some(condition))
     val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
-    val updateExpressions = tempPlan.output.filterNot(a => keyColumns.contains(a.name))
+    val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
     val updatePlan = Update(table, updateSubQuery, Seq.empty,
       updateColumns, updateExpressions, putAll = true)
 
@@ -82,28 +77,7 @@ class PutIntoColumnTableOp(sparkSession: SparkSession) {
       s"Update/Delete requires a MutableRelation but got $table"))
 
   }
-
-  private def tempTableId(): String = {
-    val jvmId = UUID.randomUUID()
-    s"temp$jvmId"
-  }
-
-  @throws[AnalysisException]
-  def createGlobalTempView(viewName: String, plan: LogicalPlan): Unit = {
-    CreateViewCommand(
-      name = TableIdentifier(viewName),
-      userSpecifiedColumns = Nil,
-      comment = None,
-      properties = Map.empty,
-      originalText = None,
-      child = plan,
-      allowExisting = false,
-      replace = true,
-      viewType = LocalTempView)
-  }
-
 }
-
 
 case class PutIntoColumnTable(table: LogicalPlan,
     insert: Insert, update: Update) extends BinaryNode {
@@ -111,7 +85,6 @@ case class PutIntoColumnTable(table: LogicalPlan,
   override lazy val output: Seq[Attribute] = AttributeReference(
     "insertCount", LongType)() :: AttributeReference(
     "updateCount", LongType)() :: Nil
-
 
   override lazy val resolved: Boolean = childrenResolved &&
       update.output.zip(insert.output).forall {
@@ -121,6 +94,5 @@ case class PutIntoColumnTable(table: LogicalPlan,
       }
 
   override def left: LogicalPlan = update
-
   override def right: LogicalPlan = insert
 }

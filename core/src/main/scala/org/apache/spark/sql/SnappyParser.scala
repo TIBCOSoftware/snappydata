@@ -965,10 +965,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   protected final def put: Rule1[LogicalPlan] = rule {
     PUT ~ INTO ~ TABLE.? ~ relationFactor ~ subSelectQuery ~
-        WITHKEY ~ namedExpression ~> ((r: LogicalPlan,
+        (WITHKEY ~ namedExpression).? ~> ((r: LogicalPlan,
         s: LogicalPlan, p: Any) => {
-      val expressions = p.asInstanceOf[Expression]
-      PutIntoTable(r, s , Some(expressions))
+      val condition = p.asInstanceOf[Option[Expression]]
+      PutIntoTable(r, s , condition)
     })
   }
 

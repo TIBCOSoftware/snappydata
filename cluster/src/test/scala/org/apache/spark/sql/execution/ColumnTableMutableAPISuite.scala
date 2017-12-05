@@ -31,13 +31,16 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite
 
   test("Test the creation/dropping of row table using Schema") {
     val snc = new SnappySession(sc)
-     snc.snappyContext.conf.setConfString("spark.sql.autoBroadcastJoinThreshold", "-1")
-    val data1 = Seq(Seq(1, 22, 3), Seq(7, 81, 9), Seq(9, 23, 3), Seq(4, 24, 3), Seq(5, 6, 7), Seq(88, 88, 88))
+    snc.snappyContext.conf.setConfString("spark.sql.autoBroadcastJoinThreshold", "-1")
+    val data1 = Seq(Seq(1, 22, 3), Seq(7, 81, 9),
+      Seq(9, 23, 3), Seq(4, 24, 3),
+      Seq(5, 6, 7), Seq(88, 88, 88))
     val rdd = sc.parallelize(data1, 2).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    val data2 = Seq(Seq(1, 22, 3), Seq(7, 81, 9), Seq(9, 23, 3), Seq(4, 24, 3), Seq(5, 6, 7),
-      Seq(8, 8, 8), Seq(88, 88, 88))
+    val data2 = Seq(Seq(1, 22, 3), Seq(7, 81, 9),
+      Seq(9, 23, 3), Seq(4, 24, 3), Seq(5, 6, 7),
+      Seq(8, 8, 8), Seq(88, 88, 90))
     val rdd2 = sc.parallelize(data2, 2).map(s => new Data(s(0), s(1), s(2)))
     val dataDF2 = snc.createDataFrame(rdd2)
 
@@ -52,17 +55,12 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite
     dataDF2.write.insertInto("temp_table")
     val tabdf = snc.table("my_table")
 
-    // dataDF.createTempView("temp_table")
-  val joined = snc.sql("put into table my_table   select * from temp_table   WITHKEY my_table.col2=temp_table.col2")
-    println(joined.queryExecution.executedPlan)
+    snc.sql("put into table my_table" +
+        "   select * from temp_table" +
+        "   WITHKEY my_table.col2=temp_table.col2")
     tabdf.show
 
-/*    var result = snc.sql("update MY_TABLE set col2 =10 " +
-        "where col1 in (select a.col1 from temp_table a, my_table b where a.col1=b.col1)" )
-    tabdf.show*/
+    snc.sql("drop table MY_TABLE")
 
-    snc.sql("drop table MY_TABLE" )
-
-    println("Successful")
   }
 }
