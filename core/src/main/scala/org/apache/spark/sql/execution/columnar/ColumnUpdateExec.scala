@@ -152,7 +152,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
     assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
     assert(keyCols(3).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(3)))
-    println("Inside updateExec")
     // bind the update expressions
     ctx.INPUT_ROW = null
     ctx.currentVars = input

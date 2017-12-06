@@ -30,12 +30,11 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, MultiInstanceRelation, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti, LeftSemi}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -238,9 +237,36 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
+      case i@PutIntoUsingColumns(u: UnresolvedRelation, _, _) =>
+        i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
     }
+  }
+
+  private def resolveKeyColumns(table: LogicalPlan, child: LogicalPlan,
+      columnNames: Seq[String]) = {
+    val leftKeys = columnNames.map { keyName =>
+      table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
+        throw new AnalysisException(s"USING column `$keyName` cannot be resolved on the left " +
+            s"side of the operation. The left-side columns: [${
+              table.
+                  output.map(_.name).mkString(", ")
+            }]")
+      }
+    }
+    val rightKeys = columnNames.map { keyName =>
+      child.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
+        throw new AnalysisException(s"USING column `$keyName` cannot be resolved on the right " +
+            s"side of the operation. The right-side columns: [${
+              child.
+                  output.map(_.name).mkString(", ")
+            }]")
+      }
+    }
+    val joinPairs = leftKeys.zip(rightKeys)
+    val newCondition = (joinPairs.map(EqualTo.tupled)).reduceOption(And)
+    PutIntoTable(table, Project(child.output, child), newCondition)
   }
 
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
@@ -335,30 +361,11 @@ class SnappySessionState(snappySession: SnappySession)
           }.unzip
           // collect all references and project on them to explicitly eliminate
           // any extra columns
-
-          val keyAttributeSet = AttributeSet(keyAttrs)
           val allReferences = newChild.references ++
-              AttributeSet(newUpdateExprs.flatMap(_.references)) ++ keyAttributeSet
-
-          val newChildPlan = Project(newChild.output.filter(allReferences.contains), newChild)
-
-          val childPlan = if (!u.putAll) {
-            val topJoin = newChild.collectFirst {
-              case j@Join(table, child, Inner, _) => j
-            }.getOrElse(throw new AnalysisException("PutAll based update" +
-                " operation is an internal opertaion should have an Inner Join at the top"))
-            Project(topJoin.left.output ++ topJoin.right.output, topJoin)
-          } else {
-            newChildPlan
-          }
-
-
-          val k = u.copy(
-            child = childPlan,
+              AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
+          u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
             keyColumns = keyAttrs.map(_.toAttribute),
             updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
-          println(k)
-          k
         }
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
@@ -370,8 +377,10 @@ class SnappySessionState(snappySession: SnappySession)
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
-      case p@PutIntoTable(table, child, condition) if condition.isDefined && child.resolved =>
+      case PutIntoTable(table, child, condition) if condition.isDefined && child.resolved =>
         new PutIntoColumnTableOp(sparkSession).convertedPlan(table, child, condition.get)
+      case PutIntoUsingColumns(table, child, columns) if child.resolved =>
+        resolveKeyColumns(table, child, columns)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -808,6 +817,22 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         case _ => p
       }
 
+    case p@PutIntoUsingColumns(table, child, _) if table.resolved && child.resolved =>
+      EliminateSubqueryAliases(table) match {
+        case l@LogicalRelation(ir: BulkPutRelation, _, _) =>
+          // First, make sure the data to be inserted have the same number of
+          // fields with the schema of the relation.
+          val expectedOutput = l.output
+          if (expectedOutput.size != child.output.size) {
+            throw new AnalysisException(s"$l requires that the query in the " +
+                "SELECT clause of the PUT INTO statement " +
+                "generates the same number of columns as its schema.")
+          }
+          castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
+
+        case _ => p
+      }
+
     // Check for DELETE
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
     // subqueries have already been eliminated by special check in
@@ -943,11 +968,14 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     if (newChildOutput == child.output) {
       plan match {
         case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
+        case p: PutIntoUsingColumns => p.copy(table = newRelation).asInstanceOf[T]
         case d: DeleteFromTable => d.copy(table = newRelation).asInstanceOf[T]
         case _: InsertIntoTable => plan
       }
     } else plan match {
       case p: PutIntoTable => p.copy(table = newRelation,
+        child = Project(newChildOutput, child)).asInstanceOf[T]
+      case p: PutIntoUsingColumns => p.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case d: DeleteFromTable => d.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
@@ -998,7 +1026,8 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
         }
 
       case PutIntoTable(table, _, _) =>
-        throw Utils.analysisException(s"$table does not allow puts.")
+        throw Utils.analysisException(s"$table does not allow puts." +
+            s" If it is a column table you need to specify a key for put")
 
       case _ => // OK
     }

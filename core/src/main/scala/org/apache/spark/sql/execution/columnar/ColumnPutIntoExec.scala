@@ -32,7 +32,9 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
   override def output: Seq[Attribute] = insertPlan.output
 
   override protected def doExecute(): RDD[InternalRow] = {
-    insertPlan.execute()
+    // First update the rows which are present in the table
     updatePlan.execute()
+    // Then insert the rows which are not there in the table
+    insertPlan.execute()
   }
 }
