@@ -163,6 +163,23 @@ case class PutIntoTable(table: LogicalPlan, child: LogicalPlan , condition : Opt
       }
 }
 
+case class PutIntoUsingColumns(table: LogicalPlan, child: LogicalPlan ,
+    columns : Seq[String])
+    extends LogicalPlan with TableMutationPlan {
+
+  override def children: Seq[LogicalPlan] = table :: child :: Nil
+
+  override lazy val output: Seq[Attribute] = AttributeReference(
+    "count", LongType)() :: Nil
+
+  override lazy val resolved: Boolean = childrenResolved &&
+      child.output.zip(table.output).forall {
+        case (childAttr, tableAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
+            tableAttr.dataType)
+      }
+}
+
 /**
  * Unlike Spark's InsertIntoTable this plan provides the count of rows
  * inserted as the output.

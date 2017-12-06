@@ -16,8 +16,7 @@
  */
 package org.apache.spark.sql.internal
 
-import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualTo, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -35,24 +34,7 @@ class PutIntoColumnTableOp(sparkSession: SparkSession) {
   def convertedPlan(table: LogicalPlan, subQuery: LogicalPlan,
       condition: Expression): PutIntoColumnTable = {
 
-    // The deduplication of expression for Join operation
-    // gives some arbitrary expression.
-    // Hence creating a new logical plan for Anti join.
-    val newTable = table match {
-      case oldVersion: MultiInstanceRelation =>
-        oldVersion.newInstance()
-      case _ => table
-    }
-    // hand coded query. So this assertion
-    assert(condition.isInstanceOf[EqualTo])
-    val eq = condition.asInstanceOf[EqualTo]
-    val rAttribute = eq.right.asInstanceOf[Attribute]
-    val lAttribute = eq.left.asInstanceOf[Attribute]
-    val tableAttribute = if (table.output.contains(rAttribute)) rAttribute else lAttribute
-    val queryAttribute = if (subQuery.output.contains(rAttribute)) rAttribute else lAttribute
-    val tableSideCondition = newTable.output.filter(a => a.name.equals(tableAttribute.name)).head
-    val newCondition = new EqualTo(queryAttribute, tableSideCondition)
-    val notExists = Join(subQuery, newTable, LeftAnti, Some(newCondition))
+    val notExists = Join(subQuery, table, LeftAnti, Some(condition))
 
     val keyColumns = getKeyColumns(table)
     val insertPlan = new Insert(table, Map.empty[String,

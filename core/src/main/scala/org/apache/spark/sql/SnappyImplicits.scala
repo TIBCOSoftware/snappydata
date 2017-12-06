@@ -20,9 +20,10 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.analysis.{UnresolvedAttribute, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
-import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
+import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable, PutIntoUsingColumns}
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -170,7 +171,7 @@ object snappy extends Serializable {
      *
      * This ignores all SaveMode.
      */
-    def putInto(tableName: String): Unit = {
+    def putInto(tableName: String, usingColumns : Seq[String] = Seq.empty[String]): Unit = {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
         case sc: SnappySession => sc
@@ -189,8 +190,14 @@ object snappy extends Serializable {
         Project(inputDataCols ++ inputPartCols, df.logicalPlan)
       }.getOrElse(df.logicalPlan)
 
-      df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input, None))
+      val plan = if (!usingColumns.isEmpty) {
+        PutIntoUsingColumns(UnresolvedRelation(
+          session.sessionState.catalog.newQualifiedTableName(tableName)), input, usingColumns)
+      } else {
+        PutIntoTable(UnresolvedRelation(
+          session.sessionState.catalog.newQualifiedTableName(tableName)), input, None)
+      }
+      df.sparkSession.sessionState.executePlan(plan)
           .executedPlan.executeCollect()
     }
 
