@@ -30,7 +30,7 @@ sbin="$(dirname "$(absPath "$0")")"
 mode=$1
 shift
 
-. "$sbin/snappy-config.sh"
+. "$sbin/snappy-config.sh" lead
 . "$sbin/spark-config.sh"
 
 . "$SNAPPY_HOME/bin/load-spark-env.sh"
