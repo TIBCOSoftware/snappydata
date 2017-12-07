@@ -138,8 +138,6 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   override protected[sql] def getNumNullWords: Int = realEncoder.getNumNullWords
 
-  override protected[sql] def getNullWords: AnyRef = realEncoder.getNullWords
-
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = realEncoder.writeNulls(columnBytes, cursor, numWords)
 

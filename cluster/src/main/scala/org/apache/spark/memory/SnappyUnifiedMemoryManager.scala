@@ -343,10 +343,10 @@ class SnappyUnifiedMemoryManager private[memory](
       capacity, changeOwner)
   }
 
-  def tryExplicitGC(): Unit = {
+  def tryExplicitGC(numBytes: Long): Unit = {
     // check if explicit GC should be invoked
     if (canUseExplicitGC) {
-      logStats("Invoking explicit GC before failing storage allocation request: ")
+      logStats(s"Explicit GC before failing storage allocation request of $numBytes bytes: ")
       System.gc()
       System.runFinalization()
       logStats("Stats after explicit GC: ")
@@ -638,7 +638,7 @@ class SnappyUnifiedMemoryManager private[memory](
         // for off-heap try harder before giving up since pending references
         // may be on heap (due to unexpected exceptions) that will go away on GC
         if (!couldEvictSomeData && offHeap) {
-          tryExplicitGC()
+          tryExplicitGC(numBytes)
           couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         }
         if (!couldEvictSomeData) {
@@ -646,11 +646,11 @@ class SnappyUnifiedMemoryManager private[memory](
             wrapperStats.incNumFailedEvictionRequest(offHeap)
           }
           logWarning(s"Could not allocate memory for $blockId of " +
-            s"$objectName size=$numBytes. Memory pool size " + storagePool.memoryUsed)
+            s"$objectName size=$numBytes. Memory pool size ${storagePool.memoryUsed}")
         } else {
           memoryForObject.addTo(objectName -> memoryMode, numBytes)
           logDebug(s"Allocated memory for $blockId of " +
-            s"$objectName size=$numBytes. Memory pool size " + storagePool.memoryUsed)
+            s"$objectName size=$numBytes. Memory pool size ${storagePool.memoryUsed}")
         }
         couldEvictSomeData
       } else {

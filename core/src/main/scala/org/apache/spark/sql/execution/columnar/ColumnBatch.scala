@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 
 import scala.collection.mutable.ArrayBuffer
@@ -228,8 +228,13 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     val previousColumns = currentColumns
     if ((previousColumns ne null) && previousColumns.nonEmpty) {
       currentColumns = null
-      previousColumns.foreach(_.release())
-      previousColumns.length
+      val len = previousColumns.length
+      var i = 0
+      while (i < len) {
+        previousColumns(i).release()
+        i += 1
+      }
+      len
     } else 0
   }
 
@@ -305,7 +310,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 
   private def decompress(buffer: ByteBuffer): ByteBuffer = {
     val allocator = ColumnEncoding.getAllocator(buffer)
-    val result = Utils.codecDecompress(buffer, allocator)
+    val result = Utils.codecDecompress(buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
     if (result ne buffer) {
       UnsafeHolder.releaseIfDirectBuffer(buffer)
     }

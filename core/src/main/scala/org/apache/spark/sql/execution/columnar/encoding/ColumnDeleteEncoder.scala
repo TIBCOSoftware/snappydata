@@ -48,8 +48,6 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
 
   override protected[sql] def getNumNullWords: Int = 0
 
-  override protected[sql] def getNullWords: AnyRef = null
-
   override protected[sql] def initializeNulls(initSize: Int): Int =
     throw new UnsupportedOperationException(s"initializeNulls for $toString")
 
@@ -257,8 +255,5 @@ final class ColumnDeleteDelta extends ColumnFormatValue with Delta {
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_DELETE_DELTA
 
-  override def toString: String = {
-    val buffer = getBuffer
-    s"ColumnDeleteDelta[size=${buffer.remaining()} $buffer"
-  }
+  override protected def className: String = "ColumnDeleteDelta"
 }

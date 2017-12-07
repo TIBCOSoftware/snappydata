@@ -730,8 +730,8 @@ object Utils {
         }
     }
     // check if there was some decent reduction else return uncompressed input itself
-    if (resultLen.toDouble < len * MIN_COMPRESSION_RATIO) {
-      // no need to trim since this should be written to output stream right away
+    if (resultLen.toDouble <= len * MIN_COMPRESSION_RATIO) {
+      // caller should trim the buffer (can skip if written to output stream right away)
       writeCompressionHeader(codecId, len, result)
       result.limit(resultLen + COMPRESSION_HEADER_SIZE)
       result
@@ -760,15 +760,22 @@ object Utils {
 
   def codecDecompress(input: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
     assert(input.order() eq ByteOrder.LITTLE_ENDIAN)
-    val codecId = -input.getInt
-    if (codecId <= 0) return input
-    val outputLen = input.getInt
+    val position = input.position()
+    val codecId = -input.getInt(position)
+    if (codecId > 0) codecDecompress(input, allocator, position, codecId)
+    else input
+  }
+
+  private[sql] def codecDecompress(input: ByteBuffer,
+      allocator: BufferAllocator, position: Int, codecId: Int): ByteBuffer = {
+    val outputLen = input.getInt(position + 4)
     val result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
     codecId match {
       case CompressionCodecId.LZ4_ID =>
         LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
-          input.position(), result, 0, outputLen)
+          position + 8, result, 0, outputLen)
       case CompressionCodecId.SNAPPY_ID =>
+        input.position(position + 8)
         if (input.isDirect) {
           Snappy.uncompress(input, result)
         } else {
@@ -776,6 +783,7 @@ object Utils {
               input.position(), input.remaining(), result.array(), 0)
         }
     }
+    result.rewind()
     result
   }
 

@@ -120,10 +120,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_FORMAT_DELTA
 
-  override def toString: String = {
-    val buffer = getBuffer
-    s"ColumnDelta[size=${buffer.remaining()} $buffer"
-  }
+  override protected def className: String = "ColumnDelta"
 }
 
 object ColumnDelta {
