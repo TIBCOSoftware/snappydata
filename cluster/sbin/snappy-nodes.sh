@@ -137,10 +137,35 @@ function execute() {
     args="${args} ${dirparam}"
   fi
 
+  # check for AWS and set SPARK_PUBLIC_DNS (only supported for Linux)
+  preCommand=
+  if [ -z "$SPARK_PUBLIC_DNS" -a "${componentType}" = "lead" ]; then
+    CHECK_AWS=1
+    if [ -r /sys/hypervisor/uuid ]; then
+      if ! grep -q '^ec2' /sys/hypervisor/uuid; then
+        CHECK_AWS=
+      fi
+    elif [ -r /sys/devices/virtual/dmi/id/product_name ]; then
+      if ! grep -iq 'hvm' /sys/devices/virtual/dmi/id/product_name; then
+        CHECK_AWS=
+      fi
+    else
+      # not running on AWS if neither of those two files are present
+      CHECK_AWS=
+    fi
+    if [ -n "$CHECK_AWS" ]; then
+      SPARK_PUBLIC_DNS="$(curl -s --connect-timeout 3 http://169.254.169.254/latest/meta-data/public-hostname)"
+      if [ -n "$SPARK_PUBLIC_DNS" ]; then
+        export SPARK_PUBLIC_DNS
+        preCommand="export SPARK_PUBLIC_DNS=$SPARK_PUBLIC_DNS; "
+      fi
+    fi
+  fi
+
   # For stop and status mode, don't pass any parameters other than directory
   if echo $"${@// /\\ }" | grep -wq "start"; then
     # Set a default locator if not already set.
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep '[-]locators=')" ]; then
+    if ! echo $args $"${@// /\\ }" | egrep -q '[-](locators=|peer-discovery-address=)'; then
       args="${args} $LOCATOR_ARGS"
       # inject start-locators argument if not present
       if [[ "${componentType}" == "locator" && -z "$(echo  $args $"${@// /\\ }" | grep 'start-locator=')" ]]; then
@@ -151,18 +176,32 @@ function execute() {
         args="${args} -start-locator=$host:$port"
       fi
       # Set low discovery and join timeouts for quick startup when locator is local.
-      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.discoveryTimeout=')" ]; then
+      if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.discoveryTimeout='; then
         args="${args} -J-Dp2p.discoveryTimeout=1000"
       fi
-      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.joinTimeout=')" ]; then
+      if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.joinTimeout='; then
         args="${args} -J-Dp2p.joinTimeout=2000"
       fi
     fi
+    # set the default bind-address and SPARK_LOCAL_IP
+    if ! echo $args $"${@// /\\ }" | grep -q '[-]bind-address='; then
+      args="${args} -bind-address=$host"
+    fi
+    if [ -z "$SPARK_LOCAL_IP" ]; then
+      export SPARK_LOCAL_IP=$host
+      preCommand="export SPARK_LOCAL_IP=$SPARK_LOCAL_IP; "
+    fi
+    # set the default client-bind-address and locator's peer-discovery-address
     if [ -z "$(echo  $args $"${@// /\\ }" | grep 'client-bind-address=')" -a "${componentType}" != "lead"  ]; then
       args="${args} -client-bind-address=${host}"
     fi
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" == "locator"  ]; then
+    if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
       args="${args} -peer-discovery-address=${host}"
+    fi
+    # set the public hostname for Spark Web UI
+    if [ -z "$SPARK_PUBLIC_DNS" -a "${componentType}" = "lead" ]; then
+      export SPARK_PUBLIC_DNS=$host
+      preCommand="${preCommand}export SPARK_PUBLIC_DNS=$SPARK_PUBLIC_DNS; "
     fi
   else
     args="${dirparam}"
@@ -181,12 +220,12 @@ function execute() {
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
       (ssh $SPARK_SSH_OPTS "$host" \
-        "{ if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi; } && " $"${@// /\\ } ${args};" < /dev/null \
-        2>&1 | sed "s/^/$host: /") &
+        "{ if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi; } && " $"${preCommand}${@// /\\ } ${args};" \
+        < /dev/null 2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
     else
       # ssh reads from standard input and eats all the remaining lines.Connect its standard input to nowhere:
-      (ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" < /dev/null \
+      (ssh $SPARK_SSH_OPTS "$host" $"${preCommand}${@// /\\ } ${args}" < /dev/null \
         2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
     fi
