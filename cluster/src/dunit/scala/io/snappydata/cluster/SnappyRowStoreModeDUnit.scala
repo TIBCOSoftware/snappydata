@@ -33,9 +33,7 @@ class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Lo
 
   private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
 
-
   val port: Int = AvailablePortHelper.getRandomAvailableTCPPort
-  val netPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort1: Int = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort2: Int = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort3: Int = AvailablePortHelper.getRandomAvailableTCPPort
@@ -43,11 +41,11 @@ class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Lo
   override def beforeClass(): Unit = {
     super.beforeClass()
     logInfo(s"Starting snappy rowstore cluster" +
-        s" in $snappyProductDir/work with locator client port $netPort")
+        s" in $snappyProductDir/work with locator client port $netPort1")
 
-    // create locators, leads and servers files
+    // create locators and servers files
     val confDir = s"$snappyProductDir/conf"
-    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
+    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort1",
       s"$confDir/locators")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort2
@@ -93,7 +91,7 @@ class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Lo
    * Basic test to make sure that SnappyData rowstore mode works
    */
   def testRowStoreCluster(): Unit = {
-    val conn = getANetConnection(netPort)
+    val conn = getANetConnection(netPort1)
     val s = conn.createStatement()
     try {
       s.execute("CREATE TABLE T1(COL1 INT, COL2 INT) PERSISTENT REPLICATE")
