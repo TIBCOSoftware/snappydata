@@ -1173,7 +1173,7 @@ trait NullableEncoder extends NotNullEncoder {
     // check if bitset is too sparse then switch to using position encoder
     val numNulls = nullBitSetCount(numWords)
     // bytes used in position encoder = numNulls * 4
-    if (numNulls < (numWords << 1)) {
+    if (numNulls <= (numWords << 1)) {
       this.positionEncoderSize = numNulls
       (numNulls + 1) >> 1
     } else numWords
