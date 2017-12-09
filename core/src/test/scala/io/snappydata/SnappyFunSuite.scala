@@ -20,6 +20,7 @@ import java.io.File
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.gemstone.gemfire.internal.shared.NativeCalls
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
@@ -45,6 +46,11 @@ abstract class SnappyFunSuite
         with Logging with Retries {
 
   InitializeRun.setUp()
+
+  private val nativeCalls = NativeCalls.getInstance()
+  nativeCalls.setEnvironment("gemfire.bind-address", "localhost")
+  nativeCalls.setEnvironment("SPARK_LOCAL_IP", "localhost")
+  nativeCalls.setEnvironment("SPARK_PUBLIC_DNS", "localhost")
 
   protected var testName: String = _
   protected val dirList: ArrayBuffer[String] = ArrayBuffer[String]()

@@ -18,6 +18,7 @@ package io.snappydata
 
 // scalastyle:off
 import java.io._
+import java.net.InetAddress
 import java.util.regex.Pattern
 
 import scala.language.postfixOps
@@ -69,7 +70,7 @@ with Logging with Retries {
     if (snappyHome == null) {
       throw new Exception("SNAPPY_HOME should be set as an environment variable")
     }
-    localHostName = java.net.InetAddress.getLocalHost().getHostName()
+    localHostName = "localhost"
     currWorkingDir = System.getProperty("user.dir")
     val workDir = new File(s"$snappyHome/work")
     if (workDir.exists) {
@@ -210,7 +211,8 @@ with Logging with Retries {
                   confs: Seq[String] = Seq.empty[String],
                   appJar: String): Unit = {
 
-    val masterStr = master.getOrElse(s"spark://$localHostName:7077")
+    val sparkHost = InetAddress.getLocalHost.getHostName
+    val masterStr = master.getOrElse(s"spark://$sparkHost:7077")
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val classStr = if (appClass.isEmpty) "" else s"--class  $appClass"
     val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $masterStr $confStr $appJar"
