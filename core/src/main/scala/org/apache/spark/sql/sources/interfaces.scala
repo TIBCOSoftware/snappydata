@@ -73,6 +73,7 @@ trait RowPutRelation extends DestroyRelation {
 trait BulkPutRelation extends DestroyRelation {
 
 
+  def getPutKeys() : Option[Seq[String]]
   /**
     * Get a spark plan for puts. If the row is already present, it gets updated
     * otherwise it gets inserted into the table represented by this relation.

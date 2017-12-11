@@ -671,6 +671,14 @@ class ColumnFormatRelation(
   override def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
     ColumnPutIntoExec(insertPlan, updatePlan)
   }
+
+  override def getPutKeys(): Option[Seq[String]] = {
+    val keys = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+    keys match {
+      case Some(x) => Some(x.split(",").toSeq)
+      case None => None
+    }
+  }
 }
 
 /**

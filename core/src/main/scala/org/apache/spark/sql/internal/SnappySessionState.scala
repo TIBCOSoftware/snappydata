@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, _}
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -235,38 +235,13 @@ class SnappySessionState(snappySession: SnappySession)
     }
 
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-      case i@PutIntoTable(u: UnresolvedRelation, _, _) =>
+      case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case i@PutIntoUsingColumns(u: UnresolvedRelation, _, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
     }
-  }
-
-  private def resolveKeyColumns(table: LogicalPlan, child: LogicalPlan,
-      columnNames: Seq[String]) = {
-    val leftKeys = columnNames.map { keyName =>
-      table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
-        throw new AnalysisException(s"USING column `$keyName` cannot be resolved on the left " +
-            s"side of the operation. The left-side columns: [${
-              table.
-                  output.map(_.name).mkString(", ")
-            }]")
-      }
-    }
-    val rightKeys = columnNames.map { keyName =>
-      child.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
-        throw new AnalysisException(s"USING column `$keyName` cannot be resolved on the right " +
-            s"side of the operation. The right-side columns: [${
-              child.
-                  output.map(_.name).mkString(", ")
-            }]")
-      }
-    }
-    val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = (joinPairs.map(EqualTo.tupled)).reduceOption(And)
-    PutIntoTable(table, Project(child.output, child), newCondition)
   }
 
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
@@ -377,10 +352,8 @@ class SnappySessionState(snappySession: SnappySession)
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
-      case PutIntoTable(table, child, condition) if condition.isDefined && child.resolved =>
-        new PutIntoColumnTableOp(sparkSession).convertedPlan(table, child, condition.get)
-      case PutIntoUsingColumns(table, child, columns) if child.resolved =>
-        resolveKeyColumns(table, child, columns)
+      case PutIntoTable(table, child) if child.resolved =>
+        new PutIntoColumnTableOp(sparkSession).convertedPlan(table, child)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -801,7 +774,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
     // subqueries have already been eliminated by special check in
     // ResolveRelations, no such special rule has been added for PUT
-    case p@PutIntoTable(table, child, _) if table.resolved && child.resolved =>
+    case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(ir: RowInsertableRelation, _, _) =>
           // First, make sure the data to be inserted have the same number of
@@ -1013,7 +986,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
 
   def apply(plan: LogicalPlan): Unit = {
     plan.foreach {
-      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _), query, _) =>
+      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _), query) =>
         // Get all input data source relations of the query.
         val srcRelations = query.collect {
           case LogicalRelation(src: BaseRelation, _, _) => src
@@ -1025,7 +998,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
           // OK
         }
 
-      case PutIntoTable(table, _, _) =>
+      case PutIntoTable(table, _) =>
         throw Utils.analysisException(s"$table does not allow puts." +
             s" If it is a column table you need to specify a key for put")
 

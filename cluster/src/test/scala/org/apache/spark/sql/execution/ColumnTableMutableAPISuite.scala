@@ -44,7 +44,7 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite
     val rdd2 = sc.parallelize(data2, 2).map(s => new Data(s(0), s(1), s(2)))
     val dataDF2 = snc.createDataFrame(rdd2)
 
-    val props = Map("BUCKETS" -> "2", "PARTITION_BY" -> "col1")
+    val props = Map("BUCKETS" -> "2", "PARTITION_BY" -> "col1", "key_columns" -> "col2")
     val props1 = Map.empty[String, String]
 
     Property.ColumnBatchSize.set(snc.sessionState.conf, "50")
@@ -56,8 +56,7 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite
     val tabdf = snc.table("my_table")
 
     snc.sql("put into table my_table" +
-        "   select * from row_table" +
-        "   WITHKEY my_table.col2=row_table.col2")
+        "   select * from row_table")
     tabdf.show
 
     snc.sql("drop table MY_TABLE")
@@ -83,12 +82,12 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite
     val props1 = Map.empty[String, String]
 
     Property.ColumnBatchSize.set(snc.sessionState.conf, "50")
-    snc.createTable("MY_TABLE", "column", dataDF.schema, props)
+    snc.createTable("MY_TABLE", "column", dataDF.schema, Map("key_columns" -> "col2"))
 
     dataDF.write.insertInto("my_table")
     val tabdf = snc.table("my_table")
 
-    dataDF2.write.putInto("my_table", usingColumns = Seq("col2"))
+    dataDF2.write.putInto("my_table")
     tabdf.show
 
     snc.sql("drop table MY_TABLE")

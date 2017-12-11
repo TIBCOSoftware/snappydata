@@ -106,7 +106,7 @@ object StoreStrategy extends Strategy {
     case d@DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand, d.output)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query, _) =>
+    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
     case PutIntoColumnTable(l@LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
@@ -147,7 +147,7 @@ case class ExternalTableDMLCmd(
   override lazy val output: Seq[Attribute] = childOutput
 }
 
-case class PutIntoTable(table: LogicalPlan, child: LogicalPlan , condition : Option[Expression])
+case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
     extends LogicalPlan with TableMutationPlan {
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
