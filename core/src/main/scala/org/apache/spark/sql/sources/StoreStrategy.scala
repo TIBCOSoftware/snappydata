@@ -113,7 +113,7 @@ object StoreStrategy extends Strategy {
       ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
 
     case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
-    keyColumns, updateColumns, updateExpressions, _) =>
+    keyColumns, updateColumns, updateExpressions) =>
       ExecutePlan(u.getUpdatePlan(l, planLater(child), updateColumns,
         updateExpressions, keyColumns)) :: Nil
 
@@ -163,23 +163,6 @@ case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
       }
 }
 
-case class PutIntoUsingColumns(table: LogicalPlan, child: LogicalPlan ,
-    columns : Seq[String])
-    extends LogicalPlan with TableMutationPlan {
-
-  override def children: Seq[LogicalPlan] = table :: child :: Nil
-
-  override lazy val output: Seq[Attribute] = AttributeReference(
-    "count", LongType)() :: Nil
-
-  override lazy val resolved: Boolean = childrenResolved &&
-      child.output.zip(table.output).forall {
-        case (childAttr, tableAttr) =>
-          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
-            tableAttr.dataType)
-      }
-}
-
 /**
  * Unlike Spark's InsertIntoTable this plan provides the count of rows
  * inserted as the output.
@@ -210,8 +193,7 @@ final class Insert(
 
 case class Update(table: LogicalPlan, child: LogicalPlan,
     keyColumns: Seq[Attribute], updateColumns: Seq[Attribute],
-    updateExpressions: Seq[Expression],
-    putAll : Boolean = true) extends LogicalPlan with TableMutationPlan {
+    updateExpressions: Seq[Expression]) extends LogicalPlan with TableMutationPlan {
 
   assert(updateColumns.length == updateExpressions.length,
     s"Internal error: updateColumns=${updateColumns.length} " +

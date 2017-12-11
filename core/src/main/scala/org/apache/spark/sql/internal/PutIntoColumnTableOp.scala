@@ -58,7 +58,7 @@ class PutIntoColumnTableOp(sparkSession: SparkSession) {
     val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
     val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
     val updatePlan = Update(table, updateSubQuery, Seq.empty,
-      updateColumns, updateExpressions, putAll = true)
+      updateColumns, updateExpressions)
 
     PutIntoColumnTable(table, insertPlan, updatePlan)
   }

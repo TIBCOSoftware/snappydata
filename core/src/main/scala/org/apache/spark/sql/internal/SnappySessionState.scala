@@ -237,8 +237,6 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
-      case i@PutIntoUsingColumns(u: UnresolvedRelation, _, _) =>
-        i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
     }
@@ -297,7 +295,7 @@ class SnappySessionState(snappySession: SnappySession)
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
 
-      case u@Update(table, child, keyColumns, updateCols, updateExprs, _)
+      case u@Update(table, child, keyColumns, updateCols, updateExprs)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
         // add the key columns to the plan
         val (keyAttrs, newChild, relation) = getKeyAttributes(table, child, u)
@@ -790,22 +788,6 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         case _ => p
       }
 
-    case p@PutIntoUsingColumns(table, child, _) if table.resolved && child.resolved =>
-      EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(ir: BulkPutRelation, _, _) =>
-          // First, make sure the data to be inserted have the same number of
-          // fields with the schema of the relation.
-          val expectedOutput = l.output
-          if (expectedOutput.size != child.output.size) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "SELECT clause of the PUT INTO statement " +
-                "generates the same number of columns as its schema.")
-          }
-          castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
-
-        case _ => p
-      }
-
     // Check for DELETE
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
     // subqueries have already been eliminated by special check in
@@ -941,14 +923,11 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     if (newChildOutput == child.output) {
       plan match {
         case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
-        case p: PutIntoUsingColumns => p.copy(table = newRelation).asInstanceOf[T]
         case d: DeleteFromTable => d.copy(table = newRelation).asInstanceOf[T]
         case _: InsertIntoTable => plan
       }
     } else plan match {
       case p: PutIntoTable => p.copy(table = newRelation,
-        child = Project(newChildOutput, child)).asInstanceOf[T]
-      case p: PutIntoUsingColumns => p.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case d: DeleteFromTable => d.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]

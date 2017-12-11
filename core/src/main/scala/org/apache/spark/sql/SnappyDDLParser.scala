@@ -186,7 +186,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def ROLLUP: Rule0 = rule { keyword(Consts.ROLLUP) }
   final def GROUPING: Rule0 = rule { keyword(Consts.GROUPING) }
   final def SETS: Rule0 = rule { keyword(Consts.SETS) }
-  final def WITHKEY: Rule0 = rule { keyword(Consts.WITHKEY) }
 
   // DDLs, SET, SHOW etc
 
