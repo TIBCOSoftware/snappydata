@@ -20,51 +20,56 @@ import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeRefer
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.sources.{BulkPutRelation, Insert, MutableRelation, Update}
+import org.apache.spark.sql.sources.{BulkPutRelation, Insert, MutableRelation, PutIntoTable, Update}
 import org.apache.spark.sql.types.{DataType, LongType}
 import org.apache.spark.sql.{AnalysisException, SparkSession}
 
 /**
-  * Helper class for PutInto operations for column tables.
+  * Helper object for PutInto operations for column tables.
   * This class takes the logical plans from SnappyParser
   * and converts it into another plan.
   */
-class PutIntoColumnTableOp(sparkSession: SparkSession) {
+object ColumnTableBulkOps {
 
-  val analyzer = sparkSession.sessionState.analyzer
+  def transformPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
+    val table = originalPlan.table
+    val subQuery = originalPlan.child
+    var transFormedPlan: LogicalPlan = originalPlan
 
-  def convertedPlan(table: LogicalPlan, subQuery: LogicalPlan): PutIntoColumnTable = {
+    table.collectFirst {
+      case LogicalRelation(mutable: BulkPutRelation, _, _) => {
+        val putKeys = mutable.getPutKeys()
+        if (!putKeys.isDefined) {
+          throw new AnalysisException(
+            s"PutInto in a column table requires key column(s) but got empty string")
+        }
+        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
 
-    val putKeyColumns = table.collectFirst {
-      case lr@LogicalRelation(mutable: BulkPutRelation, _, _) => mutable.getPutKeys()
-    }.getOrElse( throw new AnalysisException(
-      s"This method should only be called for tables implementing BulkPutRelation"))
+        val notExists = Join(subQuery, table, LeftAnti, condition)
 
-    if (!putKeyColumns.isDefined) {
-      throw new AnalysisException(
-        s"PutInto in a column table requires key column(s) but got empty string")
+        val keyColumns = getKeyColumns(table)
+        val insertPlan = new Insert(table, Map.empty[String,
+            Option[String]], Project(subQuery.output, notExists),
+          OverwriteOptions(false), ifNotExists = false)
+
+        val updateSubQuery = Join(table, subQuery, Inner, condition)
+        val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
+        val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
+        val updatePlan = Update(table, updateSubQuery, Seq.empty,
+          updateColumns, updateExpressions)
+
+        transFormedPlan = PutIntoColumnTable(table, insertPlan, updatePlan)
+      }
+      case _ => // Do nothing, original putInto plan is enough
     }
-
-    val condition = prepareCondition(table, subQuery, putKeyColumns.get)
-
-    val notExists = Join(subQuery, table, LeftAnti, condition)
-
-    val keyColumns = getKeyColumns(table)
-    val insertPlan = new Insert(table, Map.empty[String,
-        Option[String]], Project(subQuery.output, notExists),
-      OverwriteOptions(false), ifNotExists = false)
-
-    val updateSubQuery = Join(table, subQuery, Inner, condition)
-    val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
-    val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
-    val updatePlan = Update(table, updateSubQuery, Seq.empty,
-      updateColumns, updateExpressions)
-
-    PutIntoColumnTable(table, insertPlan, updatePlan)
+    transFormedPlan
   }
 
-  private def prepareCondition(table: LogicalPlan, child: LogicalPlan,
+  private def prepareCondition(sparkSession: SparkSession,
+      table: LogicalPlan,
+      child: LogicalPlan,
       columnNames: Seq[String]): Option[Expression] = {
+    val analyzer = sparkSession.sessionState.analyzer
     val leftKeys = columnNames.map { keyName =>
       table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
         throw new AnalysisException(s"key column `$keyName` cannot be resolved on the left " +
