@@ -16,11 +16,11 @@
  */
 package org.apache.spark.sql.internal
 
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.sources.{Insert, MutableRelation, Update}
+import org.apache.spark.sql.sources.{BulkPutRelation, Insert, MutableRelation, Update}
 import org.apache.spark.sql.types.{DataType, LongType}
 import org.apache.spark.sql.{AnalysisException, SparkSession}
 
@@ -31,23 +31,61 @@ import org.apache.spark.sql.{AnalysisException, SparkSession}
   */
 class PutIntoColumnTableOp(sparkSession: SparkSession) {
 
-  def convertedPlan(table: LogicalPlan, subQuery: LogicalPlan,
-      condition: Expression): PutIntoColumnTable = {
+  val analyzer = sparkSession.sessionState.analyzer
 
-    val notExists = Join(subQuery, table, LeftAnti, Some(condition))
+  def convertedPlan(table: LogicalPlan, subQuery: LogicalPlan): PutIntoColumnTable = {
+
+    val putKeyColumns = table.collectFirst {
+      case lr@LogicalRelation(mutable: BulkPutRelation, _, _) => mutable.getPutKeys()
+    }.getOrElse( throw new AnalysisException(
+      s"This method should only be called for tables implementing BulkPutRelation"))
+
+    if (!putKeyColumns.isDefined) {
+      throw new AnalysisException(
+        s"PutInto in a column table requires key column(s) but got empty string")
+    }
+
+    val condition = prepareCondition(table, subQuery, putKeyColumns.get)
+
+    val notExists = Join(subQuery, table, LeftAnti, condition)
 
     val keyColumns = getKeyColumns(table)
     val insertPlan = new Insert(table, Map.empty[String,
         Option[String]], Project(subQuery.output, notExists),
       OverwriteOptions(false), ifNotExists = false)
 
-    val updateSubQuery = Join(table, subQuery, Inner, Some(condition))
+    val updateSubQuery = Join(table, subQuery, Inner, condition)
     val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
     val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
     val updatePlan = Update(table, updateSubQuery, Seq.empty,
       updateColumns, updateExpressions, putAll = true)
 
     PutIntoColumnTable(table, insertPlan, updatePlan)
+  }
+
+  private def prepareCondition(table: LogicalPlan, child: LogicalPlan,
+      columnNames: Seq[String]): Option[Expression] = {
+    val leftKeys = columnNames.map { keyName =>
+      table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
+        throw new AnalysisException(s"key column `$keyName` cannot be resolved on the left " +
+            s"side of the operation. The left-side columns: [${
+              table.
+                  output.map(_.name).mkString(", ")
+            }]")
+      }
+    }
+    val rightKeys = columnNames.map { keyName =>
+      child.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
+        throw new AnalysisException(s"USING column `$keyName` cannot be resolved on the right " +
+            s"side of the operation. The right-side columns: [${
+              child.
+                  output.map(_.name).mkString(", ")
+            }]")
+      }
+    }
+    val joinPairs = leftKeys.zip(rightKeys)
+    val newCondition = (joinPairs.map(EqualTo.tupled)).reduceOption(And)
+    newCondition
   }
 
   def getKeyColumns(table: LogicalPlan): Seq[String] = {
@@ -76,5 +114,6 @@ case class PutIntoColumnTable(table: LogicalPlan,
       }
 
   override def left: LogicalPlan = update
+
   override def right: LogicalPlan = insert
 }
