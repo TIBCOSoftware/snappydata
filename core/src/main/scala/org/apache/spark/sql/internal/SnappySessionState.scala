@@ -350,8 +350,8 @@ class SnappySessionState(snappySession: SnappySession)
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
-      case PutIntoTable(table, child) if child.resolved =>
-        new PutIntoColumnTableOp(sparkSession).convertedPlan(table, child)
+      case p@PutIntoTable(table, child) if child.resolved =>
+        ColumnTableBulkOps.transformPlan(sparkSession, p)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
