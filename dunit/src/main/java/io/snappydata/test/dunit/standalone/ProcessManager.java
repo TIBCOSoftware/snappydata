@@ -186,7 +186,7 @@ public class ProcessManager {
       "-DsecurityLogLevel=" + DUnitLauncher.SECURITY_LOG_LEVEL,
       "-Dgemfire.security-log-level=" + DUnitLauncher.SECURITY_LOG_LEVEL,
       "-Djava.library.path=" + System.getProperty("java.library.path"),
-      "-Xrunjdwp:transport=dt_socket,server=y,suspend=n",
+      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n",
       "-XX:+HeapDumpOnOutOfMemoryError",
       "-Xmx1g",
       "-Xms1g",
