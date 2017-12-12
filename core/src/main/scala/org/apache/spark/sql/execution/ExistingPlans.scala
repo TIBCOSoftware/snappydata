@@ -224,7 +224,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     }
     val sc = session.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
-    if (oldExecutionId == null) {
+    if (oldExecutionId eq null) {
       CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
         queryString, child.treeString(verbose = true), planInfo) {
         child.executeCollect()
@@ -232,7 +232,6 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     } else {
       child.executeCollect()
     }
-
   }
 
   override def executeCollect(): Array[InternalRow] = sideEffectResult

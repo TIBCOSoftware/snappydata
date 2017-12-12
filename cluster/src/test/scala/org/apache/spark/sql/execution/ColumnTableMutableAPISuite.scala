@@ -16,80 +16,147 @@
  */
 package org.apache.spark.sql.execution
 
+import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
-import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.{Row, SnappySession}
 
-class ColumnTableMutableAPISuite extends SnappyFunSuite
-    with Logging
-    with BeforeAndAfter
+case class DataDiffCol(column1: Int, column2: Int, column3: Int)
+
+case class DataStrCol(column1: Int, column2: String, column3: Int)
+
+class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with BeforeAndAfter
     with BeforeAndAfterAll {
 
-  test("PutInto with RowTable subquery without broadcast") {
-    val snc = new SnappySession(sc)
-    snc.snappyContext.conf.setConfString("spark.sql.autoBroadcastJoinThreshold", "-1")
-    val data1 = Seq(Seq(1, 22, 3), Seq(7, 81, 9),
-      Seq(9, 23, 3), Seq(4, 24, 3),
-      Seq(5, 6, 7), Seq(88, 88, 88))
-    val rdd = sc.parallelize(data1, 2).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
+  val data1 = Seq(Seq(1, 22, 3), Seq(7, 81, 9), Seq(9, 23, 3), Seq(4, 24, 3),
+    Seq(5, 6, 7), Seq(88, 88, 88))
 
-    val data2 = Seq(Seq(1, 22, 3), Seq(7, 81, 9),
-      Seq(9, 23, 3), Seq(4, 24, 3), Seq(5, 6, 7),
-      Seq(8, 8, 8), Seq(88, 88, 90))
-    val rdd2 = sc.parallelize(data2, 2).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF2 = snc.createDataFrame(rdd2)
+  val data2 = Seq(Seq(1, 22, 3), Seq(7, 81, 9), Seq(9, 23, 3), Seq(4, 24, 3),
+    Seq(5, 6, 7), Seq(8, 8, 8), Seq(88, 88, 90))
+
+  val data3 = Seq(Seq(1, "22", 3), Seq(7, "81", 9), Seq(9, "23", 3), Seq(4, null, 3),
+    Seq(5, "6", 7), Seq(88, "88", 88))
+
+  val data4 = Seq(Seq(1, "22", 3), Seq(7, "81", 9), Seq(9, "23", 3), Seq(4, null, 3),
+    Seq(5, "6", 7), Seq(8, "8", 8), Seq(88, "88", 90))
+
+  after {
+    snc.dropTable("col_table", ifExists = true)
+    snc.dropTable("row_table", ifExists = true)
+  }
+
+  test("PutInto with sql") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+
+    val rdd2 = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
 
     val props = Map("BUCKETS" -> "2", "PARTITION_BY" -> "col1", "key_columns" -> "col2")
     val props1 = Map.empty[String, String]
 
-    Property.ColumnBatchSize.set(snc.sessionState.conf, "50")
-    snc.createTable("MY_TABLE", "column", dataDF.schema, props)
-    snc.createTable("row_table", "row", dataDF2.schema, props1)
+    snc.createTable("col_table", "column", df1.schema, props)
+    snc.createTable("row_table", "row", df2.schema, props1)
 
-    dataDF.write.insertInto("my_table")
-    dataDF2.write.insertInto("row_table")
-    val tabdf = snc.table("my_table")
+    df1.write.insertInto("col_table")
+    df2.write.insertInto("row_table")
 
-    snc.sql("put into table my_table" +
+    snc.sql("put into table col_table" +
         "   select * from row_table")
-    tabdf.show
 
-    snc.sql("drop table MY_TABLE")
-    snc.sql("drop table row_table")
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 7)
+    assert(resultdf.contains(Row(8, 8, 8)))
+    assert(resultdf.contains(Row(88, 88, 90)))
   }
 
-  test("PutInto with df") {
+  test("PutInto with API") {
     val snc = new SnappySession(sc)
-    snc.snappyContext.conf.setConfString("spark.sql.autoBroadcastJoinThreshold", "-1")
-    val data1 = Seq(Seq(1, 22, 3), Seq(7, 81, 9),
-      Seq(9, 23, 3), Seq(4, 24, 3),
-      Seq(5, 6, 7), Seq(88, 88, 88))
-    val rdd = sc.parallelize(data1, 2).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
+    val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
 
-    val data2 = Seq(Seq(1, 22, 3), Seq(7, 81, 9),
-      Seq(9, 23, 3), Seq(4, 24, 3), Seq(5, 6, 7),
-      Seq(8, 8, 8), Seq(88, 88, 90))
-    val rdd2 = sc.parallelize(data2, 2).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF2 = snc.createDataFrame(rdd2)
+    snc.createTable("col_table", "column", df1.schema, Map("key_columns" -> "col2"))
 
-    val props = Map("BUCKETS" -> "2", "PARTITION_BY" -> "col1")
-    val props1 = Map.empty[String, String]
+    df1.write.insertInto("col_table") // insert initial data
+    df2.write.putInto("col_table") // update & insert subsequent data
 
-    Property.ColumnBatchSize.set(snc.sessionState.conf, "50")
-    snc.createTable("MY_TABLE", "column", dataDF.schema, Map("key_columns" -> "col2"))
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 7)
+    assert(resultdf.contains(Row(8, 8, 8)))
+    assert(resultdf.contains(Row(88, 88, 90)))
+    Thread.sleep(Long.MaxValue)
+  }
 
-    dataDF.write.insertInto("my_table")
-    val tabdf = snc.table("my_table")
+  test("PutInto with different column names") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data2, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
 
-    dataDF2.write.putInto("my_table")
-    tabdf.show
+    snc.createTable("col_table", "column", df1.schema, Map("key_columns" -> "col2"))
 
-    snc.sql("drop table MY_TABLE")
+    df1.write.insertInto("col_table") // insert initial data
+    df2.write.putInto("col_table") // update & insert subsequent data
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 7)
+    assert(resultdf.contains(Row(8, 8, 8)))
+    assert(resultdf.contains(Row(88, 88, 90)))
+  }
+
+  test("PutInto with null key values") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 INT)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1', key_columns 'col2') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 INT)")
+
+    snc.insert("row_table", Row(1, "1", 1))
+    snc.insert("row_table", Row(2, "2", 2))
+    snc.insert("row_table", Row(3, null, 3))
+
+    snc.insert("col_table", Row(1, "1", 1))
+    snc.insert("col_table", Row(2, "2", 2))
+    snc.insert("col_table", Row(3, null, 3))
+
+    snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 4)
+    // TODO What should be the behaviour ?
+    assert(resultdf.filter(r => r.equals(Row(3, null, 3))).size == 2)
+  }
+
+  test("PutInto with multiple column key") {
+    val snc = new SnappySession(sc)
+
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1', key_columns 'col2, col3') ")
+
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)")
+
+
+    snc.insert("row_table", Row(1, "1", "1", 100))
+    snc.insert("row_table", Row(2, "2", "2", 2))
+    snc.insert("row_table", Row(4, "4", "4", 4))
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(2, "2", "2", 2))
+    snc.insert("col_table", Row(3, "3", "3", 3))
+
+    snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 4)
+    assert(resultdf.contains(Row(1, "1", "1", 100)))
+    assert(resultdf.contains(Row(4, "4", "4", 4)))
   }
 }

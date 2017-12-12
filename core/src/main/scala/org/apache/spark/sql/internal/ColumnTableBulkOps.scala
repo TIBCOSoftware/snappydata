@@ -44,9 +44,7 @@ object ColumnTableBulkOps {
             s"PutInto in a column table requires key column(s) but got empty string")
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
-
         val notExists = Join(subQuery, table, LeftAnti, condition)
-
         val keyColumns = getKeyColumns(table)
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, notExists),
