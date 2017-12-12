@@ -102,6 +102,11 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     benchmarkRandomizedKeys(size = 50000000, queryPath = true)
   }
 
+  test("PutInto wide column table") {
+    snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+    createAndTestPutIntoInBigTable()
+  }
+
   private def doGC(): Unit = {
     System.gc()
     System.runFinalization()
@@ -226,6 +231,24 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     benchmark.run()
   }
 
+  private def createAndTestPutIntoInBigTable(): Unit = {
+    snappySession.sql("drop table if exists wide_table")
+    import org.apache.spark.sql.snappy._
+    val size = 100
+    val num_col = 300
+    val str = (1 to num_col).map(i => s" '$i' as C$i")
+    val testDF = snappySession.range(size).select(str.map { expr =>
+      Column(snappySession.sessionState.sqlParser.parseExpression(expr))
+    }: _*)
+
+
+    testDF.collect()
+    val sql = (1 to num_col).map(i => s"C$i STRING").mkString(",")
+    snappySession.sql(s"create table wide_table($sql) " +
+        s" using column options(key_columns 'C2,C3,C4,C5')")
+    testDF.write.insertInto("wide_table")
+    testDF.write.putInto("wide_table")
+  }
 
   private def createAndTestBigTable(): Unit = {
     snappySession.sql("drop table if exists wide_table")

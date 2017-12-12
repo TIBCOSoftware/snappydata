@@ -675,7 +675,7 @@ class ColumnFormatRelation(
   override def getPutKeys(): Option[Seq[String]] = {
     val keys = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
     keys match {
-      case Some(x) => Some(x.split(",").toSeq)
+      case Some(x) => Some(x.split(",").map(s => s.trim).toSeq)
       case None => None
     }
   }
