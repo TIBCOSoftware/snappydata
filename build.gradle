@@ -114,7 +114,6 @@ allprojects {
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
-    awsVersion = '1.11.211'
     jacksonVersion = '2.9.1'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.22.v20170606'
@@ -941,8 +940,6 @@ ospackage {
   link('/usr/bin/snappy', "/opt/${packageName}/bin/snappy")
   link('/usr/bin/snappy-sql', "/opt/${packageName}/bin/snappy-sql")
   link('/usr/bin/snappy-job.sh', "/opt/${packageName}/bin/snappy-job.sh")
-  link('/etc/profile.d/snappydata.sh', "/opt/${packageName}/profile.d/snappydata.sh")
-  link('/etc/profile.d/snappydata.csh', "/opt/${packageName}/profile.d/snappydata.csh")
 }
 
 buildRpm {
