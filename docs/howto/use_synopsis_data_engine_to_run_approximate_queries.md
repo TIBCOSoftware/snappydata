@@ -1,5 +1,5 @@
 <a id="howto-sde"></a>
-# How to Use Synopsis Data Engine to Run Approximate Queries
+# How to use Synopsis Data Engine to Run Approximate Queries
 
 Synopsis Data Engine (SDE) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire dataset. The approach trades off query accuracy for fast response time.
 For more information on  SDE, refer to [SDE documentation](../aqp.md).

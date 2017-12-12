@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.physical._
-import org.apache.spark.sql.collection.{ExecutorMultiBucketLocalShellPartition, Utils}
+import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.hive.ConnectorCatalog
@@ -137,7 +137,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       val locations = new Array[Seq[String]](numBuckets)
       var i = 0
       relInfo.partitions.foreach(x => {
-          locations(i) = x.asInstanceOf[ExecutorMultiBucketLocalShellPartition].
+          locations(i) = x.asInstanceOf[SmartExecutorBucketPartition].
           hostList.map(_._1.asInstanceOf[String])
           i = i + 1
       })
