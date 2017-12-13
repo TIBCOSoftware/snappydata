@@ -976,11 +976,8 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
         } else {
           // OK
         }
-
       case PutIntoTable(table, _) =>
-        throw Utils.analysisException(s"$table does not allow puts." +
-            s" If it is a column table you need to specify a key for put")
-
+        throw Utils.analysisException(s"$table does not allow puts.")
       case _ => // OK
     }
   }

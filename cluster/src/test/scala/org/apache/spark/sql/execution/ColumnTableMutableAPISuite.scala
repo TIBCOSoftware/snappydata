@@ -22,7 +22,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{Row, SnappySession}
+import org.apache.spark.sql.{AnalysisException, Row, SnappySession}
 
 case class DataDiffCol(column1: Int, column2: Int, column3: Int)
 
@@ -90,7 +90,6 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.length == 7)
     assert(resultdf.contains(Row(8, 8, 8)))
     assert(resultdf.contains(Row(88, 88, 90)))
-    Thread.sleep(Long.MaxValue)
   }
 
   test("PutInto with different column names") {
@@ -158,5 +157,70 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.length == 4)
     assert(resultdf.contains(Row(1, "1", "1", 100)))
     assert(resultdf.contains(Row(4, "4", "4", 4)))
+  }
+
+  test("PutInto with multiple column key and null values") {
+    val snc = new SnappySession(sc)
+
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1', key_columns 'col2, col3') ")
+
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)")
+
+
+    snc.insert("row_table", Row(1, "1", "1", 100))
+    snc.insert("row_table", Row(2, "2", "2", 2))
+    snc.insert("row_table", Row(4, "4", "4", 4))
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(2, "2", null, 2))
+    snc.insert("col_table", Row(3, "3", "3", 3))
+
+    snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 5)
+    assert(resultdf.contains(Row(2, "2", null, 2)))
+    assert(resultdf.contains(Row(2, "2", "2", 2)))
+  }
+
+  test("PutInto selecting from same table") {
+    val snc = new SnappySession(sc)
+
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1', key_columns 'col2, col3') ")
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(2, "2", "2", 2))
+    snc.insert("col_table", Row(3, "3", "3", 3))
+
+    intercept[AnalysisException]{
+      snc.sql("put into table col_table" +
+          "   select * from col_table")
+    }
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 3)
+  }
+
+  test("PutInto Key columns validation") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+
+    snc.insert("row_table", Row(1, "1", "1", 100))
+    snc.insert("row_table", Row(2, "2", "2", 2))
+    snc.insert("row_table", Row(4, "4", "4", 4))
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(2, "2", null, 2))
+    snc.insert("col_table", Row(3, "3", "3", 3))
+
+    intercept[AnalysisException]{
+      snc.sql("put into table col_table" +
+          "   select * from row_table")
+    }
   }
 }
