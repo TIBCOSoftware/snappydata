@@ -19,8 +19,9 @@ package org.apache.spark.sql.internal
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.sources.{BulkPutRelation, Insert, MutableRelation, PutIntoTable, Update}
+import org.apache.spark.sql.sources.{BaseRelation, BulkPutRelation, Insert, MutableRelation, PutIntoTable, RowPutRelation, Update}
 import org.apache.spark.sql.types.{DataType, LongType}
 import org.apache.spark.sql.{AnalysisException, SparkSession}
 
@@ -31,7 +32,24 @@ import org.apache.spark.sql.{AnalysisException, SparkSession}
   */
 object ColumnTableBulkOps {
 
+  def validateOp(originalPlan: PutIntoTable) {
+    originalPlan match {
+      case PutIntoTable(LogicalRelation(t: BulkPutRelation, _, _), query) =>
+        val srcRelations = query.collect {
+          case LogicalRelation(src: BaseRelation, _, _) => src
+        }
+        if (srcRelations.contains(t)) {
+          throw Utils.analysisException(
+            "Cannot put into table that is also being read from.")
+        } else {
+          // OK
+        }
+      case _ => // OKK
+    }
+  }
+
   def transformPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
+    validateOp(originalPlan)
     val table = originalPlan.table
     val subQuery = originalPlan.child
     var transFormedPlan: LogicalPlan = originalPlan
