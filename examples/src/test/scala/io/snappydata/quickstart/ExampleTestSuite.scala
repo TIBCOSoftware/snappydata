@@ -19,12 +19,12 @@ package io.snappydata.quickstart
 import io.snappydata.SnappyTestRunner
 
 /**
- * Extending SnappyTestRunner. This class tests the old quickstart as well as the examples enumerated in
- * Snappy examples folder
+ * Extending SnappyTestRunner. This class tests the old quickstart as well as
+ * the examples enumerated in Snappy examples folder
  */
 class ExampleTestSuite extends SnappyTestRunner {
 
-  def quickStartJar = s"$snappyHome/examples/jars/quickstart.jar"
+  def quickStartJar: String = s"$snappyHome/examples/jars/quickstart.jar"
 
   val localLead = "localhost:8090"
   val snappyExamples = "org.apache.spark.examples.snappydata"
@@ -57,19 +57,19 @@ class ExampleTestSuite extends SnappyTestRunner {
 
   }
 
-  test("Create Table in Python"){
+  test("Create Table in Python") {
     SparkSubmit("CreateTable", appClass = "", None,
       confs = Seq.empty[String],
       appJar = s"$snappyHome/quickstart/python/CreateTable.py")
   }
 
-  test("KMeans in Python"){
+  test("KMeans in Python") {
     SparkSubmit("KMeansWeather", appClass = "", None,
       confs = Seq.empty[String],
       appJar = s"$snappyHome/quickstart/python/KMeansWeather.py")
   }
 
-  test("QuickStart.scala script"){
+  test("QuickStart.scala script") {
     SparkShell(Seq.empty[String], "--driver-memory=4g --driver-java-options=" +
       "\"-XX:+UseConcMarkSweepGC\" \"-XX:+UseParNewGC\" \"-XX:+CMSClassUnloadingEnabled\"" +
       " \"-XX:MaxNewSize=1g\"",
@@ -90,8 +90,8 @@ class ExampleTestSuite extends SnappyTestRunner {
   }
 
   test("CreateColumnTable") {
-    Job(s"$snappyExamples.CreateColumnTable",
-      localLead, quickStartJar, Seq(s"data_resource_folder=$snappyHome/quickstart/src/main/resources"))
+    Job(s"$snappyExamples.CreateColumnTable", localLead, quickStartJar,
+      Seq(s"data_resource_folder=$snappyHome/quickstart/src/main/resources"))
   }
 
   test("CreatePartitionedRowTable") {
@@ -116,7 +116,8 @@ class ExampleTestSuite extends SnappyTestRunner {
   }
 
   test("WorkingWithJson With main") {
-    RunExample("WorkingWithJson_main", "snappydata.WorkingWithJson", Seq(s"$snappyHome/quickstart/src/main/resources"))
+    RunExample("WorkingWithJson_main", "snappydata.WorkingWithJson",
+      Seq(s"$snappyHome/quickstart/src/main/resources"))
   }
 
   test("SmartConnectorExample") {
