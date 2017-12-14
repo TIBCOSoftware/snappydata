@@ -103,8 +103,9 @@ class SnappySessionState(snappySession: SnappySession)
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
-  def getExtendedCheckRules: Seq[LogicalPlan => Unit] =
-    Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+  def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
+    Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
+  }
 
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
@@ -350,7 +351,7 @@ class SnappySessionState(snappySession: SnappySession)
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
-      case p@PutIntoTable(table, child) if child.resolved =>
+      case p@PutIntoTable(_, child) if child.resolved =>
         ColumnTableBulkOps.transformPlan(sparkSession, p)
     }
 
@@ -979,6 +980,16 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
       case PutIntoTable(table, _) =>
         throw Utils.analysisException(s"$table does not allow puts.")
       case _ => // OK
+    }
+  }
+}
+
+private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: datasources.PreWriteCheck)
+    extends (LogicalPlan => Unit) {
+  def apply(plan: LogicalPlan): Unit = {
+    plan match {
+      case PutIntoColumnTable(_, _, _) => // Do nothing
+      case _ => sparkPreWriteCheck.apply(plan)
     }
   }
 }
