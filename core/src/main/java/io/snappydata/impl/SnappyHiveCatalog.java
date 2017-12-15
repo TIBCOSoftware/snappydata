@@ -36,6 +36,7 @@ import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 import com.pivotal.gemfirexd.Attribute;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
+import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI;
 import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet;
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
@@ -62,9 +63,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   final private static String THREAD_GROUP_NAME = "HiveMetaStore Client Group";
 
   private final Future<?> initFuture;
-
-  public static final ThreadLocal<Boolean> SKIP_HIVE_TABLE_CALLS =
-      new ThreadLocal<>();
 
   public static final Object hiveClientSync = new Object();
 
@@ -187,8 +185,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   public List<ExternalTableMetaData> getHiveTables(boolean skipLocks) {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
-    if (Boolean.TRUE.equals(
-        SKIP_HIVE_TABLE_CALLS.get())) {
+    if (Boolean.TRUE.equals(HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get())) {
       return Collections.emptyList();
     }
     HMSQuery q = getHMSQuery();
@@ -303,7 +300,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
     @Override
     public Object call() throws Exception {
-      SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
+      HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
       Hive hmc;
       try {
         if (this.skipLock) {
