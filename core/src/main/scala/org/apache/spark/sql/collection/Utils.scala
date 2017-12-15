@@ -17,7 +17,7 @@
 package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
-import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.ByteBuffer
 import java.sql.DriverManager
 import java.util.TimeZone
 
@@ -30,20 +30,14 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.SystemFailure
-import com.gemstone.gemfire.internal.shared.BufferAllocator
-import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
-import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{Constant, ToolsCallback}
-import net.jpountz.lz4.LZ4Factory
 import org.apache.commons.math3.distribution.NormalDistribution
-import org.slf4j.LoggerFactory
-import org.xerial.snappy.Snappy
 
 import org.apache.spark._
-import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
-import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
+import org.apache.spark.io.CompressionCodec
+import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
@@ -59,7 +53,6 @@ import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWr
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
-import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.unsafe.Platform
@@ -659,134 +652,6 @@ object Utils {
   def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
     new ChunkedByteBuffer(chunks)
 
-  def codecCompress(codec: CompressionCodec, input: Array[Byte],
-      inputLen: Int): Array[Byte] = codec match {
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastCompressor().compress(input, 0, inputLen)
-    case _: LZFCompressionCodec => LZFEncoder.encode(input, 0, inputLen)
-    case _: SnappyCompressionCodec =>
-      Snappy.rawCompress(input, inputLen)
-  }
-
-  private[this] val COMPRESSION_HEADER_SIZE = 8
-  private[this] val MIN_COMPRESSION_RATIO = 0.75
-  /** minimum size of buffer that will be considered for compression */
-  private[sql] val MIN_COMPRESSION_SIZE = 2048
-
-  private def writeCompressionHeader(codecId: Int,
-      uncompressedLen: Int, buffer: ByteBuffer): Unit = {
-    // assume little-endian to match ColumnEncoding.writeInt/readInt
-    assert(buffer.order() eq ByteOrder.LITTLE_ENDIAN)
-    buffer.rewind()
-    // write the codec and uncompressed size for fastest decompression
-    buffer.putInt(0, -codecId) // negative typeId indicates compressed buffer
-    buffer.putInt(4, uncompressedLen)
-  }
-
-  def allocateExecutionMemory(size: Int, owner: String,
-      allocator: BufferAllocator): ByteBuffer = {
-    if (allocator.isManagedDirect) {
-      val context = TaskContext.get()
-      if (context ne null) {
-        val memoryManager = context.taskMemoryManager()
-        val totalSize = UnsafeHolder.getAllocationSize(size) +
-            DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
-        val consumer = new DefaultMemoryConsumer(memoryManager, MemoryMode.OFF_HEAP)
-        if (consumer.acquireMemory(totalSize) < totalSize) {
-          consumer.freeMemory(consumer.getUsed)
-          throw DirectBufferAllocator.instance().lowMemoryException(owner, totalSize)
-        }
-        return allocator.allocateCustom(totalSize, new UnsafeHolder.FreeMemoryFactory {
-          override def newFreeMemory(address: Long, size: Int): ExecutionFreeMemory =
-            new ExecutionFreeMemory(consumer, address)
-        }).order(ByteOrder.LITTLE_ENDIAN)
-      }
-    }
-    allocator.allocate(size, owner).order(ByteOrder.LITTLE_ENDIAN)
-  }
-
-  def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
-      allocator: BufferAllocator): ByteBuffer = {
-    if (len < MIN_COMPRESSION_SIZE) return input
-
-    var result: ByteBuffer = null
-    val resultLen = codecId match {
-      case CompressionCodecId.LZ4_ID =>
-        val compressor = LZ4Factory.fastestInstance().fastCompressor()
-        val maxLength = compressor.maxCompressedLength(len)
-        val maxTotal = maxLength + COMPRESSION_HEADER_SIZE
-        result = allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator)
-        compressor.compress(input, input.position(), len,
-          result, COMPRESSION_HEADER_SIZE, maxLength)
-      case CompressionCodecId.SNAPPY_ID =>
-        val maxTotal = Snappy.maxCompressedLength(len) + COMPRESSION_HEADER_SIZE
-        result = allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator)
-        if (input.isDirect) {
-          result.position(COMPRESSION_HEADER_SIZE)
-          Snappy.compress(input, result)
-        } else {
-          Snappy.compress(input.array(), input.arrayOffset() + input.position(),
-            len, result.array(), COMPRESSION_HEADER_SIZE)
-        }
-    }
-    // check if there was some decent reduction else return uncompressed input itself
-    if (resultLen.toDouble <= len * MIN_COMPRESSION_RATIO) {
-      // caller should trim the buffer (can skip if written to output stream right away)
-      writeCompressionHeader(codecId, len, result)
-      result.limit(resultLen + COMPRESSION_HEADER_SIZE)
-      result
-    } else {
-      // release the compressed buffer if required
-      UnsafeHolder.releaseIfDirectBuffer(result)
-      input
-    }
-  }
-
-  def codecDecompress(codec: CompressionCodec, input: Array[Byte],
-      inputOffset: Int, inputLen: Int,
-      outputLen: Int): Array[Byte] = codec match {
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
-        inputOffset, outputLen)
-    case _: LZFCompressionCodec =>
-      val output = new Array[Byte](outputLen)
-      LZFDecoder.decode(input, inputOffset, inputLen, output)
-      output
-    case _: SnappyCompressionCodec =>
-      val output = new Array[Byte](outputLen)
-      Snappy.uncompress(input, inputOffset, inputLen, output, 0)
-      output
-  }
-
-  def codecDecompress(input: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
-    assert(input.order() eq ByteOrder.LITTLE_ENDIAN)
-    val position = input.position()
-    val codecId = -input.getInt(position)
-    if (codecId > 0) codecDecompress(input, allocator, position, codecId)
-    else input
-  }
-
-  private[sql] def codecDecompress(input: ByteBuffer,
-      allocator: BufferAllocator, position: Int, codecId: Int): ByteBuffer = {
-    val outputLen = input.getInt(position + 4)
-    val result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
-    codecId match {
-      case CompressionCodecId.LZ4_ID =>
-        LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
-          position + 8, result, 0, outputLen)
-      case CompressionCodecId.SNAPPY_ID =>
-        input.position(position + 8)
-        if (input.isDirect) {
-          Snappy.uncompress(input, result)
-        } else {
-          Snappy.uncompress(input.array(), input.arrayOffset() +
-              input.position(), input.remaining(), result.array(), 0)
-        }
-    }
-    result.rewind()
-    result
-  }
-
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
     conf.getOption(name) match {
@@ -1150,44 +1015,5 @@ object OrderlessHashPartitioningExtract {
     if (callbacks ne null) {
       callbacks.checkOrderlessHashPartitioning(partitioning)
     } else None
-  }
-}
-
-final class DefaultMemoryConsumer(taskMemoryManager: TaskMemoryManager,
-    mode: MemoryMode = MemoryMode.ON_HEAP)
-    extends MemoryConsumer(taskMemoryManager, taskMemoryManager.pageSizeBytes(), mode) {
-
-  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
-
-  override def getUsed: Long = this.used
-}
-
-final class ExecutionFreeMemory(consumer: DefaultMemoryConsumer,
-    address: Long) extends UnsafeHolder.FreeMemory(address) {
-
-  override protected def objectName(): String = BufferAllocator.EXECUTION
-
-  override def run() {
-    val address = tryFree()
-    if (address != 0) {
-      UnsafeHolder.getUnsafe.freeMemory(address)
-      releaseExecutionMemory()
-    }
-  }
-
-  def releaseExecutionMemory(): Unit = {
-    try {
-      // release from execution pool
-      consumer.freeMemory(consumer.getUsed)
-    } catch {
-      case t: Throwable => // ignore exceptions
-        SystemFailure.checkFailure()
-        try {
-          val logger = LoggerFactory.getLogger(getClass)
-          logger.error("ExecutionFreeMemory unexpected exception", t)
-        } catch {
-          case _: Throwable => // ignore if even logging failed
-        }
-    }
   }
 }

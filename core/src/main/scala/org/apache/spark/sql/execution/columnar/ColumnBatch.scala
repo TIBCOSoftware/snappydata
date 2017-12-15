@@ -30,10 +30,10 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
+import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.{Logging, TaskContext}
 
@@ -310,7 +310,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 
   private def decompress(buffer: ByteBuffer): ByteBuffer = {
     val allocator = ColumnEncoding.getAllocator(buffer)
-    val result = Utils.codecDecompress(buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
+    val result = CompressionUtils.codecDecompress(buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
     if (result ne buffer) {
       UnsafeHolder.releaseIfDirectBuffer(buffer)
     }

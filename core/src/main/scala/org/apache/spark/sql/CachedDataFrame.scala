@@ -37,16 +37,17 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.MemoryConsumer
+import org.apache.spark.memory.DefaultMemoryConsumer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{Literal, LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
-import org.apache.spark.sql.collection.{DefaultMemoryConsumer, Utils}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
+import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
@@ -427,7 +428,7 @@ object CachedDataFrame
   private def flushBufferOutput(bufferOutput: Output, position: Int,
       output: ByteBufferDataOutput, codec: CompressionCodec): Unit = {
     if (position > 0) {
-      val compressedBytes = Utils.codecCompress(codec,
+      val compressedBytes = CompressionUtils.codecCompress(codec,
         bufferOutput.getBuffer, position)
       val len = compressedBytes.length
       // write the uncompressed length too
@@ -632,7 +633,7 @@ object CachedDataFrame
     var decompressedLen = input.readInt()
     var inputLen = input.readInt()
     val inputPosition = input.position()
-    val bufferInput = new Input(Utils.codecDecompress(codec, data,
+    val bufferInput = new Input(CompressionUtils.codecDecompress(codec, data,
       inputPosition, inputLen, decompressedLen))
     input.setPosition(inputPosition + inputLen)
 
@@ -655,7 +656,7 @@ object CachedDataFrame
           decompressedLen = input.readInt()
           inputLen = input.readInt()
           val inputPosition = input.position()
-          bufferInput.setBuffer(Utils.codecDecompress(codec, data,
+          bufferInput.setBuffer(CompressionUtils.codecDecompress(codec, data,
             inputPosition, inputLen, decompressedLen))
           input.setPosition(inputPosition + inputLen)
           bufferInput.readInt(true)

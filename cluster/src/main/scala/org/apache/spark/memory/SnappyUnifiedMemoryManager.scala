@@ -33,7 +33,6 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.collection.ObjectLongHashMap
 
-import org.apache.spark.sql.collection.ExecutionFreeMemory
 import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 import org.apache.spark.storage.BlockId
 import org.apache.spark.util.Utils
