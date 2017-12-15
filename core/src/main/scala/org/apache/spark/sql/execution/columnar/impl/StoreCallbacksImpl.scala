@@ -205,15 +205,20 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val isBuiltIn = context.getIsBuiltIn
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating table $tableIdent")
+        // don't attempt resolution for external tables
         session.createTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
-          provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
+          provider, userSpecifiedSchema, schemaDDL, mode, options,
+          isBuiltIn, resolveRelation = isBuiltIn)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_TABLE =>
         val tableIdent = context.getTableIdentifier
         val ifExists = context.getIfExists
+        val isBuiltIn = context.getIsBuiltIn
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp dropping table $tableIdent")
-        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent), ifExists)
+        // don't attempt resolution for external tables
+        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
+          ifExists, resolveRelation = isBuiltIn)
 
       case LeadNodeSmartConnectorOpContext.OpType.CREATE_INDEX =>
         val tableIdent = context.getTableIdentifier

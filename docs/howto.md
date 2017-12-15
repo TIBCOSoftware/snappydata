@@ -70,9 +70,9 @@ If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.
 
 <heading2> More Information</heading2>
 
-Refer to these sections for information:
+Refer to these sections for information on SnappyData CloudBuilder:
 
-* [About the Interpreter](aqp_aws.md#using-the-interpreter) 
+* [About the Interpreter](isight/quick_start_steps.md#using-the-interpreter) 
 
-* [Example Notebooks](aqp_aws.md#creating-notebooks-try-it-yourself)
+* [Example Notebooks](isight/quick_start_steps/#creating-notebooks-try-it-yourself)
 

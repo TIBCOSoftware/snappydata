@@ -6,6 +6,6 @@ In a highly concurrent system that has thousands of connections, multiple querie
 
 The following topics are covered in this section:
 
-* [Design Principles of Scalable, Partition-Aware Databases](design_schema.md)
+* [Design Principles of Scalable, Partition-Aware Databases](design_principles.md)
 
 * [Optimizing Query Latency: Partitioning and Replication Strategies](optimizing_query_latency.md)

@@ -41,7 +41,7 @@ USING csv OPTIONS (path '../../quickstart/src/main/resources/customer.csv');
 You can also load data from AWS S3, as given in the example below:
 
 ```
-CREATE EXTERNAL TABLE NYCTAXI USINg parquet OPTIONS(path 's3a://<AWS_SECRET_KEY>:<AWS_SECRET_ID>@<folder>/<data>');
+CREATE EXTERNAL TABLE NYCTAXI USING parquet OPTIONS(path 's3a://<AWS_SECRET_KEY>:<AWS_SECRET_ID>@<folder>/<data>');
 ```
 
-For more information on loading data from AWS, refer [Loading Data from AWS S3](/../../aqp_aws.md#loading-data-from-aws-s3).
+For more information on loading data from AWS, refer [Loading Data from AWS S3](../../isight/quick_start_steps.md#dataAWSS3).

@@ -22,6 +22,7 @@ import java.util.Properties
 import scala.language.postfixOps
 import scala.sys.process._
 
+import com.gemstone.gemfire.internal.shared.NativeCalls
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
@@ -61,6 +62,7 @@ abstract class ClusterManagerTestBase(s: String)
 //   bootProps.setProperty("gemfirexd.debug.true",
 //     "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
+  bootProps.setProperty("bind-address", "localhost")
   bootProps.setProperty("spark.executor.cores",
     TestUtils.defaultCores.toString)
   bootProps.setProperty("spark.memory.manager",
@@ -92,6 +94,8 @@ abstract class ClusterManagerTestBase(s: String)
   val locatorNetPort: Int = 0
   val locatorNetProps = new Properties()
   val stopNetServersInTearDown = true
+
+  locatorNetProps.setProperty("bind-address", "localhost")
 
   // SparkContext is initialized on the lead node and hence,
   // this can be used only by jobs running on Lead node
@@ -260,6 +264,8 @@ object ClusterManagerTestBase extends Logging {
    * Only a single instance of SnappyLead should be started.
    */
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
+    NativeCalls.getInstance().setEnvironment("SPARK_LOCAL_IP", "localhost")
+    NativeCalls.getInstance().setEnvironment("SPARK_PUBLIC_DNS", "localhost")
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     props.setProperty(Property.JobServerEnabled.name, "false")
     props.setProperty("isTest", "true")
@@ -272,6 +278,7 @@ object ClusterManagerTestBase extends Logging {
    * Start a snappy server. Any number of snappy servers can be started.
    */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
+    NativeCalls.getInstance().setEnvironment("SPARK_LOCAL_IP", "localhost")
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     // bootProps.setProperty("log-level", "info")
     val server: Server = ServiceManager.getServerInstance
