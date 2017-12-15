@@ -22,6 +22,7 @@ import com.gemstone.gemfire.internal.shared.SystemProperties
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
+import org.apache.spark.sql.store.CompressionCodecId
 
 /**
  * Constant names suggested per naming convention
@@ -120,6 +121,9 @@ object Constant {
   // But the JNI version means no warmup time which helps for short jobs.
   val DEFAULT_CODEC = "lz4"
 
+  /** the [[CompressionCodecId]] of default compression scheme ([[DEFAULT_CODEC]]) */
+  val DEFAULT_CODECID: CompressionCodecId.Type = CompressionCodecId.fromName(DEFAULT_CODEC)
+
   // System property to tell the system whether the String type columns
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
@@ -215,13 +219,9 @@ object Property extends Enumeration {
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
      "JDBC driver. This will be used to form a JDBC URL of the form " +
-     "\"jdbc:snappydata://host:clientPort/\". It is recommended that hostname " +
-     "and client port of the locator be specified for this.",
-     None, Constant.SPARK_PREFIX)
-
-  val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
-    "Enabled in SnappyData embedded cluster and disabled for other " +
-        "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
+     "\"jdbc:snappydata://host:clientPort/\" (or use the form \"host[clientPort]\"). " +
+     "It is recommended that hostname and client port of the locator " +
+     "be specified for this.", None, Constant.SPARK_PREFIX)
 
   val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
     s"Number of query plans that will be cached.", Some(3000))
@@ -242,12 +242,6 @@ object Property extends Enumeration {
         s"$ColumnBatchSize and this property is hit first. It can also be set for " +
         s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
         s"create table DDL else this setting is used for the create table.", Some(10000))
-
-  val CompressionCodec = SQLVal[String](s"${Constant.PROPERTY_PREFIX}compression.codec",
-    "The compression codec to use when creating column batches for binary and " +
-        "complex type columns. Possible values: none, snappy, gzip, lzo. It can " +
-        s"also be set as ${ExternalStoreUtils.COMPRESSION_CODEC} option in " +
-        s"create table DDL. Default is no compression.", Some("none"))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
     "The join would be converted into a hash join if the table is of size less " +

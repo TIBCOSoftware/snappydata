@@ -164,6 +164,34 @@ class SetIsolationDUnitTest (val s: String)
     conn2.close()
   }
 
+  /**
+    * Test put into on replicated table - SNAP2082
+    */
+  def testPutIntoOnReplicatedTables() {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val conn = getANetConnection(netPort1)
+    logInfo(s"testPutIntoOnReplicatedTables: test with isolation level TRANSACTION_READ_COMMITTED")
+    conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
+    val st = conn.createStatement()
+    st.execute("CREATE TABLE APP.TABLE2 ( FIELD1 VARCHAR(36) NOT NULL " +
+      "PRIMARY KEY, FIELD2 INT, FIELD3 VARCHAR(36) NOT NULL)")
+    st.executeUpdate("PUT INTO APP.TABLE2(FIELD1, FIELD2, FIELD3)  VALUES ('key1',1,'value1')")
+    conn.commit()
+    val rs1 = st.executeQuery("select * from table2")
+    assert(rs1.next())
+    assert(rs1.getString(3).equals("value1"))
+    st.executeUpdate("PUT INTO APP.TABLE2(FIELD1, FIELD2, FIELD3)  VALUES ('key1',1,'value1')")
+    conn.commit()
+    st.executeUpdate("PUT INTO APP.TABLE2(FIELD1, FIELD2, FIELD3)  VALUES ('key1',1,'value11')")
+    conn.commit()
+    val rs2 = st.executeQuery("select * from table2")
+    assert(rs2.next())
+    assert(rs2.getString(3).equals("value11"))
+    conn.close()
+  }
+
   private def doTestCommitWithConflicts(netPort1: Int, conn: Connection, isolationLevel: Int) = {
     conn.setAutoCommit(false)
     val st = conn.createStatement

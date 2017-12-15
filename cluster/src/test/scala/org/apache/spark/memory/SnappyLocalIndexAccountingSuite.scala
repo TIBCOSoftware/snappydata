@@ -19,10 +19,11 @@ package org.apache.spark.memory
 
 import java.sql.DriverManager
 
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
+import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
+
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
@@ -221,11 +222,11 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     sparkSession = createSparkSession(1, 0, 2000000L)
     snSession = new SnappySession(sparkSession.sparkContext)
     val afterRecoverySize = SparkEnv.get.memoryManager.storageMemoryUsed
-    assertApproximate(afterIndex, afterRecoverySize, 10)
+    assertApproximate(afterIndex, afterRecoverySize, 20)
     snSession.dropTable("t1")
   }
 
-  test("Test Index recovery on row repliacted table") {
+  test("Test Index recovery on row replicated table") {
     var sparkSession = createSparkSession(1, 0, 2000000L)
     var snSession = new SnappySession(sparkSession.sparkContext)
     val serverHostPort = TestUtil.startNetServer()
@@ -242,7 +243,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     sparkSession = createSparkSession(1, 0, 2000000L)
     snSession = new SnappySession(sparkSession.sparkContext)
     val afterRecoverySize = SparkEnv.get.memoryManager.storageMemoryUsed
-    assertApproximate(afterIndex, afterRecoverySize, 10)
+    assertApproximate(afterIndex, afterRecoverySize, 20)
     snSession.dropTable("t1")
   }
 

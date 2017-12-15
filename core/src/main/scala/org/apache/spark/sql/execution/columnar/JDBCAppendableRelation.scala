@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.Attribute
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -159,12 +159,14 @@ abstract case class JDBCAppendableRelation(
         Integer.parseInt(cd)
       case _ => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
     }
-    val compressionCodec = origOptions.get(
-      ExternalStoreUtils.COMPRESSION_CODEC) match {
+    (columnBatchSize, columnMaxDeltaRows, getCompressionCodec)
+  }
+
+  def getCompressionCodec: String = {
+    origOptions.get(ExternalStoreUtils.COMPRESSION_CODEC) match {
       case Some(codec) => codec
-      case None => ExternalStoreUtils.defaultCompressionCodec(session)
+      case None => Constant.DEFAULT_CODEC
     }
-    (columnBatchSize, columnMaxDeltaRows, compressionCodec)
   }
 
   // truncate both actual and shadow table

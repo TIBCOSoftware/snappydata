@@ -71,6 +71,10 @@ object ServiceUtils {
     if (storeProps.getProperty(DistributionConfig.MEMBER_TIMEOUT_NAME) == null) {
       storeProps.setProperty(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
     }
+    // try hard to maintain executor_ locality
+    if (storeProps.getProperty("spark.locality.wait.process") == null) {
+      storeProps.setProperty("spark.locality.wait.process", "20s")
+    }
     storeProps
   }
 

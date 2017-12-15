@@ -22,7 +22,6 @@ import java.io.{File, FileOutputStream, PrintStream}
 import scala.language.implicitConversions
 
 import com.typesafe.config.Config
-import io.snappydata.benchmark.snappy.TPCH_Snappy
 
 import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
@@ -63,7 +62,7 @@ object QueryExecutionJob extends SnappySQLJob {
     avgPrintStream.close()
     avgFileStream.close()
 
-    TPCH_Snappy.close
+    QueryExecutor.close
   }
 
   def main(args: Array[String]): Unit = {

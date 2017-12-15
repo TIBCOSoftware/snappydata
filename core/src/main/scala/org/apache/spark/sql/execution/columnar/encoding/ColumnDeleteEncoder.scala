@@ -48,8 +48,6 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
 
   override protected[sql] def getNumNullWords: Int = 0
 
-  override protected[sql] def getNullWords: AnyRef = null
-
   override protected[sql] def initializeNulls(initSize: Int): Int =
     throw new UnsupportedOperationException(s"initializeNulls for $toString")
 
@@ -194,9 +192,15 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
 /** Simple delta that merges the deleted positions */
 final class ColumnDeleteDelta extends ColumnFormatValue with Delta {
 
-  def this(buffer: ByteBuffer) = {
+  def this(buffer: ByteBuffer, codecId: Int, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean = true) = {
     this()
-    setBuffer(buffer)
+    setBuffer(buffer, codecId, isCompressed, changeOwnerToStorage)
+  }
+
+  override protected def copy(buffer: ByteBuffer, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean): ColumnDeleteDelta = synchronized {
+    new ColumnDeleteDelta(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
   override def apply(putEvent: EntryEvent[_, _]): AnyRef = {
@@ -206,23 +210,28 @@ final class ColumnDeleteDelta extends ColumnFormatValue with Delta {
   }
 
   override def apply(region: Region[_, _], key: AnyRef, oldValue: AnyRef,
-      prepareForOffHeap: Boolean): AnyRef = {
+      prepareForOffHeap: Boolean): AnyRef = synchronized {
     if (oldValue eq null) {
       // first delta, so put as is
-      val result = new ColumnFormatValue(columnBuffer)
+      val result = new ColumnFormatValue(columnBuffer, compressionCodecId, isCompressed)
       // buffer has been transferred and should be removed from delta
       // which would no longer be usable after this point
       columnBuffer = DiskEntry.Helper.NULL_BUFFER
+      decompressionState = -1
       result
     } else {
       // merge with existing delete list
       val encoder = new ColumnDeleteEncoder
-      val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue]
-      val existingBuffer = oldColumnValue.getBufferRetain
+      val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
+        decompress = true, compress = false)
+      val existingBuffer = oldColumnValue.getBuffer
+      val newValue = getValueRetain(decompress = true, compress = false)
       try {
-        new ColumnFormatValue(encoder.merge(existingBuffer, columnBuffer))
+        new ColumnFormatValue(encoder.merge(newValue.getBuffer, existingBuffer),
+          oldColumnValue.compressionCodecId, isCompressed = false)
       } finally {
         oldColumnValue.release()
+        newValue.release()
         // release own buffer too and delta should be unusable now
         release()
       }
@@ -246,8 +255,5 @@ final class ColumnDeleteDelta extends ColumnFormatValue with Delta {
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_DELETE_DELTA
 
-  override def toString: String = {
-    val buffer = columnBuffer.duplicate()
-    s"ColumnDeleteDelta[size=${buffer.remaining()} $buffer"
-  }
+  override protected def className: String = "ColumnDeleteDelta"
 }
