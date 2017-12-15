@@ -40,10 +40,7 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long = 0L
 
-  override def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int =
-    if (holder.row.isNullAt(columnIndex)) -num - 1 else 0
-
-  override def isNullAt(columnBytes: AnyRef, ordinal: Int): Boolean =
+  override def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
     holder.row.isNullAt(columnIndex)
 
   override def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean =

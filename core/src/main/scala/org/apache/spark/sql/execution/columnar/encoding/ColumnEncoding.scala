@@ -77,10 +77,10 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
 
   /**
    * Not used by decoders themselves but by delta writer that stores the
-   * current nonNullOrdinal for the decoder.
+   * current nonNullPosition for the decoder.
    * Initialized to -1 so that first increment starts at 0.
    */
-  protected[sql] final var nonNullOrdinal: Int = -1
+  protected[sql] final var nonNullPosition: Int = -1
 
   protected[sql] def hasNulls: Boolean
 
@@ -93,16 +93,7 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
   private[sql] def initializeNullsBeforeFinish(
       columnBytes: AnyRef, cursor: Long, numNullBytes: Int): Unit = {}
 
-  /**
-   * Return the number of nulls till given ordinal given previous result.
-   * If result is < 0 then current value was null (and num to be passed
-   * in subsequent calls should be -ve of that) else it was not (and
-   * num passed in subsequent calls should be that return value).
-   * The initial value of num that should be passed is 0.
-   */
-  def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int
-
-  /** Absolute ordinal null check for random access. */
+  /** Absolute position null check for random access. */
   def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
     throw new UnsupportedOperationException(s"isNullAt for $toString")
 
@@ -272,11 +263,11 @@ trait ColumnEncoder extends ColumnEncoding {
   /**
    * Initialize this ColumnEncoder.
    *
-   * @param dataType   DataType of the field to be written
-   * @param nullable   True if the field is nullable, false otherwise
-   * @param initSize   Initial estimated number of elements to be written
-   * @param withHeader True if header is to be written to data (typeId etc)
-   * @param allocator  the [[BufferAllocator]] to use for the data
+   * @param dataType      DataType of the field to be written
+   * @param nullable      True if the field is nullable, false otherwise
+   * @param initSize      Initial estimated number of elements to be written
+   * @param withHeader    True if header is to be written to data (typeId etc)
+   * @param allocator     the [[BufferAllocator]] to use for the data
    * @param minBufferSize the minimum size of initial buffer to use (ignored if <= 0)
    * @return initial position of the cursor that caller must use to write
    */
@@ -481,7 +472,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   def isNullable: Boolean
 
-  def writeIsNull(ordinal: Int): Unit
+  def writeIsNull(position: Int): Unit
 
   def writeBoolean(cursor: Long, value: Boolean): Long =
     throw new UnsupportedOperationException(s"writeBoolean for $toString")
@@ -505,11 +496,11 @@ trait ColumnEncoder extends ColumnEncoding {
     throw new UnsupportedOperationException(s"writeDouble for $toString")
 
   def writeLongDecimal(cursor: Long, value: Decimal,
-      ordinal: Int, precision: Int, scale: Int): Long =
+      position: Int, precision: Int, scale: Int): Long =
     throw new UnsupportedOperationException(s"writeLongDecimal for $toString")
 
   def writeDecimal(cursor: Long, value: Decimal,
-      ordinal: Int, precision: Int, scale: Int): Long =
+      position: Int, precision: Int, scale: Int): Long =
     throw new UnsupportedOperationException(s"writeDecimal for $toString")
 
   def writeDate(cursor: Long, value: Int): Long =
@@ -736,6 +727,8 @@ object ColumnEncoding {
 
   private[columnar] val MAX_BITMASK = 1L << 63
 
+  private[columnar] val ULIMIT_POSITION = 0x3fffffff
+
   private[columnar] val identityLong: (AnyRef, Long) => Long = (_: AnyRef, l: Long) => l
 
   /** maximum number of null words that can be allowed to go waste in storage */
@@ -816,8 +809,7 @@ object ColumnEncoding {
     getColumnEncoder(Utils.getSQLDataType(field.dataType), field.nullable)
 
   def getColumnEncoder(dataType: DataType, nullable: Boolean): ColumnEncoder = {
-    // TODO: SW: add RunLength by default (others on explicit
-    //    compression level with LZ4/LZF for binary/complex data)
+    // TODO: SW: add RunLength by default
     dataType match {
       case StringType => createDictionaryEncoder(StringType, nullable)
       case BooleanType => createBooleanBitSetEncoder(BooleanType, nullable)
@@ -977,6 +969,18 @@ object ColumnEncoding {
     Platform.copyMemory(base, offset, columnBytes, position, size)
     position + size
   }
+
+  /** Write a short run-length as either 1 or 2 bytes */
+  final def writeRunLength(columnBytes: AnyRef, cursor: Long, run: Int): Long = {
+    if (run > 0x7f) {
+      Platform.putByte(columnBytes, cursor, ((run & 0x7f) | 0x80).toByte)
+      Platform.putByte(columnBytes, cursor + 1, (run >>> 7).toByte)
+      cursor + 2
+    } else {
+      Platform.putByte(columnBytes, cursor, run.toByte)
+      cursor + 1
+    }
+  }
 }
 
 case class ColumnStatsSchema(fieldName: String,
@@ -1015,8 +1019,6 @@ trait NotNullDecoder extends ColumnDecoder {
     startCursor + 4
   }
 
-  override final def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int = 0
-
   override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean = false
 }
 
@@ -1027,88 +1029,48 @@ trait NotNullDecoder extends ColumnDecoder {
  * field which is negative for the latter case. The decoder for latter
  * keeps track of next null position and compares against that.
  */
-trait NullableDecoder extends ColumnDecoder {
+trait NullableDecoder extends ColumnDecoder with BooleanRunLengthDecoder {
 
-  private[this] final var baseNullOffset: Long = _
-  private[this] final var nextNullOrNumWords: Int = _
-  private[this] final var numNulls: Int = _
+  private[this] final var numNullBytes: Int = _
 
   override protected[sql] final def hasNulls: Boolean = true
 
   protected[sql] def initializeNulls(columnBytes: AnyRef,
       startCursor: Long, field: StructField): Long = {
     var cursor = startCursor
-    val numNullBytes = ColumnEncoding.readInt(columnBytes, cursor)
+    var numNullBytes = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
-    this.baseNullOffset = cursor
+    this.dataCursor = cursor
 
-    if (numNullBytes < 0) {
-      val numNulls = -numNullBytes
-      // mark the case with negative ordinal
-      this.nextNullOrNumWords = -getNextNullOrdinal(columnBytes, cursor, 0, numNulls) - 1
-      this.numNulls = numNulls
-      // skip null bit set (aligned to 8-byte)
-      cursor += ((numNulls + 1) >> 1) << 3
-      cursor
+    if (numNullBytes <= 0) {
+      numNullBytes = -numNullBytes
+      this.endDataCursor = cursor + numNullBytes
+      updateRunLength(columnBytes, 0, 0)
+      // return end of null data aligned to word boundary
+      cursor + (((numNullBytes + 7) >>> 3) << 3)
     } else {
+      this.dataCursor = cursor
       // expect it to be a factor of 8
       assert(numNullBytes > 0 && (numNullBytes & 0x7) == 0,
         s"Expected valid null values but got length = $numNullBytes")
-      this.nextNullOrNumWords = numNullBytes >>> 3
+      // mark this case with a negative "nextPosition" that holds the number of words
+      this.nextPosition = -(numNullBytes >>> 3)
+      this.numNullBytes = numNullBytes
       // skip null bit set
       cursor += numNullBytes
       cursor
     }
   }
 
-  private final def getNextNullOrdinal(columnBytes: AnyRef,
-      nullOffset: Long, num: Int, numNulls: Int): Int = {
-    if (num < numNulls) ColumnEncoding.readInt(columnBytes, nullOffset + (num << 2))
-    else Int.MaxValue - 1 // "-1" so that -ve-1 and back does not overflow
-  }
-
-  private def updateNumNulls(columnBytes: AnyRef, ordinal: Int, n: Int, next: Int): Int = {
-    val nullOffset = this.baseNullOffset
-    val numNulls = this.numNulls
-    var num = n
-    var nextNull = next
-    // count the nulls till ordinal from the last count
-    while (nextNull < ordinal) {
-      num += 1
-      nextNull = getNextNullOrdinal(columnBytes, nullOffset, num, numNulls)
-    }
-    if (nextNull == ordinal) {
-      num += 1
-      nextNullOrNumWords = -getNextNullOrdinal(columnBytes, nullOffset, num, numNulls) - 1
-      // negative result indicates current value is null to caller
-      -num
-    } else {
-      nextNullOrNumWords = -nextNull - 1
-      num
-    }
-  }
-
-  override final def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int = {
-    val nextNull = nextNullOrNumWords
-    if (nextNull < 0) {
-      val nextNullPos = -nextNull - 1
-      if (nextNullPos > ordinal) num
-      else if (nextNullPos == ordinal) {
-        nextNullOrNumWords = -getNextNullOrdinal(columnBytes, baseNullOffset,
-          num + 1, numNulls) - 1
-        // negative result indicates current value is null to caller
-        -num - 1
-      } else {
-        // case of some ordinals being skipped (nextNullOrdinal < ordinal)
-        updateNumNulls(columnBytes, ordinal, num, nextNullPos)
-      }
-    } else {
-      if (BitSet.isSet(columnBytes, baseNullOffset, ordinal, nextNull)) -num - 1 else num
-    }
+  override protected def handleDataEnd(nextPosition: Int): Int = {
+    // beyond last encoded null all are non-nulls so return max "false" position
+    (ColumnEncoding.ULIMIT_POSITION - 1 - nextPosition) << 1
   }
 
   override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean = {
-    BitSet.isSet(columnBytes, baseNullOffset, position, numNulls)
+    val nextPosOrNumWords = nextPosition
+    if (nextPosOrNumWords >= 0) readBooleanRLE(columnBytes, position, nextPosOrNumWords)
+    else BitSet.isSet(columnBytes, dataCursor, position, -nextPosOrNumWords)
   }
 }
 
@@ -1120,7 +1082,7 @@ trait NotNullEncoder extends ColumnEncoder {
 
   override def isNullable: Boolean = false
 
-  override def writeIsNull(ordinal: Int): Unit =
+  override def writeIsNull(position: Int): Unit =
     throw new UnsupportedOperationException(s"writeIsNull for $toString")
 
   override protected[sql] def getNumNullWords: Int = 0
@@ -1154,12 +1116,11 @@ trait NotNullEncoder extends ColumnEncoder {
   }
 }
 
-trait NullableEncoder extends NotNullEncoder {
+trait NullableEncoder extends NotNullEncoder with BooleanRunLengthEncoder {
 
   protected final var maxNulls: Long = _
   protected final var nullWords: Array[Long] = _
   protected final var initialNumWords: Int = _
-  protected final var positionEncoderSize: Int = _
 
   private def trimmedNumNullWords: Int = {
     val nullWords = this.nullWords
@@ -1170,12 +1131,11 @@ trait NullableEncoder extends NotNullEncoder {
 
   override protected[sql] def getNumNullWords: Int = {
     val numWords = trimmedNumNullWords
-    // check if bitset is too sparse then switch to using position encoder
-    val numNulls = nullBitSetCount(numWords)
-    // bytes used in position encoder = numNulls * 4
-    if (numNulls <= (numWords << 1)) {
-      this.positionEncoderSize = numNulls
-      (numNulls + 1) >> 1
+    // switch to run-length encoding if it compresses much better
+    val sizeRLE = encodedSizeRLE
+    if (sizeRLE <= (numWords << 3)) {
+      startCursorRLE = 1L // indicator that RLE should be used
+      (sizeRLE + 7) >>> 3 // align to word boundary
     } else numWords
   }
 
@@ -1185,13 +1145,13 @@ trait NullableEncoder extends NotNullEncoder {
       maxNulls = numWords.toLong << 6L
       nullWords = new Array[Long](numWords)
       initialNumWords = numWords
-      positionEncoderSize = 0
+      initializeRLE()
       numWords
     } else {
       val numWords = nullWords.length
       maxNulls = numWords.toLong << 6L
       initialNumWords = numWords
-      positionEncoderSize = 0
+      initializeRLE()
       // clear the words
       var i = 0
       while (i < numWords) {
@@ -1202,11 +1162,10 @@ trait NullableEncoder extends NotNullEncoder {
     }
   }
 
-  override def nullCount: Int = nullBitSetCount(trimmedNumNullWords)
-
-  private def nullBitSetCount(numWords: Int): Int = {
+  override def nullCount: Int = {
     var sum = 0
     var i = 0
+    val numWords = trimmedNumNullWords
     while (i < numWords) {
       sum += java.lang.Long.bitCount(nullWords(i))
       i += 1
@@ -1216,58 +1175,58 @@ trait NullableEncoder extends NotNullEncoder {
 
   override def isNullable: Boolean = true
 
-  override def writeIsNull(ordinal: Int): Unit = {
-    if (ordinal < maxNulls) {
-      BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, ordinal)
+  override def writeIsNull(position: Int): Unit = {
+    if (position < maxNulls) {
+      BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, position)
     } else {
       // expand
       val oldNulls = nullWords
       val oldLen = trimmedNumNullWords
-      // ensure that ordinal fits (SNAP-1760)
-      val newLen = math.max(oldNulls.length << 1, (ordinal >> 6) + 1)
+      // ensure that position fits (SNAP-1760)
+      val newLen = math.max(oldNulls.length << 1, (position >> 6) + 1)
       nullWords = new Array[Long](newLen)
       maxNulls = newLen.toLong << 6L
       if (oldLen > 0) System.arraycopy(oldNulls, 0, nullWords, 0, oldLen)
-      BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, ordinal)
+      BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, position)
     }
+    updateBooleanStats(position, value = true)
+  }
+
+  override protected final def writeSizeRLE(columnBytes: AnyRef, size: Int): Unit = {
+    // write negative of size to indicate run-length encoding
+    ColumnEncoding.writeInt(columnBytes, startCursorRLE, -size)
   }
 
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = {
-    var position = cursor
+    var writeCursor = cursor
     val nullWords = this.nullWords
-    // encode as positions if it will reduce the size
-    val numPositions = this.positionEncoderSize
-    if (numPositions > 0) {
+    // use run-length encoding if it will reduce the size
+    if (startCursorRLE != 0L) {
+      initializeRLE(columnBytes, cursor - 4)
       val len = trimmedNumNullWords
-      var done = false
       var pos = 0
+      var done = false
       while (!done) {
         pos = BitSet.nextSetBit(nullWords, Platform.LONG_ARRAY_OFFSET, pos, len)
         if (pos != Int.MaxValue) {
-          ColumnEncoding.writeInt(columnBytes, position, pos)
-          position += 4
+          writeCursor = writeBooleanRLE(columnBytes, writeCursor, pos, value = true)
           pos += 1
         } else {
           done = true
         }
       }
-      // exactly numPositions integers should have been written
-      assert(numPositions == ((position - cursor) >> 2),
-        s"numPositions=$numPositions written=${(position - cursor) >> 2} " +
-            s"count=$nullCount words=${nullWords.map(java.lang.Long.toHexString).mkString(",")}")
-      // change the numNullWords to negative to indicate position encoding
-      ColumnEncoding.writeInt(columnBytes, cursor - 4, -numPositions)
-      // align to 8-byte boundary
-      if ((numPositions & 0x1) == 0) position else position + 4
+      val endCursor = finishRLE(columnBytes, writeCursor)
+      assert(endCursor <= cursor + (numWords << 3))
+      cursor + (numWords << 3)
     } else {
       var index = 0
       while (index < numWords) {
-        ColumnEncoding.writeLong(columnBytes, position, nullWords(index))
-        position += 8
+        ColumnEncoding.writeLong(columnBytes, writeCursor, nullWords(index))
+        writeCursor += 8
         index += 1
       }
-      position
+      writeCursor
     }
   }
 
