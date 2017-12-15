@@ -14,15 +14,17 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.scheduler
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SnappyContext
+apply plugin: 'java'
 
-private[spark] class SnappyTaskSchedulerImpl(sc: SparkContext) extends TaskSchedulerImpl(sc) {
+compileJava.options.encoding = 'UTF-8'
 
-  override def postStartHook(): Unit = {
-    SnappyContext.initGlobalSparkContext(sc)
-    super.postStartHook()
+dependencies {
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    compile project(':snappy-store:gemfire-shared')
+  } else {
+    compile group: 'io.snappydata', name: 'gemfire-shared', version: snappyStoreVersion
   }
 }
+
+archivesBaseName = 'snappydata-launcher'

@@ -642,6 +642,36 @@ trait AltName[T] {
     }
   }
 
+  private def get(conf: SparkConf, name: String,
+      defaultValue: String): T = {
+    configEntry.entry.defaultValue match {
+      case Some(_) => configEntry.valueConverter[T](
+        conf.get(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](
+        conf.get(name, defaultValue)).get
+    }
+  }
+
+  def get(conf: SparkConf): T = if (altName == null) {
+    get(conf, name, configEntry.defaultValueString)
+  } else {
+    if (conf.contains(name)) {
+      if (!conf.contains(altName)) get(conf, name, configEntry.defaultValueString)
+      else {
+        throw new IllegalArgumentException(
+          s"Both $name and $altName configured. Only one should be set.")
+      }
+    } else {
+      get(conf, altName, configEntry.defaultValueString)
+    }
+  }
+
+  def get(properties: Properties): T = {
+    val propertyValue = getProperty(properties)
+    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
+    else defaultValue.get
+  }
+
   def getProperty(properties: Properties): String = if (altName == null) {
     properties.getProperty(name)
   } else {
@@ -691,12 +721,6 @@ trait SQLAltName[T] extends AltName[T] {
     } else {
       get(conf, altName, configEntry.defaultValueString)
     }
-  }
-
-  def get(properties: Properties): T = {
-    val propertyValue = getProperty(properties)
-    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
-    else defaultValue.get
   }
 
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {

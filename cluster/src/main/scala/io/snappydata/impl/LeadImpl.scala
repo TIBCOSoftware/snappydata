@@ -16,19 +16,20 @@
  */
 package io.snappydata.impl
 
-import java.lang
 import java.lang.reflect.{Constructor, Method}
 import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 import akka.actor.ActorSystem
-import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, Status}
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -37,15 +38,15 @@ import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
+import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata._
 import io.snappydata.cluster.ExecutorInitiator
-import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 
@@ -71,7 +72,7 @@ class LeadImpl extends ServerImpl with Lead
     DLockService.create(LOCK_SERVICE_NAME, dSys, true, true, true)
   }
 
-  private var sparkContext: SparkContext = _
+  private val sparkContext = new AtomicReference[SparkContext]
 
   private var notifyStatusChange: ((FabricService.State) => Unit) = _
 
@@ -79,16 +80,9 @@ class LeadImpl extends ServerImpl with Lead
     LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
-  private[snappydata] val snappyProperties = Utils.getFields(Property).collect {
-    case (_, SparkProperty(prop)) => prop
-    case (_, SnappySparkProperty(prop)) => prop
-    case (_, SparkSQLProperty(prop)) => prop
-    case (_, SnappySparkSQLProperty(prop)) => prop
-    case _ => ""
-  }.toSet
-
   var _directApiInvoked: Boolean = false
   var isTestSetup = false
+
   def directApiInvoked: Boolean = _directApiInvoked
 
   private var remoteInterpreterServerClass: Class[_] = _
@@ -96,21 +90,75 @@ class LeadImpl extends ServerImpl with Lead
 
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
-
     _directApiInvoked = true
 
     isTestSetup = bootProperties.getProperty("isTest", "false").toBoolean
     bootProperties.remove("isTest")
-    try {
 
-      val locator = {
-        bootProperties.getProperty(DistributionConfig.LOCATORS_NAME) match {
-          case v if v != null => v
-          case _ => Property.Locators.getProperty(bootProperties)
+    // prefix all store properties with "snappydata.store" for SparkConf
+
+    // first the passed in bootProperties
+    var propNames = bootProperties.stringPropertyNames().iterator()
+    while (propNames.hasNext) {
+      val propName = propNames.next()
+      if (propName.startsWith(SPARK_PREFIX)) {
+        if (propName.startsWith(SPARK_SNAPPY_PREFIX)) {
+          // remove the "spark." prefix for uniformity (e.g. when looking up a property)
+          bootProperties.setProperty(propName.substring(SPARK_PREFIX.length),
+            bootProperties.getProperty(propName))
+          bootProperties.remove(propName)
         }
+      } else if (!propName.startsWith(SNAPPY_PREFIX) &&
+          !propName.startsWith(JOBSERVER_PREFIX)) {
+        bootProperties.setProperty(STORE_PREFIX + propName, bootProperties.getProperty(propName))
+        bootProperties.remove(propName)
       }
+    }
+    // next the system properties that can override above
+    val sysProps = System.getProperties
+    val sysPropNames = sysProps.stringPropertyNames().iterator()
+    while (sysPropNames.hasNext) {
+      val sysPropName = sysPropNames.next()
+      if (sysPropName.startsWith(SPARK_PREFIX)) {
+        if (sysPropName.startsWith(SPARK_SNAPPY_PREFIX)) {
+          // remove the "spark." prefix for uniformity (e.g. when looking up a property)
+          bootProperties.setProperty(sysPropName.substring(SPARK_PREFIX.length),
+            sysProps.getProperty(sysPropName))
+        } else {
+          bootProperties.setProperty(sysPropName, sysProps.getProperty(sysPropName))
+        }
+      } else if (sysPropName.startsWith(SNAPPY_PREFIX)) {
+        bootProperties.setProperty(sysPropName, sysProps.getProperty(sysPropName))
+      }
+    }
 
-      val conf = new SparkConf()
+    // add default lead properties
+    val serverGroupsProp = STORE_PREFIX + Attribute.SERVER_GROUPS
+    val groups = bootProperties.getProperty(serverGroupsProp) match {
+      case null => LeadImpl.LEADER_SERVERGROUP
+      case v => v + ',' + LeadImpl.LEADER_SERVERGROUP
+    }
+    bootProperties.setProperty(serverGroupsProp, groups)
+    bootProperties.setProperty(STORE_PREFIX + Attribute.GFXD_HOST_DATA, "false")
+    bootProperties.setProperty(STORE_PREFIX + Attribute.GFXD_PERSIST_DD, "false")
+
+    // copy store related properties into a separate properties bag
+    // to be used by store boot while original will be used by SparkConf
+    val storeProperties = new Properties()
+    propNames = bootProperties.stringPropertyNames().iterator()
+    while (propNames.hasNext) {
+      val propName = propNames.next()
+      if (propName.startsWith(STORE_PREFIX)) {
+        storeProperties.setProperty(propName.substring(
+          STORE_PREFIX.length), bootProperties.getProperty(propName))
+      }
+    }
+
+    // initialize store and Spark in parallel (Spark will wait in
+    // cluster manager start on internalStart)
+    val initServices = Future {
+      val locator = bootProperties.getProperty(Property.Locators.name)
+      val conf = new SparkConf(false) // system properties already in bootProperties
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
           setAppName("SnappyData").
           set(Property.JobServerEnabled.name, "true").
@@ -120,21 +168,7 @@ class LeadImpl extends ServerImpl with Lead
 
       Utils.setDefaultSerializerAndCodec(conf)
 
-      // inspect user input and add appropriate prefixes
-      // if property doesn't contain '.'
-      // if input prop key is found in io.snappydata.Property,
-      // its prefixed with 'snappydata.' otherwise its assumed
-      // to be snappydata.store.
-      bootProperties.asScala.foreach({ case (k, v) =>
-        val key = if (k.indexOf(".") < 0) {
-          if (snappyProperties(k)) {
-            Constant.PROPERTY_PREFIX + k
-          } else {
-            Constant.STORE_PROPERTY_PREFIX + k
-          }
-        } else k
-        conf.set(key, v)
-      })
+      conf.setAll(bootProperties.asScala)
       // set spark ui port to 5050 that is snappy's default
       conf.set("spark.ui.port",
         bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
@@ -174,10 +208,59 @@ class LeadImpl extends ServerImpl with Lead
         SparkCallbacks.setAuthenticatorForJettyServer()
       }
 
-      sparkContext = new SparkContext(conf)
+      // wait for log service to initialize so that Spark also uses the same
+      while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {
+        Thread.sleep(50)
+      }
 
+      // take out the password property from SparkConf so that it is not logged
+      // or seen by Spark layer
+      conf.remove(STORE_PREFIX + Attribute.PASSWORD_ATTR)
+
+      val sc = new SparkContext(conf)
+
+      this.sparkContext.set(sc)
+
+      // wait for store to initialize
+      internalStart(storeProperties)
+
+      // start the service to gather table statistics
+      SnappyTableStatsProviderService.start(sc)
+
+      // This will use GfxdDistributionAdvisor#distributeProfileUpdate
+      // which inturn will create a new profile object via #instantiateProfile
+      // whereby ClusterCallbacks#getDriverURL should be now returning
+      // the correct URL given SparkContext is fully initialized.
+      logInfo("About to send profile update after initialization completed.")
+      ServerGroupUtils.sendUpdateProfile()
+
+      val jobServerWait = Property.JobServerWaitForInit.get(conf)
+      if (!jobServerWait) {
+        // mark RUNNING (job server will continue to start in background)
+        notifyRunningInLauncher(Status.RUNNING)
+      }
+
+      // initialize global context
+      SnappyContext(sc)
+
+      // update the Spark UI to add the dashboard and other SnappyData pages
+      ToolsCallbackInit.toolsCallback.updateUI(sc)
+
+      // start other add-on services (job server)
+      startAddOnServices(conf)
+
+      if (jobServerWait) {
+        // mark RUNNING after job server initialization if so configured
+        notifyRunningInLauncher(Status.RUNNING)
+      }
+
+      // finally start embedded zeppelin interpreter if configured
       checkAndStartZeppelinInterpreter(bootProperties)
+    }
 
+    try {
+      internalStart(storeProperties)
+      Await.result(initServices, Duration.Inf)
     } catch {
       case _: InterruptedException =>
         logInfo(s"Thread interrupted, aborting.")
@@ -185,35 +268,48 @@ class LeadImpl extends ServerImpl with Lead
         logWarning("Exception while starting lead node", e)
         throw e
     }
-
-
   }
 
+  /*
   @throws[SparkException]
-  private[snappydata] def internalStart(sc: SparkContext): Unit = {
+  private[snappydata] def internalStart(conf: SparkConf): Unit = synchronized {
+    if (status() != State.UNINITIALIZED && status() != State.STOPPED) {
+      // already started or in the process of starting
+      return
+    }
 
-    val conf = sc.getConf // this will get you a cloned copy
-    initStartupArgs(conf, sc)
+    initStartupArgs(conf)
 
-    val password = conf.getOption(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
-    if (password.isDefined) conf.remove(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
+    // take out the password property so that it is not logged
+    val passwordKey = STORE_PREFIX + Attribute.PASSWORD_ATTR
+    val password = conf.getOption(passwordKey)
+    if (password.isDefined) conf.remove(passwordKey)
     logInfo("cluster configuration after overriding certain properties \n"
         + conf.toDebugString)
-    if (password.isDefined) conf.set(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR,
-      password.get)
 
-    val confProps = conf.getAll
+    val confProps = password match {
+      case None => conf.getAll
+      case Some(pwd) => conf.clone.set(passwordKey, pwd).getAll
+    }
     val storeProps = ServiceUtils.getStoreProperties(confProps)
+    logInfo("passing store properties as " + storeProps)
+    internalStart(storeProps)
+  }
+  */
+
+  @throws[SparkException]
+  private def internalStart(storeProps: Properties): Unit = synchronized {
+    if (status() != State.UNINITIALIZED && status() != State.STOPPED) {
+      // already started or in the process of starting
+      return
+    }
     checkAuthProvider(storeProps)
 
-    val pass = storeProps.remove(Attribute.PASSWORD_ATTR)
-    logInfo("passing store properties as " + storeProps)
-    if (pass != null) storeProps.setProperty(Attribute.PASSWORD_ATTR, pass.asInstanceOf[String])
     super.start(storeProps, ignoreIfStarted = false)
 
     status() match {
       case State.RUNNING =>
-        bootProperties.putAll(confProps.toMap.asJava)
+        bootProperties.putAll(storeProps)
         logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
 
@@ -280,20 +376,22 @@ class LeadImpl extends ServerImpl with Lead
     }
     */
 
+    val sparkContext = this.sparkContext.get()
+
     assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")
     if (!sparkContext.isStopped) {
       sparkContext.stop()
-      sparkContext = null
+      this.sparkContext.set(null)
     }
     Utils.clearDefaultSerializerAndCodec()
 
     if (null != remoteInterpreterServerObj) {
       val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
-      val isAlive: lang.Boolean = method.invoke(remoteInterpreterServerObj)
-          .asInstanceOf[lang.Boolean]
+      val isAlive: java.lang.Boolean = method.invoke(remoteInterpreterServerObj)
+          .asInstanceOf[java.lang.Boolean]
       val shutdown: Method = remoteInterpreterServerClass.getMethod("shutdown",
-        classOf[lang.Boolean])
+        classOf[java.lang.Boolean])
 
       if (isAlive) {
         shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
@@ -306,13 +404,13 @@ class LeadImpl extends ServerImpl with Lead
     val sc = SnappyContext.globalSparkContext
     if (sc != null) sc.stop()
     // TODO: [soubhik] find a way to stop jobserver.
-    sparkContext = null
+    sparkContext.set(null)
     if (null != remoteInterpreterServerObj) {
       val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
-      val isAlive: lang.Boolean = method.invoke(remoteInterpreterServerObj)
-          .asInstanceOf[lang.Boolean]
+      val isAlive: java.lang.Boolean = method.invoke(remoteInterpreterServerObj)
+          .asInstanceOf[java.lang.Boolean]
       val shutdown: Method = remoteInterpreterServerClass.getMethod("shutdown",
-        classOf[lang.Boolean])
+        classOf[java.lang.Boolean])
 
       if (isAlive) {
         shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
@@ -330,33 +428,31 @@ class LeadImpl extends ServerImpl with Lead
       conf.getOption(attrKey) match {
         case None => if (sparkPrefix == null) {
           changeOrAppend(attr, value, overwrite, ignoreIfPresent,
-            sparkPrefix = Constant.SPARK_PREFIX)
+            sparkPrefix = SPARK_PREFIX)
         } else conf.set(attr, value)
         case _ if ignoreIfPresent => // skip setting property
         case _ if overwrite => conf.set(attr, value)
-        case Some(x) => conf.set(attr, x ++ s""",$value""")
+        case Some(v) =>
+          // ignore if already set
+          val prefixedValue = "," + value
+          if (v != value && !value.contains(prefixedValue)) conf.set(attr, v + prefixedValue)
       }
     }
 
-    changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
-        com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LeadImpl.LEADER_SERVERGROUP)
+    changeOrAppend(STORE_PREFIX + Attribute.SERVER_GROUPS, LeadImpl.LEADER_SERVERGROUP)
 
     assert(Property.Locators.getOption(conf).orElse(
       Property.McastPort.getOption(conf)).isDefined,
       s"Either ${Property.Locators} or ${Property.McastPort} " +
           s"must be defined for SnappyData cluster to start")
-    import org.apache.spark.sql.collection.Utils
     // skip overriding host-data if loner VM.
     if (sc != null && Utils.isLoner(sc)) {
-      changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
-          com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
+      changeOrAppend(STORE_PREFIX + Attribute.GFXD_HOST_DATA,
         "true", overwrite = true)
     } else {
-      changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
-          com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
+      changeOrAppend(STORE_PREFIX + Attribute.GFXD_HOST_DATA,
         "false", overwrite = true)
-      changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
-          com.pivotal.gemfirexd.Attribute.GFXD_PERSIST_DD,
+      changeOrAppend(STORE_PREFIX + Attribute.GFXD_PERSIST_DD,
         "false", overwrite = true)
     }
     changeOrAppend(Property.JobServerEnabled.name, "false",
@@ -369,18 +465,8 @@ class LeadImpl extends ServerImpl with Lead
     this.notifyStatusChange = f
 
   @throws[Exception]
-  private[snappydata] def startAddOnServices(sc: SparkContext): Unit = this.synchronized {
-    LeadImpl.setInitializingSparkContext(sc)
-
-    if (status() == State.UNINITIALIZED || status() == State.STOPPED) {
-      // for SparkContext.setMaster("local[xx]"), ds.connect won't happen
-      // until now.
-      logInfo("Connecting to snappydata cluster now...")
-      internalStart(sc)
-    }
-
-    val jobServerEnabled = Property.JobServerEnabled.getProperty(
-      bootProperties).toBoolean
+  private def startAddOnServices(conf: SparkConf): Unit = this.synchronized {
+    val jobServerEnabled = Property.JobServerEnabled.get(conf)
     if (_directApiInvoked && !isTestSetup) {
       assert(jobServerEnabled,
         "JobServer must have been enabled with lead.start(..) invocation")
@@ -388,31 +474,20 @@ class LeadImpl extends ServerImpl with Lead
     if (jobServerEnabled) {
       logInfo("Starting job server...")
 
-      val confFile = bootProperties.getProperty("jobserver.configFile") match {
-        case null => Array[String]()
-        case c => Array(c)
+      val confFile = conf.getOption("jobserver.configFile") match {
+        case None => Array[String]()
+        case Some(c) => Array(c)
       }
 
       configureAuthenticatorForSJS()
       JobServer.start(confFile, getConfig, createActorSystem)
     }
-
-    // This will use GfxdDistributionAdvisor#distributeProfileUpdate
-    // which inturn will create a new profile object via #instantiateProfile
-    // whereby ClusterCallbacks#getDriverURL should be now returning
-    // the correct URL given SparkContext is fully initialized.
-    logInfo("About to send profile update after initialization completed.")
-    ServerGroupUtils.sendUpdateProfile()
-
-    LeadImpl.clearInitializingSparkContext()
   }
 
   def configureAuthenticatorForSJS(): Unit = {
     if (Misc.isSecurityEnabled) {
       logInfo("Configuring authenticator for Snappy Job users.")
       SnappyAuthenticator.auth = new SnappyAuthenticator {
-
-        import scala.concurrent.ExecutionContext.Implicits.global
 
         override def authenticate(userPass: Option[UserPass]): Future[Option[AuthInfo]] = {
           Future { checkCredentials(userPass) }
@@ -472,7 +547,7 @@ class LeadImpl extends ServerImpl with Lead
     val replaceString = "<basedir>"
 
     def replace(key: String, value: String, newValue: String) = {
-      assert (value.indexOf(replaceString) >= 0)
+      assert(value.indexOf(replaceString) >= 0)
       dynamicOverrides.setProperty(key, value.replace(replaceString, newValue))
     }
 
@@ -563,42 +638,16 @@ object LeadImpl {
 
   val SPARKUI_PORT = 5050
   val LEADER_SERVERGROUP = "IMPLICIT_LEADER_SERVERGROUP"
-  private[this] val startingContext: AtomicReference[SparkContext] =
-    new AtomicReference[SparkContext](null)
 
-  def invokeLeadStart(sc: SparkContext): Unit = {
+  /*
+  def invokeLeadStart(conf: SparkConf): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.internalStart(sc)
+    lead.internalStart(conf)
   }
-
-  def invokeLeadStartAddonService(sc: SparkContext): Unit = {
-    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.startAddOnServices(sc)
-  }
+  */
 
   def invokeLeadStop(shutdownCredentials: Properties): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     lead.internalStop(shutdownCredentials)
-  }
-
-  def setInitializingSparkContext(sc: SparkContext): Unit = {
-    assert(sc != null)
-    startingContext.set(sc)
-  }
-
-  def getInitializingSparkContext: SparkContext = {
-    val sc = SnappyContext.globalSparkContext
-    if (sc != null) {
-      return sc
-    }
-
-    val initSC = startingContext.get()
-    assert(initSC != null)
-
-    initSC
-  }
-
-  def clearInitializingSparkContext(): Unit = {
-    startingContext.set(null)
   }
 }

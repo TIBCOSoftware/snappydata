@@ -83,8 +83,6 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
     val schedulerImpl = scheduler.asInstanceOf[TaskSchedulerImpl]
 
     schedulerImpl.initialize(backend)
-
-    LeadImpl.invokeLeadStart(schedulerImpl.sc)
   }
 
   def stopLead(): Unit = {

@@ -814,6 +814,7 @@ object SnappyContext extends Logging {
   @volatile private[this] var _clusterMode: ClusterMode = _
   @volatile private[this] var _sharedState: SnappySharedState = _
 
+  @volatile private[this] var _globalContextInitialized: Boolean = false
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
@@ -1059,14 +1060,25 @@ object SnappyContext extends Logging {
     mode
   }
 
+  private[spark] def initGlobalSparkContext(sc: SparkContext): Unit = {
+    if (!_globalContextInitialized) {
+      contextLock.synchronized {
+        if (!_globalContextInitialized) {
+          invokeServices(sc)
+          sc.addSparkListener(new SparkContextListener)
+          initMemberBlockMap(sc)
+          _globalContextInitialized = true
+        }
+      }
+    }
+  }
+
   private[sql] def initGlobalSnappyContext(sc: SparkContext,
       session: SnappySession): Unit = {
     if (!_globalSNContextInitialized) {
       contextLock.synchronized {
         if (!_globalSNContextInitialized) {
-          invokeServices(sc)
-          sc.addSparkListener(new SparkContextListener)
-          initMemberBlockMap(sc)
+          initGlobalSparkContext(sc)
           _sharedState = SnappySharedState.create(sc)
           _globalClear = session.snappyContextFunctions.clearStatic()
           _globalSNContextInitialized = true
@@ -1075,7 +1087,14 @@ object SnappyContext extends Logging {
     }
   }
 
-  private[sql] def sharedState: SnappySharedState = _sharedState
+  private[sql] def sharedState(sc: SparkContext): SnappySharedState = {
+    val state = _sharedState
+    if ((state ne null) && (state.sparkContext eq sc)) state
+    else contextLock.synchronized {
+      _sharedState = SnappySharedState.create(sc)
+      _sharedState
+    }
+  }
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
@@ -1085,14 +1104,6 @@ object SnappyContext extends Logging {
 
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) =>
-        // NOTE: if Property.jobServer.enabled is true
-        // this will trigger SnappyContext.apply() method
-        // prior to `new SnappyContext(sc)` after this
-        // method ends.
-        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        SnappyTableStatsProviderService.start(sc)
-        ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
       case ThinClientConnectorMode(_, url) =>
         SnappyTableStatsProviderService.start(sc, url)
       case LocalMode(_, url) =>
@@ -1100,15 +1111,15 @@ object SnappyContext extends Logging {
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
         SnappyTableStatsProviderService.start(sc)
         if (ToolsCallbackInit.toolsCallback != null) {
-          ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
+          ToolsCallbackInit.toolsCallback.updateUI(sc)
         }
       case _ => // ignore
     }
   }
 
-  private def stopSnappyContext(): Unit = {
+  private def stopSnappyContext(): Unit = contextLock.synchronized {
     val sc = globalSparkContext
-    if (_globalSNContextInitialized) {
+    if (_globalContextInitialized) {
       // clear static objects on the driver
       clearStaticArtifacts()
 
@@ -1129,6 +1140,7 @@ object SnappyContext extends Logging {
     _clusterMode = null
     _anySNContext = null
     _globalSNContextInitialized = false
+    _globalContextInitialized = false
   }
 
   /** Cleanup static artifacts on this lead/executor. */

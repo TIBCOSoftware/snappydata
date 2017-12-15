@@ -96,7 +96,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * and a catalog that interacts with external systems.
    */
   @transient
-  override private[sql] lazy val sharedState: SnappySharedState = SnappyContext.sharedState
+  override private[sql] lazy val sharedState: SnappySharedState = {
+    SnappyContext.sharedState(sparkContext)
+  }
 
   /**
    * State isolated across sessions, including SQL configurations, temporary tables, registered
@@ -2241,18 +2243,15 @@ object SnappySession extends Logging {
   }
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
-    if (!SnappyTableStatsProviderService.suspendCacheInvalidation &&
-        (SnappyContext.globalSparkContext ne null)) {
+    val sc = SnappyContext.globalSparkContext
+    if (!SnappyTableStatsProviderService.suspendCacheInvalidation && (sc ne null)) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
         CodeGeneration.clearAllCache()
-        val sc = SnappyContext.globalSparkContext
-        if (sc ne null) {
-          Utils.mapExecutors(sc, (_, _) => {
-            CodeGeneration.clearAllCache()
-            Iterator.empty
-          })
-        }
+        Utils.mapExecutors(sc, (_, _) => {
+          CodeGeneration.clearAllCache()
+          Iterator.empty
+        })
       }
     }
   }
