@@ -132,13 +132,12 @@ object StoreUtils {
         case None => Seq.empty
       }
     } else {
-      val distMembers = getBucketOwnersForRead(bucketId, region)
-      val members = new mutable.ArrayBuffer[String](2)
       var prependPrimary = preferPrimaries
       val primary = if (preferPrimaries) {
         region.getOrCreateNodeForBucketWrite(bucketId, null)
       } else null
-      distMembers.foreach { m =>
+      val members = new mutable.ArrayBuffer[String](2)
+      getBucketOwnersForRead(bucketId, region).foreach { m =>
         SnappyContext.getBlockId(m.toString) match {
           case Some(b) =>
             if (prependPrimary && m.equals(primary)) {
