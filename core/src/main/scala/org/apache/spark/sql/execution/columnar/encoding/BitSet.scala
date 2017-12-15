@@ -66,14 +66,14 @@ object BitSet {
    * given maximum size of nulls bitmask in words (8-bytes).
    * Returns true if the bit is set at the specified index.
    */
-  def isSet(baseObject: AnyRef, baseAddress: Long, position: Int, maxWords: Int): Boolean = {
-    var wordIndex = position >> 6
+  @inline def isSet(baseObject: AnyRef, baseAddress: Long, position: Int,
+      maxWords: Int): Boolean = {
+    val wordIndex = position >> 6
     if (wordIndex < maxWords) {
-      // word aligned reads for best performance
-      wordIndex <<= 3
       // mod 64 and shift
       val mask = 1L << (position & 0x3f)
-      (ColumnEncoding.readLong(baseObject, baseAddress + wordIndex) & mask) != 0
+      // word aligned reads for best performance
+      (ColumnEncoding.readLong(baseObject, baseAddress + (wordIndex << 3)) & mask) != 0
     } else false
   }
 

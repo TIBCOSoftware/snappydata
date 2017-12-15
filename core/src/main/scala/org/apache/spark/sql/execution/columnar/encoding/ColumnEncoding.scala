@@ -1029,9 +1029,10 @@ trait NotNullDecoder extends ColumnDecoder {
  * field which is negative for the latter case. The decoder for latter
  * keeps track of next null position and compares against that.
  */
-trait NullableDecoder extends ColumnDecoder with BooleanRunLengthDecoder {
+trait NullableDecoder extends ColumnDecoder {
 
-  private[this] final var numNullBytes: Int = _
+  private[this] final var dataCursor: Long = _
+  private[this] final var numNullWords: Int = _
 
   override protected[sql] final def hasNulls: Boolean = true
 
@@ -1041,36 +1042,18 @@ trait NullableDecoder extends ColumnDecoder with BooleanRunLengthDecoder {
     var numNullBytes = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
     this.dataCursor = cursor
-
-    if (numNullBytes <= 0) {
-      numNullBytes = -numNullBytes
-      this.endDataCursor = cursor + numNullBytes
-      updateRunLength(columnBytes, 0, 0)
-      // return end of null data aligned to word boundary
-      cursor + (((numNullBytes + 7) >>> 3) << 3)
-    } else {
-      this.dataCursor = cursor
-      // expect it to be a factor of 8
-      assert(numNullBytes > 0 && (numNullBytes & 0x7) == 0,
-        s"Expected valid null values but got length = $numNullBytes")
-      // mark this case with a negative "nextPosition" that holds the number of words
-      this.nextPosition = -(numNullBytes >>> 3)
-      this.numNullBytes = numNullBytes
-      // skip null bit set
-      cursor += numNullBytes
-      cursor
-    }
-  }
-
-  override protected def handleDataEnd(nextPosition: Int): Int = {
-    // beyond last encoded null all are non-nulls so return max "false" position
-    (ColumnEncoding.ULIMIT_POSITION - 1 - nextPosition) << 1
+    // expect it to be a factor of 8
+    assert(numNullBytes > 0 && (numNullBytes & 0x7) == 0,
+      s"Expected valid null values but got length = $numNullBytes")
+    // mark this case with a negative "nextPosition" that holds the number of words
+    this.numNullWords = numNullBytes >>> 3
+    // skip null bit set
+    cursor += numNullBytes
+    cursor
   }
 
   override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean = {
-    val nextPosOrNumWords = nextPosition
-    if (nextPosOrNumWords >= 0) readBooleanRLE(columnBytes, position, nextPosOrNumWords)
-    else BitSet.isSet(columnBytes, dataCursor, position, -nextPosOrNumWords)
+    BitSet.isSet(columnBytes, dataCursor, position, numNullWords)
   }
 }
 
@@ -1116,7 +1099,7 @@ trait NotNullEncoder extends ColumnEncoder {
   }
 }
 
-trait NullableEncoder extends NotNullEncoder with BooleanRunLengthEncoder {
+trait NullableEncoder extends NotNullEncoder {
 
   protected final var maxNulls: Long = _
   protected final var nullWords: Array[Long] = _
@@ -1129,15 +1112,7 @@ trait NullableEncoder extends NotNullEncoder with BooleanRunLengthEncoder {
     numWords
   }
 
-  override protected[sql] def getNumNullWords: Int = {
-    val numWords = trimmedNumNullWords
-    // switch to run-length encoding if it compresses much better
-    val sizeRLE = encodedSizeRLE
-    if (sizeRLE <= (numWords << 3)) {
-      startCursorRLE = 1L // indicator that RLE should be used
-      (sizeRLE + 7) >>> 3 // align to word boundary
-    } else numWords
-  }
+  override protected[sql] def getNumNullWords: Int = trimmedNumNullWords
 
   override protected[sql] def initializeNulls(initSize: Int): Int = {
     if (nullWords eq null) {
@@ -1145,13 +1120,11 @@ trait NullableEncoder extends NotNullEncoder with BooleanRunLengthEncoder {
       maxNulls = numWords.toLong << 6L
       nullWords = new Array[Long](numWords)
       initialNumWords = numWords
-      initializeRLE()
       numWords
     } else {
       val numWords = nullWords.length
       maxNulls = numWords.toLong << 6L
       initialNumWords = numWords
-      initializeRLE()
       // clear the words
       var i = 0
       while (i < numWords) {
@@ -1189,45 +1162,19 @@ trait NullableEncoder extends NotNullEncoder with BooleanRunLengthEncoder {
       if (oldLen > 0) System.arraycopy(oldNulls, 0, nullWords, 0, oldLen)
       BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, position)
     }
-    updateBooleanStats(position, value = true)
-  }
-
-  override protected final def writeSizeRLE(columnBytes: AnyRef, size: Int): Unit = {
-    // write negative of size to indicate run-length encoding
-    ColumnEncoding.writeInt(columnBytes, startCursorRLE, -size)
   }
 
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = {
     var writeCursor = cursor
     val nullWords = this.nullWords
-    // use run-length encoding if it will reduce the size
-    if (startCursorRLE != 0L) {
-      initializeRLE(columnBytes, cursor - 4)
-      val len = trimmedNumNullWords
-      var pos = 0
-      var done = false
-      while (!done) {
-        pos = BitSet.nextSetBit(nullWords, Platform.LONG_ARRAY_OFFSET, pos, len)
-        if (pos != Int.MaxValue) {
-          writeCursor = writeBooleanRLE(columnBytes, writeCursor, pos, value = true)
-          pos += 1
-        } else {
-          done = true
-        }
-      }
-      val endCursor = finishRLE(columnBytes, writeCursor)
-      assert(endCursor <= cursor + (numWords << 3))
-      cursor + (numWords << 3)
-    } else {
-      var index = 0
-      while (index < numWords) {
-        ColumnEncoding.writeLong(columnBytes, writeCursor, nullWords(index))
-        writeCursor += 8
-        index += 1
-      }
-      writeCursor
+    var index = 0
+    while (index < numWords) {
+      ColumnEncoding.writeLong(columnBytes, writeCursor, nullWords(index))
+      writeCursor += 8
+      index += 1
     }
+    writeCursor
   }
 
   private def allowWastedWords(cursor: Long, numWords: Int): Boolean = {
