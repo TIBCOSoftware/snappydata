@@ -43,7 +43,7 @@ trait RowExec extends TableExec {
   def connProps: ConnectionProperties
 
   override def simpleString: String = s"$nodeName($resolvedName) partitioning=" +
-      s"${partitionColumns.mkString("[", ",", "]")} numBuckets = $numBuckets"
+      s"${partitionColumns.mkString("[", ",", "]")} numBuckets=$numBuckets"
 
   protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName

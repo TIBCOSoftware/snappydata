@@ -31,14 +31,12 @@ import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{Constant, ToolsCallback}
-import net.jpountz.lz4.LZ4Factory
 import org.apache.commons.math3.distribution.NormalDistribution
-import org.xerial.snappy.Snappy
 
-import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
+import org.apache.spark._
+import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
@@ -61,7 +59,6 @@ import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark._
 
 object Utils {
 
@@ -654,31 +651,6 @@ object Utils {
 
   def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
     new ChunkedByteBuffer(chunks)
-
-  def codecCompress(codec: CompressionCodec, input: Array[Byte],
-      inputLen: Int): Array[Byte] = codec match {
-    case _: LZFCompressionCodec => LZFEncoder.encode(input, 0, inputLen)
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastCompressor().compress(input, 0, inputLen)
-    case _: SnappyCompressionCodec =>
-      Snappy.rawCompress(input, inputLen)
-  }
-
-  def codecDecompress(codec: CompressionCodec, input: Array[Byte],
-      inputOffset: Int, inputLen: Int,
-      outputLen: Int): Array[Byte] = codec match {
-    case _: LZFCompressionCodec =>
-      val output = new Array[Byte](outputLen)
-      LZFDecoder.decode(input, inputOffset, inputLen, output)
-      output
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
-        inputOffset, outputLen)
-    case _: SnappyCompressionCodec =>
-      val output = new Array[Byte](outputLen)
-      Snappy.uncompress(input, inputOffset, inputLen, output, 0)
-      output
-  }
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {

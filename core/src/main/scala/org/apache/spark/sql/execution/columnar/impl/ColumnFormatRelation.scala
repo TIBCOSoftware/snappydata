@@ -262,7 +262,7 @@ abstract class BaseColumnFormatRelation(
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
     ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, Some(this),
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
       updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
   }
 
@@ -274,7 +274,7 @@ abstract class BaseColumnFormatRelation(
       keyColumns: Seq[Attribute]): SparkPlan = {
     ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
       partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
-      Some(this), keyColumns, connProperties, onExecutor = false)
+      this, keyColumns, connProperties, onExecutor = false)
   }
 
   /**

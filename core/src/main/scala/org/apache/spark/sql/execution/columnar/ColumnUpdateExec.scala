@@ -26,7 +26,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -36,11 +36,16 @@ import org.apache.spark.sql.types.StructType
 case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression], numBuckets: Int,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
-    relation: Option[DestroyRelation], updateColumns: Seq[Attribute],
+    appendableRelation: JDBCAppendableRelation, updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
     connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
+
+  override def relation: Option[DestroyRelation] = Some(appendableRelation)
+
+  val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
+    appendableRelation.getCompressionCodec)
 
   private lazy val schemaAttributes = tableSchema.toAttributes
   /**
@@ -77,8 +82,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
         "number of updates to column batches"))
   }
 
-  override def simpleString: String =
-    s"${super.simpleString} update: columns=$updateColumns expressions=$updateExpressions"
+  override def simpleString: String = s"${super.simpleString} update: columns=$updateColumns " +
+      s"expressions=$updateExpressions compression=$compressionCodec"
 
   @transient private var batchOrdinal: String = _
   @transient private var finishUpdate: String = _
@@ -232,8 +237,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |    final $columnBatchClass columnBatch = $columnBatchClass.apply(
          |        $batchOrdinal, buffers, new byte[] { 0, 0, 0, 0 }, $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
-         |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch,
-         |        $lastBucketId, $lastColumnBatchId, -1, new scala.Some($connTerm));
+         |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
+         |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();

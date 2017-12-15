@@ -18,7 +18,7 @@ package org.apache.spark.memory
 
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Consumer
+import java.util.function.BiConsumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -307,8 +307,8 @@ class SnappyUnifiedMemoryManager private[memory](
     val mode = MemoryMode.OFF_HEAP
     val totalSize = capacity + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
     val toOwner = DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER
-    val changeOwner = new Consumer[String] {
-      override def accept(fromOwner: String): Unit = {
+    val changeOwner = new BiConsumer[String, AnyRef] {
+      override def accept(fromOwner: String, runnable: AnyRef): Unit = {
         if (fromOwner ne null) {
           val memoryForObject = self.memoryForObject
           // "from" was changed to "to"
@@ -328,6 +328,11 @@ class SnappyUnifiedMemoryManager private[memory](
             throw DirectBufferAllocator.instance().lowMemoryException(
               "changeToStorage", totalSize)
           }
+          // release from execution pool if using execution allocator
+          runnable match {
+            case r: ExecutionFreeMemory => r.releaseExecutionMemory()
+            case _ =>
+          }
         } else throw new IllegalStateException(
           s"ByteBuffer Cleaner does not match expected source $fromOwner")
       }
@@ -337,10 +342,10 @@ class SnappyUnifiedMemoryManager private[memory](
       capacity, changeOwner)
   }
 
-  def tryExplicitGC(): Unit = {
+  def tryExplicitGC(numBytes: Long): Unit = {
     // check if explicit GC should be invoked
     if (canUseExplicitGC) {
-      logStats("Invoking explicit GC before failing storage allocation request: ")
+      logStats(s"Explicit GC before failing storage allocation request of $numBytes bytes: ")
       System.gc()
       System.runFinalization()
       logStats("Stats after explicit GC: ")
@@ -632,7 +637,7 @@ class SnappyUnifiedMemoryManager private[memory](
         // for off-heap try harder before giving up since pending references
         // may be on heap (due to unexpected exceptions) that will go away on GC
         if (!couldEvictSomeData && offHeap) {
-          tryExplicitGC()
+          tryExplicitGC(numBytes)
           couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         }
         if (!couldEvictSomeData) {
@@ -640,11 +645,11 @@ class SnappyUnifiedMemoryManager private[memory](
             wrapperStats.incNumFailedEvictionRequest(offHeap)
           }
           logWarning(s"Could not allocate memory for $blockId of " +
-            s"$objectName size=$numBytes. Memory pool size " + storagePool.memoryUsed)
+            s"$objectName size=$numBytes. Memory pool size ${storagePool.memoryUsed}")
         } else {
           memoryForObject.addTo(objectName -> memoryMode, numBytes)
           logDebug(s"Allocated memory for $blockId of " +
-            s"$objectName size=$numBytes. Memory pool size " + storagePool.memoryUsed)
+            s"$objectName size=$numBytes. Memory pool size ${storagePool.memoryUsed}")
         }
         couldEvictSomeData
       } else {
