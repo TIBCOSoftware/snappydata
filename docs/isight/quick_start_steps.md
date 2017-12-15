@@ -37,18 +37,18 @@ It is recommended that you select an instance type with higher processing power 
 
 This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started! 
 
-### Step 1: Launch the [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder)
+### Step 1: Launch [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder)
 
 ### Step 2: Define your Cluster
 #### Community Edition users
 
-1. **Pick your version**</br> Select the **Community** option.
+1. **Pick your version**</br> Select the **Community** option. </br>
 	![STEP](../Images/cloudbuilder_community_version.png)
 
-2. **Pick your Instance**</br>Select an instance based on the capacity that you require.
+2. **Pick your Instance**</br>Select an instance based on the capacity that you require.</br>
 	![STEP](../Images/cloudbuilder_community_instance.png)
 
-3. **Enter your email**: Provide your email address. 
+3. **Enter your email**: Provide your email address. </br>
 	![STEP](../Images/cloudbuilder_community_email.png)
 
 4. Click **Generate**. 
@@ -76,7 +76,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 	![STEP](../Images/cloudbuilder_enterprise_memory.png)
 
-4. **Recommended Cluster**: Select an instance based on the capacity that you require.
+4. **Recommended Cluster**: Select an instance based on the required capacity.
 
 	* **Add servers to support high availability?**: Select this option to add servers to support high availability.
 
@@ -96,7 +96,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 <a id="region"></a>
 ### Step 3: Select the Region and Launch your Cluster
-1. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
+1. On this page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
 
     !!! Note
 
@@ -216,6 +216,7 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 
 
 !!! Note
+
     * 	The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.
 
 	* 	You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.

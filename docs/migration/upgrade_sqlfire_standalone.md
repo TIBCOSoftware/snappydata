@@ -1,14 +1,15 @@
-# Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.5
+# Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.6.0
 
-In this document you can find information on how to manually upgrade SQLFire 1.1.x to SnappyData 0.6.1 / RowStore 1.5. It is a step-by-step guide for configuring and customizing your system. This guide assumes you have a basic understanding of your Linux system.
+In this document, you can find information on how to manually upgrade SQLFire 1.1.x to SnappyData 1.0.0/RowStore 1.6. It is a step-by-step guide for configuring and customizing your system. This guide assumes you have a basic understanding of your Linux system.
 
 * [Prerequisites](#pre-req)
 
 * [Upgrade Process](#upgrade-process)
 
-# Prerequisites<a id="pre-req"></a>
+<a id="pre-req"></a>
+# Prerequisites
 
--   Download the distribution file from the [SnappyData Release page (snappydata-0.6.1)](https://github.com/SnappyDataInc/snappydata/releases)
+-   Download the distribution file from the [SnappyData Release page (snappydata-1.0.0)](https://github.com/SnappyDataInc/snappydata/releases)
 -   Ensure that before moving into production, you have tested your development systems thoroughly with the new version
 
 # Upgrade Process<a id="upgrade-process"></a>
@@ -111,16 +112,16 @@ Here `node1-server` and `node2-server` are the data directories of SQLFire serve
 
 <a id="Step2"></a>
 ## Step 2: Downloading and Extracting Product Distribution
-1. Download the distribution binary file (snappydata-0.6.1/RowStore1.5.2) from the SnappyData Release page (if not done already), and extract the contents of the file to a suitable location on your computer.
+1. Download the distribution binary file (snappydata-1.0.0/RowStore1.6.0) from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases/) (if not done already), and extract the contents of the file to a suitable location on your computer.
 For example for Linux:
 
-	    $ unzip snappydata-0.6.1-bin.zip -d <path_to_product>
+	    $ unzip snappydata-1.0.0-bin.zip -d <path_to_product>
 
 	Here the <path_to_product> is the directory where you want to install the product. Repeat this step to install RowStore on each different computer where you want to run a SnappyData RowStore member. Alternatively, SnappyData RowStore can also be installed on an NFS location that is accessible to all members.
 
-2. If the `PATH` variable is set to the path of SQLFire, ensure that you update it to `snappydata-0.6.1-bin`. Add the SnappyData RowStore **bin **and **sbin** directories to your path, as described below:
+2. If the `PATH` variable is set to the path of SQLFire, ensure that you update it to `snappydata-1.0.0-bin`. Add the SnappyData RowStore **bin **and **sbin** directories to your path, as described below:
 
-	    $ export PATH=$PATH:/path_to_product/snappydata-0.6.1-bin/bin:/path_to_product/snappydata-0.6.1-bin/sbin
+	    $ export PATH=$PATH:/path_to_product/snappydata-1.0.0-bin/bin:/path_to_product/snappydata-1.0.0-bin/sbin
 
 <a id="Step3"></a>
 ## Step 3: Starting the Upgrade
@@ -133,13 +134,11 @@ For example for Linux:
 
 <a id="Passwordless"></a>
 ### Setting up Passwordless SSH 
-SnappyData provides utility scripts to start/stop cluster (located in the **sbin** directory of the product distribution). These scripts use SSH to execute commands on different machines on which SnappyData servers are to be started/stopped. It is recommended that you setup passwordless SSH on the system where these scripts are executed. 
-To set up passwordless SSH, refer to the following document: 
-https://github.com/SnappyDataInc/snappydata#setting-up-passwordless-ssh
+SnappyData provides utility scripts to start/stop cluster (located in the **sbin** directory of the product distribution). These scripts use SSH to execute commands on different machines on which SnappyData servers are to be started/stopped. It is recommended that you setup passwordless SSH on the system where these scripts are executed. For more information see [Configuring SSH Login without Password](../reference/misc/passwordless_ssh.md).
 
 <a id="Config"></a>
 ### Creating configuration files for SnappyData servers and locators
-In this step, you create configuration files for servers and locators, and then use those to start the Snappydata RowStore cluster (locators and servers) using the backed up data directories.
+In this step, you create configuration files for servers and locators, and then use those to start the SnappyData RowStore cluster (locators and servers) using the backed up data directories.
 
 If the NFS location is not accessible to all members, you need to follow the process of each machine. If passwordless SSH is set, the cluster can be started from one host.
 
@@ -147,8 +146,8 @@ These configuration files contain hostname of the node where a locator/server is
 
 **To configure the locators:**
 
-1. In the **<path_to_product>/snappydata-0.6.1-bin/conf** directory, make a copy of the **locators.template**, and rename it to **locators**.
-2. Edit the locators file to set it to the previous location of the SQLFire locator (using the `-dir` option)
+1. In the **<path_to_product>/snappydata-1.0.0-bin/conf** directory, make a copy of the **locators.template**, and rename it to **locators**.
+2. Edit the locator file to set it to the previous location of the SQLFire locator (using the `-dir` option)
 
 	    localhost -dir=<log-dir>/snappydata/locator
 
@@ -159,7 +158,7 @@ These configuration files contain hostname of the node where a locator/server is
 
 **To configure the servers:**
 
-1. In **<path_to_product>/snappydata-0.6.1-bin/conf**, make a copy of the **servers.template** file, and rename it to **servers**.
+1. In **<path_to_product>/snappydata-1.0.0-bin/conf**, make a copy of the **servers.template** file, and rename it to **servers**.
 2. Edit the servers file to set it to the previous location of the SQLFire server (using the `-dir` option). You can use `-server-group` option to configure server groups.
     
 	    localhost -dir=<log-dir>/snappydata/server -server-groups=cache
@@ -174,7 +173,7 @@ These configuration files contain hostname of the node where a locator/server is
 
     In SQLFire, if you are using a properties file (**sqlfire.properties**) for configuring various properties such as authentication, rename the file to **snappydata.properties**. Also, the property prefix has been changed to **snappydata** instead of **sqlfire**.
 
-    Alternatively, you may add these properties to the above mentioned **conf/locators** and **conf/servers** files in front of each hostname.
+    Alternatively, you may add these properties to the above-mentioned **conf/locators** and **conf/servers** files in front of each hostname.
 
 <a id="Start"></a>
 ### Starting the SnappyData RowStore cluster 
@@ -212,7 +211,7 @@ This step is necessary as the handling of blank padding of the CHAR keys has cha
 
 	    snappy>create table app.member_tmp as select * from app.member with no data;
 
-2. Insert data from the original source table into new temporary table:
+2. Insert data from the original source table into new the temporary table:
 
 	    snappy>insert into app.member_tmp select * from app.member;
 
@@ -234,7 +233,7 @@ This step is necessary as the handling of blank padding of the CHAR keys has cha
 
 In the initial steps of the upgrade, you had removed the objects that depended on `com.vmware.sqlfire` or  `com.pivotal.sqlfire`, as described in - [Stopping and Removing Objects](#Stopping).
 
-In this step you use the modified DDL SQL scripts to recreate stored procedures, async event listener implementations, row loaders/writers using the new `com.pivotal.gemfirexd` package names. 
+In this step, you use the modified DDL SQL scripts to recreate stored procedures, async event listener implementations, row loaders/writers using the new `com.pivotal.gemfirexd` package names. 
 
 1. Replace the old jar files:
     After the distributed system is running, replace the older jar containing the listener/rowloader/ writer/procedure implementations using the sqlj.replace_jar system procedure.  
@@ -261,12 +260,12 @@ In this step you use the modified DDL SQL scripts to recreate stored procedures,
     
 <a id="Step6"></a>
 ## Step 6: Verifying Upgrade is Successful 
-The system is started and you can fire queries on the `snappy-shell` to check the status of the upgrade. The `sqlf` shell is replaced by the `snappy-shell` command in SnappyData.
+The system is started and you can fire queries on the snappy-shell to check the status of the upgrade. The `sql` shell is replaced by the `snappy-sql` command in SnappyData.
 For example:
 
 ``` pre
-snappy-shell
->SnappyData version 1.5.0-SNAPSHOT
+snappy-sql
+>SnappyData version 1.0.0
 snappy> connect client '127.0.0.1:1527';
 Using CONNECTION0
 snappy> show tables;

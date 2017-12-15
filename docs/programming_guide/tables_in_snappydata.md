@@ -97,10 +97,11 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * <b>PERSISTENCE:</b>  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
    	
-!!! Note:
-   	* By default, both row and column tables are persistent.
+	!!! Note:
 
-   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9 <!--DO NOT CHANGE RELEASE NO. -->. Although it does work, it is recommended to use `PERSISTENCE` instead.
+ 		- By default, both row and column tables are persistent.
+
+ 		- The option `PERSISTENT` has been deprecated as of SnappyData 0.9. <!--DO NOT CHANGE RELEASE NO. -->. Although it does work, it is recommended to use `PERSISTENCE` instead.
 
    * <b>DISKSTORE:</b>  The disk directory where you want to persist the table data. For more information, [refer to this document](../reference/sql_reference/create-diskstore.md).
 

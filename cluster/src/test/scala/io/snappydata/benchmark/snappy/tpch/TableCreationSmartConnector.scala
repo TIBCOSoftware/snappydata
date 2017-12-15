@@ -18,7 +18,6 @@ package io.snappydata.benchmark.snappy.tpch
 
 import java.io.{File, FileOutputStream, PrintStream}
 
-import io.snappydata.benchmark.snappy.TPCH_Snappy
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 
 import org.apache.spark.sql.{SnappySession, SparkSession}
@@ -101,7 +100,7 @@ object TableCreationSmartConnector {
         tpchDataPath, true, loadPerfPrintStream, numberOfLoadStages.toInt)
     }
 
-    TPCH_Snappy.close
+    QueryExecutor.close
     sc.stop()
 
   }

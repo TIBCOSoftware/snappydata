@@ -17,13 +17,13 @@
 
 package org.apache.spark.sql.execution
 
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql._
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
 
@@ -53,7 +53,6 @@ private[sql] case class CreateMetastoreTableUsingSelect(
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
-    temporary: Boolean,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
@@ -63,43 +62,43 @@ private[sql] case class CreateMetastoreTableUsingSelect(
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    if (temporary) {
-      // the equivalent of a registerTempTable of a DataFrame
-      if (tableIdent.database.isDefined) {
-        throw Utils.analysisException(
-          s"Temporary table '$tableIdent' should not have specified a database")
-      }
-      Dataset.ofRows(session, query).createTempView(tableIdent.table)
-    } else {
-      snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
-        userSpecifiedSchema, schemaDDL, partitionColumns, mode,
-        snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
-    }
+    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
+      userSpecifiedSchema, schemaDDL, partitionColumns, mode,
+      snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
     Seq.empty
   }
 }
 
-private[sql] case class DropTableCommand(ifExists: Any,
+private[sql] case class DropTableOrViewCommand(isView: Boolean, ifExists: Boolean,
     tableIdent: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    snc.dropTable(catalog.newQualifiedTableName(tableIdent),
-      ifExists.asInstanceOf[Option[Boolean]].isDefined)
+    // check for table/view
+    val qualifiedName = catalog.newQualifiedTableName(tableIdent)
+    if (isView) {
+      if (!catalog.isView(qualifiedName) && !catalog.isTemporaryTable(qualifiedName)) {
+        throw new AnalysisException(
+          s"Cannot drop a table with DROP VIEW. Please use DROP TABLE instead")
+      }
+    } else if (catalog.isView(qualifiedName)) {
+      throw new AnalysisException(
+        "Cannot drop a view with DROP TABLE. Please use DROP VIEW instead")
+    }
+    snc.dropTable(qualifiedName, ifExists, resolveRelation = true)
     Seq.empty
   }
 }
 
-private[sql] case class TruncateTableCommand(ifExists: Any,
+private[sql] case class TruncateManagedTableCommand(ifExists: Boolean,
     tableIdent: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
     snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
-      ifExists.asInstanceOf[Option[Boolean]].isDefined,
-      ignoreIfUnsupported = false)
+      ifExists, ignoreIfUnsupported = false)
     Seq.empty
   }
 }

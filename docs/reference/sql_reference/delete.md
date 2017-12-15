@@ -15,10 +15,10 @@ This form is called a searched delete, removes all rows identified by the table 
 
 ## Example
 
-``` pre
--- Delete rows from the CUSTOMERS table where the CID is equal to 10.
+``` scala
+// Delete rows from the CUSTOMERS table where the CID is equal to 10.
 DELETE FROM TRADE.CUSTOMERS WHERE CID = 10;
 
--- Delete all rows from table T.
+// Delete all rows from table T.
 DELETE FROM T;
 ```

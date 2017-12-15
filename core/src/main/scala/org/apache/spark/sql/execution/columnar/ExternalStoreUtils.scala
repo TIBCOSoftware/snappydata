@@ -32,11 +32,14 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
+import org.apache.hadoop.hive.metastore.api.FieldSchema
+import org.apache.hadoop.hive.ql.metadata.Table
 
-import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
+import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -47,24 +50,34 @@ import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{StructType, _}
 import org.apache.spark.util.{Utils => SparkUtils}
+import org.apache.spark.{SparkContext, SparkException}
 
 /**
  * Utility methods used by external storage layers.
  */
 object ExternalStoreUtils {
 
-  private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) =
-    Option(SnappyContext.globalSparkContext).map(_.schedulerBackend) match {
+  private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) = {
+    val sc = Option(SnappyContext.globalSparkContext)
+    sc.map(_.schedulerBackend) match {
       case Some(local: LocalSchedulerBackend) =>
-        // apply a max limit of 64 in local mode since there is not much
-        // scaling to be had beyond that on most processors
-        val result = math.min(64, math.max(local.totalCores << 1, 8)).toString
+        // apply a max limit of 32 in local mode since there is not much
+        // scaling to be had beyond that on most machines
+        val result = math.min(32, math.max(local.totalCores << 1, 8)).toString
         // use same number of partitions for sample table in local mode
         (result, result)
-      case _ => ("128", "64")
+      case _ => sc.flatMap(s => Property.Locators.getOption(s.conf).map(Utils.toLowerCase)) match {
+        // reduce defaults for localhost-only cluster too
+        case Some(s) if s.startsWith("localhost:") || s.startsWith("localhost[") ||
+            s.startsWith("127.0.0.1") || s.startsWith("::1[") =>
+          val result = math.min(32, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
+          (result, result)
+        case _ => ("128", "64")
+      }
     }
+  }
 
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
@@ -73,7 +86,7 @@ object ExternalStoreUtils {
   final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
-  final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
+  final val COMPRESSION_CODEC = "COMPRESSION"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
@@ -180,7 +193,7 @@ object ExternalStoreUtils {
         case None => // Do nothing
       }
     })
-    optMap.toMap
+    new CaseInsensitiveMap(optMap.toMap)
   }
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
@@ -196,8 +209,6 @@ object ExternalStoreUtils {
                 ";host-data=false;mcast-port=0;internal-connection=true"
           case ThinClientConnectorMode(_, url) =>
             url + ";route-query=false;internal-connection=true"
-          case ExternalEmbeddedMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
           case LocalMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";" + url + ";internal-connection=true"
           case ExternalClusterMode(_, url) =>
@@ -391,46 +402,58 @@ object ExternalStoreUtils {
     case _ => true
   }
 
-  val SOME_TRUE = Some(true)
-  val SOME_FALSE = Some(false)
-
   private def checkIndexedColumn(col: String,
-      indexedCols: scala.collection.Set[String]): Option[Boolean] =
-    if (indexedCols.contains(col)) SOME_TRUE else None
+      indexedCols: scala.collection.Set[String]): Option[String] = {
+    // quote identifiers when they could be case-sensitive
+    if (indexedCols.contains(col)) Some("\"" + col + '"')
+    else {
+      // case-insensitive check
+      val ucol = Utils.toUpperCase(col)
+      if ((col ne ucol) && indexedCols.contains(ucol)) Some(col)
+      else None
+    }
+  }
 
   // below should exactly match RowFormatScanRDD.compileFilter
   def handledFilter(f: Filter,
-      indexedCols: scala.collection.Set[String]): Option[Boolean] = f match {
+      indexedCols: scala.collection.Set[String]): Option[Filter] = f match {
     // only pushdown filters if there is an index on the column;
     // keeping a bit conservative and not pushing other filters because
     // Spark execution engine is much faster at filter apply (though
     //   its possible that not all indexed columns will be used for
     //   index lookup still push down all to keep things simple)
-    case EqualTo(col, _) => checkIndexedColumn(col, indexedCols)
-    case LessThan(col, _) => checkIndexedColumn(col, indexedCols)
-    case GreaterThan(col, _) => checkIndexedColumn(col, indexedCols)
-    case LessThanOrEqual(col, _) => checkIndexedColumn(col, indexedCols)
-    case GreaterThanOrEqual(col, _) => checkIndexedColumn(col, indexedCols)
-    case StringStartsWith(col, _) => checkIndexedColumn(col, indexedCols)
-    case In(col, _) => checkIndexedColumn(col, indexedCols)
+    case EqualTo(col, v) => checkIndexedColumn(col, indexedCols).map(EqualTo(_, v))
+    case LessThan(col, v) => checkIndexedColumn(col, indexedCols).map(LessThan(_, v))
+    case GreaterThan(col, v) => checkIndexedColumn(col, indexedCols).map(GreaterThan(_, v))
+    case LessThanOrEqual(col, v) => checkIndexedColumn(col, indexedCols).map(LessThanOrEqual(_, v))
+    case GreaterThanOrEqual(col, v) =>
+      checkIndexedColumn(col, indexedCols).map(GreaterThanOrEqual(_, v))
+    case StringStartsWith(col, v) =>
+      checkIndexedColumn(col, indexedCols).map(StringStartsWith(_, v))
+    case In(col, v) => checkIndexedColumn(col, indexedCols).map(In(_, v))
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
-    case And(left, right) =>
-      val v = handledFilter(left, indexedCols)
-      if (v ne None) v
-      else handledFilter(right, indexedCols)
+    case And(left, right) => handledFilter(left, indexedCols) match {
+      case None => handledFilter(right, indexedCols)
+      case lf@Some(l) => handledFilter(right, indexedCols) match {
+        case None => lf
+        case Some(r) => Some(And(l, r))
+      }
+    }
     // ORList optimization requires all columns to have indexes
     // which is ensured by the condition below
-    case Or(left, right) => if ((handledFilter(left, indexedCols) eq
-        SOME_TRUE) && (handledFilter(right, indexedCols) eq SOME_TRUE)) {
-      SOME_TRUE
-    } else SOME_FALSE
-    case _ => SOME_FALSE
+    case Or(left, right) => handledFilter(left, indexedCols) match {
+      case None => None
+      case Some(l) => handledFilter(right, indexedCols) match {
+        case None => None
+        case Some(r) => Some(Or(l, r))
+      }
+    }
+    case _ => None
   }
 
-  def unhandledFilter(f: Filter,
-      indexedCols: scala.collection.Set[String]): Boolean =
-    handledFilter(f, indexedCols) ne SOME_TRUE
+  def unhandledFilter(f: Filter, indexedCols: scala.collection.Set[String]): Boolean =
+    handledFilter(f, indexedCols) eq None
 
   /**
    * Prune all but the specified columns from the specified Catalyst schema.
@@ -483,13 +506,6 @@ object ExternalStoreUtils {
   final val PARTITION_BY = "PARTITION_BY"
   final val REPLICATE = "REPLICATE"
   final val BUCKETS = "BUCKETS"
-
-  def getAndSetTotalPartitions(parameters: java.util.Map[String, String],
-      forManagedTable: Boolean): Int = {
-    // noinspection RedundantDefaultArgument
-    getAndSetTotalPartitions(None, parameters.asScala,
-      forManagedTable, forColumnTable = true, forSampleTable = false)
-  }
 
   def getAndSetTotalPartitions(sparkContext: Option[SparkContext],
       parameters: mutable.Map[String, String],
@@ -589,18 +605,39 @@ object ExternalStoreUtils {
     new JDBCSourceAsColumnarStore(connProperties, partitions, tableName, schema)
   }
 
-  def getTableSchema(
-      tableProps: java.util.Map[String, String]): Option[StructType] =
-    getTableSchema(tableProps.asScala)
+  // taken from HiveClientImpl.fromHiveColumn
+  def fromHiveColumn(hc: FieldSchema): StructField = {
+    val columnType = try {
+      CatalystSqlParser.parseDataType(hc.getType)
+    } catch {
+      case e: ParseException =>
+        throw new SparkException("Cannot recognize hive type string: " + hc.getType, e)
+    }
+
+    val metadata = new MetadataBuilder().putString(HIVE_TYPE_STRING, hc.getType).build()
+    val field = StructField(
+      name = hc.getName,
+      dataType = columnType,
+      nullable = true,
+      metadata = metadata)
+    Option(hc.getComment).map(field.withComment).getOrElse(field)
+  }
+
+  def getTableSchema(table: Table): StructType = {
+    getTableSchema(table.getParameters.asScala).getOrElse {
+      // Try to get from hive schema that separates partition columns from schema.
+      val partCols = table.getPartCols.asScala.map(fromHiveColumn)
+      StructType(table.getCols.asScala.map(fromHiveColumn) ++ partCols)
+    }
+  }
 
   def getTableSchema(
       tableProps: scala.collection.Map[String, String]): Option[StructType] =
     JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
       tableProps).map(StructType.fromString)
 
-  def getColumnMetadata(
-      schema: Option[StructType]): java.util.List[ExternalTableMetaData.Column] = {
-    schema.toList.flatMap(_.map { f =>
+  def getColumnMetadata(schema: StructType): java.util.List[ExternalTableMetaData.Column] = {
+    schema.toList.map { f =>
       val (dataType, typeName) = f.dataType match {
         case u: UserDefinedType[_] =>
           (Utils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
@@ -639,7 +676,7 @@ object ExternalStoreUtils {
             typeName.getOrElse(dataType.simpleString),
             precision, scale, precision, f.nullable)
       }
-    }).asJava
+    }.asJava
   }
 
   def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {
@@ -667,10 +704,6 @@ object ExternalStoreUtils {
 
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
     Property.ColumnMaxDeltaRows.get(session.sessionState.conf)
-  }
-
-  def defaultCompressionCodec(session: SparkSession): String = {
-    Property.CompressionCodec.get(session.sessionState.conf)
   }
 
   def getSQLListener: AtomicReference[SQLListener] = {

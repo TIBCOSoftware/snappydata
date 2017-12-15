@@ -1,5 +1,5 @@
 <a id="howto-streams"></a>
-# How to Use Stream Processing with SnappyData
+# How to use Stream Processing with SnappyData
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to the [documentation](../programming_guide/stream_processing_using_sql.md).
 
 **Code Example **: </br>

@@ -296,10 +296,6 @@ object SnappyParserConsts {
   final val numericSuffix: CharPredicate = CharPredicate('D', 'L')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
-  final val trueFn: () => Boolean = () => true
-
-  final val falseFn: () => Boolean = () => false
-
   final val reservedKeywords: mutable.Set[String] = mutable.Set[String]()
 
   final val allKeywords: mutable.Set[String] = mutable.Set[String]()
@@ -368,6 +364,7 @@ object SnappyParserConsts {
   final val FROM: Keyword = reservedKeyword("from")
   final val GROUP: Keyword = reservedKeyword("group")
   final val HAVING: Keyword = reservedKeyword("having")
+  final val IF: Keyword = reservedKeyword("if")
   final val IN: Keyword = reservedKeyword("in")
   final val INNER: Keyword = reservedKeyword("inner")
   final val INSERT: Keyword = reservedKeyword("insert")
@@ -420,12 +417,12 @@ object SnappyParserConsts {
   final val END: Keyword = nonReservedKeyword("end")
   final val EXTENDED: Keyword = nonReservedKeyword("extended")
   final val EXTERNAL: Keyword = nonReservedKeyword("external")
+  final val FETCH: Keyword = nonReservedKeyword("fetch")
   final val FIRST: Keyword = nonReservedKeyword("first")
   final val FN: Keyword = nonReservedKeyword("fn")
   final val FULL: Keyword = nonReservedKeyword("full")
   final val GLOBAL: Keyword = nonReservedKeyword("global")
   final val HASH: Keyword = nonReservedKeyword("hash")
-  final val IF: Keyword = nonReservedKeyword("if")
   final val INDEX: Keyword = nonReservedKeyword("index")
   final val INIT: Keyword = nonReservedKeyword("init")
   final val INTERVAL: Keyword = nonReservedKeyword("interval")
@@ -434,12 +431,14 @@ object SnappyParserConsts {
   final val LIMIT: Keyword = nonReservedKeyword("limit")
   final val NATURAL: Keyword = nonReservedKeyword("natural")
   final val NULLS: Keyword = nonReservedKeyword("nulls")
+  final val ONLY: Keyword = nonReservedKeyword("only")
   final val OPTIONS: Keyword = nonReservedKeyword("options")
   final val OVERWRITE: Keyword = nonReservedKeyword("overwrite")
   final val PARTITION: Keyword = nonReservedKeyword("partition")
   final val PUT: Keyword = nonReservedKeyword("put")
   final val REFRESH: Keyword = nonReservedKeyword("refresh")
   final val REGEXP: Keyword = nonReservedKeyword("regexp")
+  final val REPLACE: Keyword = nonReservedKeyword("replace")
   final val RETURNS: Keyword = nonReservedKeyword("returns")
   final val RLIKE: Keyword = nonReservedKeyword("rlike")
   final val SEMI: Keyword = nonReservedKeyword("semi")
@@ -455,6 +454,7 @@ object SnappyParserConsts {
   final val UNCACHE: Keyword = nonReservedKeyword("uncache")
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")
+  final val VIEW: Keyword = nonReservedKeyword("view")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")
