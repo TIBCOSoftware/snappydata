@@ -47,6 +47,9 @@ final class ResultSetDecoder(rs: ResultSetWithNull, columnPosition: Int)
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long = 0L
 
+  override def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
+    rs.isNull(columnPosition)
+
   override def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean =
     rs.getBoolean(columnPosition)
 

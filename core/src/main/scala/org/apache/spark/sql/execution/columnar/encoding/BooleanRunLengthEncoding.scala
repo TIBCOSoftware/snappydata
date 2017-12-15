@@ -29,7 +29,8 @@ trait BooleanRunLengthDecoder extends RunLengthDecoding {
    * Reads the boolean value at given position. Calls to this method should
    * be monotonically increasing and never decrease else result may be incorrect.
    */
-  final def readBooleanRLE(columnBytes: AnyRef, position: Int, nextPosition: Int): Boolean = {
+  @inline final def readBooleanRLE(columnBytes: AnyRef, position: Int,
+      nextPosition: Int): Boolean = {
     if (nextPosition < ColumnEncoding.ULIMIT_POSITION) {
       if (nextPosition > position) false
       else updateRunLength(columnBytes, position, nextPosition)

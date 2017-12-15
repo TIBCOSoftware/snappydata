@@ -90,12 +90,8 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
   protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long
 
-  private[sql] def initializeNullsBeforeFinish(
-      columnBytes: AnyRef, cursor: Long, numNullBytes: Int): Unit = {}
-
   /** Absolute position null check for random access. */
-  def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
-    throw new UnsupportedOperationException(s"isNullAt for $toString")
+  def isNullAt(columnBytes: AnyRef, position: Int): Boolean
 
   def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean =
     throw new UnsupportedOperationException(s"readBoolean for $toString")
