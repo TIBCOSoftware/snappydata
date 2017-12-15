@@ -22,7 +22,6 @@ import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRe
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
-import io.snappydata.Property
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -85,8 +84,8 @@ final class ColumnBatchCreator(
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
           val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
-            numBuckets = -1, isPartitioned = false, None, (-bufferRegion.getColumnBatchSize, -1,
-                Property.CompressionCodec.defaultValue.get), tableName,
+            numBuckets = -1, isPartitioned = false, None,
+            (-bufferRegion.getColumnBatchSize, -1, compressionCodec), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD semantics
@@ -130,8 +129,8 @@ final class ColumnBatchCreator(
    * insertion of rows as they appear. Currently used by sampler that
    * does not have any indexes so there is no dependents handling here.
    */
-  def createColumnBatchBuffer(columnBatchSize: Int, columnMaxDeltaRows: Int,
-      compressionCodec: String): ColumnBatchRowsBuffer = {
+  def createColumnBatchBuffer(columnBatchSize: Int,
+      columnMaxDeltaRows: Int): ColumnBatchRowsBuffer = {
     val gen = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held

@@ -67,7 +67,6 @@ allprojects {
   apply plugin: 'maven'
   apply plugin: 'scalaStyle'
   apply plugin: 'idea'
-  apply plugin: 'eclipse'
   apply plugin: "build-time-tracker"
   apply plugin: "nebula.ospackage"
   apply plugin: 'nebula.ospackage-base'
@@ -614,13 +613,6 @@ subprojects {
   }
   artifacts {
     testOutput packageTests
-  }
-
-  eclipse {
-    classpath {
-      defaultOutputDir = file('build-artifacts/eclipse')
-      downloadSources = true
-    }
   }
 
   dependencies {

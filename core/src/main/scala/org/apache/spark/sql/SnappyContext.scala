@@ -819,7 +819,9 @@ object SnappyContext extends Logging {
   private[this] val contextLock = new AnyRef
 
   val SAMPLE_SOURCE = "column_sample"
+  val SAMPLE_SOURCE_CLASS = "org.apache.spark.sql.sampling.DefaultSource"
   val TOPK_SOURCE = "approx_topk"
+  val TOPK_SOURCE_CLASS = "org.apache.spark.sql.topk.DefaultSource"
 
   val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
     classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
@@ -829,8 +831,8 @@ object SnappyContext extends Logging {
   private val builtinSources = new CaseInsensitiveMap(Map(
     ParserConsts.COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ParserConsts.ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
-    SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
-    TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
+    SAMPLE_SOURCE -> SAMPLE_SOURCE_CLASS,
+    TOPK_SOURCE -> TOPK_SOURCE_CLASS,
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
     "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,

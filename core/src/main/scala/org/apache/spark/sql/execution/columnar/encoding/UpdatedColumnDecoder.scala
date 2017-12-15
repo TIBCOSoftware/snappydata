@@ -112,7 +112,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
   @inline protected final def skipUpdatedPosition(delta: ColumnDeltaDecoder): Unit = {
-    if (!nullable || delta.readNotNull) delta.nextNonNullOrdinal()
+    if (!nullable || delta.readNotNull) delta.nextNonNullPosition()
   }
 
   protected final def moveToNextUpdatedPosition(ordinal: Int): Int = {

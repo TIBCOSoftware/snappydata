@@ -202,7 +202,7 @@ trait SerializedRowData extends SpecializedGetters
   final def isNullAt(ordinal: Int): Boolean = {
     if (indexIsValid(ordinal)) {
       BitSet.isSet(baseObject, baseOffset, ordinal + (skipBytes << 3),
-        bitSetWidthInBytes)
+        bitSetWidthInBytes >> 3)
     } else throw indexInvalid(ordinal)
   }
 
@@ -328,7 +328,7 @@ trait SerializedRowData extends SpecializedGetters
 
   final def anyNull: Boolean = {
     if (skipBytes == 0) {
-      BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes)
+      BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes >> 3)
     } else {
       // need to account separately for skipBytes
       var offset = baseOffset + skipBytes

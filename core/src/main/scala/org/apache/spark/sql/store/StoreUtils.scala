@@ -54,6 +54,7 @@ object StoreUtils {
   val SERVER_GROUPS = "SERVER_GROUPS"
   val EXPIRE = "EXPIRE"
   val OVERFLOW = "OVERFLOW"
+  val COMPRESSION_CODEC_DEPRECATED = "COMPRESSION_CODEC"
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
@@ -93,7 +94,7 @@ object StoreUtils {
 
   val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, PARTITIONER,
     COLOCATE_WITH, REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW,
+    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW, COMPRESSION_CODEC_DEPRECATED,
     GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
@@ -131,13 +132,12 @@ object StoreUtils {
         case None => Seq.empty
       }
     } else {
-      val distMembers = getBucketOwnersForRead(bucketId, region)
-      val members = new mutable.ArrayBuffer[String](2)
       var prependPrimary = preferPrimaries
       val primary = if (preferPrimaries) {
         region.getOrCreateNodeForBucketWrite(bucketId, null)
       } else null
-      distMembers.foreach { m =>
+      val members = new mutable.ArrayBuffer[String](2)
+      getBucketOwnersForRead(bucketId, region).foreach { m =>
         SnappyContext.getBlockId(m.toString) match {
           case Some(b) =>
             if (prependPrimary && m.equals(primary)) {

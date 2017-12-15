@@ -63,16 +63,16 @@ object ExternalStoreUtils {
     val sc = Option(SnappyContext.globalSparkContext)
     sc.map(_.schedulerBackend) match {
       case Some(local: LocalSchedulerBackend) =>
-        // apply a max limit of 64 in local mode since there is not much
-        // scaling to be had beyond that on most processors
-        val result = math.min(64, math.max(local.totalCores << 1, 8)).toString
+        // apply a max limit of 32 in local mode since there is not much
+        // scaling to be had beyond that on most machines
+        val result = math.min(32, math.max(local.totalCores << 1, 8)).toString
         // use same number of partitions for sample table in local mode
         (result, result)
       case _ => sc.flatMap(s => Property.Locators.getOption(s.conf).map(Utils.toLowerCase)) match {
         // reduce defaults for localhost-only cluster too
         case Some(s) if s.startsWith("localhost:") || s.startsWith("localhost[") ||
             s.startsWith("127.0.0.1") || s.startsWith("::1[") =>
-          val result = math.min(64, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
+          val result = math.min(32, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
           (result, result)
         case _ => ("128", "64")
       }
@@ -86,7 +86,7 @@ object ExternalStoreUtils {
   final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
-  final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
+  final val COMPRESSION_CODEC = "COMPRESSION"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
@@ -704,10 +704,6 @@ object ExternalStoreUtils {
 
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
     Property.ColumnMaxDeltaRows.get(session.sessionState.conf)
-  }
-
-  def defaultCompressionCodec(session: SparkSession): String = {
-    Property.CompressionCodec.get(session.sessionState.conf)
   }
 
   def getSQLListener: AtomicReference[SQLListener] = {
