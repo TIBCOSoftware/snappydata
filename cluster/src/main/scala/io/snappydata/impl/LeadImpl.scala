@@ -27,8 +27,9 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 import akka.actor.ActorSystem
+import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, Status}
+import com.gemstone.gemfire.internal.cache.Status
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
@@ -60,15 +61,7 @@ class LeadImpl extends ServerImpl with Lead
   private val bootProperties = new Properties()
 
   private lazy val dls = {
-
-    val gfCache = GemFireCacheImpl.getInstance
-
-    if (gfCache == null || gfCache.isClosed) {
-      throw new IllegalStateException("GemFire Cache not initialized")
-    }
-
-    val dSys = gfCache.getDistributedSystem
-
+    val dSys = Misc.getGemFireCache.getDistributedSystem
     DLockService.create(LOCK_SERVICE_NAME, dSys, true, true, true)
   }
 
@@ -270,33 +263,6 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
-  /*
-  @throws[SparkException]
-  private[snappydata] def internalStart(conf: SparkConf): Unit = synchronized {
-    if (status() != State.UNINITIALIZED && status() != State.STOPPED) {
-      // already started or in the process of starting
-      return
-    }
-
-    initStartupArgs(conf)
-
-    // take out the password property so that it is not logged
-    val passwordKey = STORE_PREFIX + Attribute.PASSWORD_ATTR
-    val password = conf.getOption(passwordKey)
-    if (password.isDefined) conf.remove(passwordKey)
-    logInfo("cluster configuration after overriding certain properties \n"
-        + conf.toDebugString)
-
-    val confProps = password match {
-      case None => conf.getAll
-      case Some(pwd) => conf.clone.set(passwordKey, pwd).getAll
-    }
-    val storeProps = ServiceUtils.getStoreProperties(confProps)
-    logInfo("passing store properties as " + storeProps)
-    internalStart(storeProps)
-  }
-  */
-
   @throws[SparkException]
   private def internalStart(storeProps: Properties): Unit = synchronized {
     if (status() != State.UNINITIALIZED && status() != State.STOPPED) {
@@ -310,6 +276,8 @@ class LeadImpl extends ServerImpl with Lead
     status() match {
       case State.RUNNING =>
         bootProperties.putAll(storeProps)
+        Misc.getGemFireCache.getDistributionManager
+            .addMembershipListener(SnappyContext.membershipListener)
         logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
 
@@ -335,7 +303,7 @@ class LeadImpl extends ServerImpl with Lead
             }
 
             logInfo("Primary Lead node (Spark Driver) is already running in the system." +
-                "Standing by as secondary.")
+                " Standing by as secondary.")
             primaryLeaderLock.lockInterruptibly()
 
             // TODO: check cancelInProgress and other shutdown possibilities.
@@ -400,6 +368,12 @@ class LeadImpl extends ServerImpl with Lead
   }
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
+    try {
+      Misc.getGemFireCache.getDistributionManager
+          .removeMembershipListener(SnappyContext.membershipListener)
+    } catch {
+      case _: CacheClosedException =>
+    }
     bootProperties.clear()
     val sc = SnappyContext.globalSparkContext
     if (sc != null) sc.stop()
@@ -627,7 +601,7 @@ class LeadImpl extends ServerImpl with Lead
       }
       // Add memory listener for zeppelin will need it for zeppelin
       // val listener = new LeadNodeMemoryListener();
-      // GemFireCacheImpl.getInstance().getResourceManager().
+      // Misc.getGemFireCache.getResourceManager.
       //   addResourceListener(InternalResourceManager.ResourceType.ALL, listener)
 
     }
@@ -638,13 +612,6 @@ object LeadImpl {
 
   val SPARKUI_PORT = 5050
   val LEADER_SERVERGROUP = "IMPLICIT_LEADER_SERVERGROUP"
-
-  /*
-  def invokeLeadStart(conf: SparkConf): Unit = {
-    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.internalStart(conf)
-  }
-  */
 
   def invokeLeadStop(shutdownCredentials: Properties): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]

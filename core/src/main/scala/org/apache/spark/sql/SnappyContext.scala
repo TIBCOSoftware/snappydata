@@ -25,6 +25,8 @@ import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
+import com.gemstone.gemfire.distributed.internal.MembershipListener
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.util.ServiceUtils
@@ -911,6 +913,20 @@ object SnappyContext extends Logging {
     storeToBlockMap.clear()
     totalCoreCount.set(0)
     SnappySession.clearAllCache()
+  }
+
+  val membershipListener = new MembershipListener {
+    override def quorumLost(failures: java.util.Set[InternalDistributedMember],
+        remaining: java.util.List[InternalDistributedMember]): Unit = {}
+
+    override def memberJoined(id: InternalDistributedMember): Unit = {}
+
+    override def memberSuspect(id: InternalDistributedMember,
+        whoSuspected: InternalDistributedMember): Unit = {}
+
+    override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
+      removeBlockId(id.toString)
+    }
   }
 
   /** Returns the current SparkContext or null */
