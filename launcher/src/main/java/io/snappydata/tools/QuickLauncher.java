@@ -37,8 +37,9 @@ class QuickLauncher extends LauncherBase {
 
   private static final String DIR_OPT = "-dir=";
   private static final String CLASSPATH_OPT = "-classpath=";
+  private static final String HEAP_SIZE_OPT = "-heap-size=";
+  private static final String WAIT_FOR_SYNC_OPT = "-sync=";
   private static final String PASSWORD_OPT = "-password";
-  private static final String WAIT_FOR_SYNC_OPT = "-" + WAIT_FOR_SYNC + '=';
 
   private final String launcherClass;
   private final boolean isLocator;
@@ -306,6 +307,8 @@ class QuickLauncher extends LauncherBase {
       } else if (arg.startsWith(CLASSPATH_OPT)) {
         classPath.append(java.io.File.pathSeparator)
             .append(arg.substring(CLASSPATH_OPT.length()));
+      } else if (arg.startsWith(HEAP_SIZE_OPT)) {
+        processHeapSize(arg.substring(HEAP_SIZE_OPT.length()), vmArgs);
       } else if (arg.startsWith("-J")) {
         processVMArg(arg.substring(2), vmArgs);
       } else if (arg.startsWith("-D")) {
