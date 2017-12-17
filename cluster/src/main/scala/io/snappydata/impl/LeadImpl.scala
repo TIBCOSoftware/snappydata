@@ -27,6 +27,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 import akka.actor.ActorSystem
+import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.Status
@@ -152,7 +153,7 @@ class LeadImpl extends ServerImpl with Lead
     val initServices = Future {
       val locator = bootProperties.getProperty(Property.Locators.name)
       val conf = new SparkConf(false) // system properties already in bootProperties
-      conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
+      conf.setMaster(s"${Constant.SNAPPY_URL_PREFIX}$locator").
           setAppName("SnappyData").
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
@@ -208,7 +209,12 @@ class LeadImpl extends ServerImpl with Lead
 
       // take out the password property from SparkConf so that it is not logged
       // or seen by Spark layer
-      conf.remove(STORE_PREFIX + Attribute.PASSWORD_ATTR)
+      val passwordKey = STORE_PREFIX + Attribute.PASSWORD_ATTR
+      val password = conf.getOption(passwordKey)
+      password match {
+        case Some(_) => conf.remove(passwordKey)
+        case _ =>
+      }
 
       val sc = new SparkContext(conf)
 
@@ -234,7 +240,15 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       // initialize global context
-      SnappyContext(sc)
+      password match {
+        case Some(p) =>
+          // set the password back and remove after initialization
+          SparkCallbacks.setSparkConf(sc, passwordKey, p)
+          SnappyContext(sc)
+          SparkCallbacks.setSparkConf(sc, passwordKey, value = null)
+
+        case _ => SnappyContext(sc)
+      }
 
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
@@ -273,11 +287,12 @@ class LeadImpl extends ServerImpl with Lead
 
     super.start(storeProps, ignoreIfStarted = false)
 
+    Misc.getGemFireCache.getDistributionManager
+        .addMembershipListener(SnappyContext.membershipListener)
+
     status() match {
       case State.RUNNING =>
         bootProperties.putAll(storeProps)
-        Misc.getGemFireCache.getDistributionManager
-            .addMembershipListener(SnappyContext.membershipListener)
         logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
 
@@ -390,7 +405,11 @@ class LeadImpl extends ServerImpl with Lead
         shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
       }
     }
-    super.stop(shutdownCredentials)
+    try {
+      super.stop(shutdownCredentials)
+    } catch {
+      case _: CancelException => // ignore if already stopped
+    }
   }
 
   private[snappydata] def initStartupArgs(conf: SparkConf, sc: SparkContext = null) = {

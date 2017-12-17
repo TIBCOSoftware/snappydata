@@ -91,7 +91,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   private[sql] def client = {
     // check initialized meta-store (including initial consistency check)
-    Misc.getMemStoreBooting.getExternalCatalog
+    val memStore = Misc.getMemStoreBootingNoThrow
+    if (memStore ne null) {
+      memStore.getExistingExternalCatalog
+    }
     _client
   }
 

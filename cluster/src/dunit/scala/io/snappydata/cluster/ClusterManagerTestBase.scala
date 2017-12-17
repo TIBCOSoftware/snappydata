@@ -293,6 +293,7 @@ object ClusterManagerTestBase extends Logging {
 
   def cleanupTestData(testClass: String, testName: String): Unit = {
     // cleanup metastore
+    if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
       TestUtils.dropAllTables(snc)

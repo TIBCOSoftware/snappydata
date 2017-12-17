@@ -38,6 +38,7 @@ class QuickLauncher extends LauncherBase {
   private static final String DIR_OPT = "-dir=";
   private static final String CLASSPATH_OPT = "-classpath=";
   private static final String PASSWORD_OPT = "-password";
+  private static final String WAIT_FOR_SYNC_OPT = "-" + WAIT_FOR_SYNC + '=';
 
   private final String launcherClass;
   private final boolean isLocator;
@@ -82,6 +83,8 @@ class QuickLauncher extends LauncherBase {
     super(displayName, baseName);
     this.launcherClass = launcherClass;
     this.isLocator = locator;
+    // don't wait for diskstore sync by default and go into WAITING state
+    this.waitForData = false;
   }
 
   @Override
@@ -324,6 +327,8 @@ class QuickLauncher extends LauncherBase {
           // encrypted throughout in the system (SNAP-1657)
           env.put(ENV1, ENV_MARKER + pwd);
         }
+      } else if (arg.startsWith(WAIT_FOR_SYNC_OPT)) {
+        processWaitForSync(arg.substring(WAIT_FOR_SYNC_OPT.length()));
       } else if (arg.length() > 0 && arg.charAt(0) == '-') {
         // put rest of the arguments as is
         int eqIndex = arg.indexOf('=');
