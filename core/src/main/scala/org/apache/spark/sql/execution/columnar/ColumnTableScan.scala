@@ -426,7 +426,6 @@ private[sql] final case class ColumnTableScan(
       classOf[StructType].getName)
     val columnBufferInit = new StringBuilder
     val bufferInitCode = new StringBuilder
-    val numNullsUpdateCode = new StringBuilder
     val reservoirRowFetch =
       s"""
          |$stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
@@ -485,7 +484,6 @@ private[sql] final case class ColumnTableScan(
       val updatedDecoder = s"${decoder}Updated"
       val updatedDecoderLocal = s"${decoder}UpdatedLocal"
       val numNullsVar = s"${decoder}NumNulls"
-      val numNullsLocal = s"${decoder}NumNullsLocal"
       val buffer = ctx.freshName("buffer")
       val bufferVar = s"${buffer}Object"
       val initBufferFunction = s"${buffer}Init"
@@ -556,14 +554,12 @@ private[sql] final case class ColumnTableScan(
              |final $updatedDecoderClass $updatedDecoderLocal = $updatedDecoder;
              |final Object $bufferVar = ($buffer == null || $buffer.isDirect())
              |    ? null : $buffer.array();
-             |int $numNullsLocal = $numNullsVar;
           """.stripMargin)
-        numNullsUpdateCode.append(s"$numNullsVar = $numNullsLocal;\n")
       }
 
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName, thisRowFromDelta,
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDelta,
           isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
@@ -775,8 +771,6 @@ private[sql] final case class ColumnTableScan(
        |          // increment index for return
        |          $batchIndex = $batchOrdinal + 1;
        |        }
-       |        // update the numNulls
-       |        ${numNullsUpdateCode.toString()}
        |        return;
        |      }
        |      if ($isCaseOfSortedInsert) {
@@ -879,11 +873,10 @@ private[sql] final case class ColumnTableScan(
       val code =
         s"""
            |final $jt $col;
-           |boolean $isNullVar = false;
+           |final boolean $isNullVar;
            |if ($unchangedCode) {
-           |  $numNullsVar = $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar);
-           |  if ($numNullsVar >= 0) {
-           |    $colAssign
+           |  if (($isNullVar = $decoder.isNullAt($buffer, $batchOrdinal))) {
+           |    $col = $defaultValue;
            |    // TODO VB: Remove this
            |    System.out.println("VB: Scan [inserted] " + $col +
            |    " ,batchOrdinal=" + $batchOrdinal +
@@ -893,11 +886,8 @@ private[sql] final case class ColumnTableScan(
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,numRows=" + $numRows);
-           |  } else {
-           |    $col = $defaultValue;
-           |    $isNullVar = true;
-           |    $numNullsVar = -$numNullsVar;
-           |  }
+           |    $numNullsVar++;
+           |  } else $colAssign
            |} else if ($updateDecoder.readNotNull()) {
            |  $thisRowFromDelta = true;
            |  $updatedAssign
@@ -910,6 +900,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,numRows=" + $numRows);
+           |  $isNullVar = false;
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;

@@ -65,7 +65,7 @@ abstract class MutableRelationProvider
         numPartitions.get.toInt)
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
-    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(qualifiedTableName.toString,
+    val tableName = SnappyStoreHiveCatalog.processIdentifier(qualifiedTableName.toString,
       sqlContext.conf)
     var success = false
     val relation = JDBCMutableRelation(connProperties, tableName,

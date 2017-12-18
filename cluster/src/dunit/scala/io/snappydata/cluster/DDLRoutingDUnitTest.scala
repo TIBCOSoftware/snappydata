@@ -229,7 +229,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
     // gatewaysenders/receivers
     s.execute("CREATE GATEWAYSENDER gwSender ( REMOTEDSID 2) SERVER GROUPS (sg1)")
-    s.execute("CREATE GATEWAYRECEIVER gwRcvr (startport 1111 endport 9999) SERVER GROUPS (sg1)")
+    s.execute("CREATE GATEWAYRECEIVER gwRcvr (bindaddress 'localhost' " +
+        "startport 1111 endport 9999) SERVER GROUPS (sg1)")
     s.execute(s"ALTER TABLE $tableName SET GATEWAYSENDER (gwSender) ")
     rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
     while (rs.next) {

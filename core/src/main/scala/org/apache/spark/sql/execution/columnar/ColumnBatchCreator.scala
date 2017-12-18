@@ -113,8 +113,8 @@ final class ColumnBatchCreator(
           // Currently this do not work and thus have customized sorting. Must be removed.
           var partitionColumns: Seq[String] = tableInfo.getPrimaryKeyColumnNames
           val insertPlan = ColumnInsertExec(tableScan, partitionColumns, Seq.empty,
-            numBuckets = -1, isPartitioned = false, None, (-bufferRegion.getColumnBatchSize, -1,
-                Property.CompressionCodec.defaultValue.get), tableName,
+            numBuckets = -1, isPartitioned = false, None,
+            (-bufferRegion.getColumnBatchSize, -1, compressionCodec), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD semantics
@@ -158,8 +158,8 @@ final class ColumnBatchCreator(
    * insertion of rows as they appear. Currently used by sampler that
    * does not have any indexes so there is no dependents handling here.
    */
-  def createColumnBatchBuffer(columnBatchSize: Int, columnMaxDeltaRows: Int,
-      compressionCodec: String): ColumnBatchRowsBuffer = {
+  def createColumnBatchBuffer(columnBatchSize: Int,
+      columnMaxDeltaRows: Int): ColumnBatchRowsBuffer = {
     val gen = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held

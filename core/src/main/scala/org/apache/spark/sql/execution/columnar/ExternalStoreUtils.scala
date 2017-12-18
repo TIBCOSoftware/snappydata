@@ -63,16 +63,16 @@ object ExternalStoreUtils {
     val sc = Option(SnappyContext.globalSparkContext)
     sc.map(_.schedulerBackend) match {
       case Some(local: LocalSchedulerBackend) =>
-        // apply a max limit of 64 in local mode since there is not much
-        // scaling to be had beyond that on most processors
-        val result = math.min(64, math.max(local.totalCores << 1, 8)).toString
+        // apply a max limit of 32 in local mode since there is not much
+        // scaling to be had beyond that on most machines
+        val result = math.min(32, math.max(local.totalCores << 1, 8)).toString
         // use same number of partitions for sample table in local mode
         (result, result)
       case _ => sc.flatMap(s => Property.Locators.getOption(s.conf).map(Utils.toLowerCase)) match {
         // reduce defaults for localhost-only cluster too
         case Some(s) if s.startsWith("localhost:") || s.startsWith("localhost[") ||
             s.startsWith("127.0.0.1") || s.startsWith("::1[") =>
-          val result = math.min(64, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
+          val result = math.min(32, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
           (result, result)
         case _ => ("128", "64")
       }
@@ -86,7 +86,7 @@ object ExternalStoreUtils {
   final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
-  final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
+  final val COMPRESSION_CODEC = "COMPRESSION"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
@@ -402,46 +402,58 @@ object ExternalStoreUtils {
     case _ => true
   }
 
-  val SOME_TRUE = Some(true)
-  val SOME_FALSE = Some(false)
-
   private def checkIndexedColumn(col: String,
-      indexedCols: scala.collection.Set[String]): Option[Boolean] =
-    if (indexedCols.contains(col)) SOME_TRUE else None
+      indexedCols: scala.collection.Set[String]): Option[String] = {
+    // quote identifiers when they could be case-sensitive
+    if (indexedCols.contains(col)) Some("\"" + col + '"')
+    else {
+      // case-insensitive check
+      val ucol = Utils.toUpperCase(col)
+      if ((col ne ucol) && indexedCols.contains(ucol)) Some(col)
+      else None
+    }
+  }
 
   // below should exactly match RowFormatScanRDD.compileFilter
   def handledFilter(f: Filter,
-      indexedCols: scala.collection.Set[String]): Option[Boolean] = f match {
+      indexedCols: scala.collection.Set[String]): Option[Filter] = f match {
     // only pushdown filters if there is an index on the column;
     // keeping a bit conservative and not pushing other filters because
     // Spark execution engine is much faster at filter apply (though
     //   its possible that not all indexed columns will be used for
     //   index lookup still push down all to keep things simple)
-    case EqualTo(col, _) => checkIndexedColumn(col, indexedCols)
-    case LessThan(col, _) => checkIndexedColumn(col, indexedCols)
-    case GreaterThan(col, _) => checkIndexedColumn(col, indexedCols)
-    case LessThanOrEqual(col, _) => checkIndexedColumn(col, indexedCols)
-    case GreaterThanOrEqual(col, _) => checkIndexedColumn(col, indexedCols)
-    case StringStartsWith(col, _) => checkIndexedColumn(col, indexedCols)
-    case In(col, _) => checkIndexedColumn(col, indexedCols)
+    case EqualTo(col, v) => checkIndexedColumn(col, indexedCols).map(EqualTo(_, v))
+    case LessThan(col, v) => checkIndexedColumn(col, indexedCols).map(LessThan(_, v))
+    case GreaterThan(col, v) => checkIndexedColumn(col, indexedCols).map(GreaterThan(_, v))
+    case LessThanOrEqual(col, v) => checkIndexedColumn(col, indexedCols).map(LessThanOrEqual(_, v))
+    case GreaterThanOrEqual(col, v) =>
+      checkIndexedColumn(col, indexedCols).map(GreaterThanOrEqual(_, v))
+    case StringStartsWith(col, v) =>
+      checkIndexedColumn(col, indexedCols).map(StringStartsWith(_, v))
+    case In(col, v) => checkIndexedColumn(col, indexedCols).map(In(_, v))
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
-    case And(left, right) =>
-      val v = handledFilter(left, indexedCols)
-      if (v ne None) v
-      else handledFilter(right, indexedCols)
+    case And(left, right) => handledFilter(left, indexedCols) match {
+      case None => handledFilter(right, indexedCols)
+      case lf@Some(l) => handledFilter(right, indexedCols) match {
+        case None => lf
+        case Some(r) => Some(And(l, r))
+      }
+    }
     // ORList optimization requires all columns to have indexes
     // which is ensured by the condition below
-    case Or(left, right) => if ((handledFilter(left, indexedCols) eq
-        SOME_TRUE) && (handledFilter(right, indexedCols) eq SOME_TRUE)) {
-      SOME_TRUE
-    } else SOME_FALSE
-    case _ => SOME_FALSE
+    case Or(left, right) => handledFilter(left, indexedCols) match {
+      case None => None
+      case Some(l) => handledFilter(right, indexedCols) match {
+        case None => None
+        case Some(r) => Some(Or(l, r))
+      }
+    }
+    case _ => None
   }
 
-  def unhandledFilter(f: Filter,
-      indexedCols: scala.collection.Set[String]): Boolean =
-    handledFilter(f, indexedCols) ne SOME_TRUE
+  def unhandledFilter(f: Filter, indexedCols: scala.collection.Set[String]): Boolean =
+    handledFilter(f, indexedCols) eq None
 
   /**
    * Prune all but the specified columns from the specified Catalyst schema.
@@ -692,10 +704,6 @@ object ExternalStoreUtils {
 
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
     Property.ColumnMaxDeltaRows.get(session.sessionState.conf)
-  }
-
-  def defaultCompressionCodec(session: SparkSession): String = {
-    Property.CompressionCodec.get(session.sessionState.conf)
   }
 
   def getSQLListener: AtomicReference[SQLListener] = {

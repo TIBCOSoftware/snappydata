@@ -29,6 +29,7 @@ import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, 
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
 import org.apache.spark.util.TaskCompletionListener
 
@@ -81,6 +82,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   def columnBatchSize: Int = batchParams._1
 
   def columnMaxDeltaRows: Int = batchParams._2
+
+  val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(batchParams._3)
 
   override protected def opType: String = "Inserted"
 
@@ -665,7 +668,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm, $conn);
+         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
+         |      ${compressionCodec.id}, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -813,7 +817,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm, $conn);
+         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
+         |      ${compressionCodec.id}, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -946,7 +951,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   override def simpleString: String = s"ColumnInsert($columnTable) partitionColumns=" +
       s"${partitionColumns.mkString("[", ",", "]")} numBuckets = $numBuckets " +
-      s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows"
+      s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows compression=$compressionCodec"
 }
 
 object ColumnWriter {

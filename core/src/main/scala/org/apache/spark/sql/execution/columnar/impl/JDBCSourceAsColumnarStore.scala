@@ -86,14 +86,16 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def storeColumnBatch(columnTableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
-      conn: Option[Connection]): Unit = {
+      compressionCodecId: Int, conn: Option[Connection]): Unit = {
     if (partitionId >= 0) {
-      doInsertOrPut(columnTableName, batch, batchId, partitionId, maxDeltaRows, conn)
+      doInsertOrPut(columnTableName, batch, batchId, partitionId, maxDeltaRows,
+        compressionCodecId, conn)
     } else {
       val (bucketId, br, batchSize) = getPartitionID(columnTableName,
         () => batch.buffers.foldLeft(0L)(_ + _.capacity()))
       try {
-        doInsertOrPut(columnTableName, batch, batchId, bucketId, maxDeltaRows, conn)
+        doInsertOrPut(columnTableName, batch, batchId, bucketId, maxDeltaRows,
+          compressionCodecId, conn)
       } finally br match {
         case None =>
         case Some(bucket) => bucket.updateInProgressSize(-batchSize)
@@ -208,10 +210,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def storeDelete(columnTableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int,
-      batchId: Long, conn: Option[Connection]): Unit = {
+      statsData: Array[Byte], partitionId: Int, batchId: Long,
+      compressionCodecId: Int, conn: Option[Connection]): Unit = {
     val allocator = GemFireCacheImpl.getCurrentBufferAllocator
     val statsBuffer = createStatsBuffer(statsData, allocator)
+    val value = new ColumnDeleteDelta(buffer, compressionCodecId, isCompressed = false)
+    val statsValue = new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
     connectionType match {
       case ConnectionType.Embedded =>
         val region = Misc.getRegionForTable[ColumnFormatKey, ColumnFormatValue](
@@ -226,13 +230,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         }
 
         val keyValues = new java.util.HashMap[ColumnFormatKey, ColumnFormatValue](2)
-        val value = new ColumnDeleteDelta(buffer)
         keyValues.put(key, value)
 
         // add the stats row
         key = new ColumnFormatKey(batchId, partitionId,
           ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
-        val statsValue = new ColumnDelta(statsBuffer)
         keyValues.put(key, statsValue)
 
         region.putAll(keyValues)
@@ -290,7 +292,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setLong(1, batchId)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, ColumnFormatEntry.DELETE_MASK_COL_INDEX)
-            blob = new ClientBlob(buffer)
+            // wrap ColumnDelete to compress transparently in socket write if required
+            blob = new ClientBlob(value)
             stmt.setBlob(4, blob)
             stmt.addBatch()
 
@@ -298,7 +301,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setLong(1, batchId)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
-            blob = new ClientBlob(statsBuffer)
+            // wrap ColumnDelete to compress transparently in socket write if required
+            blob = new ClientBlob(statsValue)
             stmt.setBlob(4, blob)
             stmt.addBatch()
 
@@ -353,7 +357,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    * batches for now.
    */
   private def doSnappyInsertOrPut(region: LocalRegion, batch: ColumnBatch,
-      batchId: Long, partitionId: Int, maxDeltaRows: Int): Unit = {
+      batchId: Long, partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int): Unit = {
     val deltaUpdate = batch.deltaIndexes ne null
     val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
     else ColumnFormatEntry.STATROW_COL_INDEX
@@ -365,7 +369,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       batch.buffers.foreach { buffer =>
         val columnIndex = if (deltaUpdate) batch.deltaIndexes(index - 1) else index
         val key = new ColumnFormatKey(batchId, partitionId, columnIndex)
-        val value = if (deltaUpdate) new ColumnDelta(buffer) else new ColumnFormatValue(buffer)
+        val value = if (deltaUpdate) {
+          new ColumnDelta(buffer, compressionCodecId, isCompressed = false)
+        } else new ColumnFormatValue(buffer, compressionCodecId, isCompressed = false)
         keyValues.put(key, value)
         index += 1
       }
@@ -373,8 +379,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       val key = new ColumnFormatKey(batchId, partitionId, statRowIndex)
       val allocator = Misc.getGemFireCache.getBufferAllocator
       val statsBuffer = createStatsBuffer(batch.statsData, allocator)
-      val value = if (deltaUpdate) new ColumnDelta(statsBuffer)
-      else new ColumnFormatValue(statsBuffer)
+      val value = if (deltaUpdate) {
+        new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
+      } else new ColumnFormatValue(statsBuffer, compressionCodecId, isCompressed = false)
       keyValues.put(key, value)
 
       // do a putAll of the key-value map with create=true
@@ -400,7 +407,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    * batches for now.
    */
   private def doGFXDInsertOrPut(columnTableName: String, batch: ColumnBatch,
-      batchId: Long, partitionId: Int, maxDeltaRows: Int): (Connection => Unit) = {
+      batchId: Long, partitionId: Int, maxDeltaRows: Int,
+      compressionCodecId: Int): (Connection => Unit) = {
     {
       (connection: Connection) => {
         val deltaUpdate = batch.deltaIndexes ne null
@@ -418,7 +426,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setLong(1, batchId)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, columnIndex)
-            val blob = new ClientBlob(buffer)
+            // wrap in ColumnFormatValue to compress transparently in socket write if required
+            val value = if (deltaUpdate) {
+              new ColumnDelta(buffer, compressionCodecId, isCompressed = false)
+            } else new ColumnFormatValue(buffer, compressionCodecId, isCompressed = false)
+            val blob = new ClientBlob(value)
             stmt.setBlob(4, blob)
             index += 1
             stmt.addBatch()
@@ -430,7 +442,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           stmt.setInt(3, statRowIndex)
           val allocator = GemFireCacheImpl.getCurrentBufferAllocator
           val statsBuffer = createStatsBuffer(batch.statsData, allocator)
-          stmt.setBlob(4, new ClientBlob(statsBuffer))
+          // wrap in ColumnFormatValue to compress transparently in socket write if required
+          val value = if (deltaUpdate) {
+            new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
+          } else new ColumnFormatValue(statsBuffer, compressionCodecId, isCompressed = false)
+          stmt.setBlob(4, new ClientBlob(value))
           stmt.addBatch()
 
           stmt.executeBatch()
@@ -522,7 +538,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   private def doInsertOrPut(columnTableName: String, batch: ColumnBatch, batchId: Long,
-      partitionId: Int, maxDeltaRows: Int, conn: Option[Connection] = None): Unit = {
+      partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int,
+      conn: Option[Connection] = None): Unit = {
     // split the batch and put into row buffer if it is small
     if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
       GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
@@ -538,13 +555,13 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           // all other callers (ColumnFormatEncoder, BucketRegion) use the same
           val uuid = if (BucketRegion.isValidUUID(batchId)) batchId
           else region.getColocatedWithRegion.newUUID(false)
-          doSnappyInsertOrPut(region, batch, uuid, partitionId, maxDeltaRows)
+          doSnappyInsertOrPut(region, batch, uuid, partitionId, maxDeltaRows, compressionCodecId)
 
         case _ =>
           // noinspection RedundantDefaultArgument
           tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
             onExecutor = true)(doGFXDInsertOrPut(columnTableName, batch, batchId, partitionId,
-            maxDeltaRows))(conn)
+            maxDeltaRows, compressionCodecId))(conn)
       }
     }
   }
