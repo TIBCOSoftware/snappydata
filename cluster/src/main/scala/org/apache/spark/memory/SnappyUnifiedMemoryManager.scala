@@ -122,9 +122,11 @@ class SnappyUnifiedMemoryManager private[memory](
             // as Spark is booted first temp memory manager is not used
             bootTimeMap.entrySet().iterator().asScala foreach { entry =>
               val (objectName, mode) = entry.getKey
-              acquireStorageMemoryForObject(objectName,
-                MemoryManagerCallback.storageBlockId, entry.getValue, mode, null,
-                shouldEvict = true)
+              val numBytes = entry.getValue.longValue()
+              if (numBytes > 0) {
+                acquireStorageMemoryForObject(objectName,
+                  MemoryManagerCallback.storageBlockId, numBytes, mode, null, shouldEvict = true)
+              }
               // TODO: SW: if above fails then this should throw exception
               // and _memoryForObjectMap made null again?
             }

@@ -963,12 +963,12 @@ object SnappyContext extends Logging {
    * @return
    */
   def apply(): SnappyContext = {
-    val gc = globalSparkContext
-    if (gc != null) {
-      newSnappyContext(gc)
-    } else {
-      null
-    }
+    if (_globalSNContextInitialized) {
+      val gc = globalSparkContext
+      if (gc != null) {
+        newSnappyContext(gc)
+      } else null
+    } else null
   }
 
   /**
@@ -1136,6 +1136,14 @@ object SnappyContext extends Logging {
   private def stopSnappyContext(): Unit = contextLock.synchronized {
     val sc = globalSparkContext
     if (_globalContextInitialized) {
+      SnappyTableStatsProviderService.stop()
+
+      // clear current hive catalog connection
+      Hive.closeCurrent()
+      if (ExternalStoreUtils.isLocalMode(sc)) {
+        ServiceUtils.invokeStopFabricServer(sc)
+      }
+
       // clear static objects on the driver
       clearStaticArtifacts()
 
@@ -1143,13 +1151,6 @@ object SnappyContext extends Logging {
       if (_globalClear ne null) {
         _globalClear()
         _globalClear = null
-      }
-      SnappyTableStatsProviderService.stop()
-
-      // clear current hive catalog connection
-      Hive.closeCurrent()
-      if (ExternalStoreUtils.isLocalMode(sc)) {
-        ServiceUtils.invokeStopFabricServer(sc)
       }
       MemoryManagerCallback.resetMemoryManager()
     }

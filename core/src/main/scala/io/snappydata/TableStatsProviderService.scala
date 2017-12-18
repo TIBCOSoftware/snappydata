@@ -42,9 +42,11 @@ trait TableStatsProviderService extends Logging {
 
   protected def snc: SnappyContext = synchronized {
     _snc.getOrElse {
-      val context = SnappyContext()
-      _snc = Option(context)
-      context
+      if (doRun) {
+        val context = SnappyContext()
+        _snc = Option(context)
+        context
+      } else null
     }
   }
 
@@ -177,9 +179,9 @@ trait TableStatsProviderService extends Logging {
     doRun = false
     // wait for it to end for sometime
     synchronized {
-      if (running) wait(20000)
+      if (running) wait(10000)
+      _snc = None
     }
-    _snc = None
   }
 
   def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
