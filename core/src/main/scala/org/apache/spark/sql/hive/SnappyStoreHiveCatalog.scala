@@ -51,6 +51,7 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.columnar.impl.{DefaultSource => ColumnSource}
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
@@ -134,15 +135,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   /**
    * Format table name, taking into account case sensitivity.
    */
-  override def formatTableName(name: String): String = {
-    SnappyStoreHiveCatalog.processTableIdentifier(name, sqlConf)
-  }
+  override def formatTableName(name: String): String = formatName(name)
 
   /**
    * Format database name, taking into account case sensitivity.
    */
-  override def formatDatabaseName(name: String): String = {
-    SnappyStoreHiveCatalog.processTableIdentifier(name, sqlConf)
+  override def formatDatabaseName(name: String): String = formatName(name)
+
+  private[sql] def formatName(name: String): String = {
+    SnappyStoreHiveCatalog.processIdentifier(name, sqlConf)
   }
 
   // TODO: SW: cleanup this schema/database stuff
@@ -595,24 +596,25 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case None =>
 
         val newOptions = new CaseInsensitiveMutableHashMap(options)
-        newOptions.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
-          case Some(_) =>
-          case None => newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
-              ExternalStoreUtils.defaultColumnBatchSize(snappySession).toString)
-            // mark this as transient since can change as per session configuration later
-            newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE_TRANSIENT -> "true")
-        }
-        newOptions.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
-          case Some(_) =>
-          case None => newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
-              ExternalStoreUtils.defaultColumnMaxDeltaRows(snappySession).toString)
-            // mark this as transient since can change as per session configuration later
-            newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS_TRANSIENT -> "true")
-        }
-        newOptions.get(ExternalStoreUtils.COMPRESSION_CODEC) match {
-          case Some(_) =>
-          case None => newOptions += (ExternalStoreUtils.COMPRESSION_CODEC ->
-              ExternalStoreUtils.defaultCompressionCodec(snappySession).toString)
+        // add default batchSize and maxDeltaRows options for column tables
+        if (SnappyParserConsts.COLUMN_SOURCE.equalsIgnoreCase(provider) ||
+            classOf[ColumnSource].getCanonicalName == provider ||
+            SnappyContext.SAMPLE_SOURCE.equalsIgnoreCase(provider) ||
+            SnappyContext.SAMPLE_SOURCE_CLASS == provider) {
+          newOptions.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+            case Some(_) =>
+            case None => newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
+                ExternalStoreUtils.defaultColumnBatchSize(snappySession).toString)
+              // mark this as transient since can change as per session configuration later
+              newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE_TRANSIENT -> "true")
+          }
+          newOptions.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
+            case Some(_) =>
+            case None => newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
+                ExternalStoreUtils.defaultColumnMaxDeltaRows(snappySession).toString)
+              // mark this as transient since can change as per session configuration later
+              newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS_TRANSIENT -> "true")
+          }
         }
         // invalidate any cached plan for the table
         tableIdent.invalidate()
@@ -1090,11 +1092,11 @@ object SnappyStoreHiveCatalog {
     })
 
 
-  def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
+  def processIdentifier(identifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {
-      tableIdentifier
+      identifier
     } else {
-      Utils.toUpperCase(tableIdentifier)
+      Utils.toUpperCase(identifier)
     }
   }
 

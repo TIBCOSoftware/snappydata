@@ -40,6 +40,8 @@ shift
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/smokePerf.bt
 sleep 30;
 
+java -ea -cp $SNAPPYDATA_SOURCE_DIR/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar io.snappydata.benchmark.snappy.TPCHPerfComparer $resultDir
+
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/cluster/startDualModeCluster.bt
 sleep 30;
 

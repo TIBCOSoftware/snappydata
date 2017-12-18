@@ -25,7 +25,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -35,8 +35,14 @@ import org.apache.spark.sql.types.StructType
 case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
     numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
-    externalStore: ExternalStore, relation: Option[DestroyRelation], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
+    externalStore: ExternalStore, appendableRelation: JDBCAppendableRelation,
+    keyColumns: Seq[Attribute], connProps: ConnectionProperties,
+    onExecutor: Boolean) extends ColumnExec {
+
+  override def relation: Option[DestroyRelation] = Some(appendableRelation)
+
+  val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
+    appendableRelation.getCompressionCodec)
 
   override protected def opType: String = "Delete"
 
@@ -58,6 +64,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
       "numDeleteColumnBatchRows" -> SQLMetrics.createMetric(sparkContext,
         "number of deletes in column batches"))
   }
+
+  override def simpleString: String = s"${super.simpleString} compression=$compressionCodec"
 
   @transient private var batchOrdinal: String = _
   @transient private var finishDelete: String = _
@@ -153,7 +161,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($position, $lastNumRows);
          |    // delete puts an empty stats row to denote that there are changes
          |    $externalStoreTerm.storeDelete($tableName, buffer, new byte[] { 0, 0, 0, 0 },
-         |        $lastBucketId, $lastColumnBatchId, new scala.Some($connTerm));
+         |        $lastBucketId, $lastColumnBatchId, ${compressionCodec.id},
+         |        new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoder
