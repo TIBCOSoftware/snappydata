@@ -963,7 +963,7 @@ object SnappyContext extends Logging {
    * @return
    */
   def apply(): SnappyContext = {
-    if (_globalSNContextInitialized) {
+    if (_globalContextInitialized) {
       val gc = globalSparkContext
       if (gc != null) {
         newSnappyContext(gc)

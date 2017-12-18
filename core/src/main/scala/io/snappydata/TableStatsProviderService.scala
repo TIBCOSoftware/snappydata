@@ -17,6 +17,8 @@
 
 package io.snappydata
 
+import java.util.concurrent.atomic.AtomicReference
+
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -38,16 +40,16 @@ trait TableStatsProviderService extends Logging {
   protected val membersInfo: TrieMap[String, mutable.Map[String, Any]] =
     TrieMap.empty[String, mutable.Map[String, Any]]
 
-  private var _snc: Option[SnappyContext] = None
+  private val _snc: AtomicReference[SnappyContext] = new AtomicReference[SnappyContext]()
 
-  protected def snc: SnappyContext = synchronized {
-    _snc.getOrElse {
-      if (doRun) {
-        val context = SnappyContext()
-        _snc = Option(context)
-        context
-      } else null
-    }
+  protected def snc: SnappyContext = {
+    val context = _snc.get()
+    if (context ne null) context
+    else if (doRun) {
+      val newContext = SnappyContext()
+      _snc.compareAndSet(null, newContext)
+      _snc.get()
+    } else null
   }
 
   var memberStatsUpdater: Option[Thread] = None
@@ -180,8 +182,8 @@ trait TableStatsProviderService extends Logging {
     // wait for it to end for sometime
     synchronized {
       if (running) wait(10000)
-      _snc = None
     }
+    _snc.set(null)
   }
 
   def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
@@ -221,7 +223,7 @@ trait TableStatsProviderService extends Logging {
   def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
       Map[String, SnappyIndexStats]) = {
     val snc = this.snc
-    if (snc == null) return (Map.empty, Map.empty)
+    if (snc eq null) return (Map.empty, Map.empty)
     val (tableStats, indexStats) = getStatsFromAllServers()
 
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
