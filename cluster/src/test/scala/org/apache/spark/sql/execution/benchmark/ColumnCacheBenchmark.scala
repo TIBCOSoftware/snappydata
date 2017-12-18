@@ -87,6 +87,10 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
   }
 
+  ignore("PutInto Vs Insert") {
+    benchMarkForPutIntoColumnTable(size = 50000000)
+  }
+
   test("insert more than 64K data") {
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createAndTestBigTable()
@@ -112,6 +116,45 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     System.runFinalization()
     System.gc()
     System.runFinalization()
+  }
+
+  private def benchMarkForPutIntoColumnTable(size: Int, numIters: Int = 10): Unit = {
+    val benchmark = new Benchmark("PutInto Vs Insert", size)
+    val sparkSession = this.sparkSession
+    val snappySession = this.snappySession
+    import org.apache.spark.sql.snappy._
+    if (GemFireCacheImpl.getCurrentBufferAllocator.isDirect) {
+      logInfo("ColumnCacheBenchmark: using off-heap for performance comparison")
+    } else {
+      logInfo("ColumnCacheBenchmark: using heap for performance comparison")
+    }
+
+    val testDF2 = snappySession.range(size)
+        .selectExpr("id", "(rand() * 1000.0) as k")
+
+    def prepare(): Unit = {
+      doGC()
+      sparkSession.sql("drop table if exists test")
+      snappySession.sql("create table test (id bigint not null, k double not null) " +
+          s"using column options(partition_by 'id', buckets '$cores', key_columns 'id')")
+    }
+
+    def cleanup(): Unit = {
+      snappySession.sql("drop table if exists test")
+      doGC()
+    }
+
+    def testCleanup(): Unit = {
+      snappySession.sql("truncate table if exists test")
+    }
+    // As expected putInto is two times slower than a simple insert
+    addCaseWithCleanup(benchmark, "Insert", numIters, prepare, cleanup, testCleanup) { i =>
+      testDF2.write.insertInto("test")
+    }
+    addCaseWithCleanup(benchmark, "PutInto", numIters, prepare, cleanup, testCleanup) { i =>
+        testDF2.write.putInto("test")
+    }
+    benchmark.run()
   }
 
   /**
