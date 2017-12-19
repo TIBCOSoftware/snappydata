@@ -16,8 +16,7 @@
  */
 package org.apache.spark.sql
 
-import java.sql.{Connection, DriverManager}
-import java.util.{Properties, TimeZone}
+import java.util.TimeZone
 
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import io.snappydata.benchmark.TPCH_Queries
@@ -26,15 +25,11 @@ import io.snappydata.benchmark.snappy.{SnappyAdapter, TPCH}
 import io.snappydata.{PlanTest, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Sort}
-import org.apache.spark.sql.execution.streaming.{Offset, Sink, Source}
-import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider, StreamSourceProvider}
-import org.apache.spark.sql.streaming.OutputMode
-import org.apache.spark.sql.types.{BooleanType, IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.util.Benchmark
 
 class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
@@ -273,8 +268,8 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 //      genPlan = genPlan)._1.foreach(_ => ())
 
     var queryToBeExecuted = TPCH_Queries.getQuery(qNum, false, true)
-    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(qNum, queryToBeExecuted, snc, false)
-        ._1.foreach(_ => ())
+    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(
+      qNum, queryToBeExecuted, snc, false)._1.foreach(_ => ())
 
     def evalBaseTPCH = qryProvider.execute(query, executor)._1.foreach(_ => ())
 

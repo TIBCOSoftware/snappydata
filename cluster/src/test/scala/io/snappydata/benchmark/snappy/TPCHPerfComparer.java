@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -54,7 +55,8 @@ public class TPCHPerfComparer {
     final int maxDepth = 4;
     List<String> errorList = new ArrayList<String>();
     try {
-      FileOutputStream reportOutputStream  = new FileOutputStream(new File("ComparisonReport.txt"));
+      SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss") ;
+      FileOutputStream reportOutputStream  = new FileOutputStream(new File(p.toString(), "ComparisonReport_"+dateFormat.format(new Date())+".txt"));
       PrintStream reportPrintStream = new PrintStream(reportOutputStream);
 
       Stream<Path> matches = Files.find(p, maxDepth, (path, attr) -> path.getFileName().toString().equals("1_Snappy_Average.out"));

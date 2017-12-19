@@ -132,8 +132,7 @@ class RowFormatRelation(
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val handledFilters = filters.filter(ExternalStoreUtils
-        .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
+    val handledFilters = filters.flatMap(ExternalStoreUtils.handledFilter(_, indexedColumns))
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
@@ -242,7 +241,7 @@ class RowFormatRelation(
   }
 
   private def getColumnStr(colWithDirection: (String, Option[SortDirection])): String = {
-    colWithDirection._1 + " " + (colWithDirection._2 match {
+    "\"" + colWithDirection._1 + "\" " + (colWithDirection._2 match {
       case Some(Ascending) => "ASC"
       case Some(Descending) => "DESC"
       case None => ""
@@ -332,7 +331,7 @@ final class DefaultSource extends MutableRelationProvider {
       Some(sqlContext.sparkSession), parameters)
 
     StoreUtils.validateConnProps(parameters)
-    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
+    val tableName = SnappyStoreHiveCatalog.processIdentifier(table, sqlContext.conf)
     var success = false
     val relation = new RowFormatRelation(connProperties,
       tableName,
