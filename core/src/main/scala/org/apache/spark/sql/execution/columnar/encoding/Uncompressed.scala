@@ -92,32 +92,27 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
       baseCursor + (nonNullPosition << 3)), precision, scale)
 
   private def setCursorAtPosition(columnBytes: AnyRef, nonNullPosition: Int,
-      sizeWidth: Int): Unit = {
-    // check if new position is behind the current, in which case rewind
-    var newPosition = lastNonNullPosition + 1
-    if (nonNullPosition > newPosition) {
-      var cursor = currentCursor
-      do {
-        cursor += sizeWidth + ColumnEncoding.readInt(columnBytes, cursor)
-        newPosition += 1
-      } while (nonNullPosition != newPosition)
-      currentCursor = cursor
-    } else {
-      var cursor = baseCursor
-      newPosition = 0
-      while (nonNullPosition != newPosition) {
-        cursor += sizeWidth + ColumnEncoding.readInt(columnBytes, cursor)
-        newPosition += 1
-      }
-      currentCursor = cursor
+      sizeWidth: Int, expectedPosition: Int): Unit = {
+    if (nonNullPosition <= expectedPosition) {
+      throw new IllegalStateException(s"Decoder map cursor cannot move back: " +
+          s"lastPosition=${expectedPosition - 1} newPosition=$nonNullPosition")
     }
+    var lastPosition = expectedPosition
+    var cursor = currentCursor
+    do {
+      // first read is of keyArraySize and second of valueArraySize
+      cursor += sizeWidth + ColumnEncoding.readInt(columnBytes, cursor)
+      lastPosition += 1
+    } while (nonNullPosition != lastPosition)
+    currentCursor = cursor
   }
 
   private def setCursorForVariableWidth(columnBytes: AnyRef, nonNullPosition: Int,
       sizeWidth: Int = 4): Unit = {
     // check sequential calls else skip as much required
-    if (nonNullPosition != lastNonNullPosition + 1) {
-      setCursorAtPosition(columnBytes, nonNullPosition, sizeWidth)
+    val expectedPosition = lastNonNullPosition + 1
+    if (nonNullPosition != expectedPosition) {
+      setCursorAtPosition(columnBytes, nonNullPosition, sizeWidth, expectedPosition)
     }
     lastNonNullPosition = nonNullPosition
   }
@@ -166,19 +161,28 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
     result
   }
 
+  private def setCursorAtPositionForMap(columnBytes: AnyRef, nonNullPosition: Int,
+      expectedPosition: Int): Unit = {
+    if (nonNullPosition <= expectedPosition) {
+      throw new IllegalStateException(s"Decoder map cursor cannot move back: " +
+          s"lastPosition=${expectedPosition - 1} newPosition=$nonNullPosition")
+    }
+    var lastPosition = expectedPosition
+    var cursor = currentCursor
+    do {
+      // first read is of keyArraySize and second of valueArraySize
+      cursor += ColumnEncoding.readInt(columnBytes, cursor)
+      cursor += ColumnEncoding.readInt(columnBytes, cursor)
+      lastPosition += 1
+    } while (nonNullPosition != lastPosition)
+    currentCursor = cursor
+  }
+
   private def setCursorForMap(columnBytes: AnyRef, nonNullPosition: Int): Unit = {
     // check sequential calls else skip as much required
-    var lastPosition = lastNonNullPosition
-    if (nonNullPosition != lastPosition + 1) {
-      var cursor = currentCursor
-      lastPosition += 1
-      do {
-        // first read is of keyArraySize and second of valueArraySize
-        cursor += ColumnEncoding.readInt(columnBytes, cursor)
-        cursor += ColumnEncoding.readInt(columnBytes, cursor)
-        lastPosition += 1
-      } while (nonNullPosition != lastPosition)
-      currentCursor = cursor
+    val expectedPosition = lastNonNullPosition + 1
+    if (nonNullPosition != expectedPosition) {
+      setCursorAtPositionForMap(columnBytes, nonNullPosition, expectedPosition)
     }
     lastNonNullPosition = nonNullPosition
   }
@@ -299,11 +303,11 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
   }
 
   override def writeLongDecimal(cursor: Long, value: Decimal,
-      ordinal: Int, precision: Int, scale: Int): Long = {
+      position: Int, precision: Int, scale: Int): Long = {
     if ((value eq null) || ((value.precision != precision ||
         value.scale != scale) && !value.changePrecision(precision, scale))) {
       if (isNullable) {
-        writeIsNull(ordinal)
+        writeIsNull(position)
         cursor
       }
       else writeLong(cursor, Decimal.ZERO.toUnscaledLong)
@@ -313,12 +317,12 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
   }
 
   override def writeDecimal(cursor: Long, value: Decimal,
-      ordinal: Int, precision: Int, scale: Int): Long = {
+      position: Int, precision: Int, scale: Int): Long = {
     var decimal = value
     if ((value eq null) || ((value.precision != precision ||
         value.scale != scale) && !value.changePrecision(precision, scale))) {
       if (isNullable) {
-        writeIsNull(ordinal)
+        writeIsNull(position)
         return cursor
       } else {
         decimal = Decimal.ZERO

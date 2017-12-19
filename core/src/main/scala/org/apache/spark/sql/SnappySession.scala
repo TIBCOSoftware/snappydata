@@ -1452,7 +1452,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
     val tableIdent = sessionCatalog.newQualifiedTableName(baseTable)
     val indexIdent = sessionCatalog.newQualifiedTableName(indexName)
-    createIndex(indexIdent, tableIdent, indexColumns, options)
+    // normalize index column names for API calls
+    val columnsWithDirection = indexColumns.map(p => sessionCatalog.formatName(p._1) -> p._2)
+    createIndex(indexIdent, tableIdent, columnsWithDirection, options)
   }
 
   /**
