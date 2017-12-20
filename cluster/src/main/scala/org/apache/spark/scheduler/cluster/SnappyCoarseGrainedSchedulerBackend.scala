@@ -16,8 +16,6 @@
  */
 package org.apache.spark.scheduler.cluster
 
-import com.gemstone.gemfire.distributed.internal.MembershipListener
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.SparkContext
@@ -30,20 +28,6 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
     extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
 
   private val snappyAppId = "snappy-app-" + System.currentTimeMillis
-
-  val membershipListener = new MembershipListener {
-    override def quorumLost(failures: java.util.Set[InternalDistributedMember],
-        remaining: java.util.List[InternalDistributedMember]): Unit = {}
-
-    override def memberJoined(id: InternalDistributedMember): Unit = {}
-
-    override def memberSuspect(id: InternalDistributedMember,
-        whoSuspected: InternalDistributedMember): Unit = {}
-
-    override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
-      SnappyContext.removeBlockId(id.toString)
-    }
-  }
 
   /**
    * Overriding the spark app id function to provide a snappy specific app id.
