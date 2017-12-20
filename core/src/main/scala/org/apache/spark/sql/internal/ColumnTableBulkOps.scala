@@ -21,7 +21,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPla
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.sources.{BaseRelation, BulkPutRelation, Insert, MutableRelation, PutIntoTable, RowPutRelation, Update}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
 import org.apache.spark.sql.{AnalysisException, SparkSession}
 
@@ -44,11 +44,11 @@ object ColumnTableBulkOps {
         } else {
           // OK
         }
-      case _ => // OKK
+      case _ => // OK
     }
   }
 
-  def transformPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
+  def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
     val table = originalPlan.table
     val subQuery = originalPlan.child
@@ -117,6 +117,28 @@ object ColumnTableBulkOps {
     }.getOrElse(throw new AnalysisException(
       s"Update/Delete requires a MutableRelation but got $table"))
 
+  }
+
+  def transformDeletePlan(sparkSession: SparkSession,
+      originalPlan: DeleteFromTable): LogicalPlan = {
+    val table = originalPlan.table
+    val subQuery = originalPlan.child
+    var transFormedPlan: LogicalPlan = originalPlan
+
+    table.collectFirst {
+      case LogicalRelation(mutable: BulkPutRelation, _, _) => {
+        val putKeys = mutable.getPutKeys()
+        if (!putKeys.isDefined) {
+          throw new AnalysisException(
+            s"DeleteFrom in a column table requires key column(s) but got empty string")
+        }
+        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
+        val exists = Join(subQuery, table, Inner, condition)
+        transFormedPlan = Delete(table, exists, Seq.empty[Attribute])
+      }
+      case _ => // Do nothing, original DeleteFromTable plan is enough
+    }
+    transFormedPlan
   }
 }
 

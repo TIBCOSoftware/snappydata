@@ -246,8 +246,10 @@ class SnappySessionState(snappySession: SnappySession)
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] {
 
-    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
-        plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
+    private def getKeyAttributes(table: LogicalPlan,
+        child: LogicalPlan,
+        plan: LogicalPlan,
+        isDelete : Boolean = false): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
         case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
@@ -257,8 +259,12 @@ class SnappySessionState(snappySession: SnappySession)
             // if this is a row table, then fallback to direct execution
             mutable match {
               case _: UpdatableRelation if currentKey ne null =>
-                return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
-                  mutable.table), lr, currentKey.sqlText), lr)
+                return if (!isDelete) {
+                  (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
+                    mutable.table), lr, currentKey.sqlText), lr)
+                } else {
+                  (Seq.empty, DeleteFromTable(lr, child), lr)
+                }
               case _ =>
                 throw new AnalysisException(
                   s"Empty key columns for update/delete on $mutable")
@@ -344,15 +350,17 @@ class SnappySessionState(snappySession: SnappySession)
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
         // add and project only the key columns
-        val (keyAttrs, newChild, _) = getKeyAttributes(table, child, d)
+        val (keyAttrs, newChild, _) = getKeyAttributes(table, child, d, isDelete = true)
         // if this is a row table with no PK, then fallback to direct execution
         if (keyAttrs.isEmpty) newChild
         else {
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
+      case d@DeleteFromTable(_, child) if child.resolved =>
+        ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
       case p@PutIntoTable(_, child) if child.resolved =>
-        ColumnTableBulkOps.transformPlan(sparkSession, p)
+        ColumnTableBulkOps.transformPutPlan(sparkSession, p)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -819,6 +827,10 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           }
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 
+        case l@LogicalRelation(dr: MutableRelation, _, _) =>
+          // First, make sure the where column(s) of the delete are in schema of the relation.
+          val expectedOutput = l.output
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
         case _ => d
       }
 
