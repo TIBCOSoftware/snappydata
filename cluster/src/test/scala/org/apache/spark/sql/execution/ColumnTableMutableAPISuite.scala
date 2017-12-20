@@ -74,6 +74,32 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.contains(Row(88, 88, 90)))
   }
 
+  test("Multiple update") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+
+    val rdd2 = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    val props = Map("BUCKETS" -> "2", "PARTITION_BY" -> "col1", "key_columns" -> "col2")
+    val props1 = Map.empty[String, String]
+
+    snc.createTable("col_table", "column", df1.schema, props)
+    snc.createTable("row_table", "row", df2.schema, props1)
+
+    df1.write.insertInto("col_table")
+    df2.write.insertInto("row_table")
+
+    snc.sql("update col_table  set(col3) =" +
+        " (select col3 from rowTable  where col_table.col2 = rowTable.col2")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 7)
+    assert(resultdf.contains(Row(8, 8, 8)))
+    assert(resultdf.contains(Row(88, 88, 90)))
+  }
+
   test("PutInto with API") {
     val snc = new SnappySession(sc)
     val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
@@ -208,7 +234,7 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
         " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
     snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+        " using row options(BUCKETS '2', PARTITION_BY 'col1') ")
 
     snc.insert("row_table", Row(1, "1", "1", 100))
     snc.insert("row_table", Row(2, "2", "2", 2))
@@ -221,6 +247,108 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     intercept[AnalysisException]{
       snc.sql("put into table col_table" +
           "   select * from row_table")
+    }
+  }
+
+  test("deleteFrom table exists syntax") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row options(BUCKETS '2', PARTITION_BY 'col1') ")
+
+    snc.insert("row_table", Row(1, "1", "1", 100))
+    snc.insert("row_table", Row(2, "2", "2", 2))
+    snc.insert("row_table", Row(4, "4", "4", 4))
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(2, "2", null, 2))
+    snc.insert("col_table", Row(3, "3", "3", 3))
+    snc.sql("delete from col_table where exists (select 1 from row_table where col_table.col2 = " +
+        "row_table.col2 and col_table.col3 = row_table.col3)")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 2)
+    assert(resultdf.contains(Row(3, "3", "3", 3)))
+    assert(resultdf.contains(Row(2, "2", null, 2)))
+  }
+
+  test("deleteFrom table where(a,b) select a,b syntax") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row options(BUCKETS '2', PARTITION_BY 'col1') ")
+
+    snc.insert("row_table", Row(1, "1", "1", 100))
+    snc.insert("row_table", Row(2, "2", "2", 2))
+    snc.insert("row_table", Row(4, "4", "4", 4))
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(2, "2", null, 2))
+    snc.insert("col_table", Row(3, "3", "3", 3))
+    snc.sql("delete from col_table where (col2, col3) in  (select col2, col3 from row_table)")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 2)
+    assert(resultdf.contains(Row(3, "3", "3", 3)))
+    assert(resultdf.contains(Row(2, "2", null, 2)))
+  }
+
+  test("deleteFrom table where(a,b) select a,b syntax Row table") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row options(BUCKETS '2', PARTITION_BY 'col1') ")
+
+    snc.insert("row_table", Row(1, "1", "1", 100))
+    snc.insert("row_table", Row(2, "2", "2", 2))
+    snc.insert("row_table", Row(4, "4", "4", 4))
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(2, "2", null, 2))
+    snc.insert("col_table", Row(3, "3", "3", 3))
+    snc.sql("delete from row_table where (col2, col3) in  (select col2, col3 from col_table)")
+
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 2)
+    assert(resultdf.contains(Row(4, "4", "4", 4)))
+    assert(resultdf.contains(Row(2, "2", "2", 2)))
+  }
+
+  test("DeleteFrom dataframe API") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.createTable("col_table", "column",
+      df1.schema, Map("key_columns" -> "col2"))
+
+    df1.write.insertInto("col_table")
+    df2.write.deleteFrom("col_table")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, 8)))
+  }
+
+  test("DeleteFrom Key columns validation") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.createTable("col_table", "column",
+      df1.schema, Map.empty[String, String])
+
+    df1.write.insertInto("col_table")
+
+    intercept[AnalysisException]{
+      df2.write.deleteFrom("col_table")
     }
   }
 }
