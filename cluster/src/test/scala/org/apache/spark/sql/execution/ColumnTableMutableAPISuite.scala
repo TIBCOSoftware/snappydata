@@ -250,7 +250,7 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     }
   }
 
-  test("deleteFrom table exists syntax") {
+  test("deleteFrom table exists syntax with alias") {
     val snc = new SnappySession(sc)
     snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
         " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
@@ -264,7 +264,30 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.insert("col_table", Row(1, "1", "1", 1))
     snc.insert("col_table", Row(2, "2", null, 2))
     snc.insert("col_table", Row(3, "3", "3", 3))
-    snc.sql("delete from col_table where exists (select 1 from row_table where col_table.col2 = " +
+    snc.sql("delete from col_table a where exists (select 1 from row_table b where a.col2 = " +
+        "b.col2 and a.col3 = b.col3)")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 2)
+    assert(resultdf.contains(Row(3, "3", "3", 3)))
+    assert(resultdf.contains(Row(2, "2", null, 2)))
+  }
+
+  test("deleteFrom table exists syntax without alias") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row options(BUCKETS '2', PARTITION_BY 'col1') ")
+
+    snc.insert("row_table", Row(1, "1", "1", 100))
+    snc.insert("row_table", Row(2, "2", "2", 2))
+    snc.insert("row_table", Row(4, "4", "4", 4))
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(2, "2", null, 2))
+    snc.insert("col_table", Row(3, "3", "3", 3))
+    snc.sql("delete from col_table where exists (select 1 from row_table  where col_table.col2 = " +
         "row_table.col2 and col_table.col3 = row_table.col3)")
 
     val resultdf = snc.table("col_table").collect()

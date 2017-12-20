@@ -29,7 +29,7 @@ import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
@@ -984,10 +984,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def delete: Rule1[LogicalPlan] = rule {
-    DELETE ~ FROM ~ tableIdentifier ~
+    DELETE ~ FROM ~ relationFactor ~
         (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
-        ((tableName: TableIdentifier, whereExpr: Any) => {
-          val base = UnresolvedRelation(tableName)
+        ((t: Any, whereExpr: Any) => {
+          val base = t.asInstanceOf[LogicalPlan]
           val child = whereExpr match {
             case None => base
             case Some(w) => Filter(w.asInstanceOf[Expression], base)
