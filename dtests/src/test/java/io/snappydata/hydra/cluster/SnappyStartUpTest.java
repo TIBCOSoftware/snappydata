@@ -426,11 +426,90 @@ public class SnappyStartUpTest extends SnappyTest {
               "number of rows, " + "but observed actual Number of rows " + actualNumRows + " in " +
               "table " + tableName);
         }
+        long numRowsPrimaryBeforeRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRowsPrimaryBeforeRestart");
+        long numRowsSecondaryBeforeRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRowsSecondaryBeforeRestart");
+
+        long numRowsPrimaryAfterRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRowsPrimaryAfterRestart");
+        long numRowsSecondaryAfterRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRowsSecondaryAfterRestart");
+
+        if (numRowsPrimaryBeforeRestart != numRowsPrimaryAfterRestart) {
+          throw new TestException("Mismatch observed. Expected " + numRowsPrimaryBeforeRestart +
+              "number of rows in primary buckets, " + "but observed actual Number of rows in " +
+              "primary buckets" +
+              " " + numRowsPrimaryAfterRestart + " for " +
+              "table " + tableName);
+        }
+        if (numRowsSecondaryBeforeRestart != numRowsSecondaryAfterRestart) {
+          throw new TestException("Mismatch observed. Expected " + numRowsSecondaryBeforeRestart +
+              "number of rows in secondary buckets, " + "but observed actual Number of rows in " +
+              "secondary buckets" +
+              " " + numRowsSecondaryAfterRestart + " for " +
+              "table " + tableName);
+        }
       }
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
       throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
     }
+  }
+
+  public static void HydraTask_executeDiagnosticQueriesBeforeRecovery() {
+    executeDiagnosticQueries("Before");
+  }
+
+  public static void executeDiagnosticQueries(String queryExecutionTime) {
+    Connection conn;
+    ResultSet rs;
+    String query = null;
+    Vector tableNames = null;
+    long numRowsPrimary = 0, numRowsPrimarySecondary = 0, numRowsInSecondary = 0;
+    try {
+      conn = getLocatorConnection();
+      tableNames = SnappyPrms.getTableList();
+      if (tableNames.isEmpty()) {
+        throw new TestException("List of tables against tableNames " +
+            "required for diagnostic query execution is not specified");
+      }
+      for (int i = 0; i < tableNames.size(); i++) {
+        String tableName = (String) tableNames.elementAt(i);
+        query = "select count(*), dsid() from " + tableName + " -- GEMFIREXD-PROPERTIES " +
+            "withSecondaries=false ";
+        rs = conn.createStatement().executeQuery(query);
+        while (rs.next()) {
+          numRowsPrimary = rs.getLong(1);
+          Log.getLogWriter().info("Qyery : " + query + " executed successfully and found " +
+              numRowsPrimary + " rows in primary buckets " +
+              queryExecutionTime + "  cluster restart.");
+        }
+        query = "select count(*), dsid() from " + tableName + " -- GEMFIREXD-PROPERTIES " +
+            "withSecondaries=true ";
+
+        rs = conn.createStatement().executeQuery(query);
+        while (rs.next()) {
+          numRowsPrimarySecondary = rs.getLong(1);
+          Log.getLogWriter().info("Qyery : " + query + " executed successfully and and found " +
+              numRowsPrimarySecondary + " rows in primary and secondary buckets " +
+              queryExecutionTime + " cluster " +
+              "restart.");
+        }
+        numRowsInSecondary = numRowsPrimarySecondary - numRowsPrimary;
+        SnappyBB.getBB().getSharedMap().put("numRowsPrimary" +
+            queryExecutionTime + "Restart", numRowsPrimary);
+        SnappyBB.getBB().getSharedMap().put("numRowsSecondary" + queryExecutionTime + "Restart", numRowsInSecondary);
+      }
+      closeConnection(conn);
+    } catch (SQLException e) {
+      SQLHelper.printSQLException(e);
+      throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+    }
+  }
+
+  public static void HydraTask_executeDiagnosticQueriesAfterRecovery() {
+    executeDiagnosticQueries("After");
   }
 }
