@@ -238,6 +238,13 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
+     /* case i@Update(_, _, _, _, updateExpressions: Seq[Expression]) =>
+        val newExpressions = updateExpressions.map(expr => {
+          expr.transformDown {
+            case u@UnresolvedRelation => EliminateSubqueryAliases(getTable(u)).)
+          }
+        })
+        i.copy(updateExpressions = newExpressions)*/
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
     }
@@ -259,11 +266,13 @@ class SnappySessionState(snappySession: SnappySession)
             // if this is a row table, then fallback to direct execution
             mutable match {
               case _: UpdatableRelation if currentKey ne null =>
-                return if (!isDelete) {
+                return if (child.equals(table)) {
                   (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
                     mutable.table), lr, currentKey.sqlText), lr)
-                } else {
+                } else if (isDelete) {
                   (Seq.empty, DeleteFromTable(lr, child), lr)
+                } else {
+                  (Seq.empty, plan, lr)
                 }
               case _ =>
                 throw new AnalysisException(

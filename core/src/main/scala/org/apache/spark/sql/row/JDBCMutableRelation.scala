@@ -241,13 +241,11 @@ case class JDBCMutableRelation(
       }
       primaryKeys.close()
       // if partitioning columns are different from primary key then add those
-      if (keyColumns.nonEmpty) {
-        partitionColumns.foreach { p =>
-          // always use case-insensitive analysis for partitioning columns
-          // since table creation can use case-insensitive in creation
-          val partCol = Utils.toUpperCase(p)
-          if (!keyColumns.contains(partCol)) keyColumns += partCol
-        }
+      partitionColumns.foreach { p =>
+        // always use case-insensitive analysis for partitioning columns
+        // since table creation can use case-insensitive in creation
+        val partCol = Utils.toUpperCase(p)
+        if (!keyColumns.contains(partCol)) keyColumns += partCol
       }
       keyColumns
     } finally {
