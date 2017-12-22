@@ -18,15 +18,16 @@ SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memor
 
 | Operating System| Version |
 |--------|--------|
-|Red Hat Enterprise Linux|RHEL 6.0 and 7.0|
-|Ubuntu|Ubuntu Server 14.04 and later|
-|CentOS|CentOS 6, 7|
+|Red Hat Enterprise Linux|- RHEL 6.0 </p> - RHEL 7.0 (Recommended Kernel version: 3.10.0-693.2.2.el7.x86_64)|
+|Ubuntu|Ubuntu Server 14.04 and later||
+|CentOS|CentOS 6, 7 (Recommended Kernel version: 3.10.0-693.2.2.el7.x86_64)|
+
 
 
 ## Host Machine Requirements
 Requirements for each host:
 
-* A supported [Java SE installation](http://www.oracle.com/technetwork/java/javase/downloads). SnappyData does not support Java SE 9.
+* A supported [Java SE 8u151/ 8u152 or earlier installation](http://www.oracle.com/technetwork/java/javase/downloads). We recommend using Java version: 1.8.0_144.
 
 * A file system that supports long file names.
 

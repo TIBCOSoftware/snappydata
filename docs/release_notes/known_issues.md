@@ -6,7 +6,7 @@ The following key issues have been registered as bugs in the SnappyData bug trac
 <col width="25%" />
 <col width="25%" />
 <col width="25%" />
-<col width="25%" />
+<col width="25%" /> 
 </colgroup>
 <thead>
 <tr class="header">
@@ -17,6 +17,12 @@ The following key issues have been registered as bugs in the SnappyData bug trac
 </tr>
 </thead>
 <tbody>
+<tr class="odd">
+<td><a href="https://jira.snappydata.io/browse/SNAP-1375">SNAP-1375</a></td>
+<td>JVM crash reported</td>
+<td>This was reported on: <br> - RHEL kernel version: 3.10.0-327.13.1.el7.x86_64 <br> - Java version: 1.8.0_121</td>
+<td>To resolve this, use: </br> - RHEL kernel version: 3.10.0-693.2.2.el7.x86_64 </br> - Java version: 1.8.0_144</td>
+</tr>
 <tr class="odd">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1422">SNAP-1422</a></td>
 <td>Catalog in smart connector inconsistent with servers</td>
@@ -67,9 +73,24 @@ select
 </code></pre>
 </td>
 </tr>
-
-
-
+<tr class="even">
+<td><a href="https://jira.snappydata.io/browse/SNAP-1911">SNAP-1911</a></td>
+<td>JVM crash reported</td>
+<td>This was reported on: <br> -  RHEL kernel version: 3.10.0-327.13.1.el7.x86_64<br> - Java version: 1.8.0_131</td>
+<td>To resolve this, use: </br> - RHEL kernel version: 3.10.0-693.2.2.el7.x86_64</br> - Java version: 1.8.0_144</td>
+</tr>
+<tr class="odd">
+<td><a href="https://jira.snappydata.io/browse/SNAP-1999">SNAP-1999</a></td>
+<td>JVM crash reported</td>
+<td>This was reported on: <br> - RHEL kernel version: 3.10.0-327.13.1.el7.x86_64 <br> - Java version: 1.8.0_131</td>
+<td>To resolve this, use: </br> - RHEL kernel version: 3.10.0-693.2.2.el7.x86_64 </br> - Java version: 1.8.0_144</td>
+</tr>
+<tr class="even">
+<td><a href="https://jira.snappydata.io/browse/SNAP-2017">SNAP-2017</a></td>
+<td>JVM crash reported</td>
+<td>This was reported on: <br> - RHEL kernel version: 3.10.0-514.10.2.el7.x86_64 <br> - Java version: 1.8.0_144</td>
+<td>To resolve this, use: </br> -  RHEL kernel version: 3.10.0-693.2.2.el7.x86_64 </br> - Java version: 1.8.0_144</td>
+</tr>
 
 
 <!--

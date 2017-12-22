@@ -74,10 +74,11 @@ column-data-type:
 	SHORT | 
 	TINYINT | 
 	BYTE | 
+	VARCHAR | 
 ```
 Column tables can also use ARRAY, MAP and STRUCT types.</br>
 Decimal and numeric has default precision of 38 and scale of 18.</br>
-In this release, LONG is supported only for column tables. It is recommended to use BEGIN fo row tables instead.
+In this release, LONG is supported only for column tables. It is recommended to use BEGINT for row tables instead.
 
 <a id="ddl"></a>
 <a id="colocate-with"></a>
