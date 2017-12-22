@@ -47,9 +47,15 @@ import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructTyp
  */
 final class ColumnDelta extends ColumnFormatValue with Delta {
 
-  def this(buffer: ByteBuffer) = {
+  def this(buffer: ByteBuffer, codecId: Int, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean = true) = {
     this()
-    setBuffer(buffer)
+    setBuffer(buffer, codecId, isCompressed, changeOwnerToStorage)
+  }
+
+  override protected def copy(buffer: ByteBuffer, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean): ColumnDelta = synchronized {
+    new ColumnDelta(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
   override def apply(putEvent: EntryEvent[_, _]): AnyRef = {
@@ -59,13 +65,14 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   }
 
   override def apply(region: Region[_, _], key: AnyRef, oldValue: AnyRef,
-      prepareForOffHeap: Boolean): AnyRef = {
+      prepareForOffHeap: Boolean): AnyRef = synchronized {
     if (oldValue eq null) {
       // first delta, so put as is
-      val result = new ColumnFormatValue(columnBuffer)
+      val result = new ColumnFormatValue(columnBuffer, compressionCodecId, isCompressed)
       // buffer has been transferred and should be removed from delta
       // which would no longer be usable after this point
       columnBuffer = DiskEntry.Helper.NULL_BUFFER
+      decompressionState = -1
       result
     } else {
       // merge with existing delta
@@ -78,13 +85,17 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
         val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
             .fetchHiveMetaData(false).schema.asInstanceOf[StructType]
-        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue]
-        val existingBuffer = oldColumnValue.getBufferRetain
+        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
+          decompress = true, compress = false)
+        val existingBuffer = oldColumnValue.getBuffer
+        val newValue = getValueRetain(decompress = true, compress = false)
         try {
-          new ColumnFormatValue(encoder.merge(columnBuffer, existingBuffer,
-            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)))
+          new ColumnFormatValue(encoder.merge(newValue.getBuffer, existingBuffer,
+            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)),
+            oldColumnValue.compressionCodecId, isCompressed = false)
         } finally {
           oldColumnValue.release()
+          newValue.release()
           // release own buffer too and delta should be unusable now
           release()
         }
@@ -109,10 +120,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_FORMAT_DELTA
 
-  override def toString: String = {
-    val buffer = columnBuffer.duplicate()
-    s"ColumnDelta[size=${buffer.remaining()} $buffer"
-  }
+  override protected def className: String = "ColumnDelta"
 }
 
 object ColumnDelta {

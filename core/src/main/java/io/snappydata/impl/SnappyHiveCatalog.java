@@ -36,6 +36,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
+import io.snappydata.Constant;
 import org.apache.commons.collections.map.CaseInsensitiveMap;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.metadata.Hive;
@@ -396,7 +397,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           int columnMaxDeltaRows = Integer.parseInt(parameters.get(
               ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS()));
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
-          String compressionCodec = value == null ? null : value.toString();
+          String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);
           return new ExternalTableMetaData(
               fullyQualifiedName,

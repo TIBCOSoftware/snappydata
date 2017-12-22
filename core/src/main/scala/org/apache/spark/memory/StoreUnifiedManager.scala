@@ -16,15 +16,18 @@
  */
 package org.apache.spark.memory
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 
+import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.internal.shared.BufferAllocator
+import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
+import org.slf4j.LoggerFactory
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.util.Utils
-import org.apache.spark.{Logging, SparkConf, SparkEnv}
+import org.apache.spark.{Logging, SparkConf, SparkEnv, TaskContext}
 
 /**
   * Base trait for different memory manager used by SnappyData in different modes
@@ -222,6 +225,67 @@ object MemoryManagerCallback extends Logging {
       }
     } else { // Spark.env will be null only with gemxd boot time
       bootMemoryManager
+    }
+  }
+
+  def allocateExecutionMemory(size: Int, owner: String,
+      allocator: BufferAllocator): ByteBuffer = {
+    if (allocator.isManagedDirect) {
+      val context = TaskContext.get()
+      if (context ne null) {
+        val memoryManager = context.taskMemoryManager()
+        val totalSize = UnsafeHolder.getAllocationSize(size) +
+            DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
+        val consumer = new DefaultMemoryConsumer(memoryManager, MemoryMode.OFF_HEAP)
+        if (consumer.acquireMemory(totalSize) < totalSize) {
+          consumer.freeMemory(consumer.getUsed)
+          throw DirectBufferAllocator.instance().lowMemoryException(owner, totalSize)
+        }
+        return allocator.allocateCustom(totalSize, new UnsafeHolder.FreeMemoryFactory {
+          override def newFreeMemory(address: Long, size: Int): ExecutionFreeMemory =
+            new ExecutionFreeMemory(consumer, address)
+        }).order(ByteOrder.LITTLE_ENDIAN)
+      }
+    }
+    allocator.allocate(size, owner).order(ByteOrder.LITTLE_ENDIAN)
+  }
+}
+
+final class DefaultMemoryConsumer(taskMemoryManager: TaskMemoryManager,
+    mode: MemoryMode = MemoryMode.ON_HEAP)
+    extends MemoryConsumer(taskMemoryManager, taskMemoryManager.pageSizeBytes(), mode) {
+
+  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
+
+  override def getUsed: Long = this.used
+}
+
+final class ExecutionFreeMemory(consumer: DefaultMemoryConsumer,
+    address: Long) extends UnsafeHolder.FreeMemory(address) {
+
+  override protected def objectName(): String = BufferAllocator.EXECUTION
+
+  override def run() {
+    val address = tryFree()
+    if (address != 0) {
+      UnsafeHolder.getUnsafe.freeMemory(address)
+      releaseExecutionMemory()
+    }
+  }
+
+  def releaseExecutionMemory(): Unit = {
+    try {
+      // release from execution pool
+      consumer.freeMemory(consumer.getUsed)
+    } catch {
+      case t: Throwable => // ignore exceptions
+        SystemFailure.checkFailure()
+        try {
+          val logger = LoggerFactory.getLogger(getClass)
+          logger.error("ExecutionFreeMemory unexpected exception", t)
+        } catch {
+          case _: Throwable => // ignore if even logging failed
+        }
     }
   }
 }

@@ -22,6 +22,7 @@ import com.gemstone.gemfire.internal.shared.SystemProperties
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
+import org.apache.spark.sql.store.CompressionCodecId
 
 /**
  * Constant names suggested per naming convention
@@ -119,6 +120,9 @@ object Constant {
   // speed and compression ratio having higher compression ration than LZ4.
   // But the JNI version means no warmup time which helps for short jobs.
   val DEFAULT_CODEC = "lz4"
+
+  /** the [[CompressionCodecId]] of default compression scheme ([[DEFAULT_CODEC]]) */
+  val DEFAULT_CODECID: CompressionCodecId.Type = CompressionCodecId.fromName(DEFAULT_CODEC)
 
   // System property to tell the system whether the String type columns
   // should be considered as clob or not
@@ -238,12 +242,6 @@ object Property extends Enumeration {
         s"$ColumnBatchSize and this property is hit first. It can also be set for " +
         s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
         s"create table DDL else this setting is used for the create table.", Some(10000))
-
-  val CompressionCodec = SQLVal[String](s"${Constant.PROPERTY_PREFIX}compression.codec",
-    "The compression codec to use when creating column batches for binary and " +
-        "complex type columns. Possible values: none, snappy, gzip, lzo. It can " +
-        s"also be set as ${ExternalStoreUtils.COMPRESSION_CODEC} option in " +
-        s"create table DDL. Default is no compression.", Some("none"))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
     "The join would be converted into a hash join if the table is of size less " +
