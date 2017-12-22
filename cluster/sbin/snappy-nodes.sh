@@ -157,6 +157,9 @@ function execute() {
       if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.joinTimeout='; then
         args="${args} -J-Dp2p.joinTimeout=2000"
       fi
+      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.minJoinTries=')" ]; then
+        args="${args} -J-Dp2p.minJoinTries=1"
+      fi
     fi
     # set the default bind-address and SPARK_LOCAL_IP
     if ! echo $args $"${@// /\\ }" | grep -q '[-]bind-address='; then
