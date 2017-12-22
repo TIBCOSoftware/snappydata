@@ -497,6 +497,13 @@ public class SnappyPrms extends BasePrms {
   public static Long indexList;
 
   /**
+   * Parameter used to get the user specified List of connetcion properties and set them on the
+   * jdbc connection.
+   * (VectorsetValues of Strings) A list of values for connetcion properties list
+   */
+  public static Long connPropsList;
+
+  /**
    * Parameter used to get the number of Rows in each table provided in table List. This is
    * required for validating recovery after cluster restart.
    * (VectorsetValues of Strings) A list of values for number of rows in each table in table list
@@ -873,6 +880,11 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getIndexList() {
     Long key = indexList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getConnPropsList() {
+    Long key = connPropsList;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 

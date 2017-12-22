@@ -1187,7 +1187,13 @@ public class SnappyTest implements Serializable {
       SQLException {
     List<String> endpoints = validateLocatorEndpointData();
     Properties props = new Properties();
-    props.setProperty("route-query", "false");
+    Vector connPropsList = SnappyPrms.getConnPropsList();
+    for (int i = 0; i < connPropsList.size(); i++) {
+      String conProp = (String) connPropsList.elementAt(i);
+      String conPropKey = conProp.substring(0, conProp.indexOf("="));
+      String conPropValue = conProp.substring(conProp.indexOf("=") + 1);
+      props.setProperty(conPropKey, conPropValue);
+    }
     Connection conn = null;
     String url = "jdbc:snappydata://" + endpoints.get(0) + "/";
     conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);

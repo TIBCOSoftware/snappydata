@@ -6,7 +6,8 @@ Creates persistent Row Tables required for ods schema use case using SQL way, lo
 data into tables using snappy job.
 It then restarts the cluster 2-3 times.
 Test verifies that each time, the cluster is restarted properly within expected time and
-all the tables are recovered with persisted data.
+all the tables are recovered with persisted data and also verifies that the primary buckets and
+secondary buckets and their corresponding indexes are all containing data as expected.
 ";
 
 INCLUDE $JTESTS/hydraconfig/hydraparams1.inc;
@@ -106,6 +107,9 @@ CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
 CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSnappyCluster
             threadGroups = snappyThreads;
 
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyStartUpTest taskMethod  = HydraTask_executeDiagnosticQueriesAfterRecovery
+            threadGroups = snappyThreads;
+
 CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyStartUpTest taskMethod = HydraTask_verifyTableData
             threadGroups = snappyThreads;
 
@@ -148,4 +152,5 @@ io.snappydata.hydra.cluster.SnappyPrms-columnBatchSize = 100000;
 io.snappydata.hydra.cluster.SnappyPrms-tableList = ODS.PERSONS ODS.CLAIM_DETAIL ODS.CLAIM_STATUS;
 io.snappydata.hydra.cluster.SnappyPrms-indexList = IX_PERSONS_02 IX_PERSONS_03 IX_PERSONS_04 IX_CLAIM_DETAIL_01 IX_CLAIM_DETAIL_02 IX_CLAIM_STATUS_01 IX_CLAIM_STATUS_02;
 io.snappydata.hydra.cluster.SnappyPrms-persistIndexes = ONEOF true false FOENO;
-
+//io.snappydata.hydra.cluster.SnappyPrms-connPropsList = "route-query=false log-level=fine";
+io.snappydata.hydra.cluster.SnappyPrms-connPropsList = "route-query=false";
