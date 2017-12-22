@@ -146,5 +146,6 @@ io.snappydata.hydra.cluster.SnappyPrms-forceStart = true;
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar;
 io.snappydata.hydra.cluster.SnappyPrms-columnBatchSize = 100000;
 io.snappydata.hydra.cluster.SnappyPrms-tableList = ODS.PERSONS ODS.CLAIM_DETAIL ODS.CLAIM_STATUS;
+io.snappydata.hydra.cluster.SnappyPrms-indexList = IX_PERSONS_02 IX_PERSONS_03 IX_PERSONS_04 IX_CLAIM_DETAIL_01 IX_CLAIM_DETAIL_02 IX_CLAIM_STATUS_01 IX_CLAIM_STATUS_02;
 io.snappydata.hydra.cluster.SnappyPrms-persistIndexes = ONEOF true false FOENO;
 

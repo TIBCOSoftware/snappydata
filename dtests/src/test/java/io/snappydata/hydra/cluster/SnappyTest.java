@@ -1183,6 +1183,17 @@ public class SnappyTest implements Serializable {
     return conn;
   }
 
+  public static Connection getLocatorConnectionUsingProps() throws
+      SQLException {
+    List<String> endpoints = validateLocatorEndpointData();
+    Properties props = new Properties();
+    props.setProperty("route-query", "false");
+    Connection conn = null;
+    String url = "jdbc:snappydata://" + endpoints.get(0) + "/";
+    conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
+    return conn;
+  }
+
   public static Connection getServerConnection() throws SQLException {
     List<String> endpoints = validateServerEndpointData();
     Connection conn = null;
@@ -1202,6 +1213,16 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info("Creating connection using " + driver + " with " + protocol);
     loadDriver(driver);
     Connection conn = DriverManager.getConnection(protocol);
+    return conn;
+  }
+
+  private static Connection getConnection(String protocol, String driver, Properties props)
+      throws
+      SQLException {
+    Log.getLogWriter().info("Creating connection using " + driver + " with " + protocol +
+        " and user specified properties list: = " + props.toString());
+    loadDriver(driver);
+    Connection conn = DriverManager.getConnection(protocol, props);
     return conn;
   }
 

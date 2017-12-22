@@ -442,6 +442,10 @@ public class SnappyStartUpTest extends SnappyTest {
               "primary buckets" +
               " " + numRowsPrimaryAfterRestart + " for " +
               "table " + tableName);
+        } else {
+          Log.getLogWriter().info("Got expected number of rows : " +
+              numRowsPrimaryAfterRestart + " in primary buckets before and " +
+              "after cluster restart");
         }
         if (numRowsSecondaryBeforeRestart != numRowsSecondaryAfterRestart) {
           throw new TestException("Mismatch observed. Expected " + numRowsSecondaryBeforeRestart +
@@ -449,6 +453,27 @@ public class SnappyStartUpTest extends SnappyTest {
               "secondary buckets" +
               " " + numRowsSecondaryAfterRestart + " for " +
               "table " + tableName);
+        } else {
+          Log.getLogWriter().info("Got expected number of rows : " +
+              numRowsSecondaryAfterRestart + " in secondary buckets before and " +
+              "after cluster restart");
+        }
+      }
+      Vector indexNames = SnappyPrms.getIndexList();
+      for (int j = 0; j < indexNames.size(); j++) {
+        String indexName = (String) indexNames.elementAt(j);
+        long numRowsIndexBeforeRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRows_" + indexName + "_BeforeRestart");
+        long numRowsIndexAfterRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRows_" + indexName + "_AfterRestart");
+        if (numRowsIndexBeforeRestart != numRowsIndexAfterRestart) {
+          throw new TestException("Mismatch observed. Expected " + numRowsIndexBeforeRestart +
+              "number of rows in index: " + indexName + ", " + "but observed " +
+              numRowsIndexAfterRestart + " number of rows.");
+        } else {
+          Log.getLogWriter().info("Got expected number of rows : " +
+              numRowsIndexAfterRestart + " in index: " + indexName + " before and " +
+              "after cluster restart");
         }
       }
       closeConnection(conn);
@@ -466,19 +491,22 @@ public class SnappyStartUpTest extends SnappyTest {
     Connection conn;
     ResultSet rs;
     String query = null;
-    Vector tableNames = null;
-    long numRowsPrimary = 0, numRowsPrimarySecondary = 0, numRowsInSecondary = 0;
+    Vector tableNames = SnappyPrms.getTableList(), indexNames = SnappyPrms.getIndexList();
+    long numRowsPrimary = 0, numRowsPrimarySecondary = 0, numRowsSecondary = 0, numRowsIndex
+        = 0;
     try {
-      conn = getLocatorConnection();
-      tableNames = SnappyPrms.getTableList();
+      conn = getLocatorConnectionUsingProps();
       if (tableNames.isEmpty()) {
         throw new TestException("List of tables against tableNames " +
             "required for diagnostic query execution is not specified");
       }
+      if (indexNames.isEmpty()) {
+        throw new TestException("List of indexes against tableNames " +
+            "required for diagnostic query execution is not specified");
+      }
       for (int i = 0; i < tableNames.size(); i++) {
         String tableName = (String) tableNames.elementAt(i);
-        query = "select count(*), dsid() from " + tableName + " -- GEMFIREXD-PROPERTIES " +
-            "withSecondaries=false ";
+        query = "select count(*), dsid() from sys.members m --GEMFIREXD-PROPERTIES withSecondaries=false \n , " + tableName + "  where dsid() = m.id";
         rs = conn.createStatement().executeQuery(query);
         while (rs.next()) {
           numRowsPrimary = rs.getLong(1);
@@ -486,9 +514,7 @@ public class SnappyStartUpTest extends SnappyTest {
               numRowsPrimary + " rows in primary buckets " +
               queryExecutionTime + "  cluster restart.");
         }
-        query = "select count(*), dsid() from " + tableName + " -- GEMFIREXD-PROPERTIES " +
-            "withSecondaries=true ";
-
+        query = "select count(*), dsid() from sys.members m --GEMFIREXD-PROPERTIES withSecondaries=true \n , " + tableName + "  where dsid() = m.id";
         rs = conn.createStatement().executeQuery(query);
         while (rs.next()) {
           numRowsPrimarySecondary = rs.getLong(1);
@@ -497,10 +523,28 @@ public class SnappyStartUpTest extends SnappyTest {
               queryExecutionTime + " cluster " +
               "restart.");
         }
-        numRowsInSecondary = numRowsPrimarySecondary - numRowsPrimary;
+        numRowsSecondary = numRowsPrimarySecondary - numRowsPrimary;
         SnappyBB.getBB().getSharedMap().put("numRowsPrimary" +
             queryExecutionTime + "Restart", numRowsPrimary);
-        SnappyBB.getBB().getSharedMap().put("numRowsSecondary" + queryExecutionTime + "Restart", numRowsInSecondary);
+        SnappyBB.getBB().getSharedMap().put("numRowsSecondary" + queryExecutionTime + "Restart", numRowsSecondary);
+
+        for (int j = 0; j < indexNames.size(); j++) {
+          String indexName = (String) indexNames.elementAt(j);
+          String tableNameString = tableName.substring(tableName.indexOf(".") + 1);
+          if (indexName.contains(tableNameString)) {
+            query = "select count(*), dsid() from sys.members m , " + tableName + " " +
+                "--GEMFIREXD-PROPERTIES index=" + indexName + "  \n where dsid() = m.id ";
+            rs = conn.createStatement().executeQuery(query);
+            while (rs.next()) {
+              numRowsIndex = rs.getLong(1);
+              Log.getLogWriter().info("Qyery : " + query + " executed successfully and and found " +
+                  numRowsIndex + " rows in index:  " + indexName + " on table: " + tableName +
+                  queryExecutionTime + " cluster restart.");
+            }
+            SnappyBB.getBB().getSharedMap().put("numRows_" + indexName + "_" +
+                queryExecutionTime + "Restart", numRowsIndex);
+          }
+        }
       }
       closeConnection(conn);
     } catch (SQLException e) {
@@ -508,6 +552,7 @@ public class SnappyStartUpTest extends SnappyTest {
       throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
     }
   }
+
 
   public static void HydraTask_executeDiagnosticQueriesAfterRecovery() {
     executeDiagnosticQueries("After");

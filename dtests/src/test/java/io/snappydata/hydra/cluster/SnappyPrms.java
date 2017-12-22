@@ -491,6 +491,12 @@ public class SnappyPrms extends BasePrms {
   public static Long tableList;
 
   /**
+   * Parameter used to get the user specified index List required for validation.
+   * (VectorsetValues of Strings) A list of values for index List
+   */
+  public static Long indexList;
+
+  /**
    * Parameter used to get the number of Rows in each table provided in table List. This is
    * required for validating recovery after cluster restart.
    * (VectorsetValues of Strings) A list of values for number of rows in each table in table list
@@ -626,7 +632,7 @@ public class SnappyPrms extends BasePrms {
 
   public static int getShufflePartitions() {
     Long key = shufflePartitions;
-    return tasktab().intAt(key, tab().intAt(key, 1));
+    return tasktab().intAt(key, tab().intAt(key, 200));
   }
 
   public static String getCommaSepAPPProps() {
@@ -862,6 +868,11 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getNumRowsList() {
     Long key = numRowsList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getIndexList() {
+    Long key = indexList;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
