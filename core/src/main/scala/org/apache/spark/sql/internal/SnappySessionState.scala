@@ -32,10 +32,10 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
@@ -251,33 +251,61 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
-      analyzer: Analyzer) extends Rule[LogicalPlan] {
+      analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
+
+    protected def splitEqualExpression(condition: Expression): Seq[Expression] = {
+      condition match {
+        case EqualTo(l, r) =>
+          Seq(l, r)
+        case other => other :: Nil
+      }
+    }
 
     private def getKeyAttributes(table: LogicalPlan,
         child: LogicalPlan,
         plan: LogicalPlan,
-        isDelete : Boolean = false): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
+        isDelete: Boolean = false): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
         case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
-          val ks = mutable.getKeyColumns
-          if (ks.isEmpty) {
-            val currentKey = snappySession.currentKey
-            // if this is a row table, then fallback to direct execution
-            mutable match {
-              case _: UpdatableRelation if currentKey ne null =>
-                return if (child.equals(table)) {
-                  (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
-                    mutable.table), lr, currentKey.sqlText), lr)
-                } else if (isDelete) {
-                  (Seq.empty, DeleteFromTable(lr, child), lr)
-                } else {
-                  (Seq.empty, plan, lr)
+          var ks = mutable.getKeyColumns
+          val currentKey = snappySession.currentKey
+          mutable match {
+            case _: UpdatableRelation if currentKey ne null =>
+              if (child.equals(table)) {
+                // if this is a row table && no subquery then fallback to direct execution
+                return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
+                  mutable.table), lr, currentKey.sqlText), lr)
+              } else if (isDelete) {
+                // if this is a row table && has subquery use DeleteFromTable
+                return (Seq.empty, DeleteFromTable(lr, child), lr)
+              } else {
+                // if this is a row table update with child then use join
+                // expression as well in key columns
+                child match {
+                  case Join(_, _, _, condition) =>
+                    val relExpr = lr.output.map(_.canonicalized)
+                    val tableSidejoinKeys =
+                      splitConjunctivePredicates(condition.get)
+                          .map(splitEqualExpression(_)).flatten
+                          .filter(e => relExpr.find(r => r.equals(e.canonicalized)).isDefined)
+                    ks = ks ++ tableSidejoinKeys.map(_.references).flatten.map(_.name)
+
+                  case Filter(condition, child) =>
+                    val relExpr = lr.output.map(_.canonicalized)
+                    val tableSideWhereKey = condition.children.map(splitEqualExpression(_)).flatten
+                          .filter(e => relExpr.find(r => r.equals(e.canonicalized)).isDefined)
+                    ks = ks ++ tableSideWhereKey.map(_.references).flatten.map(_.name)
+                  // There should not be case which will come here. But I am not sure
+                  case _ => return (Seq.empty, plan, lr)
                 }
-              case _ =>
-                throw new AnalysisException(
-                  s"Empty key columns for update/delete on $mutable")
-            }
+              }
+            case _ =>
+          }
+
+          if (ks.isEmpty) {
+            throw new AnalysisException(
+              s"Empty key columns for update/delete on $mutable")
           }
           tableName = mutable.table
           ks

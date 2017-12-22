@@ -28,7 +28,7 @@ case class DataDiffCol(column1: Int, column2: Int, column3: Int)
 
 case class DataStrCol(column1: Int, column2: String, column3: Int)
 
-class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with BeforeAndAfter
+class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with BeforeAndAfter
     with BeforeAndAfterAll {
 
   val data1 = Seq(Seq(1, 22, 3), Seq(7, 81, 9), Seq(9, 23, 3), Seq(4, 24, 3),
@@ -74,7 +74,7 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.contains(Row(88, 88, 90)))
   }
 
-  test("Multiple update with correlated subquery") {
+  ignore("Multiple update with correlated subquery") {
     val snc = new SnappySession(sc)
     val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
     val df1 = snc.createDataFrame(rdd)
@@ -162,6 +162,7 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.insert("col_table", Row(4, "4", "400", 4))
 
     snc.insert("row_table", Row(1, "1", "1", 1))
+    snc.insert("row_table", Row(1, "5", "30", 30))
     snc.insert("row_table", Row(2, "2", null, 2))
     snc.insert("row_table", Row(4, "4", "3", 3))
 
@@ -169,11 +170,40 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
         "row_table a join col_table b on a.col2 = b.col2")
 
     val resultdf = snc.table("row_table").collect()
-    assert(resultdf.length == 3)
+    assert(resultdf.length == 4)
     assert(resultdf.contains(Row(1, "1", "100", 100)))
     assert(resultdf.contains(Row(2, "2", "200", 200)))
     assert(resultdf.contains(Row(4, "4", "400", 4)))
+    assert(resultdf.contains(Row(1, "5", "30", 30))) // Unchanged
   }
+
+  test("Multiple columns update with join : Column tables") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row options(BUCKETS '2', PARTITION_BY 'col1') ")
+
+    snc.insert("row_table", Row(1, "1", "100", 100))
+    snc.insert("row_table", Row(2, "2", "200", 200))
+    snc.insert("row_table", Row(4, "4", "400", 4))
+
+    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(1, "5", "30", 30))
+    snc.insert("col_table", Row(2, "2", null, 2))
+    snc.insert("col_table", Row(4, "4", "3", 3))
+
+    snc.sql("update col_table set a.col3 = b.col3, a.col4 = b.col4 from " +
+        "col_table a join row_table b on a.col2 = b.col2")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 4)
+    assert(resultdf.contains(Row(1, "1", "100", 100)))
+    assert(resultdf.contains(Row(2, "2", "200", 200)))
+    assert(resultdf.contains(Row(4, "4", "400", 4)))
+    assert(resultdf.contains(Row(1, "5", "30", 30))) // Unchanged
+  }
+
 
   test("Multiple columns update with join : Row RR tables") {
     val snc = new SnappySession(sc)
@@ -181,12 +211,12 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
         " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
     snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
         " using row ")
-
     snc.insert("col_table", Row(1, "1", "100", 100))
     snc.insert("col_table", Row(2, "2", "200", 200))
     snc.insert("col_table", Row(4, "4", "400", 4))
 
     snc.insert("row_table", Row(1, "1", "1", 1))
+    snc.insert("row_table", Row(1, "5", "30", 30))
     snc.insert("row_table", Row(2, "2", null, 2))
     snc.insert("row_table", Row(4, "4", "3", 3))
 
@@ -194,10 +224,59 @@ class ColumnTableMutableAPISuite extends SnappyFunSuite with Logging with Before
         "row_table a join col_table b on a.col2 = b.col2")
 
     val resultdf = snc.table("row_table").collect()
-    assert(resultdf.length == 3)
+    assert(resultdf.length == 4)
     assert(resultdf.contains(Row(1, "1", "100", 100)))
     assert(resultdf.contains(Row(2, "2", "200", 200)))
     assert(resultdf.contains(Row(4, "4", "400", 4)))
+    assert(resultdf.contains(Row(1, "5", "30", 30))) // Unchanged
+  }
+
+  test("Single column update with subquery : Row RR tables") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row ")
+    snc.insert("col_table", Row(1, "1", "100", 100))
+    snc.insert("col_table", Row(2, "2", "200", 200))
+    snc.insert("col_table", Row(4, "4", "400", 4))
+
+    snc.insert("row_table", Row(1, "1", "1", 1))
+    snc.insert("row_table", Row(1, "5", "30", 30))
+    snc.insert("row_table", Row(2, "2", null, 2))
+    snc.insert("row_table", Row(4, "4", "3", 3))
+
+    snc.sql("update row_table set col3 = '5' where col2 in (select col2 from col_table)")
+
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 4)
+    assert(resultdf.contains(Row(1, "1", "5", 1)))
+    assert(resultdf.contains(Row(2, "2", "5", 2)))
+    assert(resultdf.contains(Row(4, "4", "5", 3)))
+    assert(resultdf.contains(Row(1, "5", "30", 30))) // Unchanged
+  }
+
+  ignore("Single column update with subquery with avg : Row RR tables") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row ")
+    snc.insert("col_table", Row(1, "2", "100", 100))
+    snc.insert("col_table", Row(2, "2", "200", 200))
+    snc.insert("col_table", Row(4, "2", "400", 4))
+
+    snc.insert("row_table", Row(1, "1", "1", 1))
+    snc.insert("row_table", Row(1, "5", "30", 30))
+    snc.insert("row_table", Row(2, "2", null, 2))
+    snc.insert("row_table", Row(4, "4", "3", 3))
+
+    snc.sql("update row_table set col3 = '5' where col2 > (select avg(col2) from col_table)")
+
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 4)
+    assert(resultdf.contains(Row(4, "4", "5", 3)))
+    assert(resultdf.contains(Row(1, "5", "5", 30))) // Unchanged
   }
 
   test("row table without child") {
