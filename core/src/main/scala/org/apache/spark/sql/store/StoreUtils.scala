@@ -24,7 +24,7 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.Property
 
 import org.apache.spark.Partition
@@ -465,10 +465,18 @@ object StoreUtils {
       }
     }.getOrElse(sb.append(s"$GEM_PERSISTENT SYNCHRONOUS "))
 
-    parameters.remove(DISKSTORE).foreach { v =>
-      if (isPersistent) sb.append(s"'$v' ")
-      else throw Utils.analysisException(
-        s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+    // delta buffer regions will use delta store
+    if (!isRowTable && !isShadowTable) {
+      if (parameters.remove(DISKSTORE).isDefined && !isPersistent) {
+        throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+      }
+      if (isPersistent) sb.append(s"'${GfxdConstants.SNAPPY_DELTA_DISKSTORE_NAME}' ")
+    } else {
+      parameters.remove(DISKSTORE).foreach { v =>
+        if (isPersistent) sb.append(s"'$v' ")
+        else throw Utils.analysisException(
+          s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+      }
     }
     sb.append(parameters.remove(SERVER_GROUPS)
         .map(v => s"$GEM_SERVER_GROUPS ($v) ")
