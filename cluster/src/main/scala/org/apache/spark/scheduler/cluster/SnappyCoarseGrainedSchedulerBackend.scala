@@ -43,7 +43,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
         whoSuspected: InternalDistributedMember): Unit = {}
 
     override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
-      SnappyContext.removeBlockId(id.toString)
+      SnappyContext.removeBlockId(id.canonicalString())
     }
   }
 
@@ -78,7 +78,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
       GemFireXDUtils.getGfxdAdvisor.getDistributionManager
           .removeMembershipListener(membershipListener)
     } catch {
-      case cce: CacheClosedException =>
+      case _: CacheClosedException =>
     }
     logInfo(s"stopped successfully")
   }
