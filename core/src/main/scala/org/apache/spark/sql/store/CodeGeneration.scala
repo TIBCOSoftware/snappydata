@@ -27,7 +27,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream
 import org.codehaus.janino.CompilerFactory
 
-import org.apache.spark.Logging
+import org.apache.spark.{Logging, SparkEnv}
 import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
@@ -57,10 +57,18 @@ object CodeGeneration extends Logging {
 
   override def logDebug(msg: => String): Unit = super.logDebug(msg)
 
+  private[this] lazy val cacheSize = {
+    // don't need as big a cache as Spark's CodeGenerator.cache
+    val env = SparkEnv.get
+    if (env ne null) {
+      env.conf.getInt("spark.sql.codegen.cacheSize", 1000) / 4
+    } else 250
+  }
+
   /**
    * A loading cache of generated <code>GeneratedStatement</code>s.
    */
-  private[this] val cache = CacheBuilder.newBuilder().maximumSize(100).build(
+  private[this] lazy val cache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[ExecuteKey, GeneratedStatement]() {
       override def load(key: ExecuteKey): GeneratedStatement = {
         val start = System.nanoTime()
@@ -76,7 +84,7 @@ object CodeGeneration extends Logging {
    * a key (name+schema) instead of the code string itself to avoid having
    * to create the code string upfront. Code adapted from CodeGenerator.cache
    */
-  private[this] val codeCache = CacheBuilder.newBuilder().maximumSize(100).build(
+  private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[ExecuteKey, (GeneratedClass, Array[Any])]() {
       // invoke CodeGenerator.doCompile by reflection to reduce code duplication
       private val doCompileMethod = {
@@ -101,7 +109,7 @@ object CodeGeneration extends Logging {
       }
     })
 
-  private[this] val indexCache = CacheBuilder.newBuilder().maximumSize(100).build(
+  private[this] lazy val indexCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[ExecuteKey, GeneratedIndexStatement]() {
       override def load(key: ExecuteKey): GeneratedIndexStatement = {
         val start = System.nanoTime()
@@ -115,7 +123,7 @@ object CodeGeneration extends Logging {
   /**
    * A loading cache of generated <code>SerializeComplexType</code>s.
    */
-  private[this] val typeCache = CacheBuilder.newBuilder().maximumSize(100).build(
+  private[this] lazy val typeCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[DataType, SerializeComplexType]() {
       override def load(key: DataType): SerializeComplexType = {
         val start = System.nanoTime()
