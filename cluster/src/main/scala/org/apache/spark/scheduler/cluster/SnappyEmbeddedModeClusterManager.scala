@@ -92,6 +92,9 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
       case service => throw new SparkException(
         s"Trying to start lead on node already booted as $service")
     }
+
+    // wait for store to initialize (acquire lead lock or go to standby)
+    LeadImpl.invokeLeadStart(schedulerImpl.sc.conf)
   }
 
   def stopLead(): Unit = {

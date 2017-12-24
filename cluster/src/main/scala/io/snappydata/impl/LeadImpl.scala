@@ -19,7 +19,6 @@ package io.snappydata.impl
 import java.lang.reflect.{Constructor, Method}
 import java.sql.SQLException
 import java.util.Properties
-import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,6 +42,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata._
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
@@ -61,18 +61,7 @@ class LeadImpl extends ServerImpl with Lead
 
   private val bootProperties = new Properties()
 
-  private lazy val dls = {
-    val dSys = Misc.getGemFireCache.getDistributedSystem
-    DLockService.create(LOCK_SERVICE_NAME, dSys, true, true, true)
-  }
-
-  private val sparkContext = new AtomicReference[SparkContext]
-
   private var notifyStatusChange: ((FabricService.State) => Unit) = _
-
-  private lazy val primaryLeaderLock = new DistributedMemberLock(dls,
-    LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
-    DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
   var _directApiInvoked: Boolean = false
   var isTestSetup = false
@@ -218,11 +207,6 @@ class LeadImpl extends ServerImpl with Lead
 
       val sc = new SparkContext(conf)
 
-      this.sparkContext.set(sc)
-
-      // wait for store to initialize
-      internalStart(storeProperties)
-
       // start the service to gather table statistics
       SnappyTableStatsProviderService.start(sc)
 
@@ -266,7 +250,7 @@ class LeadImpl extends ServerImpl with Lead
     }
 
     try {
-      internalStart(storeProperties)
+      internalStart(() => storeProperties)
       Await.result(initServices, Duration.Inf)
     } catch {
       case _: InterruptedException =>
@@ -278,17 +262,18 @@ class LeadImpl extends ServerImpl with Lead
   }
 
   @throws[SparkException]
-  private def internalStart(storeProps: Properties): Unit = synchronized {
+  private def internalStart(initStoreProps: () => Properties): Unit = synchronized {
     if (status() != State.UNINITIALIZED && status() != State.STOPPED) {
       // already started or in the process of starting
       return
     }
+    val storeProps = initStoreProps()
     checkAuthProvider(storeProps)
 
     super.start(storeProps, ignoreIfStarted = false)
 
-    Misc.getGemFireCache.getDistributionManager
-        .addMembershipListener(SnappyContext.membershipListener)
+    val cache = Misc.getGemFireCache
+    cache.getDistributionManager.addMembershipListener(SnappyContext.membershipListener)
 
     status() match {
       case State.RUNNING =>
@@ -296,8 +281,14 @@ class LeadImpl extends ServerImpl with Lead
         logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
 
-        val startStatus = primaryLeaderLock.tryLock()
+        val dls = DLockService.create(LOCK_SERVICE_NAME, cache.getDistributedSystem,
+          true, true, true)
+        val primaryLeaderLock = new DistributedMemberLock(dls,
+          LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
+          DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
+        val startStatus = primaryLeaderLock.tryLock()
+        // noinspection SimplifyBooleanMatch
         startStatus match {
           case true =>
             logInfo("Primary lead lock acquired.")
@@ -358,28 +349,7 @@ class LeadImpl extends ServerImpl with Lead
       SnappyContext.flushSampleTables()
     }
     */
-
-    val sparkContext = this.sparkContext.get()
-
-    assert(sparkContext != null, "Mix and match of LeadService api " +
-        "and SparkContext is unsupported.")
-    if (!sparkContext.isStopped) {
-      sparkContext.stop()
-      this.sparkContext.set(null)
-    }
-    Utils.clearDefaultSerializerAndCodec()
-
-    if (null != remoteInterpreterServerObj) {
-      val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
-      val isAlive: java.lang.Boolean = method.invoke(remoteInterpreterServerObj)
-          .asInstanceOf[java.lang.Boolean]
-      val shutdown: Method = remoteInterpreterServerClass.getMethod("shutdown",
-        classOf[java.lang.Boolean])
-
-      if (isAlive) {
-        shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
-      }
-    }
+    internalStop(shutdownCredentials)
   }
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
@@ -393,7 +363,6 @@ class LeadImpl extends ServerImpl with Lead
     val sc = SnappyContext.globalSparkContext
     if (sc != null) sc.stop()
     // TODO: [soubhik] find a way to stop jobserver.
-    sparkContext.set(null)
     if (null != remoteInterpreterServerObj) {
       val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
       val isAlive: java.lang.Boolean = method.invoke(remoteInterpreterServerObj)
@@ -631,6 +600,11 @@ object LeadImpl {
 
   val SPARKUI_PORT = 5050
   val LEADER_SERVERGROUP = "IMPLICIT_LEADER_SERVERGROUP"
+
+  def invokeLeadStart(conf: SparkConf): Unit = {
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    lead.internalStart(() => ServiceUtils.getStoreProperties(conf.getAll))
+  }
 
   def invokeLeadStop(shutdownCredentials: Properties): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
