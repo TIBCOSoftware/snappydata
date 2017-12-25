@@ -553,9 +553,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           }
         }
       }
-      // publish the column table stats at this point because that
-      // requires the hive metastore
-      Misc.getMemStoreBooting().getDatabase().publishColumnStats();
     }
 
     private Table getTable(Hive hmc, String dbName, String tableName) throws SQLException {
