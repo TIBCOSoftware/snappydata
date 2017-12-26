@@ -70,7 +70,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
+import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv}
 
 
 class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
@@ -2074,8 +2074,9 @@ object SnappySession extends Logging {
         }
       }
     }
-    val cacheSize = if (SnappyContext.globalSparkContext != null) {
-      Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
+    val env = SparkEnv.get
+    val cacheSize = if (env ne null) {
+      Property.PlanCacheSize.getOption(env.conf) match {
         case Some(size) => size.toInt
         case None => Property.PlanCacheSize.defaultValue.get
       }
