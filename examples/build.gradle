@@ -64,7 +64,7 @@ task productExamples(dependsOn: 'jar') { doLast {
 } }
 
 scalaTest {
-  dependsOn ':cleanScalaTest'
+  dependsOn ':cleanScalaTest', ':product'
   doFirst {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)

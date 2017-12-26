@@ -684,7 +684,11 @@ object ExternalStoreUtils {
     region.getUserAttribute.asInstanceOf[GemFireContainer] match {
       case null =>
         throw new IllegalStateException(s"Table $schema.$table not found in containers")
-      case c => c.fetchHiveMetaData(false)
+      case c => c.fetchHiveMetaData(false) match {
+        case null =>
+          throw new IllegalStateException(s"Table $schema.$table not found in hive metadata")
+        case m => m
+      }
     }
   }
 
