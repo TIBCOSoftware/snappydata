@@ -84,7 +84,11 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex)
         val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
         val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
-            .fetchHiveMetaData(false).schema.asInstanceOf[StructType]
+            .fetchHiveMetaData(false) match {
+          case null => throw new IllegalStateException(
+            s"Table for region ${region.getFullPath} not found in hive metadata")
+          case m => m.schema.asInstanceOf[StructType]
+        }
         val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
           decompress = true, compress = false)
         val existingBuffer = oldColumnValue.getBuffer
