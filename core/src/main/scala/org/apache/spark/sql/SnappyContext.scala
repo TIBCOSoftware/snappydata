@@ -853,17 +853,10 @@ object SnappyContext extends Logging {
     TrieMap.empty[String, BlockAndExecutorId]
   private[spark] val totalCoreCount = new AtomicInteger(0)
 
-  def containsBlockId(executorId: String): Boolean = {
-    storeToBlockMap.get(executorId) match {
-      case Some(b) => b.blockId != null
-      case None => false
-    }
-  }
-
   def getBlockId(executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.get(executorId) match {
-      case s@Some(b) if b.blockId != null => s
-      case None => None
+      case s@Some(b) if b.blockId ne null => s
+      case _ => None
     }
   }
 
@@ -935,7 +928,7 @@ object SnappyContext extends Logging {
       val blockId = new BlockAndExecutorId(
         SparkEnv.get.blockManager.blockManagerId,
         numCores, numCores)
-      storeToBlockMap(cache.getMyId.toString) = blockId
+      storeToBlockMap(cache.getMyId.canonicalString()) = blockId
       totalCoreCount.set(blockId.numProcessors)
       SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
