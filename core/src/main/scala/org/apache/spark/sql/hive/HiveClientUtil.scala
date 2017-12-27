@@ -290,7 +290,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     SnappyContext.getClusterMode(sparkContext) match {
       case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
         (ExternalStoreUtils.defaultStoreURL(Some(sparkContext)) +
-            ";disable-streaming=true;default-persistent=true;skip-constraint-checks=true;",
+            SnappyHiveCatalog.getCommonJDBCSuffix + ";skip-constraint-checks=true",
             Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, url) =>
         (url + ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
