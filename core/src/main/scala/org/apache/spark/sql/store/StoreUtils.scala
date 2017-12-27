@@ -476,10 +476,15 @@ object StoreUtils {
 
     // delta buffer regions will use delta store
     if (!isRowTable && !isShadowTable) {
-      if (parameters.remove(DISKSTORE).isDefined && !isPersistent) {
-        throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+      parameters.remove(DISKSTORE) match {
+        case Some(v) =>
+          if (!isPersistent) {
+            throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+          }
+          sb.append(s"'$v${GfxdConstants.SNAPPY_DELTA_DISKSTORE_SUFFIX}' ")
+        case None =>
+          if (isPersistent) sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
       }
-      if (isPersistent) sb.append(s"'${GfxdConstants.SNAPPY_DELTA_DISKSTORE_NAME}' ")
     } else {
       parameters.remove(DISKSTORE).foreach { v =>
         if (isPersistent) sb.append(s"'$v' ")
