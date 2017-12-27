@@ -46,6 +46,12 @@ if echo $@ | grep -qw "rowstore"; then
     fi
   done
   exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.GfxdUtilLauncher $newargs
+elif [ "$1" = "dataextractor" ]; then
+  shift
+  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.dataextractor.GemFireXDDataExtractor "$@"
+elif [ "$1" = "dataextractloader" ]; then
+  shift
+  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.dataextractor.GemFireXDDataExtractorLoader "$@"
 elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
        -a '(' "$2" = "start" -o "$2" = "stop" -o "$2" = "status" ')' \
        -a '(' "$1" = "server" -o "$1" = "leader" -o "$1" = "locator" ')' ]; then
@@ -67,12 +73,6 @@ elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
 
   JARS="`echo "${SPARK_HOME}"/jars/snappydata-launcher* "${SPARK_HOME}"/jars/gemfire-shared* | sed 's/ /:/g'`"
   exec $RUNNER $JAVA_ARGS -Xverify:none -cp "$JARS" io.snappydata.tools.QuickLauncher "$@"
-elif [ "$1" = "dataextractor" ]; then
-  shift
-  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.dataextractor.GemFireXDDataExtractor "$@"
-elif [ "$1" = "dataextractloader" ]; then
-  shift
-  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.dataextractor.GemFireXDDataExtractorLoader "$@"
 else
   # use full snappy launcher
   exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS io.snappydata.tools.SnappyUtilLauncher "$@"

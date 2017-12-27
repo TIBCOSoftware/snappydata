@@ -918,7 +918,7 @@ object SnappyContext extends Logging {
         whoSuspected: InternalDistributedMember): Unit = {}
 
     override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
-      removeBlockId(id.toString)
+      removeBlockId(id.canonicalString())
     }
   }
 
