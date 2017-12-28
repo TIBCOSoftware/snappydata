@@ -33,7 +33,7 @@ elif [ -z "$SPARK_HOME" ]; then
 fi
 
 # check for AWS and set SPARK_PUBLIC_DNS (only supported for Linux)
-if [ -z "$SPARK_PUBLIC_DNS" -a "$1" = "lead" ]; then
+if [ -z "$SPARK_PUBLIC_DNS" ]; then
   CHECK_AWS=1
   if [ -r /sys/hypervisor/uuid ]; then
     if ! grep -q '^ec2' /sys/hypervisor/uuid; then
@@ -50,7 +50,8 @@ if [ -z "$SPARK_PUBLIC_DNS" -a "$1" = "lead" ]; then
   if [ -n "$CHECK_AWS" ]; then
     SPARK_PUBLIC_DNS="$(curl -s --connect-timeout 3 http://169.254.169.254/latest/meta-data/public-hostname)"
     if [ -n "$SPARK_PUBLIC_DNS" ]; then
-      export SPARK_PUBLIC_DNS
+      SPARK_IS_AWS_INSTANCE=1
+      export SPARK_PUBLIC_DNS SPARK_IS_AWS_INSTANCE
     fi
   fi
 fi
