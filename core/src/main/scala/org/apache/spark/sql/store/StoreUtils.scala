@@ -481,7 +481,11 @@ object StoreUtils {
           if (!isPersistent) {
             throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
           }
-          sb.append(s"'$v${GfxdConstants.SNAPPY_DELTA_DISKSTORE_SUFFIX}' ")
+          if (v == GfxdConstants.GFXD_DEFAULT_DISKSTORE_NAME) {
+            sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
+          } else {
+            sb.append(s"'$v${GfxdConstants.SNAPPY_DELTA_DISKSTORE_SUFFIX}' ")
+          }
         case None =>
           if (isPersistent) sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
       }
