@@ -85,71 +85,7 @@ trait StoreUnifiedManager {
   def close()
 }
 
-/**
-  * A MemoryManager which simply delegates to configured Spark memory manager.
-  * This manager will be used in Connector mode. All SnappyData execution memory
-  * like encoder etc will account memory here.
-  */
-class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
-  override def acquireStorageMemoryForObject(objectName: String,
-      blockId: BlockId,
-      numBytes: Long,
-      memoryMode: MemoryMode,
-      buffer: UMMMemoryTracker,
-      shouldEvict: Boolean): Boolean = {
-    logDebug(s"Acquiring DefaultManager memory for $objectName $numBytes")
-    if (SparkEnv.get ne null) {
-      SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
-    } else {
-      true
-    }
-  }
-
-  // This should not be called in connector mode
-  override def dropStorageMemoryForObject(
-      objectName: String,
-      memoryMode: MemoryMode,
-      ignoreNumBytes: Long): Long = 0L
-
-  override def releaseStorageMemoryForObject(
-      objectName: String,
-      numBytes: Long,
-      memoryMode: MemoryMode): Unit = {
-    logDebug(s"Releasing DefaultManager memory for $objectName $numBytes")
-    if (SparkEnv.get ne null) {
-      SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
-    }
-  }
-
-  override def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long = 0L
-
-  override def getStoragePoolSize(memoryMode: MemoryMode): Long = 0L
-
-  override def getExecutionPoolUsedMemory(memoryMode: MemoryMode): Long = 0L
-
-  override def getExecutionPoolSize(memoryMode: MemoryMode): Long = 0L
-
-  override def getOffHeapMemory(objectName: String): Long = 0L
-
-  override def hasOffHeap: Boolean = false
-
-  override def logStats(): Unit = logInfo("No stats for NoOpSnappyMemoryManager")
-
-  override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
-      allowNonAllocator: Boolean): Unit = {}
-
-  override def shouldStopRecovery(): Boolean = false
-
-  override def initMemoryStats(stats: MemoryManagerStats): Unit = {}
-
-  override def close(): Unit = {}
-
-  /**
-    * Clears the internal map
-    */
-  override def clear(): Unit = {}
-}
 
 object MemoryManagerCallback extends Logging {
 
