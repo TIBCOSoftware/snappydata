@@ -238,13 +238,6 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
-     /* case i@Update(_, _, _, _, updateExpressions: Seq[Expression]) =>
-        val newExpressions = updateExpressions.map(expr => {
-          expr.transformDown {
-            case u@UnresolvedRelation => EliminateSubqueryAliases(getTable(u)).)
-          }
-        })
-        i.copy(updateExpressions = newExpressions)*/
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
     }
@@ -261,6 +254,20 @@ class SnappySessionState(snappySession: SnappySession)
       }
     }
 
+    private def canExecuteDirect(plan: LogicalPlan): Boolean = {
+      val allPlans = plan.subqueries :+ plan
+      val allRelations = allPlans.map { p =>
+        p.collect {
+          case LogicalRelation(src: BaseRelation, _, _) =>
+            src match {
+              case _: UpdatableRelation => true
+              case _ => false
+            }
+        }
+      }.flatten
+      allRelations.reduce((a, b) => a && b)
+    }
+
     private def getKeyAttributes(table: LogicalPlan,
         child: LogicalPlan,
         plan: LogicalPlan,
@@ -272,8 +279,9 @@ class SnappySessionState(snappySession: SnappySession)
           val currentKey = snappySession.currentKey
           mutable match {
             case _: UpdatableRelation if currentKey ne null =>
-              if (child.equals(table)) {
-                // if this is a row table && no subquery then fallback to direct execution
+              if (canExecuteDirect(child)) {
+                // if this is a row table && no subquery
+                // then push the update to direct execution at GemXD layer
                 return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
                   mutable.table), lr, currentKey.sqlText), lr)
               } else if (isDelete) {
