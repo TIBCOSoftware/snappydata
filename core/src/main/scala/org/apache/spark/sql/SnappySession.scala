@@ -178,7 +178,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def sqlUncached(sqlText: String): DataFrame =
     snappyContextFunctions.sql(super.sql(sqlText))
 
-  private[sql] final def prepareSQL(sqlText: String): LogicalPlan = {
+  final def prepareSQL(sqlText: String): LogicalPlan = {
     val logical = sessionState.sqlParser.parsePlan(sqlText)
     SparkSession.setActiveSession(this)
     sessionState.analyzerPrepare.execute(logical)
