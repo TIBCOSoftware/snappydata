@@ -28,7 +28,7 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.analysis
+import org.apache.spark.sql.catalyst.{analysis, expressions}
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
@@ -238,6 +238,8 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
+      case i@Update(table : LogicalPlan, _, _, _, _, updatePlans) =>
+            i
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
     }
@@ -267,6 +269,7 @@ class SnappySessionState(snappySession: SnappySession)
       }.flatten
       allRelations.reduce((a, b) => a && b)
     }
+
 
     private def getKeyAttributes(table: LogicalPlan,
         child: LogicalPlan,
@@ -347,7 +350,7 @@ class SnappySessionState(snappySession: SnappySession)
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
 
-      case u@Update(table, child, keyColumns, updateCols, updateExprs)
+      case u@Update(table, child, keyColumns, updateCols, updateExprs, updatePlans)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
         // add the key columns to the plan
         val (keyAttrs, newChild, relation) = getKeyAttributes(table, child, u)

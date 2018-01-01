@@ -74,7 +74,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.contains(Row(88, 88, 90)))
   }
 
-  ignore("Multiple update with correlated subquery") {
+  test("Multiple update with correlated subquery") {
     val snc = new SnappySession(sc)
     val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
     val df1 = snc.createDataFrame(rdd)
@@ -91,13 +91,13 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     df1.write.insertInto("col_table")
     df2.write.insertInto("row_table")
 
-    snc.sql("update col_table  set col3 = "  +
-        " (select col3 from row_table  where col_table.col2 = row_table.col2 )")
-
+    val df = snc.sql("update col_table a  set col3 = "  +
+        " (select col3 from row_table b  where a.col2 = b.col2 )")
+    println(df.queryExecution.executedPlan)
     val resultdf = snc.table("col_table").collect()
-    assert(resultdf.length == 7)
-    assert(resultdf.contains(Row(8, 8, 8)))
+    assert(resultdf.length == 6)
     assert(resultdf.contains(Row(88, 88, 90)))
+
   }
 
   test("Single column update with join") {

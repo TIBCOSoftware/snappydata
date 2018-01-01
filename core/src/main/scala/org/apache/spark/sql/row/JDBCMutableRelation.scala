@@ -26,7 +26,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -205,7 +205,7 @@ case class JDBCMutableRelation(
    */
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-      keyColumns: Seq[Attribute]): SparkPlan = {
+      keyColumns: Seq[Attribute], updatePlans: Seq[SparkPlan]): SparkPlan = {
     RowUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
       numBuckets, isPartitioned, schema, Some(this), updateColumns, updateExpressions,
       keyColumns, connProperties, onExecutor = false)

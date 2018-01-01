@@ -28,6 +28,7 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, DynamicReplacableConstant, Expression, SortDirection, SpecificInternalRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
@@ -260,10 +261,10 @@ abstract class BaseColumnFormatRelation(
    */
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-      keyColumns: Seq[Attribute]): SparkPlan = {
+      keyColumns: Seq[Attribute], updatePlans: Seq[SparkPlan]): SparkPlan = {
     ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
       partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, Some(this),
-      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false, updatePlans)
   }
 
   /**

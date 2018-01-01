@@ -852,7 +852,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         (expression + commaSep) ~ ')' ~ ws ~> ((exprs: Seq[Expression]) =>
           if (exprs.length == 1) exprs.head else CreateStruct(exprs)
         ) |
-        query ~ ')' ~ ws ~> (ScalarSubquery(_))
+        query ~ ')' ~ ws ~> (Exists(_))
     ) |
     signedPrimary |
     '~' ~ ws ~ expression ~> BitwiseNot
@@ -968,11 +968,12 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   protected final def update: Rule1[LogicalPlan] = rule {
     UPDATE ~ relationFactor ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
-        '=' ~ ws ~ expression ~> ((cols: Seq[String], e: Expression) =>
+        '=' ~ ws ~  expression ~> ((cols: Seq[String], e: Expression) =>
       UnresolvedAttribute(cols) -> e)) + commaSep) ~
         ((WHERE ~ expression) | (FROM ~ relations)).? ~ TOKENIZE_END ~>
         ((t: Any, updateExprs: Seq[(UnresolvedAttribute,
             Expression)], whereExpr: Any) => {
+
           val base = t.asInstanceOf[LogicalPlan]
           val withFilter = whereExpr match {
             case None => base
@@ -984,8 +985,13 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
               }
             }
           }
-          val (updateColumns, updateExpressions) = updateExprs.unzip
-          Update(base, withFilter, Seq.empty, updateColumns, updateExpressions)
+
+          val (updateColumns, updatePlans) = updateExprs.unzip
+          val y = updatePlans.map(e => Filter(e, base))
+          val x = y.map(p => p.condition.asInstanceOf[Exists].plan.output).flatten
+          updateColumns.foreach(println)
+          x.foreach(println)
+          Update(base, withFilter, Seq.empty, updateColumns, x, y)
         })
   }
 

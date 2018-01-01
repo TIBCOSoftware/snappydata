@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
@@ -38,7 +39,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
     relation: Option[DestroyRelation], updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
+    connProps: ConnectionProperties,
+    onExecutor: Boolean, updatePlans: Seq[SparkPlan]) extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
@@ -156,14 +158,21 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // bind the update expressions
     ctx.INPUT_ROW = null
     ctx.currentVars = input
+
     val allExpressions = updateExpressions ++ keyColumns
-    val boundUpdateExpr = allExpressions.map(
-      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(u, child.output)))
+    /*val boundUpdateExpr = allExpressions.map(
+      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(u, child.output)))*/
+
+    val boundUpdateExpr = updateExpressions.zip(updatePlans).map {case(expr, plan) =>
+      ExpressionCanonicalizer.execute(BindReferences.bindReference(expr, plan.output))
+    }
     val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(boundUpdateExpr)
     val effectiveCodes = subExprs.codes.mkString("\n")
+
     val updateInput = ctx.withSubExprEliminationExprs(subExprs.states) {
       boundUpdateExpr.map(_.genCode(ctx))
     }
+    updateInput.foreach(println)
     ctx.currentVars = null
 
     val keyVars = updateInput.takeRight(4)

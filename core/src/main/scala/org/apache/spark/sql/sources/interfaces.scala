@@ -122,7 +122,7 @@ trait MutableRelation extends DestroyRelation {
    */
   def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-      keyColumns: Seq[Attribute]): SparkPlan
+      keyColumns: Seq[Attribute], updatePlans: Seq[SparkPlan]): SparkPlan
 
   /**
    * Get a spark plan to delete rows the relation. The result of SparkPlan

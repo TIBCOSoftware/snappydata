@@ -113,9 +113,9 @@ object StoreStrategy extends Strategy {
       ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
 
     case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
-    keyColumns, updateColumns, updateExpressions) =>
+    keyColumns, updateColumns, updateExpressions, updatePlans) =>
       ExecutePlan(u.getUpdatePlan(l, planLater(child), updateColumns,
-        updateExpressions, keyColumns)) :: Nil
+        updateExpressions, keyColumns, updatePlans.map(a => planLater(a)))) :: Nil
 
     case Delete(l@LogicalRelation(d: MutableRelation, _, _), child, keyColumns) =>
       ExecutePlan(d.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
@@ -193,16 +193,18 @@ final class Insert(
 
 case class Update(table: LogicalPlan, child: LogicalPlan,
     keyColumns: Seq[Attribute], updateColumns: Seq[Attribute],
-    updateExpressions: Seq[Expression]) extends LogicalPlan with TableMutationPlan {
+    updateExpressions: Seq[Expression],
+    updatePlans: Seq[LogicalPlan] = Seq.empty[LogicalPlan])
+    extends LogicalPlan with TableMutationPlan {
 
   assert(updateColumns.length == updateExpressions.length,
     s"Internal error: updateColumns=${updateColumns.length} " +
         s"updateExpressions=${updateExpressions.length}")
 
-  override def children: Seq[LogicalPlan] = table :: child :: Nil
-
   override lazy val output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil
+
+  override def children: Seq[LogicalPlan] = updatePlans ++ (table :: child :: Nil)
 }
 
 case class Delete(table: LogicalPlan, child: LogicalPlan,
