@@ -18,8 +18,9 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager, SQLException}
 
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 
@@ -133,7 +134,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
           s"USING column $options")
     } catch {
       case sqle: SQLException => if (sqle.getSQLState != "38000" ||
-          !sqle.getMessage.contains("Disk store D1 not found")) {
+          (!sqle.getMessage.contains("Disk store D1 not found") && !sqle.getMessage.contains(
+            s"Disk store D1${GfxdConstants.SNAPPY_DELTA_DISKSTORE_SUFFIX} not found"))) {
         throw sqle
       }
     }

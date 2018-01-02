@@ -98,7 +98,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     _client
   }
 
-
   // Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
   // catalog will hit our catalog rather than the SessionCatalog. Some of the methods might look
   // not needed . @TODO will clean up once we have our own seggregation for SessionCatalog and
@@ -601,6 +600,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                                provider: String,
                                options: Map[String, String],
                                relation: Option[BaseRelation]): Unit = {
+    val client = this.client
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
