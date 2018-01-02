@@ -687,13 +687,13 @@ final class ColumnarStorePartitionedRDD(
         } else {
           val pr = region.asInstanceOf[PartitionedRegion]
           val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
-          val prefNodes = distMembers.collect {
-            case m if SnappyContext.containsBlockId(m.toString) =>
-              Utils.getHostExecutorId(SnappyContext.getBlockId(
-                m.toString).get.blockId)
-          }
+          val prefNodes = new ArrayBuffer[String](2)
+          distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
+            case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+            case _ =>
+          })
           Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
-            pr.getTotalNumberOfBuckets, prefNodes.toSeq))
+            pr.getTotalNumberOfBuckets, prefNodes))
         }
     }
   }

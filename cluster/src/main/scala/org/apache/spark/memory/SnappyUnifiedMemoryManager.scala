@@ -179,11 +179,11 @@ class SnappyUnifiedMemoryManager private[memory](
     if (_memoryForObjectMap ne null) _memoryForObjectMap.clear()
   }
 
-  val threadsWaitingForStorage = new AtomicInteger()
+  private[this] val threadsWaitingForStorage = new AtomicInteger()
 
-  val SPARK_CACHE = "_SPARK_CACHE_"
+  private[this] val SPARK_CACHE = "_SPARK_CACHE_"
 
-  private[memory] val evictor = new SnappyStorageEvictor
+  private[this] val evictor = new SnappyStorageEvictor
 
   def this(conf: SparkConf, numCores: Int, tempManager: Boolean = false) = {
     this(conf,
@@ -387,22 +387,32 @@ class SnappyUnifiedMemoryManager private[memory](
     assertInvariants()
     assert(numBytes >= 0)
     val offHeap = memoryMode eq MemoryMode.OFF_HEAP
-    val (executionPool, storagePool, storageRegionSize, maxMemory,
-    minEviction) = memoryMode match {
-      case MemoryMode.ON_HEAP => (
-          onHeapExecutionMemoryPool,
-          onHeapStorageMemoryPool,
-          onHeapStorageRegionSize,
-          maxHeapMemory,
-          getMinHeapEviction(numBytes))
-      case MemoryMode.OFF_HEAP => (
-          offHeapExecutionMemoryPool,
-          offHeapStorageMemoryPool,
-          offHeapStorageMemory,
-          maxOffHeapMemory,
-          getMinOffHeapEviction(numBytes))
+    // use vars instead of tuple to avoid Tuple5 creation and Long boxing/unboxing
+    var executionMemoryPool: ExecutionMemoryPool = null
+    var storageMemoryPool: StorageMemoryPool = null
+    var regionSize = 0L
+    var maxMemoryBytes = 0L
+    var minEvictionBytes = 0L
+    memoryMode match {
+      case MemoryMode.ON_HEAP =>
+        executionMemoryPool = onHeapExecutionMemoryPool
+        storageMemoryPool = onHeapStorageMemoryPool
+        regionSize = onHeapStorageRegionSize
+        maxMemoryBytes = maxHeapMemory
+        minEvictionBytes = getMinHeapEviction(numBytes)
+      case MemoryMode.OFF_HEAP =>
+        executionMemoryPool = offHeapExecutionMemoryPool
+        storageMemoryPool = offHeapStorageMemoryPool
+        regionSize = offHeapStorageMemory
+        maxMemoryBytes = maxOffHeapMemory
+        minEvictionBytes = getMinOffHeapEviction(numBytes)
     }
 
+    val executionPool = executionMemoryPool
+    val storagePool = storageMemoryPool
+    val storageRegionSize = regionSize
+    val maxMemory = maxMemoryBytes
+    val minEviction = minEvictionBytes
     /**
       * Grow the execution pool by evicting cached blocks, thereby shrinking the storage pool.
       *
@@ -534,22 +544,28 @@ class SnappyUnifiedMemoryManager private[memory](
       }
       assertInvariants()
       assert(numBytes >= 0)
-      val (executionPool, storagePool, maxMemory, maxStorageSize,
-      minEviction) = memoryMode match {
-        case MemoryMode.ON_HEAP => (
-            onHeapExecutionMemoryPool,
-            onHeapStorageMemoryPool,
-            maxOnHeapStorageMemory,
-            maxHeapStorageSize,
-            getMinHeapEviction(numBytes))
-        case MemoryMode.OFF_HEAP => (
-            offHeapExecutionMemoryPool,
-            offHeapStorageMemoryPool,
-            maxOffHeapMemory - offHeapExecutionMemoryPool.memoryUsed,
-            maxOffHeapStorageSize,
-            getMinOffHeapEviction(numBytes))
+      // use vars instead of tuple to avoid Tuple5 creation and Long boxing/unboxing
+      var executionPool: ExecutionMemoryPool = null
+      var storageMemoryPool: StorageMemoryPool = null
+      var maxMemory = 0L
+      var maxStorageSize = 0L
+      var minEviction = 0L
+      memoryMode match {
+        case MemoryMode.ON_HEAP =>
+          executionPool = onHeapExecutionMemoryPool
+          storageMemoryPool = onHeapStorageMemoryPool
+          maxMemory = maxOnHeapStorageMemory
+          maxStorageSize = maxHeapStorageSize
+          minEviction = getMinHeapEviction(numBytes)
+        case MemoryMode.OFF_HEAP =>
+          executionPool = offHeapExecutionMemoryPool
+          storageMemoryPool = offHeapStorageMemoryPool
+          maxMemory = maxOffHeapMemory - offHeapExecutionMemoryPool.memoryUsed
+          maxStorageSize = maxOffHeapStorageSize
+          minEviction = getMinOffHeapEviction(numBytes)
       }
 
+      val storagePool = storageMemoryPool
       // Evict only limited amount for owners marked as non-evicting.
       // TODO: this can be removed once these calls are moved to execution
       // TODO use something like "(spark.driver.maxResultSize / numPartitions) * 2"
@@ -564,10 +580,11 @@ class SnappyUnifiedMemoryManager private[memory](
       } else shouldEvict
 
       if (numBytes > maxMemory) {
+        val max = maxMemory
         // Fail fast if the block simply won't fit
         logWarning(s"Will not store $blockId for $objectName as " +
           s"the required space ($numBytes bytes) exceeds our " +
-            s"memory limit ($maxMemory bytes)")
+            s"memory limit ($max bytes)")
         return false
       }
       // don't borrow from execution for off-heap if shouldEvict=false since it

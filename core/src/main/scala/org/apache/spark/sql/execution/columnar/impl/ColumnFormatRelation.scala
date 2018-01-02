@@ -379,7 +379,7 @@ abstract class BaseColumnFormatRelation(
       conn.commit()
       conn.close()
     }
-    createActualTable(table, externalStore)
+    createActualTables(table, externalStore)
   }
 
   /**
@@ -419,7 +419,7 @@ abstract class BaseColumnFormatRelation(
 
   // TODO: Suranjan make sure that this table doesn't evict to disk by
   // setting some property, may be MemLRU?
-  private def createActualTable(tableName: String,
+  private def createActualTables(tableName: String,
       externalStore: ExternalStore): Unit = {
     // Create the table if the table didn't exist.
     var conn: Connection = null

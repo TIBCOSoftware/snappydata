@@ -44,8 +44,6 @@ class MapTest extends SnappyFunSuite {
     val oset2 = new ObjectOpenHashSet[Item](numEntries, 0.6f)
     val oset3 = new OpenHashSet[Item](numEntries, 0.6f)
 
-    val hashingStrategy = oset3.getHashingStrategy
-
     val rnd = new XORShiftRandom()
     val data = Array.fill(numEntries)(Item(rnd.nextLong(),
       s"str${rnd.nextInt(100)}", rnd.nextDouble()))
@@ -127,14 +125,12 @@ class MapTest extends SnappyFunSuite {
       for (op <- operations) {
         val item = op.operation match {
           case GET =>
-            oset3.getKey(op, OpenHashSet.keyHash(op, hashingStrategy),
-              hashingStrategy).asInstanceOf[Item]
+            oset3.getKey(op).asInstanceOf[Item]
           case INSERT =>
             oset3.add(op)
             op
           case DELETE =>
-            oset3.removeKey(op, OpenHashSet.keyHash(op, hashingStrategy),
-              hashingStrategy).asInstanceOf[Item]
+            oset3.removeKey(op).asInstanceOf[Item]
         }
         if (item ne null) {
           sum += item.l + item.s.length + item.d.toLong

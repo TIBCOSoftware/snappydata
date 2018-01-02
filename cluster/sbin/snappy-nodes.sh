@@ -107,7 +107,7 @@ default_loc_port=10334
 function readalllocators { 
   retVal=
   while read loc || [[ -n "${loc}" ]]; do
-    [[ -z "$(echo $loc | grep ^[^#] | grep -v ^$ )"  ]] && continue
+    [[ -z "$(echo $loc | grep ^[^#] | grep -v ^$ )" ]] && continue
     if [ -n "$(echo $loc | grep peer-discovery-port)" ]; then
       retVal="$retVal,$(echo $loc | sed "s#\([^ ]*\).*peer-discovery-port\s*=\s*\([^ ]*\).*#\1:\2#g")"
     else
@@ -117,10 +117,16 @@ function readalllocators {
   echo ${retVal#","}
 }
 
+LOCATOR_IS_LOCAL=
 if [ -f "${SPARK_CONF_DIR}/locators" ]; then
-  LOCATOR_ARGS="-locators="$(readalllocators)
+  allLocators="$(readalllocators)"
+  LOCATOR_ARGS="-locators=$allLocators"
+  if echo $allLocators | egrep -wq '(localhost|127\.0\.0\.1|::1)'; then
+    LOCATOR_IS_LOCAL=1
+  fi
 else
   LOCATOR_ARGS="-locators=localhost[$default_loc_port]"
+  LOCATOR_IS_LOCAL=1
 fi
 
 MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
@@ -150,14 +156,16 @@ function execute() {
         fi
         args="${args} -start-locator=$host:$port"
       fi
-      # Set low discovery and join timeouts for quick startup when locator is local.
+    fi
+    # Set low discovery and join timeouts for quick startup when locator is local.
+    if [ -n "$LOCATOR_IS_LOCAL" ]; then
       if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.discoveryTimeout='; then
         args="${args} -J-Dp2p.discoveryTimeout=1000"
       fi
       if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.joinTimeout='; then
         args="${args} -J-Dp2p.joinTimeout=2000"
       fi
-      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.minJoinTries=')" ]; then
+      if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.minJoinTries='; then
         args="${args} -J-Dp2p.minJoinTries=1"
       fi
     fi
@@ -170,7 +178,7 @@ function execute() {
       preCommand="export SPARK_LOCAL_IP=$SPARK_LOCAL_IP; "
     fi
     # set the default client-bind-address and locator's peer-discovery-address
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'client-bind-address=')" -a "${componentType}" != "lead"  ]; then
+    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'client-bind-address=')" -a "${componentType}" != "lead" ]; then
       args="${args} -client-bind-address=${host}"
     fi
     if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
@@ -180,6 +188,10 @@ function execute() {
     if [ -z "$SPARK_PUBLIC_DNS" -a "${componentType}" = "lead" ]; then
       export SPARK_PUBLIC_DNS=$host
       preCommand="${preCommand}export SPARK_PUBLIC_DNS=$SPARK_PUBLIC_DNS; "
+    fi
+    # Set hostname-for-clients on AWS as per SPARK_PUBLIC_DNS
+    if [ -n "${SPARK_IS_AWS_INSTANCE}" -a -n "${SPARK_PUBLIC_DNS}" -a "${componentType}" != "lead" -a "${host}" != 'localhost' -a "${host}" != "127.0.0.1" -a "${host}" != "::1" ] && ! echo $args $"${@// /\\ }" | grep -q 'hostname-for-clients='; then
+      args="${args} -hostname-for-clients=${SPARK_PUBLIC_DNS}"
     fi
   else
     args="${dirparam}"
