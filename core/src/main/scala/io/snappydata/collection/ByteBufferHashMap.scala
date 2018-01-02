@@ -212,7 +212,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
             // Inserting the key at newPos
             Platform.putLong(newKeyObject, newOffset, key)
             if (fixedKeySize > 8) {
-              UnsafeHolder.getUnsafe.copyMemory(keyObject, keyOffset + 8,
+              UnsafeHolder.copyMemory(keyObject, keyOffset + 8,
                 newKeyObject, newOffset + 8, fixedKeySize - 8)
             }
             keepGoing = false
