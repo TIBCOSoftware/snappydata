@@ -28,6 +28,7 @@ import scala.concurrent.{Await, Future}
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
+import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.Status
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
@@ -36,6 +37,7 @@ import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -374,10 +376,20 @@ class LeadImpl extends ServerImpl with Lead
         shutdown.invoke(remoteInterpreterServerObj, true.asInstanceOf[AnyRef])
       }
     }
-    try {
-      super.stop(shutdownCredentials)
-    } catch {
-      case _: CancelException => // ignore if already stopped
+    val sys = InternalDistributedSystem.getConnectedInstance
+    if (sys ne null) {
+      try {
+        super.stop(shutdownCredentials)
+      } catch {
+        case sqle: SQLException =>
+          val sqlState = sqle.getSQLState
+          if (SQLState.CLOUDSCAPE_SYSTEM_SHUTDOWN.startsWith(sqlState)
+              || SQLState.SHUTDOWN_DATABASE.startsWith(sqlState)
+              || SQLState.GFXD_NODE_SHUTDOWN.startsWith(sqlState)) {
+            // ignore if already stopped
+          } else throw sqle
+        case _: CancelException => // ignore if already stopped
+      }
     }
   }
 
