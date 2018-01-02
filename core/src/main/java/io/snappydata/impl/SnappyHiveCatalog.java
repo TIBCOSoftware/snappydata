@@ -94,6 +94,14 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   }
 
   /**
+   * Common connection properties set on metastore JDBC connections.
+   */
+  public static String getCommonJDBCSuffix() {
+    return ";disable-streaming=true;default-persistent=true;" +
+        "sync-commits=true;internal-connection=true";
+  }
+
+  /**
    * Set the common hive metastore properties and also invoke
    * the static initialization for Hive with system properties
    * which tries booting default derby otherwise (SNAP-1956, SNAP-1961).
@@ -478,7 +486,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       HiveConf metadataConf = new HiveConf();
       String urlSecure = "jdbc:snappydata:" +
           ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
-          ";disable-streaming=true;default-persistent=true;internal-connection=true";
+          getCommonJDBCSuffix();
       final Map<Object, Object> bootProperties = Misc.getMemStore().getBootProperties();
       if (bootProperties.containsKey(Attribute.USERNAME_ATTR) && bootProperties.containsKey
           (Attribute.PASSWORD_ATTR)) {
@@ -486,7 +494,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             ";user=" + bootProperties.get(Attribute.USERNAME_ATTR) +
             ";password=" + bootProperties.get(Attribute.PASSWORD_ATTR) +
             ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
-            ";disable-streaming=true;default-persistent=true;internal-connection=true";
+            getCommonJDBCSuffix();
         /*
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
             bootProperties.get("user").toString());
