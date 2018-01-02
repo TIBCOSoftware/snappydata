@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.hive;
 
-import io.snappydata.impl.SnappyHiveCatalog;
+import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI;
 import org.apache.spark.SparkContext;
 import org.apache.spark.SparkException;
 import org.apache.spark.sql.ClusterMode;
@@ -87,14 +87,14 @@ public final class SnappySharedState extends SharedState {
   private SnappySharedState(SparkContext sparkContext) throws SparkException {
     super(sparkContext);
 
-    Boolean oldFlag = SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.get();
-    SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
+    Boolean oldFlag = HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get();
+    HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
     try {
       // avoid inheritance of activeSession
       SparkSession.clearActiveSession();
       this.client = HiveClientUtil$.MODULE$.newClient(sparkContext());
     } finally {
-      SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(oldFlag);
+      HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(oldFlag);
     }
 
     ClusterMode mode = SnappyContext.getClusterMode(sparkContext());
