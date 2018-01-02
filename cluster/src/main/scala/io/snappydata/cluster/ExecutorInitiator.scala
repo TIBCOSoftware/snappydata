@@ -146,7 +146,7 @@ object ExecutorInitiator extends Logging {
                    */
                   val myId = GemFireCacheImpl.getExisting.getMyId
                   val executorHost = myId.getHost
-                  val memberId = myId.toString
+                  val memberId = myId.canonicalString()
                   SparkHadoopUtil.get.runAsSparkUser { () =>
 
                     // Fetch the driver's Spark properties.

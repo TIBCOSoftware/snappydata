@@ -24,7 +24,7 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.Property
 
 import org.apache.spark.Partition
@@ -126,7 +126,7 @@ object StoreUtils {
       bucketId: Int, forWrite: Boolean,
       preferPrimaries: Boolean = false): Seq[String] = {
     if (forWrite) {
-      val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).toString
+      val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).canonicalString()
       SnappyContext.getBlockId(primary) match {
         case Some(b) => Seq(Utils.getHostExecutorId(b.blockId))
         case None => Seq.empty
@@ -138,7 +138,7 @@ object StoreUtils {
       } else null
       val members = new mutable.ArrayBuffer[String](2)
       getBucketOwnersForRead(bucketId, region).foreach { m =>
-        SnappyContext.getBlockId(m.toString) match {
+        SnappyContext.getBlockId(m.canonicalString()) match {
           case Some(b) =>
             if (prependPrimary && m.equals(primary)) {
               // add primary for "preferPrimaries" at the start
@@ -204,10 +204,11 @@ object StoreUtils {
     } else {
       region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
     }
-    val prefNodes = regionMembers.collect {
-      case m if SnappyContext.containsBlockId(m.toString) =>
-        Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
-    }.toSeq
+    val prefNodes = new mutable.ArrayBuffer[String](8)
+    regionMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
+      case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+      case _ =>
+    })
     partitions(0) = new MultiBucketExecutorPartition(0, null, 0, prefNodes)
     partitions
   }
@@ -226,12 +227,20 @@ object StoreUtils {
         prefNode = region.getOrCreateNodeForInitializedBucketRead(p, true)
       }
       // prefer another copy if this one does not have an executor
-      val prefBlockId = SnappyContext.getBlockId(prefNode.toString) match {
+      val prefBlockId = SnappyContext.getBlockId(prefNode.canonicalString()) match {
         case b@Some(_) => b
         case None =>
-          prefNode = adviser.getBucketOwners(p).asScala.find(m =>
-            SnappyContext.containsBlockId(m.toString)).getOrElse(prefNode)
-          SnappyContext.getBlockId(prefNode.toString)
+          adviser.getBucketOwners(p).asScala.collectFirst(
+            new PartialFunction[InternalDistributedMember, BlockAndExecutorId] {
+              private var b: Option[BlockAndExecutorId] = None
+              override def isDefinedAt(m: InternalDistributedMember): Boolean = {
+                b = SnappyContext.getBlockId(m.canonicalString())
+                b.isDefined
+              }
+              override def apply(m: InternalDistributedMember): BlockAndExecutorId = {
+                prefNode = m; b.get
+              }
+            })
       }
       val buckets = serverToBuckets.get(prefNode) match {
         case Some(b) => b._2
@@ -281,7 +290,7 @@ object StoreUtils {
         }
         partitionStart = partitionEnd
         val preferredLocations = (blockId :: alternates.map(mbr =>
-          SnappyContext.getBlockId(mbr.toString)).toList).collect {
+          SnappyContext.getBlockId(mbr.canonicalString())).toList).collect {
           case Some(b) => Utils.getHostExecutorId(b.blockId)
         }
         partitionIndex += 1
@@ -465,10 +474,27 @@ object StoreUtils {
       }
     }.getOrElse(sb.append(s"$GEM_PERSISTENT SYNCHRONOUS "))
 
-    parameters.remove(DISKSTORE).foreach { v =>
-      if (isPersistent) sb.append(s"'$v' ")
-      else throw Utils.analysisException(
-        s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+    // delta buffer regions will use delta store
+    if (!isRowTable && !isShadowTable) {
+      parameters.remove(DISKSTORE) match {
+        case Some(v) =>
+          if (!isPersistent) {
+            throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+          }
+          if (v == GfxdConstants.GFXD_DEFAULT_DISKSTORE_NAME) {
+            sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
+          } else {
+            sb.append(s"'$v${GfxdConstants.SNAPPY_DELTA_DISKSTORE_SUFFIX}' ")
+          }
+        case None =>
+          if (isPersistent) sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
+      }
+    } else {
+      parameters.remove(DISKSTORE).foreach { v =>
+        if (isPersistent) sb.append(s"'$v' ")
+        else throw Utils.analysisException(
+          s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+      }
     }
     sb.append(parameters.remove(SERVER_GROUPS)
         .map(v => s"$GEM_SERVER_GROUPS ($v) ")
