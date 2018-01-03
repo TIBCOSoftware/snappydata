@@ -970,22 +970,20 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     UPDATE ~ relationFactor ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
         '=' ~ ws ~ expression ~> ((cols: Seq[String], e: Expression) =>
       UnresolvedAttribute(cols) -> e)) + commaSep) ~
-        ((WHERE ~ expression) | (FROM ~ relations)).? ~ TOKENIZE_END ~>
+        (FROM ~ relations).? ~ (WHERE ~ expression).? ~ TOKENIZE_END ~>
         ((t: Any, updateExprs: Seq[(UnresolvedAttribute,
-            Expression)], whereExpr: Any) => {
-          val base = t.asInstanceOf[LogicalPlan]
+            Expression)], relations : Any, whereExpr: Any) => {
+          val table = t.asInstanceOf[LogicalPlan]
+          val base = relations match {
+            case Some(plan) => plan.asInstanceOf[LogicalPlan]
+            case _ => table
+          }
           val withFilter = whereExpr match {
-            case None => base
-            case Some(w) => {
-              if (w.isInstanceOf[Expression]) {
-                Filter(w.asInstanceOf[Expression], base)
-              } else {
-                w.asInstanceOf[LogicalPlan]
-              }
-            }
+            case Some(expr) => Filter(expr.asInstanceOf[Expression], base)
+            case _ => base
           }
           val (updateColumns, updateExpressions) = updateExprs.unzip
-          Update(base, withFilter, Seq.empty, updateColumns, updateExpressions)
+          Update(table, withFilter, Seq.empty, updateColumns, updateExpressions)
         })
   }
 
