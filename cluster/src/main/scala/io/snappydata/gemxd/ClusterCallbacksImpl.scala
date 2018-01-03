@@ -67,11 +67,10 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getDriverURL: String = {
     SnappyClusterManager.cm.map(_.schedulerBackend) match {
-      case Some(x) =>
+      case Some(x) if x ne null =>
         logInfo(s"returning driverUrl=${x.driverUrl}")
         x.driverUrl
-      case None =>
-        null
+      case _ => null
     }
   }
 

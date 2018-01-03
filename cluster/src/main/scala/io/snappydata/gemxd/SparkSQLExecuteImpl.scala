@@ -466,7 +466,7 @@ object SnappySessionPerConnection {
     val session = connectionIdMap.get(connectionID)
     if (session != null) session
     else {
-      val session = SnappyContext(null: SparkContext).snappySession
+      val session = SnappyContext().snappySession
       val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
       if (oldSession == null) session else oldSession
     }

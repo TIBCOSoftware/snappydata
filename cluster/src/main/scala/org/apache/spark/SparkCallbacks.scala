@@ -92,4 +92,7 @@ object SparkCallbacks {
     }
   }
 
+  def setSparkConf(sc: SparkContext, key: String, value: String): Unit = {
+    if (value ne null) sc.conf.set(key, value) else sc.conf.remove(key)
+  }
 }
