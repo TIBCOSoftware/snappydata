@@ -22,7 +22,7 @@ import java.nio.ByteBuffer
 
 import scala.reflect.ClassTag
 
-import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.io.{Input, ByteBufferOutput}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
 import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
@@ -184,8 +184,8 @@ final class PooledObject(serializer: PooledKryoSerializer,
   val kryo: Kryo = serializer.newKryo()
   val input: Input = new KryoInputStringFix(0)
 
-  def newOutput(): Output = new Output(bufferSize, -1)
-  def newOutput(size: Int): Output = new Output(size, -1)
+  def newOutput(): ByteBufferOutput = new ByteBufferOutput(bufferSize, -1)
+  def newOutput(size: Int): ByteBufferOutput = new ByteBufferOutput(size, -1)
 }
 
 // TODO: SW: pool must be per SparkContext
@@ -286,9 +286,9 @@ private[spark] final class PooledKryoSerializerInstance(
 
     try {
       poolObject.kryo.writeClassAndObject(output, t)
-      val result = ByteBuffer.wrap(output.toBytes)
-      result
+      ByteBuffer.wrap(output.toBytes)
     } finally {
+      output.release()
       KryoSerializerPool.release(poolObject)
     }
   }
@@ -375,6 +375,7 @@ private[serializer] class KryoStringFixSerializationStream(
       try {
         output.close()
       } finally {
+        output.release()
         output = null
         KryoSerializerPool.release(poolObject)
       }

@@ -44,7 +44,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -237,8 +237,9 @@ class SparkSQLExecuteImpl(val sql: String,
           try {
             StructTypeSerializer.writeType(pooled.kryo, output,
               querySchema(i).dataType)
-            hdos.write(output.getBuffer, 0, output.position())
+            hdos.write(output.toBytes)
           } finally {
+            output.release()
             KryoSerializerPool.release(pooled)
           }
         case _ => // ignore for others
