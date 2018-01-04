@@ -275,45 +275,18 @@ class SnappySessionState(snappySession: SnappySession)
       var tableName = ""
       val keyColumns = table.collectFirst {
         case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
-          var ks = mutable.getKeyColumns
-          val currentKey = snappySession.currentKey
-          mutable match {
-            case _: UpdatableRelation if currentKey ne null =>
-              if (canExecuteDirect(child)) {
-                // if this is a row table && no subquery
-                // then push the update to direct execution at GemXD layer
+          val ks = mutable.getKeyColumns
+          if (ks.isEmpty) {
+            val currentKey = snappySession.currentKey
+            // if this is a row table, then fallback to direct execution
+            mutable match {
+              case _: UpdatableRelation if currentKey ne null =>
                 return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
                   mutable.table), lr, currentKey.sqlText), lr)
-              } else if (isDelete) {
-                // if this is a row table && has subquery use DeleteFromTable
-                return (Seq.empty, DeleteFromTable(lr, child), lr)
-              } else {
-                // if this is a row table update with child then use join
-                // expression as well in key columns
-                child match {
-                  case Join(_, _, _, condition) =>
-                    val relExpr = lr.output.map(_.canonicalized)
-                    val tableSidejoinKeys =
-                      splitConjunctivePredicates(condition.get)
-                          .map(splitEqualExpression(_)).flatten
-                          .filter(e => relExpr.find(r => r.equals(e.canonicalized)).isDefined)
-                    ks = ks ++ tableSidejoinKeys.map(_.references).flatten.map(_.name)
-
-                  case Filter(condition, child) =>
-                    val relExpr = lr.output.map(_.canonicalized)
-                    val tableSideWhereKey = condition.children.map(splitEqualExpression(_)).flatten
-                          .filter(e => relExpr.find(r => r.equals(e.canonicalized)).isDefined)
-                    ks = ks ++ tableSideWhereKey.map(_.references).flatten.map(_.name)
-                  // There should not be case which will come here. But I am not sure
-                  case _ => return (Seq.empty, plan, lr)
-                }
-              }
-            case _ =>
-          }
-
-          if (ks.isEmpty) {
-            throw new AnalysisException(
-              s"Empty key columns for update/delete on $mutable")
+              case _ =>
+                throw new AnalysisException(
+                  s"Empty key columns for update/delete on $mutable")
+            }
           }
           tableName = mutable.table
           ks
