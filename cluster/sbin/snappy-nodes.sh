@@ -46,7 +46,7 @@ componentType=$1
 shift
 
 # Whether to apply the operation in background
-RUN_IN_BACKGROUND=0
+RUN_IN_BACKGROUND=
 if [ "$1" = "-bg" -o "$1" = "--background" ]; then
   RUN_IN_BACKGROUND=1
   shift
@@ -74,12 +74,14 @@ fi
 . "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
 
+FIRST_LOCATOR=
 case $componentType in
 
   (locator)
     if [ -f "${SPARK_CONF_DIR}/locators" ]; then
       HOSTLIST="${SPARK_CONF_DIR}/locators"
     fi
+    FIRST_LOCATOR=1
     ;;
 
   (server)
@@ -97,6 +99,8 @@ case $componentType in
       exit 1
       ;;
 esac
+export FIRST_LOCATOR
+
 # By default disable strict host key checking
 if [ "$SPARK_SSH_OPTS" = "" ]; then
   SPARK_SSH_OPTS="-o StrictHostKeyChecking=no"
@@ -131,8 +135,7 @@ fi
 
 MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
 
-FIRST_NODE=1
-export FIRST_NODE
+
 function execute() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
 
@@ -149,7 +152,7 @@ function execute() {
     if ! echo $args $"${@// /\\ }" | egrep -q '[-](locators=|peer-discovery-address=)'; then
       args="${args} $LOCATOR_ARGS"
       # inject start-locators argument if not present
-      if [[ "${componentType}" == "locator" && -z "$(echo  $args $"${@// /\\ }" | grep 'start-locator=')" ]]; then
+      if [ "${componentType}" = "locator" -a -z "$(echo  $args $"${@// /\\ }" | grep 'start-locator=')" ]; then
         port=$(echo $args | grep -wo "peer-discovery-port=[^ ]*" | sed 's#peer-discovery-port=##g')
         if [ -z "$port" ]; then
           port=$default_loc_port
@@ -157,8 +160,9 @@ function execute() {
         args="${args} -start-locator=$host:$port"
       fi
     fi
-    # Set low discovery and join timeouts for quick startup when locator is local.
-    if [ -n "$LOCATOR_IS_LOCAL" ]; then
+    # Reduce discovery and join timeouts, retries for first locator to reduce self-wait
+    if [ -n "$FIRST_LOCATOR" ]; then
+      FIRST_LOCATOR=
       if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.discoveryTimeout='; then
         args="${args} -J-Dp2p.discoveryTimeout=1000"
       fi
@@ -219,10 +223,8 @@ function execute() {
         2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
     fi
-    if [ "${RUN_IN_BACKGROUND}" = "0" -o "${FIRST_NODE}" = "1" ]; then
-      if wait $LAST_PID; then
-        FIRST_NODE=0
-      fi
+    if [ -z "$RUN_IN_BACKGROUND" ]; then
+      wait $LAST_PID
     else
       sleep 3
     fi
