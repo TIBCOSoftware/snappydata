@@ -1017,7 +1017,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() => tokenize = !tokenizationDisabled && canTokenize &&
+    MATCH ~> (() => tokenize = !session.disablePlanCaching &&
+        !tokenizationDisabled && canTokenize &&
         session.sessionState.conf.wholeStageEnabled)
   }
 

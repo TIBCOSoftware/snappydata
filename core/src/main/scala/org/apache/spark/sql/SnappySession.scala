@@ -219,6 +219,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] var currentKey: SnappySession.CachedKey = _
 
+  @transient
+  private[sql] var disablePlanCaching: Boolean = false
+
   /**
    * Get a previously registered context object using [[addContextObject]].
    */
