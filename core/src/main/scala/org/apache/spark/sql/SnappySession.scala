@@ -2059,6 +2059,14 @@ object SnappySession extends Logging {
     if (executedPlan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
       throw new EntryExistsException("uncached plan", cdf)
     }
+
+    // Try plan caching for only snappy tables
+    if (executedPlan.find(t => t match {
+      case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
+      case _ => false
+    }).isDefined) {
+      throw new EntryExistsException("uncached plan", cdf)
+    }
     cdf
   }
 
