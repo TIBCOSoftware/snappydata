@@ -261,6 +261,18 @@ class TokenizationTest
     assert(cacheMap.size() == 0) // no caching since JsonTuple is not code-generated
   }
 
+  test("Test external tables no plan caching") {
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    val airline = snc.read.parquet(hfile)
+    snc.sql(s"CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet options(path '$hfile')")
+    snc.sql(s"select count(*) from STAGING_AIRLINE").collect()
+    assert( cacheMap.size() == 0)
+    snc.sql(s"select * from STAGING_AIRLINE where MonthI = 2").collect()
+    assert( cacheMap.size() == 0)
+    snc.sql(s"drop table STAGING_AIRLINE")
+  }
+
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
