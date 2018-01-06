@@ -226,7 +226,10 @@ function execute() {
     if [ -z "$RUN_IN_BACKGROUND" ]; then
       wait $LAST_PID
     else
-      sleep 3
+      sleep 1
+      if [ -e "/proc/$LAST_PID/status" ]; then
+        sleep 1
+      fi
     fi
   else
     if [ "$dirfolder" != "" ]; then
