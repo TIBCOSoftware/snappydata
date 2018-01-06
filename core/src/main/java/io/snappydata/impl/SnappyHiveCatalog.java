@@ -55,7 +55,6 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
 import org.apache.spark.sql.sources.JdbcExtendedUtils;
@@ -518,8 +517,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private void initHMC() {
-      DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver");
-      DriverRegistry.register("io.snappydata.jdbc.ClientDriver");
+      ExternalStoreUtils.registerBuiltinDrivers();
 
       HiveConf metadataConf = new HiveConf();
       String urlSecure = "jdbc:snappydata:" +
@@ -545,7 +543,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       }
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, urlSecure);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-          "io.snappydata.jdbc.EmbeddedDriver");
+          Constant.JDBC_EMBEDDED_DRIVER());
       initCommonHiveMetaStoreProperties(metadataConf);
 
       final short numRetries = 40;

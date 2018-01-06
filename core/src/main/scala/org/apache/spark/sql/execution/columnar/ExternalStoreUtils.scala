@@ -95,6 +95,13 @@ object ExternalStoreUtils {
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
     COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
 
+  registerBuiltinDrivers()
+
+  def registerBuiltinDrivers(): Unit = {
+    DriverRegistry.register(Constant.JDBC_EMBEDDED_DRIVER)
+    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
+  }
+
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
       schema + '.' + tableName
@@ -139,8 +146,8 @@ object ExternalStoreUtils {
 
   def getDriver(url: String, dialect: JdbcDialect): String = {
     dialect match {
-      case GemFireXDDialect => "io.snappydata.jdbc.EmbeddedDriver"
-      case GemFireXDClientDialect => "io.snappydata.jdbc.ClientDriver"
+      case GemFireXDDialect => Constant.JDBC_EMBEDDED_DRIVER
+      case GemFireXDClientDialect => Constant.JDBC_CLIENT_DRIVER
       case _ => Utils.getDriverClassName(url)
     }
   }
@@ -233,9 +240,10 @@ object ExternalStoreUtils {
       session.map(_.sparkContext)))
 
     val dialect = JdbcDialects.get(url)
-    val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
-
-    DriverRegistry.register(driver)
+    val driver = parameters.remove("driver") match {
+      case Some(d) => DriverRegistry.register(d); d
+      case None => getDriver(url, dialect)
+    }
 
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
@@ -355,7 +363,10 @@ object ExternalStoreUtils {
 
   def getConnection(id: String, connProperties: ConnectionProperties,
       forExecutor: Boolean): Connection = {
-    Utils.registerDriver(connProperties.driver)
+    connProperties.driver match {
+      case Constant.JDBC_EMBEDDED_DRIVER | Constant.JDBC_CLIENT_DRIVER => // ignore
+      case driver => Utils.registerDriver(driver)
+    }
     val connProps = if (forExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,

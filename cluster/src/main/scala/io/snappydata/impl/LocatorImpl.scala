@@ -20,6 +20,7 @@ import java.sql.SQLException
 import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricLocatorImpl
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Locator, ProtocolOverrides}
 
 class LocatorImpl
@@ -27,15 +28,14 @@ class LocatorImpl
 
   @throws[SQLException]
   override def start(bindAddress: String, port: Int,
-      bootProperties: Properties) = {
-    start(bindAddress, port, bootProperties, false)
+      bootProperties: Properties): Unit = {
+    start(bindAddress, port, bootProperties, ignoreIfStarted = false)
   }
 
   @throws[SQLException]
   override def start(bindAddress: String, port: Int,
-      bootProperties: Properties, ignoreIfStarted: Boolean) = {
-    synchronized {
-      super.start(bindAddress, port, bootProperties, ignoreIfStarted)
-    }
+      bootProperties: Properties, ignoreIfStarted: Boolean): Unit = synchronized {
+    super.start(bindAddress, port,
+      ServiceUtils.setCommonBootDefaults(bootProperties, forLocator = true), ignoreIfStarted)
   }
 }

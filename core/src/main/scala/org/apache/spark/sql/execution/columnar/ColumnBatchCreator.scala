@@ -19,10 +19,10 @@ package org.apache.spark.sql.execution.columnar
 import scala.collection.AbstractIterator
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
-import com.gemstone.gemfire.internal.shared.OpenHashSet
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
+import io.snappydata.collection.OpenHashSet
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
