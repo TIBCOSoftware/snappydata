@@ -29,11 +29,7 @@ rm -f $SnappyData/conf/servers
 COUNTER=1
 for element in "${servers[@]}";
   do
-    if [ $COUNTER -le 5 ]; then
         echo $element -locators=$locator:10334 $serverMemory -dir=$serverDir$COUNTER >> $SnappyData/conf/servers
-    else
-        echo $element -locators=$locator:10334 -J-Dgemfirexd.metastore.write-lock=false $serverMemory -dir=$serverDir$COUNTER >> $SnappyData/conf/servers
-    fi
         COUNTER=$[$COUNTER +1]
   done
 echo "******************Created conf/servers******************"

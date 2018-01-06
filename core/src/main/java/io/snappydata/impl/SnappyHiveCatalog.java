@@ -50,6 +50,9 @@ import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.InvalidTableException;
 import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
@@ -66,9 +69,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   private final Future<?> initFuture;
 
   public static final Object hiveClientSync = new Object();
-
-  private static final boolean hiveClientWriteLock = SystemProperties
-      .getServerInstance().getBoolean("metastore.write-lock", true);
 
   private final ExecutorService hmsQueriesExecutorService;
 
@@ -326,37 +326,61 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           final String hiveClientObject = "HiveMetaStoreClient";
           final GfxdDRWLockService lockService = Misc.getMemStoreBooting()
               .getDDLLockService();
-          GFToSlf4jBridge logger = (GFToSlf4jBridge)Misc.getI18NLogWriter();
-          int previousLevel = logger.getLevel();
+          final GFToSlf4jBridge logger = (GFToSlf4jBridge)Misc.getI18NLogWriter();
+          final int previousLevel = logger.getLevel();
+          final Logger log4jLogger = LogManager.getRootLogger();
+          final Level log4jLevel = log4jLogger.getEffectiveLevel();
+          logger.info("Starting hive meta-store initialization");
           // just log the warning messages, during hive client initialization
           // as it generates hundreds of line of logs which are of no use.
           // Once the initialization is done, restore the logging level.
-          if (previousLevel <= LogWriterImpl.CONFIG_LEVEL) {
+          final boolean reduceLog = previousLevel == LogWriterImpl.CONFIG_LEVEL
+              || previousLevel == LogWriterImpl.INFO_LEVEL;
+          if (reduceLog) {
             logger.setLevel(LogWriterImpl.WARNING_LEVEL);
+            log4jLogger.setLevel(Level.WARN);
           }
 
-          final boolean lockTaken;
           final Object lockOwner = lockService.newCurrentOwner();
-          if (hiveClientWriteLock) {
-            lockTaken = lockService.writeLock(hiveClientObject, lockOwner,
-                GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
-          } else {
-            lockTaken = lockService.readLock(hiveClientObject, lockOwner,
-                GfxdLockSet.MAX_LOCKWAIT_VAL);
-          }
+          boolean writeLock = false;
+          boolean dlockTaken = lockService.lock(hiveClientObject,
+              GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
+          boolean lockTaken = false;
           try {
+            // downgrade dlock to a read lock if hive metastore has already
+            // been initialized by some other server
+            if (dlockTaken && Misc.getRegionByPath("/" + SystemProperties
+                .SNAPPY_HIVE_METASTORE + "/FUNCS", false) != null) {
+              lockService.unlock(hiveClientObject);
+              dlockTaken = false;
+              lockTaken = lockService.readLock(hiveClientObject, lockOwner,
+                  GfxdLockSet.MAX_LOCKWAIT_VAL);
+              // reduce log4j level to avoid "function exists" warnings
+              if (reduceLog) {
+                log4jLogger.setLevel(Level.ERROR);
+              }
+            } else {
+              lockTaken = lockService.writeLock(hiveClientObject, lockOwner,
+                  GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
+              writeLock = true;
+            }
             synchronized (hiveClientSync) {
               initHMC();
             }
           } finally {
             if (lockTaken) {
-              if (hiveClientWriteLock) {
+              if (writeLock) {
                 lockService.writeUnlock(hiveClientObject, lockOwner);
               } else {
                 lockService.readUnlock(hiveClientObject);
               }
             }
+            if (dlockTaken) {
+              lockService.unlock(hiveClientObject);
+            }
             logger.setLevel(previousLevel);
+            log4jLogger.setLevel(log4jLevel);
+            logger.info("Done hive meta-store initialization");
           }
           return true;
 
