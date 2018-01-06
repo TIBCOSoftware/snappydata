@@ -787,11 +787,11 @@ class SnappyUnifiedMemoryManager private[memory](
 
 object SnappyUnifiedMemoryManager extends Logging {
 
-  // Reserving minimum 500MB data for unaccounted data, GC headroom etc
+  // Reserving minimum 100MB data for unaccounted data, GC headroom etc
   private val RESERVED_SYSTEM_MEMORY_BYTES = {
-    // reserve 5% of heap by default subject to max of 5GB and min of 500MB
+    // reserve 5% of heap by default subject to max of 5GB and min of 100MB
     math.min(5L * 1024L * 1024L * 1024L,
-      math.max(getMaxHeapMemory / 20, 500L * 1024L * 1024L))
+      math.max(getMaxHeapMemory / 20, 100L * 1024L * 1024L))
   }
 
   private val DEFAULT_EVICTION_FRACTION = 0.8
@@ -919,14 +919,14 @@ object SnappyUnifiedMemoryManager extends Logging {
         case None => RESERVED_SYSTEM_MEMORY_BYTES
       }
     }
+    if (reservedMemory < 25L * 1024L * 1024L) {
+      throw new IllegalArgumentException(s"Reserved memory $reservedMemory must " +
+          "be at least 25MB. Please increase critical-heap-percentage and/or heap size " +
+          "using the --driver-memory option or spark.driver.memory in Spark configuration.")
+    }
     reservedMemory = conf.getLong("spark.testing.reservedMemory",
       if (conf.contains("spark.testing")) 0 else reservedMemory)
     val minSystemMemory = (reservedMemory * 1.5).ceil.toLong
-    if (reservedMemory < 50L * 1024L * 1024L) {
-      throw new IllegalArgumentException(s"Reserved memory $reservedMemory must " +
-          "be at least 50MB. Please increase critical-heap-percentage and/or heap size " +
-          "using the --driver-memory option or spark.driver.memory in Spark configuration.")
-    }
     if (systemMemory < minSystemMemory) {
       throw new IllegalArgumentException(s"System memory $systemMemory must " +
         s"be at least $minSystemMemory. Please increase heap size using the --driver-memory " +
