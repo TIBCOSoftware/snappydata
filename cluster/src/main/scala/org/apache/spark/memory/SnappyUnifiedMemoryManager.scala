@@ -25,7 +25,7 @@ import scala.collection.mutable
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
-import com.gemstone.gemfire.internal.shared.BufferAllocator
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, LauncherBase}
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
@@ -873,7 +873,7 @@ object SnappyUnifiedMemoryManager extends Logging {
     */
   def getStorageEvictionFraction(conf: SparkConf): Double = {
     val cache = Misc.getGemFireCacheNoThrow
-    if (cache ne null) {
+    val evictionFraction = if (cache ne null) {
       val thresholds = cache.getResourceManager.getHeapMonitor.getThresholds
       if (thresholds.isEvictionThresholdEnabled) {
         thresholds.getEvictionThreshold * 0.01
@@ -883,13 +883,23 @@ object SnappyUnifiedMemoryManager extends Logging {
         DEFAULT_EVICTION_FRACTION
       }
     } else {
-      conf.getDouble("spark.testing.maxStorageFraction", DEFAULT_EVICTION_FRACTION)
+      // search in conf
+      conf.getOption(Constant.STORE_PROPERTY_PREFIX +
+          LauncherBase.EVICTION_HEAP_PERCENTAGE) match {
+        case Some(c) => c.toDouble * 0.01
+        case None => conf.getDouble("spark.testing.maxStorageFraction", DEFAULT_EVICTION_FRACTION)
+      }
     }
+    if (evictionFraction < 0.1 || evictionFraction > 0.98) {
+      throw new IllegalArgumentException(s"Eviction fraction $evictionFraction must " +
+          "be between 0.1 and 0.98. Please set or correct eviction-heap-percentage.")
+    }
+    evictionFraction
   }
 
   /**
     * Return the total amount of memory shared between execution and storage, in bytes.
-    * This is a direct copy from UnifiedMemorymanager with an extra check for evit fraction
+    * This is a direct copy from UnifiedMemorymanager with an extra check for evict fraction
     */
   private def getMaxMemory(conf: SparkConf): Long = {
     var systemMemory = conf.getLong("spark.testing.memory", getMaxHeapMemory)
@@ -901,14 +911,26 @@ object SnappyUnifiedMemoryManager extends Logging {
         systemMemory = thresholds.getMaxMemoryBytes
         systemMemory - thresholds.getCriticalThresholdBytes
       } else RESERVED_SYSTEM_MEMORY_BYTES
-    } else RESERVED_SYSTEM_MEMORY_BYTES
+    } else {
+      // search in conf
+      conf.getOption(Constant.STORE_PROPERTY_PREFIX +
+          LauncherBase.CRITICAL_HEAP_PERCENTAGE) match {
+        case Some(c) => (systemMemory * (100.0 - c.toDouble) * 0.01).toLong
+        case None => RESERVED_SYSTEM_MEMORY_BYTES
+      }
+    }
     reservedMemory = conf.getLong("spark.testing.reservedMemory",
       if (conf.contains("spark.testing")) 0 else reservedMemory)
     val minSystemMemory = (reservedMemory * 1.5).ceil.toLong
+    if (reservedMemory < 50L * 1024L * 1024L) {
+      throw new IllegalArgumentException(s"Reserved memory $reservedMemory must " +
+          "be at least 50MB. Please increase critical-heap-percentage and/or heap size " +
+          "using the --driver-memory option or spark.driver.memory in Spark configuration.")
+    }
     if (systemMemory < minSystemMemory) {
       throw new IllegalArgumentException(s"System memory $systemMemory must " +
         s"be at least $minSystemMemory. Please increase heap size using the --driver-memory " +
-        s"option or spark.driver.memory in Spark configuration.")
+        "option or spark.driver.memory in Spark configuration.")
     }
     // SPARK-12759 Check executor memory to fail fast if memory is insufficient
     if (conf.contains("spark.executor.memory")) {
@@ -916,7 +938,7 @@ object SnappyUnifiedMemoryManager extends Logging {
       if (executorMemory < minSystemMemory) {
         throw new IllegalArgumentException(s"Executor memory $executorMemory must be at least " +
           s"$minSystemMemory. Please increase executor memory using the " +
-          s"--executor-memory option or spark.executor.memory in Spark configuration.")
+          "--executor-memory option or spark.executor.memory in Spark configuration.")
       }
     }
 

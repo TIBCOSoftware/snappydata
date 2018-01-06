@@ -27,16 +27,17 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import com.gemstone.gemfire.cache.PartitionAttributes;
-import com.gemstone.gemfire.distributed.internal.locks.DLockService;
 import com.gemstone.gemfire.internal.GFToSlf4jBridge;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
 import com.gemstone.gemfire.internal.cache.GemfireCacheHelper;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
+import com.gemstone.gemfire.internal.shared.SystemProperties;
 import com.pivotal.gemfirexd.Attribute;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI;
+import com.pivotal.gemfirexd.internal.engine.locks.GfxdDRWLockService;
 import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet;
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
@@ -65,6 +66,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   private final Future<?> initFuture;
 
   public static final Object hiveClientSync = new Object();
+
+  private static final boolean hiveClientWriteLock = SystemProperties
+      .getServerInstance().getBoolean("metastore.write-lock", true);
 
   private final ExecutorService hmsQueriesExecutorService;
 
@@ -316,11 +320,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         }
       switch (this.qType) {
         case INIT:
-          // Take write lock on data dictionary. Because of this all the servers
+          // Take read/write lock on metastore. Because of this all the servers
           // will initiate their hive client one by one. This is important as we
           // have downgraded the ISOLATION LEVEL from SERIALIZABLE to REPEATABLE READ
           final String hiveClientObject = "HiveMetaStoreClient";
-          final DLockService lockService = Misc.getMemStoreBooting()
+          final GfxdDRWLockService lockService = Misc.getMemStoreBooting()
               .getDDLLockService();
           GFToSlf4jBridge logger = (GFToSlf4jBridge)Misc.getI18NLogWriter();
           int previousLevel = logger.getLevel();
@@ -331,16 +335,26 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             logger.setLevel(LogWriterImpl.WARNING_LEVEL);
           }
 
-          final boolean writeLockTaken = lockService.lock(hiveClientObject,
-              GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
+          final boolean lockTaken;
+          final Object lockOwner = lockService.newCurrentOwner();
+          if (hiveClientWriteLock) {
+            lockTaken = lockService.writeLock(hiveClientObject, lockOwner,
+                GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
+          } else {
+            lockTaken = lockService.readLock(hiveClientObject, lockOwner,
+                GfxdLockSet.MAX_LOCKWAIT_VAL);
+          }
           try {
             synchronized (hiveClientSync) {
               initHMC();
             }
           } finally {
-            if (writeLockTaken) {
-              //this.dd.unlockAfterWriting(tc, false);
-              lockService.unlock(hiveClientObject);
+            if (lockTaken) {
+              if (hiveClientWriteLock) {
+                lockService.writeUnlock(hiveClientObject, lockOwner);
+              } else {
+                lockService.readUnlock(hiveClientObject);
+              }
             }
             logger.setLevel(previousLevel);
           }
