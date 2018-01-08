@@ -25,6 +25,8 @@ import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
+import com.gemstone.gemfire.distributed.internal.MembershipListener
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.util.ServiceUtils
@@ -814,6 +816,7 @@ object SnappyContext extends Logging {
   @volatile private[this] var _clusterMode: ClusterMode = _
   @volatile private[this] var _sharedState: SnappySharedState = _
 
+  @volatile private[this] var _globalContextInitialized: Boolean = false
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
@@ -853,17 +856,10 @@ object SnappyContext extends Logging {
     TrieMap.empty[String, BlockAndExecutorId]
   private[spark] val totalCoreCount = new AtomicInteger(0)
 
-  def containsBlockId(executorId: String): Boolean = {
-    storeToBlockMap.get(executorId) match {
-      case Some(b) => b.blockId != null
-      case None => false
-    }
-  }
-
   def getBlockId(executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.get(executorId) match {
-      case s@Some(b) if b.blockId != null => s
-      case None => None
+      case s@Some(b) if b.blockId ne null => s
+      case _ => None
     }
   }
 
@@ -912,6 +908,20 @@ object SnappyContext extends Logging {
     SnappySession.clearAllCache()
   }
 
+  val membershipListener = new MembershipListener {
+    override def quorumLost(failures: java.util.Set[InternalDistributedMember],
+        remaining: java.util.List[InternalDistributedMember]): Unit = {}
+
+    override def memberJoined(id: InternalDistributedMember): Unit = {}
+
+    override def memberSuspect(id: InternalDistributedMember,
+        whoSuspected: InternalDistributedMember): Unit = {}
+
+    override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
+      removeBlockId(id.canonicalString())
+    }
+  }
+
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
     SparkContext.getOrCreate(INVALID_CONF)
@@ -935,7 +945,7 @@ object SnappyContext extends Logging {
       val blockId = new BlockAndExecutorId(
         SparkEnv.get.blockManager.blockManagerId,
         numCores, numCores)
-      storeToBlockMap(cache.getMyId.toString) = blockId
+      storeToBlockMap(cache.getMyId.canonicalString()) = blockId
       totalCoreCount.set(blockId.numProcessors)
       SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
@@ -946,12 +956,12 @@ object SnappyContext extends Logging {
    * @return
    */
   def apply(): SnappyContext = {
-    val gc = globalSparkContext
-    if (gc != null) {
-      newSnappyContext(gc)
-    } else {
-      null
-    }
+    if (_globalContextInitialized) {
+      val gc = globalSparkContext
+      if (gc != null) {
+        newSnappyContext(gc)
+      } else null
+    } else null
   }
 
   /**
@@ -1059,14 +1069,25 @@ object SnappyContext extends Logging {
     mode
   }
 
+  private[spark] def initGlobalSparkContext(sc: SparkContext): Unit = {
+    if (!_globalContextInitialized) {
+      contextLock.synchronized {
+        if (!_globalContextInitialized) {
+          invokeServices(sc)
+          sc.addSparkListener(new SparkContextListener)
+          initMemberBlockMap(sc)
+          _globalContextInitialized = true
+        }
+      }
+    }
+  }
+
   private[sql] def initGlobalSnappyContext(sc: SparkContext,
       session: SnappySession): Unit = {
     if (!_globalSNContextInitialized) {
       contextLock.synchronized {
         if (!_globalSNContextInitialized) {
-          invokeServices(sc)
-          sc.addSparkListener(new SparkContextListener)
-          initMemberBlockMap(sc)
+          initGlobalSparkContext(sc)
           _sharedState = SnappySharedState.create(sc)
           _globalClear = session.snappyContextFunctions.clearStatic()
           _globalSNContextInitialized = true
@@ -1075,7 +1096,14 @@ object SnappyContext extends Logging {
     }
   }
 
-  private[sql] def sharedState: SnappySharedState = _sharedState
+  private[sql] def sharedState(sc: SparkContext): SnappySharedState = {
+    val state = _sharedState
+    if ((state ne null) && (state.sparkContext eq sc)) state
+    else contextLock.synchronized {
+      _sharedState = SnappySharedState.create(sc)
+      _sharedState
+    }
+  }
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
@@ -1085,14 +1113,6 @@ object SnappyContext extends Logging {
 
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) =>
-        // NOTE: if Property.jobServer.enabled is true
-        // this will trigger SnappyContext.apply() method
-        // prior to `new SnappyContext(sc)` after this
-        // method ends.
-        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        SnappyTableStatsProviderService.start(sc)
-        ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
       case ThinClientConnectorMode(_, url) =>
         SnappyTableStatsProviderService.start(sc, url)
       case LocalMode(_, url) =>
@@ -1100,15 +1120,23 @@ object SnappyContext extends Logging {
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
         SnappyTableStatsProviderService.start(sc)
         if (ToolsCallbackInit.toolsCallback != null) {
-          ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
+          ToolsCallbackInit.toolsCallback.updateUI(sc)
         }
       case _ => // ignore
     }
   }
 
-  private def stopSnappyContext(): Unit = {
+  private def stopSnappyContext(): Unit = contextLock.synchronized {
     val sc = globalSparkContext
-    if (_globalSNContextInitialized) {
+    if (_globalContextInitialized) {
+      SnappyTableStatsProviderService.stop()
+
+      // clear current hive catalog connection
+      Hive.closeCurrent()
+      if (ExternalStoreUtils.isLocalMode(sc)) {
+        ServiceUtils.invokeStopFabricServer(sc)
+      }
+
       // clear static objects on the driver
       clearStaticArtifacts()
 
@@ -1117,18 +1145,12 @@ object SnappyContext extends Logging {
         _globalClear()
         _globalClear = null
       }
-      SnappyTableStatsProviderService.stop()
-
-      // clear current hive catalog connection
-      Hive.closeCurrent()
-      if (ExternalStoreUtils.isLocalMode(sc)) {
-        ServiceUtils.invokeStopFabricServer(sc)
-      }
       MemoryManagerCallback.resetMemoryManager()
     }
     _clusterMode = null
     _anySNContext = null
     _globalSNContextInitialized = false
+    _globalContextInitialized = false
   }
 
   /** Cleanup static artifacts on this lead/executor. */

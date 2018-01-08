@@ -30,10 +30,10 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.util.SnappyUtils
 
 
@@ -61,9 +61,7 @@ class SparkSQLPrepareImpl(val sql: String,
   session.setPreparedQuery(preparePhase = true, None)
 
   private[this] val analyzedPlan: LogicalPlan = {
-    val method = classOf[SnappySession].getDeclaredMethod("prepareSQL", classOf[String])
-    method.setAccessible(true)
-    method.invoke(session, sql).asInstanceOf[LogicalPlan]
+    session.prepareSQL(sql)
   }
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()

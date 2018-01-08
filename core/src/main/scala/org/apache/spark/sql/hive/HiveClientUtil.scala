@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.impl.SnappyHiveCatalog
@@ -134,6 +135,15 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
         props.setProperty("log4j.logger.DataNucleus.Query", "ERROR")
         ClientSharedUtils.initLog4J(null, props, currentLevel)
       })
+      // wait for store hive client to initialize first
+      val store = Misc.getMemStoreBootingNoThrow
+      if (store ne null) {
+        val storeCatalog = store.getExternalCatalog
+        if (storeCatalog ne null) {
+          // explicit wait though it should already be done by the getter above
+          storeCatalog.waitForInitialization()
+        }
+      }
       val hc = newClient()
       // Perform some action to hit other paths that could throw warning messages.
       ifSmartConn(() => {hc.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS")})
@@ -280,7 +290,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     SnappyContext.getClusterMode(sparkContext) match {
       case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
         (ExternalStoreUtils.defaultStoreURL(Some(sparkContext)) +
-            ";disable-streaming=true;default-persistent=true;skip-constraint-checks=true;",
+            SnappyHiveCatalog.getCommonJDBCSuffix + ";skip-constraint-checks=true",
             Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, url) =>
         (url + ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)

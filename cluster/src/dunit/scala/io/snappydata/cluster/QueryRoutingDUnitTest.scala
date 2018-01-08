@@ -824,7 +824,7 @@ class QueryRoutingDUnitTest(val s: String)
     def assertPrimaries(query: String): Unit = {
 
       def hostExecutorId(m: InternalDistributedMember): String =
-        Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
+        Utils.getHostExecutorId(SnappyContext.getBlockId(m.canonicalString()).get.blockId)
 
       val rdd = session.sql(query).queryExecution.executedPlan.execute()
       val region = Misc.getRegionForTable(s"APP.$table", true)
