@@ -246,32 +246,9 @@ class SnappySessionState(snappySession: SnappySession)
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
 
-    protected def splitEqualExpression(condition: Expression): Seq[Expression] = {
-      condition match {
-        case EqualTo(l, r) =>
-          Seq(l, r)
-        case other => other :: Nil
-      }
-    }
-
-    private def canExecuteDirect(plan: LogicalPlan): Boolean = {
-      val allPlans = plan.subqueries :+ plan
-      val allRelations = allPlans.map { p =>
-        p.collect {
-          case LogicalRelation(src: BaseRelation, _, _) =>
-            src match {
-              case _: UpdatableRelation => true
-              case _ => false
-            }
-        }
-      }.flatten
-      allRelations.reduce((a, b) => a && b)
-    }
-
     private def getKeyAttributes(table: LogicalPlan,
         child: LogicalPlan,
-        plan: LogicalPlan,
-        isDelete: Boolean = false): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
+        plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
         case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
@@ -368,7 +345,7 @@ class SnappySessionState(snappySession: SnappySession)
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
         // add and project only the key columns
-        val (keyAttrs, newChild, _) = getKeyAttributes(table, child, d, isDelete = true)
+        val (keyAttrs, newChild, _) = getKeyAttributes(table, child, d)
         // if this is a row table with no PK, then fallback to direct execution
         if (keyAttrs.isEmpty) newChild
         else {
