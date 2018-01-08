@@ -30,7 +30,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 
 //Benchmark function that will execute a function and returns time taken to execute that function
-def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) : Double = {
+def benchmark(name: String, times: Int = 5, warmups: Int = 3)(f: => Unit) : Double = {
   for (i <- 1 to warmups) {
     f
   }

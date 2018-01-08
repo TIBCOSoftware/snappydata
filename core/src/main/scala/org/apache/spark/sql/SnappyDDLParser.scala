@@ -267,7 +267,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected final def beforeDDLEnd: Rule0 = rule {
-    noneOf("uUoOaA-/")
+    noneOf("uUoOaA-;/")
   }
 
   protected final def ddlEnd: Rule1[TableEnd] = rule {

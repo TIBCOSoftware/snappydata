@@ -22,8 +22,7 @@ import org.apache.spark.sql.SnappyContext
 private[spark] class SnappyTaskSchedulerImpl(sc: SparkContext) extends TaskSchedulerImpl(sc) {
 
   override def postStartHook(): Unit = {
-    SnappyContext(sc)
+    SnappyContext.initGlobalSparkContext(sc)
     super.postStartHook()
   }
-
 }

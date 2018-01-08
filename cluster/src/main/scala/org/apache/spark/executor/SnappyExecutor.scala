@@ -206,9 +206,14 @@ private class SnappyUncaughtExceptionHandler(
         }
       }
     } catch {
-      // Exception while handling an uncaught exception. we cannot do much here
-      case _: OutOfMemoryError => Runtime.getRuntime.halt(SparkExitCode.OOM)
-      case _: Throwable => Runtime.getRuntime.halt(SparkExitCode.UNCAUGHT_EXCEPTION_TWICE)
+      case t: Throwable => try {
+        if (t.isInstanceOf[OutOfMemoryError]) System.exit(SparkExitCode.OOM)
+        else System.exit(SparkExitCode.UNCAUGHT_EXCEPTION)
+      } catch {
+        // Exception while handling an uncaught exception. we cannot do much here
+        case _: OutOfMemoryError => Runtime.getRuntime.halt(SparkExitCode.OOM)
+        case _: Throwable => Runtime.getRuntime.halt(SparkExitCode.UNCAUGHT_EXCEPTION_TWICE)
+      }
     }
   }
 }

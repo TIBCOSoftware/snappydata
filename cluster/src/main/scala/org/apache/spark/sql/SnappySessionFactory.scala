@@ -25,7 +25,7 @@ import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.SparkConf
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.util.SnappyUtils
 
 
@@ -40,11 +40,8 @@ class SnappySessionFactory extends SparkContextFactory {
 
 object SnappySessionFactory {
 
-  private[this] val snappySession =
-    new SnappySession(LeadImpl.getInitializingSparkContext)
-
-  def updateCredentials(snc: SnappySession, jobConfig: Config, fromStreamCtx: Boolean = false): Config
-  = {
+  def updateCredentials(snc: SnappySession, jobConfig: Config,
+      fromStreamCtx: Boolean = false): Config = {
     if (Misc.isSecurityEnabled) {
       try {
         // Pass job credentials to snappy session
@@ -79,7 +76,7 @@ object SnappySessionFactory {
   }
 
   protected def newSession(): SnappySession with ContextLike =
-    new SnappySession(snappySession.sparkContext) with ContextLike {
+    new SnappySession(SparkContext.getActive.get) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 

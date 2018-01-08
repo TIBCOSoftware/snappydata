@@ -18,19 +18,13 @@ package io.snappydata
 
 import java.io.File
 
-import io.snappydata.impl.LeadImpl
-
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
-import org.apache.spark.ui.{SnappyDashboardTab, SparkUI}
+import org.apache.spark.ui.SnappyDashboardTab
 import org.apache.spark.util.SnappyUtils
 
 object ToolsCallbackImpl extends ToolsCallback {
-
-  override def invokeLeadStartAddonService(sc: SparkContext): Unit = {
-    LeadImpl.invokeLeadStartAddonService(sc)
-  }
 
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
       partitionColumnAliases: Seq[Seq[Attribute]],
@@ -46,10 +40,8 @@ object ToolsCallbackImpl extends ToolsCallback {
     case _ => None
   }
 
-  override def updateUI(scUI: Option[Any]): Unit = {
-    scUI.foreach { ui =>
-      new SnappyDashboardTab(ui.asInstanceOf[SparkUI])
-    }
+  override def updateUI(sc: SparkContext): Unit = {
+    SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
   }
 
   override def removeAddedJar(sc: SparkContext, jarName: String) : Unit =

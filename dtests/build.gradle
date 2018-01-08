@@ -110,7 +110,6 @@ dependencies {
 }
 
 task buildDtests {
-  delete buildDir
   dependsOn ':cleanScalaTest', ':snappy-store:storeProduct', ':product', packageTests
 }
 

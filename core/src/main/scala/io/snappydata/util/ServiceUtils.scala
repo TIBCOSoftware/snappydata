@@ -63,17 +63,16 @@ object ServiceUtils {
 
   private[snappydata] def setCommonBootDefaults(props: Properties): Properties = {
     val storeProps = if (props ne null) props else new Properties()
-    val storePropNames = storeProps.stringPropertyNames()
     // set default recovery delay to 2 minutes (SNAP-1541)
-    if (!storePropNames.contains(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP)) {
+    if (storeProps.getProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP) == null) {
       storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
-    if (!storePropNames.contains(DistributionConfig.MEMBER_TIMEOUT_NAME)) {
+    if (storeProps.getProperty(DistributionConfig.MEMBER_TIMEOUT_NAME) == null) {
       storeProps.setProperty(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
     }
     // try hard to maintain executor_ locality
-    if (!storePropNames.contains("spark.locality.wait.process")) {
+    if (storeProps.getProperty("spark.locality.wait.process") == null) {
       storeProps.setProperty("spark.locality.wait.process", "20s")
     }
     storeProps

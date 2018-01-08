@@ -186,7 +186,7 @@ object SparkConnectorRDDHelper {
           val netUrls = new ArrayBuffer[(String, String)](1)
           netUrls += host -> netUrl
           allNetUrls(bid) = netUrls
-          if (!availableNetUrls.contains(host)) {
+          if (!availableNetUrls.containsKey(host)) {
             availableNetUrls.put(host, netUrl)
           }
         } else {
