@@ -328,6 +328,11 @@ object Property extends Enumeration {
     s"Boolean if false tells engine to use bootstrap analysis for error calculation for all cases" +
       s". Default is true.", Some(true), null, false)
 
+  val PutIntoInnerJoinCacheSize =
+    SQLVal[Long](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
+    "The putInto inner join would be cached if the table is of size less " +
+        "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
+
 
 }
 

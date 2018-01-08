@@ -16,6 +16,9 @@
  */
 package org.apache.spark.sql.internal
 
+import io.snappydata.Property
+
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
@@ -23,7 +26,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
-import org.apache.spark.sql.{AnalysisException, SparkSession}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappyContext, SnappySession, SparkSession}
 
 /**
   * Helper object for PutInto operations for column tables.
@@ -31,6 +34,8 @@ import org.apache.spark.sql.{AnalysisException, SparkSession}
   * and converts it into another plan.
   */
 object ColumnTableBulkOps {
+
+  val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
   def validateOp(originalPlan: PutIntoTable) {
     originalPlan match {
@@ -62,14 +67,29 @@ object ColumnTableBulkOps {
             s"PutInto in a column table requires key column(s) but got empty string")
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
-        val notExists = Join(subQuery, table, LeftAnti, condition)
+
         val keyColumns = getKeyColumns(table)
+        val updateSubQuery = Join(table, subQuery, Inner, condition)
+        val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
+
+        val cacheSize = Property.PutIntoInnerJoinCacheSize
+            .getOption(sparkSession.sparkContext.conf) match {
+          case Some(size) => size.toInt
+          case None => Property.PutIntoInnerJoinCacheSize.defaultValue.get
+        }
+        if (updateSubQuery.statistics.sizeInBytes <= cacheSize) {
+          sparkSession.sharedState.cacheManager.
+              cacheQuery(new Dataset(sparkSession,
+                updateSubQuery, RowEncoder(updateSubQuery.schema)))
+          sparkSession.asInstanceOf[SnappySession].
+              addContextObject(CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
+        }
+
+        val notExists = Join(subQuery, updateSubQuery, LeftAnti, condition)
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, notExists),
           OverwriteOptions(false), ifNotExists = false)
 
-        val updateSubQuery = Join(table, subQuery, Inner, condition)
-        val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
         val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
         val updatePlan = Update(table, updateSubQuery, Seq.empty,
           updateColumns, updateExpressions)

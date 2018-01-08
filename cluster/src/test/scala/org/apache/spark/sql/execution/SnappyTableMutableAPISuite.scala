@@ -168,12 +168,6 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.sql("update col_table set a.col3 = b.col3, a.col4 = b.col4 from " +
         "col_table a, row_table b where a.col2 = b.col2")
 
-    /*val df = snc.sql("select *  from " +
-        "col_table a, row_table b where a.col2 = b.col2")
-     println(df.queryExecution.logical)
-    println(df.queryExecution.analyzed)
-    println(df.queryExecution.optimizedPlan)
-    println(df.queryExecution.executedPlan)*/
     val resultdf = snc.table("col_table").collect()
     assert(resultdf.length == 3)
     assert(resultdf.contains(Row(1, "1", "100", 100)))
@@ -182,7 +176,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
   }
 
 
-  test("Multiple columns update with join : Row PR tables") {
+  ignore("Multiple columns update with join : Row PR tables") {
     val snc = new SnappySession(sc)
     snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
         " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
@@ -237,7 +231,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
   }
 
 
-  test("Multiple columns update with join : Row RR tables") {
+  ignore("Multiple columns update with join : Row RR tables") {
     val snc = new SnappySession(sc)
     snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
         " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
@@ -549,24 +543,26 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.contains(Row(2, "2", null, 2)))
   }
 
-  test("deleteFrom table where(a,b) select a,b syntax Row table") {
+  ignore("deleteFrom table where(a,b) select a,b syntax Row table") {
     val snc = new SnappySession(sc)
     snc.sql("create table col_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
         " using column options(BUCKETS '2', PARTITION_BY 'col1') ")
     snc.sql("create table row_table(col1 INT, col2 STRING, col3 String, col4 Int)" +
         " using row options(BUCKETS '2', PARTITION_BY 'col1') ")
 
+    snc.insert("row_table", Row(1, "5", "5", 100))
     snc.insert("row_table", Row(1, "1", "1", 100))
     snc.insert("row_table", Row(2, "2", "2", 2))
     snc.insert("row_table", Row(4, "4", "4", 4))
 
-    snc.insert("col_table", Row(1, "1", "1", 1))
+    snc.insert("col_table", Row(9, "1", "1", 1))
     snc.insert("col_table", Row(2, "2", null, 2))
     snc.insert("col_table", Row(3, "3", "3", 3))
     snc.sql("delete from row_table where (col2, col3) in  (select col2, col3 from col_table)")
 
     val resultdf = snc.table("row_table").collect()
-    assert(resultdf.length == 2)
+    assert(resultdf.length == 3)
+    assert(resultdf.contains(Row(1, "5", "5", 100)))
     assert(resultdf.contains(Row(4, "4", "4", 4)))
     assert(resultdf.contains(Row(2, "2", "2", 2)))
   }
