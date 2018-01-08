@@ -417,7 +417,7 @@ object StoreUtils {
     // if OVERFLOW has been provided, then use HEAPPERCENT as the default
     // eviction policy (unless overridden explicitly)
     val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
-        .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
+        .getOrElse(!parameters.contains(EVICTION_BY))
     val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
     var overflowAdded = false
     if (!isShadowTable) {
@@ -427,6 +427,9 @@ object StoreUtils {
         } else {
           if (hasOverflow) {
             overflowAdded = true
+            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+          } else if (!parameters.contains(OVERFLOW)) {
+            // SNAP-1501 Set overflow as default evict-action unless specified otherwise.
             s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
           } else {
             s"$GEM_EVICTION_BY $v "
@@ -443,6 +446,9 @@ object StoreUtils {
         } else {
           if (hasOverflow) {
             overflowAdded = true
+            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+          } else if (!parameters.contains(OVERFLOW)) {
+            // SNAP-1501 Set overflow as default evict-action unless specified otherwise.
             s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
           } else {
             s"$GEM_EVICTION_BY $v "

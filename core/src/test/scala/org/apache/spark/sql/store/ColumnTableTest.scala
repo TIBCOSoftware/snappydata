@@ -19,9 +19,8 @@ package org.apache.spark.sql.store
 import java.sql.{DriverManager, SQLException}
 
 import scala.util.{Failure, Success, Try}
-
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
@@ -30,7 +29,6 @@ import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyF
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
@@ -625,7 +623,7 @@ class ColumnTableTest
     assert(region.getEvictionAttributes.getAlgorithm ===
         EvictionAlgorithm.LRU_MEMORY)
     assert(region.getEvictionAttributes.getAction ===
-        EvictionAction.LOCAL_DESTROY)
+        EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
   }
@@ -684,7 +682,7 @@ class ColumnTableTest
     assert(region.getEvictionAttributes.getAlgorithm ===
       EvictionAlgorithm.LRU_MEMORY)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
+      EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
@@ -695,7 +693,7 @@ class ColumnTableTest
     assert(region.getEvictionAttributes.getAlgorithm ===
       EvictionAlgorithm.LRU_MEMORY)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
+      EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
@@ -737,6 +735,24 @@ class ColumnTableTest
       EvictionAlgorithm.LRU_HEAP)
     assert(region.getEvictionAttributes.getAction ===
       EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT, ItemId INT) USING column")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT, ItemId INT) USING row")
+    val r = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[DistributedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
   }
 
