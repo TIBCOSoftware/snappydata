@@ -18,8 +18,7 @@ package org.apache.spark.memory
 
 
 import java.util.Properties
-
-import scala.collection.JavaConverters._
+import java.util.function.ObjLongConsumer
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -497,14 +496,14 @@ object SnappyUnifiedMemoryManagerDUnitTest {
             .asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject
         SparkEnv.get.memoryManager
             .asInstanceOf[SnappyUnifiedMemoryManager].logStats()
-        val keys = mMap.keySet().iterator()
         var sum = 0L
-        while (keys.hasNext) {
-          val key = keys.next()
-          if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
-            sum = sum + mMap.getLong(key)
+        mMap.forEach(new ObjLongConsumer[(String, MemoryMode)] {
+          override def accept(key: (String, MemoryMode), value: Long): Unit = {
+            if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
+              sum += value
+            }
           }
-        }
+        })
         sum
       } else {
         -1L

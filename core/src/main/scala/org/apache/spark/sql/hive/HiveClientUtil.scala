@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.impl.SnappyHiveCatalog
@@ -33,7 +34,6 @@ import org.apache.log4j.LogManager
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.client.{HiveClient, IsolatedClientLoader}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.{Logging, SparkContext}
@@ -134,6 +134,15 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
         props.setProperty("log4j.logger.DataNucleus.Query", "ERROR")
         ClientSharedUtils.initLog4J(null, props, currentLevel)
       })
+      // wait for store hive client to initialize first
+      val store = Misc.getMemStoreBootingNoThrow
+      if (store ne null) {
+        val storeCatalog = store.getExternalCatalog
+        if (storeCatalog ne null) {
+          // explicit wait though it should already be done by the getter above
+          storeCatalog.waitForInitialization()
+        }
+      }
       val hc = newClient()
       // Perform some action to hit other paths that could throw warning messages.
       ifSmartConn(() => {hc.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS")})
@@ -220,9 +229,6 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
               "Please set spark.sql.hive.metastore.jars.")
       }
 
-      DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver")
-      DriverRegistry.register("io.snappydata.jdbc.ClientDriver")
-
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using Spark classes.")
       // new ClientWrapper(metaVersion, allConfig, classLoader)
@@ -291,6 +297,8 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
 }
 
 object HiveClientUtil {
+
+  ExternalStoreUtils.registerBuiltinDrivers()
 
   def newClient(sparkContext: SparkContext): HiveClient = synchronized {
     new HiveClientUtil(sparkContext).newClientWithLogSetting()

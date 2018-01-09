@@ -17,6 +17,7 @@
 package org.apache.spark.memory
 
 import java.util.Properties
+import java.util.function.ObjLongConsumer
 
 import io.snappydata.cluster.{ClusterManagerTestBase, ExecutorInitiator}
 import io.snappydata.test.dunit.SerializableRunnable
@@ -175,14 +176,14 @@ object MemoryManagerRestartDUnitTest {
     val memoryManager = SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager]
     val mMap = memoryManager.memoryForObject
     memoryManager.logStats()
-    val keys = mMap.keySet().iterator()
     var sum = 0L
-    while (keys.hasNext) {
-      val key = keys.next()
-      if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
-        sum = sum + mMap.getLong(key)
+    mMap.forEach(new ObjLongConsumer[(String, MemoryMode)] {
+      override def accept(key: (String, MemoryMode), value: Long): Unit = {
+        if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
+          sum += value
+        }
       }
-    }
+    })
     sum
   }
 
