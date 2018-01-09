@@ -1,4 +1,22 @@
 /*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+/*
+ * Portions adapted from Spark's OpenHashSet having the license below.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,24 +32,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * Changes for SnappyData data platform.
- *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
+
 package io.snappydata.collection
 
 import java.util.{Iterator => JIterator}
@@ -77,8 +78,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] var objectSize = -1L
   private[this] var totalSize = 0L
 
-  private[this] var _capacity = ObjectHashSet.nextPowerOf2(
-    initialCapacity, loadFactor)
+  private[this] var _capacity = OpenHashSet.nextPowerOf2(initialCapacity)
   private[this] var _size = 0
   private[this] var _growThreshold = (loadFactor * _capacity).toInt
 
@@ -113,7 +113,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
           // update
           return longKey.asInstanceOf[T]
         } else {
-          // quadratic probing with position increase by 1, 2, 3, ...
+          // quadratic probing (increase delta)
           pos = (pos + delta) & mask
           delta += 1
         }
@@ -246,7 +246,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     acquireMemory(valSize)
     totalSize += valSize
 
-    val newCapacity = ObjectHashSet.checkCapacity(capacity << 1, loadFactor)
+    val newCapacity = OpenHashSet.checkCapacity(capacity << 1)
     val newData = newArray(newCapacity)
     val newMask = newCapacity - 1
 
@@ -282,8 +282,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private def acquireMemory(required: Long) = {
     if (longLived) {
       val blockId = TaskResultBlockId(taskContext.taskAttemptId())
-      SparkEnv.get.memoryManager
-        .acquireStorageMemory(blockId, required, MemoryMode.ON_HEAP)
+      SparkEnv.get.memoryManager.acquireStorageMemory(blockId, required, MemoryMode.ON_HEAP)
     } else if (consumer ne null) {
       consumer.acquireMemory(required)
     }
@@ -298,24 +297,6 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   def freeStorageMemory(): Unit = {
     assert(longLived, "Method valid for only long lived hashsets")
     SparkEnv.get.memoryManager.releaseStorageMemory(totalSize, MemoryMode.ON_HEAP)
-  }
-}
-
-object ObjectHashSet {
-
-  def checkCapacity(capacity: Int, loadFactor: Double): Int = {
-    val maxCapacity = 1 << 30
-    if (capacity > 0 && capacity <= maxCapacity) {
-      capacity
-    } else {
-      throw new IllegalStateException(
-        s"Can't contain more than ${(loadFactor * maxCapacity).toInt} elements")
-    }
-  }
-
-  def nextPowerOf2(n: Int, loadFactor: Double): Int = {
-    val highBit = Integer.highestOneBit(n)
-    checkCapacity(if (highBit == n) n else highBit << 1, loadFactor)
   }
 }
 

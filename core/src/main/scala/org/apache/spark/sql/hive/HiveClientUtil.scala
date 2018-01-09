@@ -34,7 +34,6 @@ import org.apache.log4j.LogManager
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.client.{HiveClient, IsolatedClientLoader}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.{Logging, SparkContext}
@@ -230,9 +229,6 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
               "Please set spark.sql.hive.metastore.jars.")
       }
 
-      DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver")
-      DriverRegistry.register("io.snappydata.jdbc.ClientDriver")
-
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using Spark classes.")
       // new ClientWrapper(metaVersion, allConfig, classLoader)
@@ -301,6 +297,8 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
 }
 
 object HiveClientUtil {
+
+  ExternalStoreUtils.registerBuiltinDrivers()
 
   def newClient(sparkContext: SparkContext): HiveClient = synchronized {
     new HiveClientUtil(sparkContext).newClientWithLogSetting()
