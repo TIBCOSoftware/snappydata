@@ -18,9 +18,9 @@ package org.apache.spark.sql.execution.benchmark
 
 import scala.collection.mutable
 
-import com.gemstone.gemfire.internal.shared.OpenHashSet
 import com.gemstone.gnu.trove.THashSet
 import io.snappydata.SnappyFunSuite
+import io.snappydata.collection.OpenHashSet
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
