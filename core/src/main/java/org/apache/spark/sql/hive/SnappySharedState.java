@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.hive;
 
-import io.snappydata.impl.SnappyHiveCatalog;
+import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI;
 import org.apache.spark.SparkContext;
 import org.apache.spark.SparkException;
 import org.apache.spark.sql.ClusterMode;
@@ -87,38 +87,42 @@ public final class SnappySharedState extends SharedState {
   private SnappySharedState(SparkContext sparkContext) throws SparkException {
     super(sparkContext);
 
-    Boolean oldFlag = SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.get();
-    SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
+    Boolean oldFlag = HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get();
+    if (oldFlag != Boolean.TRUE) {
+      HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
+    }
     try {
       // avoid inheritance of activeSession
       SparkSession.clearActiveSession();
       this.client = HiveClientUtil$.MODULE$.newClient(sparkContext());
+
+      ClusterMode mode = SnappyContext.getClusterMode(sparkContext());
+      if (mode instanceof ThinClientConnectorMode) {
+        this.snappyCatalog = new SnappyConnectorExternalCatalog(this.client,
+            sparkContext().hadoopConfiguration());
+      } else {
+        this.snappyCatalog = new SnappyExternalCatalog(this.client,
+            sparkContext().hadoopConfiguration());
+      }
+
+      // Initialize global temporary view manager.
+      // Use upper-case database to match the convention used by SnappySession.
+      String globalDBName = Utils.toUpperCase(sparkContext().conf().get(
+          StaticSQLConf.GLOBAL_TEMP_DATABASE()));
+      if (this.snappyCatalog.databaseExists(globalDBName)) {
+        throw new SparkException(globalDBName + " is a system reserved schema, " +
+            "please drop your existing schema to resolve the name conflict, " +
+            "or set a different value for " + StaticSQLConf.GLOBAL_TEMP_DATABASE().key() +
+            ", and start the cluster again.");
+      }
+      this.globalViewManager = new GlobalTempViewManager(globalDBName);
+
+      this.initialized = true;
     } finally {
-      SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(oldFlag);
+      if (oldFlag != Boolean.TRUE) {
+        HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(oldFlag);
+      }
     }
-
-    ClusterMode mode = SnappyContext.getClusterMode(sparkContext());
-    if (mode instanceof ThinClientConnectorMode) {
-      this.snappyCatalog = new SnappyConnectorExternalCatalog(this.client,
-          sparkContext().hadoopConfiguration());
-    } else {
-      this.snappyCatalog = new SnappyExternalCatalog(this.client,
-          sparkContext().hadoopConfiguration());
-    }
-
-    // Initialize global temporary view manager.
-    // Use upper-case database to match the convention used by SnappySession.
-    String globalDBName = Utils.toUpperCase(sparkContext().conf().get(
-        StaticSQLConf.GLOBAL_TEMP_DATABASE()));
-    if (this.snappyCatalog.databaseExists(globalDBName)) {
-      throw new SparkException(globalDBName + " is a system reserved schema, " +
-          "please drop your existing schema to resolve the name conflict, " +
-          "or set a different value for " + StaticSQLConf.GLOBAL_TEMP_DATABASE().key() +
-          ", and start the cluster again.");
-    }
-    this.globalViewManager = new GlobalTempViewManager(globalDBName);
-
-    this.initialized = true;
   }
 
   public static synchronized SnappySharedState create(SparkContext sparkContext)

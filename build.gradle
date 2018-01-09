@@ -707,8 +707,10 @@ task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
+  dependsOn ':snappy-launcher:jar'
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
+  def launcherProject = project(':snappy-launcher')
   def targetProject = clusterProject
   def isEnterpriseProduct = new File(rootDir, 'aqp/build.gradle').exists() &&
       rootProject.hasProperty('snappydata.enterprise')
@@ -764,6 +766,12 @@ task product(type: Zip) {
       }
       from targetProject.jar.outputs
       into "${snappyProductDir}/jars"
+    }
+    // copy the launcher jar
+    copy {
+      from launcherProject.jar.destinationDir
+      into "${snappyProductDir}/jars"
+      include launcherProject.jar.archiveName
     }
 
     // create the RELEASE file
