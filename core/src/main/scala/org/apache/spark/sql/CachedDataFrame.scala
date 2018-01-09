@@ -95,6 +95,8 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
 
+  private lazy val rowConverter = UnsafeProjection.create(queryExecution.executedPlan.schema)
+
   private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
     if (numShuffleDeps > 0) {
@@ -320,20 +322,18 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
-            val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(rowConverter))._1))
           }
 
-        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan) =>
+        case _: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
-            val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(rowConverter))._1))
           }
 
         case _ =>
