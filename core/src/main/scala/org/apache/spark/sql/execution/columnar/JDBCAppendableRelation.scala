@@ -150,13 +150,14 @@ abstract case class JDBCAppendableRelation(
     val columnBatchSize = origOptions.get(
       ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
       case Some(cb) if !origOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE_TRANSIENT) =>
-        Integer.parseInt(cb)
+        ExternalStoreUtils.sizeAsBytes(cb, ExternalStoreUtils.COLUMN_BATCH_SIZE)
       case _ => ExternalStoreUtils.defaultColumnBatchSize(session)
     }
     val columnMaxDeltaRows = origOptions.get(
       ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
       case Some(cd) if !origOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS_TRANSIENT) =>
-        Integer.parseInt(cd)
+        ExternalStoreUtils.checkPositiveNum(Integer.parseInt(cd),
+          ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)
       case _ => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
     }
     (columnBatchSize, columnMaxDeltaRows, getCompressionCodec)
