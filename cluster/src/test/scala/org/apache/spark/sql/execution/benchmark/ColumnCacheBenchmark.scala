@@ -276,6 +276,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
   private def createAndTestPutIntoInBigTable(): Unit = {
     snappySession.sql("drop table if exists wide_table")
+    snappySession.sql("drop table if exists wide_table1")
     import org.apache.spark.sql.snappy._
     val size = 100
     val num_col = 300
@@ -288,9 +289,14 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     testDF.collect()
     val sql = (1 to num_col).map(i => s"C$i STRING").mkString(",")
     snappySession.sql(s"create table wide_table($sql) " +
-        s" using column options(key_columns 'C2,C3,C4,C5')")
+        s" using column options(key_columns 'C2,C3')")
+    snappySession.sql(s"create table wide_table1($sql) " +
+        s" using column options()")
+    // Creating another table for Range related issue SNAP-2142
     testDF.write.insertInto("wide_table")
-    testDF.write.putInto("wide_table")
+    testDF.write.insertInto("wide_table1")
+    val tableDF = snappySession.table("wide_table1")
+    tableDF.write.putInto("wide_table")
   }
 
   private def createAndTestBigTable(): Unit = {
