@@ -45,7 +45,7 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 class SnappyStreamingContext protected[spark](
     sc_ : SparkContext,
     cp_ : Checkpoint,
-    batchDur_ : Duration)
+    batchDur_ : Duration, val reuseSnappySession: Option[SnappySession] = None )
     extends StreamingContext(sc_, cp_, batchDur_) with Serializable {
 
   self =>
@@ -56,7 +56,7 @@ class SnappyStreamingContext protected[spark](
         "both SparkContext and checkpoint as null")
   }
 
-  val snappySession = new SnappySession(sc)
+  val snappySession = reuseSnappySession.getOrElse(new SnappySession(sc))
 
   val snappyContext = snappySession.snappyContext
 
@@ -69,6 +69,10 @@ class SnappyStreamingContext protected[spark](
    */
   def this(sparkContext: SparkContext, batchDuration: Duration) = {
     this(sparkContext, null, batchDuration)
+  }
+
+  def this(snappySession: SnappySession, batchDuration: Duration) = {
+    this(snappySession.snappyContext.sparkContext, null, batchDuration, Some(snappySession))
   }
 
   /**
@@ -141,8 +145,11 @@ class SnappyStreamingContext protected[spark](
       SnappyStreamingContext.setInstanceContext(null)
     } finally {
       // snappySession.clearCache()
-      snappySession.clear()
-      StreamSqlHelper.registerRelationDestroy() // Not sure why we need this @TODO
+      if (stopSparkContext) {
+        snappySession.clear()
+        StreamSqlHelper.registerRelationDestroy() // Not sure why we need this @TODO
+      }
+
       StreamSqlHelper.clearStreams()
     }
   }
