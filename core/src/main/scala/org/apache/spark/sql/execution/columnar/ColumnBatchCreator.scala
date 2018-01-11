@@ -16,12 +16,15 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.util
+
 import scala.collection.AbstractIterator
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
-import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, CompactCompositeKey}
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
+import com.pivotal.gemfirexd.internal.iapi.types.SQLInteger
 import io.snappydata.collection.OpenHashSet
 
 import org.apache.spark.Logging
@@ -44,7 +47,7 @@ final class ColumnBatchCreator(
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
       batchID: Long, bucketID: Int,
-      dependents: Seq[ExternalTableMetaData]): OpenHashSet[AnyRef] = {
+      dependents: Seq[ExternalTableMetaData]): java.util.TreeSet[AnyRef] = {
     var connectedExternalStore: ConnectedExternalStore = null
     var success: Boolean = false
     try {
@@ -59,7 +62,14 @@ final class ColumnBatchCreator(
       }
       val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
       memHeapScanController.setAddRegionAndKey()
-      val keySet = new OpenHashSet[AnyRef]
+      object keyOrdering extends Ordering[CompactCompositeKey] {
+        def compare(a: CompactCompositeKey, b: CompactCompositeKey) = {
+          val first = a.getKeyColumn(0).asInstanceOf[SQLInteger].getInt
+          val second = b.getKeyColumn(0).asInstanceOf[SQLInteger].getInt
+          first compareTo second
+        }
+      }
+      val keySet = new java.util.TreeSet[CompactCompositeKey](keyOrdering)
       val execRows = new AbstractIterator[AbstractCompactExecRow] {
 
         var hasNext: Boolean = memHeapScanController.next()
@@ -67,7 +77,7 @@ final class ColumnBatchCreator(
         override def next(): AbstractCompactExecRow = {
           if (hasNext) {
             memHeapScanController.fetch(row)
-            keySet.add(row.getAllRegionAndKeyInfo.first().getKey)
+            keySet.add(row.getAllRegionAndKeyInfo.first().getKey.asInstanceOf[CompactCompositeKey])
             hasNext = memHeapScanController.next()
             row
           } else {
@@ -113,7 +123,7 @@ final class ColumnBatchCreator(
         while (iter.hasNext) {
           iter.next() // ignore result which is number of inserted rows
         }
-        keySet
+        keySet.asInstanceOf[java.util.TreeSet[AnyRef]]
       } finally {
         sc.close()
         success = true
