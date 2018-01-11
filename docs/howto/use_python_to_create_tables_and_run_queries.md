@@ -1,5 +1,5 @@
 <a id="howto-python"></a>
-# How to Use Python to Create Tables and Run Queries
+# How to use Python to Create Tables and Run Queries
 
 Developers can write programs in Python to use SnappyData features.
 

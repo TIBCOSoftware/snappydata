@@ -116,6 +116,7 @@ object ConnectionPool {
               if (connectionProps != null) {
                 tconf.setDbProperties(connectionProps)
               }
+              tconf.setUseStatementFacade(false)
               new TDataSource(tconf)
             }
             pools(poolKey) = (newDS, mutable.Set(id))

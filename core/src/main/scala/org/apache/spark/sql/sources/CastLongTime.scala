@@ -16,10 +16,10 @@
  */
 package org.apache.spark.sql.sources
 
+import scala.util.control.NonFatal
+
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row}
-
-import scala.util.control.NonFatal
 
 /**
  * Cast a given column in a schema to epoch time in long milliseconds.
@@ -54,7 +54,7 @@ trait CastLongTime {
     }
   }
 
-  protected def getNullMillis(getDefaultForNull: Boolean) = -1L
+  protected def getNullMillis(getDefaultForNull: Boolean): Long = -1L
 
   final def parseMillis(row: Row, timeCol: Int,
       getDefaultForNull: Boolean = false): Long = {
@@ -84,8 +84,7 @@ trait CastLongTime {
       }
     } catch {
       case NonFatal(e) =>
-        if (timeCol >= 0 && row.isNullAt(timeCol))
-          getNullMillis(getDefaultForNull)
+        if (timeCol >= 0 && row.isNullAt(timeCol)) getNullMillis(getDefaultForNull)
         else throw e
     }
   }

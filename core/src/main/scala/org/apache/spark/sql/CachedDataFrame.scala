@@ -37,7 +37,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.MemoryConsumer
+import org.apache.spark.memory.DefaultMemoryConsumer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
@@ -47,6 +47,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
+import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
@@ -93,6 +94,8 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
 
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
+
+  private lazy val rowConverter = UnsafeProjection.create(queryExecution.executedPlan.schema)
 
   private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
@@ -319,20 +322,18 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
-            val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(rowConverter))._1))
           }
 
-        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan) =>
+        case _: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
-            val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(rowConverter))._1))
           }
 
         case _ =>
@@ -427,7 +428,7 @@ object CachedDataFrame
   private def flushBufferOutput(bufferOutput: Output, position: Int,
       output: ByteBufferDataOutput, codec: CompressionCodec): Unit = {
     if (position > 0) {
-      val compressedBytes = Utils.codecCompress(codec,
+      val compressedBytes = CompressionUtils.codecCompress(codec,
         bufferOutput.getBuffer, position)
       val len = compressedBytes.length
       // write the uncompressed length too
@@ -483,13 +484,9 @@ object CachedDataFrame
         // We will ensure that sufficient memory is available by reserving
         // four times as Kryo serialization will expand its buffer accordingly
         // and transport layer can create another copy.
-        if (context != null) {
+        if (context ne null) {
           // TODO why driver is calling this code with context null ?
-          val memoryConsumer = new MemoryConsumer(context.taskMemoryManager()) {
-            override def spill(size: Long, trigger: MemoryConsumer): Long = {
-              0L
-            }
-          }
+          val memoryConsumer = new DefaultMemoryConsumer(context.taskMemoryManager())
           // TODO Remove the 4 times check once SNAP-1759 is fixed
           val required = 4L * memSize
           val granted = memoryConsumer.acquireMemory(4L * memSize)
@@ -636,7 +633,7 @@ object CachedDataFrame
     var decompressedLen = input.readInt()
     var inputLen = input.readInt()
     val inputPosition = input.position()
-    val bufferInput = new Input(Utils.codecDecompress(codec, data,
+    val bufferInput = new Input(CompressionUtils.codecDecompress(codec, data,
       inputPosition, inputLen, decompressedLen))
     input.setPosition(inputPosition + inputLen)
 
@@ -659,7 +656,7 @@ object CachedDataFrame
           decompressedLen = input.readInt()
           inputLen = input.readInt()
           val inputPosition = input.position()
-          bufferInput.setBuffer(Utils.codecDecompress(codec, data,
+          bufferInput.setBuffer(CompressionUtils.codecDecompress(codec, data,
             inputPosition, inputLen, decompressedLen))
           input.setPosition(inputPosition + inputLen)
           bufferInput.readInt(true)

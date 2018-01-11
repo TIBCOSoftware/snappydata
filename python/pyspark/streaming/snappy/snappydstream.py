@@ -17,9 +17,7 @@
 
 
 from pyspark.streaming.dstream import DStream
-from pyspark.streaming.util import TransformFunction
-from pyspark.sql.snappy import SnappyContext
-from pyspark.sql.types import  StructType
+from pyspark.sql.snappy import SnappySession
 
 class SchemaDStream(DStream):
     """
@@ -38,11 +36,11 @@ class SchemaDStream(DStream):
         DStream.__init__(self, jdstream, ssc, jrdd_deserializer)
 
         self._schema = schema
-        self._sqlcontext = SnappyContext(self._sc)
+        self._snappySession = SnappySession(self._sc)
 
     def foreachDataFrame(self, func):
 
         def createDataFrame(_, rdd):
-            df = self._sqlcontext.createDataFrame(rdd, self._schema)
+            df = self._snappySession.createDataFrame(rdd, self._schema)
             func(df)
         self.foreachRDD(createDataFrame)

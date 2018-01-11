@@ -20,15 +20,17 @@ import java.io.InputStream
 import java.util.{Iterator => JIterator}
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.{ByteArrayDataInput, ClassPathLoader, GemFireVersion}
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.Version
+import com.gemstone.gemfire.internal.{ByteArrayDataInput, ClassPathLoader, GemFireVersion}
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{SnappyEmbeddedTableStatsProviderService, SnappyTableStatsProviderService}
+import io.snappydata.SnappyEmbeddedTableStatsProviderService
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
+
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
@@ -59,17 +61,16 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     else {
       Some(driverUrl)
     }
-    logInfo(s"invoking startOrTransmute with. $url")
+    logInfo(s"invoking startOrTransmute with $url")
     ExecutorInitiator.startOrTransmuteExecutor(url, driverDM)
   }
 
   override def getDriverURL: String = {
     SnappyClusterManager.cm.map(_.schedulerBackend) match {
-      case Some(x) =>
+      case Some(x) if x ne null =>
         logInfo(s"returning driverUrl=${x.driverUrl}")
         x.driverUrl
-      case None =>
-        null
+      case _ => null
     }
   }
 
@@ -119,7 +120,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
   }
 
-  override def getClusterType(): String = {
+  override def getClusterType: String = {
+    GemFireCacheImpl.setGFXDSystem(true)
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], SnappyDataVersion.AQP_VERSION_PROPERTIES)

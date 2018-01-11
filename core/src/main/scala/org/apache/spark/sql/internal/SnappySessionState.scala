@@ -23,7 +23,6 @@ import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
@@ -444,17 +443,6 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
-
-  var isPreparePhase: Boolean = false
-
-  var pvs: Option[ParameterValueSet] = None
-
-  var questionMarkCounter: Int = 0
-
-  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit = {
-    isPreparePhase = preparePhase
-    pvs = paramSet
-  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
@@ -502,7 +490,7 @@ class SnappyConf(@transient val session: SnappySession)
         case None => Property.SchedulerPool.defaultValue.get
         case Some(pool) if session.sparkContext.getAllPools.exists(_.name == pool) =>
           pool.toString
-        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool ${pool}")
+        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
     case _ => // ignore others
   }
@@ -654,6 +642,36 @@ trait AltName[T] {
     }
   }
 
+  private def get(conf: SparkConf, name: String,
+      defaultValue: String): T = {
+    configEntry.entry.defaultValue match {
+      case Some(_) => configEntry.valueConverter[T](
+        conf.get(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](
+        conf.get(name, defaultValue)).get
+    }
+  }
+
+  def get(conf: SparkConf): T = if (altName == null) {
+    get(conf, name, configEntry.defaultValueString)
+  } else {
+    if (conf.contains(name)) {
+      if (!conf.contains(altName)) get(conf, name, configEntry.defaultValueString)
+      else {
+        throw new IllegalArgumentException(
+          s"Both $name and $altName configured. Only one should be set.")
+      }
+    } else {
+      get(conf, altName, configEntry.defaultValueString)
+    }
+  }
+
+  def get(properties: Properties): T = {
+    val propertyValue = getProperty(properties)
+    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
+    else defaultValue.get
+  }
+
   def getProperty(properties: Properties): String = if (altName == null) {
     properties.getProperty(name)
   } else {
@@ -705,12 +723,6 @@ trait SQLAltName[T] extends AltName[T] {
     }
   }
 
-  def get(properties: Properties): T = {
-    val propertyValue = getProperty(properties)
-    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
-    else defaultValue.get
-  }
-
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {
     if (conf.contains(name)) Some(get(conf, name, "<undefined>"))
     else defaultValue
@@ -749,7 +761,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
   }
 
   private val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, LocalJoinStrategies)
+    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,

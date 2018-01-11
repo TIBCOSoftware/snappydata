@@ -20,7 +20,6 @@ import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{DriverManager, PreparedStatement}
 
 import io.snappydata.benchmark.TPCH_Queries
-import io.snappydata.benchmark.snappy.TPCH_Snappy
 
 object QueryExecutionJdbc {
 
@@ -267,7 +266,7 @@ object QueryExecutionJdbc {
     avgPrintStream.close()
     avgFileStream.close()
 
-    TPCH_Snappy.close
+    QueryExecutor.close
 
   }
 }

@@ -205,15 +205,20 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val isBuiltIn = context.getIsBuiltIn
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating table $tableIdent")
+        // don't attempt resolution for external tables
         session.createTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
-          provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
+          provider, userSpecifiedSchema, schemaDDL, mode, options,
+          isBuiltIn, resolveRelation = isBuiltIn)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_TABLE =>
         val tableIdent = context.getTableIdentifier
         val ifExists = context.getIfExists
+        val isBuiltIn = context.getIsBuiltIn
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp dropping table $tableIdent")
-        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent), ifExists)
+        // don't attempt resolution for external tables
+        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
+          ifExists, resolveRelation = isBuiltIn)
 
       case LeadNodeSmartConnectorOpContext.OpType.CREATE_INDEX =>
         val tableIdent = context.getTableIdentifier
@@ -304,6 +309,27 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     // off-heap will be cleared via ManagedDirectBufferAllocator
     MemoryManagerCallback.memoryManager.
       dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
+
+  override def waitForRuntimeManager(maxWaitMillis: Long): Unit = {
+    val memoryManager = MemoryManagerCallback.memoryManager
+    if (memoryManager.bootManager) {
+      val endWait = System.currentTimeMillis() + math.max(10, maxWaitMillis)
+      do {
+        var interrupt: InterruptedException = null
+        try {
+          Thread.sleep(10)
+        } catch {
+          case ie: InterruptedException => interrupt = ie
+        }
+        val cache = Misc.getGemFireCacheNoThrow
+        if (cache ne null) {
+          cache.getCancelCriterion.checkCancelInProgress(interrupt)
+          if (interrupt ne null) Thread.currentThread().interrupt()
+        }
+      } while (MemoryManagerCallback.memoryManager.bootManager &&
+          System.currentTimeMillis() < endWait)
+    }
+  }
 
   override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
 

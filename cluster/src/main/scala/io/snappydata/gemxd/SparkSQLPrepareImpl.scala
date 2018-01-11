@@ -19,6 +19,7 @@ package io.snappydata.gemxd
 import java.io.DataOutput
 
 import scala.collection.mutable
+
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.Attribute
@@ -27,11 +28,11 @@ import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecuto
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
+
 import org.apache.spark.Logging
-import org.apache.spark.sql.{Row, SnappySession}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -59,16 +60,8 @@ class SparkSQLPrepareImpl(val sql: String,
 
   session.setPreparedQuery(preparePhase = true, None)
 
-  private[this] val sessionState: SnappySessionState = {
-    val field = classOf[SnappySession].getDeclaredField("sessionState")
-    field.setAccessible(true)
-    field.get(session).asInstanceOf[SnappySessionState]
-  }
-
   private[this] val analyzedPlan: LogicalPlan = {
-    val method = classOf[SnappySession].getDeclaredMethod("prepareSQL", classOf[String])
-    method.setAccessible(true)
-    method.invoke(session, sql).asInstanceOf[LogicalPlan]
+    session.prepareSQL(sql)
   }
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
@@ -79,15 +72,16 @@ class SparkSQLPrepareImpl(val sql: String,
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
-    if (sessionState.questionMarkCounter > 0) {
+    val questionMarkCounter = session.snappyParser.questionMarkCounter
+    if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
       allParamLiterals(analyzedPlan, paramLiterals)
-      if (paramLiterals.size < sessionState.questionMarkCounter) {
+      if (paramLiterals.size < questionMarkCounter) {
         remainingParamLiterals(analyzedPlan, paramLiterals)
       }
       val paramLiteralsAtPrepare = paramLiterals.toArray.sortBy(_.pos)
       val paramCount = paramLiteralsAtPrepare.length
-      if (paramCount != sessionState.questionMarkCounter) {
+      if (paramCount != questionMarkCounter) {
         throw new UnsupportedOperationException("This query is unsupported for prepared statement")
       }
       val types = new Array[Int](paramCount * 4 + 1)

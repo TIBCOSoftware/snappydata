@@ -42,7 +42,6 @@ import hydra.Prms;
 import hydra.TestConfig;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
-import io.snappydata.hydra.snapshotIsolation.SnapshotIsolationDMLOpsBB;
 import org.apache.commons.lang.ArrayUtils;
 import sql.SQLHelper;
 import sql.sqlutil.GFXDStructImpl;
@@ -71,8 +70,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     for (int i = 0; i < dmlTableLength; i++) {
       insertCounters.add(1);
     }
-    if (!SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("insertCounters"))
-      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("insertCounters", insertCounters);
+    if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("insertCounters"))
+      SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", insertCounters);
     derbyTestUtils = new DerbyTestUtils();
   }
 
@@ -164,14 +163,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static void HydraTask_initializeSelectThreads() {
     testInstance.getDmlLock();
     ArrayList<Integer> selectThreads;
-    if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
-      selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap()
+    if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
+      selectThreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap()
           .get("selectThreads");
     else
       selectThreads = new ArrayList<>();
     if (!selectThreads.contains(testInstance.getMyTid())) {
       selectThreads.add(testInstance.getMyTid());
-      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("selectThreads", selectThreads);
+      SnappyDMLOpsBB.getBB().getSharedMap().put("selectThreads", selectThreads);
     }
     testInstance.releaseDmlLock();
   }
@@ -198,7 +197,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           fieldNames[i] = rsmd.getColumnName(i + 1);
         }
         StructTypeImpl sType = new StructTypeImpl(fieldNames, oTypes);
-        SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("tableMetaData_" + table.toUpperCase(), sType);
+        SnappyDMLOpsBB.getBB().getSharedMap().put("tableMetaData_" + table.toUpperCase(), sType);
       }
     } catch (SQLException se) {
       throw new TestException("Got exception while saving table metadata to BB. Exception is : ",
@@ -689,7 +688,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         //    .indexOf(tableName)];
         String message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
         if(message.length()!=0){
-          throw new TestException("Validation failed after update table " + tableName + "." + message);
+          throw new TestException("Validation failed after update on table " + tableName + "." +
+              message);
         }
       }
       closeConnection(conn);
@@ -975,8 +975,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         Log.getLogWriter().info("size of resultSet from derby is " + derbyList.size());
 
         if (snappyList.size() != derbyList.size())
-          mismatchString.append("Result mismatch observed for table " + table + ". Number of rows" +
-              " in snappy is " + snappyList.size() + " and derby is " + derbyList.size());
+          mismatchString.append(" Result mismatch observed for table " + table + ". Number of " +
+              "rows in snappy is " + snappyList.size() + " and derby is " + derbyList.size() + ".");
 
         String queryResultDirPath = "";
 
@@ -1051,22 +1051,21 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     List<String> unexpected = new ArrayList<>(), missing = new ArrayList<>();
     try {
       while ((line = unexpectedRsReader.readLine()) != null)
-        unexpected.add(line);
+        unexpected.add("\n  " + line);
       while ((line = missingRsReader.readLine()) != null)
-        missing.add(line);
+        missing.add("\n  " + line);
       unexpectedRsReader.close();
       missingRsReader.close();
     } catch(IOException ie){
       throw new TestException("Got exception while reading resultset files", ie);
     }
     if(missing.size()>0) {
-      aStr.append("The following rows are missing in snappy, but exists in derby resultset : \n");
+      aStr.append("\nThe following rows are missing in snappy, but exists in derby resultset:");
       aStr.append(missing.toString());
       aStr.append("\n");
     }
     if(unexpected.size()>0) {
-      aStr.append("The following rows are unexpected in snappy, but are missing in derby " +
-          "resultset : \n");
+      aStr.append("\nThe following rows are unexpected in snappy, but missing in derby resultset:");
       aStr.append(unexpected.toString());
       aStr.append("\n");
     }
@@ -1103,7 +1102,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     try {
       if(ps == null)
         ps = conn.prepareStatement(stmt);
-      StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+      StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
           ("tableMetaData_" + tableName);
       ObjectType[] oTypes = sType.getFieldTypes();
       String[] fieldNames = sType.getFieldNames();
@@ -1176,11 +1175,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     String csvFilePath = SnappySchemaPrms.getCsvLocationforLargeData();
     String csvFileName = SnappySchemaPrms.getInsertCsvFileNames()[randTable];
     getDmlLock();
-    List<Integer> counters = (List<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+    List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("insertCounters");
     insertCounter = counters.get(randTable);
     counters.set(randTable, insertCounter + 1);
-    SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
+    SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
     releaseDmlLock();
     //Log.getLogWriter().info("insert Counter is :" + insertCounter + " for csv " + csvFilePath +
     //    File.separator + csvFileName);
@@ -1195,7 +1194,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   protected void getDmlLock() {
     if (dmlLock == null)
-      dmlLock = SnapshotIsolationDMLOpsBB.getBB().getSharedLock();
+      dmlLock = SnappyDMLOpsBB.getBB().getSharedLock();
     dmlLock.lock();
   }
 
@@ -1206,7 +1205,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public String getStmt(String stmt, String row, String tableName) {
     String[] columnValues = row.split(",");
     String replaceString = stmt;
-    StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     ObjectType[] oTypes = sType.getFieldTypes();
     for (int i = 0; i < oTypes.length; i++) {
@@ -1391,7 +1390,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     updateStmt = updateStmt.replace("$tableName", tableName);
     String whereClause = "";
     int tid = getMyTid();
-    StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     String[] columnNames = sType.getFieldNames();
     ObjectType[] oTypes = sType.getFieldTypes();
@@ -1423,7 +1422,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     deleteStmt = deleteStmt.replace("$tableName", tableName);
     String whereClause = "";
     int tid = getMyTid();
-    StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     String[] columnNames = sType.getFieldNames();
     ObjectType[] oTypes = sType.getFieldTypes();

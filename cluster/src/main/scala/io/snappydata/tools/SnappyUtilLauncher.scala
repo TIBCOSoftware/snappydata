@@ -20,14 +20,13 @@ import java.io.{File, IOException}
 import java.util
 
 import com.gemstone.gemfire.internal.GemFireUtilLauncher.CommandEntry
-import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
 import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
-import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdSystemAdmin, GfxdUtilLauncher}
+import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
 import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
 
@@ -41,12 +40,11 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
   import SnappyUtilLauncher._
 
-  SnappyDataVersion.loadProperties
+  SnappyDataVersion.loadProperties()
 
   // gfxd commands not applicable in snappy
   protected var snappy_removed_commands: Set[String] = Set[String](
-    "agent", "encrypt-password", "upgrade-disk-store",
-    "modify-disk-store", "export-disk-store", "shut-down-all")
+    "agent", "encrypt-password", "upgrade-disk-store", "export-disk-store")
 
   protected override def getTypes: java.util.Map[String, CommandEntry] = {
     val types: java.util.Map[String, CommandEntry] = new util.LinkedHashMap[String, CommandEntry]()
@@ -60,7 +58,6 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
     types.put(SCRIPT_NAME, new CommandEntry(classOf[ij],
       LocalizedMessages.res.getTextMessage("UTIL_SnappyShell_Usage"), false))
-    val product = LocalizedMessages.res.getTextMessage("FS_PRODUCT")
 
     val commands = GfxdSystemAdmin.getValidCommands
     for (cmd <- commands) {
@@ -94,7 +91,7 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
     super.invoke(args)
   }
 
-  override def validateArgs (args: Array[String]): Unit = {
+  override def validateArgs(args: Array[String]): Unit = {
     super.validateArgs(args)
   }
 
