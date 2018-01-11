@@ -18,7 +18,7 @@
 package org.apache.spark.util
 
 import java.io.File
-import java.net.{URI, URL, URLClassLoader}
+import java.net.{URL, URLClassLoader}
 import java.security.SecureClassLoader
 
 import _root_.io.snappydata.Constant
@@ -27,10 +27,13 @@ import org.joda.time.DateTime
 import spark.jobserver.util.ContextURLClassLoader
 
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.{SparkContext, SparkEnv}
 import org.apache.spark.sql.collection.ToolsCallbackInit
+import org.apache.spark.ui.SparkUI
+import org.apache.spark.{SparkContext, SparkEnv}
 
 object SnappyUtils {
+
+  def getSparkUI(sc: SparkContext): Option[SparkUI] = sc.ui
 
   def getSnappyStoreContextLoader(parent: ClassLoader): ClassLoader = parent match {
     case _: SnappyContextLoader => parent // no double wrap
@@ -73,7 +76,7 @@ object SnappyUtils {
       classLoader: ClassLoader): Unit = {
     assert(classOf[URLClassLoader].isAssignableFrom(classLoader.getClass))
     val dependentJars = classLoader.asInstanceOf[URLClassLoader].getURLs
-    val sparkJars = dependentJars.map( url => {
+    val sparkJars = dependentJars.map(url => {
       sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))
     })
     val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.toSeq).mkString(",")
@@ -112,7 +115,7 @@ class SnappyContextLoader(parent: ClassLoader)
     try {
       parent.loadClass(name)
     } catch {
-      case cnfe: ClassNotFoundException =>
+      case _: ClassNotFoundException =>
         Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
     }
   }
@@ -126,7 +129,7 @@ class SnappyContextURLLoader(parent: ClassLoader)
     try {
       super.loadClass(name)
     } catch {
-      case cnfe: ClassNotFoundException =>
+      case _: ClassNotFoundException =>
         Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
     }
   }

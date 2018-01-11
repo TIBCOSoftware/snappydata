@@ -22,6 +22,7 @@ import java.util
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
+import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
@@ -76,17 +77,25 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     }
   }
 
-  def withHiveExceptionHandling[T](function: => T): T = {
+  def withHiveExceptionHandling[T](function: => T): T = synchronized {
+    val oldFlag = HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get
+    if (oldFlag ne java.lang.Boolean.TRUE) {
+      HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(java.lang.Boolean.TRUE)
+    }
     try {
       function
     } catch {
       case he: HiveException if isDisconnectException(he) =>
         // stale JDBC connection
-        Hive.closeCurrent()
+        SnappyStoreHiveCatalog.closeHive(client)
         SnappyStoreHiveCatalog.suspendActiveSession {
           client = client.newSession()
         }
         function
+    } finally {
+      if (oldFlag ne java.lang.Boolean.TRUE) {
+        HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(oldFlag)
+      }
     }
   }
 
@@ -229,7 +238,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   }
 
   override def renameTable(db: String, oldName: String, newName: String): Unit = withClient {
-    val newTable = client.getTable(db, oldName)
+    val newTable = withHiveExceptionHandling(client.getTable(db, oldName))
         .copy(identifier = TableIdentifier(newName, Some(db)))
     withHiveExceptionHandling(client.alterTable(oldName, newTable))
     SnappySession.clearAllCache()
@@ -251,17 +260,18 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
 
   def alterTableSchema(db: String, table: String, schema: StructType): Unit = withClient {
     requireTableExists(db, table)
-    val hiveTable = client.getTable(db, table)
+    val hiveTable = withHiveExceptionHandling(client.getTable(db, table))
     val updatedTable = hiveTable.copy(schema = schema)
     try {
-      client.alterTable(updatedTable)
+      withHiveExceptionHandling(client.alterTable(updatedTable))
     } catch {
       case NonFatal(e) =>
         val warningMessage =
           s"Could not alter schema of table  ${hiveTable.identifier.quotedString} in a Hive " +
               "compatible way. Updating Hive metastore in Spark SQL specific format."
         logWarning(warningMessage, e)
-        client.alterTable(updatedTable.copy(schema = updatedTable.partitionSchema))
+        withHiveExceptionHandling(client.alterTable(
+          updatedTable.copy(schema = updatedTable.partitionSchema)))
     }
   }
 
@@ -452,21 +462,22 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       orderedPartitionSpec.put(colName.toLowerCase, partition(colName))
     }
 
-    client.loadDynamicPartitions(
+    withHiveExceptionHandling(client.loadDynamicPartitions(
       loadPath,
       db,
       table,
       orderedPartitionSpec,
       replace,
       numDP,
-      holdDDLTime)
+      holdDDLTime))
   }
 
   override def getPartitionOption(
       db: String,
       table: String,
       spec: TablePartitionSpec): Option[CatalogTablePartition] = {
-    client.getPartitionOption(db, table, lowerCasePartitionSpec(spec)).map { part =>
+    withHiveExceptionHandling(client.getPartitionOption(db, table,
+      lowerCasePartitionSpec(spec))).map { part =>
       part.copy(spec = restorePartitionSpec(part.spec, getTable(db, table).partitionColumnNames))
     }
   }
@@ -478,7 +489,8 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     val catalogTable = getTable(db, table)
     val partColNameMap = buildLowerCasePartColNameMap(catalogTable).mapValues(escapePathName)
     val clientPartitionNames =
-      client.getPartitionNames(catalogTable, partialSpec.map(lowerCasePartitionSpec))
+      withHiveExceptionHandling(client.getPartitionNames(catalogTable,
+        partialSpec.map(lowerCasePartitionSpec)))
     clientPartitionNames.map { partName =>
       val partSpec = PartitioningUtils.parsePathFragmentAsSeq(partName)
       partSpec.map { case (partName, partValue) =>
@@ -491,7 +503,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       db: String,
       table: String,
       predicates: Seq[Expression]): Seq[CatalogTablePartition] = withClient {
-    val rawTable = client.getTable(db, table)
+    val rawTable = withHiveExceptionHandling(client.getTable(db, table))
     val catalogTable = restoreTableMetadata(rawTable)
     val partitionColumnNames = catalogTable.partitionColumnNames.toSet
     val nonPartitionPruningPredicates = predicates.filterNot {
@@ -507,7 +519,8 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     val partColNameMap = buildLowerCasePartColNameMap(getTable(db, table))
 
     if (predicates.nonEmpty) {
-      val clientPrunedPartitions = client.getPartitionsByFilter(rawTable, predicates).map { part =>
+      val clientPrunedPartitions = withHiveExceptionHandling(client.getPartitionsByFilter(
+        rawTable, predicates)).map { part =>
         part.copy(spec = restorePartitionSpec(part.spec, partColNameMap))
       }
       val boundPredicate =
@@ -518,7 +531,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
         })
       clientPrunedPartitions.filter { p => boundPredicate(p.toRow(partitionSchema)) }
     } else {
-      client.getPartitions(catalogTable).map { part =>
+      withHiveExceptionHandling(client.getPartitions(catalogTable)).map { part =>
         part.copy(spec = restorePartitionSpec(part.spec, partColNameMap))
       }
     }
@@ -620,8 +633,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     withHiveExceptionHandling(client.listFunctions(db, pattern))
   }
 
-  def closeCurrent(): Unit = {
-    Hive.closeCurrent()
+  def close(): Unit = synchronized {
+    SnappyStoreHiveCatalog.closeHive(client)
   }
-
 }

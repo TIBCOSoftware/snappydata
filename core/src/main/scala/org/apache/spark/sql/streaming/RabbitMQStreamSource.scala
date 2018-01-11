@@ -37,9 +37,9 @@ final class RabbitMQStreamSource extends StreamPlanProvider {
 
 final class RabbitMQStreamRelation(
     @transient override val sqlContext: SQLContext,
-    options: Map[String, String],
+    opts: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options) {
+    extends StreamBaseRelation(opts) {
 
   val T = options.getOrElse("T", "java.lang.String")
   val D = options.getOrElse("D", "org.apache.spark.sql.streaming.RabbitMQStringDecoder")

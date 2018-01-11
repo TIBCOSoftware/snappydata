@@ -1,5 +1,5 @@
 <a id="howto-job"></a>
-# How to run Spark Code inside the Cluster
+# How to Run Spark Job inside the Cluster
 Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.
 
 **Implementing a Job**: 
@@ -33,11 +33,25 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 </dependency>
 ```
 
+```scala
+<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11 -->
+<dependency>
+    <groupId>io.snappydata</groupId>
+    <artifactId>snappydata-core_2.11</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
 **Example: SBT dependency**:
 
 ```scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0"
+```
+
+```scala
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.0"
 ```
 
 **Running the Job**: 

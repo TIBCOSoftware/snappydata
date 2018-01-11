@@ -66,8 +66,10 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
     val locPort = ClusterManagerTestBase.locPort
+    val sysProps = this.sysProps
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
         val loc: Locator = ServiceManager.getLocatorInstance
 
         if (loc.status != FabricService.State.RUNNING) {
@@ -85,6 +87,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     val nodeProps = bootProps
     val startNode = new SerializableRunnable() {
       override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
         val node = ServiceManager.currentFabricServiceInstance
         if (node == null || node.status != FabricService.State.RUNNING) {
           ClusterManagerTestBase.startSnappyServer(locPort, nodeProps)

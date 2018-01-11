@@ -202,7 +202,7 @@ trait SerializedRowData extends SpecializedGetters
   final def isNullAt(ordinal: Int): Boolean = {
     if (indexIsValid(ordinal)) {
       BitSet.isSet(baseObject, baseOffset, ordinal + (skipBytes << 3),
-        bitSetWidthInBytes)
+        bitSetWidthInBytes >> 3)
     } else throw indexInvalid(ordinal)
   }
 
@@ -328,7 +328,7 @@ trait SerializedRowData extends SpecializedGetters
 
   final def anyNull: Boolean = {
     if (skipBytes == 0) {
-      BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes)
+      BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes >> 3)
     } else {
       // need to account separately for skipBytes
       var offset = baseOffset + skipBytes
@@ -368,7 +368,7 @@ trait SerializedRowData extends SpecializedGetters
   /**
    * Returns the underlying bytes for this row.
    */
-  protected final def getBytes: Array[Byte] = {
+  final def toBytes: Array[Byte] = {
     if (baseOffset == Platform.BYTE_ARRAY_OFFSET) baseObject match {
       case bytes: Array[Byte] if bytes.length == sizeInBytes => return bytes
       case _ => // fallback to full copy
@@ -395,8 +395,8 @@ trait SerializedRowData extends SpecializedGetters
   }
 
   @throws[IOException]
-  final def writeExternal(out: ObjectOutput): Unit = {
-    val bytes = getBytes
+  override final def writeExternal(out: ObjectOutput): Unit = {
+    val bytes = toBytes
     out.writeInt(bytes.length)
     out.writeInt(this.skipBytes)
     out.writeInt(this.nFields)
@@ -405,7 +405,7 @@ trait SerializedRowData extends SpecializedGetters
 
   @throws[IOException]
   @throws[ClassNotFoundException]
-  final def readExternal(in: ObjectInput): Unit = {
+  override final def readExternal(in: ObjectInput): Unit = {
     this.sizeInBytes = in.readInt
     this.skipBytes = in.readInt
     this.nFields = in.readInt
@@ -416,15 +416,15 @@ trait SerializedRowData extends SpecializedGetters
     this.baseObject = bytes
   }
 
-  final def write(kryo: Kryo, out: Output): Unit = {
-    val bytes = getBytes
+  override final def write(kryo: Kryo, out: Output): Unit = {
+    val bytes = toBytes
     out.writeInt(bytes.length)
     out.writeVarInt(this.skipBytes, true)
     out.writeVarInt(this.nFields, true)
     out.write(bytes)
   }
 
-  final def read(kryo: Kryo, in: Input): Unit = {
+  override final def read(kryo: Kryo, in: Input): Unit = {
     this.sizeInBytes = in.readInt
     this.skipBytes = in.readVarInt(true)
     this.nFields = in.readVarInt(true)

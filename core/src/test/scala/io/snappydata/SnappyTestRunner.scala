@@ -18,17 +18,19 @@ package io.snappydata
 
 // scalastyle:off
 import java.io._
+import java.net.InetAddress
 import java.util.regex.Pattern
+
+import scala.language.postfixOps
+import scala.sys.process._
+import scala.util.parsing.json.JSON
 
 import com.gemstone.gemfire.internal.AvailablePort
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.output.TeeOutputStream
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Retries}
 
 import org.apache.spark.Logging
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Retries}
-import scala.language.postfixOps
-import scala.sys.process._
-import scala.util.parsing.json.JSON
 
 /**
  * Extensible Abstract test suite to test different shell based commands
@@ -51,6 +53,8 @@ with Logging with Retries {
   // One can ovveride this method to pass other parameters like heap size.
   def servers: String = s"$localHostName\n$localHostName"
 
+  def leads: String = s"$localHostName -jobserver.waitForInitialization=true\n"
+
   def snappyShell: String = s"$snappyHome/bin/snappy-sql"
 
   def sparkShell: String = s"$snappyHome/bin/spark-shell"
@@ -68,7 +72,7 @@ with Logging with Retries {
     if (snappyHome == null) {
       throw new Exception("SNAPPY_HOME should be set as an environment variable")
     }
-    localHostName = java.net.InetAddress.getLocalHost().getHostName()
+    localHostName = "localhost"
     currWorkingDir = System.getProperty("user.dir")
     val workDir = new File(s"$snappyHome/work")
     if (workDir.exists) {
@@ -83,21 +87,31 @@ with Logging with Retries {
 
   def stopCluster(): Unit = {
     executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-stop-all.sh")
-    new File(s"$snappyHome/conf/servers").deleteOnExit()
+    new File(s"$snappyHome/conf/servers").delete()
+    new File(s"$snappyHome/conf/leads").delete()
     executeProcess("sparkCluster", s"$snappyHome/sbin/stop-all.sh")
   }
 
   def startupCluster(): Unit = {
-    new PrintWriter(s"$snappyHome/conf/servers") {
+    val serverFile = new File(s"$snappyHome/conf/servers")
+    new PrintWriter(serverFile) {
       write(servers)
-      close
+      close()
     }
-    val (out, err) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh")
+    serverFile.deleteOnExit()
+    val leadFile = new File(s"$snappyHome/conf/leads")
+    new PrintWriter(leadFile) {
+      write(leads)
+      close()
+    }
+    leadFile.deleteOnExit()
+
+    val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh")
 
     if (!out.contains("Distributed system now has 4 members")) {
       throw new Exception(s"Failed to start Snappy cluster")
     }
-    val (out1, err1) = executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh")
+    executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh")
   }
 
   // scalastyle:off println
@@ -209,7 +223,8 @@ with Logging with Retries {
                   confs: Seq[String] = Seq.empty[String],
                   appJar: String): Unit = {
 
-    val masterStr = master.getOrElse(s"spark://$localHostName:7077")
+    val sparkHost = InetAddress.getLocalHost.getHostName
+    val masterStr = master.getOrElse(s"spark://$sparkHost:7077")
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val classStr = if (appClass.isEmpty) "" else s"--class  $appClass"
     val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $masterStr $confStr $appJar"

@@ -60,10 +60,10 @@ done
 
 
 # Start Locators
-"$sbin"/snappy-locators.sh start "$@"
+"$sbin"/snappy-locators.sh start $clustermode "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh $BACKGROUND start "$@"
+"$sbin"/snappy-servers.sh $BACKGROUND start $clustermode "$@"
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then

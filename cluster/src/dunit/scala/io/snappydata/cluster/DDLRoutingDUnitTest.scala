@@ -18,8 +18,9 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager, SQLException}
 
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 
@@ -133,7 +134,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
           s"USING column $options")
     } catch {
       case sqle: SQLException => if (sqle.getSQLState != "38000" ||
-          !sqle.getMessage.contains("Disk store D1 not found")) {
+          (!sqle.getMessage.contains("Disk store D1 not found") && !sqle.getMessage.contains(
+            s"Disk store D1${GfxdConstants.SNAPPY_DELTA_DISKSTORE_SUFFIX} not found"))) {
         throw sqle
       }
     }
@@ -229,7 +231,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
     // gatewaysenders/receivers
     s.execute("CREATE GATEWAYSENDER gwSender ( REMOTEDSID 2) SERVER GROUPS (sg1)")
-    s.execute("CREATE GATEWAYRECEIVER gwRcvr (startport 1111 endport 9999) SERVER GROUPS (sg1)")
+    s.execute("CREATE GATEWAYRECEIVER gwRcvr (bindaddress 'localhost' " +
+        "startport 1111 endport 9999) SERVER GROUPS (sg1)")
     s.execute(s"ALTER TABLE $tableName SET GATEWAYSENDER (gwSender) ")
     rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
     while (rs.next) {

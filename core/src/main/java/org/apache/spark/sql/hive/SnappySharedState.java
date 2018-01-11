@@ -16,19 +16,23 @@
  */
 package org.apache.spark.sql.hive;
 
-import io.snappydata.impl.SnappyHiveCatalog;
+import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI;
 import org.apache.spark.SparkContext;
+import org.apache.spark.SparkException;
 import org.apache.spark.sql.ClusterMode;
 import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.ThinClientConnectorMode;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
+import org.apache.spark.sql.catalyst.catalog.GlobalTempViewManager;
+import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.ui.SQLListener;
 import org.apache.spark.sql.execution.ui.SQLTab;
 import org.apache.spark.sql.execution.ui.SnappySQLListener;
 import org.apache.spark.sql.hive.client.HiveClient;
 import org.apache.spark.sql.internal.SharedState;
+import org.apache.spark.sql.internal.StaticSQLConf;
 import org.apache.spark.ui.SparkUI;
 
 /**
@@ -39,13 +43,19 @@ public final class SnappySharedState extends SharedState {
   /**
    * A Hive client used to interact with the meta-store.
    */
-  private volatile HiveClient client;
+  private final HiveClient client;
 
   /**
    * The ExternalCatalog implementation used for SnappyData (either
    * for embedded cluster or for connector).
    */
-  private volatile SnappyExternalCatalog snappyCatalog;
+  private final SnappyExternalCatalog snappyCatalog;
+
+  /**
+   * Overrides to use upper-case "database" name as assumed by SnappyData
+   * conventions to follow other normal DBs.
+   */
+  private final GlobalTempViewManager globalViewManager;
 
   /**
    * Used to skip initializing meta-store in super's constructor.
@@ -55,7 +65,7 @@ public final class SnappySharedState extends SharedState {
   private static final String CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation";
 
   /**
-   *  Create Snappy's SQL Listener instead of SQLListener
+   * Create Snappy's SQL Listener instead of SQLListener
    */
   private static SQLListener createListenerAndUI(SparkContext sc) {
     SQLListener initListener = ExternalStoreUtils.getSQLListener().get();
@@ -69,18 +79,54 @@ public final class SnappySharedState extends SharedState {
         }
       }
       return ExternalStoreUtils.getSQLListener().get();
-    }
-    else {
+    } else {
       return initListener;
     }
   }
 
-  private SnappySharedState(SparkContext sparkContext) {
+  private SnappySharedState(SparkContext sparkContext) throws SparkException {
     super(sparkContext);
-    this.initialized = true;
+
+    Boolean oldFlag = HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get();
+    if (oldFlag != Boolean.TRUE) {
+      HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
+    }
+    try {
+      // avoid inheritance of activeSession
+      SparkSession.clearActiveSession();
+      this.client = HiveClientUtil$.MODULE$.newClient(sparkContext());
+
+      ClusterMode mode = SnappyContext.getClusterMode(sparkContext());
+      if (mode instanceof ThinClientConnectorMode) {
+        this.snappyCatalog = new SnappyConnectorExternalCatalog(this.client,
+            sparkContext().hadoopConfiguration());
+      } else {
+        this.snappyCatalog = new SnappyExternalCatalog(this.client,
+            sparkContext().hadoopConfiguration());
+      }
+
+      // Initialize global temporary view manager.
+      // Use upper-case database to match the convention used by SnappySession.
+      String globalDBName = Utils.toUpperCase(sparkContext().conf().get(
+          StaticSQLConf.GLOBAL_TEMP_DATABASE()));
+      if (this.snappyCatalog.databaseExists(globalDBName)) {
+        throw new SparkException(globalDBName + " is a system reserved schema, " +
+            "please drop your existing schema to resolve the name conflict, " +
+            "or set a different value for " + StaticSQLConf.GLOBAL_TEMP_DATABASE().key() +
+            ", and start the cluster again.");
+      }
+      this.globalViewManager = new GlobalTempViewManager(globalDBName);
+
+      this.initialized = true;
+    } finally {
+      if (oldFlag != Boolean.TRUE) {
+        HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(oldFlag);
+      }
+    }
   }
 
-  public static synchronized SnappySharedState create(SparkContext sparkContext) {
+  public static synchronized SnappySharedState create(SparkContext sparkContext)
+      throws SparkException {
     // force in-memory catalog to avoid initializing hive for SnappyData
     final String catalogImpl = sparkContext.conf().get(CATALOG_IMPLEMENTATION, null);
     // there is a small thread-safety issue in that if multiple threads
@@ -101,46 +147,11 @@ public final class SnappySharedState extends SharedState {
     return sharedState;
   }
 
-  private synchronized void initMetaStore() {
-    if (this.client != null) {
-      assert this.snappyCatalog != null;
-      return;
-    }
-    Boolean oldFlag = SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.get();
-    SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
-    try {
-      // avoid inheritance of activeSession
-      SparkSession.clearActiveSession();
-      this.client = HiveClientUtil$.MODULE$.newClient(sparkContext());
-    } finally {
-      SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(oldFlag);
-    }
-
-    ClusterMode mode = SnappyContext.getClusterMode(sparkContext());
-    if (mode instanceof ThinClientConnectorMode) {
-      this.snappyCatalog = new SnappyConnectorExternalCatalog(metadataHive(),
-          sparkContext().hadoopConfiguration());
-    } else {
-      this.snappyCatalog = new SnappyExternalCatalog(metadataHive(),
-          sparkContext().hadoopConfiguration());
-    }
-  }
-
   public HiveClient metadataHive() {
-    final HiveClient client = this.client;
-    if (client != null) {
-      return client;
-    }
-    initMetaStore();
     return this.client;
   }
 
   public SnappyExternalCatalog snappyCatalog() {
-    final SnappyExternalCatalog snappyCatalog = this.snappyCatalog;
-    if (snappyCatalog != null) {
-      return snappyCatalog;
-    }
-    initMetaStore();
     return this.snappyCatalog;
   }
 
@@ -152,5 +163,19 @@ public final class SnappySharedState extends SharedState {
       // in super constructor, no harm in returning super's value at this point
       return super.externalCatalog();
     }
+  }
+
+  @Override
+  public GlobalTempViewManager globalTempViewManager() {
+    if (this.initialized) {
+      return this.globalViewManager;
+    } else {
+      // in super constructor, no harm in returning super's value at this point
+      return super.globalTempViewManager();
+    }
+  }
+
+  public void close() {
+    snappyCatalog().close();
   }
 }

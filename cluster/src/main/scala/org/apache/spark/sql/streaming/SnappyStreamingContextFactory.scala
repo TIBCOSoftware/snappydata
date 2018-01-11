@@ -20,7 +20,8 @@ import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
-import org.apache.spark.SparkConf
+
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation, SnappySessionFactory}
 import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.util.SnappyUtils
@@ -62,7 +63,7 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
   override def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
     val interval = config.getInt("streaming.batch_interval")
 
-    new SnappyStreamingContext(LeadImpl.getInitializingSparkContext,
+    new SnappyStreamingContext(SparkContext.getActive.get,
       Milliseconds(interval)) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean =
