@@ -6,7 +6,7 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
 
 ### Scala
 ```scala
- val props = Map("BUCKETS" -> "2")// Number of partitions to use in the SnappyStore
+ val props = Map("BUCKETS" -> "8")// Number of partitions to use in the SnappyStore
 
  case class Data(COL1: Int, COL2: Int, COL3: Int)
 
@@ -32,7 +32,7 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
 ### Java
 ```Java
  Map<String, String> props1 = new HashMap<>();
- props1.put("buckets", "11");
+ props1.put("buckets", "16");
 
  JavaRDD<Row> jrdd = jsc.parallelize(Arrays.asList(
   RowFactory.create(1, 2, 3),
@@ -84,7 +84,7 @@ dataDF = snappy.createDataFrame(rdd, schema)
 snappy.dropTable("COLUMN_TABLE", True)
 #"column" is the table format (that is row or column)
 #dataDF.schema provides the schema for table
-snappy.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="11")
+snappy.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="16")
 
 #append dataDF into the table
 dataDF.write.insertInto("COLUMN_TABLE")
