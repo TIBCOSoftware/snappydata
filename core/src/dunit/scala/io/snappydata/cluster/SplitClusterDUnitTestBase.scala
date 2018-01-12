@@ -104,7 +104,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   def doTestComplexTypesForColumnTables_SNAP643(): Unit = {
     // Embedded Cluster Operations
-    val props = Map("buckets" -> "7")
+    val props = Map("buckets" -> "8")
     testObject.createComplexTablesAndInsertData(props)
 
     // StandAlone Spark Cluster Operations

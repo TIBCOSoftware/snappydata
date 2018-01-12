@@ -90,7 +90,7 @@ class SparkSQLExecuteImpl(val sql: String,
   // check for query hint to serialize complex types as JSON strings
   private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
-    case None => false
+    case None => true
     case Some(v) => Misc.parseBoolean(v)
   }
 
