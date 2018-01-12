@@ -210,10 +210,8 @@ trait ColumnEncoder extends ColumnEncoding {
 
   protected[sql] def initializeNulls(initSize: Int): Int
 
-  final def initialize(field: StructField, initSize: Int,
-      withHeader: Boolean): Long = {
-    initialize(field, initSize, withHeader,
-      GemFireCacheImpl.getCurrentBufferAllocator)
+  final def initialize(field: StructField, initSize: Int, withHeader: Boolean): Long = {
+    initialize(field, initSize, withHeader, GemFireCacheImpl.getCurrentBufferAllocator)
   }
 
   protected def initializeLimits(): Unit = {
@@ -281,9 +279,7 @@ trait ColumnEncoder extends ColumnEncoding {
     val numNullBytes = numNullWords << 3
 
     // initialize the lower and upper limits
-    if (withHeader) initializeLimits()
-    else if (numNullWords != 0) assert(assertion = false,
-      s"Unexpected nulls=$numNullWords for withHeader=false")
+    initializeLimits()
 
     var baseSize = numNullBytes.toLong
     if (withHeader) {
@@ -382,7 +378,7 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final def expand(cursor: Long, required: Int): Long = {
     val numWritten = cursor - columnBeginPosition
     setSource(allocator.expand(columnData, required,
-      ColumnEncoding.BUFFER_OWNER), releaseOld = false)
+      ColumnEncoding.BUFFER_OWNER), releaseOld = true)
     columnBeginPosition + numWritten
   }
 
