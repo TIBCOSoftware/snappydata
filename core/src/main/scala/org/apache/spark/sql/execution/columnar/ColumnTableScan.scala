@@ -801,7 +801,7 @@ private[sql] final case class ColumnTableScan(
           ExprCode(
             s"""
                |if ($decoder.isNullAt($buffer, $batchOrdinal)) {
-               |  $dictionaryIndexVar = $dictionaryVar.size() - 1;
+               |  $dictionaryIndexVar = $dictionaryVar.size();
                |  $numNullsVar++;
                |} else {
                |  $dictionaryIndexVar = $updateDecoder == null

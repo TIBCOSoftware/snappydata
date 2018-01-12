@@ -685,6 +685,38 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     FileUtils.deleteDirectory(new File(tempPath))
   }
 
+  def testSNAP2088(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val t1 = "snap2088"
+    val t2 = "snap2088_2"
+
+    snc.sql(s"create table $t1 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '50')")
+    snc.sql(s"create table $t2 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '5000')")
+
+    1 to 500 foreach { i =>
+      if (i % 2 == 0) {
+        snc.sql(s"insert into $t1 values (${Random.nextInt}, 'name_$i', null, 'country_$i')")
+        snc.sql(s"insert into $t2 values (${Random.nextInt}, 'name_$i', null, 'country_$i')")
+      } else {
+        snc.sql(s"insert into $t1 values (${Random.nextInt}, 'name_$i', 'city_$i', 'country_$i')")
+        snc.sql(s"insert into $t2 values (${Random.nextInt}, 'name_$i', 'city_$i', 'country_$i')")
+      }
+    }
+    snc.sql(s"select distinct city from $t1").show
+    snc.sql(s"select distinct city from $t2 order by city").show
+    var df = snc.sql(s"select count(*) from $t1 where city is null")
+    var cnt = df.collect()(0).getLong(0)
+    assert(cnt == 250, s"$cnt records found in $t1 with null city, expected 250")
+
+    df = snc.sql(s"select count(*) from $t2 where city is null")
+    cnt = df.collect()(0).getLong(0)
+    assert(cnt == 250, s"$cnt records found in $t2 with null city, expected 250")
+
+    snc.sql(s"select distinct city from $t1 where country like 'country_1%'").show
+    snc.sql(s"select distinct city from $t2 where country like 'country_1%'").show
+  }
 
 }
 

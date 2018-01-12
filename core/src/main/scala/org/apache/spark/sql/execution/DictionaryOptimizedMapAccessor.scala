@@ -138,7 +138,7 @@ object DictionaryOptimizedMapAccessor {
 
     s"""
        |$dictionaryIndexInit
-       |if ($arrayVar != null) {
+       |if ($arrayVar != null && $arrayVar.length > 0) {
        |  $indexCode
        |  $resultVar = $arrayVar[$keyIndex];
        |  ${nullCheck}if ($resultVar == null) {
