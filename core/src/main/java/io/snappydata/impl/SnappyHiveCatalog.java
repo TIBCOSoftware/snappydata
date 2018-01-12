@@ -479,10 +479,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
           String[] dependentRelations = value != null
               ? value.toString().split(",") : null;
-          int columnBatchSize = Integer.parseInt(parameters.get(
-              ExternalStoreUtils.COLUMN_BATCH_SIZE()));
-          int columnMaxDeltaRows = Integer.parseInt(parameters.get(
-              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS()));
+          int columnBatchSize = ExternalStoreUtils.sizeAsBytes(parameters.get(
+              ExternalStoreUtils.COLUMN_BATCH_SIZE()), ExternalStoreUtils.COLUMN_BATCH_SIZE());
+          int columnMaxDeltaRows = ExternalStoreUtils.checkPositiveNum(Integer.parseInt(
+              parameters.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS())),
+              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);

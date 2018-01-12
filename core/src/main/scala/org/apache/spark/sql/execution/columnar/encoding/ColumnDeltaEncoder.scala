@@ -197,6 +197,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     positionsArray(positionIndex) = position
   }
 
+  def getRealEncoder: ColumnEncoder = realEncoder
+
   override def writeIsNull(position: Int): Unit = {
     // write the relative position in the delta rather than absolute position
     // to save quite a bit of space
@@ -680,8 +682,8 @@ object DeltaWriter {
              |  @Override
              |  public long readAndEncode(ColumnDecoder srcDecoder, Object srcColumnBytes,
              |      ColumnEncoder destEncoder, long destCursor, int encoderPosition,
-             |      boolean forMerge, boolean doWrite) {
-             |      srcDecoder.nonNullPosition_$$eq(srcDecoder.nonNullPosition() + 1);
+             |      boolean doWrite) {
+             |    srcDecoder.nonNullPosition_$$eq(srcDecoder.nonNullPosition() + 1);
              |    if (doWrite) {
              |      $complexType data = ($complexType)srcDecoder.read$name(srcColumnBytes,
              |         srcDecoder.nonNullPosition());
