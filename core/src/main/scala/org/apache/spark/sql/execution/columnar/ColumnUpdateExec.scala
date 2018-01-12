@@ -21,7 +21,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder}
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
@@ -137,6 +137,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
     val numColumns = updateColumns.length
     val deltaEncoderClass = classOf[ColumnDeltaEncoder].getName
+    val encoderClass = classOf[ColumnEncoder].getName
     val columnBatchClass = classOf[ColumnBatch].getName
 
     ctx.addMutableState(s"$deltaEncoderClass[]", deltaEncoders, "")
@@ -201,16 +202,19 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val isNull = ctx.freshName("isNull")
       val field = ctx.freshName("field")
       val dataType = col.dataType
-      val encoderTerm = s"$deltaEncoders[$i]"
+      val encoderTerm = ctx.freshName("deltaEncoder")
+      val realEncoderTerm = s"${encoderTerm}_realEncoder"
       val cursorTerm = s"$cursors[$i]"
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
            |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
+           |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
+           |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
            |  $encoderTerm.setUpdatePosition($ordinalIdVar);
-           |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
-                cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
+           |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
+                encoderTerm, cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
