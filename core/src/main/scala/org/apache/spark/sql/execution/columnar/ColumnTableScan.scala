@@ -877,6 +877,9 @@ private[sql] final case class ColumnTableScan(
            |if ($unchangedCode) {
            |  if (($isNullVar = $decoder.isNullAt($buffer, $batchOrdinal))) {
            |    $col = $defaultValue;
+           |    $numNullsVar++;
+           |  } else {
+           |    $colAssign
            |    // TODO VB: Remove this
            |    System.out.println("VB: Scan [inserted] " + $col +
            |    " ,batchOrdinal=" + $batchOrdinal +
@@ -886,8 +889,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,numRows=" + $numRows);
-           |    $numNullsVar++;
-           |  } else $colAssign
+           |  }
            |} else if ($updateDecoder.readNotNull()) {
            |  $thisRowFromDelta = true;
            |  $updatedAssign
