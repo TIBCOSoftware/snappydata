@@ -59,6 +59,12 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
    */
   private var lastNonNullPosition: Int = -1
 
+  /**
+   * The last size read for a variable width value. Used to
+   * rewind back to previous position if required.
+   */
+  private var lastSize: Int = _
+
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long = {
     currentCursor = cursor
@@ -93,7 +99,7 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
 
   private def setCursorAtPosition(columnBytes: AnyRef, nonNullPosition: Int,
       sizeWidth: Int, expectedPosition: Int): Unit = {
-    if (nonNullPosition <= expectedPosition) {
+    if (nonNullPosition < expectedPosition) {
       throw new IllegalStateException(s"Decoder map cursor cannot move back: " +
           s"lastPosition=${expectedPosition - 1} newPosition=$nonNullPosition")
     }
@@ -110,11 +116,20 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
   private def setCursorForVariableWidth(columnBytes: AnyRef, nonNullPosition: Int,
       sizeWidth: Int = 4): Unit = {
     // check sequential calls else skip as much required
-    val expectedPosition = lastNonNullPosition + 1
-    if (nonNullPosition != expectedPosition) {
-      setCursorAtPosition(columnBytes, nonNullPosition, sizeWidth, expectedPosition)
+    if (nonNullPosition != lastNonNullPosition + 1) {
+      // if same position accessed again then rewind to previous position (SNAP-2118);
+      // this can happen for aggregation over inner join returning multiple rows for a
+      // single streamed row (so then same value for aggregation is read multiple times)
+      if (nonNullPosition == lastNonNullPosition) {
+        currentCursor -= lastSize
+        return
+      } else {
+        setCursorAtPosition(columnBytes, nonNullPosition, sizeWidth, lastNonNullPosition + 1)
+      }
     }
     lastNonNullPosition = nonNullPosition
+    lastSize = ColumnEncoding.readInt(columnBytes, currentCursor)
+    currentCursor += sizeWidth
   }
 
   override def readDecimal(columnBytes: AnyRef, precision: Int,
@@ -125,9 +140,8 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
 
   override def readUTF8String(columnBytes: AnyRef, nonNullPosition: Int): UTF8String = {
     setCursorForVariableWidth(columnBytes, nonNullPosition)
-    val cursor = currentCursor
-    val s = ColumnEncoding.readUTF8String(columnBytes, cursor)
-    currentCursor = cursor + 4 + s.numBytes()
+    val s = UTF8String.fromAddress(columnBytes, currentCursor, lastSize)
+    currentCursor += lastSize
     s
   }
 
@@ -140,12 +154,9 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
 
   override def readBinary(columnBytes: AnyRef, nonNullPosition: Int): Array[Byte] = {
     setCursorForVariableWidth(columnBytes, nonNullPosition)
-    var cursor = currentCursor
-    val size = ColumnEncoding.readInt(columnBytes, cursor)
-    cursor += 4
-    currentCursor = cursor + size
-    val b = new Array[Byte](size)
-    Platform.copyMemory(columnBytes, cursor, b, Platform.BYTE_ARRAY_OFFSET, size)
+    val b = new Array[Byte](lastSize)
+    Platform.copyMemory(columnBytes, currentCursor, b, Platform.BYTE_ARRAY_OFFSET, lastSize)
+    currentCursor += lastSize
     b
   }
 
@@ -154,10 +165,8 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
     setCursorForVariableWidth(columnBytes, nonNullPosition, sizeWidth = 0)
     // 4 bytes for size and then 4 bytes for number of elements
     val result = new SerializedArray(8)
-    val cursor = currentCursor
-    val size = ColumnEncoding.readInt(columnBytes, cursor)
-    currentCursor = cursor + size
-    result.pointTo(columnBytes, cursor, size)
+    result.pointTo(columnBytes, currentCursor, lastSize)
+    currentCursor += lastSize
     result
   }
 
@@ -180,9 +189,14 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
 
   private def setCursorForMap(columnBytes: AnyRef, nonNullPosition: Int): Unit = {
     // check sequential calls else skip as much required
-    val expectedPosition = lastNonNullPosition + 1
-    if (nonNullPosition != expectedPosition) {
-      setCursorAtPositionForMap(columnBytes, nonNullPosition, expectedPosition)
+    if (nonNullPosition != lastNonNullPosition + 1) {
+      // if same position accessed again then rewind to previous position (SNAP-2118)
+      if (nonNullPosition == lastNonNullPosition) {
+        currentCursor -= lastSize
+        return
+      } else {
+        setCursorAtPositionForMap(columnBytes, nonNullPosition, lastNonNullPosition + 1)
+      }
     }
     lastNonNullPosition = nonNullPosition
   }
@@ -190,11 +204,11 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
   override def readMap(columnBytes: AnyRef, nonNullPosition: Int): SerializedMap = {
     setCursorForMap(columnBytes, nonNullPosition)
     val result = new SerializedMap
-    var cursor = currentCursor
-    result.pointTo(columnBytes, cursor)
+    result.pointTo(columnBytes, currentCursor)
     // first read is of keyArraySize and second of valueArraySize
-    cursor += ColumnEncoding.readInt(columnBytes, cursor)
-    currentCursor = cursor + ColumnEncoding.readInt(columnBytes, cursor)
+    lastSize = ColumnEncoding.readInt(columnBytes, currentCursor)
+    lastSize += ColumnEncoding.readInt(columnBytes, currentCursor + lastSize)
+    currentCursor += lastSize
     result
   }
 
@@ -205,10 +219,8 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
     // cursor itself to get best 8-byte word alignment (the 4 bytes are
     //   subsumed in the null bit mask at the start)
     val result = new SerializedRow(4, numFields)
-    val cursor = currentCursor
-    val size = ColumnEncoding.readInt(columnBytes, cursor)
-    currentCursor = cursor + size
-    result.pointTo(columnBytes, cursor, size)
+    result.pointTo(columnBytes, currentCursor, lastSize)
+    currentCursor += lastSize
     result
   }
 }
