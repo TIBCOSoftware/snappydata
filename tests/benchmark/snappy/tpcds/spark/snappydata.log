@@ -1,0 +1,720 @@
+18/01/12 13:00:34.439 IST main<tid=0x1> INFO SparkContext: Running Spark version 2.1.1.1
+18/01/12 13:00:34.753 IST main<tid=0x1> WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+18/01/12 13:00:34.871 IST main<tid=0x1> WARN Utils: Your hostname, pnq-kbachhav resolves to a loopback address: 127.0.1.1; using 192.168.1.154 instead (on interface eth0)
+18/01/12 13:00:34.872 IST main<tid=0x1> WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+18/01/12 13:00:34.902 IST main<tid=0x1> INFO SecurityManager: Changing view acls to: kishor
+18/01/12 13:00:34.902 IST main<tid=0x1> INFO SecurityManager: Changing modify acls to: kishor
+18/01/12 13:00:34.903 IST main<tid=0x1> INFO SecurityManager: Changing view acls groups to: 
+18/01/12 13:00:34.904 IST main<tid=0x1> INFO SecurityManager: Changing modify acls groups to: 
+18/01/12 13:00:34.904 IST main<tid=0x1> INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users  with view permissions: Set(kishor); groups with view permissions: Set(); users  with modify permissions: Set(kishor); groups with modify permissions: Set()
+18/01/12 13:00:35.095 IST main<tid=0x1> INFO Utils: Successfully started service 'sparkDriver' on port 34202.
+18/01/12 13:00:35.115 IST main<tid=0x1> INFO SparkEnv: Registering MapOutputTracker
+18/01/12 13:00:35.266 IST main<tid=0x1> INFO SnappyUnifiedMemoryManager: RuntimeMemoryManager org.apache.spark.memory.SnappyUnifiedMemoryManager@27305e6 configuration:
+		Total Usable Heap = 786.2 MB (824374722)
+		Storage Pool = 393.1 MB (412187361)
+		Execution Pool = 393.1 MB (412187361)
+		Max Storage Pool Size = 628.9 MB (659499777)
+18/01/12 13:00:35.272 IST main<tid=0x1> INFO SparkEnv: Registering BlockManagerMaster
+18/01/12 13:00:35.275 IST main<tid=0x1> INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+18/01/12 13:00:35.275 IST main<tid=0x1> INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+18/01/12 13:00:35.285 IST main<tid=0x1> INFO DiskBlockManager: Created local directory at /tmp/blockmgr-e047ec75-3718-408a-93ad-a781b4626688
+18/01/12 13:00:35.348 IST main<tid=0x1> INFO SparkEnv: Registering OutputCommitCoordinator
+18/01/12 13:00:35.549 IST main<tid=0x1> INFO Utils: Successfully started service 'SparkUI' on port 4040.
+18/01/12 13:00:35.554 IST main<tid=0x1> INFO SparkUI: Bound SparkUI to 0.0.0.0, and started at http://192.168.1.154:4040
+18/01/12 13:00:35.584 IST main<tid=0x1> INFO SparkContext: Added JAR file:/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar at spark://192.168.1.154:34202/jars/snappydata-cluster_2.11-1.0.0-tests.jar with timestamp 1515742235584
+18/01/12 13:00:35.687 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 13:00:35.735 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 13:00:55.688 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 13:00:55.691 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 13:01:15.688 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 13:01:15.697 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 13:01:35.689 IST appclient-registration-retry-thread<tid=0x31> ERROR StandaloneSchedulerBackend: Application has been killed. Reason: All masters are unresponsive! Giving up.
+18/01/12 13:01:35.690 IST main<tid=0x1> WARN StandaloneSchedulerBackend: Application ID is not initialized yet.
+18/01/12 13:01:35.695 IST main<tid=0x1> INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 39118.
+18/01/12 13:01:35.696 IST main<tid=0x1> INFO NettyBlockTransferService: Server created on 192.168.1.154:39118
+18/01/12 13:01:35.698 IST main<tid=0x1> INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+18/01/12 13:01:35.702 IST main<tid=0x1> INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, 192.168.1.154, 39118, None)
+18/01/12 13:01:35.711 IST dispatcher-event-loop-0<tid=0xd> INFO BlockManagerMasterEndpoint: Registering block manager 192.168.1.154:39118 with 786.2 MB RAM, BlockManagerId(driver, 192.168.1.154, 39118, None)
+18/01/12 13:01:35.716 IST main<tid=0x1> INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, 192.168.1.154, 39118, None)
+18/01/12 13:01:35.717 IST stop-spark-context<tid=0x35> INFO SparkUI: Stopped Spark web UI at http://192.168.1.154:4040
+18/01/12 13:01:35.718 IST main<tid=0x1> INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, 192.168.1.154, 39118, None)
+18/01/12 13:01:35.725 IST stop-spark-context<tid=0x35> INFO StandaloneSchedulerBackend: Shutting down all executors
+18/01/12 13:01:35.757 IST dispatcher-event-loop-0<tid=0xd> WARN StandaloneAppClient$ClientEndpoint: Drop UnregisterApplication(null) because has not yet connected to master
+18/01/12 13:01:35.784 IST stop-spark-context<tid=0x35> INFO BlockManager: BlockManager stopped
+18/01/12 13:01:35.793 IST stop-spark-context<tid=0x35> INFO BlockManagerMaster: BlockManagerMaster stopped
+18/01/12 13:01:35.801 IST dispatcher-event-loop-2<tid=0xf> INFO OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: OutputCommitCoordinator stopped!
+18/01/12 13:01:35.916 IST main<tid=0x1> ERROR SparkContext: Error initializing SparkContext.
+java.lang.IllegalArgumentException: requirement failed: Can only call getServletHandlers on a running MetricsSystem
+	at scala.Predef$.require(Predef.scala:224)
+	at org.apache.spark.metrics.MetricsSystem.getServletHandlers(MetricsSystem.scala:91)
+	at org.apache.spark.SparkContext.<init>(SparkContext.scala:550)
+	at org.apache.spark.SparkContext$.getOrCreate(SparkContext.scala:2347)
+	at org.apache.spark.sql.SparkSession$Builder$$anonfun$6.apply(SparkSession.scala:868)
+	at org.apache.spark.sql.SparkSession$Builder$$anonfun$6.apply(SparkSession.scala:860)
+	at scala.Option.getOrElse(Option.scala:121)
+	at org.apache.spark.sql.SparkSession$Builder.getOrCreate(SparkSession.scala:860)
+	at io.snappydata.benchmark.snappy.tpcds.SparkApp$.main(SparkApp.scala:36)
+	at io.snappydata.benchmark.snappy.tpcds.SparkApp.main(SparkApp.scala)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.SparkSubmit$.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:743)
+	at org.apache.spark.deploy.SparkSubmit$.doRunMain$1(SparkSubmit.scala:187)
+	at org.apache.spark.deploy.SparkSubmit$.submit(SparkSubmit.scala:212)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:126)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+18/01/12 13:01:35.919 IST main<tid=0x1> INFO SparkContext: SparkContext already stopped.
+18/01/12 13:01:35.920 IST stop-spark-context<tid=0x35> INFO SparkContext: Successfully stopped SparkContext
+18/01/12 13:01:35.925 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Shutdown hook called
+18/01/12 13:01:35.927 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Deleting directory /tmp/spark-ecd5a38b-212f-492d-bd9b-06790205f962
+18/01/12 13:05:35.588 IST main<tid=0x1> INFO SparkContext: Running Spark version 2.1.1.1
+18/01/12 13:05:35.911 IST main<tid=0x1> WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+18/01/12 13:05:36.017 IST main<tid=0x1> WARN Utils: Your hostname, pnq-kbachhav resolves to a loopback address: 127.0.1.1; using 192.168.1.154 instead (on interface eth0)
+18/01/12 13:05:36.017 IST main<tid=0x1> WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+18/01/12 13:05:36.042 IST main<tid=0x1> INFO SecurityManager: Changing view acls to: kishor
+18/01/12 13:05:36.043 IST main<tid=0x1> INFO SecurityManager: Changing modify acls to: kishor
+18/01/12 13:05:36.043 IST main<tid=0x1> INFO SecurityManager: Changing view acls groups to: 
+18/01/12 13:05:36.044 IST main<tid=0x1> INFO SecurityManager: Changing modify acls groups to: 
+18/01/12 13:05:36.044 IST main<tid=0x1> INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users  with view permissions: Set(kishor); groups with view permissions: Set(); users  with modify permissions: Set(kishor); groups with modify permissions: Set()
+18/01/12 13:05:36.242 IST main<tid=0x1> INFO Utils: Successfully started service 'sparkDriver' on port 44308.
+18/01/12 13:05:36.270 IST main<tid=0x1> INFO SparkEnv: Registering MapOutputTracker
+18/01/12 13:05:36.419 IST main<tid=0x1> INFO SnappyUnifiedMemoryManager: RuntimeMemoryManager org.apache.spark.memory.SnappyUnifiedMemoryManager@27305e6 configuration:
+		Total Usable Heap = 786.2 MB (824374722)
+		Storage Pool = 393.1 MB (412187361)
+		Execution Pool = 393.1 MB (412187361)
+		Max Storage Pool Size = 628.9 MB (659499777)
+18/01/12 13:05:36.425 IST main<tid=0x1> INFO SparkEnv: Registering BlockManagerMaster
+18/01/12 13:05:36.429 IST main<tid=0x1> INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+18/01/12 13:05:36.430 IST main<tid=0x1> INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+18/01/12 13:05:36.444 IST main<tid=0x1> INFO DiskBlockManager: Created local directory at /tmp/blockmgr-c58cde3b-ac62-4452-b0ae-709cefc4cbcd
+18/01/12 13:05:36.522 IST main<tid=0x1> INFO SparkEnv: Registering OutputCommitCoordinator
+18/01/12 13:05:36.745 IST main<tid=0x1> INFO Utils: Successfully started service 'SparkUI' on port 4040.
+18/01/12 13:05:36.750 IST main<tid=0x1> INFO SparkUI: Bound SparkUI to 0.0.0.0, and started at http://192.168.1.154:4040
+18/01/12 13:05:36.779 IST main<tid=0x1> INFO SparkContext: Added JAR file:/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar at spark://192.168.1.154:44308/jars/snappydata-cluster_2.11-1.0.0-tests.jar with timestamp 1515742536778
+18/01/12 13:05:36.901 IST appclient-register-master-threadpool-0<tid=0x31> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 13:05:36.965 IST appclient-register-master-threadpool-0<tid=0x31> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 13:05:56.896 IST appclient-register-master-threadpool-0<tid=0x31> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 13:05:56.899 IST appclient-register-master-threadpool-0<tid=0x31> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 13:06:16.897 IST appclient-register-master-threadpool-0<tid=0x31> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 13:06:16.900 IST appclient-register-master-threadpool-0<tid=0x31> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 13:06:36.898 IST appclient-registration-retry-thread<tid=0x32> ERROR StandaloneSchedulerBackend: Application has been killed. Reason: All masters are unresponsive! Giving up.
+18/01/12 13:06:36.898 IST main<tid=0x1> WARN StandaloneSchedulerBackend: Application ID is not initialized yet.
+18/01/12 13:06:36.906 IST main<tid=0x1> INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 43405.
+18/01/12 13:06:36.907 IST main<tid=0x1> INFO NettyBlockTransferService: Server created on 192.168.1.154:43405
+18/01/12 13:06:36.909 IST main<tid=0x1> INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+18/01/12 13:06:36.911 IST main<tid=0x1> INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, 192.168.1.154, 43405, None)
+18/01/12 13:06:36.915 IST dispatcher-event-loop-1<tid=0xe> INFO BlockManagerMasterEndpoint: Registering block manager 192.168.1.154:43405 with 786.2 MB RAM, BlockManagerId(driver, 192.168.1.154, 43405, None)
+18/01/12 13:06:36.922 IST main<tid=0x1> INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, 192.168.1.154, 43405, None)
+18/01/12 13:06:36.923 IST main<tid=0x1> INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, 192.168.1.154, 43405, None)
+18/01/12 13:06:36.930 IST stop-spark-context<tid=0x39> INFO SparkUI: Stopped Spark web UI at http://192.168.1.154:4040
+18/01/12 13:06:36.935 IST stop-spark-context<tid=0x39> INFO StandaloneSchedulerBackend: Shutting down all executors
+18/01/12 13:06:36.944 IST dispatcher-event-loop-1<tid=0xe> WARN StandaloneAppClient$ClientEndpoint: Drop UnregisterApplication(null) because has not yet connected to master
+18/01/12 13:06:36.955 IST main<tid=0x1> ERROR SparkContext: Error initializing SparkContext.
+java.lang.NullPointerException
+	at org.apache.spark.SparkContext.<init>(SparkContext.scala:593)
+	at org.apache.spark.SparkContext$.getOrCreate(SparkContext.scala:2347)
+	at org.apache.spark.sql.SparkSession$Builder$$anonfun$6.apply(SparkSession.scala:868)
+	at org.apache.spark.sql.SparkSession$Builder$$anonfun$6.apply(SparkSession.scala:860)
+	at scala.Option.getOrElse(Option.scala:121)
+	at org.apache.spark.sql.SparkSession$Builder.getOrCreate(SparkSession.scala:860)
+	at io.snappydata.benchmark.snappy.tpcds.SparkApp$.main(SparkApp.scala:36)
+	at io.snappydata.benchmark.snappy.tpcds.SparkApp.main(SparkApp.scala)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.SparkSubmit$.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:743)
+	at org.apache.spark.deploy.SparkSubmit$.doRunMain$1(SparkSubmit.scala:187)
+	at org.apache.spark.deploy.SparkSubmit$.submit(SparkSubmit.scala:212)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:126)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+18/01/12 13:06:36.956 IST main<tid=0x1> INFO SparkContext: SparkContext already stopped.
+18/01/12 13:06:36.962 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Shutdown hook called
+18/01/12 13:06:36.964 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Deleting directory /tmp/spark-4832563f-24cd-4b88-ad40-78873c9f2507/userFiles-934c8bfe-b573-47f7-be86-d62690b49ba0
+18/01/12 13:06:36.964 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Deleting directory /tmp/spark-4832563f-24cd-4b88-ad40-78873c9f2507
+18/01/12 13:06:36.964 IST stop-spark-context<tid=0x39> INFO BlockManager: BlockManager stopped
+18/01/12 14:16:45.567 IST main<tid=0x1> INFO SparkContext: Running Spark version 2.1.1.1
+18/01/12 14:16:45.881 IST main<tid=0x1> WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+18/01/12 14:16:46.001 IST main<tid=0x1> WARN Utils: Your hostname, pnq-kbachhav resolves to a loopback address: 127.0.1.1; using 192.168.1.154 instead (on interface eth0)
+18/01/12 14:16:46.002 IST main<tid=0x1> WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+18/01/12 14:16:46.030 IST main<tid=0x1> INFO SecurityManager: Changing view acls to: kishor
+18/01/12 14:16:46.031 IST main<tid=0x1> INFO SecurityManager: Changing modify acls to: kishor
+18/01/12 14:16:46.032 IST main<tid=0x1> INFO SecurityManager: Changing view acls groups to: 
+18/01/12 14:16:46.032 IST main<tid=0x1> INFO SecurityManager: Changing modify acls groups to: 
+18/01/12 14:16:46.033 IST main<tid=0x1> INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users  with view permissions: Set(kishor); groups with view permissions: Set(); users  with modify permissions: Set(kishor); groups with modify permissions: Set()
+18/01/12 14:16:46.228 IST main<tid=0x1> INFO Utils: Successfully started service 'sparkDriver' on port 34143.
+18/01/12 14:16:46.247 IST main<tid=0x1> INFO SparkEnv: Registering MapOutputTracker
+18/01/12 14:16:46.389 IST main<tid=0x1> INFO SnappyUnifiedMemoryManager: RuntimeMemoryManager org.apache.spark.memory.SnappyUnifiedMemoryManager@27305e6 configuration:
+		Total Usable Heap = 786.2 MB (824374722)
+		Storage Pool = 393.1 MB (412187361)
+		Execution Pool = 393.1 MB (412187361)
+		Max Storage Pool Size = 628.9 MB (659499777)
+18/01/12 14:16:46.394 IST main<tid=0x1> INFO SparkEnv: Registering BlockManagerMaster
+18/01/12 14:16:46.398 IST main<tid=0x1> INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+18/01/12 14:16:46.398 IST main<tid=0x1> INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+18/01/12 14:16:46.411 IST main<tid=0x1> INFO DiskBlockManager: Created local directory at /tmp/blockmgr-e64a8a67-998c-414a-b157-13b28cf5eedf
+18/01/12 14:16:46.486 IST main<tid=0x1> INFO SparkEnv: Registering OutputCommitCoordinator
+18/01/12 14:16:46.692 IST main<tid=0x1> INFO Utils: Successfully started service 'SparkUI' on port 4040.
+18/01/12 14:16:46.696 IST main<tid=0x1> INFO SparkUI: Bound SparkUI to 0.0.0.0, and started at http://192.168.1.154:4040
+18/01/12 14:16:46.723 IST main<tid=0x1> INFO SparkContext: Added JAR file:/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar at spark://192.168.1.154:34143/jars/snappydata-cluster_2.11-1.0.0-tests.jar with timestamp 1515746806723
+18/01/12 14:16:46.830 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 14:16:46.876 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 14:17:06.831 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 14:17:06.835 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 14:17:26.831 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 14:17:26.839 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 14:17:46.832 IST appclient-registration-retry-thread<tid=0x31> ERROR StandaloneSchedulerBackend: Application has been killed. Reason: All masters are unresponsive! Giving up.
+18/01/12 14:17:46.832 IST main<tid=0x1> WARN StandaloneSchedulerBackend: Application ID is not initialized yet.
+18/01/12 14:17:46.837 IST main<tid=0x1> INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 60232.
+18/01/12 14:17:46.838 IST main<tid=0x1> INFO NettyBlockTransferService: Server created on 192.168.1.154:60232
+18/01/12 14:17:46.840 IST main<tid=0x1> INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+18/01/12 14:17:46.844 IST main<tid=0x1> INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, 192.168.1.154, 60232, None)
+18/01/12 14:17:46.846 IST stop-spark-context<tid=0x35> INFO SparkUI: Stopped Spark web UI at http://192.168.1.154:4040
+18/01/12 14:17:46.848 IST dispatcher-event-loop-0<tid=0xd> INFO BlockManagerMasterEndpoint: Registering block manager 192.168.1.154:60232 with 786.2 MB RAM, BlockManagerId(driver, 192.168.1.154, 60232, None)
+18/01/12 14:17:46.850 IST stop-spark-context<tid=0x35> INFO StandaloneSchedulerBackend: Shutting down all executors
+18/01/12 14:17:46.851 IST main<tid=0x1> INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, 192.168.1.154, 60232, None)
+18/01/12 14:17:46.852 IST main<tid=0x1> INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, 192.168.1.154, 60232, None)
+18/01/12 14:17:46.868 IST dispatcher-event-loop-1<tid=0xe> WARN StandaloneAppClient$ClientEndpoint: Drop UnregisterApplication(null) because has not yet connected to master
+18/01/12 14:17:46.895 IST stop-spark-context<tid=0x35> INFO BlockManager: BlockManager stopped
+18/01/12 14:17:46.905 IST stop-spark-context<tid=0x35> INFO BlockManagerMaster: BlockManagerMaster stopped
+18/01/12 14:17:46.914 IST dispatcher-event-loop-0<tid=0xd> INFO OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: OutputCommitCoordinator stopped!
+18/01/12 14:17:47.035 IST main<tid=0x1> ERROR SparkContext: Error initializing SparkContext.
+java.lang.IllegalArgumentException: requirement failed: Can only call getServletHandlers on a running MetricsSystem
+	at scala.Predef$.require(Predef.scala:224)
+	at org.apache.spark.metrics.MetricsSystem.getServletHandlers(MetricsSystem.scala:91)
+	at org.apache.spark.SparkContext.<init>(SparkContext.scala:550)
+	at org.apache.spark.SparkContext$.getOrCreate(SparkContext.scala:2347)
+	at org.apache.spark.sql.SparkSession$Builder$$anonfun$6.apply(SparkSession.scala:868)
+	at org.apache.spark.sql.SparkSession$Builder$$anonfun$6.apply(SparkSession.scala:860)
+	at scala.Option.getOrElse(Option.scala:121)
+	at org.apache.spark.sql.SparkSession$Builder.getOrCreate(SparkSession.scala:860)
+	at io.snappydata.benchmark.snappy.tpcds.SparkApp$.main(SparkApp.scala:36)
+	at io.snappydata.benchmark.snappy.tpcds.SparkApp.main(SparkApp.scala)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.SparkSubmit$.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:743)
+	at org.apache.spark.deploy.SparkSubmit$.doRunMain$1(SparkSubmit.scala:187)
+	at org.apache.spark.deploy.SparkSubmit$.submit(SparkSubmit.scala:212)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:126)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+18/01/12 14:17:47.036 IST main<tid=0x1> INFO SparkContext: SparkContext already stopped.
+18/01/12 14:17:47.039 IST stop-spark-context<tid=0x35> INFO SparkContext: Successfully stopped SparkContext
+18/01/12 14:17:47.041 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Shutdown hook called
+18/01/12 14:17:47.042 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Deleting directory /tmp/spark-623c01e0-592e-475a-8d83-b13b01c4bf90
+18/01/12 14:23:48.086 IST main<tid=0x1> INFO SparkContext: Running Spark version 2.1.1.1
+18/01/12 14:23:48.447 IST main<tid=0x1> WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+18/01/12 14:23:48.577 IST main<tid=0x1> WARN Utils: Your hostname, pnq-kbachhav resolves to a loopback address: 127.0.1.1; using 192.168.1.154 instead (on interface eth0)
+18/01/12 14:23:48.578 IST main<tid=0x1> WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+18/01/12 14:23:48.602 IST main<tid=0x1> INFO SecurityManager: Changing view acls to: kishor
+18/01/12 14:23:48.603 IST main<tid=0x1> INFO SecurityManager: Changing modify acls to: kishor
+18/01/12 14:23:48.603 IST main<tid=0x1> INFO SecurityManager: Changing view acls groups to: 
+18/01/12 14:23:48.604 IST main<tid=0x1> INFO SecurityManager: Changing modify acls groups to: 
+18/01/12 14:23:48.604 IST main<tid=0x1> INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users  with view permissions: Set(kishor); groups with view permissions: Set(); users  with modify permissions: Set(kishor); groups with modify permissions: Set()
+18/01/12 14:23:48.810 IST main<tid=0x1> INFO Utils: Successfully started service 'sparkDriver' on port 60337.
+18/01/12 14:23:48.831 IST main<tid=0x1> INFO SparkEnv: Registering MapOutputTracker
+18/01/12 14:23:48.963 IST main<tid=0x1> INFO SnappyUnifiedMemoryManager: RuntimeMemoryManager org.apache.spark.memory.SnappyUnifiedMemoryManager@27305e6 configuration:
+		Total Usable Heap = 786.2 MB (824374722)
+		Storage Pool = 393.1 MB (412187361)
+		Execution Pool = 393.1 MB (412187361)
+		Max Storage Pool Size = 628.9 MB (659499777)
+18/01/12 14:23:48.967 IST main<tid=0x1> INFO SparkEnv: Registering BlockManagerMaster
+18/01/12 14:23:48.970 IST main<tid=0x1> INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+18/01/12 14:23:48.971 IST main<tid=0x1> INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+18/01/12 14:23:48.982 IST main<tid=0x1> INFO DiskBlockManager: Created local directory at /tmp/blockmgr-62edd64b-2caf-4774-9a66-a504a22aa965
+18/01/12 14:23:49.044 IST main<tid=0x1> INFO SparkEnv: Registering OutputCommitCoordinator
+18/01/12 14:23:49.259 IST main<tid=0x1> INFO Utils: Successfully started service 'SparkUI' on port 4040.
+18/01/12 14:23:49.264 IST main<tid=0x1> INFO SparkUI: Bound SparkUI to 0.0.0.0, and started at http://192.168.1.154:4040
+18/01/12 14:23:49.294 IST main<tid=0x1> INFO SparkContext: Added JAR file:/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar at spark://192.168.1.154:60337/jars/snappydata-cluster_2.11-1.0.0-tests.jar with timestamp 1515747229293
+18/01/12 14:23:49.391 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 14:23:49.443 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 14:24:09.392 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 14:24:09.395 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 14:24:29.392 IST appclient-register-master-threadpool-0<tid=0x30> INFO StandaloneAppClient$ClientEndpoint: Connecting to master spark://localhost:7077...
+18/01/12 14:24:29.401 IST appclient-register-master-threadpool-0<tid=0x30> WARN StandaloneAppClient$ClientEndpoint: Failed to connect to master localhost:7077
+org.apache.spark.SparkException: Exception thrown in awaitResult
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:77)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$1.applyOrElse(RpcTimeout.scala:75)
+	at scala.runtime.AbstractPartialFunction.apply(AbstractPartialFunction.scala:36)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at org.apache.spark.rpc.RpcTimeout$$anonfun$addMessageIfTimeout$1.applyOrElse(RpcTimeout.scala:59)
+	at scala.PartialFunction$OrElse.apply(PartialFunction.scala:167)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:83)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRefByURI(RpcEnv.scala:104)
+	at org.apache.spark.rpc.RpcEnv.setupEndpointRef(RpcEnv.scala:112)
+	at org.apache.spark.deploy.client.StandaloneAppClient$ClientEndpoint$$anonfun$tryRegisterAllMasters$1$$anon$1.run(StandaloneAppClient.scala:106)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.io.IOException: Failed to connect to localhost/127.0.0.1:7077
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:232)
+	at org.apache.spark.network.client.TransportClientFactory.createClient(TransportClientFactory.java:182)
+	at org.apache.spark.rpc.netty.NettyRpcEnv.createClient(NettyRpcEnv.scala:204)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:194)
+	at org.apache.spark.rpc.netty.Outbox$$anon$1.call(Outbox.scala:190)
+	... 4 more
+Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: localhost/127.0.0.1:7077
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)
+	at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:259)
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:291)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:634)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:581)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:498)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:460)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	... 1 more
+Caused by: java.net.ConnectException: Connection refused
+	... 11 more
+18/01/12 14:24:49.393 IST appclient-registration-retry-thread<tid=0x31> ERROR StandaloneSchedulerBackend: Application has been killed. Reason: All masters are unresponsive! Giving up.
+18/01/12 14:24:49.393 IST main<tid=0x1> WARN StandaloneSchedulerBackend: Application ID is not initialized yet.
+18/01/12 14:24:49.403 IST main<tid=0x1> INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 51229.
+18/01/12 14:24:49.404 IST main<tid=0x1> INFO NettyBlockTransferService: Server created on 192.168.1.154:51229
+18/01/12 14:24:49.408 IST main<tid=0x1> INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+18/01/12 14:24:49.410 IST stop-spark-context<tid=0x35> INFO SparkUI: Stopped Spark web UI at http://192.168.1.154:4040
+18/01/12 14:24:49.412 IST main<tid=0x1> INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, 192.168.1.154, 51229, None)
+18/01/12 14:24:49.417 IST dispatcher-event-loop-0<tid=0xd> INFO BlockManagerMasterEndpoint: Registering block manager 192.168.1.154:51229 with 786.2 MB RAM, BlockManagerId(driver, 192.168.1.154, 51229, None)
+18/01/12 14:24:49.421 IST main<tid=0x1> INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, 192.168.1.154, 51229, None)
+18/01/12 14:24:49.421 IST main<tid=0x1> INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, 192.168.1.154, 51229, None)
+18/01/12 14:24:49.423 IST stop-spark-context<tid=0x35> INFO StandaloneSchedulerBackend: Shutting down all executors
+18/01/12 14:24:49.443 IST dispatcher-event-loop-0<tid=0xd> WARN StandaloneAppClient$ClientEndpoint: Drop UnregisterApplication(null) because has not yet connected to master
+18/01/12 14:24:49.466 IST stop-spark-context<tid=0x35> INFO BlockManager: BlockManager stopped
+18/01/12 14:24:49.474 IST stop-spark-context<tid=0x35> INFO BlockManagerMaster: BlockManagerMaster stopped
+18/01/12 14:24:49.480 IST dispatcher-event-loop-1<tid=0xe> INFO OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: OutputCommitCoordinator stopped!
+18/01/12 14:24:49.646 IST main<tid=0x1> ERROR SparkContext: Error initializing SparkContext.
+java.lang.IllegalArgumentException: requirement failed: Can only call getServletHandlers on a running MetricsSystem
+	at scala.Predef$.require(Predef.scala:224)
+	at org.apache.spark.metrics.MetricsSystem.getServletHandlers(MetricsSystem.scala:91)
+	at org.apache.spark.SparkContext.<init>(SparkContext.scala:550)
+	at org.apache.spark.SparkContext$.getOrCreate(SparkContext.scala:2347)
+	at org.apache.spark.sql.SparkSession$Builder$$anonfun$6.apply(SparkSession.scala:868)
+	at org.apache.spark.sql.SparkSession$Builder$$anonfun$6.apply(SparkSession.scala:860)
+	at scala.Option.getOrElse(Option.scala:121)
+	at org.apache.spark.sql.SparkSession$Builder.getOrCreate(SparkSession.scala:860)
+	at io.snappydata.benchmark.snappy.tpcds.SparkApp$.main(SparkApp.scala:36)
+	at io.snappydata.benchmark.snappy.tpcds.SparkApp.main(SparkApp.scala)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.SparkSubmit$.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:743)
+	at org.apache.spark.deploy.SparkSubmit$.doRunMain$1(SparkSubmit.scala:187)
+	at org.apache.spark.deploy.SparkSubmit$.submit(SparkSubmit.scala:212)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:126)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+18/01/12 14:24:49.647 IST main<tid=0x1> INFO SparkContext: SparkContext already stopped.
+18/01/12 14:24:49.648 IST stop-spark-context<tid=0x35> INFO SparkContext: Successfully stopped SparkContext
+18/01/12 14:24:49.653 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Shutdown hook called
+18/01/12 14:24:49.655 IST Thread-2<tid=0x21> INFO ShutdownHookManager: Deleting directory /tmp/spark-789a747f-5999-427a-a5fb-2c0371a862b2

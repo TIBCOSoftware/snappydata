@@ -14,20 +14,21 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.benchmark.snappy.tpch
+package io.snappydata.benchmark.snappy.tpcds
 
 import java.io.{File, FileOutputStream, PrintStream}
 
-import org.apache.spark.sql.{Row, SnappySession, SparkSession}
+import io.snappydata.benchmark.snappy.tpch.QueryExecutor
+
 import org.apache.spark.sql.catalyst.util.fileToString
+import org.apache.spark.sql.{Row, SparkSession}
 
 /**
   * Created by sbhokare on 31/8/17.
   */
-object SparkAppTPCDS {
+object SparkApp {
 
   def main(args: Array[String]) {
-
 
     val sc: SparkSession = SparkSession
       .builder
@@ -38,6 +39,10 @@ object SparkAppTPCDS {
     val dataLocation = args(1)
     val queries = args(2).split(",").toSeq
     val queryPath = args(3)
+    var buckets_ColumnTable = args(4).toInt
+    var isResultCollection = args(5).toBoolean
+    var warmUp = args(6).toInt
+    var runsForAverage = args(7).toInt
 
     for (prop <- sparkSqlProps) {
       // scalastyle:off println
@@ -54,22 +59,6 @@ object SparkAppTPCDS {
     // scalastyle:off println
     println(s"****************queries : $queries")
     // scalastyle:on println
-
-    /*
-      call_center
-      catalog_page
-      date_dim
-      household_demographics
-      income_band
-      promotions
-      reasons
-      ship_mode
-      store
-      time_dim
-      warehouse
-      webpage
-      website
-   */
 
     /*catalog_page", "catalog_returns", "customer", "customer_address",
       "customer_demographics", "date_dim", "household_demographics", "inventory", "item",
@@ -153,15 +142,13 @@ object SparkAppTPCDS {
 
         val path: String = s"$queryPath/$name.sql"
         val queryString = fileToString(new File(path))
-        val warmup = 2
-        val runsForAverage = 3
 
         var totalTime: Long = 0
 
         // scalastyle:off println
         //println("Query : " + queryString)
 
-        for (i <- 1 to (warmup + runsForAverage)) {
+        for (i <- 1 to (warmUp + runsForAverage)) {
           // queryPrintStream.println(queryToBeExecuted)
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
@@ -180,7 +167,7 @@ object SparkAppTPCDS {
           // scalastyle:off println
           println(s"iterationTime = $iterationTime")
 
-          if (i > warmup) {
+          if (i > warmUp) {
             totalTime += iterationTime
           }
           cnts = null
