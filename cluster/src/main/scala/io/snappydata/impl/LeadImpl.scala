@@ -94,7 +94,8 @@ class LeadImpl extends ServerImpl with Lead
           bootProperties.remove(propName)
         }
       } else if (!propName.startsWith(SNAPPY_PREFIX) &&
-          !propName.startsWith(JOBSERVER_PREFIX)) {
+          !propName.startsWith(JOBSERVER_PREFIX) &&
+          !propName.startsWith("zeppelin.")) {
         bootProperties.setProperty(STORE_PREFIX + propName, bootProperties.getProperty(propName))
         bootProperties.remove(propName)
       }
@@ -158,9 +159,17 @@ class LeadImpl extends ServerImpl with Lead
       conf.set("spark.ui.port",
         bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
 
-      if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
-        "false").equalsIgnoreCase("true")) {
+      // wait for log service to initialize so that Spark also uses the same
+      // WARNING: no log lines should be added before this point else lazy logger
+      // will get initialized with no-op logging
+      while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {
+        Thread.sleep(50)
+      }
+      resetLogger()
 
+      val zeppelinEnabled = bootProperties.getProperty(
+        Constant.ENABLE_ZEPPELIN_INTERPRETER, "false").equalsIgnoreCase("true")
+      if (zeppelinEnabled) {
         try {
 
           val zeppelinIntpUtilClass = Utils.classForName(
@@ -193,11 +202,6 @@ class LeadImpl extends ServerImpl with Lead
         SparkCallbacks.setAuthenticatorForJettyServer()
       }
 
-      // wait for log service to initialize so that Spark also uses the same
-      while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {
-        Thread.sleep(50)
-      }
-
       // take out the password property from SparkConf so that it is not logged
       // or seen by Spark layer
       val passwordKey = STORE_PREFIX + Attribute.PASSWORD_ATTR
@@ -221,7 +225,7 @@ class LeadImpl extends ServerImpl with Lead
 
       val jobServerWait = Property.JobServerWaitForInit.get(conf)
       if (!jobServerWait) {
-        // mark RUNNING (job server will continue to start in background)
+        // mark RUNNING (job server and zeppelin will continue to start in background)
         notifyRunningInLauncher(Status.RUNNING)
       }
 
@@ -242,13 +246,13 @@ class LeadImpl extends ServerImpl with Lead
       // start other add-on services (job server)
       startAddOnServices(conf)
 
+      // finally start embedded zeppelin interpreter if configured
+      checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
+
       if (jobServerWait) {
-        // mark RUNNING after job server initialization if so configured
+        // mark RUNNING after job server and zeppelin initialization if so configured
         notifyRunningInLauncher(Status.RUNNING)
       }
-
-      // finally start embedded zeppelin interpreter if configured
-      checkAndStartZeppelinInterpreter(bootProperties)
     }
 
     try {
@@ -576,12 +580,12 @@ class LeadImpl extends ServerImpl with Lead
    * setting "zeppelin.interpreter.enable" to false in leads conf file.User can also specify
    * the port on which intrepreter should listen using  property zeppelin.interpreter.port
    */
-  private def checkAndStartZeppelinInterpreter(bootProperties: Properties): Unit = {
+  private def checkAndStartZeppelinInterpreter(enabled: Boolean,
+      bootProperties: Properties): Unit = {
     // As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
     // [sumedh] Our startup times are already very high and we are looking to
     // cut that down and not increase further with these external utilities.
-    if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
-      "false").equalsIgnoreCase("true")) {
+    if (enabled) {
       val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT,
         "3768").toInt
       try {
