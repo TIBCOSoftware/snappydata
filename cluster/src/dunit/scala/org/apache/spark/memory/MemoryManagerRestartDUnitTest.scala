@@ -20,7 +20,6 @@ import java.util.Properties
 import java.util.function.ObjLongConsumer
 
 import io.snappydata.cluster.{ClusterManagerTestBase, ExecutorInitiator}
-import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 
 import org.apache.spark.SparkEnv
@@ -52,7 +51,7 @@ class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s)
     t1.start()
     t1.join()
 
-    DistributedTestBase.waitForCriterion(new WaitCriterion {
+    DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
       override def done(): Boolean = {
         vm1.invoke(self.getClass, "waitForExecutor")
         try {
