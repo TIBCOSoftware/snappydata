@@ -2055,13 +2055,10 @@ object SnappySession extends Logging {
       localCollect, allLiterals, queryHints, executionTime, executionId)
 
     // if this has in-memory caching then don't cache since plan can change
-    // dynamically after caching due to unpersist etc
-    if (executedPlan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
-      throw new EntryExistsException("uncached plan", cdf)
-    }
-
-    // Try plan caching for only snappy tables
+    // dynamically after caching due to unpersist etc. Also do not cache
+    // if snappy tables are no there
     if (executedPlan.find(t => t match {
+      case _ : InMemoryTableScanExec => true
       case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
       case _ => false
     }).isDefined) {
