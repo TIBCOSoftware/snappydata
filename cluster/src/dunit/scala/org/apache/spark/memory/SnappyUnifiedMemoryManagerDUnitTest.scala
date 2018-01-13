@@ -18,8 +18,7 @@ package org.apache.spark.memory
 
 
 import java.util.Properties
-
-import scala.collection.JavaConverters._
+import java.util.function.ObjLongConsumer
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -144,7 +143,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', REDUNDANCY '2')"
+    val options = "OPTIONS (BUCKETS '64', PARTITION_BY 'Col1', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
@@ -162,7 +161,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', REDUNDANCY '2')"
+    val options = "OPTIONS (BUCKETS '64', PARTITION_BY 'Col1', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
     )
@@ -349,7 +348,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val rdd = snc.sparkContext.parallelize(data, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1'," +
+    val options = "OPTIONS (BUCKETS '4', PARTITION_BY 'Col1'," +
         " PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
@@ -404,7 +403,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1'," +
+    val options = "OPTIONS (BUCKETS '4', PARTITION_BY 'Col1'," +
         " PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
@@ -442,7 +441,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1'," +
+    val options = "OPTIONS (BUCKETS '4', PARTITION_BY 'Col1'," +
         " PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
@@ -497,14 +496,14 @@ object SnappyUnifiedMemoryManagerDUnitTest {
             .asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject
         SparkEnv.get.memoryManager
             .asInstanceOf[SnappyUnifiedMemoryManager].logStats()
-        val keys = mMap.keySet().iterator()
         var sum = 0L
-        while (keys.hasNext) {
-          val key = keys.next()
-          if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
-            sum = sum + mMap.getLong(key)
+        mMap.forEach(new ObjLongConsumer[(String, MemoryMode)] {
+          override def accept(key: (String, MemoryMode), value: Long): Unit = {
+            if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
+              sum += value
+            }
           }
-        }
+        })
         sum
       } else {
         -1L

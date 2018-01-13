@@ -28,9 +28,9 @@ import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
-import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SparkConnectorRDDHelper
@@ -541,8 +541,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int,
       conn: Option[Connection] = None): Unit = {
     // split the batch and put into row buffer if it is small
-    if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
-      GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
+    if (maxDeltaRows > 0 && batch.numRows < math.min(maxDeltaRows,
+      math.max(maxDeltaRows >>> 1, SystemProperties.SNAPPY_MIN_COLUMN_DELTA_ROWS))) {
       // noinspection RedundantDefaultArgument
       tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
         onExecutor = true)(doRowBufferPut(batch, partitionId))(conn)
@@ -687,13 +687,13 @@ final class ColumnarStorePartitionedRDD(
         } else {
           val pr = region.asInstanceOf[PartitionedRegion]
           val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
-          val prefNodes = distMembers.collect {
-            case m if SnappyContext.containsBlockId(m.toString) =>
-              Utils.getHostExecutorId(SnappyContext.getBlockId(
-                m.toString).get.blockId)
-          }
+          val prefNodes = new ArrayBuffer[String](2)
+          distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
+            case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+            case _ =>
+          })
           Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
-            pr.getTotalNumberOfBuckets, prefNodes.toSeq))
+            pr.getTotalNumberOfBuckets, prefNodes))
         }
     }
   }

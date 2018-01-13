@@ -76,7 +76,6 @@ final class SparkConnectorRDDHelper {
 
   def executeQuery(conn: Connection, tableName: String,
       split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
-    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val partition = split.asInstanceOf[SmartExecutorBucketPartition]
     val statement = conn.createStatement()
     val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get() match {
@@ -145,6 +144,8 @@ final class SparkConnectorRDDHelper {
 
 object SparkConnectorRDDHelper {
 
+  DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
+
   var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
   var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
 
@@ -186,7 +187,7 @@ object SparkConnectorRDDHelper {
           val netUrls = new ArrayBuffer[(String, String)](1)
           netUrls += host -> netUrl
           allNetUrls(bid) = netUrls
-          if (!availableNetUrls.contains(host)) {
+          if (!availableNetUrls.containsKey(host)) {
             availableNetUrls.put(host, netUrl)
           }
         } else {

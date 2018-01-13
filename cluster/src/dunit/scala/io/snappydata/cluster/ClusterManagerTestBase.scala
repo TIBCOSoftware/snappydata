@@ -48,12 +48,13 @@ abstract class ClusterManagerTestBase(s: String)
   import ClusterManagerTestBase._
 
   val bootProps: Properties = new Properties()
+  val sysProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
   val logLevel: String = System.getProperty("logLevel", "config")
   bootProps.setProperty("log-level", logLevel)
   // set DistributionManager.VERBOSE for log-level fine or higher
   if (logLevel.startsWith("fine") || logLevel == "all") {
-    System.setProperty("DistributionManager.VERBOSE", "true")
+    sysProps.setProperty("DistributionManager.VERBOSE", "true")
   }
   bootProps.setProperty("security-log-level",
     System.getProperty("securityLogLevel", "config"))
@@ -67,6 +68,11 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("spark.memory.manager",
     "org.apache.spark.memory.SnappyUnifiedMemoryManager")
   bootProps.setProperty("critical-heap-percentage", "95")
+
+  // reduce startup time
+  sysProps.setProperty("p2p.discoveryTimeout", "1000")
+  sysProps.setProperty("p2p.joinTimeout", "2000")
+  sysProps.setProperty("p2p.minJoinTries", "1")
 
   var host: Host = _
   var vm0: VM = _
@@ -101,8 +107,10 @@ abstract class ClusterManagerTestBase(s: String)
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
     val locPort = ClusterManagerTestBase.locPort
+    val sysProps = this.sysProps
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
         val loc: Locator = ServiceManager.getLocatorInstance
 
         if (loc.status != FabricService.State.RUNNING) {
@@ -120,6 +128,7 @@ abstract class ClusterManagerTestBase(s: String)
     val nodeProps = bootProps
     val startNode = new SerializableRunnable() {
       override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
         val node = ServiceManager.currentFabricServiceInstance
         if (node == null || node.status != FabricService.State.RUNNING) {
           startSnappyServer(locPort, nodeProps)
@@ -132,8 +141,12 @@ abstract class ClusterManagerTestBase(s: String)
       }
     }
 
-    vm0.invoke(startNode)
-    Array(vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
+    Array(vm0, vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
+    vm3.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
+      }
+    })
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
@@ -156,6 +169,7 @@ abstract class ClusterManagerTestBase(s: String)
     TestUtil.currentTestClass = getTestClass
     TestUtil.skipDefaultPartitioned = true
     TestUtil.doCommonSetup(bootProps)
+    ClusterManagerTestBase.setSystemProperties(sysProps)
     GemFireXDUtils.IS_TEST_MODE = true
 
     getLogWriter.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
@@ -233,6 +247,14 @@ object ClusterManagerTestBase extends Logging {
   this can be used only by jobs running on Lead node */
   def sc: SparkContext = SnappyContext.globalSparkContext
 
+  def setSystemProperties(props: Properties): Unit = {
+    val sysPropNames = props.stringPropertyNames().iterator()
+    while (sysPropNames.hasNext) {
+      val propName = sysPropNames.next()
+      System.setProperty(propName, props.getProperty(propName))
+    }
+  }
+
   /**
    * Start a snappy lead. This code starts a Spark server and at the same time
    * also starts a SparkContext and hence it kind of becomes lead. We will use
@@ -270,6 +292,7 @@ object ClusterManagerTestBase extends Logging {
 
   def cleanupTestData(testClass: String, testName: String): Unit = {
     // cleanup metastore
+    if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
       TestUtils.dropAllTables(snc)

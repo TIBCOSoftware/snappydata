@@ -162,11 +162,10 @@ object ClusterMgrDUnitTest {
     try {
       new SparkContext(conf)
       assert(assertion = false,
-        "Expected SparkContext creation to fail due to existing lead")
+        "Expected SparkContext creation to fail without launcher")
     } catch {
       case e: org.apache.spark.SparkException =>
-        if (!e.getMessage.startsWith("Primary Lead node (Spark Driver) is " +
-            "already running in the system")) {
+        if (!e.getMessage.contains("only supported from ServiceManager")) {
           throw e
         } // else ok
     }

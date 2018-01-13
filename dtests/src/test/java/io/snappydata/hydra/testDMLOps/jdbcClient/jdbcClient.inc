@@ -1,3 +1,5 @@
+INCLUDE $JTESTS/io/snappydata/hydra/connectionPool/connPool.inc;
+
 //task for running select queries at the end of test
 CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
   threadGroups = snappyThreads;

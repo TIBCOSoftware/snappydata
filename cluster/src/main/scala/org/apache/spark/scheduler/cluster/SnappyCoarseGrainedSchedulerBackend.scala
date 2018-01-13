@@ -16,11 +16,7 @@
  */
 package org.apache.spark.scheduler.cluster
 
-import com.gemstone.gemfire.cache.CacheClosedException
-import com.gemstone.gemfire.distributed.internal.MembershipListener
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
@@ -32,20 +28,6 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
     extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
 
   private val snappyAppId = "snappy-app-" + System.currentTimeMillis
-
-  val membershipListener = new MembershipListener {
-    override def quorumLost(failures: java.util.Set[InternalDistributedMember],
-        remaining: java.util.List[InternalDistributedMember]): Unit = {}
-
-    override def memberJoined(id: InternalDistributedMember): Unit = {}
-
-    override def memberSuspect(id: InternalDistributedMember,
-        whoSuspected: InternalDistributedMember): Unit = {}
-
-    override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
-      SnappyContext.removeBlockId(id.toString)
-    }
-  }
 
   /**
    * Overriding the spark app id function to provide a snappy specific app id.
@@ -65,22 +47,14 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
       scheduler.sc.conf.get("spark.driver.host"),
       scheduler.sc.conf.get("spark.driver.port").toInt,
       CoarseGrainedSchedulerBackend.ENDPOINT_NAME).toString
-    GemFireXDUtils.getGfxdAdvisor.getDistributionManager
-        .addMembershipListener(membershipListener)
-    logInfo(s"started with driverUrl $driverUrl")
+    logInfo(s"SchedulerBackend started with driverUrl $driverUrl")
   }
 
   override def stop() {
     super.stop()
     _driverUrl = ""
     SnappyClusterManager.cm.foreach(_.stopLead())
-    try {
-      GemFireXDUtils.getGfxdAdvisor.getDistributionManager
-          .removeMembershipListener(membershipListener)
-    } catch {
-      case cce: CacheClosedException =>
-    }
-    logInfo(s"stopped successfully")
+    logInfo(s"SchedulerBackend stopped successfully")
   }
 
   override protected def createDriverEndpoint(properties: Seq[(String, String)]): DriverEndpoint = {

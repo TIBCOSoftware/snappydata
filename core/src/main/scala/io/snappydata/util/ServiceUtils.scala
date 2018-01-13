@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 
 import _root_.com.gemstone.gemfire.distributed.DistributedMember
 import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig
+import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig.ENABLE_NETWORK_PARTITION_DETECTION_NAME
 import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -58,23 +59,29 @@ object ServiceUtils {
           k.startsWith(Constant.PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
-    setCommonBootDefaults(storeProps)
+    setCommonBootDefaults(storeProps, forLocator = false)
   }
 
-  private[snappydata] def setCommonBootDefaults(props: Properties): Properties = {
+  private[snappydata] def setCommonBootDefaults(props: Properties,
+      forLocator: Boolean): Properties = {
     val storeProps = if (props ne null) props else new Properties()
-    val storePropNames = storeProps.stringPropertyNames()
-    // set default recovery delay to 2 minutes (SNAP-1541)
-    if (!storePropNames.contains(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP)) {
-      storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+    if (!forLocator) {
+      // set default recovery delay to 2 minutes (SNAP-1541)
+      if (storeProps.getProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP) == null) {
+        storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+      }
+      // try hard to maintain executor locality
+      if (storeProps.getProperty("spark.locality.wait.process") == null) {
+        storeProps.setProperty("spark.locality.wait.process", "20s")
+      }
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
-    if (!storePropNames.contains(DistributionConfig.MEMBER_TIMEOUT_NAME)) {
+    if (storeProps.getProperty(DistributionConfig.MEMBER_TIMEOUT_NAME) == null) {
       storeProps.setProperty(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
     }
-    // try hard to maintain executor_ locality
-    if (!storePropNames.contains("spark.locality.wait.process")) {
-      storeProps.setProperty("spark.locality.wait.process", "20s")
+    // set network partition detection by default
+    if (storeProps.getProperty(ENABLE_NETWORK_PARTITION_DETECTION_NAME) == null) {
+      storeProps.setProperty(ENABLE_NETWORK_PARTITION_DETECTION_NAME, "true")
     }
     storeProps
   }
