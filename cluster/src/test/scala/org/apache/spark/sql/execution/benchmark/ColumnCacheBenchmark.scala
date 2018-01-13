@@ -87,6 +87,10 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
   }
 
+  ignore("PutInto Vs Insert") {
+    benchMarkForPutIntoColumnTable(size = 50000000)
+  }
+
   test("Performance and validity check for SNAP-2118") {
     val snappy = this.snappySession
     snappy.sql("DROP TABLE IF EXISTS TABLE1")
@@ -189,11 +193,55 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     benchmarkRandomizedKeys(size = 50000000, queryPath = true)
   }
 
+  test("PutInto wide column table") {
+    snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+    createAndTestPutIntoInBigTable()
+  }
+
   private def doGC(): Unit = {
     System.gc()
     System.runFinalization()
     System.gc()
     System.runFinalization()
+  }
+
+  private def benchMarkForPutIntoColumnTable(size: Int, numIters: Int = 10): Unit = {
+    val benchmark = new Benchmark("PutInto Vs Insert", size)
+    val sparkSession = this.sparkSession
+    val snappySession = this.snappySession
+    import org.apache.spark.sql.snappy._
+    if (GemFireCacheImpl.getCurrentBufferAllocator.isDirect) {
+      logInfo("ColumnCacheBenchmark: using off-heap for performance comparison")
+    } else {
+      logInfo("ColumnCacheBenchmark: using heap for performance comparison")
+    }
+
+    val testDF2 = snappySession.range(size)
+        .selectExpr("id", "(rand() * 1000.0) as k")
+
+    def prepare(): Unit = {
+      doGC()
+      sparkSession.sql("drop table if exists test")
+      snappySession.sql("create table test (id bigint not null, k double not null) " +
+          s"using column options(partition_by 'id', buckets '$cores', key_columns 'id')")
+    }
+
+    def cleanup(): Unit = {
+      snappySession.sql("drop table if exists test")
+      doGC()
+    }
+
+    def testCleanup(): Unit = {
+      snappySession.sql("truncate table if exists test")
+    }
+    // As expected putInto is two times slower than a simple insert
+    addCaseWithCleanup(benchmark, "Insert", numIters, prepare, cleanup, testCleanup) { i =>
+      testDF2.write.insertInto("test")
+    }
+    addCaseWithCleanup(benchmark, "PutInto", numIters, prepare, cleanup, testCleanup) { i =>
+        testDF2.write.putInto("test")
+    }
+    benchmark.run()
   }
 
   /**
@@ -313,6 +361,30 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     benchmark.run()
   }
 
+  private def createAndTestPutIntoInBigTable(): Unit = {
+    snappySession.sql("drop table if exists wide_table")
+    snappySession.sql("drop table if exists wide_table1")
+    import org.apache.spark.sql.snappy._
+    val size = 100
+    val num_col = 300
+    val str = (1 to num_col).map(i => s" '$i' as C$i")
+    val testDF = snappySession.range(size).select(str.map { expr =>
+      Column(snappySession.sessionState.sqlParser.parseExpression(expr))
+    }: _*)
+
+
+    testDF.collect()
+    val sql = (1 to num_col).map(i => s"C$i STRING").mkString(",")
+    snappySession.sql(s"create table wide_table($sql) " +
+        s" using column options(key_columns 'C2,C3')")
+    snappySession.sql(s"create table wide_table1($sql) " +
+        s" using column options()")
+    // Creating another table for Range related issue SNAP-2142
+    testDF.write.insertInto("wide_table")
+    testDF.write.insertInto("wide_table1")
+    val tableDF = snappySession.table("wide_table1")
+    tableDF.write.putInto("wide_table")
+  }
 
   private def createAndTestBigTable(): Unit = {
     snappySession.sql("drop table if exists wide_table")
