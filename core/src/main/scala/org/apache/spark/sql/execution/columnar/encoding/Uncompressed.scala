@@ -99,7 +99,7 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
 
   private def setCursorAtPosition(columnBytes: AnyRef, nonNullPosition: Int,
       sizeWidth: Int, expectedPosition: Int): Unit = {
-    if (nonNullPosition < expectedPosition) {
+    if (nonNullPosition <= expectedPosition) {
       throw new IllegalStateException(s"Decoder map cursor cannot move back: " +
           s"lastPosition=${expectedPosition - 1} newPosition=$nonNullPosition")
     }

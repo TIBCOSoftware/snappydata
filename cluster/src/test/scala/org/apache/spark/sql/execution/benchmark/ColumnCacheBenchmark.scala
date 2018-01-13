@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -161,7 +161,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         "sum(a.val1*c.factor) " +
         "from TABLE1 a, TABLE2 b, TABLE3 c " +
         "where a.id = b.id and a.year = 2015 and " +
-        "a.val_name = 'val_4' and b.role_id = 99 and c.type_id = a.type_id and " +
+        "a.val_name like 'val\\_42%' and b.role_id = 99 and c.type_id = a.type_id and " +
         "c.target_name = 'type_36' group by b.group_name, a.name"
 
     val benchmark = new Benchmark("SNAP-2118 with random data", numElems1)
@@ -234,12 +234,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     def testCleanup(): Unit = {
       snappySession.sql("truncate table if exists test")
     }
+
     // As expected putInto is two times slower than a simple insert
-    addCaseWithCleanup(benchmark, "Insert", numIters, prepare, cleanup, testCleanup) { i =>
+    addCaseWithCleanup(benchmark, "Insert", numIters, prepare, cleanup, testCleanup) { _ =>
       testDF2.write.insertInto("test")
     }
-    addCaseWithCleanup(benchmark, "PutInto", numIters, prepare, cleanup, testCleanup) { i =>
-        testDF2.write.putInto("test")
+    addCaseWithCleanup(benchmark, "PutInto", numIters, prepare, cleanup, testCleanup) { _ =>
+      testDF2.write.putInto("test")
     }
     benchmark.run()
   }
@@ -413,7 +414,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     snappySession.sql(s"select C1, $s from wide_table group by C1").show()
 
     val df = snappySession.sql("select *" +
-      " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
+        " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
     df.collect()
 
     val df0 = snappySession.sql(s"select * from wide_table")
