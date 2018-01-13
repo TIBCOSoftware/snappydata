@@ -193,7 +193,7 @@ class StringAsVarcharDUnitTest(val s: String)
 
     snc.sql(s"create table $colTab1 (col_int int, col_string string, " +
         s"col_varchar varchar($varcharSize), col_clob clob, col_char char($charSize)) " +
-        "using column options(buckets '7')")
+        "using column options(buckets '8')")
 
     snc.sql(s"create external table $extTab1 (col_int int, col_string string, " +
         s"col_varchar varchar($varcharSize), col_clob clob, col_char char($charSize)) " +
@@ -225,7 +225,7 @@ class StringAsVarcharDUnitTest(val s: String)
         s"($varcharSize), col_clob clob, col_char char($charSize))",
       Map.empty[String, String], false)
 
-    snc.createTable(colTab1, "column", schema, Map("buckets" -> "7"))
+    snc.createTable(colTab1, "column", schema, Map("buckets" -> "8"))
 
     snc.createExternalTable(extTab1, "com.databricks.spark.csv", schema, Map.empty[String,
         String])
