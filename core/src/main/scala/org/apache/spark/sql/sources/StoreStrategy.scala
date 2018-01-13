@@ -89,8 +89,6 @@ object StoreStrategy extends Strategy {
 
     case SetSchema(schemaName) => ExecutedCommandExec(SetSchemaCommand(schemaName)) :: Nil
 
-    case SetDisablePlanCaching(all) => ExecutedCommandExec(SetDisablePlanCachingCommand(all)) :: Nil
-
     case SnappyStreamingActions(action, batchInterval) =>
       ExecutedCommandExec(SnappyStreamingActionsCommand(action, batchInterval)) :: Nil
 

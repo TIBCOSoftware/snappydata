@@ -492,6 +492,10 @@ class SnappyConf(@transient val session: SnappySession)
           pool.toString
         case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
+
+    case Property.PlanCaching.name =>
+      session.clearPlanCache()
+      
     case _ => // ignore others
   }
 

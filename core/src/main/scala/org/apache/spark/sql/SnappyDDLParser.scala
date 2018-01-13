@@ -51,7 +51,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def ASC: Rule0 = rule { keyword(Consts.ASC) }
   final def BETWEEN: Rule0 = rule { keyword(Consts.BETWEEN) }
   final def BY: Rule0 = rule { keyword(Consts.BY) }
-  final def CACHING: Rule0 = rule { keyword(Consts.CACHING) }
   final def CASE: Rule0 = rule { keyword(Consts.CASE) }
   final def CAST: Rule0 = rule { keyword(Consts.CAST) }
   final def CREATE: Rule0 = rule { keyword(Consts.CREATE) }
@@ -60,7 +59,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
   final def DELETE: Rule0 = rule { keyword(Consts.DELETE) }
   final def DESC: Rule0 = rule { keyword(Consts.DESC) }
-  final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def DISTINCT: Rule0 = rule { keyword(Consts.DISTINCT) }
   final def DROP: Rule0 = rule { keyword(Consts.DROP) }
   final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
@@ -85,7 +83,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def OR: Rule0 = rule { keyword(Consts.OR) }
   final def ORDER: Rule0 = rule { keyword(Consts.ORDER) }
   final def OUTER: Rule0 = rule { keyword(Consts.OUTER) }
-  final def PLAN: Rule0 = rule { keyword(Consts.PLAN) }
   final def RIGHT: Rule0 = rule { keyword(Consts.RIGHT) }
   final def SCHEMA: Rule0 = rule { keyword(Consts.SCHEMA) }
   final def SELECT: Rule0 = rule { keyword(Consts.SELECT) }
@@ -511,14 +508,6 @@ abstract class SnappyDDLParser(session: SparkSession)
     SET ~ (
         CURRENT.? ~ SCHEMA ~ '='.? ~ ws ~ identifier ~>
             ((schemaName: String) => SetSchema(schemaName)) |
-        DISABLE ~ PLAN ~ CACHING ~ (ALL ~ push(true)).? ~>
-            ((all: Any) => {
-              val allSessions = all match {
-                case None => false
-                case Some(_) => true
-              }
-              SetDisablePlanCaching(allSessions)
-            }) |
         capture(ANY.*) ~> { (rest: String) =>
           val separatorIndex = rest.indexOf('=')
           if (separatorIndex >= 0) {
@@ -711,7 +700,5 @@ case class DMLExternalTable(
 }
 
 case class SetSchema(schemaName: String) extends Command
-
-case class SetDisablePlanCaching(allSessions: Boolean) extends Command
 
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command

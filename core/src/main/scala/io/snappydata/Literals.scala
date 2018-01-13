@@ -273,6 +273,10 @@ object Property extends Enumeration {
         "scalability of queries in the interest of reduced memory usage for " +
         "secondary buckets. Default is false.", Some(false), Constant.SPARK_PREFIX)
 
+  val PlanCaching: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}planCaching",
+    "Property to set/unset plan caching", Some(true))
+
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +

@@ -174,14 +174,6 @@ private[sql] case class SetSchemaCommand(schemaName: String) extends RunnableCom
   }
 }
 
-private[sql] case class SetDisablePlanCachingCommand(all: Boolean) extends RunnableCommand {
-
-  override def run(sparkSession: SparkSession): Seq[Row] = {
-    sparkSession.asInstanceOf[SnappySession].disablePlanCaching = true
-    Seq.empty[Row]
-  }
-}
-
 private[sql] case class SnappyStreamingActionsCommand(action: Int,
     batchInterval: Option[Duration]) extends RunnableCommand {
 

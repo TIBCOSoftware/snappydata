@@ -289,7 +289,7 @@ class TokenizationTest
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 1)
 
-      newSession.sql(s"set disable plan caching").collect()
+      newSession.sql(s"set snappydata.planCaching=false").collect()
       assert(cacheMap.size() == 1)
 
       var query = s"select * from $table where a = 0"
