@@ -222,8 +222,14 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
           CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key)))
     }
-    CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
-      queryString, child.treeString(verbose = true), planInfo) {
+    val sc = session.sparkContext
+    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+    if (oldExecutionId eq null) {
+      CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+        queryString, child.treeString(verbose = true), planInfo) {
+        child.executeCollect()
+      }
+    } else {
       child.executeCollect()
     }
   }

@@ -70,6 +70,18 @@ trait RowPutRelation extends DestroyRelation {
   def getPutPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
+trait BulkPutRelation extends DestroyRelation {
+
+
+  def getPutKeys() : Option[Seq[String]]
+  /**
+    * Get a spark plan for puts. If the row is already present, it gets updated
+    * otherwise it gets inserted into the table represented by this relation.
+    * The result of SparkPlan execution should be a count of number of rows put.
+    */
+  def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan
+}
+
 @DeveloperApi
 trait SingleRowInsertableRelation {
   /**
