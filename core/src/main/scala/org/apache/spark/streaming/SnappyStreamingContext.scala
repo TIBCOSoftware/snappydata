@@ -18,15 +18,17 @@ package org.apache.spark.streaming
 
 import java.util.concurrent.atomic.AtomicReference
 
+import com.pivotal.gemfirexd.Attribute
+import io.snappydata.Constant
+
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
-
 import org.apache.hadoop.conf.Configuration
-
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
 import org.apache.spark.sql.hive.ExternalTableType
+import org.apache.spark.sql.internal.{SQLConf, SnappyConf}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SnappySession}
@@ -45,7 +47,8 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 class SnappyStreamingContext protected[spark](
     sc_ : SparkContext,
     cp_ : Checkpoint,
-    batchDur_ : Duration, val reuseSnappySession: Option[SnappySession] = None )
+    batchDur_ : Duration, private val reuseSnappySession: Option[SnappySession] = None,
+    private val currentSnappySession: Option[SnappySession] = None)
     extends StreamingContext(sc_, cp_, batchDur_) with Serializable {
 
   self =>
@@ -57,6 +60,27 @@ class SnappyStreamingContext protected[spark](
   }
 
   val snappySession = reuseSnappySession.getOrElse(new SnappySession(sc))
+  currentSnappySession.foreach(csn => {
+    var user = csn.conf.get(Attribute.USERNAME_ATTR, "")
+
+    val isSmartConnProp = if (user.isEmpty) {
+      // In smart connector, property name is different.
+      user = csn.conf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
+      true
+    } else {
+      false
+    }
+    if (!user.isEmpty) {
+      val password = csn.conf.get(Attribute.PASSWORD_ATTR, "")
+
+      snappySession.sessionState.conf.setConfString(
+        if (isSmartConnProp) {
+          Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR
+        }
+      else Attribute.USERNAME_ATTR, user)
+      snappySession.sessionState.conf.setConfString(Attribute.PASSWORD_ATTR, password)
+    }
+  })
 
   val snappyContext = snappySession.snappyContext
 
@@ -126,8 +150,8 @@ class SnappyStreamingContext protected[spark](
       // register population of AQP tables from stream tables
       snappySession.snappyContextFunctions.aqpTablePopulator(snappySession)
     }
-    super.start()
     SnappyStreamingContext.setActiveContext(self)
+    super.start()
   }
 
   def registerStreamTables: Unit = {
@@ -259,6 +283,7 @@ object SnappyStreamingContext extends Logging {
   def getActiveOrCreate(creatingFunc: () => SnappyStreamingContext): SnappyStreamingContext = {
     ACTIVATION_LOCK.synchronized {
       getActive.getOrElse { creatingFunc() }
+
     }
   }
 
@@ -286,7 +311,9 @@ object SnappyStreamingContext extends Logging {
       createOnError: Boolean = false
       ): SnappyStreamingContext = {
     ACTIVATION_LOCK.synchronized {
-      getActive.getOrElse { getOrCreate(checkpointPath, creatingFunc, hadoopConf, createOnError) }
+     getActive.getOrElse { getOrCreate(checkpointPath, creatingFunc,
+        hadoopConf, createOnError) }
+
     }
   }
 
@@ -314,7 +341,23 @@ object SnappyStreamingContext extends Logging {
       ): SnappyStreamingContext = {
     val checkpointOption = CheckpointReader.read(
       checkpointPath, new SparkConf(), hadoopConf, createOnError)
-    checkpointOption.map(new SnappyStreamingContext(null, _, null)).getOrElse(creatingFunc())
+    checkpointOption.map(new SnappyStreamingContext(null, _, null)).
+      getOrElse(creatingFunc())
+
+  }
+
+  def getOrCreateWithUseCredential(
+                   checkpointPath: String,
+                   creatingFunc: () => SnappyStreamingContext,
+                   currentSession: SnappySession,
+                   hadoopConf: Configuration = SparkHadoopUtil.get.conf,
+                   createOnError: Boolean = false
+                 ): SnappyStreamingContext = {
+    val checkpointOption = CheckpointReader.read(
+      checkpointPath, new SparkConf(), hadoopConf, createOnError)
+    checkpointOption.map(new SnappyStreamingContext(null, _, null, None, Option(currentSession))).
+      getOrElse(creatingFunc())
+
   }
 
 }
