@@ -261,6 +261,82 @@ class TokenizationTest
     assert(cacheMap.size() == 0) // no caching since JsonTuple is not code-generated
   }
 
+  test("Test no tokenize if plan caching disabled in session") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    try {
+      val q = (0 until numRows) map { x =>
+        s"select * from $table where a = $x"
+      }
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = snc.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      val newSession = new SnappySession(snc.sparkSession.sparkContext)
+
+      val cacheMap = SnappySession.getPlanCache.asMap()
+      assert(cacheMap.size() == 1)
+
+      newSession.sql(s"set snappydata.planCaching=false").collect()
+      assert(cacheMap.size() == 1)
+
+      var query = s"select * from $table where a = 0"
+      newSession.sql(query).collect()
+      assert(cacheMap.size() == 2)
+
+      query = s"select * from $table where a = 1"
+      newSession.sql(query).collect()
+      assert(cacheMap.size() == 3)
+
+      query = s"select * from $table where b = 1"
+      var res2 = newSession.sql(query).collect()
+      assert(cacheMap.size() == 4)
+
+      newSession.sql(s"set snappydata.planCachingAll=false").collect()
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+      assert(cacheMap.size() == 10)
+
+      cacheMap.clear()
+
+      val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
+      newSession2.sql(s"set snappydata.planCachingAll=true").collect()
+
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession2.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      assert(cacheMap.size() == 1)
+      newSession.clear()
+      newSession2.clear()
+      cacheMap.clear()
+
+    } finally {
+      snc.sql("set spark.sql.caseSensitive = false")
+      snc.sql("set schema = APP")
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
