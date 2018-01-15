@@ -637,7 +637,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "NASDelay INT," +
         "SecurityDelay INT," +
         "LateAircraftDelay INT," +
-        "ArrDelaySlot INT) using column options (partition_by 'DayOfMonth', Buckets '7', " +
+        "ArrDelaySlot INT) using column options (partition_by 'DayOfMonth', Buckets '8', " +
         "Redundancy '2')")
 
     val hfile: String = getClass.getResource("/2015.parquet").getPath

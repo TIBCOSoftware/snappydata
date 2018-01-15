@@ -20,7 +20,7 @@ import java.util.Properties
 import java.util.function.ObjLongConsumer
 
 import io.snappydata.cluster.{ClusterManagerTestBase, ExecutorInitiator}
-import io.snappydata.test.dunit.SerializableRunnable
+import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.SnappyContext
@@ -28,6 +28,8 @@ import org.apache.spark.sql.collection.Utils
 
 
 class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+
+  self =>
 
   import MemoryManagerRestartDUnitTest._
 
@@ -47,11 +49,21 @@ class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s)
       }
     })
     t1.start()
-    vm1.invoke(getClass, "waitForExecutor")
     t1.join()
 
-    val newID = vm1.invoke(getClass, "getMemoryManagerIdentity").asInstanceOf[Int]
-    assert(newID != oldID, "The MemoryManager instance has not changed as expected")
+    DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+      override def done(): Boolean = {
+        vm1.invoke(self.getClass, "waitForExecutor")
+        try {
+          vm1.invoke(self.getClass, "getMemoryManagerIdentity").asInstanceOf[Int] != oldID
+        } catch {
+          case _: AssertionError => false // ignore and retry till timeout
+        }
+      }
+
+      override def description(): String =
+        "waiting for executor to restart with changed memory manager"
+    }, 30000, 500, true)
 
     val value1 = vm1.invoke(getClass, "getMemoryForTable", "testExecutorRestart").asInstanceOf[Long]
     assert(value1 == 1000L, s"The storage for object should be 1000 rather than $value1")

@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
+import org.apache.spark.sql.internal.PutIntoColumnTable
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
 
 /**
@@ -107,6 +108,9 @@ object StoreStrategy extends Strategy {
 
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
+
+    case PutIntoColumnTable(l@LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
+      ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
 
     case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
     keyColumns, updateColumns, updateExpressions) =>
