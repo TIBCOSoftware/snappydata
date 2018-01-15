@@ -38,12 +38,11 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
 
   val options = Map("PARTITION_BY" -> "col1",
     "EVICTION_BY" -> "LRUHEAPPERCENT",
-    "OVERFLOW" -> "true", "PERSISTENCE" -> "none")
+    "PERSISTENCE" -> "none")
   val coptions = Map("PARTITION_BY" -> "col1",
-    "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT",
-    "OVERFLOW" -> "true")
-  val cwoptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-  val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
+    "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT")
+  val cwoptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT")
+  val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT")
 
   val memoryMode = MemoryMode.ON_HEAP
 

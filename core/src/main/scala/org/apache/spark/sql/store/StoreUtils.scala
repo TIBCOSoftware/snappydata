@@ -53,7 +53,6 @@ object StoreUtils {
   val DISKSTORE = "DISKSTORE"
   val SERVER_GROUPS = "SERVER_GROUPS"
   val EXPIRE = "EXPIRE"
-  val OVERFLOW = "OVERFLOW"
   val COMPRESSION_CODEC_DEPRECATED = "COMPRESSION_CODEC"
 
   val GEM_PARTITION_BY = "PARTITION BY"
@@ -68,7 +67,7 @@ object StoreUtils {
   val GEM_PERSISTENT = "PERSISTENT"
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_EXPIRE = "EXPIRE"
-  val GEM_OVERFLOW = "EVICTACTION OVERFLOW"
+  val GEM_OVERFLOW = "EVICTACTION OVERFLOW "
   val GEM_HEAPPERCENT = "EVICTION BY LRUHEAPPERCENT "
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
@@ -94,7 +93,7 @@ object StoreUtils {
 
   val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, PARTITIONER,
     COLOCATE_WITH, REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW, COMPRESSION_CODEC_DEPRECATED,
+    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, COMPRESSION_CODEC_DEPRECATED,
     GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
@@ -414,53 +413,17 @@ object StoreUtils {
     parameters.remove(PARTITIONER).foreach(v =>
       sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
 
-    // if OVERFLOW has been provided, then use HEAPPERCENT as the default
-    // eviction policy (unless overridden explicitly)
-    val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
-        .getOrElse(!parameters.contains(EVICTION_BY))
-    val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
-    var overflowAdded = false
-    if (!isShadowTable) {
-      sb.append(parameters.remove(EVICTION_BY).map(v =>
-        if (v == NONE) {
-          EMPTY_STRING
-        } else {
-          if (hasOverflow) {
-            overflowAdded = true
-            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
-          } else if (!parameters.contains(OVERFLOW)) {
-            // SNAP-1501 Set overflow as default evict-action unless specified otherwise.
-            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
-          } else {
-            s"$GEM_EVICTION_BY $v "
-          }
-        })
-        .getOrElse(defaultEviction))
-    } else {
-      sb.append(parameters.remove(EVICTION_BY).map(v => {
-        if (v.contains(LRUCOUNT)) {
-          throw Utils.analysisException(
-            "Column table cannot take LRUCOUNT as eviction policy")
-        } else if (v == NONE) {
-          EMPTY_STRING
-        } else {
-          if (hasOverflow) {
-            overflowAdded = true
-            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
-          } else if (!parameters.contains(OVERFLOW)) {
-            // SNAP-1501 Set overflow as default evict-action unless specified otherwise.
-            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
-          } else {
-            s"$GEM_EVICTION_BY $v "
-          }
-        }
-      }).getOrElse(defaultEviction))
-    }
-
-    if (hasOverflow && !overflowAdded) {
-      parameters.remove(OVERFLOW)
-      sb.append(s"$GEM_OVERFLOW ")
-    }
+    val defaultEviction = s"$GEM_HEAPPERCENT $GEM_OVERFLOW"
+    sb.append(parameters.remove(EVICTION_BY).map(v => {
+      if (v.contains(LRUCOUNT) && isShadowTable) {
+        throw Utils.analysisException(
+          "Column table cannot take LRUCOUNT as eviction policy.")
+      } else if (v.equalsIgnoreCase("NONE")) {
+        EMPTY_STRING
+      } else {
+        s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+      }
+    }).getOrElse(defaultEviction))
 
     // default is sync persistence for all snappydata tables
     var isPersistent = true
