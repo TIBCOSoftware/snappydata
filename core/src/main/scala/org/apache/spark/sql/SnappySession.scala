@@ -2073,9 +2073,8 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): CachedDataFrame = {
         val session = key.session
         session.currentKey = key
-        var df: DataFrame = null
         try {
-          df = session.executeSQL(key.sqlText)
+          val df = session.executeSQL(key.sqlText)
           evaluatePlan(df, session, key.sqlText, key)
         } finally {
           session.currentKey = null

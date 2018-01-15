@@ -141,8 +141,7 @@ abstract class ClusterManagerTestBase(s: String)
       }
     }
 
-    vm0.invoke(startNode)
-    Array(vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
+    Array(vm0, vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
     vm3.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         ClusterManagerTestBase.setSystemProperties(sysProps)

@@ -310,6 +310,27 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     MemoryManagerCallback.memoryManager.
       dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
 
+  override def waitForRuntimeManager(maxWaitMillis: Long): Unit = {
+    val memoryManager = MemoryManagerCallback.memoryManager
+    if (memoryManager.bootManager) {
+      val endWait = System.currentTimeMillis() + math.max(10, maxWaitMillis)
+      do {
+        var interrupt: InterruptedException = null
+        try {
+          Thread.sleep(10)
+        } catch {
+          case ie: InterruptedException => interrupt = ie
+        }
+        val cache = Misc.getGemFireCacheNoThrow
+        if (cache ne null) {
+          cache.getCancelCriterion.checkCancelInProgress(interrupt)
+          if (interrupt ne null) Thread.currentThread().interrupt()
+        }
+      } while (MemoryManagerCallback.memoryManager.bootManager &&
+          System.currentTimeMillis() < endWait)
+    }
+  }
+
   override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
 
   override def isSnappyStore: Boolean = true

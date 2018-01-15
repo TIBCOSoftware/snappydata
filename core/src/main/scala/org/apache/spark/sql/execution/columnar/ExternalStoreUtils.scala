@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
@@ -28,7 +28,7 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
-import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
+import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
@@ -90,10 +90,18 @@ object ExternalStoreUtils {
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
+  final val KEY_COLUMNS = "KEY_COLUMNS"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
-    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
+    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE, KEY_COLUMNS)
+
+  registerBuiltinDrivers()
+
+  def registerBuiltinDrivers(): Unit = {
+    DriverRegistry.register(Constant.JDBC_EMBEDDED_DRIVER)
+    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
+  }
 
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
@@ -139,8 +147,8 @@ object ExternalStoreUtils {
 
   def getDriver(url: String, dialect: JdbcDialect): String = {
     dialect match {
-      case GemFireXDDialect => "io.snappydata.jdbc.EmbeddedDriver"
-      case GemFireXDClientDialect => "io.snappydata.jdbc.ClientDriver"
+      case GemFireXDDialect => Constant.JDBC_EMBEDDED_DRIVER
+      case GemFireXDClientDialect => Constant.JDBC_CLIENT_DRIVER
       case _ => Utils.getDriverClassName(url)
     }
   }
@@ -233,9 +241,10 @@ object ExternalStoreUtils {
       session.map(_.sparkContext)))
 
     val dialect = JdbcDialects.get(url)
-    val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
-
-    DriverRegistry.register(driver)
+    val driver = parameters.remove("driver") match {
+      case Some(d) => DriverRegistry.register(d); d
+      case None => getDriver(url, dialect)
+    }
 
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
@@ -287,12 +296,12 @@ object ExternalStoreUtils {
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
         val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
-          case Some(s) => Integer.parseInt(s)
+          case Some(s) => sizeAsBytes(s, COLUMN_BATCH_SIZE)
           case None => session.map(defaultColumnBatchSize).getOrElse(
             sizeAsBytes(Property.ColumnBatchSize.defaultValue.get, Property.ColumnBatchSize.name))
         }
-        val columnBatchSize = math.max((batchSize << 2) / 3,
-          snappydataConstants.DEFAULT_LOB_CHUNKSIZE)
+        val columnBatchSize = math.min(Int.MaxValue, math.max((batchSize << 2) / 3,
+          snappydataConstants.DEFAULT_LOB_CHUNKSIZE))
         executorConnProps.setProperty(ClientAttribute.THRIFT_LOB_CHUNK_SIZE,
           Integer.toString(columnBatchSize))
         false
@@ -355,7 +364,10 @@ object ExternalStoreUtils {
 
   def getConnection(id: String, connProperties: ConnectionProperties,
       forExecutor: Boolean): Connection = {
-    Utils.registerDriver(connProperties.driver)
+    connProperties.driver match {
+      case Constant.JDBC_EMBEDDED_DRIVER | Constant.JDBC_CLIENT_DRIVER => // ignore
+      case driver => Utils.registerDriver(driver)
+    }
     val connProps = if (forExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
@@ -373,20 +385,20 @@ object ExternalStoreUtils {
   def getJDBCType(dialect: JdbcDialect, dataType: DataType): Int = {
     dialect.getJDBCType(dataType).map(_.jdbcNullType).getOrElse(
       dataType match {
-        case IntegerType => java.sql.Types.INTEGER
-        case LongType => java.sql.Types.BIGINT
-        case DoubleType => java.sql.Types.DOUBLE
-        case FloatType => java.sql.Types.REAL
-        case ShortType => java.sql.Types.INTEGER
-        case ByteType => java.sql.Types.INTEGER
+        case IntegerType => Types.INTEGER
+        case LongType => Types.BIGINT
+        case DoubleType => Types.DOUBLE
+        case FloatType => Types.REAL
+        case ShortType => Types.INTEGER
+        case ByteType => Types.INTEGER
         // need to keep below mapping to BIT instead of BOOLEAN for MySQL
-        case BooleanType => java.sql.Types.BIT
-        case StringType => java.sql.Types.CLOB
-        case BinaryType => java.sql.Types.BLOB
-        case TimestampType => java.sql.Types.TIMESTAMP
-        case DateType => java.sql.Types.DATE
-        case _: DecimalType => java.sql.Types.DECIMAL
-        case NullType => java.sql.Types.NULL
+        case BooleanType => Types.BIT
+        case StringType => Types.CLOB
+        case BinaryType => Types.BLOB
+        case TimestampType => Types.TIMESTAMP
+        case DateType => Types.DATE
+        case _: DecimalType => Types.DECIMAL
+        case NullType => Types.NULL
         case _ => throw new IllegalArgumentException(
           s"Can't translate to JDBC value for type $dataType")
       })
@@ -497,7 +509,7 @@ object ExternalStoreUtils {
           case _ => stmt.setObject(col, colVal)
         }
       } else {
-        stmt.setNull(col, java.sql.Types.NULL)
+        stmt.setNull(col, Types.NULL)
       }
       col += 1
     }
@@ -636,46 +648,52 @@ object ExternalStoreUtils {
     JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
       tableProps).map(StructType.fromString)
 
+  private def getColumnMetadata(f: StructField, dt: DataType): (DataType, String, Int, Int, Int) = {
+    val (dataType, typeName) = dt match {
+      case u: UserDefinedType[_] =>
+        (Utils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
+      case t => (t, None)
+    }
+    dataType match {
+      case StringType =>
+        val name = typeName.getOrElse("VARCHAR")
+        val prec = if ((f ne null) && f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
+          math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP), Int.MaxValue).toInt
+        } else Limits.DB2_VARCHAR_MAXWIDTH
+        (dataType, name, Types.VARCHAR, prec, -1)
+      case d: DecimalType =>
+        (dataType, s"DECIMAL(${d.precision},${d.scale})", Types.DECIMAL, d.precision, d.scale)
+      case a: ArrayType =>
+        (a, s"ARRAY<${getColumnMetadata(null, a.elementType)._2}>", Types.ARRAY, -1, -1)
+      case m: MapType =>
+        val keyTypeName = getColumnMetadata(null, m.keyType)._2
+        val valueTypeName = getColumnMetadata(null, m.valueType)._2
+        (m, s"MAP<$keyTypeName, $valueTypeName>", JDBC40Translation.MAP, -1, -1)
+      case s: StructType =>
+        (s, s"STRUCT<${s.map(f => getColumnMetadata(f, f.dataType)._2).mkString(",")}>",
+            Types.STRUCT, -1, -1)
+      case d =>
+        val scale = if (d.isInstanceOf[NumericType]) 0 else -1
+        GemFireXDDialect.getJDBCType(d).orElse(JdbcUtils.getCommonJDBCType(d)) match {
+          case Some(t) =>
+            (d, typeName.getOrElse(t.databaseTypeDefinition), t.jdbcNullType, -1, scale)
+          case None =>
+            (d, typeName.getOrElse(d.simpleString), Types.OTHER, -1, scale)
+        }
+    }
+  }
+
   def getColumnMetadata(schema: StructType): java.util.List[ExternalTableMetaData.Column] = {
     schema.toList.map { f =>
-      val (dataType, typeName) = f.dataType match {
-        case u: UserDefinedType[_] =>
-          (Utils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
-        case t => (t, None)
-      }
-      val (prec, scale) = dataType match {
-        case d: DecimalType => (d.precision, d.scale)
-        case StringType => if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
-          val p = math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP),
-            Int.MaxValue).toInt
-          (p, -1)
-        } else (Limits.DB2_VARCHAR_MAXWIDTH, -1)
-        case _: NumericType => (-1, 0)
-        case _ => (-1, -1)
-      }
-      val jdbcTypeOpt = if (dataType eq StringType) {
-        Some(org.apache.spark.sql.jdbc.JdbcType("VARCHAR", java.sql.Types.VARCHAR))
-      } else { GemFireXDDialect.getJDBCType(dataType).orElse(
-        JdbcUtils.getCommonJDBCType(dataType))
-      }
-      jdbcTypeOpt match {
-        case Some(jdbcType) =>
-          val (precision, width) = if (prec == -1) {
-            val dtd = DataTypeDescriptor.getBuiltInDataTypeDescriptor(
-              jdbcType.jdbcNullType, f.nullable)
-            if (dtd ne null) {
-              (dtd.getPrecision, dtd.getMaximumWidth)
-            } else (dataType.defaultSize, dataType.defaultSize)
-          } else (prec, prec)
-          new ExternalTableMetaData.Column(f.name, jdbcType.jdbcNullType,
-            typeName.getOrElse(jdbcType.databaseTypeDefinition),
-            precision, scale, width, f.nullable)
-        case None =>
-          val precision = if (prec == -1) dataType.defaultSize else prec
-          new ExternalTableMetaData.Column(f.name, java.sql.Types.OTHER,
-            typeName.getOrElse(dataType.simpleString),
-            precision, scale, precision, f.nullable)
-      }
+      val (dataType, typeName, jdbcType, prec, scale) = getColumnMetadata(f, f.dataType)
+      val (precision, width) = if (prec == -1) {
+        val dtd = DataTypeDescriptor.getBuiltInDataTypeDescriptor(jdbcType, f.nullable)
+        if (dtd ne null) {
+          (dtd.getPrecision, dtd.getMaximumWidth)
+        } else (dataType.defaultSize, dataType.defaultSize)
+      } else (prec, prec)
+      new ExternalTableMetaData.Column(f.name, jdbcType, typeName,
+        precision, scale, width, f.nullable)
     }.asJava
   }
 
@@ -692,12 +710,19 @@ object ExternalStoreUtils {
     }
   }
 
-  def sizeAsBytes(str: String, propertyName: String): Int = {
-    val size = SparkUtils.byteStringAsBytes(str)
-    if (size > 0 && size <= Int.MaxValue) size.toInt
+  def sizeAsBytes(str: String, propertyName: String): Int =
+    sizeAsBytes(str, propertyName, 1, Int.MaxValue).toInt
+
+  def sizeAsBytes(str: String, propertyName: String, minSize: Long, maxSize: Long): Long = {
+    val s = str.trim
+    // if last character is a digit then it does not have a unit suffix
+    val size =
+      if (Character.isDigit(s.charAt(s.length - 1))) java.lang.Long.parseLong(s)
+      else SparkUtils.byteStringAsBytes(s)
+    if (size >= minSize && size <= maxSize) size
     else {
       throw new IllegalArgumentException(
-        s"$propertyName should be > 0 and < 2GB (provided = $str)")
+        s"$propertyName should be >= $minSize and <= $maxSize (provided = $str)")
     }
   }
 
@@ -706,8 +731,17 @@ object ExternalStoreUtils {
       Property.ColumnBatchSize.name)
   }
 
+  def checkPositiveNum(n: Int, propertyName: String): Int = {
+    if (n > 0 && n < Int.MaxValue) n
+    else {
+      throw new IllegalArgumentException(
+        s"$propertyName should be > 0 and < 2GB (provided = $n)")
+    }
+  }
+
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
-    Property.ColumnMaxDeltaRows.get(session.sessionState.conf)
+    checkPositiveNum(Property.ColumnMaxDeltaRows.get(session.sessionState.conf),
+      Property.ColumnMaxDeltaRows.name)
   }
 
   def getSQLListener: AtomicReference[SQLListener] = {

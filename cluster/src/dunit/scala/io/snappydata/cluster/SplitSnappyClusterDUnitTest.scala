@@ -97,7 +97,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "1" :+ Int.box(locatorClientPort))
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
-        "5" :+ Int.box(locatorClientPort))
+        "8" :+ Int.box(locatorClientPort))
   }
 
   def testBatchSize(): Unit = {
@@ -121,14 +121,14 @@ class SplitSnappyClusterDUnitTest(s: String)
         "options " +
         "(" +
         "PARTITION_BY 'Key1'," +
-        "BUCKETS '3', COLUMN_BATCH_SIZE '200')")
+        "BUCKETS '8', COLUMN_BATCH_SIZE '200')")
 
     snc.sql(s"CREATE TABLE $tblSizeBig (Key1 INT ,Value STRING) " +
         "USING column " +
         "options " +
         "(" +
         "PARTITION_BY 'Key1'," +
-        "BUCKETS '3', COLUMN_BATCH_SIZE '200000')")
+        "BUCKETS '8', COLUMN_BATCH_SIZE '200000')")
 
     val rdd = sc.parallelize(
       (1 to 100000).map(i => TestData(i, i.toString)))
@@ -205,7 +205,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     // Test using using 5 buckets
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
-        "5" :+ Int.box(locatorClientPort))
+        "8" :+ Int.box(locatorClientPort))
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val stats2 = SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
@@ -578,14 +578,14 @@ object SplitSnappyClusterDUnitTest
         "options " +
         "(" +
         "PARTITION_BY 'Key1'," +
-        "BUCKETS '3', COLUMN_BATCH_SIZE '200')")
+        "BUCKETS '8', COLUMN_BATCH_SIZE '200')")
 
     snc.sql(s"CREATE TABLE $tblBatchSize200K (Key1 INT ,Value STRING) " +
         "USING column " +
         "options " +
         "(" +
         "PARTITION_BY 'Key1'," +
-        "BUCKETS '3', COLUMN_BATCH_SIZE '200000')")
+        "BUCKETS '8', COLUMN_BATCH_SIZE '200000')")
 
     val rdd = sc.parallelize(
       (1 to 100000).map(i => TestData(i, i.toString)))
@@ -750,13 +750,13 @@ object SplitSnappyClusterDUnitTest
     snc.createTable(rowTable, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(rowTable)
 
-    snc.createTable(colTable, "column", dataDF.schema, props + ("BUCKETS" -> "17"))
+    snc.createTable(colTable, "column", dataDF.schema, props + ("BUCKETS" -> "16"))
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(colTable)
 
     executeTestWithOptions(locatorPort, locatorClientPort)
     executeTestWithOptions(locatorPort, locatorClientPort,
-      Map.empty, Map.empty + ("BUCKETS" -> "17"), "", "BUCKETS " +
-          "'13',PARTITION_BY 'COL1', REDUNDANCY '1'")
+      Map.empty, Map.empty + ("BUCKETS" -> "16"), "",
+      "BUCKETS '8', PARTITION_BY 'COL1', REDUNDANCY '1'")
   }
 
   def executeTestWithOptions(locatorPort: Int, locatorClientPort: Int,

@@ -20,7 +20,7 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
-import io.snappydata.collection.{ByteBufferHashMap, LongKey, ObjectHashSet}
+import io.snappydata.collection.{DictionaryMap, LongKey, ObjectHashSet}
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
@@ -75,10 +75,10 @@ abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
   /**
    * Initialization will fill in the dictionaries as written by the
    * DictionaryEncoder. For string maps it reads in the value array
-   * written using [[ByteBufferHashMap]] by the encoder expecting the
+   * written using [[DictionaryMap]] by the encoder expecting the
    * size of UTF8 encoded string followed by the string contents.
    * Long and integer dictionaries are still using the old ObjectHashSet
-   * which needs to be moved to [[ByteBufferHashMap]] once DictionaryEncoder
+   * which needs to be moved to [[DictionaryMap]] once DictionaryEncoder
    * adds support for long/integer dictionary encoding.
    */
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
@@ -162,10 +162,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
    * created to help GC issues in bulk inserts. The serialized map uses
    * a single serialized array for fixed-width keys and another for values.
    *
-   * Strings are added using [[ByteBufferHashMap.addDictionaryString]]
+   * Strings are added using [[DictionaryMap.addDictionaryString]]
    * method which returns the index of the string in the dictionary.
    */
-  private final var stringMap: ByteBufferHashMap = _
+  private final var stringMap: DictionaryMap = _
 
   private final var longMap: ObjectHashSet[LongIndexKey] = _
   private final var longArray: TLongArrayList = _
@@ -212,9 +212,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         if (stringMap eq null) {
           // assume some level of compression with dictionary encoding
           val mapSize = math.min(math.max(initSize >>> 1, 128), 1024)
-          // keySize is 4 since need to store dictionary index
-          stringMap = new ByteBufferHashMap(mapSize, 0.6, 4,
-            StringType.defaultSize, allocator)
+          stringMap = new DictionaryMap(mapSize, 0.6, StringType.defaultSize, allocator)
         } else {
           // reuse the previous dictionary data but release the shell objects
           stringMap = stringMap.duplicate()
@@ -350,8 +348,8 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     if (stringMap ne null) {
       // dictionary is already in serialized form
       if (numDictionaryElements > 0) {
-        Platform.copyMemory(stringMap.valueData.baseObject,
-          stringMap.valueData.baseOffset, columnBytes, cursor, dictionarySize)
+        Platform.copyMemory(stringMap.getValueData.baseObject,
+          stringMap.getValueData.baseOffset, columnBytes, cursor, dictionarySize)
         cursor += dictionarySize
       }
     } else if (isIntMap) {
@@ -432,7 +430,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override def close(): Unit = {
     super.close()
-    if ((stringMap ne null) && (stringMap.keyData ne null)) {
+    if ((stringMap ne null) && (stringMap.getKeyData ne null)) {
       stringMap.release()
     }
     stringMap = null

@@ -788,8 +788,14 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
     if (part.blockId.host != thisBlockId.host ||
         part.blockId.executorId != thisBlockId.executorId) {
       // kill the task and force a retry
-      logWarning(s"Unexpected execution of $part on $thisBlockId")
-      throw new TaskKilledException
+      val msg = s"Unexpected execution of $part on $thisBlockId"
+      logWarning(msg)
+      if (context.attemptNumber() < 10) {
+        throw new TaskKilledException
+      } else {
+        // fail after many retries (other executor is likely gone)
+        throw new IllegalStateException(msg)
+      }
     }
 
     f(context, part)
