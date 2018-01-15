@@ -676,7 +676,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width:300px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.extTableStatsColumn("nameTooltip")
@@ -685,7 +685,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.extTableStatsColumn("name")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width:300px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.extTableStatsColumn("typeTooltip")
@@ -694,7 +694,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.extTableStatsColumn("type")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width:300px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.extTableStatsColumn("providerTooltip")
@@ -703,7 +703,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.extTableStatsColumn("provider")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.extTableStatsColumn("externalSourceTooltip")
@@ -1062,8 +1062,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </div>
       </td>
       <td>
-        <div style="padding-right:10px; text-align:right;">
-          {tableDetails.getExternalStore}
+        <div style="padding-right:10px; text-align:left;">
+          {tableDetails.getDataSourcePath}
         </div>
       </td>
     </tr>
