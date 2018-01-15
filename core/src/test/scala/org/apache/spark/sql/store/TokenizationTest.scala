@@ -270,19 +270,13 @@ class TokenizationTest
       val q = (0 until numRows) map { x =>
         s"select * from $table where a = $x"
       }
-      val start = System.currentTimeMillis()
       q.zipWithIndex.foreach { case (x, i) =>
         var result = snc.sql(x).collect()
         assert(result.length === 1)
         result.foreach(r => {
-          println(s"${r.get(0)}, ${r.get(1)}, ${r.get(2)}, ${i}")
           assert(r.get(0) == r.get(1) && r.get(2) == i)
         })
       }
-      val end = System.currentTimeMillis()
-
-      // snc.sql(s"select * from $table where a = 1200").collect()
-      println("Time taken = " + (end - start))
 
       val newSession = new SnappySession(snc.sparkSession.sparkContext)
 
@@ -304,7 +298,38 @@ class TokenizationTest
       var res2 = newSession.sql(query).collect()
       assert(cacheMap.size() == 4)
 
+      newSession.sql(s"set snappydata.planCachingAll=false").collect()
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+      assert(cacheMap.size() == 10)
+
+      cacheMap.clear()
+
+      val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
+      newSession2.sql(s"set snappydata.planCachingAll=true").collect()
+
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession2.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      assert(cacheMap.size() == 1)
       newSession.clear()
+      newSession2.clear()
+      cacheMap.clear()
+
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")

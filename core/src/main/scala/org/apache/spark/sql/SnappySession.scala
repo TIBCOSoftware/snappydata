@@ -1835,6 +1835,8 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
 
+  def tokenizationDisabled: Boolean = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
+
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)

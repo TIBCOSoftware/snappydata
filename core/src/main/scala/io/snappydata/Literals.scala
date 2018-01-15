@@ -277,6 +277,10 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}planCaching",
     "Property to set/unset plan caching", Some(true))
 
+  val PlanCachingAll: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}planCachingAll",
+    "Property to set/unset plan caching on all sessions", Some(true))
+
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +
