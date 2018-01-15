@@ -2058,7 +2058,7 @@ object SnappySession extends Logging {
     // dynamically after caching due to unpersist etc. Also do not cache
     // if snappy tables are no there
     if (executedPlan.find(t => t match {
-      case _ : InMemoryTableScanExec => true
+      case imse : InMemoryTableScanExec => true
       case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
       case _ => false
     }).isDefined) {
