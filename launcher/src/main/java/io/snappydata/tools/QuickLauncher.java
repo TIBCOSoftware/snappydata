@@ -174,12 +174,8 @@ class QuickLauncher extends LauncherBase {
     // finally launch the main process
     final Path startLogFile = this.workingDir.resolve(startLogFileName);
     final Path pidFile = this.workingDir.resolve(pidFileName);
-    if (Files.exists(startLogFile)) {
-      Files.delete(startLogFile);
-    }
-    if (Files.exists(pidFile)) {
-      Files.delete(pidFile);
-    }
+    Files.deleteIfExists(startLogFile);
+    Files.deleteIfExists(pidFile);
 
     // add command-line to ENV2
     StringBuilder fullCommandLine = new StringBuilder(1024);

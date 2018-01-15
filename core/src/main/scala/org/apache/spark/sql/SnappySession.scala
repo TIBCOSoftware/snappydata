@@ -219,6 +219,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] var currentKey: SnappySession.CachedKey = _
 
+  @transient
+  private[sql] def planCaching: Boolean = sessionState.conf.getConfString(
+    Property.PlanCaching.name, "true").toBoolean
+
   /**
    * Get a previously registered context object using [[addContextObject]].
    */
@@ -1831,6 +1835,8 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
 
+  def tokenizationDisabled: Boolean = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
+
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
@@ -2072,9 +2078,8 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): CachedDataFrame = {
         val session = key.session
         session.currentKey = key
-        var df: DataFrame = null
         try {
-          df = session.executeSQL(key.sqlText)
+          val df = session.executeSQL(key.sqlText)
           evaluatePlan(df, session, key.sqlText, key)
         } finally {
           session.currentKey = null

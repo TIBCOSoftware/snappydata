@@ -28,9 +28,8 @@ import org.apache.spark.storage.BlockId
 
 class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
-  private val memoryForObject: ObjectLongHashMap[(String, MemoryMode)]
-  = ObjectLongHashMap.withExpectedSize[(String, MemoryMode)](16)
-
+  private val memoryForObject: ObjectLongHashMap[(String, MemoryMode)] =
+    ObjectLongHashMap.withExpectedSize[(String, MemoryMode)](16)
 
   private val managerId = "DefaultMemoryManager"
 
@@ -128,6 +127,8 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       allowNonAllocator: Boolean): Unit = {}
 
   override def shouldStopRecovery(): Boolean = false
+
+  override def bootManager: Boolean = false
 
   override def initMemoryStats(stats: MemoryManagerStats): Unit = {}
 

@@ -26,8 +26,9 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.cache.EntryDestroyedException
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, RegionEntry}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.koloboke.function.LongObjPredicate
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import io.snappydata.collection.IntObjectHashMap
+import io.snappydata.collection.LongObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
@@ -299,8 +300,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private var currentUUID: Long = _
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
-  private var colBuffers: IntObjectHashMap[ByteBuffer] =
-    IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
+  private var colBuffers: LongObjectHashMap[ByteBuffer] =
+    LongObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
   private var hasUpdates: Boolean = _
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
@@ -393,11 +394,13 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     val buffers = colBuffers
     // not null check in case constructor itself fails due to low memory
     if ((buffers ne null) && buffers.size() > 0) {
-      val values = buffers.values().iterator()
-      while (values.hasNext) {
-        // release previous set of buffers immediately
-        UnsafeHolder.releaseIfDirectBuffer(values.next())
-      }
+      buffers.forEachWhile(new LongObjPredicate[ByteBuffer] {
+        override def test(col: Long, buffer: ByteBuffer): Boolean = {
+          // release previous set of buffers immediately
+          UnsafeHolder.releaseIfDirectBuffer(buffer)
+          true
+        }
+      })
     }
   }
 
@@ -405,7 +408,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     currentUUID = rs.getLong(1)
     releaseColumns()
     // create a new map instead of clearing old one to help young gen GC
-    colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
+    colBuffers = LongObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
     val statsBlob = rs.getBlob(4)
     val statsBuffer = statsBlob match {
       case blob: BufferedBlob =>

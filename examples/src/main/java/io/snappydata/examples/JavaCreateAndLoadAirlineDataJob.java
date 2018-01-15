@@ -56,7 +56,7 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
 
       // Create a table in snappy store
       Map<String, String> columnTableProps = new HashMap<>();
-      columnTableProps.put("buckets", "11");
+      columnTableProps.put("buckets", "16");
       snc.createTable(colTable, "column",
           updatedSchema, columnTableProps, false);
 
@@ -79,7 +79,7 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
       // Create a sample table sampling parameters.
 
       Map<String, String> sampleTableProps = new HashMap<>();
-      sampleTableProps.put("buckets", "7");
+      sampleTableProps.put("buckets", "8");
       sampleTableProps.put("qcs", "UniqueCarrier, Year_, Month_");
       sampleTableProps.put("fraction", "0.03");
       sampleTableProps.put("strataReservoirSize", "50");
