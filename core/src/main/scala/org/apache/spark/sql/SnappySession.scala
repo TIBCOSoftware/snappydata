@@ -220,8 +220,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] var currentKey: SnappySession.CachedKey = _
 
   @transient
-  private[sql] var planCaching: Boolean = sessionState.conf.getConfString(
-    Property.PlanCaching.name, "true").toBoolean
+  private[sql] var planCaching: Boolean = Property.PlanCaching.get(sessionState.conf)
 
   /**
    * Get a previously registered context object using [[addContextObject]].
