@@ -220,7 +220,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] var currentKey: SnappySession.CachedKey = _
 
   @transient
-  private[sql] def planCaching: Boolean = sessionState.conf.getConfString(
+  private[sql] var planCaching: Boolean = sessionState.conf.getConfString(
     Property.PlanCaching.name, "true").toBoolean
 
   /**
@@ -1835,7 +1835,7 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
 
-  def tokenizationDisabled: Boolean = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
+  var tokenize: Boolean = true
 
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)

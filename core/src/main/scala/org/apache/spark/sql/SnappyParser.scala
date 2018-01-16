@@ -1019,7 +1019,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
     MATCH ~> (() => tokenize = session.planCaching &&
-        !SnappySession.tokenizationDisabled && canTokenize &&
+        SnappySession.tokenize && canTokenize &&
         session.sessionState.conf.wholeStageEnabled)
   }
 
