@@ -342,9 +342,9 @@ object JdbcExtendedUtils extends Logging {
     val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
       rows.map(encoder.toRow)), schema)
     val plan = if (putInto) {
-      PutIntoTable(
+      BulkUpdate(
         table = UnresolvedRelation(tableIdent),
-        child = ds.logicalPlan)
+        child = ds.logicalPlan, isPutInto = true)
     } else {
       new Insert(
         table = UnresolvedRelation(tableIdent),

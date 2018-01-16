@@ -236,7 +236,7 @@ class SnappySessionState(snappySession: SnappySession)
     }
 
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-      case i@PutIntoTable(u: UnresolvedRelation, _) =>
+      case i@BulkUpdate(u: UnresolvedRelation, _, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
@@ -354,8 +354,8 @@ class SnappySessionState(snappySession: SnappySession)
         }
       case d@DeleteFromTable(_, child) if child.resolved =>
         ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
-      case p@PutIntoTable(_, child) if child.resolved =>
-        ColumnTableBulkOps.transformPutPlan(sparkSession, p)
+      case p@BulkUpdate(_, child, _) if child.resolved =>
+        ColumnTableBulkOps.transformUpdatePlan(sparkSession, p)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -800,7 +800,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
     // subqueries have already been eliminated by special check in
     // ResolveRelations, no such special rule has been added for PUT
-    case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
+    case p@BulkUpdate(table, child, _) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(ir: RowInsertableRelation, _, _) =>
           // First, make sure the data to be inserted have the same number of
@@ -954,12 +954,12 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
 
     if (newChildOutput == child.output) {
       plan match {
-        case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
+        case p: BulkUpdate => p.copy(table = newRelation).asInstanceOf[T]
         case d: DeleteFromTable => d.copy(table = newRelation).asInstanceOf[T]
         case _: InsertIntoTable => plan
       }
     } else plan match {
-      case p: PutIntoTable => p.copy(table = newRelation,
+      case p: BulkUpdate => p.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case d: DeleteFromTable => d.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
@@ -997,7 +997,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
 
   def apply(plan: LogicalPlan): Unit = {
     plan.foreach {
-      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _), query) =>
+      case BulkUpdate(LogicalRelation(t: RowPutRelation, _, _), query, _) =>
         // Get all input data source relations of the query.
         val srcRelations = query.collect {
           case LogicalRelation(src: BaseRelation, _, _) => src
@@ -1008,7 +1008,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
         } else {
           // OK
         }
-      case PutIntoTable(table, _) =>
+      case BulkUpdate(table, _, _) =>
         throw Utils.analysisException(s"$table does not allow puts.")
       case _ => // OK
     }

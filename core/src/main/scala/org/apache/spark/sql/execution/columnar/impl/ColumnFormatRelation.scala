@@ -517,7 +517,7 @@ class ColumnFormatRelation(
     _externalStore,
     _partitioningColumns,
     _context)
-  with ParentRelation with DependentRelation with BulkPutRelation {
+  with ParentRelation with DependentRelation with BulkUpdateRelation {
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
@@ -668,11 +668,11 @@ class ColumnFormatRelation(
     * otherwise it gets inserted into the table represented by this relation.
     * The result of SparkPlan execution should be a count of number of rows put.
     */
-  override def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
+  override def getUpdatePlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
     ColumnPutIntoExec(insertPlan, updatePlan)
   }
 
-  override def getPutKeys(): Option[Seq[String]] = {
+  override def getUpdateKeys(): Option[Seq[String]] = {
     val keys = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
     keys match {
       case Some(x) => Some(x.split(",").map(s => s.trim).toSeq)
