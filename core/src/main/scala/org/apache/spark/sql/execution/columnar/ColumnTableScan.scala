@@ -797,12 +797,26 @@ private[sql] final case class ColumnTableScan(
              |    ? $decoderGlobal.getStringDictionary()
              |    : $mutableDecoderGlobal.getStringDictionary();
           """.stripMargin, s"($dictionaryVar == null)", dictionaryVar)
-        val dictionaryIndex = ExprCode(
-          s"""
-             |final int $dictionaryIndexVar = $updateDecoder == null
-             |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
-             |    : $updateDecoder.readDictionaryIndex();
+        val dictionaryIndex = if (attr.nullable) {
+          ExprCode(
+            s"""
+               |if ($decoder.isNullAt($buffer, $batchOrdinal)) {
+               |  $dictionaryIndexVar = $dictionaryVar.size();
+               |  $numNullsVar++;
+               |} else {
+               |  $dictionaryIndexVar = $updateDecoder == null
+               |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
+               |    : $updateDecoder.readDictionaryIndex();
+               |}
+               """.stripMargin, "false", dictionaryIndexVar)
+        } else {
+          ExprCode(
+            s"""
+               |$dictionaryIndexVar = $updateDecoder == null
+               |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
+               |    : $updateDecoder.readDictionaryIndex();
           """.stripMargin, "false", dictionaryIndexVar)
+        }
         session.foreach(_.addDictionaryCode(ctx, col,
           DictionaryCode(dictionary, buffer, dictionaryIndex)))
         "UTF8String"
