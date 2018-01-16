@@ -503,7 +503,10 @@ class SnappyConf(@transient val session: SnappySession)
     case Property.PlanCaching.name =>
       value match {
         case Some(boolval) => {
-          if (boolval.toString.toBoolean) session.clearPlanCache()
+          if (boolval.toString.toBoolean) {
+            session.clearPlanCache()
+          }
+          session.planCaching = boolval.toString.toBoolean
         }
         case None =>
       }
@@ -511,13 +514,20 @@ class SnappyConf(@transient val session: SnappySession)
     case Property.PlanCachingAll.name =>
       value match {
         case Some(boolval) => {
-          val disable_tokenization = !boolval.toString.toBoolean
-          System.setProperty("DISABLE_TOKENIZATION", disable_tokenization.toString)
-          if (disable_tokenization) SnappySession.getPlanCache.asMap().clear()
+          val clearCache = !boolval.toString.toBoolean
+          if (clearCache) SnappySession.getPlanCache.asMap().clear()
         }
         case None =>
       }
-      
+
+    case Property.Tokenize.name =>
+      value match {
+        case Some(boolval) => {
+          SnappySession.tokenize = boolval.toString.toBoolean
+        }
+        case None =>
+      }
+
     case _ => // ignore others
   }
 
