@@ -61,24 +61,27 @@ class SnappyStreamingContext protected[spark](
 
   val snappySession = reuseSnappySession.getOrElse(new SnappySession(sc))
   currentSnappySession.foreach(csn => {
-    var user = csn.conf.get(Attribute.USERNAME_ATTR, "")
-
+    var userKey = Attribute.USERNAME_ATTR
+    var user = csn.conf.get(userKey, "")
     val isSmartConnProp = if (user.isEmpty) {
       // In smart connector, property name is different.
-      user = csn.conf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
+      userKey = Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR
+      user = csn.conf.get(userKey, "")
       true
     } else {
       false
     }
-    if (!user.isEmpty) {
-      val password = csn.conf.get(Attribute.PASSWORD_ATTR, "")
 
-      snappySession.sessionState.conf.setConfString(
-        if (isSmartConnProp) {
-          Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR
-        }
-      else Attribute.USERNAME_ATTR, user)
-      snappySession.sessionState.conf.setConfString(Attribute.PASSWORD_ATTR, password)
+    if (!user.isEmpty) {
+      val (passwordKey, password) = if (isSmartConnProp) {
+        val key = Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR
+        key -> csn.conf.get(key, "")
+      } else {
+        val key = Attribute.PASSWORD_ATTR
+        key -> csn.conf.get(key, "")
+      }
+      snappySession.sessionState.conf.setConfString(userKey, user)
+      snappySession.sessionState.conf.setConfString(passwordKey, password)
     }
   })
 
@@ -260,7 +263,6 @@ object SnappyStreamingContext extends Logging {
     }
   }
 
-
   /**
    * :: Experimental ::
    *
@@ -277,13 +279,15 @@ object SnappyStreamingContext extends Logging {
    * :: Experimental ::
    * Either return the "active" StreamingContext (that is, started but not stopped), or create a
    * new StreamingContext that is started by the creating function
-   * @param creatingFunc   Function to create a new StreamingContext
+   *
+   * @param creatingFunc Function to create a new StreamingContext
    */
   @Experimental
   def getActiveOrCreate(creatingFunc: () => SnappyStreamingContext): SnappyStreamingContext = {
     ACTIVATION_LOCK.synchronized {
-      getActive.getOrElse { creatingFunc() }
-
+      getActive.getOrElse {
+        creatingFunc()
+      }
     }
   }
 
@@ -309,11 +313,12 @@ object SnappyStreamingContext extends Logging {
       creatingFunc: () => SnappyStreamingContext,
       hadoopConf: Configuration = SparkHadoopUtil.get.conf,
       createOnError: Boolean = false
-      ): SnappyStreamingContext = {
+  ): SnappyStreamingContext = {
     ACTIVATION_LOCK.synchronized {
-     getActive.getOrElse { getOrCreate(checkpointPath, creatingFunc,
-        hadoopConf, createOnError) }
-
+      getActive.getOrElse {
+        getOrCreate(checkpointPath, creatingFunc,
+          hadoopConf, createOnError)
+      }
     }
   }
 
@@ -343,9 +348,24 @@ object SnappyStreamingContext extends Logging {
       checkpointPath, new SparkConf(), hadoopConf, createOnError)
     checkpointOption.map(new SnappyStreamingContext(null, _, null)).
       getOrElse(creatingFunc())
-
   }
 
+  /**
+   * Either recreate a SnappyStreamingContext from checkpoint data or create a
+   * new SnappyStreamingContext. If checkpoint data exists in the provided
+   * `checkpointPath`, then SnappyStreamingContext will be recreated from the
+   * checkpoint data. If the data does not exist, then the StreamingContext
+   * will be created by called the provided `creatingFunc`.
+   *
+   * @param checkpointPath Checkpoint directory used in an earlier StreamingContext program
+   * @param creatingFunc   Function to create a new SnappyStreamingContext
+   * @param currentSession Current SnappySession instance from which to use the credentials
+   * @param hadoopConf     Optional Hadoop configuration if necessary for reading from the
+   *                       file system
+   * @param createOnError  Optional, whether to create a new SnappyStreamingContext if there is an
+   *                       error in reading checkpoint data. By default, an exception will be
+   *                       thrown on error.
+   */
   def getOrCreateWithUseCredential(
                    checkpointPath: String,
                    creatingFunc: () => SnappyStreamingContext,
