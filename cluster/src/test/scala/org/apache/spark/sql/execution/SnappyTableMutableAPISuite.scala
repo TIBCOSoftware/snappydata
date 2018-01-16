@@ -585,6 +585,58 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.contains(Row(8, 8, 8)))
   }
 
+  test("update with dataframe API col tables") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.createTable("col_table", "column",
+      df1.schema, Map("key_columns" -> "col2"))
+
+    df1.write.insertInto("col_table")
+    df2.write.update("col_table")
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 7)
+    assert(resultdf.contains(Row(88, 88, 88)))
+  }
+
+  test("update with dataframe API row tables") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table row_table (col1 int, col2 int, col3 int, PRIMARY KEY (col2))")
+
+    df1.write.insertInto("row_table")
+    df2.write.update("row_table")
+
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 7)
+    assert(resultdf.contains(Row(88, 88, 88)))
+  }
+
+  test("Update row tables Key columns validation") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.createTable("row_table", "row",
+      df1.schema, Map.empty[String, String])
+
+    df1.write.insertInto("row_table")
+
+    intercept[AnalysisException]{
+      df2.write.update("row_table")
+    }
+  }
+
   test("DeleteFrom Key columns validation") {
     val snc = new SnappySession(sc)
     val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))

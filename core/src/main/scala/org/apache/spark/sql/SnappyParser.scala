@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
+import org.apache.spark.sql.sources.{Delete, Insert, BulkUpdate, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -963,7 +963,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE.? ~ relationFactor ~ subSelectQuery ~> PutIntoTable
+    PUT ~ INTO ~ TABLE.? ~ relationFactor ~ subSelectQuery ~>
+        ((t: LogicalPlan, s: LogicalPlan) =>  BulkUpdate(t, s, true))
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
