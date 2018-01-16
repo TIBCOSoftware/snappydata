@@ -718,7 +718,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snc.sql(s"select distinct city from $t2 where country like 'country_1%'").show
   }
 
-  def DISABLED_testSNAP2088_2(): Unit = {
+  // This will fail until part 2 of the fix for SNAP-2088 comes in.
+  def testSNAP2088_2(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
     val t1 = "snap2088"
     val t2 = "snap2088_2"
