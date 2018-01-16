@@ -499,6 +499,25 @@ class SnappyConf(@transient val session: SnappySession)
           pool.toString
         case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
+
+    case Property.PlanCaching.name =>
+      value match {
+        case Some(boolval) => {
+          if (boolval.toString.toBoolean) session.clearPlanCache()
+        }
+        case None =>
+      }
+
+    case Property.PlanCachingAll.name =>
+      value match {
+        case Some(boolval) => {
+          val disable_tokenization = !boolval.toString.toBoolean
+          System.setProperty("DISABLE_TOKENIZATION", disable_tokenization.toString)
+          if (disable_tokenization) SnappySession.getPlanCache.asMap().clear()
+        }
+        case None =>
+      }
+      
     case _ => // ignore others
   }
 
