@@ -1076,6 +1076,7 @@ object SnappyContext extends Logging {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
           initMemberBlockMap(sc)
+          SnappySession.tokenize = Property.Tokenize.get(sc.conf)
           _globalContextInitialized = true
         }
       }
