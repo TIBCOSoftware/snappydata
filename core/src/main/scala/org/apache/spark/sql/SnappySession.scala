@@ -1835,7 +1835,7 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
 
-  var tokenize: Boolean = true
+  private[sql] var tokenize: Boolean = true
 
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
