@@ -295,7 +295,7 @@ class TokenizationTest
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 1)
 
-      newSession.sql(s"set snappydata.planCaching=false").collect()
+      newSession.sql(s"set snappydata.sql.planCaching=false").collect()
       assert(cacheMap.size() == 1)
 
       var query = s"select * from $table where a = 0"
@@ -310,7 +310,7 @@ class TokenizationTest
       var res2 = newSession.sql(query).collect()
       assert(cacheMap.size() == 4)
 
-      newSession.sql(s"set snappydata.planCachingAll=false").collect()
+      newSession.sql(s"set snappydata.sql.planCachingAll=false").collect()
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -325,7 +325,7 @@ class TokenizationTest
       cacheMap.clear()
 
       val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
-      newSession2.sql(s"set snappydata.planCachingAll=true").collect()
+      newSession2.sql(s"set snappydata.sql.planCachingAll=true").collect()
 
       assert(cacheMap.size() == 0)
 
@@ -342,9 +342,28 @@ class TokenizationTest
       newSession2.clear()
       cacheMap.clear()
 
+      val newSession3 = new SnappySession(snc.sparkSession.sparkContext)
+      newSession3.sql(s"set snappydata.sql.tokenize=false").collect()
+
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession3.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      assert(cacheMap.size() == 10)
+
+      newSession3.clear()
+      cacheMap.clear()
+
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")
+      snc.sql(s"set snappydata.sql.tokenize=true").collect()
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
   }
