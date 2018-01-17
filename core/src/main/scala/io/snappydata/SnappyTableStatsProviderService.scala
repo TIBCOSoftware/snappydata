@@ -198,7 +198,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         if (extTable.tableType.toUpperCase.equals("EXTERNAL")) {
           val snappyExternalTableStats: SnappyExternalTableStats =
             new SnappyExternalTableStats (extTable.entityName, extTable.tableType,
-              extTable.provider, extTable.externalStore, extTable.dataSourcePath);
+              extTable.provider, extTable.externalStore, extTable.dataSourcePath,
+              extTable.driverClass);
           externalTables += snappyExternalTableStats
         }
       }

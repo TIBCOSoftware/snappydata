@@ -1063,7 +1063,13 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         <div style="padding-right:10px; text-align:left;">
-          {tableDetails.getDataSourcePath}
+          {
+            if (tableDetails.getProvider.toLowerCase().equalsIgnoreCase("jdbc")) {
+              tableDetails.getDriverClass
+            } else {
+              tableDetails.getDataSourcePath
+            }
+          }
         </div>
       </td>
     </tr>

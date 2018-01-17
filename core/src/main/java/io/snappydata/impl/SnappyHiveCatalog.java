@@ -410,6 +410,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             for (String tableName : tables) {
               Table table = hmc.getTable(schema, tableName);
               String tblDataSourcePath = table.getMetadata().getProperty("path");
+              tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+              String driverClass = table.getMetadata().getProperty("driver");
+              driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
               String tableType = ExternalTableType.getTableType(table);
               if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType)) {
                 // TODO: FIX ME: should not convert to upper case blindly
@@ -419,7 +422,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
                     Utils.toUpperCase(table.getDbName()),
                     tableType, null, -1, -1,
                     null, null, null, null,
-                    tblDataSourcePath);
+                    tblDataSourcePath, driverClass);
                 metaData.provider = table.getParameters().get(
                     SnappyStoreHiveCatalog.HIVE_PROVIDER());
                 metaData.columns = ExternalStoreUtils.getColumnMetadata(
@@ -490,6 +493,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);
           String tblDataSourcePath = table.getMetadata().getProperty("path");
+          tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+          String driverClass = table.getMetadata().getProperty("driver");
+          driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
           return new ExternalTableMetaData(
               fullyQualifiedName,
               schema,
@@ -502,7 +508,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               baseTable,
               dmls,
               dependentRelations,
-              tblDataSourcePath);
+              tblDataSourcePath,
+              driverClass);
 
         case CLOSE_HMC:
           Hive.closeCurrent();
