@@ -212,7 +212,7 @@ public class SnappyStartUpTest extends SnappyTest {
       long numRows = 0;
       while (rs.next()) {
         numRows = rs.getLong(1);
-        Log.getLogWriter().info("Qyery : " + query + " executed successfully and query " +
+        Log.getLogWriter().info("Query : " + query + " executed successfully and query " +
             "result is ::" + numRows);
       }
       if (numRows != 6)
@@ -239,7 +239,8 @@ public class SnappyStartUpTest extends SnappyTest {
       Log.getLogWriter().info("staging_order_details table dropped successfully");
       query = "CREATE EXTERNAL TABLE staging_order_details" +
           "    USING com.databricks.spark.csv OPTIONS(path '" + SnappyPrms.getDataLocationList()
-          .get(0) + "/order-details.csv', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096')";
+          .get(0) + "/order-details.csv', header 'true', inferSchema 'true', nullValue 'NULL',  " +
+          "maxCharsPerColumn '4096')";
       conn.createStatement().executeUpdate(query);
       Log.getLogWriter().info("staging_order_details table recreated successfully");
       query = "CREATE TABLE order_details USING column OPTIONS(partition_by 'OrderId', buckets" +
@@ -268,8 +269,8 @@ public class SnappyStartUpTest extends SnappyTest {
     for (String nodeLogDir : newNodeLogDirs) {
       Log.getLogWriter().info("nodeLogDir is : " + nodeLogDir);
       nodeLogDir = nodeLogDir + " " + " -rebalance ";
-      SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + RemoteTestModule.getMyVmid() + "_" +
-          snappyTest.getMyTid(), nodeLogDir);
+      SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + RemoteTestModule.getMyVmid() +
+          "_" + snappyTest.getMyTid(), nodeLogDir);
       String newNodeLogDir;
       newNodeLogDir = nodeLogDir.substring(nodeLogDir.lastIndexOf("-dir=") + 5);
       newNodeLogDir = newNodeLogDir.substring(0, newNodeLogDir.indexOf(" "));
@@ -479,7 +480,8 @@ public class SnappyStartUpTest extends SnappyTest {
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
-      throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+      throw new TestException("Got Exception: " + e.getMessage() + "\n" + TestHelper.getStackTrace
+          (e));
     }
   }
 
