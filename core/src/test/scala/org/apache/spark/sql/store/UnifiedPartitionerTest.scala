@@ -333,9 +333,8 @@ class UnifiedPartitionerTest extends SnappyFunSuite
     snc.sql(s"set ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key}=1")
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemId INT, ItemRef INT) " +
         "USING column " +
-        "options " +
-        "(" +
-        "BUCKETS '11'," +
+        "options (" +
+        "BUCKETS '8'," +
         "PARTITION_BY 'OrderId'," +
         "PERSISTENT 'ASYNCHRONOUS')")
 
@@ -343,7 +342,7 @@ class UnifiedPartitionerTest extends SnappyFunSuite
       (1 to 5).map(i => TestData2(i, i.toString, i)))
     val dataDF = snc.createDataFrame(rdd)
 
-    val rep = dataDF.repartition(11, new ColumnName("key1"))
+    val rep = dataDF.repartition(8, new ColumnName("key1"))
 
     rep.createOrReplaceTempView("ColumnTable1Temp")
 

@@ -70,7 +70,7 @@ public class JavaAirlineDataJob {
 
     // Create a table in snappy store
     options.clear();
-    options.put("buckets", "11");
+    options.put("buckets", "16");
     snc.createTable(colTable, "column", updatedSchema, options, false);
 
     // Populate the table in snappy store
@@ -91,7 +91,7 @@ public class JavaAirlineDataJob {
 
     // Create a sample table sampling parameters.
     options.clear();
-    options.put("buckets", "7");
+    options.put("buckets", "8");
     options.put("qcs", "UniqueCarrier, Year_, Month_");
     options.put("fraction", "0.03");
     options.put("strataReservoirSize", "50");

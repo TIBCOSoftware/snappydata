@@ -637,7 +637,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "NASDelay INT," +
         "SecurityDelay INT," +
         "LateAircraftDelay INT," +
-        "ArrDelaySlot INT) using column options (partition_by 'DayOfMonth', Buckets '7', " +
+        "ArrDelaySlot INT) using column options (partition_by 'DayOfMonth', Buckets '8', " +
         "Redundancy '2')")
 
     val hfile: String = getClass.getResource("/2015.parquet").getPath
@@ -685,6 +685,85 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     FileUtils.deleteDirectory(new File(tempPath))
   }
 
+  def testSNAP2088_1(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val t1 = "snap2088"
+    val t2 = "snap2088_2"
+
+    snc.sql(s"create table $t1 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '50')")
+    snc.sql(s"create table $t2 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '5000')")
+
+    1 to 500 foreach { i =>
+      if (i % 2 == 0) {
+        snc.sql(s"insert into $t1 values (${Random.nextInt}, 'name_$i', null, 'country_$i')")
+        snc.sql(s"insert into $t2 values (${Random.nextInt}, 'name_$i', null, 'country_$i')")
+      } else {
+        snc.sql(s"insert into $t1 values (${Random.nextInt}, 'name_$i', 'city_$i', 'country_$i')")
+        snc.sql(s"insert into $t2 values (${Random.nextInt}, 'name_$i', 'city_$i', 'country_$i')")
+      }
+    }
+    snc.sql(s"select distinct city from $t1").show
+    snc.sql(s"select distinct city from $t2 order by city").show
+    var df = snc.sql(s"select count(*) from $t1 where city is null")
+    var cnt = df.collect()(0).getLong(0)
+    assert(cnt == 250, s"$cnt records found in $t1 with null city, expected 250")
+
+    df = snc.sql(s"select count(*) from $t2 where city is null")
+    cnt = df.collect()(0).getLong(0)
+    assert(cnt == 250, s"$cnt records found in $t2 with null city, expected 250")
+
+    snc.sql(s"select distinct city from $t1 where country like 'country_1%'").show
+    snc.sql(s"select distinct city from $t2 where country like 'country_1%'").show
+  }
+
+  // This will fail until part 2 of the fix for SNAP-2088 comes in.
+  def testSNAP2088_2(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val t1 = "snap2088"
+    val t2 = "snap2088_2"
+
+    snc.sql(s"create table $t1 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '50')")
+    snc.sql(s"create table $t2 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '5000')")
+
+    val data = snc.range(10000).selectExpr("cast ((rand() * 100000) as int)",
+      "concat('name_', cast((id % 20) as string))",
+      "case when id % 2 = 0 then null else concat('city_', cast((id % 10) as string)) end",
+      "concat('country_', cast((id % 3) as string))")
+    data.write.insertInto(t1)
+    data.write.insertInto(t2)
+
+    // Ensure some queries do not just throw exception.
+    snc.sql(s"select distinct city from $t1").show
+    snc.sql(s"select distinct city from $t2 order by city").show
+    snc.sql(s"select count(*) from $t1 group by city").show
+    snc.sql(s"select distinct city from $t1 where country like 'country_1%'").show
+    snc.sql(s"select distinct city from $t2 where country like 'country_1%'").show
+
+    // Validate the results too.
+    var df = snc.sql(s"select count(*) from $t1 where city is null")
+    var cnt = df.collect()(0).getLong(0)
+    assert(cnt == 5000, s"$cnt records found in $t1 with null city, expected 5000")
+
+    df = snc.sql(s"select count(*) from $t2 where city is null")
+    cnt = df.collect()(0).getLong(0)
+    assert(cnt == 5000, s"$cnt records found in $t2 with null city, expected 5000")
+
+    df = snc.sql(s"select count(*) from $t1 group by city")
+    df.collect().foreach(r => {
+      assert(r.getLong(0) == 1000, s"${r.getLong(0)} rows found, expected 1000 for $t1")
+    })
+    assert(df.collect().length == 6, s"${df.collect().length} cities found, expected 6")
+
+    snc.sql(s"select count(*) from $t2 group by city")
+    df.collect().foreach(r => {
+      assert(r.getLong(0) == 1000, s"${r.getLong(0)} rows found, expected 1000 for $t2")
+    })
+    assert(df.collect().length == 6, s"${df.collect().length} cities found, expected 6")
+  }
 
 }
 

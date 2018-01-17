@@ -68,7 +68,7 @@ object StoreUtils {
   val GEM_PERSISTENT = "PERSISTENT"
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_EXPIRE = "EXPIRE"
-  val GEM_OVERFLOW = "EVICTACTION OVERFLOW"
+  val GEM_OVERFLOW = "EVICTACTION OVERFLOW "
   val GEM_HEAPPERCENT = "EVICTION BY LRUHEAPPERCENT "
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
@@ -414,47 +414,21 @@ object StoreUtils {
     parameters.remove(PARTITIONER).foreach(v =>
       sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
 
-    // if OVERFLOW has been provided, then use HEAPPERCENT as the default
-    // eviction policy (unless overridden explicitly)
-    val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
-        .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
-    val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
-    var overflowAdded = false
-    if (!isShadowTable) {
-      sb.append(parameters.remove(EVICTION_BY).map(v =>
-        if (v == NONE) {
-          EMPTY_STRING
-        } else {
-          if (hasOverflow) {
-            overflowAdded = true
-            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
-          } else {
-            s"$GEM_EVICTION_BY $v "
-          }
-        })
-        .getOrElse(defaultEviction))
-    } else {
-      sb.append(parameters.remove(EVICTION_BY).map(v => {
-        if (v.contains(LRUCOUNT)) {
-          throw Utils.analysisException(
-            "Column table cannot take LRUCOUNT as eviction policy")
-        } else if (v == NONE) {
-          EMPTY_STRING
-        } else {
-          if (hasOverflow) {
-            overflowAdded = true
-            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
-          } else {
-            s"$GEM_EVICTION_BY $v "
-          }
+    val defaultEviction = s"$GEM_HEAPPERCENT $GEM_OVERFLOW"
+    sb.append(parameters.remove(EVICTION_BY).map(v => {
+      if (v.contains(LRUCOUNT) && isShadowTable) {
+        throw Utils.analysisException(
+          "Column table cannot take LRUCOUNT as eviction policy.")
+      } else if (v.equalsIgnoreCase("NONE")) {
+        EMPTY_STRING
+      } else {
+        if (!parameters.get(OVERFLOW).map((_.toBoolean)).getOrElse(true)) {
+          throw Utils.analysisException("overflow 'FALSE' is not supported when eviction is " +
+              "configured.")
         }
-      }).getOrElse(defaultEviction))
-    }
-
-    if (hasOverflow && !overflowAdded) {
-      parameters.remove(OVERFLOW)
-      sb.append(s"$GEM_OVERFLOW ")
-    }
+        s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+      }
+    }).getOrElse(defaultEviction))
 
     // default is sync persistence for all snappydata tables
     var isPersistent = true

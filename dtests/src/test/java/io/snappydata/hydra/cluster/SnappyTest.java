@@ -361,7 +361,7 @@ public class SnappyTest implements Serializable {
             " -J-Dgemfirexd.table-default-partitioned=" +
             SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
             SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() +
-            SnappyPrms.getEvictionHeapPercentage() +
+            SnappyPrms.getEvictionHeapPercentage() + SnappyPrms.getPersistIndexes() +
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
             " -J-XX:+DisableExplicitGC" +
@@ -1210,6 +1210,23 @@ public class SnappyTest implements Serializable {
     return conn;
   }
 
+  public static Connection getLocatorConnectionUsingProps() throws
+      SQLException {
+    List<String> endpoints = validateLocatorEndpointData();
+    Properties props = new Properties();
+    Vector connPropsList = SnappyPrms.getConnPropsList();
+    for (int i = 0; i < connPropsList.size(); i++) {
+      String conProp = (String) connPropsList.elementAt(i);
+      String conPropKey = conProp.substring(0, conProp.indexOf("="));
+      String conPropValue = conProp.substring(conProp.indexOf("=") + 1);
+      props.setProperty(conPropKey, conPropValue);
+    }
+    Connection conn = null;
+    String url = "jdbc:snappydata://" + endpoints.get(0) + "/";
+    conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
+    return conn;
+  }
+
   public static Connection getServerConnection() throws SQLException {
     List<String> endpoints = validateServerEndpointData();
     Connection conn = null;
@@ -1229,6 +1246,16 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info("Creating connection using " + driver + " with " + protocol);
     loadDriver(driver);
     Connection conn = DriverManager.getConnection(protocol);
+    return conn;
+  }
+
+  private static Connection getConnection(String protocol, String driver, Properties props)
+      throws
+      SQLException {
+    Log.getLogWriter().info("Creating connection using " + driver + " with " + protocol +
+        " and user specified properties list: = " + props.toString());
+    loadDriver(driver);
+    Connection conn = DriverManager.getConnection(protocol, props);
     return conn;
   }
 
@@ -2385,14 +2412,6 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_startSnappyCluster() {
     if (forceStart) {
       startSnappyCluster();
-      try {
-        //2 mins sleep is added to avoid the stopSnappy cluster call immediately after restart and
-        // verify the recovery in UI.
-        Thread.sleep(120000);
-      } catch (InterruptedException e) {
-        String s = "Exception occurred while waiting for snappy-start-all script execution..";
-        throw new TestException(s, e);
-      }
     } else {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
       if (num == 1) {
