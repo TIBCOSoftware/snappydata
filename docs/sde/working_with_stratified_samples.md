@@ -37,7 +37,7 @@ For example:
 
 ```
 CREATE TABLE BASETABLENAME <column details> 
-USING COLUMN OPTIONS (partition_by '<column_name_a>', Buckets '7', Redundancy '1')
+USING COLUMN OPTIONS (partition_by '<column_name_a>', Buckets '8', Redundancy '1')
 
 CREATE TABLE SAMPLETABLENAME <column details> 
 USING COLUMN_SAMPLE OPTIONS (qcs '<column_name_b>',fraction '0.05', 

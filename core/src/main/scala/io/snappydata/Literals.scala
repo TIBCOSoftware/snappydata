@@ -274,6 +274,18 @@ object Property extends Enumeration {
         "scalability of queries in the interest of reduced memory usage for " +
         "secondary buckets. Default is false.", Some(false), Constant.SPARK_PREFIX)
 
+  val PlanCaching: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.planCaching",
+    "Property to set/unset plan caching", Some(true))
+
+  val PlanCachingAll: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.planCachingAll",
+    "Property to set/unset plan caching on all sessions", Some(true))
+
+  val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.tokenize",
+    "Property to enable/disable tokenization", Some(true))
+
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +
@@ -330,6 +342,11 @@ object Property extends Enumeration {
   val ClosedFormEstimates = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.closedFormEstimates",
     s"Boolean if false tells engine to use bootstrap analysis for error calculation for all cases" +
       s". Default is true.", Some(true), null, false)
+
+  val PutIntoInnerJoinCacheSize =
+    SQLVal[Long](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
+    "The putInto inner join would be cached if the table is of size less " +
+        "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
 
 
 }
