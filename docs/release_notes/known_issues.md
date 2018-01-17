@@ -6,7 +6,7 @@ The following key issues have been registered as bugs in the SnappyData bug trac
 <col width="25%" />
 <col width="25%" />
 <col width="25%" />
-<col width="25%" /> 
+<col width="25%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -61,9 +61,9 @@ select
        and l_shipinstruct = 'DELIVER IN PERSON'
         )
 </code></pre>
-<pre class="pre"><code>  
+<pre class="pre"><code>
 select
-        sum(l_extendedprice) 
+        sum(l_extendedprice)
     from
         LINEITEM,
         PART

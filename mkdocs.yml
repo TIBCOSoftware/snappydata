@@ -33,6 +33,9 @@ pages:
 #    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 #    - 'Migrating from Version 0.9 to Version 1.0.0-RC1 Release': 'migration/migration-0.9-01_rc.md'
 #---
+- 'Concepts': 'howto.md'
+- 'Concepts': 
+    - 'Detecting and Handling Network Segmentation ("Split Brain")': 'concepts/network_partition.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
@@ -77,13 +80,25 @@ pages:
     - 'Using SnappyData Shell': 'programming_guide/using_snappydata_shell.md'
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
-    - 'Using Transactions': 'programming_guide/using_transactions.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
     - 'Multiple Language Binding using Thrift Protocol': 'programming_guide/multiple_language_binding_using_thrift_protocol.md'
     - 'Building SnappyData Applications using Spark API': 'programming_guide/building_snappydata_applications_using_spark_api.md'
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
     - 'Stream Processing using SQL': 'programming_guide/stream_processing_using_sql.md'
     - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md' 
+- 'Managing Consistency': 'programming_guide/using_transactions.md'
+- 'Managing Consistency':
+    - 'Using Transactions for Row Tables': 'programming_guide/consistency/using_transactions_row.md'
+    - 'Using Transactions for Row Tables':     
+        - 'How the Transaction Model Works': 'programming_guide/consistency/transactions_about.md'
+        - 'Transactions and DDL Statements': 'programming_guide/consistency/transactions_ddl.md'
+        - 'Transactions with SELECT FOR UPDATE': 'programming_guide/consistency/transactions_select_update_row.md'
+        - 'Rollback Behavior and Member Failures': 'programming_guide/consistency/transactions_failures.md'
+        - 'Best Practices for Using Transactions': 'programming_guide/consistency/transactions_best_practices.md'
+        - 'Transaction Functionality and Limitations': 'programming_guide/consistency/transactions_limitations.md'
+    - 'Using Snapshot Isolation for Column Tables': 'programming_guide/consistency/using_snapshot_isolation_column.md'
+#    - 'Using Snapshot Isolation for Column Tables':
+#        - 'Additional Information': 'programming_guide/consistency/snapshot_info.md'
 - 'Affinity Modes': 'deployment.md'
 - 'Affinity Modes': 
     - 'Local Mode': 'affinity_modes/local_mode.md'
@@ -94,7 +109,7 @@ pages:
     - 'Tuning for Concurrency and Computation': 'best_practices/setup_cluster.md'
     - 'Designing your Database and Schema': 'best_practices/design_schema.md'  
     - 'Designing your Database and Schema':
-        - 'Design Principles of Scalable, Partition-Aware Databases': 'best_practices/design_principles.md'  
+        - 'Design Principles of Scalable, Partition-Aware Databases': 'best_practices/design_principles.md'
         - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
     - 'Memory Management': 'best_practices/memory_management.md'      
     - 'HA Considerations': 'best_practices/ha_considerations.md'    
@@ -247,7 +262,7 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Documentation': 'apidocsintro.md'
-#    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
+    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
@@ -283,7 +298,6 @@ extra_css:
     - 'extra.css'
     
 markdown_extensions:
-    - admonition:
-   
+    - markdown.extensions.admonition 
     
 copyright: Copyright &copy; 2017 SnappyData Inc.

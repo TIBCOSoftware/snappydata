@@ -18,16 +18,16 @@ SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memor
 
 | Operating System| Version |
 |--------|--------|
-|Red Hat Enterprise Linux|- RHEL 6.0 </p> - RHEL 7.0 (Recommended Kernel version: 3.10.0-693.2.2.el7.x86_64)|
+|Red Hat Enterprise Linux|- RHEL 6.0 </p> - RHEL 7.0 (Mininum recommended kernel version: 3.10.0-693.2.2.el7.x86_64)|
 |Ubuntu|Ubuntu Server 14.04 and later||
-|CentOS|CentOS 6, 7 (Recommended Kernel version: 3.10.0-693.2.2.el7.x86_64)|
+|CentOS|CentOS 6, 7 (Minimum recommended kernel version: 3.10.0-693.2.2.el7.x86_64)|
 
 
 
 ## Host Machine Requirements
 Requirements for each host:
 
-* A supported [Java SE 8u151/ 8u152 or earlier installation](http://www.oracle.com/technetwork/java/javase/downloads). We recommend using Java version: 1.8.0_144.
+* A supported [Oracle Java SE 8](http://www.oracle.com/technetwork/java/javase/downloads) installation. We recommend minimum version: 1.8.0_144 (see [SNAP-2017](https://jira.snappydata.io/browse/SNAP-2017), [SNAP-1999](https://jira.snappydata.io/browse/SNAP-1999), [SNAP-1911](https://jira.snappydata.io/browse/SNAP-1911), [SNAP-1375](https://jira.snappydata.io/browse/SNAP-1375) for crashes reported with earlier versions).
 
 * A file system that supports long file names.
 

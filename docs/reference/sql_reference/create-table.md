@@ -53,27 +53,27 @@ Refer to the [constraint](#constraint) section for more information on table-con
 `column-data-type`
 ```
 column-data-type: 
-	STRING | 
-	INTEGER | 
-	INT | 
 	BIGINT | 
-	LONG |  
-	DOUBLE |  
-	DECIMAL | 
-	NUMERIC | 
-	DATE | 
-	TIMESTAMP | 
-	FLOAT | 
-	REAL | 
-	BOOLEAN | 
-	CLOB | 
-	BLOB | 
 	BINARY | 
-	VARBINARY | 
-	SMALLINT | 
-	SHORT | 
-	TINYINT | 
+	BLOB | 
+	BOOLEAN | 
 	BYTE | 
+	CLOB | 
+	DATE | 
+	DECIMAL | 
+	DOUBLE |  
+	FLOAT | 
+	INT | 
+	INTEGER | 
+	LONG |  
+	NUMERIC | 
+	REAL | 
+	SHORT | 
+	SMALLINT | 
+	STRING | 
+	TIMESTAMP | 
+	TINYINT | 
+	VARBINARY | 
 	VARCHAR | 
 ```
 Column tables can also use ARRAY, MAP and STRUCT types.</br>
