@@ -96,7 +96,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * and a catalog that interacts with external systems.
    */
   @transient
-  override private[sql] lazy val sharedState: SnappySharedState = SnappyContext.sharedState
+  override private[sql] lazy val sharedState: SnappySharedState = {
+    SnappyContext.sharedState(sparkContext)
+  }
 
   /**
    * State isolated across sessions, including SQL configurations, temporary tables, registered
@@ -216,6 +218,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   @transient
   private[sql] var currentKey: SnappySession.CachedKey = _
+
+  @transient
+  private[sql] def planCaching: Boolean = sessionState.conf.getConfString(
+    Property.PlanCaching.name, "true").toBoolean
 
   /**
    * Get a previously registered context object using [[addContextObject]].
@@ -1829,6 +1835,8 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
 
+  def tokenizationDisabled: Boolean = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
+
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
@@ -2053,8 +2061,13 @@ object SnappySession extends Logging {
       localCollect, allLiterals, queryHints, executionTime, executionId)
 
     // if this has in-memory caching then don't cache since plan can change
-    // dynamically after caching due to unpersist etc
-    if (executedPlan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
+    // dynamically after caching due to unpersist etc. Also do not cache
+    // if snappy tables are no there
+    if (executedPlan.find(t => t match {
+      case imse : InMemoryTableScanExec => true
+      case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
+      case _ => false
+    }).isDefined) {
       throw new EntryExistsException("uncached plan", cdf)
     }
     cdf
@@ -2065,9 +2078,8 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): CachedDataFrame = {
         val session = key.session
         session.currentKey = key
-        var df: DataFrame = null
         try {
-          df = session.executeSQL(key.sqlText)
+          val df = session.executeSQL(key.sqlText)
           evaluatePlan(df, session, key.sqlText, key)
         } finally {
           session.currentKey = null
@@ -2242,18 +2254,15 @@ object SnappySession extends Logging {
   }
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
-    if (!SnappyTableStatsProviderService.suspendCacheInvalidation &&
-        (SnappyContext.globalSparkContext ne null)) {
+    val sc = SnappyContext.globalSparkContext
+    if (!SnappyTableStatsProviderService.suspendCacheInvalidation && (sc ne null)) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
         CodeGeneration.clearAllCache()
-        val sc = SnappyContext.globalSparkContext
-        if (sc ne null) {
-          Utils.mapExecutors(sc, (_, _) => {
-            CodeGeneration.clearAllCache()
-            Iterator.empty
-          })
-        }
+        Utils.mapExecutors(sc, (_, _) => {
+          CodeGeneration.clearAllCache()
+          Iterator.empty
+        })
       }
     }
   }

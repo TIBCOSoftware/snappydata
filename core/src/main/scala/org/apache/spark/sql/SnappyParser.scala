@@ -29,7 +29,7 @@ import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
@@ -967,27 +967,31 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
-    UPDATE ~ tableIdentifier ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
+    UPDATE ~ relationFactor ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
         '=' ~ ws ~ expression ~> ((cols: Seq[String], e: Expression) =>
       UnresolvedAttribute(cols) -> e)) + commaSep) ~
-        (WHERE ~ expression).? ~ TOKENIZE_END ~>
-        ((tableName: TableIdentifier, updateExprs: Seq[(UnresolvedAttribute,
-            Expression)], whereExpr: Any) => {
-          val base = UnresolvedRelation(tableName)
+        (FROM ~ relations).? ~ (WHERE ~ expression).? ~ TOKENIZE_END ~>
+        ((t: Any, updateExprs: Seq[(UnresolvedAttribute,
+            Expression)], relations : Any, whereExpr: Any) => {
+          val table = t.asInstanceOf[LogicalPlan]
+          val base = relations match {
+            case Some(plan) => plan.asInstanceOf[LogicalPlan]
+            case _ => table
+          }
           val withFilter = whereExpr match {
-            case None => base
-            case Some(w) => Filter(w.asInstanceOf[Expression], base)
+            case Some(expr) => Filter(expr.asInstanceOf[Expression], base)
+            case _ => base
           }
           val (updateColumns, updateExpressions) = updateExprs.unzip
-          Update(base, withFilter, Seq.empty, updateColumns, updateExpressions)
+          Update(table, withFilter, Seq.empty, updateColumns, updateExpressions)
         })
   }
 
   protected final def delete: Rule1[LogicalPlan] = rule {
-    DELETE ~ FROM ~ tableIdentifier ~
+    DELETE ~ FROM ~ relationFactor ~
         (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
-        ((tableName: TableIdentifier, whereExpr: Any) => {
-          val base = UnresolvedRelation(tableName)
+        ((t: Any, whereExpr: Any) => {
+          val base = t.asInstanceOf[LogicalPlan]
           val child = whereExpr match {
             case None => base
             case Some(w) => Filter(w.asInstanceOf[Expression], base)
@@ -1009,15 +1013,13 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
-  // Only when wholeStageEnabled try for tokenization. It should be true
-  private val tokenizationDisabled = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
-
   private var tokenize = false
 
   private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() => tokenize = !tokenizationDisabled && canTokenize &&
+    MATCH ~> (() => tokenize = session.planCaching &&
+        !SnappySession.tokenizationDisabled && canTokenize &&
         session.sessionState.conf.wholeStageEnabled)
   }
 

@@ -24,8 +24,6 @@ import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
 trait ToolsCallback {
 
-  def invokeLeadStartAddonService(sc: SparkContext): Unit
-
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
       partitionColumnAliases: Seq[Seq[Attribute]],
       numPartitions: Int, numBuckets: Int, tableBuckets: Int): Partitioning
@@ -33,7 +31,7 @@ trait ToolsCallback {
   def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
       (Seq[Expression], Seq[Seq[Attribute]], Int, Int, Int)]
 
-  def updateUI(scUI: Option[Any]): Unit // Option[SparkUI] is expected
+  def updateUI(sc: SparkContext): Unit
 
   def removeAddedJar(sc: SparkContext, jarName : String): Unit
 

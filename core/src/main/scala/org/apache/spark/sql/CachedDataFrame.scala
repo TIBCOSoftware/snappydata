@@ -95,6 +95,8 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
 
+  private lazy val rowConverter = UnsafeProjection.create(queryExecution.executedPlan.schema)
+
   private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
     if (numShuffleDeps > 0) {
@@ -320,20 +322,18 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
-            val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(rowConverter))._1))
           }
 
-        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan) =>
+        case _: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
-            val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(rowConverter))._1))
           }
 
         case _ =>
@@ -704,8 +704,9 @@ object CachedDataFrame
       return Iterator.empty
     }
 
+    val takeRDD = if (n > 0) rdd.mapPartitionsInternal(_.take(n)) else rdd
     var numResults = 0
-    val totalParts = rdd.partitions.length
+    val totalParts = takeRDD.partitions.length
     var partsScanned = 0
     val results = new Array[(R, Int)](totalParts)
     while (numResults < n && partsScanned < totalParts) {
@@ -714,13 +715,16 @@ object CachedDataFrame
       // totalParts in runJob.
       var numPartsToTry = 1L
       if (partsScanned > 0) {
-        // If we didn't find any rows after the first iteration, just try all
-        // partitions next. Otherwise, interpolate the number of partitions
-        // we need to try, but overestimate it by 50%.
+        // If we didn't find any rows after the previous iteration, quadruple and retry.
+        // Otherwise, interpolate the number of partitions we need to try, but overestimate
+        // it by 50%. We also cap the estimation in the end.
+        val limitScaleUpFactor = Math.max(session.sessionState.conf.limitScaleUpFactor, 2)
         if (numResults == 0) {
-          numPartsToTry = totalParts - 1
+          numPartsToTry = partsScanned * limitScaleUpFactor
         } else {
-          numPartsToTry = (1.5 * n * partsScanned / numResults).toInt
+          // the left side of max is >=1 whenever partsScanned >= 2
+          numPartsToTry = Math.max((1.5 * n * partsScanned / numResults).toInt - partsScanned, 1)
+          numPartsToTry = Math.min(numPartsToTry, partsScanned * limitScaleUpFactor)
         }
       }
       // guard against negative num of partitions
@@ -729,7 +733,7 @@ object CachedDataFrame
       val p = partsScanned.until(math.min(partsScanned + numPartsToTry,
         totalParts).toInt)
       val sc = session.sparkContext
-      sc.runJob(rdd, processPartition, p, (index: Int, r: (U, Int)) => {
+      sc.runJob(takeRDD, processPartition, p, (index: Int, r: (U, Int)) => {
         results(partsScanned + index) = (resultHandler(index, r._1), r._2)
         numResults += r._2
       })

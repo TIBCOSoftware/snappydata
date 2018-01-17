@@ -27,16 +27,17 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import com.gemstone.gemfire.cache.PartitionAttributes;
-import com.gemstone.gemfire.distributed.internal.locks.DLockService;
 import com.gemstone.gemfire.internal.GFToSlf4jBridge;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
 import com.gemstone.gemfire.internal.cache.GemfireCacheHelper;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
+import com.gemstone.gemfire.internal.shared.SystemProperties;
 import com.pivotal.gemfirexd.Attribute;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI;
+import com.pivotal.gemfirexd.internal.engine.locks.GfxdDRWLockService;
 import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet;
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
@@ -49,9 +50,11 @@ import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.InvalidTableException;
 import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
 import org.apache.spark.sql.sources.JdbcExtendedUtils;
@@ -316,33 +319,67 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         }
       switch (this.qType) {
         case INIT:
-          // Take write lock on data dictionary. Because of this all the servers
+          // Take read/write lock on metastore. Because of this all the servers
           // will initiate their hive client one by one. This is important as we
           // have downgraded the ISOLATION LEVEL from SERIALIZABLE to REPEATABLE READ
           final String hiveClientObject = "HiveMetaStoreClient";
-          final DLockService lockService = Misc.getMemStoreBooting()
+          final GfxdDRWLockService lockService = Misc.getMemStoreBooting()
               .getDDLLockService();
-          GFToSlf4jBridge logger = (GFToSlf4jBridge)Misc.getI18NLogWriter();
-          int previousLevel = logger.getLevel();
+          final GFToSlf4jBridge logger = (GFToSlf4jBridge)Misc.getI18NLogWriter();
+          final int previousLevel = logger.getLevel();
+          final Logger log4jLogger = LogManager.getRootLogger();
+          final Level log4jLevel = log4jLogger.getEffectiveLevel();
+          logger.info("Starting hive meta-store initialization");
           // just log the warning messages, during hive client initialization
           // as it generates hundreds of line of logs which are of no use.
           // Once the initialization is done, restore the logging level.
-          if (previousLevel <= LogWriterImpl.CONFIG_LEVEL) {
+          final boolean reduceLog = previousLevel == LogWriterImpl.CONFIG_LEVEL
+              || previousLevel == LogWriterImpl.INFO_LEVEL;
+          if (reduceLog) {
             logger.setLevel(LogWriterImpl.WARNING_LEVEL);
+            log4jLogger.setLevel(Level.WARN);
           }
 
-          final boolean writeLockTaken = lockService.lock(hiveClientObject,
+          final Object lockOwner = lockService.newCurrentOwner();
+          boolean writeLock = false;
+          boolean dlockTaken = lockService.lock(hiveClientObject,
               GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
+          boolean lockTaken = false;
           try {
+            // downgrade dlock to a read lock if hive metastore has already
+            // been initialized by some other server
+            if (dlockTaken && Misc.getRegionByPath("/" + SystemProperties
+                .SNAPPY_HIVE_METASTORE + "/FUNCS", false) != null) {
+              lockService.unlock(hiveClientObject);
+              dlockTaken = false;
+              lockTaken = lockService.readLock(hiveClientObject, lockOwner,
+                  GfxdLockSet.MAX_LOCKWAIT_VAL);
+              // reduce log4j level to avoid "function exists" warnings
+              if (reduceLog) {
+                log4jLogger.setLevel(Level.ERROR);
+              }
+            } else {
+              lockTaken = lockService.writeLock(hiveClientObject, lockOwner,
+                  GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
+              writeLock = true;
+            }
             synchronized (hiveClientSync) {
               initHMC();
             }
           } finally {
-            if (writeLockTaken) {
-              //this.dd.unlockAfterWriting(tc, false);
+            if (lockTaken) {
+              if (writeLock) {
+                lockService.writeUnlock(hiveClientObject, lockOwner);
+              } else {
+                lockService.readUnlock(hiveClientObject);
+              }
+            }
+            if (dlockTaken) {
               lockService.unlock(hiveClientObject);
             }
             logger.setLevel(previousLevel);
+            log4jLogger.setLevel(log4jLevel);
+            logger.info("Done hive meta-store initialization");
           }
           return true;
 
@@ -442,10 +479,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
           String[] dependentRelations = value != null
               ? value.toString().split(",") : null;
-          int columnBatchSize = Integer.parseInt(parameters.get(
-              ExternalStoreUtils.COLUMN_BATCH_SIZE()));
-          int columnMaxDeltaRows = Integer.parseInt(parameters.get(
-              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS()));
+          int columnBatchSize = ExternalStoreUtils.sizeAsBytes(parameters.get(
+              ExternalStoreUtils.COLUMN_BATCH_SIZE()), ExternalStoreUtils.COLUMN_BATCH_SIZE());
+          int columnMaxDeltaRows = ExternalStoreUtils.checkPositiveNum(Integer.parseInt(
+              parameters.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS())),
+              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);
@@ -480,8 +518,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private void initHMC() {
-      DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver");
-      DriverRegistry.register("io.snappydata.jdbc.ClientDriver");
+      ExternalStoreUtils.registerBuiltinDrivers();
 
       HiveConf metadataConf = new HiveConf();
       String urlSecure = "jdbc:snappydata:" +
@@ -507,7 +544,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       }
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, urlSecure);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-          "io.snappydata.jdbc.EmbeddedDriver");
+          Constant.JDBC_EMBEDDED_DRIVER());
       initCommonHiveMetaStoreProperties(metadataConf);
 
       final short numRetries = 40;

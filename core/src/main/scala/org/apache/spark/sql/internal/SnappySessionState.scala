@@ -32,10 +32,10 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
@@ -103,8 +103,9 @@ class SnappySessionState(snappySession: SnappySession)
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
-  def getExtendedCheckRules: Seq[LogicalPlan => Unit] =
-    Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+  def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
+    Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
+  }
 
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
@@ -243,9 +244,10 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
-      analyzer: Analyzer) extends Rule[LogicalPlan] {
+      analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
 
-    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
+    private def getKeyAttributes(table: LogicalPlan,
+        child: LogicalPlan,
         plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
@@ -275,11 +277,12 @@ class SnappySessionState(snappySession: SnappySession)
           mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
           mutablePlan.get
       }
+
       mutablePlan match {
         case Some(sourcePlan) =>
           val keyAttrs = keyColumns.map { name =>
             analysis.withPosition(sourcePlan) {
-              newChild.resolveChildren(
+              sourcePlan.resolve(
                 name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve key column $name"))
             }
@@ -308,7 +311,7 @@ class SnappySessionState(snappySession: SnappySession)
           // resolve the columns being updated and cast the expressions if required
           val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
             val attr = analysis.withPosition(relation) {
-              newChild.resolveChildren(
+              relation.resolve(
                 c.name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve update column ${c.name}"))
             }
@@ -349,6 +352,10 @@ class SnappySessionState(snappySession: SnappySession)
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
+      case d@DeleteFromTable(_, child) if child.resolved =>
+        ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
+      case p@PutIntoTable(_, child) if child.resolved =>
+        ColumnTableBulkOps.transformPutPlan(sparkSession, p)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -492,6 +499,25 @@ class SnappyConf(@transient val session: SnappySession)
           pool.toString
         case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
+
+    case Property.PlanCaching.name =>
+      value match {
+        case Some(boolval) => {
+          if (boolval.toString.toBoolean) session.clearPlanCache()
+        }
+        case None =>
+      }
+
+    case Property.PlanCachingAll.name =>
+      value match {
+        case Some(boolval) => {
+          val disable_tokenization = !boolval.toString.toBoolean
+          System.setProperty("DISABLE_TOKENIZATION", disable_tokenization.toString)
+          if (disable_tokenization) SnappySession.getPlanCache.asMap().clear()
+        }
+        case None =>
+      }
+      
     case _ => // ignore others
   }
 
@@ -642,6 +668,36 @@ trait AltName[T] {
     }
   }
 
+  private def get(conf: SparkConf, name: String,
+      defaultValue: String): T = {
+    configEntry.entry.defaultValue match {
+      case Some(_) => configEntry.valueConverter[T](
+        conf.get(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](
+        conf.get(name, defaultValue)).get
+    }
+  }
+
+  def get(conf: SparkConf): T = if (altName == null) {
+    get(conf, name, configEntry.defaultValueString)
+  } else {
+    if (conf.contains(name)) {
+      if (!conf.contains(altName)) get(conf, name, configEntry.defaultValueString)
+      else {
+        throw new IllegalArgumentException(
+          s"Both $name and $altName configured. Only one should be set.")
+      }
+    } else {
+      get(conf, altName, configEntry.defaultValueString)
+    }
+  }
+
+  def get(properties: Properties): T = {
+    val propertyValue = getProperty(properties)
+    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
+    else defaultValue.get
+  }
+
   def getProperty(properties: Properties): String = if (altName == null) {
     properties.getProperty(name)
   } else {
@@ -691,12 +747,6 @@ trait SQLAltName[T] extends AltName[T] {
     } else {
       get(conf, altName, configEntry.defaultValueString)
     }
-  }
-
-  def get(properties: Properties): T = {
-    val propertyValue = getProperty(properties)
-    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
-    else defaultValue.get
   }
 
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {
@@ -815,6 +865,10 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           }
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 
+        case l@LogicalRelation(dr: MutableRelation, _, _) =>
+          // First, make sure the where column(s) of the delete are in schema of the relation.
+          val expectedOutput = l.output
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
         case _ => d
       }
 
@@ -973,11 +1027,19 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
         } else {
           // OK
         }
-
       case PutIntoTable(table, _) =>
         throw Utils.analysisException(s"$table does not allow puts.")
-
       case _ => // OK
+    }
+  }
+}
+
+private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: datasources.PreWriteCheck)
+    extends (LogicalPlan => Unit) {
+  def apply(plan: LogicalPlan): Unit = {
+    plan match {
+      case PutIntoColumnTable(_, _, _) => // Do nothing
+      case _ => sparkPreWriteCheck.apply(plan)
     }
   }
 }

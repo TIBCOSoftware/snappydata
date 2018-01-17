@@ -384,6 +384,7 @@ public class SnappyTest implements Serializable {
             SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
             " -spark.local.dir=" + snappyTest.getTempDir("temp") +
             " -dir=" + dirPath + clientPort + port +
+            " -jobserver.waitForInitialization=true " +
             SnappyPrms.getLeadMemory() + SnappyPrms.getSparkSqlBroadcastJoinThreshold()
             + " -spark.jobserver.port=" + leadPort + SnappyPrms.getSparkSchedulerMode()
             + /*" -spark.sql.inMemoryColumnarStorage.compressed="

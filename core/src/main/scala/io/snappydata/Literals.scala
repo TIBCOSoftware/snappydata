@@ -215,6 +215,10 @@ object Property extends Enumeration {
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
+  val JobServerWaitForInit = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}waitForInitialization",
+    "If true then cluster startup will wait for Spark jobserver to be fully initialized " +
+        "before marking lead as 'RUNNING'. Default is false.", Some(false), prefix = null)
+
   val SnappyConnection = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
@@ -229,7 +233,7 @@ object Property extends Enumeration {
   val ColumnBatchSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is the unit " +
-        "(in bytes or k/m/g suffixes for units) that will be used to split the data " +
+        "(in bytes or k/m/g suffixes for unit) that will be used to split the data " +
         "into chunks for efficient storage and retrieval. It can also be set for each " +
         s"table using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
         "create table DDL. Maximum allowed size is 2GB.", Some("24m"))
@@ -243,17 +247,18 @@ object Property extends Enumeration {
         s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
         s"create table DDL else this setting is used for the create table.", Some(10000))
 
-  val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
+  val HashJoinSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
     "The join would be converted into a hash join if the table is of size less " +
-        "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
+        "than hashJoinSize. The limit specifies an estimate on the input data size " +
+        "(in bytes or k/m/g/t suffixes for unit). Default value is 100MB.", Some("100m"))
 
   val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}hashAggregateSize",
     "Aggregation will use optimized hash aggregation plan but one that does not " +
         "overflow to disk and can cause OOME if the result of aggregation is large. " +
-        "The limit specifies the input data size (with b/k/m/g/t/p suffixes for units) " +
+        "The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) " +
         "and not the output size. Set this only if there are known to be queries " +
         "that can return very large number of rows in aggregation results. " +
-        "Default value is 0b meaning no limit on the size so the optimized " +
+        "Default value is 0 meaning no limit on the size so the optimized " +
         "hash aggregation is always used.", Some("0"))
 
   val ForceLinkPartitionsToBuckets: SQLValue[Boolean] = SQLVal[Boolean](
@@ -268,6 +273,14 @@ object Property extends Enumeration {
     "Property to prefer using primary buckets in queries. This reduces " +
         "scalability of queries in the interest of reduced memory usage for " +
         "secondary buckets. Default is false.", Some(false), Constant.SPARK_PREFIX)
+
+  val PlanCaching: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}planCaching",
+    "Property to set/unset plan caching", Some(true))
+
+  val PlanCachingAll: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}planCachingAll",
+    "Property to set/unset plan caching on all sessions", Some(true))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
@@ -326,6 +339,11 @@ object Property extends Enumeration {
     s"Boolean if false tells engine to use bootstrap analysis for error calculation for all cases" +
       s". Default is true.", Some(true), null, false)
 
+  val PutIntoInnerJoinCacheSize =
+    SQLVal[Long](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
+    "The putInto inner join would be cached if the table is of size less " +
+        "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
+
 
 }
 
@@ -368,13 +386,13 @@ object QueryHint extends Enumeration {
 
   /**
    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-   * as CLOBs in JSON format for routed JDBC/ODBC queries rather
-   * than as serialized blobs to display better in external tools.
+   * as CLOBs in JSON format for routed JDBC/ODBC queries (default) to display better
+   * in external tools else if set to false/0 then display as serialized blobs.
    *
-   * Possible values are 'true/1' or 'false/0'
+   * Possible values are 'false/0' or 'true/1' (default is true)
    *
    * Example:<br>
-   * SELECT * FROM t1 --+ complexTypeAsJson(1)
+   * SELECT * FROM t1 --+ complexTypeAsJson(0)
    */
   val ComplexTypeAsJson = Value("complexTypeAsJson")
 

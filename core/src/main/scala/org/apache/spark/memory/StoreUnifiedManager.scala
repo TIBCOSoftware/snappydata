@@ -64,6 +64,8 @@ trait StoreUnifiedManager {
 
   def shouldStopRecovery(): Boolean
 
+  def bootManager: Boolean
+
   def initMemoryStats(stats: MemoryManagerStats): Unit
 
   /**
@@ -101,7 +103,7 @@ object MemoryManagerCallback extends Logging {
       Utils.classForName(ummClass)
           .getConstructor(classOf[SparkConf], classOf[Int], classOf[Boolean])
           .newInstance(conf, Int.box(1), Boolean.box(true)).asInstanceOf[StoreUnifiedManager]
-      // We dont need execution memory during GemXD boot. Hence passing num core as 1
+      // We don't need execution memory during GemXD boot. Hence passing num core as 1
     } catch {
       case _: ClassNotFoundException =>
         logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
