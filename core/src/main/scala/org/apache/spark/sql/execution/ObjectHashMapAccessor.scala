@@ -700,7 +700,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
              |public $className[] $dictionaryArrayInit() {
              |  ${d.evaluateDictionaryCode()}
              |  if (${dictionary.value} != null) {
-             |    return new $className[${dictionary.value}.size()];
+             |    return new $className[${dictionary.value}.size() + 1];
              |  } else {
              |    return null;
              |  }

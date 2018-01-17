@@ -1013,15 +1013,13 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
-  // Only when wholeStageEnabled try for tokenization. It should be true
-  private val tokenizationDisabled = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
-
   private var tokenize = false
 
   private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() => tokenize = !tokenizationDisabled && canTokenize &&
+    MATCH ~> (() => tokenize = session.planCaching &&
+        SnappySession.tokenize && canTokenize &&
         session.sessionState.conf.wholeStageEnabled)
   }
 

@@ -39,12 +39,12 @@ class DisableTokenizationTest
   val table = "my_table"
 
   override def beforeAll(): Unit = {
-    System.setProperty("DISABLE_TOKENIZATION", "true")
+    snc.sql(s"set snappydata.sql.tokenize = false")
     super.beforeAll()
   }
 
   override def afterAll(): Unit = {
-    System.setProperty("DISABLE_TOKENIZATION", "false")
+    snc.sql(s"set snappydata.sql.tokenize = true")
     super.afterAll()
   }
 
@@ -71,7 +71,7 @@ class DisableTokenizationTest
 
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     } finally {
-      System.setProperty("DISABLE_TOKENIZATION", "false")
+      snc.sql(s"set snappydata.sql.tokenize = true")
     }
   }
 
