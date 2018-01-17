@@ -2077,10 +2077,7 @@ object SnappySession extends Logging {
     }
     val env = SparkEnv.get
     val cacheSize = if (env ne null) {
-      Property.PlanCacheSize.getOption(env.conf) match {
-        case Some(size) => size.toInt
-        case None => Property.PlanCacheSize.defaultValue.get
-      }
+      Property.PlanCacheSize.get(env.conf)
     } else Property.PlanCacheSize.defaultValue.get
     CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }

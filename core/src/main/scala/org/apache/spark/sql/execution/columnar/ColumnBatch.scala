@@ -18,21 +18,23 @@ package org.apache.spark.sql.execution.columnar
 
 import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
+import java.util.function.BiFunction
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.EntryDestroyedException
-import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, RegionEntry}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.koloboke.function.LongObjPredicate
+import com.koloboke.function.IntObjPredicate
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import io.snappydata.collection.LongObjectHashMap
+import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
-import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
+import org.apache.spark.sql.execution.columnar.impl.{ClusteredColumnIterator, ColumnDelta, ColumnFormatEntry, ColumnFormatIterator, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
@@ -121,19 +123,20 @@ abstract class ResultSetIterator[A](conn: Connection,
 object ColumnBatchIterator {
 
   def apply(region: LocalRegion,
-      bucketIds: java.util.Set[Integer],
-      context: TaskContext): ColumnBatchIterator = {
-    new ColumnBatchIterator(region, batch = null, bucketIds, context)
+      bucketIds: java.util.Set[Integer], projection: Array[Int],
+      fullScan: Boolean, context: TaskContext): ColumnBatchIterator = {
+    new ColumnBatchIterator(region, batch = null, bucketIds, projection, fullScan, context)
   }
 
   def apply(batch: ColumnBatch): ColumnBatchIterator = {
     new ColumnBatchIterator(region = null, batch, bucketIds = null,
-      context = null)
+      projection = null, fullScan = false, context = null)
   }
 }
 
 final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
-    bucketIds: java.util.Set[Integer], context: TaskContext)
+    bucketIds: java.util.Set[Integer], projection: Array[Int],
+    fullScan: Boolean, context: TaskContext)
     extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
 
   if (region ne null) {
@@ -149,18 +152,30 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   private var currentDeltaStats: ByteBuffer = _
   private var currentKeyPartitionId: Int = _
   private var currentKeyUUID: Long = _
-  private var currentBucketRegion: BucketRegion = _
   private var batchProcessed = false
   private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
+
+  override protected def createIterator(container: GemFireContainer, region: LocalRegion,
+      tx: TXStateInterface): PartitionedRegion#PRLocalScanIterator = if (region ne null) {
+    val txState = if (tx ne null) tx.getLocalTXState else null
+    val createIterator = new BiFunction[BucketRegion, java.lang.Long,
+        java.util.Iterator[RegionEntry]] {
+      override def apply(br: BucketRegion,
+          numEntries: java.lang.Long): java.util.Iterator[RegionEntry] = {
+        new ColumnFormatIterator(br, projection, fullScan, txState)
+      }
+    }
+    val pr = region.asInstanceOf[PartitionedRegion]
+    new pr.PRLocalScanIterator(bucketIds, txState, createIterator, false, true, true)
+  } else null
 
   def getCurrentBatchId: Long = currentKeyUUID
 
   def getCurrentBucketId: Int = currentKeyPartitionId
 
   private def getColumnBuffer(columnPosition: Int, throwIfMissing: Boolean): ByteBuffer = {
-    val key = new ColumnFormatKey(currentKeyUUID, currentKeyPartitionId, columnPosition)
-    val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
-    else region.get(key)
+    val value = itr.getBucketEntriesIterator.asInstanceOf[ClusteredColumnIterator]
+        .getColumnValue(columnPosition)
     if (value ne null) {
       val columnValue = value.asInstanceOf[ColumnFormatValue].getValueRetain(
         decompress = true, compress = false)
@@ -173,7 +188,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     if (throwIfMissing) {
       // empty buffer indicates value removed from region
       throw new EntryDestroyedException(s"Iteration on column=$columnPosition " +
-          s"partition=$currentKeyPartitionId key=$key failed due to missing value")
+          s"partition=$currentKeyPartitionId batchUUID=$currentKeyUUID " +
+          "failed due to missing value")
     } else null
   }
 
@@ -247,21 +263,17 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
         currentColumns = new ArrayBuffer[ColumnFormatValue](numColumns)
       }
       while (itr.hasNext) {
-        // println to see if we are coming here.
         val re = itr.next().asInstanceOf[RegionEntry]
-        currentBucketRegion = itr.getHostedBucketRegion
-        // get the stat row region entries only. region entries for individual
-        // columns will be fetched on demand
-        if (((currentBucketRegion ne null) ||
-          re.isInstanceOf[NonLocalRegionEntry]) && !re.isDestroyedOrRemoved) {
-          // re could be NonLocalRegionEntry in case of snapshot isolation
-          // in some cases, old value could be TOMBSTONE and not a ColumnFormatValue
-          val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
-          if (key.columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
-            // if currentBucketRegion is null then its the case of
-            // NonLocalRegionEntry where RegionEntryContext arg is not required
-            val v = re.getValue(currentBucketRegion)
-            if (v ne null ) {
+        // the underlying ClusteredColumnIterator allows fetching entire projected
+        // columns of a column batch as a single entity (SNAP-2102)
+        val bucketRegion = itr.getHostedBucketRegion
+        if ((bucketRegion ne null) || re.isInstanceOf[NonLocalRegionEntry]) {
+          if (!re.isDestroyedOrRemoved) {
+            // re could be NonLocalRegionEntry in case of snapshot isolation
+            // in some cases, old value could be TOMBSTONE and not a ColumnFormatValue
+            val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
+            val v = re.getValue(bucketRegion)
+            if (v ne null) {
               val columnValue = v.asInstanceOf[ColumnFormatValue].getValueRetain(
                 decompress = true, compress = false)
               val buffer = columnValue.getBuffer
@@ -280,6 +292,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
           }
         }
       }
+      itr.close()
       hasNextValue = false
     } else if (!batchProcessed) {
       currentVal = ByteBuffer.wrap(batch.statsData)
@@ -300,8 +313,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private var currentUUID: Long = _
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
-  private var colBuffers: LongObjectHashMap[ByteBuffer] =
-    LongObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
+  private var colBuffers: IntObjectHashMap[ByteBuffer] =
+    IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
   private var hasUpdates: Boolean = _
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
@@ -339,7 +352,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
               1, blob.length().asInstanceOf[Int]))
           }
           colBlob.free()
-          buffers.put(position, decompress(colBuffer))
+          buffers.justPut(position, decompress(colBuffer))
           // check if this an update delta
           if (position < ColumnFormatEntry.DELETE_MASK_COL_INDEX && !hasUpdates) {
             hasUpdates = true
@@ -394,8 +407,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     val buffers = colBuffers
     // not null check in case constructor itself fails due to low memory
     if ((buffers ne null) && buffers.size() > 0) {
-      buffers.forEachWhile(new LongObjPredicate[ByteBuffer] {
-        override def test(col: Long, buffer: ByteBuffer): Boolean = {
+      buffers.forEachWhile(new IntObjPredicate[ByteBuffer] {
+        override def test(col: Int, buffer: ByteBuffer): Boolean = {
           // release previous set of buffers immediately
           UnsafeHolder.releaseIfDirectBuffer(buffer)
           true
@@ -408,7 +421,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     currentUUID = rs.getLong(1)
     releaseColumns()
     // create a new map instead of clearing old one to help young gen GC
-    colBuffers = LongObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
+    colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
     val statsBlob = rs.getBlob(4)
     val statsBuffer = statsBlob match {
       case blob: BufferedBlob =>
@@ -422,7 +435,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     }
     statsBlob.free()
     // put the stats buffer to free on next() or close()
-    colBuffers.put(ColumnFormatEntry.DELTA_STATROW_COL_INDEX, decompress(statsBuffer))
+    colBuffers.justPut(ColumnFormatEntry.DELTA_STATROW_COL_INDEX, decompress(statsBuffer))
     statsBuffer
   }
 

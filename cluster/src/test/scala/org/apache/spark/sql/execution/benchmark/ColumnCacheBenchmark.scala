@@ -82,7 +82,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private lazy val sparkSession = new SparkSession(sc)
   private lazy val snappySession = snc.snappySession
 
-
   ignore("cache with randomized keys - insert") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
   }
@@ -147,12 +146,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     def testCleanup(): Unit = {
       snappySession.sql("truncate table if exists test")
     }
+
     // As expected putInto is two times slower than a simple insert
-    addCaseWithCleanup(benchmark, "Insert", numIters, prepare, cleanup, testCleanup) { i =>
+    addCaseWithCleanup(benchmark, "Insert", numIters, prepare, cleanup, testCleanup) { _ =>
       testDF2.write.insertInto("test")
     }
-    addCaseWithCleanup(benchmark, "PutInto", numIters, prepare, cleanup, testCleanup) { i =>
-        testDF2.write.putInto("test")
+    addCaseWithCleanup(benchmark, "PutInto", numIters, prepare, cleanup, testCleanup) { _ =>
+      testDF2.write.putInto("test")
     }
     benchmark.run()
   }
@@ -326,7 +326,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     snappySession.sql(s"select C1, $s from wide_table group by C1").show()
 
     val df = snappySession.sql("select *" +
-      " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
+        " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
     df.collect()
 
     val df0 = snappySession.sql(s"select * from wide_table")

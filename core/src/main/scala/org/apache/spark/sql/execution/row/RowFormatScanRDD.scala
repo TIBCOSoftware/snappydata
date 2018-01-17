@@ -409,7 +409,10 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
   protected final var doMove = true
   // transaction started by row buffer scan should be used here
   private val tx = TXManagerImpl.getCurrentSnapshotTXState
-  private[execution] final val itr = if (container ne null) {
+  private[execution] final val itr = createIterator(container, region, tx)
+
+  protected def createIterator(container: GemFireContainer, region: LocalRegion,
+      tx: TXStateInterface): PartitionedRegion#PRLocalScanIterator = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
       false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]

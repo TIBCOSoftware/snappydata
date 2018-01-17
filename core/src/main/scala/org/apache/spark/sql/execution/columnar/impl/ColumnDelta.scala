@@ -141,6 +141,12 @@ object ColumnDelta {
    */
   val MAX_DEPTH = 3
 
+  /**
+   * This is the currently used maximum depth which must be <= [[MAX_DEPTH]].
+   * It should only be used by transient execution-time structures and never in storage.
+   */
+  val USED_MAX_DEPTH = 2
+
   val mutableKeyNamePrefix = "SNAPPYDATA_INTERNAL_COLUMN_"
   /**
    * These are the virtual columns that are injected in the select plan for
@@ -166,7 +172,8 @@ object ColumnDelta {
   } else -1
 
   /**
-   * Returns 0 based table column index (while that stored in region is 1 based).
+   * Returns 0 based table column index for given delta or table column index
+   * (table column index stored in region key is 1 based).
    */
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH
