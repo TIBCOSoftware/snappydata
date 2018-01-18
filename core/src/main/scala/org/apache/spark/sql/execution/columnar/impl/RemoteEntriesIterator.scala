@@ -16,9 +16,12 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.util.function.Predicate
+
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface, Token}
+import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.message.GetAllExecutorMessage
 import com.pivotal.gemfirexd.internal.engine.sql.execute.GemFireResultSet
 import io.snappydata.collection.LongObjectHashMap
@@ -32,16 +35,9 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     pr: PartitionedRegion, tx: TXStateInterface) extends ClusteredColumnIterator {
 
   private val statsRows = {
-    val statsKeys = pr.getBucketKeys(bucketId).iterator().asScala.filter {
-      case k: ColumnFormatKey => k.columnIndex == STATROW_COL_INDEX
-      case _ => false
-    }
-    // get the entries for all stats rows using getAll (max 1000 at a time)
-    statsKeys.grouped(1000).flatMap { keys =>
-      val msg = new GetAllExecutorMessage(pr, keys.asInstanceOf[Seq[AnyRef]].toArray,
-        null, null, null, null, null, null, tx, null, false, false)
-      statsKeys.zip(GemFireResultSet.callGetAllExecutorMessage(msg).asScala.toIterator)
-    }
+    val statsKeys = pr.getBucketKeys(bucketId, StatsFilter, false, tx).toArray
+    // get the stats rows using getAll (max 1000 at a time)
+    statsKeys.grouped(1000).flatMap(fetchUsingGetAll)
   }
 
   /**
@@ -73,6 +69,17 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   private var currentStatsKey: ColumnFormatKey = _
   private val currentValueMap = LongObjectHashMap.withExpectedSize[AnyRef](8)
 
+  private def fetchUsingGetAll(keys: Array[AnyRef]): Seq[(AnyRef, AnyRef)] = {
+    val msg = new GetAllExecutorMessage(pr, keys, null, null, null, null,
+      null, null, tx, null, false, false)
+    val allMemberResults = GemFireResultSet.callGetAllExecutorMessage(msg).asScala
+    allMemberResults.flatMap { case v: ListResultCollectorValue =>
+      msg.getKeysPerMember(v.memberID).asScala.zip(
+        v.resultOfSingleExecution.asInstanceOf[java.util.List[AnyRef]].asScala)
+
+    }
+  }
+
   override def hasNext: Boolean = statsRows.hasNext
 
   override def next(): RegionEntry = {
@@ -86,12 +93,9 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     if (currentValueMap.size() == 0) {
       // fetch all the projected columns for current batch
       val fetchKeys = fullProjection.map(c =>
-        new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c))
-      val msg = new GetAllExecutorMessage(pr, fetchKeys.asInstanceOf[Array[AnyRef]],
-        null, null, null, null, null, null, tx, null, false, false)
-      fetchKeys.zip(GemFireResultSet.callGetAllExecutorMessage(msg).asScala).foreach {
-        case (_, null) | (_, _: Token) =>
-        case (k, v) => currentValueMap.justPut(k.columnIndex, v.asInstanceOf[AnyRef])
+        new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c): AnyRef)
+      fetchUsingGetAll(fetchKeys).foreach {
+        case (k: ColumnFormatKey, v) => currentValueMap.justPut(k.columnIndex, v)
       }
     }
     currentValueMap.get(column)
@@ -100,5 +104,12 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   override def close(): Unit = {
     currentStatsKey = null
     currentValueMap.clear()
+  }
+}
+
+object StatsFilter extends Predicate[AnyRef] with Serializable {
+  override def test(key: AnyRef): Boolean = key match {
+    case k: ColumnFormatKey => k.columnIndex == STATROW_COL_INDEX
+    case _ => false
   }
 }

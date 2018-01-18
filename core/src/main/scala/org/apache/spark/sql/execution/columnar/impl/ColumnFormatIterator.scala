@@ -242,7 +242,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
               // check and mark if any entry is overflowed to disk
               if (uuidMap.getGlobalState ne None) {
                 if (entry.isValueNull) {
-                  // indicate overflowed entries with globalState as Boolean.TRUE in the map
+                  // indicate overflowed entries with globalState as None in the map
                   uuidMap.setGlobalState(None)
                 } else setValue(entry, columnIndex, uuidMap)
               }
