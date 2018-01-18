@@ -759,6 +759,11 @@ class ColumnTableTest
     assert(region.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.NONE)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+        " (OVERFLOW 'false')")
+    Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[DistributedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.NONE)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
   }
 
   test("Test PR with Colocation") {
