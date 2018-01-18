@@ -34,7 +34,7 @@ import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
-import org.apache.spark.sql.execution.columnar.impl.{ClusteredColumnIterator, ColumnDelta, ColumnFormatEntry, ColumnFormatIterator, ColumnFormatKey, ColumnFormatValue}
+import org.apache.spark.sql.execution.columnar.impl.{ClusteredColumnIterator, ColumnDelta, ColumnFormatEntry, ColumnFormatIterator, ColumnFormatKey, ColumnFormatValue, RemoteEntriesIterator}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
@@ -156,7 +156,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
 
   override protected def createIterator(container: GemFireContainer, region: LocalRegion,
-      tx: TXStateInterface): PartitionedRegion#PRLocalScanIterator = if (region ne null) {
+      tx: TXStateInterface): PRIterator = if (region ne null) {
     val txState = if (tx ne null) tx.getLocalTXState else null
     val createIterator = new BiFunction[BucketRegion, java.lang.Long,
         java.util.Iterator[RegionEntry]] {
@@ -165,8 +165,16 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
         new ColumnFormatIterator(br, projection, fullScan, txState)
       }
     }
+    val createRemoteIterator = new BiFunction[java.lang.Integer, PRIterator,
+        java.util.Iterator[RegionEntry]] {
+      override def apply(bucketId: Integer,
+          iter: PRIterator): java.util.Iterator[RegionEntry] = {
+        new RemoteEntriesIterator(bucketId, projection, iter.getPartitionedRegion, txState)
+      }
+    }
     val pr = region.asInstanceOf[PartitionedRegion]
-    new pr.PRLocalScanIterator(bucketIds, txState, createIterator, false, true, true)
+    new pr.PRLocalScanIterator(bucketIds, txState, createIterator, createRemoteIterator,
+      false, true, true)
   } else null
 
   def getCurrentBatchId: Long = currentKeyUUID
