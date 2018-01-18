@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionS
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.util.Utils
 
 private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
@@ -275,20 +276,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("totalOffHeapUsage" -> totalOffHeapUsage)
     clusterStatsMap += ("jvmHeapUsage" -> jvmHeapUsage)
     clusterStatsMap += ("totalJvmHeapUsage" -> totalJvmHeapUsage)
-    clusterStatsMap += ("totalExecutorCoresCount" -> getTotalExecutorCoresCount)
+    clusterStatsMap += ("totalExecutorCoresCount" -> SnappyContext.totalCoreCount.get())
 
-  }
-
-  private def getTotalExecutorCoresCount(): Int = {
-    var totalNumExecutorCores = 0
-    val executorToTaskSummary = parent.parent.executorsListener.executorToTaskSummary
-    val executorKeysItr = executorToTaskSummary.keySet.iterator
-    while(executorKeysItr.hasNext){
-      val execKey = executorKeysItr.next()
-      val executor = executorToTaskSummary.get(execKey)
-      totalNumExecutorCores += executor.get.totalCores
-    }
-    totalNumExecutorCores
   }
 
   private def createPageTitleNode(title: String): Seq[Node] = {
