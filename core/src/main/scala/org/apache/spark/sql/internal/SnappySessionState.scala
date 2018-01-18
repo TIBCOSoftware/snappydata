@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.{EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -503,29 +503,26 @@ class SnappyConf(@transient val session: SnappySession)
 
     case Property.PlanCaching.name =>
       value match {
-        case Some(boolval) => {
+        case Some(boolval) =>
           if (boolval.toString.toBoolean) {
             session.clearPlanCache()
           }
           session.planCaching = boolval.toString.toBoolean
-        }
         case None =>
       }
 
     case Property.PlanCachingAll.name =>
       value match {
-        case Some(boolval) => {
+        case Some(boolval) =>
           val clearCache = !boolval.toString.toBoolean
           if (clearCache) SnappySession.getPlanCache.asMap().clear()
-        }
         case None =>
       }
 
     case Property.Tokenize.name =>
       value match {
-        case Some(boolval) => {
+        case Some(boolval) =>
           SnappySession.tokenize = boolval.toString.toBoolean
-        }
         case None =>
       }
 

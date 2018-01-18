@@ -95,6 +95,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     } else (0, null, null)
   }
 
+  // start iteration with the first provided region
   setRegion(baseRegion)
 
   private def switchDiskBlockSorter(): Unit = {

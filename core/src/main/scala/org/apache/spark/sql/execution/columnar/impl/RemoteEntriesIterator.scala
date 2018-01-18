@@ -36,27 +36,34 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
       case k: ColumnFormatKey => k.columnIndex == STATROW_COL_INDEX
       case _ => false
     }
-    // get the full entries for all stats rows in one getAll
-    val msg = new GetAllExecutorMessage(pr, statsKeys.asInstanceOf[Iterator[AnyRef]].toArray,
-      null, null, null, null, null, null, txState, null, false, false)
-    statsKeys.zip(GemFireResultSet.callGetAllExecutorMessage(msg).asScala.toIterator)
+    // get the entries for all stats rows using getAll (max 1000 at a time)
+    statsKeys.grouped(1000).flatMap { keys =>
+      val msg = new GetAllExecutorMessage(pr, keys.asInstanceOf[Iterator[AnyRef]].toArray,
+        null, null, null, null, null, null, txState, null, false, false)
+      statsKeys.zip(GemFireResultSet.callGetAllExecutorMessage(msg).asScala.toIterator)
+    }
   }
 
   /**
    * Full projection including all of delta and meta-data columns (except base stats entry)
    */
   private val fullProjection = {
+    // (STATROW_COL_INDEX - DELETE_MASK_COL_INDEX) gives the number of meta-data
+    // columns which are always fetched (includes the delete bitmask). This excludes
+    // STATROW_COL_INDEX itself that has already been fetched separately.
+    // And for each projected column there is a base column and upto USED_MAX_DEPTH deltas.
+    val numMetaColumns = STATROW_COL_INDEX - DELETE_MASK_COL_INDEX
     val projectionArray = new Array[Int](projection.length *
-        (ColumnDelta.USED_MAX_DEPTH + 1) - DELETE_MASK_COL_INDEX + STATROW_COL_INDEX)
+        (ColumnDelta.USED_MAX_DEPTH + 1) + numMetaColumns)
     for (i <- DELETE_MASK_COL_INDEX until STATROW_COL_INDEX) {
       projectionArray(i - DELETE_MASK_COL_INDEX) = i
     }
-    var i = STATROW_COL_INDEX - DELETE_MASK_COL_INDEX
+    var i = numMetaColumns
     for (p <- projection) {
       projectionArray(i) = p
       i += 1
       for (d <- 0 until ColumnDelta.USED_MAX_DEPTH) {
-        projectionArray(i) = ColumnDelta.deltaColumnIndex(p - 1, d)
+        projectionArray(i) = ColumnDelta.deltaColumnIndex(p - 1 /* method expects 0-based */, d)
         i += 1
       }
     }
@@ -72,7 +79,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     currentValueMap.clear()
     val p = statsRows.next()
     currentStatsKey = p._1.asInstanceOf[ColumnFormatKey]
-    NonLocalRegionEntry.newEntry(currentStatsKey, p._2, pr, null)
+    NonLocalRegionEntry.newEntry(currentStatsKey, p._2, null, null)
   }
 
   override def getColumnValue(column: Int): AnyRef = {
