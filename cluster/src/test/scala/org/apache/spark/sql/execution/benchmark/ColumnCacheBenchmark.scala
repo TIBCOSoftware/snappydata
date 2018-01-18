@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -88,6 +88,93 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
   ignore("PutInto Vs Insert") {
     benchMarkForPutIntoColumnTable(size = 50000000)
+  }
+
+  test("Performance and validity check for SNAP-2118") {
+    val snappy = this.snappySession
+    snappy.sql("DROP TABLE IF EXISTS TABLE1")
+    snappy.sql(
+      """
+        |create  table TABLE1(
+        |        id integer,
+        |        month integer,
+        |        val1 decimal(28,10),
+        |        name varchar(200),
+        |        val_name varchar(200),
+        |        year integer,
+        |        type_id integer,
+        |        val_id integer)
+        |using column options (partition_by 'id')
+      """.stripMargin)
+
+    snappy.sql("DROP TABLE IF EXISTS TABLE2")
+    snappy.sql(
+      """
+        |CREATE  TABLE TABLE2(
+        |        role_id INTEGER,
+        |        id INTEGER,
+        |        group_id INTEGER,
+        |        group_name VARCHAR(200),
+        |        name2 VARCHAR(200))
+        |USING COLUMN OPTIONS (PARTITION_BY 'id', COLOCATE_WITH 'TABLE1')
+      """.stripMargin)
+
+    snappy.sql("DROP TABLE IF EXISTS TABLE3")
+    snappy.sql(
+      """
+        |CREATE  TABLE TABLE3(
+        |        type_id INTEGER,
+        |        target_name VARCHAR(200),
+        |        factor DECIMAL(32,16))
+        |USING COLUMN OPTIONS (PARTITION_BY 'type_id');
+      """.stripMargin)
+
+    val numVals = 100
+    val numTypes = 100
+    val numRoles = 100
+    val numGroups = 100
+    val numNames = 1000
+    val numIds = 5000
+
+    val numIters = 10
+
+    val numElems1 = 12 * numVals * numIds
+    val numElems2 = 4 * numIds
+    val numElems3 = numTypes * numTypes
+
+    snappy.range(numElems1).selectExpr(s"id % $numIds",
+      s"cast((id / ($numVals * $numIds)) as int)",
+      "rand() * 100.0", s"concat('cmd_', cast((id % $numNames) as string))",
+      s"concat('val_', cast(cast((id / (12 * $numIds)) as int) as string))",
+      "(id % 2) + 2014", s"id % $numTypes", s"id % $numVals").write.insertInto("TABLE1")
+
+    snappy.range(numElems2).selectExpr(s"cast((rand() * $numRoles) as int)",
+      s"id % $numIds", s"id % $numGroups", "concat('grp_', cast((id % 100) as string))",
+      "concat('site_', cast((id % 1000) as string))").write.insertInto("TABLE2")
+
+    snappy.range(numElems3).selectExpr(s"id % $numTypes",
+      s"concat('type_', cast(cast((id / $numTypes) as int) as string))", "rand() * 100.0")
+        .write.insertInto("TABLE3")
+
+    val sql = "select b.group_name, a.name, " +
+        "sum(a.val1*c.factor) " +
+        "from TABLE1 a, TABLE2 b, TABLE3 c " +
+        "where a.id = b.id and a.year = 2015 and " +
+        "a.val_name like 'val\\_42%' and b.role_id = 99 and c.type_id = a.type_id and " +
+        "c.target_name = 'type_36' group by b.group_name, a.name"
+
+    val benchmark = new Benchmark("SNAP-2118 with random data", numElems1)
+
+    var expectedResult: Array[Row] = null
+    benchmark.addCase("smj", numIters, () => snappy.sql("set snappydata.hashJoinSize=-1")) { i =>
+      if (i == 1) expectedResult = snappy.sql(sql).collect()
+      else snappy.sql(sql).collect()
+    }
+    benchmark.addCase("hash", numIters, () => snappy.sql("set snappydata.hashJoinSize=1g")) { i =>
+      if (i == 1) ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
+      else snappy.sql(sql).collect()
+    }
+    benchmark.run()
   }
 
   test("insert more than 64K data") {
