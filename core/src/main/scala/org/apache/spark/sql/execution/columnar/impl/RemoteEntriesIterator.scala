@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXState, Token}
+import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface, Token}
 import com.pivotal.gemfirexd.internal.engine.distributed.message.GetAllExecutorMessage
 import com.pivotal.gemfirexd.internal.engine.sql.execute.GemFireResultSet
 import io.snappydata.collection.LongObjectHashMap
@@ -29,7 +29,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.{DELETE_MA
  * A [[ClusteredColumnIterator]] that fetches entries from a remote bucket.
  */
 final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
-    pr: PartitionedRegion, txState: TXState) extends ClusteredColumnIterator {
+    pr: PartitionedRegion, tx: TXStateInterface) extends ClusteredColumnIterator {
 
   private val statsRows = {
     val statsKeys = pr.getBucketKeys(bucketId).iterator().asScala.filter {
@@ -38,8 +38,8 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     }
     // get the entries for all stats rows using getAll (max 1000 at a time)
     statsKeys.grouped(1000).flatMap { keys =>
-      val msg = new GetAllExecutorMessage(pr, keys.asInstanceOf[Iterator[AnyRef]].toArray,
-        null, null, null, null, null, null, txState, null, false, false)
+      val msg = new GetAllExecutorMessage(pr, keys.asInstanceOf[Seq[AnyRef]].toArray,
+        null, null, null, null, null, null, tx, null, false, false)
       statsKeys.zip(GemFireResultSet.callGetAllExecutorMessage(msg).asScala.toIterator)
     }
   }
@@ -49,9 +49,9 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
    */
   private val fullProjection = {
     // (STATROW_COL_INDEX - DELETE_MASK_COL_INDEX) gives the number of meta-data
-    // columns which are always fetched (includes the delete bitmask). This excludes
-    // STATROW_COL_INDEX itself that has already been fetched separately.
-    // And for each projected column there is a base column and upto USED_MAX_DEPTH deltas.
+    // columns which are always fetched. This excludes STATROW_COL_INDEX itself
+    // that has already been fetched separately and includes the delete bitmask.
+    // And for each projected column there is a base column and up-to USED_MAX_DEPTH deltas.
     val numMetaColumns = STATROW_COL_INDEX - DELETE_MASK_COL_INDEX
     val projectionArray = new Array[Int](projection.length *
         (ColumnDelta.USED_MAX_DEPTH + 1) + numMetaColumns)
@@ -88,7 +88,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
       val fetchKeys = fullProjection.map(c =>
         new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c))
       val msg = new GetAllExecutorMessage(pr, fetchKeys.asInstanceOf[Array[AnyRef]],
-        null, null, null, null, null, null, txState, null, false, false)
+        null, null, null, null, null, null, tx, null, false, false)
       fetchKeys.zip(GemFireResultSet.callGetAllExecutorMessage(msg).asScala).foreach {
         case (_, null) | (_, _: Token) =>
         case (k, v) => currentValueMap.justPut(k.columnIndex, v.asInstanceOf[AnyRef])

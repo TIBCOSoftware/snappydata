@@ -25,6 +25,11 @@ import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
  * iterators or those fetching entries from remote nodes.
  */
 abstract class ClusteredColumnIterator extends CloseableIterator[RegionEntry] {
-  /** get the column value (1-based) for current iterator position */
+
+  /**
+   * Get the column value (1-based) for current iterator position. Requires
+   * the hasNext and next of iterator to have been invoked first else can
+   * throw an NullPointerException.
+   */
   def getColumnValue(column: Int): AnyRef
 }

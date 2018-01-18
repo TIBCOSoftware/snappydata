@@ -169,7 +169,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
         java.util.Iterator[RegionEntry]] {
       override def apply(bucketId: Integer,
           iter: PRIterator): java.util.Iterator[RegionEntry] = {
-        new RemoteEntriesIterator(bucketId, projection, iter.getPartitionedRegion, txState)
+        new RemoteEntriesIterator(bucketId, projection, iter.getPartitionedRegion, tx)
       }
     }
     val pr = region.asInstanceOf[PartitionedRegion]
