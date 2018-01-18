@@ -81,7 +81,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         // TODO: SW: merge stats
         oldValue
       } else {
-        val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex)
+        val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
         val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
         val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
             .fetchHiveMetaData(false) match {
@@ -172,11 +172,11 @@ object ColumnDelta {
   } else -1
 
   /**
-   * Returns 0 based table column index for given delta or table column index
+   * Returns 1 based table column index for given delta or table column index
    * (table column index stored in region key is 1 based).
    */
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
-    (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH
+    (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX + MAX_DEPTH - 1) / MAX_DEPTH
   } else deltaColumnIndex
 
   /**

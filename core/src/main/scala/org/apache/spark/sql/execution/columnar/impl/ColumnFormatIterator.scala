@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.function.LongFunction
 
-import com.gemstone.gemfire.cache.{EntryNotFoundException, RegionDestroyedException}
+import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.cache.DiskBlockSortManager.DiskBlockSorter
 import com.gemstone.gemfire.internal.cache.DistributedRegion.{DiskEntryPage, DiskPosition}
 import com.gemstone.gemfire.internal.cache._
@@ -178,19 +178,15 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     }
   }
 
-  private def getValue(entry: RegionEntry): AnyRef = {
-    val v = entry.getValue(currentRegion)
-    if (v ne null) v
-    else {
+  private def setValue(entry: RegionEntry, columnIndex: Int,
+      uuidMap: LongObjectHashMap[AnyRef]): Unit = {
+    var v = entry.getValue(currentRegion)
+    if (v eq null) {
       checkRegion(currentRegion)
       // try once more
-      val v = entry.getValue(currentRegion)
-      if (v ne null) v
-      else {
-        val enfe = new EntryNotFoundException(entry.getRawKey.toString)
-        throw new ForceReattemptException(enfe.toString, enfe)
-      }
+      v = entry.getValue(currentRegion)
     }
+    if (v ne null) uuidMap.justPut(columnIndex, v)
   }
 
   def advanceToNextBatchSet(): Boolean = {
@@ -213,10 +209,15 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
         val key = aEntry.getRawKey.asInstanceOf[ColumnFormatKey]
         // check if it is for required projection columns and whether
         val columnIndex = key.columnIndex
-        val tableColumn = ColumnDelta.tableColumnIndex(columnIndex)
-        if ((tableColumn > 0 && BitSet.isSet(projectionBitSet, Platform.LONG_ARRAY_OFFSET,
-          tableColumn, projectionBitSet.length)) ||
-            (columnIndex < 0 && columnIndex >= ColumnFormatEntry.DELETE_MASK_COL_INDEX)) {
+        if ((columnIndex < 0 && columnIndex >= ColumnFormatEntry.DELETE_MASK_COL_INDEX) || {
+          val tableColumn = ColumnDelta.tableColumnIndex(columnIndex)
+          tableColumn > 0 &&
+              BitSet.isSet(projectionBitSet, Platform.LONG_ARRAY_OFFSET,
+                tableColumn, projectionBitSet.length)
+        }) {
+          // note that the map used below uses value==0 to indicate free, so the
+          // column indexes have to be 1-based (and negative for deltas/meta-data)
+          // and so the same values as that stored in ColumnFormatKey are used
           val uuidMap = activeBatches.computeIfAbsent(key.uuid, newMapCreator)
           // set the stats entry in the state
           if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
@@ -242,11 +243,9 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
                 if (entry.isValueNull) {
                   // indicate overflowed entries with globalState as Boolean.TRUE in the map
                   uuidMap.setGlobalState(None)
-                } else {
-                  uuidMap.justPut(columnIndex, getValue(entry))
-                }
+                } else setValue(entry, columnIndex, uuidMap)
               }
-            } else uuidMap.justPut(columnIndex, getValue(entry))
+            } else setValue(entry, columnIndex, uuidMap)
           }
         }
       }
