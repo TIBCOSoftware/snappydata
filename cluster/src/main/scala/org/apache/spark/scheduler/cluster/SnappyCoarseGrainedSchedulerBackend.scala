@@ -72,27 +72,29 @@ class BlockManagerIdListener(sc: SparkContext)
   override def onExecutorAdded(
       msg: SparkListenerExecutorAdded): Unit = synchronized {
     val executorCores = msg.executorInfo.totalCores
-    val profile = Misc.getMemStore.getDistributionAdvisor
-        .getProfile(msg.executorId)
-    val numProcessors = if (profile != null) profile.getNumProcessors
-    else executorCores
+    val profile = Misc.getMemStore.getDistributionAdvisor.getProfile(msg.executorId)
+    val numProcessors = if (profile != null) profile.getNumProcessors else 0
     SnappyContext.getBlockId(msg.executorId) match {
       case None => SnappyContext.addBlockId(msg.executorId,
         new BlockAndExecutorId(null, executorCores, numProcessors))
-      case Some(b) => b._executorCores = executorCores
-        b._numProcessors = numProcessors
+      case Some(b) => SnappyContext.addBlockId(msg.executorId,
+        new BlockAndExecutorId(b.blockId, executorCores, numProcessors))
     }
   }
 
   override def onBlockManagerAdded(
       msg: SparkListenerBlockManagerAdded): Unit = synchronized {
-    val executorId = msg.blockManagerId.executorId
+    val blockId = msg.blockManagerId
+    val executorId = blockId.executorId
+    val profile = Misc.getMemStore.getDistributionAdvisor.getProfile(executorId)
+    val numProcessors = if (profile != null) profile.getNumProcessors else 0
     SnappyContext.getBlockIdIfNull(executorId) match {
-      case None =>
-        val numCores = sc.schedulerBackend.defaultParallelism()
+      case Some(b) =>
         SnappyContext.addBlockId(executorId, new BlockAndExecutorId(
-          msg.blockManagerId, numCores, numCores))
-      case Some(b) => b._blockId = msg.blockManagerId
+          blockId, b.executorCores, numProcessors))
+      case None =>
+        SnappyContext.addBlockId(executorId, new BlockAndExecutorId(
+          blockId, sc.schedulerBackend.defaultParallelism(), numProcessors))
     }
   }
 
