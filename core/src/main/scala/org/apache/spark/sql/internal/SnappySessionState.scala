@@ -32,10 +32,10 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, _}
+import org.apache.spark.sql.catalyst.expressions.{EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, InsertIntoTable, Join, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
@@ -47,7 +47,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.DecimalType
+import org.apache.spark.sql.types.{DecimalType, StringType}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.{Partition, SparkConf}
 
@@ -133,6 +133,7 @@ class SnappySessionState(snappySession: SnappySession)
       }
 
       modified :+
+          Batch("Like escape simplification", Once, LikeEscapeSimplification) :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
           Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets(conf)) :+
           Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
@@ -1051,5 +1052,55 @@ private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: datasources
       case PutIntoColumnTable(_, _, _) => // Do nothing
       case _ => sparkPreWriteCheck.apply(plan)
     }
+  }
+}
+
+/**
+ * Deals with any escape characters in the LIKE pattern in optimization.
+ * Does not deal with startsAndEndsWith equivalent of Spark's LikeSimplification
+ * so 'a%b' kind of pattern with additional escaped chars will not be optimized.
+ */
+object LikeEscapeSimplification extends Rule[LogicalPlan] {
+  def simplifyLike(expr: Expression, left: Expression, pattern: String): Expression = {
+    val len_1 = pattern.length - 1
+    if (len_1 == -1) return EqualTo(left, Literal(""))
+    val str = new StringBuilder(pattern.length)
+    var wildCardStart = false
+    var i = 0
+    while (i < len_1) {
+      pattern.charAt(i) match {
+        case '\\' =>
+          val c = pattern.charAt(i + 1)
+          c match {
+            case '_' | '%' | '\\' => // literal char
+            case _ => return expr
+          }
+          str.append(c)
+          // if next character is last one then it is literal
+          if (i == len_1 - 1) {
+            if (wildCardStart) return EndsWith(left, Literal(str.toString))
+            else return EqualTo(left, Literal(str.toString))
+          }
+          i += 1
+        case '%' if i == 0 => wildCardStart = true
+        case '%' | '_' => return expr // wildcards in middle are left as is
+        case c => str.append(c)
+      }
+      i += 1
+    }
+    pattern.charAt(len_1) match {
+      case '%' =>
+        if (wildCardStart) Contains(left, Literal(str.toString))
+        else StartsWith(left, Literal(str.toString))
+      case '_' | '\\' => expr
+      case c =>
+        str.append(c)
+        if (wildCardStart) EndsWith(left, Literal(str.toString))
+        else EqualTo(left, Literal(str.toString))
+    }
+  }
+
+  def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+    case l@Like(left, Literal(pattern, StringType)) => simplifyLike(l, left, pattern.toString)
   }
 }
