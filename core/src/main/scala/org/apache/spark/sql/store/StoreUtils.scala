@@ -421,7 +421,8 @@ object StoreUtils {
     parameters.remove(PARTITIONER).foreach(v =>
       sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
 
-    val defaultEviction = s"$GEM_HEAPPERCENT $GEM_OVERFLOW"
+    val overflow = parameters.get(OVERFLOW).map((_.toBoolean)).getOrElse(true)
+    val defaultEviction = if (overflow) s"$GEM_HEAPPERCENT $GEM_OVERFLOW" else EMPTY_STRING
     sb.append(parameters.remove(EVICTION_BY).map(v => {
       if (v.contains(LRUCOUNT) && isShadowTable) {
         throw Utils.analysisException(
@@ -429,7 +430,7 @@ object StoreUtils {
       } else if (v.equalsIgnoreCase("NONE")) {
         EMPTY_STRING
       } else {
-        if (!parameters.get(OVERFLOW).forall(_.toBoolean)) {
+        if (!overflow) {
           throw Utils.analysisException("overflow 'FALSE' is not supported when eviction is " +
               "configured.")
         }
