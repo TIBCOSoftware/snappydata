@@ -32,6 +32,7 @@ import org.junit.Assert
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -256,11 +257,18 @@ class SplitSnappyClusterDUnitTest(s: String)
   override def testUpdateDeleteOnColumnTables(): Unit = {
     // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
     val session = new SnappySession(sc)
-    ColumnUpdateDeleteTests.testBasicUpdate(session)
-    ColumnUpdateDeleteTests.testBasicDelete(session)
-    ColumnUpdateDeleteTests.testSNAP1925(session)
-    ColumnUpdateDeleteTests.testSNAP1926(session)
-    ColumnUpdateDeleteTests.testConcurrentOps(session)
+    // using random bucket assignment for this test to check remote iteration
+    // added in SNAP-2012
+    StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = true
+    try {
+      ColumnUpdateDeleteTests.testBasicUpdate(session)
+      ColumnUpdateDeleteTests.testBasicDelete(session)
+      ColumnUpdateDeleteTests.testSNAP1925(session)
+      ColumnUpdateDeleteTests.testSNAP1926(session)
+      ColumnUpdateDeleteTests.testConcurrentOps(session)
+    } finally {
+      StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
+    }
   }
 }
 

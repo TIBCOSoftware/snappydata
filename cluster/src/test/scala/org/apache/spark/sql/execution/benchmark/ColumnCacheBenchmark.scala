@@ -82,7 +82,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private lazy val sparkSession = new SparkSession(sc)
   private lazy val snappySession = snc.snappySession
 
-
   ignore("cache with randomized keys - insert") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
   }
