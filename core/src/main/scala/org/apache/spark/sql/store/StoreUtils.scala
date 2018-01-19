@@ -109,6 +109,10 @@ object StoreUtils {
   val PRIMARY_KEY_PATTERN: Pattern = Pattern.compile("\\WPRIMARY\\s+KEY\\W",
     Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
 
+  /** for testing only (a long convoluted name chosen deliberately) */
+  var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = java.lang.Boolean.getBoolean(
+    "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT")
+
   // private property to indicate One-to-one mapping of partitions to buckets
   // which is enabled per-query using `LinkPartitionsToBuckets` rule
   private[sql] val PROPERTY_PARTITION_BUCKET_LINKED = "linkPartitionsToBuckets"
@@ -137,7 +141,10 @@ object StoreUtils {
         region.getOrCreateNodeForBucketWrite(bucketId, null)
       } else null
       val members = new mutable.ArrayBuffer[String](2)
-      getBucketOwnersForRead(bucketId, region).foreach { m =>
+      val targetBucketId = if (TEST_RANDOM_BUCKETID_ASSIGNMENT) {
+        scala.util.Random.nextInt(region.getTotalNumberOfBuckets)
+      } else bucketId
+      getBucketOwnersForRead(targetBucketId, region).foreach { m =>
         SnappyContext.getBlockId(m.canonicalString()) match {
           case Some(b) =>
             if (prependPrimary && m.equals(primary)) {
@@ -414,7 +421,8 @@ object StoreUtils {
     parameters.remove(PARTITIONER).foreach(v =>
       sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
 
-    val defaultEviction = s"$GEM_HEAPPERCENT $GEM_OVERFLOW"
+    val overflow = parameters.get(OVERFLOW).map((_.toBoolean)).getOrElse(true)
+    val defaultEviction = if (overflow) s"$GEM_HEAPPERCENT $GEM_OVERFLOW" else EMPTY_STRING
     sb.append(parameters.remove(EVICTION_BY).map(v => {
       if (v.contains(LRUCOUNT) && isShadowTable) {
         throw Utils.analysisException(
@@ -422,7 +430,7 @@ object StoreUtils {
       } else if (v.equalsIgnoreCase("NONE")) {
         EMPTY_STRING
       } else {
-        if (!parameters.get(OVERFLOW).map((_.toBoolean)).getOrElse(true)) {
+        if (!overflow) {
           throw Utils.analysisException("overflow 'FALSE' is not supported when eviction is " +
               "configured.")
         }

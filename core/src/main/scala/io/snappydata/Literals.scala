@@ -227,7 +227,7 @@ object Property extends Enumeration {
      "It is recommended that hostname and client port of the locator " +
      "be specified for this.", None, Constant.SPARK_PREFIX)
 
-  val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
+  val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
     s"Number of query plans that will be cached.", Some(3000))
 
   val ColumnBatchSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}column.batchSize",
@@ -247,12 +247,12 @@ object Property extends Enumeration {
         s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
         s"create table DDL else this setting is used for the create table.", Some(10000))
 
-  val HashJoinSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
+  val HashJoinSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}sql.hashJoinSize",
     "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. The limit specifies an estimate on the input data size " +
         "(in bytes or k/m/g/t suffixes for unit). Default value is 100MB.", Some("100m"))
 
-  val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}hashAggregateSize",
+  val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}sql.hashAggregateSize",
     "Aggregation will use optimized hash aggregation plan but one that does not " +
         "overflow to disk and can cause OOME if the result of aggregation is large. " +
         "The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) " +

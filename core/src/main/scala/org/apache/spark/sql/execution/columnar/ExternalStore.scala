@@ -41,7 +41,8 @@ trait ExternalStore extends Serializable {
       compressionCodecId: Int, conn: Option[Connection]): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
-      prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any]
+      projection: Array[Int], fullScan: Boolean, prunePartitions: => Int,
+      session: SparkSession, schema: StructType): RDD[Any]
 
   def getConnectedExternalStore(tableName: String,
       onExecutor: Boolean): ConnectedExternalStore
