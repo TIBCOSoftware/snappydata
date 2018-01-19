@@ -19,7 +19,9 @@ package io.snappydata
 import scala.reflect.ClassTag
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
+import io.snappydata.collection.ObjectObjectHashMap
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 import org.apache.spark.sql.store.CompressionCodecId
@@ -137,8 +139,8 @@ object Constant {
   // @TODO check whether function like named_struct, ntile etc. can ever
   // come in the where clause of a query. Right now Tokenization is done
   // for constants in where clause only.
-  val FOLDABLE_FUNCTIONS: Map[String, Seq[Int]] = Map("ROUND" -> Seq(1),
-    "BROUND" -> Seq(1), "PERCENTILE" -> Seq(1), "STACK" -> Seq(0),
+  val FOLDABLE_FUNCTIONS: ObjectObjectHashMap[String, Seq[Int]] = Utils.toOpenHashMap(Map(
+    "ROUND" -> Seq(1), "BROUND" -> Seq(1), "PERCENTILE" -> Seq(1), "STACK" -> Seq(0),
     "NTILE" -> Seq(0), "STR_TO_MAP" -> Seq(1, 2), "NAMED_STRUCT" -> Seq(-1),
     "REFLECT" -> Seq(0, 1), "JAVA_METHOD" -> Seq(0, 1), "XPATH" -> Seq(1),
     "XPATH_BOOLEAN" -> Seq(1), "XPATH_DOUBLE" -> Seq(1),
@@ -150,7 +152,7 @@ object Constant {
     "TO_UNIX_TIMESTAMP" -> Seq(1), "FROM_UNIX_TIMESTAMP" -> Seq(1),
     "TO_UTC_TIMESTAMP" -> Seq(1), "FROM_UTC_TIMESTAMP" -> Seq(1),
     "TRUNC" -> Seq(1), "NEXT_DAY" -> Seq(1),
-    "LIKE" -> Seq(1), "RLIKE" -> Seq(1))
+    "LIKE" -> Seq(1), "RLIKE" -> Seq(1)))
 }
 
 /**
@@ -285,6 +287,10 @@ object Property extends Enumeration {
   val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.tokenize",
     "Property to enable/disable tokenization", Some(true))
+
+  val ParserTraceError: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.parser.traceError",
+    "Property to enable detailed rule tracing for parse errors", Some(false))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",

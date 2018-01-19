@@ -16,11 +16,13 @@
  */
 package org.apache.spark.sql
 
+import java.util.function.BiConsumer
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
-import io.snappydata.{Constant, QueryHint}
+import io.snappydata.{Constant, Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -146,24 +148,25 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   private final def updatePerTableQueryHint(tableIdent: TableIdentifier,
       optAlias: Option[String]) = {
     val indexHint = queryHints.remove(QueryHint.Index.toString)
-    if (indexHint.nonEmpty) {
+    if (indexHint ne null) {
       val table = optAlias match {
         case Some(alias) => alias
         case _ => tableIdent.unquotedString
       }
-
-      queryHints.put(QueryHint.Index.toString + table, indexHint.get)
+      queryHints.put(QueryHint.Index.toString + table, indexHint)
     }
   }
 
-  private final def assertNoQueryHint(hint: QueryHint.Value, msg: String) = {
-    if (queryHints.exists({
-      case (key, _) => key.startsWith(hint.toString)
-    })) {
-      throw Utils.analysisException(msg)
+  private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String) = {
+    if (!queryHints.isEmpty) {
+      val hintStr = hint.toString
+      queryHints.forEach(new BiConsumer[String, String] {
+        override def accept(key: String, value: String): Unit = {
+          if (key.startsWith(hintStr)) throw Utils.analysisException(msg)
+        }
+      })
     }
   }
-
 
   protected final def booleanLiteral: Rule1[Literal] = rule {
     TRUE ~> (() => Literal.create(true, BooleanType)) |
@@ -180,8 +183,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     stringLiteral ~> ((s: String) => Literal.create(s, StringType)) |
     numericLiteral |
     booleanLiteral |
-    NULL ~> (() => Literal.create(null, NullType)) |
-    intervalLiteral
+    NULL ~> (() => Literal.create(null, NullType))
   }
 
   protected final def paramLiteralQuestionMark: Rule1[ParamLiteral] = rule {
@@ -218,13 +220,19 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       case None =>
     }
 
-  protected final def paramLiteral: Rule1[ParamLiteral] = rule {
-    literal ~> ((l: Literal) => {
-      _paramCounter += 1
-      val p = ParamLiteral(l.value, l.dataType, _paramCounter)
-      addParamLiteralToContext(p)
-      p
-    })
+  private def handleParamLiteral(l: Literal): ParamLiteral = {
+    _paramCounter += 1
+    val p = ParamLiteral(l.value, l.dataType, _paramCounter)
+    addParamLiteralToContext(p)
+    p
+  }
+
+  protected final def paramOrLiteral: Rule1[Literal] = rule {
+    literal ~> ((l: Literal) => if (tokenize) handleParamLiteral(l) else l)
+  }
+
+  protected final def paramIntervalLiteral: Rule1[Literal] = rule {
+    intervalLiteral ~> ((l: Literal) => if (tokenize) handleParamLiteral(l) else l)
   }
 
   protected final def month: Rule1[Int] = rule {
@@ -324,7 +332,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   final def namedExpression: Rule1[Expression] = rule {
     expression ~ (
-        AS.? ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
+        AS ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         strictIdentifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
@@ -426,18 +434,20 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     */
   protected final def invertibleExpression: Rule[Expression :: HNil,
       Expression :: HNil] = rule {
-    IN ~ '(' ~ ws ~ (termExpression * commaSep) ~ ')' ~ ws ~>
-        ((e: Expression, es: Any) => In(e, es.asInstanceOf[Seq[Expression]])) |
     LIKE ~ termExpression ~>
         ((e1: Expression, e2: Expression) => e2 match {
           case pl: ParamLiteral if !pl.value.isInstanceOf[Row] => likeExpression(e1, pl)
           case _ => Like(e1, e2)
         }) |
+    IN ~ '(' ~ ws ~ (
+        (termExpression * commaSep) ~ ')' ~ ws ~> ((e: Expression, es: Any) =>
+          In(e, es.asInstanceOf[Seq[Expression]])) |
+        query ~ ')' ~ ws ~> ((e1: Expression, plan: LogicalPlan) =>
+          In(e1, Seq(ListQuery(plan))))
+        ) |
     BETWEEN ~ termExpression ~ AND ~ termExpression ~>
         ((e: Expression, el: Expression, eu: Expression) =>
           And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))) |
-    IN ~ '(' ~ ws ~ query ~ ')' ~ ws ~> ((e1: Expression
-        , plan: LogicalPlan) => In(e1, Seq(ListQuery(plan)))) |
     (RLIKE | REGEXP) ~ termExpression ~>
         ((e1: Expression, e2: Expression) => e2 match {
           case pl: ParamLiteral if !pl.value.isInstanceOf[Row] =>
@@ -770,7 +780,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
       n1: String): Seq[Expression] = if (!_isPreparePhase) {
     Constant.FOLDABLE_FUNCTIONS.get(n1) match {
-      case Some(args) =>
+      case null => exprs
+      case args =>
         exprs.zipWithIndex.collect {
           case (pl: ParamLiteral, index) if args.contains(index) ||
               // all args          // all odd args
@@ -781,12 +792,11 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
             Literal.create(pl.value, pl.dataType)
           case (ex: Expression, _) => ex
         }
-      case None => exprs
     }
   } else exprs
 
   protected final def primary: Rule1[Expression] = rule {
-    ( ( test(tokenize) ~ paramLiteral ) | literal | paramLiteralQuestionMark) |
+    paramIntervalLiteral |
     identifier ~ (
       ('.' ~ identifier).? ~ '(' ~ ws ~ (
         '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
@@ -827,6 +837,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
+    paramOrLiteral | paramLiteralQuestionMark |
     '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
       (fn: FunctionIdentifier, e: Any) =>
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
@@ -1019,8 +1030,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
     MATCH ~> (() => tokenize = session.planCaching &&
-        SnappySession.tokenize && canTokenize &&
-        session.sessionState.conf.wholeStageEnabled)
+        SnappySession.tokenize && canTokenize && session.wholeStageEnabled)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
@@ -1052,12 +1062,13 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     val plan = parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>
-        throw Utils.analysisException(formatError(e))
+        throw Utils.analysisException(formatError(e, new ErrorFormatter(
+          showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
       case Failure(e) =>
         throw Utils.analysisException(e.toString, Some(e))
     }
-    if (queryHints.nonEmpty) {
-      session.queryHints ++= queryHints
+    if (!queryHints.isEmpty) {
+      session.queryHints.putAll(queryHints)
     }
     plan
   }
