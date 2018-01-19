@@ -134,7 +134,7 @@ class LeadImpl extends ServerImpl with Lead
     propNames = bootProperties.stringPropertyNames().iterator()
     while (propNames.hasNext) {
       val propName = propNames.next()
-      if (propName.startsWith(STORE_PREFIX) ) {
+      if (propName.startsWith(STORE_PREFIX)) {
         storeProperties.setProperty(propName.substring(
           STORE_PREFIX.length), bootProperties.getProperty(propName))
       } else if (propName.startsWith(GemFireSparkConnectorCacheImpl.connectorPrefix) ) {

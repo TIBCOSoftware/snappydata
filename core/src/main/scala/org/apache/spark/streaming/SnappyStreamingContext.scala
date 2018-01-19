@@ -61,27 +61,16 @@ class SnappyStreamingContext protected[spark](
 
   val snappySession = reuseSnappySession.getOrElse(new SnappySession(sc))
   currentSnappySession.foreach(csn => {
-    var userKey = Attribute.USERNAME_ATTR
-    var user = csn.conf.get(userKey, "")
-    val isSmartConnProp = if (user.isEmpty) {
-      // In smart connector, property name is different.
-      userKey = Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR
-      user = csn.conf.get(userKey, "")
-      true
-    } else {
-      false
-    }
-
-    if (!user.isEmpty) {
-      val (passwordKey, password) = if (isSmartConnProp) {
-        val key = Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR
-        key -> csn.conf.get(key, "")
-      } else {
-        val key = Attribute.PASSWORD_ATTR
-        key -> csn.conf.get(key, "")
-      }
-      snappySession.sessionState.conf.setConfString(userKey, user)
-      snappySession.sessionState.conf.setConfString(passwordKey, password)
+    val attrs = Attribute.USERNAME_ATTR -> Attribute.PASSWORD_ATTR
+    val smartAttrs = (Constant.SPARK_STORE_PREFIX + attrs._1) ->
+        (Constant.SPARK_STORE_PREFIX + attrs._2)
+    // exists (or find) instead of foreach to break out on first match
+    Seq(attrs, smartAttrs).exists { case (userKey, passKey) =>
+      if (!csn.conf.get(userKey, "").isEmpty) {
+        snappySession.sessionState.conf.setConfString(userKey, csn.conf.get(userKey))
+        snappySession.sessionState.conf.setConfString(passKey, csn.conf.get(passKey, ""))
+        true
+      } else false
     }
   })
 
