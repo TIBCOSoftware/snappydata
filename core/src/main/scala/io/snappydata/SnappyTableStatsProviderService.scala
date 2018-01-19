@@ -30,13 +30,15 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, LocalRegion, PartitionedRegion, RegionEntry}
+import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, ExternalTableMetaData, LocalRegion, PartitionedRegion, RegionEntry}
+
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
+import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
@@ -178,8 +180,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   }
 
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats]) = {
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
+    var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
     try {
       if (dataServers != null && dataServers.size() > 0) {
@@ -189,11 +192,22 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
             .asScala
       }
+
+      // External Tables
+      val hiveTables: java.util.List[ExternalTableMetaData] =
+        Misc.getMemStore.getExternalCatalog.getHiveTables(true)
+      externalTables = hiveTables.asScala.collect {
+        case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
+          new SnappyExternalTableStats (table.entityName, table.tableType, table.provider,
+            table.externalStore, table.dataSourcePath, table.driverClass) }
     }
     catch {
       case NonFatal(e) => log.warn(e.getMessage, e)
     }
-    (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
+
+    (result.flatMap(_.getRegionStats.asScala),
+     result.flatMap(_.getIndexStats.asScala),
+     externalTables)
   }
 
   type PRIterator = PartitionedRegion#PRLocalScanIterator
