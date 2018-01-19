@@ -280,6 +280,8 @@ class LeadImpl extends ServerImpl with Lead
 
     super.start(storeProps, ignoreIfStarted = false)
 
+    resetLogger()
+
     val cache = Misc.getGemFireCache
     cache.getDistributionManager.addMembershipListener(SnappyContext.membershipListener)
 
