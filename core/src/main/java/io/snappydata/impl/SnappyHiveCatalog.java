@@ -409,6 +409,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             List<String> tables = hmc.getAllTables(schema);
             for (String tableName : tables) {
               Table table = hmc.getTable(schema, tableName);
+              String tblDataSourcePath = table.getMetadata().getProperty("path");
+              tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+              String driverClass = table.getMetadata().getProperty("driver");
+              driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
               String tableType = ExternalTableType.getTableType(table);
               if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType)) {
                 // TODO: FIX ME: should not convert to upper case blindly
@@ -417,7 +421,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
                     Utils.toUpperCase(table.getTableName()),
                     Utils.toUpperCase(table.getDbName()),
                     tableType, null, -1, -1,
-                    null, null, null, null);
+                    null, null, null, null,
+                    tblDataSourcePath, driverClass);
                 metaData.provider = table.getParameters().get(
                     SnappyStoreHiveCatalog.HIVE_PROVIDER());
                 metaData.columns = ExternalStoreUtils.getColumnMetadata(
@@ -487,6 +492,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);
+          String tblDataSourcePath = table.getMetadata().getProperty("path");
+          tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+          String driverClass = table.getMetadata().getProperty("driver");
+          driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
           return new ExternalTableMetaData(
               fullyQualifiedName,
               schema,
@@ -498,7 +507,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               compressionCodec,
               baseTable,
               dmls,
-              dependentRelations);
+              dependentRelations,
+              tblDataSourcePath,
+              driverClass);
 
         case CLOSE_HMC:
           Hive.closeCurrent();

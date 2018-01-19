@@ -11,8 +11,11 @@ Release 1.0.1
 
 - New Features/Fixed Issues
 
+  [SNAP-2086] Snappy Pulse displays list of external tables.
+
   [SNAP-2144] Snappy-Pulse UI now also displays Total Number of Cores configured in SnappyData
   cluster.
+
 
 Release 1.0.0
 
