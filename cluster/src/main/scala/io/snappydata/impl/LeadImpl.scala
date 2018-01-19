@@ -30,7 +30,7 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.Status
+import com.gemstone.gemfire.internal.cache.{GemFireSparkConnectorCacheImpl, Status}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
@@ -137,6 +137,8 @@ class LeadImpl extends ServerImpl with Lead
       if (propName.startsWith(STORE_PREFIX)) {
         storeProperties.setProperty(propName.substring(
           STORE_PREFIX.length), bootProperties.getProperty(propName))
+      } else if (propName.startsWith(GemFireSparkConnectorCacheImpl.connectorPrefix) ) {
+        storeProperties.setProperty(propName, bootProperties.getProperty(propName))
       }
     }
 
