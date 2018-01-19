@@ -18,11 +18,10 @@ package org.apache.spark.sql
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
@@ -853,35 +852,34 @@ object SnappyContext extends Logging {
       throw new IllegalStateException("Invalid SparkConf")
   }
 
-  private[this] val storeToBlockMap = new ConcurrentHashMap[String, BlockAndExecutorId]
-  private[this] val hostExecutorCount = new ConcurrentHashMap[String, Integer]
+  private[this] val storeToBlockMap: TrieMap[String, BlockAndExecutorId] =
+    TrieMap.empty[String, BlockAndExecutorId]
   private[spark] val totalCoreCount = new AtomicInteger(0)
 
   def getBlockId(executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.get(executorId) match {
-      case null => None
-      case b if b.blockId ne null => Some(b)
+      case s@Some(b) if b.blockId ne null => s
       case _ => None
     }
   }
 
   private[spark] def getBlockIdIfNull(
       executorId: String): Option[BlockAndExecutorId] =
-    Option(storeToBlockMap.get(executorId))
+    storeToBlockMap.get(executorId)
 
   private[spark] def addBlockId(executorId: String,
       id: BlockAndExecutorId): Unit = {
     storeToBlockMap.put(executorId, id) match {
-      case null =>
-        if ((id.blockId ne null) && !id.blockId.isDriver && id.numProcessors > 0) {
-          hostExecutorCount.compute(id.blockId.host, new AddHost(id))
+      case None =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(id.numProcessors)
         }
-      case oldId =>
-        if ((id.blockId ne null) && !id.blockId.isDriver && id.numProcessors > 0) {
-          hostExecutorCount.compute(id.blockId.host, new AddHost(id))
-          if ((oldId.blockId ne null) && !oldId.blockId.isDriver && oldId.numProcessors > 0) {
-            hostExecutorCount.compute(id.blockId.host, new RemoveHost(oldId))
-          }
+      case Some(oldId) =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(id.numProcessors)
+        }
+        if (oldId.blockId == null || !oldId.blockId.isDriver) {
+          totalCoreCount.addAndGet(-oldId.numProcessors)
         }
     }
     SnappySession.clearAllCache(onlyQueryPlanCache = true)
@@ -890,23 +888,22 @@ object SnappyContext extends Logging {
   private[spark] def removeBlockId(
       executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.remove(executorId) match {
-      case null => None
-      case id =>
-        if ((id.blockId ne null) && !id.blockId.isDriver && id.numProcessors > 0) {
-          hostExecutorCount.compute(id.blockId.host, new RemoveHost(id))
+      case s@Some(id) =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(-id.numProcessors)
         }
         SnappySession.clearAllCache(onlyQueryPlanCache = true)
-        Some(id)
+        s
+      case None => None
     }
   }
 
   def getAllBlockIds: scala.collection.Map[String, BlockAndExecutorId] = {
-    storeToBlockMap.asScala.filter(_._2.blockId != null)
+    storeToBlockMap.filter(_._2.blockId != null)
   }
 
   private[spark] def clearBlockIds(): Unit = {
     storeToBlockMap.clear()
-    hostExecutorCount.clear()
     totalCoreCount.set(0)
     SnappySession.clearAllCache()
   }
@@ -947,11 +944,9 @@ object SnappyContext extends Logging {
       val numCores = sc.schedulerBackend.defaultParallelism()
       val blockId = new BlockAndExecutorId(
         SparkEnv.get.blockManager.blockManagerId,
-        numCores, Runtime.getRuntime.availableProcessors())
-      storeToBlockMap.put(cache.getMyId.canonicalString(), blockId)
-      if (!blockId.blockId.isDriver) {
-        hostExecutorCount.compute(blockId.blockId.host, new AddHost(blockId))
-      }
+        numCores, numCores)
+      storeToBlockMap(cache.getMyId.canonicalString()) = blockId
+      totalCoreCount.set(blockId.numProcessors)
       SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
   }
@@ -1226,28 +1221,6 @@ object SnappyContext extends Logging {
 
 // end of SnappyContext
 
-private class AddHost(id: BlockAndExecutorId)
-    extends BiFunction[String, Integer, Integer] {
-  override def apply(host: String, count: Integer): Integer = {
-    if (count eq null) {
-      SnappyContext.totalCoreCount.addAndGet(id.numProcessors)
-      1
-    } else count + 1
-  }
-}
-
-private class RemoveHost(id: BlockAndExecutorId)
-    extends BiFunction[String, Integer, Integer] {
-  override def apply(host: String, count: Integer): Integer = {
-    if (count ne null) {
-      if (count <= 1) {
-        SnappyContext.totalCoreCount.addAndGet(-id.numProcessors)
-        null
-      } else count - 1
-    } else null
-  }
-}
-
 abstract class ClusterMode {
   val sc: SparkContext
   val url: String
@@ -1258,9 +1231,9 @@ abstract class ClusterMode {
   }
 }
 
-final class BlockAndExecutorId(private var _blockId: BlockManagerId,
-    private var _executorCores: Int,
-    private var _numProcessors: Int) extends Externalizable {
+final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
+    private[spark] var _executorCores: Int,
+    private[spark] var _numProcessors: Int) extends Externalizable {
 
   def blockId: BlockManagerId = _blockId
 
