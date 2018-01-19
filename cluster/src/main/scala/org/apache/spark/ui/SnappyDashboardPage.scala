@@ -688,15 +688,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; vertical-align: middle; width:300px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.extTableStatsColumn("typeTooltip")
-                    }
-                    style="font-size: 17px;">
-                {SnappyDashboardPage.extTableStatsColumn("type")}
-              </span>
-            </th>
-            <th style="text-align:center; vertical-align: middle; width:300px;">
-              <span data-toggle="tooltip" title=""
-                    data-original-title={
                       SnappyDashboardPage.extTableStatsColumn("providerTooltip")
                     }
                     style="font-size: 17px;">
@@ -1049,11 +1040,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         <div style="width:100%; padding-left:10px;">
           {tableDetails.getTableName}
-        </div>
-      </td>
-      <td>
-        <div style="width:100%; text-align:center;">
-          {tableDetails.getTableType}
         </div>
       </td>
       <td>

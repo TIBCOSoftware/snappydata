@@ -182,7 +182,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-    var externalTables = new scala.collection.mutable.ListBuffer[SnappyExternalTableStats]
+    var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
     try {
       if (dataServers != null && dataServers.size() > 0) {
@@ -196,16 +196,10 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       // External Tables
       val hiveTables: java.util.List[ExternalTableMetaData] =
         Misc.getMemStore.getExternalCatalog.getHiveTables(true)
-      for (i: Int <- 0 until hiveTables.size()) {
-        val extTable: ExternalTableMetaData = hiveTables.get(i)
-        if (extTable.tableType.toUpperCase.equals("EXTERNAL")) {
-          val snappyExternalTableStats: SnappyExternalTableStats =
-            new SnappyExternalTableStats (extTable.entityName, extTable.tableType,
-              extTable.provider, extTable.externalStore, extTable.dataSourcePath,
-              extTable.driverClass);
-          externalTables += snappyExternalTableStats
-        }
-      }
+      externalTables = hiveTables.asScala.collect {
+        case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
+          new SnappyExternalTableStats (table.entityName, table.tableType, table.provider,
+            table.externalStore, table.dataSourcePath, table.driverClass) }
     }
     catch {
       case NonFatal(e) => log.warn(e.getMessage, e)
@@ -213,7 +207,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
     (result.flatMap(_.getRegionStats.asScala),
      result.flatMap(_.getIndexStats.asScala),
-     externalTables.toList)
+     externalTables)
   }
 
   type PRIterator = PartitionedRegion#PRLocalScanIterator
