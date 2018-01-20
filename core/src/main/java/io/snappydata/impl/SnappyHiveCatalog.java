@@ -53,6 +53,7 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.hive.ExternalTableType;
@@ -425,6 +426,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
                     tblDataSourcePath, driverClass);
                 metaData.provider = table.getParameters().get(
                     SnappyStoreHiveCatalog.HIVE_PROVIDER());
+                metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
                 metaData.columns = ExternalStoreUtils.getColumnMetadata(
                     ExternalStoreUtils.getTableSchema(table));
                 externalTables.add(metaData);

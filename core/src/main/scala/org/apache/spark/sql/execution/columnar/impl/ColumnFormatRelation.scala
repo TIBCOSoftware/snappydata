@@ -788,7 +788,9 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 }
 
 final class DefaultSource extends SchemaRelationProvider
-    with CreatableRelationProvider {
+    with CreatableRelationProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyParserConsts.COLUMN_SOURCE
 
   def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], specifiedSchema: StructType): JDBCAppendableRelation = {

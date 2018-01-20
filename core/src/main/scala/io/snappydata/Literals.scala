@@ -119,7 +119,8 @@ object Constant {
   // LZ4 JNI version is the fastest one but LZF gives best balance between
   // speed and compression ratio having higher compression ration than LZ4.
   // But the JNI version means no warmup time which helps for short jobs.
-  val DEFAULT_CODEC = "lz4"
+  // Also LZF has no direct ByteBuffer API so is quite a bit slower for off-heap.
+  val DEFAULT_CODEC = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
 
   /** the [[CompressionCodecId]] of default compression scheme ([[DEFAULT_CODEC]]) */
   val DEFAULT_CODECID: CompressionCodecId.Type = CompressionCodecId.fromName(DEFAULT_CODEC)
