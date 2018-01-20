@@ -30,9 +30,7 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
 import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, ExternalTableMetaData, LocalRegion, PartitionedRegion, RegionEntry}
-
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
@@ -198,8 +196,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         Misc.getMemStore.getExternalCatalog.getHiveTables(true)
       externalTables = hiveTables.asScala.collect {
         case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
-          new SnappyExternalTableStats (table.entityName, table.tableType, table.provider,
-            table.externalStore, table.dataSourcePath, table.driverClass) }
+          new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
+            table.externalStore, table.dataSourcePath, table.driverClass)
+      }
     }
     catch {
       case NonFatal(e) => log.warn(e.getMessage, e)
