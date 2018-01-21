@@ -24,6 +24,7 @@ import com.gemstone.gemfire.cache.Cache
 import com.gemstone.gemfire.internal.cache.Status
 import com.pivotal.gemfirexd.FabricService
 import com.pivotal.gemfirexd.FabricService.State
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
@@ -123,8 +124,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
         genericLogger.info("Lead Node starting status written.")
 
       case State.RUNNING =>
-        setStatusField(createStatus(Status.RUNNING, getProcessId))
-        writeStatus(status)
+        running(Misc.getDistributedSystem, Status.RUNNING)
         genericLogger.info("Lead Node running status written.")
       case _ =>
     }
