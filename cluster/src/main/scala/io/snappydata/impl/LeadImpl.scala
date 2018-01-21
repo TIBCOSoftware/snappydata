@@ -260,6 +260,14 @@ class LeadImpl extends ServerImpl with Lead
     try {
       internalStart(() => storeProperties)
       Await.result(initServices, Duration.Inf)
+      // set status as RUNNING at the end in any case
+      serverstatus = State.RUNNING
+      val callback = notifyStatusChange
+      if (callback != null) {
+        notifyStatusChange(serverstatus)
+      } else {
+        notifyRunningInLauncher(Status.RUNNING)
+      }
     } catch {
       case _: InterruptedException =>
         logInfo(s"Thread interrupted, aborting.")
