@@ -440,7 +440,6 @@ object SnappyParserConsts {
   final val REFRESH: Keyword = nonReservedKeyword("refresh")
   final val REGEXP: Keyword = nonReservedKeyword("regexp")
   final val REPLACE: Keyword = nonReservedKeyword("replace")
-  final val RETURNS: Keyword = nonReservedKeyword("returns")
   final val RLIKE: Keyword = nonReservedKeyword("rlike")
   final val SEMI: Keyword = nonReservedKeyword("semi")
   final val SHOW: Keyword = nonReservedKeyword("show")
@@ -521,4 +520,8 @@ object SnappyParserConsts {
   final val BEHAVIOR: Keyword = nonReservedKeyword("behavior")
   final val SAMPLE: Keyword = nonReservedKeyword("sample")
   final val TOPK: Keyword = nonReservedKeyword("topk")
+
+  // keywords that are neither reserved nor non-reserved and can be freely
+  // used as named strictIdentifier
+  final val RETURNS: Keyword = new Keyword("returns")
 }
