@@ -32,10 +32,9 @@ import org.apache.spark.sql.types._
  */
 final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
     delta1Position: Int, delta1: ColumnDeltaDecoder,
-    delta2Position: Int, delta2: ColumnDeltaDecoder,
-    delta3Position: Int, delta3: ColumnDeltaDecoder)
+    delta2Position: Int, delta2: ColumnDeltaDecoder)
     extends UpdatedColumnDecoderBase(decoder, field, delta1Position, delta1,
-      delta2Position, delta2, delta3Position, delta3) {
+      delta2Position, delta2) {
 
   protected def nullable: Boolean = false
 
@@ -47,10 +46,9 @@ final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
  */
 final class UpdatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructField,
     delta1Position: Int, delta1: ColumnDeltaDecoder,
-    delta2Position: Int, delta2: ColumnDeltaDecoder,
-    delta3Position: Int, delta3: ColumnDeltaDecoder)
+    delta2Position: Int, delta2: ColumnDeltaDecoder)
     extends UpdatedColumnDecoderBase(decoder, field, delta1Position, delta1,
-      delta2Position, delta2, delta3Position, delta3) {
+      delta2Position, delta2) {
 
   protected def nullable: Boolean = true
 
@@ -59,8 +57,7 @@ final class UpdatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructFi
 
 object UpdatedColumnDecoder {
   def apply(decoder: ColumnDecoder, field: StructField,
-      delta1Buffer: ByteBuffer, delta2Buffer: ByteBuffer,
-      delta3Buffer: ByteBuffer): UpdatedColumnDecoderBase = {
+      delta1Buffer: ByteBuffer, delta2Buffer: ByteBuffer): UpdatedColumnDecoderBase = {
 
     // positions are initialized at max so that they always are greater
     // than a valid index
@@ -79,29 +76,21 @@ object UpdatedColumnDecoder {
       d
     } else null
 
-    var delta3Position = Int.MaxValue
-    val delta3 = if (delta3Buffer ne null) {
-      val d = new ColumnDeltaDecoder(delta3Buffer, field)
-      delta3Position = d.moveToNextPosition()
-      d
-    } else null
-
     // check if any of the deltas or full value have nulls
     if (field.nullable && (decoder.hasNulls || ((delta1 ne null) && delta1.hasNulls) ||
-        ((delta2 ne null) && delta2.hasNulls) || ((delta3 ne null) && delta3.hasNulls))) {
+        ((delta2 ne null) && delta2.hasNulls))) {
       new UpdatedColumnDecoderNullable(decoder, field, delta1Position, delta1,
-        delta2Position, delta2, delta3Position, delta3)
+        delta2Position, delta2)
     } else {
       new UpdatedColumnDecoder(decoder, field, delta1Position, delta1,
-        delta2Position, delta2, delta3Position, delta3)
+        delta2Position, delta2)
     }
   }
 }
 
 abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructField,
     private final var delta1Position: Int, delta1: ColumnDeltaDecoder,
-    private final var delta2Position: Int, delta2: ColumnDeltaDecoder,
-    private final var delta3Position: Int, delta3: ColumnDeltaDecoder) {
+    private final var delta2Position: Int, delta2: ColumnDeltaDecoder) {
 
   protected def nullable: Boolean
 
@@ -139,21 +128,6 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
         movedIndex = 1
       }
     }
-    // last delta in hierarchy
-    if (delta3Position < next) {
-      // skip on equality (result should be returned by one of the previous calls)
-      if (delta3Position <= ordinal) {
-        skipUpdatedPosition(delta3)
-        delta3Position = delta3.moveToNextPosition()
-        if (delta3Position < next) {
-          next = delta3Position
-          movedIndex = 2
-        }
-      } else {
-        next = delta3Position
-        movedIndex = 2
-      }
-    }
     movedIndex match {
       case 0 =>
         delta1Position = delta1.moveToNextPosition()
@@ -161,9 +135,6 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
       case 1 =>
         delta2Position = delta2.moveToNextPosition()
         nextDeltaBuffer = delta2
-      case 2 =>
-        delta3Position = delta3.moveToNextPosition()
-        nextDeltaBuffer = delta3
       case _ =>
     }
     next

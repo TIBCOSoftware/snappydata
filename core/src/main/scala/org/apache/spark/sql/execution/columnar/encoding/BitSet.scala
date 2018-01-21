@@ -128,6 +128,7 @@ object BitSet {
    */
   def cardinality(baseObject: AnyRef, baseAddress: Long,
       position: Int, sizeInWords: Int): Int = {
+    assert(position >= 0)
     val posNumWords = position >> 6
     var pos = 0
     val numBytesToCheck = if (sizeInWords > posNumWords) {
