@@ -627,7 +627,7 @@ class MapTest extends SnappyFunSuite {
     benchmark.run()
   }
 
-  test("compare small map gets") {
+  ignore("compare small map gets") {
     val numEntries = 20
     val numLoops = 1000000
     val numIterations = 10
