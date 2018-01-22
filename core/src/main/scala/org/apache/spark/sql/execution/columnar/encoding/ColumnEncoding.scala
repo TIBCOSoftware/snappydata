@@ -1051,22 +1051,29 @@ trait NullableDecoder extends ColumnDecoder {
   private[this] final var numNullWords: Int = _
   private[this] final var nextNullPosition: Int = _
 
-  override protected[sql] final def hasNulls: Boolean = true
+  override protected[sql] final def hasNulls: Boolean = dataCursor != Long.MaxValue
 
   protected[sql] def initializeNulls(columnBytes: AnyRef,
       startCursor: Long, field: StructField): Long = {
     var cursor = startCursor
     var numNullBytes = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
-    this.dataCursor = cursor
-    // expect it to be a factor of 8
-    assert((numNullBytes & 0x7) == 0,
-      s"Expected valid null values but got length = $numNullBytes")
-    this.numNullWords = numNullBytes >>> 3
-    // initialize the first nextNullPosition
-    findNextNullPosition(columnBytes, -1, 0)
-    // skip null bit set
-    cursor += numNullBytes
+    // for no-nulls case mark dataCursor to be so
+    if (numNullBytes == 0) {
+      this.dataCursor = Long.MaxValue
+      this.numNullWords = 0
+      this.nextNullPosition = Int.MaxValue
+    } else {
+      this.dataCursor = cursor
+      // expect it to be a factor of 8
+      assert((numNullBytes & 0x7) == 0,
+        s"Expected valid null values but got length = $numNullBytes")
+      this.numNullWords = numNullBytes >>> 3
+      // initialize the first nextNullPosition
+      findNextNullPosition(columnBytes, -1, 0)
+      // skip null bit set
+      cursor += numNullBytes
+    }
     cursor
   }
 
@@ -1109,7 +1116,8 @@ trait NullableDecoder extends ColumnDecoder {
   }
 
   override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean = {
-    BitSet.isSet(columnBytes, dataCursor, position, numNullWords)
+    dataCursor != Long.MaxValue &&
+        BitSet.isSet(columnBytes, dataCursor, position, numNullWords)
   }
 }
 
