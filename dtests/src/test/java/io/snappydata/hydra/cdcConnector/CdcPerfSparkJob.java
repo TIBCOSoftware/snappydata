@@ -40,7 +40,7 @@ public class CdcPerfSparkJob {
       long endTime;
       int numItr= 200;
       System.out.println("Getting connection");
-      String url = "jdbc:snappydata://dev11:1527";
+      String url = "jdbc:snappydata://localhost:1527";
       String driver = "io.snappydata.jdbc.ClientDriver";
       Class.forName(driver);
 
@@ -48,7 +48,8 @@ public class CdcPerfSparkJob {
       //conn = TomcatConnectionPoolForSparkApp.getConnection();
       conn = DriverManager.getConnection(url);
      // String query = "SELECT *  FROM POSTAL_ADDRESS WHERE PSTL_ADDR_ID = ? AND CNTC_ID = ?";
-     String query = "SELECT * FROM POSTAL_ADDRESS WHERE CNTC_ID = ? AND CLIENT_ID = ?";
+     // String query = "SELECT * FROM POSTAL_ADDRESS WHERE CNTC_ID = ? AND CLIENT_ID = ?";
+      String query = "SELECT * FROM CLAIM_STATUS WHERE PRSN_ID = ? AND CLM_ID = ?";
       // String query = "SELECT * FROM POSTAL_ADDRESS WHERE CTY = ? AND ST = ?";
    //  String query = "SELECT * FROM CLAIM_STATUS WHERE PRSN_ID = ? AND CLM_ID = ?";
    //   System.out.println("The query string is " + query + " with CNTC_ID : " + CNTC_ID + " and CLIENT_ID: " + CLIENT_ID);
@@ -70,8 +71,10 @@ public class CdcPerfSparkJob {
         ps.setInt(2, CLIENT_ID);
         ResultSet rs = ps.executeQuery();
         while (rs.next()) {
-          String CITY = rs.getString("CTY");
-          String COUNTRY = rs.getString("CNTY");
+/*          String CITY = rs.getString("CTY");
+          String COUNTRY = rs.getString("CNTY");*/
+          int a = rs.getInt("PRSN_ID");
+          int b = rs.getInt("CLM_ID");
        //   System.out.println("   " + CITY + " " + COUNTRY);
         }
        }
