@@ -45,7 +45,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
-import org.apache.spark.unsafe.hash.Murmur3_x86_32
 
 /**
  * Utility methods for column format storage keys and values.
@@ -84,6 +83,8 @@ object ColumnFormatEntry {
 
   val DELTA_STATROW_COL_INDEX: Int = -2
 
+  // table index mapping code depends on this being the smallest meta-column
+  // (see ColumnDelta.tableColumnIndex and similar methods)
   val DELETE_MASK_COL_INDEX: Int = -3
 }
 
@@ -153,8 +154,9 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
   private[columnar] def withColumnIndex(columnIndex: Int): ColumnFormatKey =
     new ColumnFormatKey(uuid, partitionId, columnIndex)
 
-  override def hashCode(): Int = Murmur3_x86_32.hashInt(
-    ClientResolverUtils.addLongToHashOpt(uuid, columnIndex), partitionId)
+  // use the same hash code for all the columns in the same batch so that they
+  // are gotten together by the iterator
+  override def hashCode(): Int = ClientResolverUtils.addLongToHashOpt(uuid, partitionId)
 
   override def equals(obj: Any): Boolean = obj match {
     case k: ColumnFormatKey => uuid == k.uuid &&
