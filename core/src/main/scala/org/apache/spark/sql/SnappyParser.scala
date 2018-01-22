@@ -72,21 +72,28 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   protected final type JoinRuleType = (Option[JoinType], LogicalPlan,
       Option[Expression])
 
-  private def toDecimalOrDoubleLiteral(s: String,
-      scientific: Boolean): Literal = {
-    // follow the behavior in MS SQL Server
-    // https://msdn.microsoft.com/en-us/library/ms179899.aspx
-    if (scientific) {
-      Literal(s.toDouble, DoubleType)
-    } else {
-      val d = new java.math.BigDecimal(s, BigDecimal.defaultMathContext)
-      val sysDefaultType = DecimalType.SYSTEM_DEFAULT
-      if (d.precision == sysDefaultType.precision &&
-          d.scale == sysDefaultType.scale) {
-        Literal(Decimal(d), sysDefaultType)
-      } else {
-        Literal(Decimal(d), DecimalType(Math.max(d.precision, d.scale), d.scale()))
+  private def toDecimalLiteral(s: String, checkExactNumeric: Boolean): Literal = {
+    val decimal = BigDecimal(s)
+    if (checkExactNumeric) {
+      try {
+        return Literal(decimal.toIntExact, IntegerType)
+      } catch {
+        case _: ArithmeticException =>
+          try {
+            return Literal(decimal.toLongExact, LongType)
+          } catch {
+            case _: ArithmeticException =>
+          }
       }
+    }
+    val precision = decimal.precision
+    val scale = decimal.scale
+    val sysDefaultType = DecimalType.SYSTEM_DEFAULT
+    if (precision == sysDefaultType.precision &&
+        scale == sysDefaultType.scale) {
+      Literal(Decimal(decimal), sysDefaultType)
+    } else {
+      Literal(Decimal(decimal), DecimalType(Math.max(precision, scale), scale))
     }
   }
 
@@ -110,7 +117,9 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       if (noDecimalPoint && c == '.') {
         noDecimalPoint = false
       } else if (c == 'e' || c == 'E') {
-        return toDecimalOrDoubleLiteral(s, scientific = true)
+        // follow the behavior in MS SQL Server
+        // https://msdn.microsoft.com/en-us/library/ms179899.aspx
+        return Literal(java.lang.Double.parseDouble(s), DoubleType)
       }
       index += 1
     }
@@ -126,21 +135,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         }
       } catch {
         case _: NumberFormatException =>
-          val decimal = BigDecimal(s)
-          if (decimal.isValidInt) {
-            Literal(decimal.toIntExact)
-          } else if (decimal.isValidLong) {
-            Literal(decimal.toLongExact, LongType)
-          } else {
-            val sysDefaultType = DecimalType.SYSTEM_DEFAULT
-            if (decimal.precision <= sysDefaultType.precision &&
-              decimal.scale <= sysDefaultType.scale) {
-              Literal(decimal, sysDefaultType)
-            } else Literal(decimal)
-          }
+          toDecimalLiteral(s, checkExactNumeric = true)
       }
     } else {
-      toDecimalOrDoubleLiteral(s, scientific = false)
+      toDecimalLiteral(s, checkExactNumeric = false)
     }
   }
 
