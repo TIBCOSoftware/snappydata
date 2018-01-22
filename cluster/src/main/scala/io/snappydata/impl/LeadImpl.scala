@@ -238,7 +238,7 @@ class LeadImpl extends ServerImpl with Lead
         jobServerConfig = getConfig(confFile)
         val bindAddress = jobServerConfig.getString("spark.jobserver.bind-address")
         val port = jobServerConfig.getInt("spark.jobserver.port")
-        startupString = s"job server on $bindAddress[$port]"
+        startupString = s"job server on: $bindAddress[$port]"
       }
       if (!jobServerWait) {
         // mark RUNNING (job server and zeppelin will continue to start in background)

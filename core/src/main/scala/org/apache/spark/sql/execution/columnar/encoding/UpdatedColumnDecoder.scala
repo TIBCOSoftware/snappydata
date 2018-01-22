@@ -76,9 +76,9 @@ object UpdatedColumnDecoder {
       d
     } else null
 
-    // check if any of the deltas or full value have nulls
-    if (field.nullable && (decoder.hasNulls || ((delta1 ne null) && delta1.hasNulls) ||
-        ((delta2 ne null) && delta2.hasNulls))) {
+    // check for nullable column (don't use actual number of nulls to avoid changing
+    //   type of decoder that can cause trouble with JVM inlining)
+    if (field.nullable) {
       new UpdatedColumnDecoderNullable(decoder, field, delta1Position, delta1,
         delta2Position, delta2)
     } else {
@@ -102,6 +102,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   @inline protected final def skipUpdatedPosition(delta: ColumnDeltaDecoder): Unit = {
     if (!nullable || delta.readNotNull) delta.nextNonNullPosition()
+    delta.nextPosition()
   }
 
   protected final def moveToNextUpdatedPosition(ordinal: Int): Int = {
@@ -115,7 +116,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     }
     // next delta in hierarchy
     if (delta2Position < next) {
-      // skip on equality (result should be returned by one of the previous calls)
+      // skip on equality (result should be returned by the previous call)
       if (delta2Position <= ordinal) {
         skipUpdatedPosition(delta2)
         delta2Position = delta2.moveToNextPosition()
@@ -142,17 +143,14 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   private def skipUntil(ordinal: Int): Boolean = {
     var nextUpdated = nextUpdatedPosition
-    // check if ordinal has moved ahead of updated cursor
-    if (nextUpdated < ordinal) {
-      do {
-        // skip the position in current delta
-        skipUpdatedPosition(nextDeltaBuffer)
-        // update the cursor and keep on till ordinal is not reached
-        nextUpdated = moveToNextUpdatedPosition(nextUpdated)
-      } while (nextUpdated < ordinal)
-      nextUpdatedPosition = nextUpdated
-      if (nextUpdated > ordinal) return true
-    }
+    do {
+      // skip the position in current delta
+      skipUpdatedPosition(nextDeltaBuffer)
+      // update the cursor and keep on till ordinal is not reached
+      nextUpdated = moveToNextUpdatedPosition(nextUpdated)
+    } while (nextUpdated < ordinal)
+    nextUpdatedPosition = nextUpdated
+    if (nextUpdated > ordinal) return true
     currentDeltaBuffer = nextDeltaBuffer
     nextUpdatedPosition = moveToNextUpdatedPosition(ordinal)
     false
@@ -160,6 +158,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   final def unchanged(ordinal: Int): Boolean = {
     if (nextUpdatedPosition > ordinal) true
+    else if (nextUpdatedPosition == ordinal) false
     else skipUntil(ordinal)
   }
 
