@@ -307,7 +307,7 @@ class QuickLauncher extends LauncherBase {
         processHeapSize(arg.substring(HEAP_SIZE_OPT.length()), vmArgs);
       } else if (arg.startsWith("-J")) {
         processVMArg(arg.substring(2), vmArgs);
-      } else if (arg.startsWith("-D")) {
+      } else if (arg.startsWith("-D") || arg.startsWith("-XX:")) {
         processVMArg(arg, vmArgs);
       } else if (arg.startsWith(PASSWORD_OPT)) {
         String pwd;

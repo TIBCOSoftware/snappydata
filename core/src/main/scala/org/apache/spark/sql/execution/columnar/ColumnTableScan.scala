@@ -52,6 +52,7 @@ import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
+import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
@@ -141,6 +142,12 @@ private[sql] final case class ColumnTableScan(
     // for the input expression to evaluate to `true' based on statistics
     // collected about this partition batch.
     // This code is picked up from InMemoryTableScanExec
+
+    // deal with LIKE patterns that can be optimized in predicate pushdown
+    @transient def convertLike(e: Expression): Expression = e.transformDown {
+      case l@Like(left, Literal(pattern, StringType)) =>
+        LikeEscapeSimplification.simplifyLike(l, left, pattern.toString)
+    }
     @transient def buildFilter: PartialFunction[Expression, Expression] = {
       case And(lhs: Expression, rhs: Expression)
         if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
@@ -215,7 +222,7 @@ private[sql] final case class ColumnTableScan(
         }
         orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
             .sorted.mkString(","))).flatMap { p =>
-          val filter = buildFilter.lift(p)
+          val filter = buildFilter.lift(convertLike(p))
           val boundFilter = filter.map(BindReferences.bindReference(
             _, columnBatchStats, allowFailures = true))
 

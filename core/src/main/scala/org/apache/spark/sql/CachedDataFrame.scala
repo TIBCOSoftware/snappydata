@@ -117,11 +117,10 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
   }
 
   private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
-  private lazy val unsafe = UnsafeHolder.getUnsafe
   private lazy val rdd_partitions_ = {
     val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
     _f.setAccessible(true)
-    unsafe.objectFieldOffset(_f)
+    UnsafeHolder.getUnsafe.objectFieldOffset(_f)
   }
 
   @tailrec
@@ -137,7 +136,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       case null =>
       case r: RDD[_] =>
         // f.set(r, null)
-        unsafe.putObject(r, rdd_partitions_, null)
+        UnsafeHolder.getUnsafe.putObject(r, rdd_partitions_, null)
     }
     if (children.isEmpty) {
       return

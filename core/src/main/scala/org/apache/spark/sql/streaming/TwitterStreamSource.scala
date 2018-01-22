@@ -19,16 +19,18 @@ package org.apache.spark.sql.streaming
 import twitter4j.auth.{Authorization, OAuthAuthorization}
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.{BaseRelation, DataSourceRegister}
 import org.apache.spark.sql.streaming.twitter.TwitterUtils
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.streaming.dstream.DStream
 
 
-final class TwitterStreamSource extends StreamPlanProvider {
+final class TwitterStreamSource extends StreamPlanProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyContext.TWITTER_STREAM_SOURCE
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
