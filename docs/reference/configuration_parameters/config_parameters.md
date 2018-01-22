@@ -93,6 +93,8 @@ Below is the list of all the configuration properties and links for each propert
 
 - [member-timeout](member-timeout.md)
 
+- [membership-port-range](membership-port-range.md)
+
 - [redundancy-zone](redundancy-zone.md)
 
 - [start-locator](start-locator.md)

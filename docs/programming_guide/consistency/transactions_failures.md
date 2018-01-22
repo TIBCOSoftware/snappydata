@@ -1,4 +1,8 @@
 # Rollback Behavior and Member Failures
+
+!!!Hint:
+	Distributed transaction is supported only for row tables.
+
 Within the scope of a transaction, SnappyData automatically initiates a rollback if it encounters a constraint violation.
 
 Any errors that occur while parsing queries or while binding parameters in a SQL statement *do not* cause a rollback. For example, a syntax error that occurs while executing a SQL statement does not cause previous statements in the transaction to rollback. However, a column constraint violation would cause all previous SQL operations in the transaction to roll back.

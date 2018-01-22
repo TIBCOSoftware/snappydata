@@ -1,5 +1,8 @@
 # Transaction Functionality and Limitations
 
+!!!Hint:
+	Distributed transaction is supported only for row tables.
+    
 In this release of SnappyData, the scope for transactional functionality is:
 
 -   The result set that is obtained from executing a query should either be completely consumed, or the result set is explicitly closed. Otherwise, DDL operations wait until the ResultSet is garbage-collected.

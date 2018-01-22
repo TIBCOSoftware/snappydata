@@ -1,5 +1,8 @@
 # Using Snapshot Isolation for Column Tables
 
+!!!Hint:
+	Snapshot isolation is supported only for column tables.
+    
 Multi-Statement transactions are not supported on column tables. Instead, we provide snapshot isolation by default. Snapshot ensures that all queries see the same version (snapshot), of the database, based on the state of the database at the moment in time when the query is executed. The snapshot is taken per statement for each partition, which means, the snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
 
 ## How the Snapshot Model Works

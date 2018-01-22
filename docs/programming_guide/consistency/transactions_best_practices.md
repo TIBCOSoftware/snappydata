@@ -1,5 +1,8 @@
 # Best Practices for Using Transactions
 
+!!!Hint:
+	Distributed transaction is supported only for row tables.
+
 For optimum results, take note of best practices for working with SnappyData transactions.
 
 -   For high performance, mimimize the duration of transactions to avoid conflicts with other concurrent transactions. If atomicity for only single row updates is required, then completely avoid using transactions because SnappyData provides atomicity and isolation for single rows without transactions.

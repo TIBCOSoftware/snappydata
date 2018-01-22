@@ -72,6 +72,10 @@ pages:
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
+    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
+    - 'Firewalls and Connections':
+        - 'Firewalls and Ports': 'configuring_cluster/firewalls_ports.md'    
+        - 'Locators and Ports': 'configuring_cluster/locators_gateways.md'    
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
     - 'SparkSession, SnappySession and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
@@ -86,11 +90,11 @@ pages:
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
     - 'Stream Processing using SQL': 'programming_guide/stream_processing_using_sql.md'
     - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md' 
-- 'Managing Consistency': 'programming_guide/using_transactions.md'
-- 'Managing Consistency':
-    - 'Using Transactions for Row Tables': 'programming_guide/consistency/using_transactions_row.md'
+- 'Managing Data Consistency': 'programming_guide/using_transactions.md'
+- 'Managing Data Consistency':
+    - 'Using Transactions for Row Tables': 'programming_guide/consistency/transactions_about.md'
     - 'Using Transactions for Row Tables':     
-        - 'How the Transaction Model Works': 'programming_guide/consistency/transactions_about.md'
+        - 'How the Transaction Model Works': 'programming_guide/consistency/using_transactions_row.md'
         - 'Transactions and DDL Statements': 'programming_guide/consistency/transactions_ddl.md'
         - 'Transactions with SELECT FOR UPDATE': 'programming_guide/consistency/transactions_select_update_row.md'
         - 'Rollback Behavior and Member Failures': 'programming_guide/consistency/transactions_failures.md'
@@ -188,7 +192,7 @@ pages:
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
-        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
+#        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
         - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'    
         - 'SYSTABLES': 'reference/system_tables/systables.md'    
     - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
@@ -233,7 +237,7 @@ pages:
 #        - 'log-file-size-limit': 'reference/configuration_parameters/log-file-size-limit.md'
         - 'log-level': 'reference/configuration_parameters/log-level.md'
         - 'member-timeout': 'reference/configuration_parameters/member-timeout.md'
-#        - 'membership-port-range': 'reference/configuration_parameters/membership-port-range.md'
+        - 'membership-port-range': 'reference/configuration_parameters/membership-port-range.md'
 #        - 'persist-dd': 'reference/configuration_parameters/persist-dd.md'
 #        - 'prefer-netserver-ipaddress': 'reference/configuration_parameters/prefer-netserver-ipaddress.md'
 #        - 'read-timeout': 'reference/configuration_parameters/read-timeout.md'
