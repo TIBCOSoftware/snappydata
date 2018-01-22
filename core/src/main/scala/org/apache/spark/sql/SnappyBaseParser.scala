@@ -294,7 +294,7 @@ object SnappyParserConsts {
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
       CharPredicate('.')
-  final val numericSuffix: CharPredicate = CharPredicate('D', 'L')
+  final val numericSuffix: CharPredicate = CharPredicate('D', 'd', 'F', 'f', 'L', 'l')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
   final val reservedKeywords: OpenHashSet[String] = new OpenHashSet[String]

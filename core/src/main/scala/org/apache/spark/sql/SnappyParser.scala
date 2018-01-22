@@ -79,15 +79,13 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     if (scientific) {
       Literal(s.toDouble, DoubleType)
     } else {
-      val decimal = new java.math.BigDecimal(s, BigDecimal.defaultMathContext)
-      // try to use SYSTEM_DEFAULT instead of creating new DecimalType which
-      // is expensive (due to typeTag etc resolved by reflection in AtomicType)
+      val d = new java.math.BigDecimal(s, BigDecimal.defaultMathContext)
       val sysDefaultType = DecimalType.SYSTEM_DEFAULT
-      if (decimal.precision <= sysDefaultType.precision &&
-          decimal.scale <= sysDefaultType.scale) {
-        Literal(Decimal(decimal), sysDefaultType)
+      if (d.precision == sysDefaultType.precision &&
+          d.scale == sysDefaultType.scale) {
+        Literal(Decimal(d), sysDefaultType)
       } else {
-        Literal(decimal)
+        Literal(Decimal(d), DecimalType(Math.max(d.precision, d.scale), d.scale()))
       }
     }
   }
@@ -97,14 +95,15 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     var noDecimalPoint = true
     var index = 0
     val len = s.length
-    val lastChar = s.charAt(len - 1)
-    // use double if ending with 'D'
-    if (lastChar == 'D') {
-      return Literal(java.lang.Double.parseDouble(s.substring(0, len - 1)),
-        DoubleType)
-    } else if (lastChar == 'L') {
-      return Literal(java.lang.Long.parseLong(s.substring(0, len - 1)),
-        LongType)
+    // use double if ending with D/d, float for F/f and long for L/l
+    s.charAt(len - 1) match {
+      case 'D' | 'd' =>
+        return Literal(java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
+      case 'F' | 'f' =>
+        return Literal(java.lang.Float.parseFloat(s.substring(0, len - 1)), FloatType)
+      case 'L' | 'l' =>
+        return Literal(java.lang.Long.parseLong(s.substring(0, len - 1)), LongType)
+      case _ =>
     }
     while (index < len) {
       val c = s.charAt(index)
