@@ -1,9 +1,8 @@
-# Transactions and DDL Statements
+### Move this to the 'best practices' section ...
 
-!!!Hint:
-	Distributed transaction is supported only for row tables.
+# DDL Statements in a transaction
 
-SnappyData permits schema and data manipulation statements (DML) within a single transaction. If you create a table in one transaction, you can also insert data into it in that same transaction. A schema manipulation statement (DDL) is not automatically committed when it is performed, but participates in the transaction within which it is issued.
+SnappyData permits schema and data manipulation statements (DML) within a single transaction. A data definition statement (DDL) is not automatically committed when it is performed, but participates in the transaction within which it is issued.
 
 Although the table itself becomes visible in the system immediately, it acquires exclusive locks on the system tables and the affected tables on all the members in the cluster, so that any DML operations in other transactions will block and wait for the table's locks.
 
