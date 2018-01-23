@@ -8,8 +8,10 @@
 
 -   To the extent possible, model your database so that most transactions operate on colocated data. When all transactional data is on a single member, then stricter isolation guarantees are provided.
 
-## This below section doesn't make sense ... sumedh to clarify
 
--   If your application is multi-threaded, consider setting the sync-commits </a> connection property to "true." By default SnappyData performs second-phase commit actions in the background, but ensures that the connection that issued the transaction only sees committed state. However, other threads or connections may see different results until the second-phase commit actions complete. Setting `sync-commits=true` ensures that the current thin client or peer client connection waits until all second-phase commit actions complete.
+- DDL Statements in a transaction
+    SnappyData permits schema and data manipulation statements (DML) within a single transaction. A data definition statement (DDL) is not automatically committed when it is performed, but participates in the transaction within which it is issued.
 
+    Although the table itself becomes visible in the system immediately, it acquires exclusive locks on the system tables and the affected tables on all the members in the cluster, so that any DML operations in other transactions will block and wait for the table's locks.
 
+    For example, if a new index is created on a table in a transaction, then all other transactions that refer to that table wait for the transaction to commit or roll back. Because of this behavior, as a best practice you should keep transactions that involve DDL statements short (preferably in a single transaction by itself).

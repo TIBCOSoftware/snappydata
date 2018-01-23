@@ -1,10 +1,9 @@
-# Lock free queries using MVCC(multi version concurrency control) and Snapshot Isolation
-
-As the term suggests, all queries in the system operate on a snapshot view of the database. i.e. even if concurrent updates are in progress, the querying system gets a non-changing view of the state of the database at the moment in time when the query is executed. The snapshot is partition wise. The snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
+# Lock free queries using MVCC (multi version concurrency control) and Snapshot Isolation
 
 !!!Note:
 	Snapshot isolation is supported only for column tables.
-    
+
+As the term suggests, all queries in the system operate on a snapshot view of the database. i.e. even if concurrent updates are in progress, the querying system gets a non-changing view of the state of the database at the moment in time when the query is executed. The snapshot is partition wise. The snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
 
 ## How the Snapshot Model Works
 

@@ -1,8 +1,6 @@
 # Transactions with SELECT FOR UPDATE
 
-### we don't support Select for update. Remove this entire section after confirming from Suranjan/sumedh
-
-!!!Hint:
+!!! Note:
 	Distributed transaction is supported only for row tables.
 
 The `SELECT FOR UPDATE` statement and other statements that implicitly place locks are not supported outside of a transaction (default isolation level).
