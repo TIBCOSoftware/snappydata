@@ -503,29 +503,32 @@ class SnappyConf(@transient val session: SnappySession)
 
     case Property.PlanCaching.name =>
       value match {
-        case Some(boolval) =>
-          if (boolval.toString.toBoolean) {
+        case Some(boolVal) =>
+          if (boolVal.toString.toBoolean) {
             session.clearPlanCache()
           }
-          session.planCaching = boolval.toString.toBoolean
-        case None =>
+          session.planCaching = boolVal.toString.toBoolean
+        case None => session.planCaching = Property.PlanCaching.defaultValue.get
       }
 
     case Property.PlanCachingAll.name =>
       value match {
-        case Some(boolval) =>
-          val clearCache = !boolval.toString.toBoolean
+        case Some(boolVal) =>
+          val clearCache = !boolVal.toString.toBoolean
           if (clearCache) SnappySession.getPlanCache.asMap().clear()
         case None =>
       }
 
     case Property.Tokenize.name =>
       value match {
-        case Some(boolval) =>
-          SnappySession.tokenize = boolval.toString.toBoolean
-        case None =>
+        case Some(boolVal) => SnappySession.tokenize = boolVal.toString.toBoolean
+        case None => SnappySession.tokenize = Property.Tokenize.defaultValue.get
       }
 
+    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => value match {
+      case Some(b) => session.wholeStageEnabled = b.toString.toBoolean
+      case None => session.wholeStageEnabled = SQLConf.WHOLESTAGE_CODEGEN_ENABLED.defaultValue.get
+    }
     case _ => // ignore others
   }
 

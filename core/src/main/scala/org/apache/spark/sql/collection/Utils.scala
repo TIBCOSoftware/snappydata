@@ -32,6 +32,7 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 
@@ -357,18 +358,6 @@ object Utils {
   final def isLoner(sc: SparkContext): Boolean =
     (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
-  def toLowerCase(k: String): String = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isUpperCase(k.charAt(index))) {
-        return k.toLowerCase(java.util.Locale.ENGLISH)
-      }
-      index += 1
-    }
-    k
-  }
-
   def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
@@ -389,17 +378,9 @@ object Utils {
     false
   }
 
-  def toUpperCase(k: String): String = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isLowerCase(k.charAt(index))) {
-        return k.toUpperCase(java.util.Locale.ENGLISH)
-      }
-      index += 1
-    }
-    k
-  }
+  def toLowerCase(k: String): String = k.toLowerCase(java.util.Locale.ENGLISH)
+
+  def toUpperCase(k: String): String = k.toUpperCase(java.util.Locale.ENGLISH)
 
   /**
    * Utility function to return a metadata for a StructField of StringType, to ensure that the
@@ -631,6 +612,12 @@ object Utils {
     override def foreach[U](f: ((A, B)) => U): Unit = map.foreach(f)
 
     override def get(key: A): Option[B] = map.get(key)
+  }
+
+  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): ObjectObjectHashMap[K, V] = {
+    val m = ObjectObjectHashMap.withExpectedSize[K, V](map.size)
+    map.foreach(p => m.put(p._1, p._2))
+    m
   }
 
   def createScalaConverter(dataType: DataType): Any => Any =
