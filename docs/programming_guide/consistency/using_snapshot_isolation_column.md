@@ -1,17 +1,18 @@
-# Using Snapshot Isolation for Column Tables
+# Lock free queries using MVCC(multi version concurrency control) and Snapshot Isolation
 
-!!!Hint:
+As the term suggests, all queries in the system operate on a snapshot view of the database. i.e. even if concurrent updates are in progress, the querying system gets a non-changing view of the state of the database at the moment in time when the query is executed. The snapshot is partition wise. The snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
+
+!!!Note:
 	Snapshot isolation is supported only for column tables.
     
-Multi-Statement transactions are not supported on column tables. Instead, we provide snapshot isolation by default. Snapshot ensures that all queries see the same version (snapshot), of the database, based on the state of the database at the moment in time when the query is executed. The snapshot is taken per statement for each partition, which means, the snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
 
 ## How the Snapshot Model Works
 
-Like in the [Distributed Transaction model](using_transactions_row.md), no central transaction co-ordinator exists. A version vector is maintained for each of the table on every node. The version information for each row of the table is also maintained. 
+Snappydata maintains a version vector for each of the table on every node. The version information for each row of the table is also maintained. 
 
-When a user query is executed, a snapshot is taken of the version vector of all the tables on the node on which the query is executed. The write operation modifies the row, increments its version and stores the older row in an OldEntryMap. 
+When a user query is executed, a snapshot is taken of the version vector of all the tables on the node on which the query is executed. The write operation modifies the row, increments its version while still maintaining a reference to the older version. 
 
-At the time of commit, the version information is published under a lock so that all the changes of an operation is published atomically. OldEntryMap is cleaned periodically once it is made sure that there are no operations that require these older rows.
+At the time of commit, the version information is published under a lock so that all the changes of an operation is published atomically. Older rows are cleaned periodically once it is made sure that there are no operations that require these older rows.
 
 The read operations compare the version of each row to the ones in its snapshot and returns the row whose version is same as snapshot.
 
@@ -26,7 +27,7 @@ You cannot set [autocommit](../../reference/interactive_commands/autocommit.md) 
 If there are concurrent updates in a row, then the last commit is used.
 
 !!! Note:
-	To get per statement transactional behavior, all the write operations should span only one partition.
+	To get per statement transactional behavior, all the write operations can span only one partition.
 
 	However, if you have operations that span multiple partitions, then, ensure that:
 
