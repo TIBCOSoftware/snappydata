@@ -1,8 +1,5 @@
 # Using Transactions for Row Tables
 
-!!!Hint:
-	Distributed transaction is supported only for row tables.
-
 Transactions specify an [isolation level](../../reference/sql_reference/set-isolation.md) that defines the degree to which one transaction must be isolated from resource or data modifications made by other transactions. The transaction isolation levels define the type of locks acquired on read operations. Only one of the isolation level options can be set at a time, and it remains set for that connection until it is explicitly changed.
 
 !!! Note:
