@@ -30,7 +30,7 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, GemFireSparkConnectorCacheImpl, Status}
+import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, Status}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
@@ -85,7 +85,7 @@ class LeadImpl extends ServerImpl with Lead
     // prefix all store properties with "snappydata.store" for SparkConf
 
     // first the passed in bootProperties
-    var propNames = bootProperties.stringPropertyNames().iterator()
+    val propNames = bootProperties.stringPropertyNames().iterator()
     while (propNames.hasNext) {
       val propName = propNames.next()
       if (propName.startsWith(SPARK_PREFIX)) {
@@ -132,17 +132,8 @@ class LeadImpl extends ServerImpl with Lead
 
     // copy store related properties into a separate properties bag
     // to be used by store boot while original will be used by SparkConf
-    val storeProperties = new Properties()
-    propNames = bootProperties.stringPropertyNames().iterator()
-    while (propNames.hasNext) {
-      val propName = propNames.next()
-      if (propName.startsWith(STORE_PREFIX)) {
-        storeProperties.setProperty(propName.substring(
-          STORE_PREFIX.length), bootProperties.getProperty(propName))
-      } else if (propName.startsWith(GemFireSparkConnectorCacheImpl.connectorPrefix) ) {
-        storeProperties.setProperty(propName, bootProperties.getProperty(propName))
-      }
-    }
+    val storeProperties = ServiceUtils.getStoreProperties(bootProperties.stringPropertyNames()
+        .iterator().asScala.map(k => k -> bootProperties.getProperty(k)).toSeq)
 
     // initialize store and Spark in parallel (Spark will wait in
     // cluster manager start on internalStart)
