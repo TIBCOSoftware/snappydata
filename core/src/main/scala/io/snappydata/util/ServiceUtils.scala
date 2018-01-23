@@ -40,7 +40,7 @@ object ServiceUtils {
   val LOCATOR_URL_PATTERN: Pattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
   private[snappydata] def getStoreProperties(
-      confProps: Array[(String, String)]): Properties = {
+      confProps: Seq[(String, String)]): Properties = {
     val storeProps = new Properties()
     confProps.foreach {
       case (Property.Locators(), v) =>
@@ -56,7 +56,8 @@ object ServiceUtils {
         storeProps.setProperty(k.trim.replaceFirst(
           Constant.SPARK_STORE_PREFIX, ""), v)
       case (k, v) if k.startsWith(Constant.SPARK_PREFIX) ||
-          k.startsWith(Constant.PROPERTY_PREFIX) => storeProps.setProperty(k, v)
+          k.startsWith(Constant.PROPERTY_PREFIX) ||
+          k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
     setCommonBootDefaults(storeProps, forLocator = false)

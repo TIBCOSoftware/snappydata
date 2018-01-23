@@ -835,23 +835,29 @@ object PreparedQueryRoutingSingleNodeSuite{
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
 
     val rows = (1 to numRows).toSeq
-    val stmt = conn.createStatement()
+    val prepareStatement = conn.prepareStatement(s"insert into $tableName values(?, ?, ?)")
     try {
       var i = 1
       rows.foreach(d => {
-        stmt.addBatch(s"insert into $tableName values($d, $d, '$d')")
+        prepareStatement.setInt(1, d)
+        prepareStatement.setInt(2, d)
+        prepareStatement.setString(3, s"$d")
+        prepareStatement.addBatch()
         i += 1
         if (i % 1000 == 0) {
-          stmt.executeBatch()
+          val ret = prepareStatement.executeBatch()
+          ret.foreach(r => assert(r == 1))
+          assert(ret.length == 999, ret.length)
           i = 0
         }
       })
-      stmt.executeBatch()
+      val ret = prepareStatement.executeBatch()
+      ret.foreach(r => assert(r == 1))
       // scalastyle:off println
       println(s"committed $numRows rows")
       // scalastyle:on println
     } finally {
-      stmt.close()
+      prepareStatement.close()
       conn.close()
     }
   }
@@ -904,16 +910,17 @@ object PreparedQueryRoutingSingleNodeSuite{
         Array(1, 2, 998, 999, 1000), cacheMapSize)
       prepStatement1 = conn.prepareStatement(s"delete from $tableName1 where ol_1_int2_id < ? ")
       prepStatement1.setInt(1, 400)
-      val delete1 = prepStatement1.executeUpdate
-      assert(delete1 == 399, delete1)
+      prepStatement1.addBatch()
       prepStatement1.setInt(1, 500)
-      val delete2 = prepStatement1.executeUpdate
-      assert(delete2 == 100, delete2)
+      prepStatement1.addBatch()
+      val delete1 = prepStatement1.executeBatch()
+      assert(delete1(0) == 399, delete1(0))
+      assert(delete1(1) == 100, delete1(1))
 
       prepStatement2 = conn.prepareStatement(s"delete from $tableName1 where ol_1_int2_id > ? ")
       prepStatement2.setInt(1, 502)
-      val delete3 = prepStatement2.executeUpdate
-      assert(delete3 == 498, delete3)
+      val delete2 = prepStatement2.executeUpdate
+      assert(delete2 == 498, delete2)
 
       prepStatement3 =
           conn.prepareStatement(s"update $tableName1 set ol_1_int_id = ? where ol_1_int2_id = ? ")
@@ -923,11 +930,16 @@ object PreparedQueryRoutingSingleNodeSuite{
       assert(update1 == 1, update1)
 
       prepStatement4 =
-          conn.prepareStatement(s"update $tableName1 set ol_1_int_id = ? where ol_1_int2_id > ? ")
+        conn.prepareStatement(s"update $tableName1 set ol_1_int_id = ? where ol_1_int2_id > ? ")
+      prepStatement4.setInt(1, 2000)
+      prepStatement4.setInt(2, 501)
+      prepStatement4.addBatch()
       prepStatement4.setInt(1, 2000)
       prepStatement4.setInt(2, 500)
-      val update2 = prepStatement4.executeUpdate
-      assert(update2 == 2, update2)
+      prepStatement4.addBatch()
+      val update2 = prepStatement4.executeBatch()
+      assert(update2(0) == 1, update2(0))
+      assert(update2(1) == 2, update2(1))
 
       prepStatement5 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
           s" from $tableName1" +
