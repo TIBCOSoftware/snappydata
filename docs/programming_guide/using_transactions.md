@@ -1,3 +1,5 @@
+# Shyja - this section can be deleted ... use about_transactions.md
+
 # Managing Data Consistency 
 
 Data is frequently required to help users and organizations make business decisions, and therefore it may be important that this data accurately represents the most current information available and that it is consistent. Data consistency implies that all instances of an application are presented with the same set of data values all of the time.
