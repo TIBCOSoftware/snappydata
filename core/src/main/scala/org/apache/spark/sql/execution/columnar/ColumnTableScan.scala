@@ -899,8 +899,6 @@ private[sql] final case class ColumnTableScan(
     // times for the same batchOrdinal like in SNAP-2118;
     // check below crams in all the conditions in a single check to minimize code
     // repetition of non-null assignment call that is normally inlined by JVM
-    // while moving this check in a separate method would be less performant because
-    // there are two variables that need to be returned (numNulls and isNull)
     // and besides this piece of code should get inlined in any case or else
     // it will be big performance hit for every column nullability check
     val nextNullPosition = ctx.freshName("nextNullPosition")
