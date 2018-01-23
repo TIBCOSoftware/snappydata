@@ -1,7 +1,6 @@
 # Rollback Behavior and Member Failures
 
-!!!Hint:
-	Distributed transaction is supported only for row tables.
+### Section should come as a sub-section or right after 'how transactions work' 
 
 Within the scope of a transaction, SnappyData automatically initiates a rollback if it encounters a constraint violation.
 
@@ -18,7 +17,7 @@ The following steps describe specific events that can occur depending on which m
     If all of the cohorts are in the PREPARED state and successfully apply changes to the cache without any unique constraint violations, the transaction is committed on all cohorts. Otherwise, if any member reports failure or the last copy the associated rows goes down during the PREPARED state, the transaction is rolled back on all cohorts.
 
 4.  If a participating member fails before acknowledging to the client, then the transaction continues on other members without any interruption. However, if that member contains the last copy of a table or bucket, then the transaction is rolled back.
-5.  The transaction coordinator might also fail while executing a rollback operation. In this case, a thin client would see such a failure as a SQLState error. If the client was performing a SELECT statement in a transaction, the member failure would result in SQLState error X0Z01::
+5.  The transaction coordinator might also fail while executing a rollback operation. In this case, the client would see such a failure as a SQLState error. If the client was performing a SELECT statement in a transaction, the member failure would result in SQLState error X0Z01::
 
     ``` pre
     ERROR X0Z01: Node 'node-name' went down or data no longer available while iterating the results (method 'rollback()'). Please retry the operation. 
@@ -29,7 +28,7 @@ The following steps describe specific events that can occur depending on which m
     !!! Note:
     	Outside the scope of a transaction, a DML statement would not see an exception due to a member failure. Instead, the statement would be automatically retried on another SnappyData member. However, SELECT statements would receive the X0Z01 statement even outside of a transaction.</p>
 
-Should this type of failure occur, the remaining members of the SnappyData distributed system clean up the open transactions for the failed node, and no additional steps are needed to recover from the failure. A peer client connection would not see this exception because the peer client itself acts as the transaction coordinator.
+Should this type of failure occur, the remaining members of the SnappyData distributed system clean up the open transactions for the failed node, and no additional steps are needed to recover from the failure.
 
 !!! Note:
 	In this release of SnappyData, a transaction fails if any of the cohorts depart abnormally. 
