@@ -282,7 +282,22 @@ class QueryTest extends SnappyFunSuite {
     val expectedResults = queries.map(q => snc.sql(q.replace("$t", "data")).collect())
 
     snc.sql("set snappydata.sql.hashAggregateSize=0")
-    val results = queries.map { q =>
+    var results = queries.map { q =>
+      snc.sql(q.replace("$t", t1)) -> snc.sql(q.replace("$t", t2))
+    }
+
+    for (((r1, r2), e) <- results.zip(expectedResults)) {
+      org.apache.spark.sql.QueryTest.checkAnswer(r1, e)
+      org.apache.spark.sql.QueryTest.checkAnswer(r2, e)
+    }
+
+    // fire updates and check again
+    snc.sql(s"update $t1 set airport_id = airport_id, name = name, city = city, " +
+        s"country = country where (airport_id % 3) = 0")
+    snc.sql(s"update $t2 set airport_id = airport_id, name = name, city = city, " +
+        s"country = country where (airport_id % 2) = 0")
+
+    results = queries.map { q =>
       snc.sql(q.replace("$t", t1)) -> snc.sql(q.replace("$t", t2))
     }
 
