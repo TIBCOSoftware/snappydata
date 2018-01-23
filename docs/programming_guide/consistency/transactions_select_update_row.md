@@ -1,5 +1,7 @@
 # Transactions with SELECT FOR UPDATE
 
+### we don't support Select for update. Remove this entire section after confirming from Suranjan/sumedh
+
 !!!Hint:
 	Distributed transaction is supported only for row tables.
 
