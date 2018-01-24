@@ -807,13 +807,12 @@ private[sql] final case class ColumnTableScan(
         val dictionaryIndex = if (attr.nullable) {
           ExprCode(
             s"""
-               |if ($decoder.isNullAt($buffer, $batchOrdinal)) {
-               |  $dictionaryIndexVar = $dictionaryVar.size();
-               |  $numNullsVar++;
-               |} else {
+               |${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
                |  $dictionaryIndexVar = $updateDecoder == null
                |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
                |    : $updateDecoder.readDictionaryIndex();
+               |} else {
+               |  $dictionaryIndexVar = $dictionaryVar.size();
                |}
                """.stripMargin, "false", dictionaryIndexVar)
         } else {
@@ -863,15 +862,16 @@ private[sql] final case class ColumnTableScan(
       val code =
         s"""
            |final $jt $col;
-           |final boolean $isNullVar;
+           |boolean $isNullVar = false;
            |if ($unchangedCode) {
-           |  if (($isNullVar = $decoder.isNullAt($buffer, $batchOrdinal))) {
+           |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
+           |    $colAssign
+           |  } else {
            |    $col = $defaultValue;
-           |    $numNullsVar++;
-           |  } else $colAssign
+           |    $isNullVar = true;
+           |  }
            |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
-           |  $isNullVar = false;
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;
@@ -890,6 +890,29 @@ private[sql] final case class ColumnTableScan(
       }
       ExprCode(code, "false", col)
     }
+  }
+
+  private def genIfNonNullCode(ctx: CodegenContext, decoder: String,
+      buffer: String, batchOrdinal: String, numNullsVar: String): String = {
+    // nextNullPosition is not updated immediately rather when batchOrdinal
+    // goes just past because a column read code can be invoked multiple
+    // times for the same batchOrdinal like in SNAP-2118;
+    // check below crams in all the conditions in a single check to minimize code
+    // repetition of non-null assignment call that is normally inlined by JVM
+    // and besides this piece of code should get inlined in any case or else
+    // it will be big performance hit for every column nullability check
+    val nextNullPosition = ctx.freshName("nextNullPosition")
+    s"""
+       |int $nextNullPosition = $decoder.getNextNullPosition();
+       |if ($batchOrdinal < $nextNullPosition ||
+       |    // check case when batchOrdinal has gone just past nextNullPosition
+       |    ($batchOrdinal == $nextNullPosition + 1 &&
+       |     $batchOrdinal < ($nextNullPosition = $decoder.findNextNullPosition(
+       |       $buffer, $nextNullPosition, $numNullsVar++))) ||
+       |    // check if batchOrdinal has moved ahead by more than one due to filters
+       |    ($batchOrdinal != $nextNullPosition && (($numNullsVar =
+       |       $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar)) == 0 ||
+       |       $batchOrdinal != $decoder.getNextNullPosition())))""".stripMargin
   }
 }
 
