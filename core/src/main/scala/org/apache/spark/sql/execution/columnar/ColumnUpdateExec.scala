@@ -28,6 +28,7 @@ import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.unsafe.Platform
 
 /**
  * Generated code plan for updates into a column table.
@@ -220,6 +221,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       // code for invoking the function
       s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
+    val platformClass = classOf[Platform].getName
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(long batchId, int bucketId, int numRows) {
@@ -238,8 +240,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |    }
          |    // TODO: SW: delta stats row (can have full limits for those columns)
          |    // for now put dummy bytes in delta stats row
+         |    byte[] deltaStatBytes = new byte[4];
+         |    // VB TODO: Also try ColumnEncoding.writeInt
+         |    $platformClass.putInt(deltaStatBytes, $platformClass.BYTE_ARRAY_OFFSET,
+         |        $batchOrdinal);
          |    final $columnBatchClass columnBatch = $columnBatchClass.apply(
-         |        $batchOrdinal, buffers, new byte[] { 0, 0, 0, 0 }, $deltaIndexes);
+         |        $batchOrdinal, buffers, deltaStatBytes, $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
          |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));

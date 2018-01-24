@@ -38,6 +38,7 @@ import org.apache.spark.sql.execution.columnar.impl.{ClusteredColumnIterator, Co
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Logging, TaskContext}
 
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
@@ -245,6 +246,20 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
         val allocator = ColumnEncoding.getAllocator(delete)
         ColumnEncoding.readInt(allocator.baseObject(delete),
           allocator.baseOffset(delete) + delete.position() + 8)
+      }
+    }
+  }
+
+  def getUpdatedRowCount: Int = {
+    if (currentDeltaStats eq null) 0
+    else {
+      val deltaStatBytes = getColumnBuffer(ColumnFormatEntry.DELTA_STATROW_COL_INDEX,
+        throwIfMissing = false)
+      if (deltaStatBytes eq null) 0
+      else {
+        val allocator = ColumnEncoding.getAllocator(deltaStatBytes)
+        ColumnEncoding.readInt(allocator.baseObject(deltaStatBytes),
+          allocator.baseOffset(deltaStatBytes))
       }
     }
   }

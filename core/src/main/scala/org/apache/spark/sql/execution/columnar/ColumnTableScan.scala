@@ -406,9 +406,11 @@ private[sql] final case class ColumnTableScan(
     val deletedDecoderClass = classOf[ColumnDeleteDecoder].getName
     val batch = ctx.freshName("batch")
     val numBatchRows = s"${batch}NumRows"
+    val numBatchUpdatedRows = s"${batch}NumUpdatedRows"
     val batchIndex = s"${batch}Index"
     val buffers = s"${batch}Buffers"
     val numRows = ctx.freshName("numRows")
+    val numRowsUpdated = ctx.freshName("numRowsUpdated")
     val batchOrdinal = ctx.freshName("batchOrdinal")
     val thisRowFromDelta = ctx.freshName("thisRowFromDelta")
     val isCaseOfUpdate = ctx.freshName("isCaseOfUpdate")
@@ -422,6 +424,7 @@ private[sql] final case class ColumnTableScan(
 
     ctx.addMutableState("java.nio.ByteBuffer", buffers, "")
     ctx.addMutableState("int", numBatchRows, "")
+    ctx.addMutableState("int", numBatchUpdatedRows, "")
     ctx.addMutableState("int", batchIndex, "")
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
@@ -567,11 +570,11 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDelta,
-          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow)
+          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, numRowsUpdated)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDelta,
-          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow)
+          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, numRowsUpdated)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -645,6 +648,7 @@ private[sql] final case class ColumnTableScan(
           $colNextBytes, $numColumnsInStatBlob);
         $deletedCount = $colInput.getDeletedRowCount();
         $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
+        $numBatchUpdatedRows = $colInput.getUpdatedRowCount();
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
@@ -670,6 +674,7 @@ private[sql] final case class ColumnTableScan(
          |    $initRowTableDecoders
          |    $input.next();
          |    $numBatchRows = 1;
+         |    $numBatchUpdatedRows = 0;
          |    $incrementNumRowsSnippet
          |    return true;
          |  }
@@ -699,6 +704,7 @@ private[sql] final case class ColumnTableScan(
          |  if ($inputIsRow) {
          |    $nextRowSnippet
          |    $numBatchRows = 1;
+         |    $numBatchUpdatedRows = 0;
          |    $incrementNumRowsSnippet
          |  } else {
          |    $batchInit
@@ -756,6 +762,7 @@ private[sql] final case class ColumnTableScan(
        |    $assignBatchId
        |    $batchConsume
        |    $deletedDeclaration
+       |    final int $numRowsUpdated = $numBatchUpdatedRows;
        |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    // TODO VB: Temporary variable. Must go away
        |    boolean $isCaseOfUpdate = ${ordinalIdTerm ne null};
@@ -814,7 +821,7 @@ private[sql] final case class ColumnTableScan(
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, thisRowFromDelta: String,
       isCaseOfUpdate: String, isCaseOfSortedInsert: String, numRows: String, colInput: String,
-      inputIsRow: String): ExprCode = {
+      inputIsRow: String, numRowsUpdated: String): ExprCode = {
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
@@ -909,6 +916,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
+           |    " ,numRowsUpdated=" + $numRowsUpdated +
            |    " ,numRows=" + $numRows);
            |  }
            |} else if ($updateDecoder.readNotNull()) {
@@ -922,6 +930,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
+           |    " ,numRowsUpdated=" + $numRowsUpdated +
            |    " ,numRows=" + $numRows);
            |  $isNullVar = false;
            |} else {
