@@ -622,9 +622,11 @@ object SplitSnappyClusterDUnitTest
     // get those from embedded side
     var expectedRowCount = 10000000
     def waitForStats: Boolean = {
-      val stats = SnappyTableStatsProviderService.getService.
-          getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
-      stats.getRowCount == expectedRowCount
+      SnappyTableStatsProviderService.getService.
+          getAggregatedStatsOnDemand._1.get("APP.SNAPPYTABLE") match {
+        case Some(stats) => stats.getRowCount == expectedRowCount
+        case _ => false
+      }
     }
     ClusterManagerTestBase.waitForCriterion(waitForStats,
       s"Expected stats row count to be $expectedRowCount", 30000, 500, throwOnTimeout = true)
