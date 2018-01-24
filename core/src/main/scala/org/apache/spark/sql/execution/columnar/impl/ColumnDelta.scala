@@ -22,7 +22,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
-import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
+import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
@@ -79,7 +79,21 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
       if (columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
         // TODO: SW: merge stats
-        oldValue
+        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
+          decompress = true, compress = false)
+        try {
+          val existingBuffer = oldColumnValue.getBuffer
+          val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+          val oldCount = ColumnEncoding.readInt(allocator.baseObject(existingBuffer),
+            allocator.baseOffset(existingBuffer))
+          val currentCount = ColumnEncoding.readInt(allocator.baseObject(columnBuffer),
+            allocator.baseOffset(columnBuffer))
+          ColumnEncoding.writeInt(allocator.baseObject(columnBuffer),
+            allocator.baseOffset(columnBuffer), oldCount + currentCount)
+        } finally {
+          oldColumnValue.release()
+        }
+        this
       } else {
         val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
         val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
