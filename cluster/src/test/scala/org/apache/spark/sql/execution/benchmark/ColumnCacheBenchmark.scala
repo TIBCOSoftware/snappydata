@@ -142,22 +142,27 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val numElems2 = 4 * numIds
     val numElems3 = numTypes * numTypes
 
-    snappy.range(numElems1).selectExpr(s"id % $numIds",
-      s"cast((id / ($numVals * $numIds)) as int)",
-      "rand() * 100.0", s"concat('cmd_', cast((id % $numNames) as string))",
-      s"concat('val_', cast(cast((id / (12 * $numIds)) as int) as string))",
-      "(id % 2) + 2014", s"id % $numTypes", s"id % $numVals").write.insertInto("TABLE1")
+    var ds1 = snappy.range(numElems1).selectExpr(s"(id % $numIds) as id",
+      s"cast((id / ($numVals * $numIds)) as int) as month",
+      "cast ((rand() * 100.0) as decimal(28, 10)) as val1",
+      s"concat('cmd_', cast((id % $numNames) as string)) as name",
+      s"concat('val_', cast(cast((id / (12 * $numIds)) as int) as string)) as val_name",
+      "((id % 2) + 2014) as year", s"(id % $numTypes) type_id", s"(id % $numVals) val_id")
+    ds1.cache()
+    ds1.count()
+    ds1.write.insertInto("TABLE1")
 
-    snappy.range(numElems2).selectExpr(s"cast((rand() * $numRoles) as int)",
+    val ds2 = snappy.range(numElems2).selectExpr(s"cast((rand() * $numRoles) as int)",
       s"id % $numIds", s"id % $numGroups", "concat('grp_', cast((id % 100) as string))",
-      "concat('site_', cast((id % 1000) as string))").write.insertInto("TABLE2")
+      "concat('site_', cast((id % 1000) as string))")
+    ds2.write.insertInto("TABLE2")
 
-    snappy.range(numElems3).selectExpr(s"id % $numTypes",
+    val ds3 = snappy.range(numElems3).selectExpr(s"id % $numTypes",
       s"concat('type_', cast(cast((id / $numTypes) as int) as string))", "rand() * 100.0")
-        .write.insertInto("TABLE3")
+    ds3.write.insertInto("TABLE3")
 
     val sql = "select b.group_name, a.name, " +
-        "sum(a.val1*c.factor) " +
+        "sum(a.val1 * c.factor) " +
         "from TABLE1 a, TABLE2 b, TABLE3 c " +
         "where a.id = b.id and a.year = 2015 and " +
         "a.val_name like 'val\\_42%' and b.role_id = 99 and c.type_id = a.type_id and " +
@@ -175,6 +180,39 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
       else snappy.sql(sql).collect()
     }
     benchmark.run()
+
+    // also check with null values and updates (SNAP-2088)
+
+    snappy.truncateTable("table1")
+    // null values every 8th row
+    ds1 = ds1.selectExpr("id", "month", "(case when (id & 7) = 0 then null else val1 end) val1",
+      "name", "(case when (id & 7) = 0 then null else val_name end) as val_name",
+      "year", "type_id", "(case when (id & 7) = 0 then null else val_id end) val_id")
+    ds1.createOrReplaceTempView("TABLE1_TEMP1")
+    ds1.write.insertInto("table1")
+
+    expectedResult = snappy.sql(sql.replace("TABLE1", "TABLE1_TEMP1")).collect()
+    ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
+
+    // even more null values every 4th row but on TABLE1 these are set using update
+    ds1 = ds1.selectExpr("id", "month", "(case when (id & 3) = 0 then null else val1 end) val1",
+      "name", "(case when (id & 3) = 0 then null else val_name end) as val_name",
+      "year", "type_id", "(case when (id & 3) = 0 then null else val_id end) val_id")
+    ds1.createOrReplaceTempView("TABLE1_TEMP2")
+
+    expectedResult = snappy.sql(sql.replace("TABLE1", "TABLE1_TEMP2")).collect()
+    snappy.sql("update table1 set val1 = null, val_name = null, val_id = null where (id & 3) = 0")
+    ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
+
+    // more update statements but these don't change anything rather change to same value
+    snappy.sql("update table1 set val1 = case when (id & 3) = 0 then null else val1 end, " +
+        "val_name = case when (id & 3) = 0 then null else val_name end, " +
+        "val_id = case when (id & 3) = 0 then null else val_id end where (id % 10) = 0")
+    ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
+
+    snappy.sql("DROP TABLE IF EXISTS TABLE3")
+    snappy.sql("DROP TABLE IF EXISTS TABLE2")
+    snappy.sql("DROP TABLE IF EXISTS TABLE1")
   }
 
   test("insert more than 64K data") {
