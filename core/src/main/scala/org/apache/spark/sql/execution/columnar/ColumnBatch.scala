@@ -220,9 +220,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
       val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
       val delta1 = getColumnBuffer(deltaPosition, throwIfMissing = false)
       val delta2 = getColumnBuffer(deltaPosition - 1, throwIfMissing = false)
-      val delta3 = getColumnBuffer(deltaPosition - 2, throwIfMissing = false)
-      if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null)) {
-        UpdatedColumnDecoder(decoder, field, delta1, delta2, delta3)
+      if ((delta1 ne null) || (delta2 ne null)) {
+        UpdatedColumnDecoder(decoder, field, delta1, delta2)
       } else null
     }
   }
@@ -402,9 +401,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
     val delta1 = buffers.get(deltaPosition)
     val delta2 = buffers.get(deltaPosition - 1)
-    val delta3 = buffers.get(deltaPosition - 2)
-    if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null)) {
-      UpdatedColumnDecoder(decoder, field, delta1, delta2, delta3)
+    if ((delta1 ne null) || (delta2 ne null)) {
+      UpdatedColumnDecoder(decoder, field, delta1, delta2)
     } else null
   }
 
