@@ -636,8 +636,10 @@ class MapTest extends SnappyFunSuite {
     val omap2 = new java.util.HashMap[String, String](numEntries)
     var imap3: Map[String, String] = null
     val omap3 = new scala.collection.mutable.HashMap[String, String]()
-    val omap4 = new Object2ObjectOpenHashMap[String, String](numEntries)
-    val omap5 = ObjectObjectHashMap.withExpectedSize[String, String](numEntries)
+    val omap4 = new java.util.concurrent.ConcurrentHashMap[String, String](32, 0.7f, 1)
+    val omap5 = new scala.collection.concurrent.TrieMap[String, String]
+    val omap6 = new Object2ObjectOpenHashMap[String, String](numEntries)
+    val omap7 = ObjectObjectHashMap.withExpectedSize[String, String](numEntries)
 
     val rnd = new XORShiftRandom()
     val data = Array.fill(numEntries)(s"str${rnd.nextInt(100)}")
@@ -696,7 +698,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("FastUtil Map", numIterations,
+    benchmark.addCase("Java ConcurrentHashMap", numIterations,
       () => data.foreach(d => omap4.put(d, d)), omap4.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {
@@ -708,13 +710,37 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("Koloboke Map", numIterations,
+    benchmark.addCase("Scala TrieMap", numIterations,
       () => data.foreach(d => omap5.put(d, d)), omap5.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {
         var i = 0
         while (i < numEntries) {
-          assert(data(i) == omap5.get(data(i)))
+          assert(data(i) == omap5(data(i)))
+          i += 1
+        }
+        loop += 1
+      }
+    })
+    benchmark.addCase("FastUtil Map", numIterations,
+      () => data.foreach(d => omap6.put(d, d)), omap6.clear)(_ => {
+      var loop = 0
+      while (loop < numLoops) {
+        var i = 0
+        while (i < numEntries) {
+          assert(data(i) == omap6.get(data(i)))
+          i += 1
+        }
+        loop += 1
+      }
+    })
+    benchmark.addCase("Koloboke Map", numIterations,
+      () => data.foreach(d => omap7.put(d, d)), omap7.clear)(_ => {
+      var loop = 0
+      while (loop < numLoops) {
+        var i = 0
+        while (i < numEntries) {
+          assert(data(i) == omap7.get(data(i)))
           i += 1
         }
         loop += 1

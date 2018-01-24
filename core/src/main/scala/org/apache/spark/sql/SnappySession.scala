@@ -17,10 +17,10 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
@@ -39,6 +39,7 @@ import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
+import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -209,12 +210,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   @transient
-  private[sql] val queryHints: TrieMap[String, String] = TrieMap.empty
+  private[sql] val queryHints = new ConcurrentHashMap[String, String](16, 0.7f, 1)
 
-  def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
+  def getPreviousQueryHints: java.util.Map[String, String] =
+    java.util.Collections.unmodifiableMap(queryHints)
 
   @transient
-  private val contextObjects: TrieMap[Any, Any] = TrieMap.empty
+  private val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
 
   @transient
   private[sql] var currentKey: SnappySession.CachedKey = _
@@ -222,11 +224,14 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] var planCaching: Boolean = Property.PlanCaching.get(sessionState.conf)
 
+  @transient
+  private[sql] var wholeStageEnabled: Boolean = sessionState.conf.wholeStageEnabled
+
   /**
    * Get a previously registered context object using [[addContextObject]].
    */
   private[sql] def getContextObject[T](key: Any): Option[T] = {
-    contextObjects.get(key).asInstanceOf[Option[T]]
+    Option(contextObjects.get(key).asInstanceOf[T])
   }
 
   /**
@@ -2051,7 +2056,13 @@ object SnappySession extends Logging {
 
     // collect the query hints
     val queryHints = session.synchronized {
-      val hints = session.queryHints.toMap
+      val numHints = session.queryHints.size()
+      val hints = if (numHints == 0) java.util.Collections.emptyMap[String, String]()
+      else {
+        val m = ObjectObjectHashMap.withExpectedSize[String, String](numHints)
+        m.putAll(session.queryHints)
+        m
+      }
       session.clearQueryData()
       hints
     }
@@ -2062,11 +2073,11 @@ object SnappySession extends Logging {
     // if this has in-memory caching then don't cache since plan can change
     // dynamically after caching due to unpersist etc. Also do not cache
     // if snappy tables are no there
-    if (executedPlan.find(t => t match {
+    if (executedPlan.find {
       case imse : InMemoryTableScanExec => true
       case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
       case _ => false
-    }).isDefined) {
+    }.isDefined) {
       throw new EntryExistsException("uncached plan", cdf)
     }
     cdf
@@ -2224,7 +2235,7 @@ object SnappySession extends Logging {
     // set the query hints as would be set at the end of un-cached sql()
     session.synchronized {
       session.queryHints.clear()
-      session.queryHints ++= cachedDF.queryHints
+      session.queryHints.putAll(cachedDF.queryHints)
     }
     cachedDF
   }
