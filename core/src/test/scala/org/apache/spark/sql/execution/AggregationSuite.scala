@@ -43,7 +43,7 @@ class AggregationSuite extends SnappyFunSuite {
 
     snappy.sql("drop table if exists test")
     snappy.sql("create table test (id bigint, k bigint, s varchar(10)) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '8')")
     insertDF.write.insertInto("test")
     snappy.sql("drop table if exists sym")
     snappy.sql("create table sym (s varchar(10))")

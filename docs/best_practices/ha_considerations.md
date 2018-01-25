@@ -20,4 +20,4 @@ However, the redundant copies double the memory requirements. If there are no re
 
 ## Known Limitation
 
-In case of lead HA, the new primary lead node creates a new Snappy session for the JDBC clients. This means session specific properties (for example, `spark.sql.autoBroadcastJoinThreshold`, `snappydata.hashJoinSize`) need to be set again after a lead fail over.
+In case of lead HA, the new primary lead node creates a new Snappy session for the JDBC clients. This means session specific properties (for example, `spark.sql.autoBroadcastJoinThreshold`, `snappydata.sql.hashJoinSize`) need to be set again after a lead fail over.

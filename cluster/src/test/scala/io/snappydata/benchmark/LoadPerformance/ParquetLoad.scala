@@ -69,7 +69,7 @@ object ParquetLoad extends  SnappySQLJob{
 
       //column table
       snc.createTable("AIRLINE_SNAPPY_COLUMN", "column",
-        updatedSchema, Map("buckets" -> "11"))
+        updatedSchema, Map("buckets" -> "16"))
 
       pw.println( "Created table AIRLINE_SNAPPY_COLUMN " )
 

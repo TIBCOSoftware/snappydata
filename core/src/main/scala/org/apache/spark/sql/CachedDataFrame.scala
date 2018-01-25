@@ -59,7 +59,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
     val allbcplans: mutable.Map[SparkPlan, ArrayBuffer[Any]] = mutable.Map.empty,
-    val queryHints: Map[String, String] = Map.empty,
+    val queryHints: java.util.Map[String, String] = java.util.Collections.emptyMap(),
     var planProcessingTime: Long = 0,
     var currentExecutionId: Option[Long] = None)
     extends Dataset[Row](session, queryExecution, encoder) with Logging {
@@ -69,7 +69,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
       rddId: Int, hasLocalCollectProcessing: Boolean,
       allLiterals: Array[LiteralValue],
-      queryHints: Map[String, String],
+      queryHints: java.util.Map[String, String],
       planProcessingTime: Long, currentExecutionId: Option[Long]) = {
     // scalastyle:on
     this(ds.sparkSession, ds.queryExecution, ds.exprEnc, queryString, cachedRDD,
@@ -117,11 +117,10 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
   }
 
   private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
-  private lazy val unsafe = UnsafeHolder.getUnsafe
   private lazy val rdd_partitions_ = {
     val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
     _f.setAccessible(true)
-    unsafe.objectFieldOffset(_f)
+    UnsafeHolder.getUnsafe.objectFieldOffset(_f)
   }
 
   @tailrec
@@ -137,7 +136,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       case null =>
       case r: RDD[_] =>
         // f.set(r, null)
-        unsafe.putObject(r, rdd_partitions_, null)
+        UnsafeHolder.getUnsafe.putObject(r, rdd_partitions_, null)
     }
     if (children.isEmpty) {
       return
@@ -704,8 +703,9 @@ object CachedDataFrame
       return Iterator.empty
     }
 
+    val takeRDD = if (n > 0) rdd.mapPartitionsInternal(_.take(n)) else rdd
     var numResults = 0
-    val totalParts = rdd.partitions.length
+    val totalParts = takeRDD.partitions.length
     var partsScanned = 0
     val results = new Array[(R, Int)](totalParts)
     while (numResults < n && partsScanned < totalParts) {
@@ -714,13 +714,16 @@ object CachedDataFrame
       // totalParts in runJob.
       var numPartsToTry = 1L
       if (partsScanned > 0) {
-        // If we didn't find any rows after the first iteration, just try all
-        // partitions next. Otherwise, interpolate the number of partitions
-        // we need to try, but overestimate it by 50%.
+        // If we didn't find any rows after the previous iteration, quadruple and retry.
+        // Otherwise, interpolate the number of partitions we need to try, but overestimate
+        // it by 50%. We also cap the estimation in the end.
+        val limitScaleUpFactor = Math.max(session.sessionState.conf.limitScaleUpFactor, 2)
         if (numResults == 0) {
-          numPartsToTry = totalParts - 1
+          numPartsToTry = partsScanned * limitScaleUpFactor
         } else {
-          numPartsToTry = (1.5 * n * partsScanned / numResults).toInt
+          // the left side of max is >=1 whenever partsScanned >= 2
+          numPartsToTry = Math.max((1.5 * n * partsScanned / numResults).toInt - partsScanned, 1)
+          numPartsToTry = Math.min(numPartsToTry, partsScanned * limitScaleUpFactor)
         }
       }
       // guard against negative num of partitions
@@ -729,7 +732,7 @@ object CachedDataFrame
       val p = partsScanned.until(math.min(partsScanned + numPartsToTry,
         totalParts).toInt)
       val sc = session.sparkContext
-      sc.runJob(rdd, processPartition, p, (index: Int, r: (U, Int)) => {
+      sc.runJob(takeRDD, processPartition, p, (index: Int, r: (U, Int)) => {
         results(partsScanned + index) = (resultHandler(index, r._1), r._2)
         numResults += r._2
       })

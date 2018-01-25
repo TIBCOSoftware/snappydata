@@ -90,14 +90,14 @@ class SparkSQLExecuteImpl(val sql: String,
   // check for query hint to serialize complex types as JSON strings
   private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
-    case None => false
-    case Some(v) => Misc.parseBoolean(v)
+    case null => true
+    case v => Misc.parseBoolean(v)
   }
 
   private val (allAsClob, columnsAsClob) = session.getPreviousQueryHints.get(
     QueryHint.ColumnsAsClob.toString) match {
-    case None => (false, Set.empty[String])
-    case Some(v) => Utils.parseColumnsAsClob(v)
+    case null => (false, Set.empty[String])
+    case v => Utils.parseColumnsAsClob(v)
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,

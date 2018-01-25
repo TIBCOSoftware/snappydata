@@ -864,7 +864,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   private def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
       nullable: Boolean, encoder: String, cursorTerm: String,
       ev: ExprCode): String = {
-    ColumnWriter.genCodeColumnWrite(ctx, dataType, nullable, encoder,
+    ColumnWriter.genCodeColumnWrite(ctx, dataType, nullable, encoder, encoder,
       cursorTerm, ev, batchSizeTerm)
   }
 
@@ -943,8 +943,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 object ColumnWriter {
 
   def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
-      nullable: Boolean, encoder: String, cursorTerm: String, ev: ExprCode,
-      batchSizeTerm: String, offsetTerm: String = null,
+      nullable: Boolean, encoder: String, nullEncoder: String, cursorTerm: String,
+      ev: ExprCode, batchSizeTerm: String, offsetTerm: String = null,
       baseOffsetTerm: String = null): String = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
@@ -1023,7 +1023,7 @@ object ColumnWriter {
     if (nullable) {
       s"""
          |if ($isNull) {
-         |  $encoder.writeIsNull($batchSizeTerm);
+         |  $nullEncoder.writeIsNull($batchSizeTerm);
          |} else {
          |  $writeValue
          |}""".stripMargin
@@ -1184,7 +1184,7 @@ object ColumnWriter {
     val serializeValue =
       s"""
          |final long $fieldOffset = $baseDataOffset + ($index << 3);
-         |${genCodeColumnWrite(ctx, dt, nullable = false, encoder,
+         |${genCodeColumnWrite(ctx, dt, nullable = false, encoder, encoder,
             cursorTerm, ExprCode("", "false", value), batchSizeTerm,
             fieldOffset, baseOffset)}
       """.stripMargin

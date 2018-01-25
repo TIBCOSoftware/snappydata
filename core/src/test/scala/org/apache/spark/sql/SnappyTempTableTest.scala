@@ -24,8 +24,8 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 
 
 class SnappyTempTableTest extends SnappyFunSuite
-  with Logging
-  with BeforeAndAfter {
+    with Logging
+    with BeforeAndAfter {
 
   val tableName: String = "TestTempTable"
   val props = Map.empty[String, String]
@@ -33,6 +33,7 @@ class SnappyTempTableTest extends SnappyFunSuite
   after {
     snc.dropTable(tableName, ifExists = true)
   }
+
 
   test("test drop table from a simple source") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -47,7 +48,7 @@ class SnappyTempTableTest extends SnappyFunSuite
     val plan = catalog.lookupRelation(qName)
     plan match {
       case LogicalRelation(br, _, _) => fail(" A RDD based temp table " +
-        "should have been matched with LogicalPlan")
+         "should have been matched with LogicalPlan")
       case _ =>
     }
 
@@ -59,13 +60,14 @@ class SnappyTempTableTest extends SnappyFunSuite
 
     assert(!snc.sessionState.catalog.tableExists(tableName))
   }
+
   test("test drop table from a relational source") {
     val file = getClass.getResource("/airlineCode_Lookup.csv").getPath
     val df = snc.read
-      .format("com.databricks.spark.csv") // CSV to DF package
-      .option("header", "true") // Use first line of all files as header
-      .option("inferSchema", "true") // Automatically infer data types
-      .load(file)
+       .format("com.databricks.spark.csv") // CSV to DF package
+       .option("header", "true") // Use first line of all files as header
+       .option("inferSchema", "true") // Automatically infer data types
+       .load(file)
 
     df.createOrReplaceTempView(tableName)
     val catalog = snc.sessionState.catalog
@@ -74,7 +76,7 @@ class SnappyTempTableTest extends SnappyFunSuite
     plan match {
       case LogicalRelation(br, _, _) =>
       case _ => fail("A CSV relation temp table should have been " +
-        "matched with LogicalRelation")
+         "matched with LogicalRelation")
     }
     val scan = snc.sql(s"select * from $tableName")
     scan.count()

@@ -471,4 +471,7 @@ case class JDBCMutableRelation(
   }
 }
 
-final class DefaultSource extends MutableRelationProvider
+final class DefaultSource extends MutableRelationProvider with DataSourceRegister {
+
+  override def shortName(): String = "jdbc_mutable"
+}

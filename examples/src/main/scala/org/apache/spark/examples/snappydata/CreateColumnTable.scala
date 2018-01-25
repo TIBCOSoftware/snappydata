@@ -164,7 +164,7 @@ object CreateColumnTable extends SnappySQLJob {
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
         "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL)" +
-        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY', BUCKETS '11' )")
+        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 
     // insert some data in it
     pw.println()
