@@ -178,13 +178,14 @@ val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
 data.map { r =>
   snappy.put(tableName, Row.fromSeq(r))
 }
-```scala
+```
 
 Usage SnappySession.update(): Update all rows in table that match passed filter expression
 
 ```scala
 snappy.update(tableName, "ITEMREF = 3" , Row(99) , "ITEMREF" )
 ```
+
 
 **Usage SnappySession.delete()**: Delete all rows in table that match passed filter expression
 
@@ -219,14 +220,11 @@ CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
     // create the table
     snappy.createTable(tableName, "row", schema, Map.empty[String, String])
 ```
-
-
 !!! Note: 
 	STRING columns are handled differently when queried over a JDBC connection.
 
 To ensure optimal performance for SELECT queries executed over JDBC connection (more specifically, those that get routed to lead node), the data of STRING columns is returned in VARCHAR format, by default. This also helps the data visualization tools to render the data effectively.
 <br/>However, if the STRING column size is larger than VARCHAR limit (32768), you can enforce the returned data format to be in CLOB in following ways:
-
 
 Using the system property `spark-string-as-clob` when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
 

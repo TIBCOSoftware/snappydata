@@ -73,9 +73,6 @@ pages:
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
-    - 'Firewalls and Connections':
-        - 'Firewalls and Ports': 'configuring_cluster/firewalls_ports.md'    
-        - 'Locators and Ports': 'configuring_cluster/locators_gateways.md'    
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
     - 'SparkSession, SnappySession and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
@@ -90,13 +87,10 @@ pages:
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
     - 'Stream Processing using SQL': 'programming_guide/stream_processing_using_sql.md'
     - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md' 
-- 'Overview of SnappyData Distributed Transactions': 'programming_guide/transactions_about.md'
-- 'Overview of SnappyData Distributed Transactions':
-    - 'How Transactions Work for Row Tables': 'programming_guide/consistency/using_transactions_row.md' 
-    - 'Rollback Behavior and Member Failures': 'programming_guide/consistency/transactions_failures.md'
-    - 'Transaction Functionality and Limitations': 'programming_guide/consistency/transactions_limitations.md'
-    - 'Transactions with SELECT FOR UPDATE': 'programming_guide/consistency/transactions_select_update_row.md'
-    - 'MVCC and Snapshot Isolation': 'programming_guide/consistency/using_snapshot_isolation_column.md'
+- 'Distributed Transactions': 'consistency/transactions_about.md'
+- 'Distributed Transactions':
+    - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
+    - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
 - 'Affinity Modes': 'deployment.md'
 - 'Affinity Modes': 
     - 'Local Mode': 'affinity_modes/local_mode.md'
@@ -112,7 +106,7 @@ pages:
     - 'Memory Management': 'best_practices/memory_management.md'      
     - 'HA Considerations': 'best_practices/ha_considerations.md'    
     - 'Important Settings': 'best_practices/important_settings.md'
-    - 'Best Practices for Using Transactions': 'best_practices/transactions_best_practices.md'    
+    - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'    
 - 'Synopsis Data Engine (SDE)': 'aqp.md'
 - 'Synopsis Data Engine (SDE)': 
     - 'Key Concepts': 'sde/key_concepts.md'
@@ -144,6 +138,19 @@ pages:
     - 'Authorization': 'security/authorization.md'
     - 'Configuring Network Encryption and Authentication using SSL': 'security/configuring_network_encryption_and_authentication_using_ssl.md'
     - 'User Names for Authentication, Authorization, and Membership': 'security/user_names_for_authentication_authorization_and_membership.md'
+- 'Evaluating Statistics for the System and Applications': 'vsd/system_performance.md'
+- 'Evaluating Statistics for the System and Applications':
+    - 'Collecting System Statistics': 'vsd/collecting_system_stats.md'
+    - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
+    - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
+    - 'Using VSD to Analyze Statistics':
+        - 'Installing and Running VSD': 'vsd/running_vsd.md'
+        - 'Transaction Performance': 'vsd/vsd_transactions.md'
+        - 'Table Performance': 'vsd/vsd_tables.md'
+        - 'SQL Statement Performance': 'vsd/vsd_statements.md'
+        - 'Memory Usage': 'vsd/vsd_memory.md'
+        - 'Client Connections': 'vsd/vsd-connection-stats.md'
+        - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
     - 'SQL Reference Guide': 'sql_reference.md'
@@ -224,6 +231,7 @@ pages:
         - 'enable-network-partition-detection': 'reference/configuration_parameters/enable-network-partition-detection.md'
         - 'enable-stats': 'reference/configuration_parameters/enable-stats.md'
         - 'enable-time-statistics': 'reference/configuration_parameters/enable-time-statistics.md'
+        - 'enable-timestats': 'reference/configuration_parameters/enable-timestats.md'
         - 'enforce-unique-host': 'reference/configuration_parameters/enforce-unique-host.md'
         - 'init-scripts': 'reference/configuration_parameters/init-scripts.md'
         - 'load-balance': 'reference/configuration_parameters/load-balance.md'
@@ -303,4 +311,4 @@ extra_css:
 markdown_extensions:
     - markdown.extensions.admonition 
     
-copyright: Copyright &copy; 2017 SnappyData Inc.
+copyright: Copyright &copy; 2018 SnappyData Inc.
