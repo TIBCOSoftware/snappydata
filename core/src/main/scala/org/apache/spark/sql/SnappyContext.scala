@@ -1137,7 +1137,7 @@ object SnappyContext extends Logging {
     }
   }
 
-  private def stopSnappyContext(): Unit = contextLock.synchronized {
+  private def stopSnappyContext(): Unit = synchronized {
     val sc = globalSparkContext
     if (_globalContextInitialized) {
       SnappyTableStatsProviderService.stop()
@@ -1151,17 +1151,21 @@ object SnappyContext extends Logging {
       // clear static objects on the driver
       clearStaticArtifacts()
 
-      _sharedState = null
-      if (_globalClear ne null) {
-        _globalClear()
-        _globalClear = null
+      contextLock.synchronized {
+        _sharedState = null
+        if (_globalClear ne null) {
+          _globalClear()
+          _globalClear = null
+        }
       }
       MemoryManagerCallback.resetMemoryManager()
     }
-    _clusterMode = null
-    _anySNContext = null
-    _globalSNContextInitialized = false
-    _globalContextInitialized = false
+    contextLock.synchronized {
+      _clusterMode = null
+      _anySNContext = null
+      _globalSNContextInitialized = false
+      _globalContextInitialized = false
+    }
   }
 
   /** Cleanup static artifacts on this lead/executor. */
