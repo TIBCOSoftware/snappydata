@@ -178,7 +178,7 @@ val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
 data.map { r =>
   snappy.put(tableName, Row.fromSeq(r))
 }
-```scala
+```
 
 Usage SnappySession.update(): Update all rows in table that match passed filter expression
 

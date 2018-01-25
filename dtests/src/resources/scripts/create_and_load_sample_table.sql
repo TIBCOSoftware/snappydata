@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS AIRLINE_SAMPLE ;
 --- CREATE SAMPLE TABLE ---
 CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE
   OPTIONS(
-    buckets '7',
+    buckets '8',
     qcs 'UniqueCarrier, Year_, Month_',
     fraction '0.03',
     strataReservoirSize '50', PERSISTENT ':persistenceMode')

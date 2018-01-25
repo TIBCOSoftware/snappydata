@@ -405,18 +405,23 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 abstract class PRValuesIterator[T](container: GemFireContainer,
     region: LocalRegion, bucketIds: java.util.Set[Integer]) extends Iterator[T] {
 
+  protected type PRIterator = PartitionedRegion#PRLocalScanIterator
+
   protected final var hasNextValue = true
   protected final var doMove = true
   // transaction started by row buffer scan should be used here
   private val tx = TXManagerImpl.getCurrentSnapshotTXState
-  private[execution] final val itr = if (container ne null) {
+  private[execution] final val itr = createIterator(container, region, tx)
+
+  protected def createIterator(container: GemFireContainer, region: LocalRegion,
+      tx: TXStateInterface): PRIterator = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
-      false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+      false, true).asInstanceOf[PRIterator]
   } else if (region ne null) {
     region.getDataView(tx).getLocalEntriesIterator(
       bucketIds.asInstanceOf[java.util.Set[Integer]], false, false, true,
-      region, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+      region, true).asInstanceOf[PRIterator]
   } else null
 
   protected def currentVal: T

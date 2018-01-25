@@ -28,9 +28,9 @@ import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
-import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SparkConnectorRDDHelper
@@ -505,6 +505,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   override def getColumnBatchRDD(tableName: String,
       rowBuffer: String,
       requiredColumns: Array[String],
+      projection: Array[Int],
+      fullScan: Boolean,
       prunePartitions: => Int,
       session: SparkSession,
       schema: StructType): RDD[Any] = {
@@ -512,7 +514,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD(snappySession,
-          tableName, prunePartitions, this)
+          tableName, projection, fullScan, prunePartitions, this)
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -541,8 +543,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int,
       conn: Option[Connection] = None): Unit = {
     // split the batch and put into row buffer if it is small
-    if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
-      GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
+    if (maxDeltaRows > 0 && batch.numRows < math.min(maxDeltaRows,
+      math.max(maxDeltaRows >>> 1, SystemProperties.SNAPPY_MIN_COLUMN_DELTA_ROWS))) {
       // noinspection RedundantDefaultArgument
       tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
         onExecutor = true)(doRowBufferPut(batch, partitionId))(conn)
@@ -665,6 +667,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 final class ColumnarStorePartitionedRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
+    private var projection: Array[Int],
+    private var fullScan: Boolean,
     @(transient @param) partitionPruner: => Int,
     @transient private val store: JDBCSourceAsColumnarStore)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -727,7 +731,7 @@ final class ColumnarStorePartitionedRDD(
     // val container = GemFireXDUtils.getGemFireContainer(tableName, true)
     // ColumnBatchIterator(container, bucketIds)
     val r = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
-    ColumnBatchIterator(r, bucketIds, context)
+    ColumnBatchIterator(r, bucketIds, projection, fullScan, context)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -743,11 +747,17 @@ final class ColumnarStorePartitionedRDD(
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
     output.writeString(tableName)
+    output.writeInt(projection.length)
+    output.writeInts(projection)
+    output.writeBoolean(fullScan)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
     tableName = input.readString()
+    val numProjections = input.readInt
+    projection = input.readInts(numProjections)
+    fullScan = input.readBoolean()
   }
 }
 
@@ -770,7 +780,7 @@ final class SmartConnectorColumnRDD(
 
     val partitionId = split.index
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(tableName,
-      partitionId, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
+      partitionId, requiredColumns, schema)
     // fetch the stats
     val (statement, rs, txId) = helper.executeQuery(conn, tableName, split,
       fetchStatsQuery, relDestroyVersion)

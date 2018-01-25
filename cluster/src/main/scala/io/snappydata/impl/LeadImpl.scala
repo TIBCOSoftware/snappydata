@@ -30,7 +30,7 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.Status
+import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, Status}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
@@ -65,6 +65,8 @@ class LeadImpl extends ServerImpl with Lead
 
   private var notifyStatusChange: ((FabricService.State) => Unit) = _
 
+  @volatile private var servicesStarted: Boolean = _
+
   var _directApiInvoked: Boolean = false
   var isTestSetup = false
 
@@ -83,7 +85,7 @@ class LeadImpl extends ServerImpl with Lead
     // prefix all store properties with "snappydata.store" for SparkConf
 
     // first the passed in bootProperties
-    var propNames = bootProperties.stringPropertyNames().iterator()
+    val propNames = bootProperties.stringPropertyNames().iterator()
     while (propNames.hasNext) {
       val propName = propNames.next()
       if (propName.startsWith(SPARK_PREFIX)) {
@@ -130,15 +132,8 @@ class LeadImpl extends ServerImpl with Lead
 
     // copy store related properties into a separate properties bag
     // to be used by store boot while original will be used by SparkConf
-    val storeProperties = new Properties()
-    propNames = bootProperties.stringPropertyNames().iterator()
-    while (propNames.hasNext) {
-      val propName = propNames.next()
-      if (propName.startsWith(STORE_PREFIX)) {
-        storeProperties.setProperty(propName.substring(
-          STORE_PREFIX.length), bootProperties.getProperty(propName))
-      }
-    }
+    val storeProperties = ServiceUtils.getStoreProperties(bootProperties.stringPropertyNames()
+        .iterator().asScala.map(k => k -> bootProperties.getProperty(k)).toSeq)
 
     // initialize store and Spark in parallel (Spark will wait in
     // cluster manager start on internalStart)
@@ -160,8 +155,6 @@ class LeadImpl extends ServerImpl with Lead
         bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
 
       // wait for log service to initialize so that Spark also uses the same
-      // WARNING: no log lines should be added before this point else lazy logger
-      // will get initialized with no-op logging
       while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {
         Thread.sleep(50)
       }
@@ -197,7 +190,7 @@ class LeadImpl extends ServerImpl with Lead
 
       // The auth service is not yet initialized at this point.
       // So simply check the auth-provider property value.
-      if (Misc.checkAuthProvider(bootProperties.asScala.asJava)) {
+      if (Misc.checkAuthProvider(bootProperties)) {
         logInfo("Enabling user authentication for SnappyData Pulse")
         SparkCallbacks.setAuthenticatorForJettyServer()
       }
@@ -223,10 +216,24 @@ class LeadImpl extends ServerImpl with Lead
       logInfo("About to send profile update after initialization completed.")
       ServerGroupUtils.sendUpdateProfile()
 
-      val jobServerWait = Property.JobServerWaitForInit.get(conf)
+      var jobServerWait = false
+      var confFile: Array[String] = null
+      var jobServerConfig: Config = null
+      var startupString: String = null
+      if (Property.JobServerEnabled.get(conf)) {
+        jobServerWait = Property.JobServerWaitForInit.get(conf)
+        confFile = conf.getOption("jobserver.configFile") match {
+          case None => Array[String]()
+          case Some(c) => Array(c)
+        }
+        jobServerConfig = getConfig(confFile)
+        val bindAddress = jobServerConfig.getString("spark.jobserver.bind-address")
+        val port = jobServerConfig.getInt("spark.jobserver.port")
+        startupString = s"job server on: $bindAddress[$port]"
+      }
       if (!jobServerWait) {
         // mark RUNNING (job server and zeppelin will continue to start in background)
-        notifyRunningInLauncher(Status.RUNNING)
+        markLauncherRunning(if (startupString ne null) s"Starting $startupString" else null)
       }
 
       // initialize global context
@@ -244,20 +251,22 @@ class LeadImpl extends ServerImpl with Lead
       ToolsCallbackInit.toolsCallback.updateUI(sc)
 
       // start other add-on services (job server)
-      startAddOnServices(conf)
+      startAddOnServices(conf, confFile, jobServerConfig)
 
       // finally start embedded zeppelin interpreter if configured
       checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
 
       if (jobServerWait) {
         // mark RUNNING after job server and zeppelin initialization if so configured
-        notifyRunningInLauncher(Status.RUNNING)
+        markLauncherRunning(if (startupString ne null) s"Started $startupString" else null)
       }
     }
 
     try {
       internalStart(() => storeProperties)
       Await.result(initServices, Duration.Inf)
+      // mark status as RUNNING at the end in any case
+      markRunning()
     } catch {
       case _: InterruptedException =>
         logInfo(s"Thread interrupted, aborting.")
@@ -277,6 +286,8 @@ class LeadImpl extends ServerImpl with Lead
     checkAuthProvider(storeProps)
 
     super.start(storeProps, ignoreIfStarted = false)
+
+    resetLogger()
 
     val cache = Misc.getGemFireCache
     cache.getDistributionManager.addMembershipListener(SnappyContext.membershipListener)
@@ -331,6 +342,38 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
+  override def serviceStatus(): State = {
+    // show as running only after everything has initialized
+    status() match {
+      case State.RUNNING if !servicesStarted => State.STARTING
+      case state => state
+    }
+  }
+
+  private def markRunning() = {
+    if (GemFireXDUtils.TraceFabricServiceBoot) {
+      logInfo("Accepting RUNNING notification")
+    }
+    notifyRunningInLauncher(Status.RUNNING)
+    serverstatus = State.RUNNING
+    servicesStarted = true
+  }
+
+  private def markLauncherRunning(message: String): Unit = {
+    if ((message ne null) && !message.isEmpty) {
+      val launcher = CacheServerLauncher.getCurrentInstance
+      if (launcher ne null) {
+        val startupMessage = launcher.getServerStartupMessage
+        if (startupMessage eq null) {
+          launcher.setServerStartupMessage(message)
+        } else {
+          launcher.setServerStartupMessage(startupMessage + "\n  " + message)
+        }
+      }
+    }
+    notifyRunningInLauncher(Status.RUNNING)
+  }
+
   private def checkAuthProvider(props: Properties): Unit = {
     doCheck(props.getProperty(Attribute.AUTH_PROVIDER))
     doCheck(props.getProperty(Attribute.SERVER_AUTH_PROVIDER))
@@ -368,6 +411,7 @@ class LeadImpl extends ServerImpl with Lead
     bootProperties.clear()
     val sc = SnappyContext.globalSparkContext
     if (sc != null) sc.stop()
+    servicesStarted = false
     // TODO: [soubhik] find a way to stop jobserver.
     if (null != remoteInterpreterServerObj) {
       val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
@@ -443,22 +487,17 @@ class LeadImpl extends ServerImpl with Lead
     this.notifyStatusChange = f
 
   @throws[Exception]
-  private def startAddOnServices(conf: SparkConf): Unit = this.synchronized {
-    val jobServerEnabled = Property.JobServerEnabled.get(conf)
+  private def startAddOnServices(conf: SparkConf,
+      confFile: Array[String], jobServerConfig: Config): Unit = this.synchronized {
     if (_directApiInvoked && !isTestSetup) {
-      assert(jobServerEnabled,
+      assert(jobServerConfig ne null,
         "JobServer must have been enabled with lead.start(..) invocation")
     }
-    if (jobServerEnabled) {
+    if (jobServerConfig ne null) {
       logInfo("Starting job server...")
 
-      val confFile = conf.getOption("jobserver.configFile") match {
-        case None => Array[String]()
-        case Some(c) => Array(c)
-      }
-
       configureAuthenticatorForSJS()
-      JobServer.start(confFile, getConfig, createActorSystem)
+      JobServer.start(confFile, _ => jobServerConfig, createActorSystem)
     }
   }
 
