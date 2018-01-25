@@ -78,7 +78,6 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     if (delta2 ne null) delta2.readUpdatedPosition() else Int.MaxValue
 
   protected final var currentDeltaBuffer: ColumnDeltaDecoder = _
-  
   protected final var nextUpdatedPosition: Int = Int.MaxValue
 
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer

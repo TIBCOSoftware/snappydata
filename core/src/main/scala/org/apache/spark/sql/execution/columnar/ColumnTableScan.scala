@@ -732,13 +732,9 @@ private[sql] final case class ColumnTableScan(
         """.stripMargin,
         // ordinalId is the last column in the row buffer table (exclude virtual columns)
         s"""
-           |final long $ordinalIdTerm;
-           |if ($inputIsRow) {
-           |  $ordinalIdTerm = $rs.getLong(
-           |    ${if (embedded) relationSchema.length - 3 else output.length - 3});
-           |} else {
-           |  $ordinalIdTerm = -$batchOrdinal -1;
-           |}
+           |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(
+           |    ${if (embedded) relationSchema.length - 3 else output.length - 3})
+           |    : -$batchOrdinal -1;
         """.stripMargin)
     else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
@@ -774,7 +770,8 @@ private[sql] final case class ColumnTableScan(
        |    } else {
        |      $isCaseOfSortedInsert = false;
        |    }
-       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows; $batchOrdinal++) {
+       |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
+       |         $batchOrdinal++) {
        |      boolean $thisRowFromDelta = false;
        |      $deletedCheck
        |      $assignOrdinalId
