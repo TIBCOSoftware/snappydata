@@ -834,6 +834,7 @@ object SnappyContext extends Logging {
   val TEXT_SOCKET_STREAM_SOURCE = "text_socket_stream"
   val TWITTER_STREAM_SOURCE = "twitter_stream"
   val RABBITMQ_STREAM_SOURCE = "rabbitmq_stream"
+  val KAFKA_STRUCT_STREAM_SOURCE = "kafka_struct_stream"
 
   val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
     classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
@@ -852,7 +853,8 @@ object SnappyContext extends Logging {
     RAW_SOCKET_STREAM_SOURCE -> classOf[RawSocketStreamSource].getCanonicalName,
     TEXT_SOCKET_STREAM_SOURCE -> classOf[TextSocketStreamSource].getCanonicalName,
     RABBITMQ_STREAM_SOURCE -> classOf[RabbitMQStreamSource].getCanonicalName,
-    "com.databricks.spark.csv" -> classOf[CSVFileFormat].getCanonicalName
+    "com.databricks.spark.csv" -> classOf[CSVFileFormat].getCanonicalName,
+    KAFKA_STRUCT_STREAM_SOURCE -> classOf[KafkaStructStreamSource].getCanonicalName
   ))
   private val builtinSourcesShortNames: Map[String, String] = builtinSources.map(p => p._2 -> p._1)
 

@@ -727,8 +727,26 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       })
   }
 
+  protected final def structStreamRelationFactor: Rule1[LogicalPlan] = rule {
+        tableIdentifier ~ (OPTIONS ~ options).? ~
+            (AS ~ identifier | strictIdentifier).? ~>
+            ((tableIdent: TableIdentifier,
+                opts: Any, alias: Any) => opts match {
+            case null =>
+              val optAlias = alias.asInstanceOf[Option[String]]
+              updatePerTableQueryHint(tableIdent, optAlias)
+              UnresolvedRelation(tableIdent, optAlias)
+            case _ =>
+              val optAlias = alias.asInstanceOf[Option[String]]
+              updatePerTableQueryHint(tableIdent, optAlias)
+              LogicalStructStreamPlan(UnresolvedRelation(tableIdent, optAlias), opts)
+          })
+  }
+
+
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    ((relationFactor | inlineTable) ~ tableValuedFunctionExpressions.?) ~>
+    ((relationFactor | inlineTable | structStreamRelationFactor)
+      ~ tableValuedFunctionExpressions.?) ~>
         ((lp: LogicalPlan, se: Any) => {
       se.asInstanceOf[Option[Seq[Expression]]] match {
         case None => lp
