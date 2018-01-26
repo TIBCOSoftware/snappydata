@@ -389,10 +389,11 @@ abstract class SnappyDDLParser(session: SparkSession)
         val provider = SnappyContext.getProvider(pname, onlyBuiltIn = false)
         // check that the provider is a stream relation
         val clazz = DataSource(session, provider).providingClass
-        if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
-          throw Utils.analysisException(s"CREATE STREAM provider $pname" +
-              " does not implement StreamPlanProvider")
-        }
+
+//        if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
+//          throw Utils.analysisException(s"CREATE STREAM provider $pname" +
+//              " does not implement StreamPlanProvider")
+//        }
         // provider has already been resolved, so isBuiltIn==false allows
         // for both builtin as well as external implementations
         CreateTableUsing(streamIdent, None, specifiedSchema, None,

@@ -73,7 +73,16 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  object HashJoinStrategies extends Strategy {
+  object StructStreamQueryStrategy extends Strategy {
+        def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+          case LogicalStructStreamPlan(child, options) =>
+                PhysicalStructStreamPlan(child.output) :: Nil
+          case _ => Nil
+        }
+  }
+
+
+        object HashJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
