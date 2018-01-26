@@ -54,6 +54,52 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
 
   private def newTopic(): String = s"topic-${topicId.getAndIncrement()}"
 
+  test("struct stream ddl") {
+    val topic = newTopic()
+    kafkaTestUtils.createTopic(topic, partitions = 3)
+    kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
+    kafkaTestUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
+    kafkaTestUtils.sendMessages(topic, Array("1"), Some(2))
+    val groupId = s"test-consumer-" + scala.util.Random.nextInt(10000)
+    val add = kafkaTestUtils.brokerAddress
+
+    val partitions = Map(
+      new TopicPartition(topic, 0) -> 0L,
+      new TopicPartition(topic, 1) -> 0L,
+      new TopicPartition(topic, 2) -> 0L
+    )
+
+    val startingOffsets = JsonUtils.partitionOffsets(partitions)
+
+    //    val df = snc.sql("create stream table kafkaStream (" +
+    //      " publisher string)" +
+    //      " using kafka options(" +
+    //      " rowConverter 'org.apache.spark.sql.kafka010.RowsConverter' ," +
+    //      s" kafkaParams 'kafka.bootstrap.servers->$add;" +
+    //      "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+    //      "value.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+    //      s"group.id->$groupId;auto.offset.reset->earliest'," +
+    //      s"startingOffsets '$startingOffsets', " +
+    //      s" subscribe '$topic')")
+
+    snc.sql("create stream table kafkaStream (id int)" +
+      " using kafka_struct_stream options(" +
+      " rowConverter 'org.apache.spark.sql.kafka010.RowsConverter' ," +
+      s" kafka.bootstrap.servers '$add'," +
+      s" bootstrap.servers '$add'," +
+      " key.deserializer 'org.apache.kafka.common.serialization.StringDeserializer'," +
+      " value.deserializer 'org.apache.kafka.common.serialization.StringDeserializer'," +
+      s" group.id '$groupId'," +
+      " auto.offset.reset 'earliest'," +
+      s" startingOffsets '$startingOffsets', " +
+      s" subscribe '$topic')")
+
+    snc.sql("select * from kafkaStream options(format 'snappy', resultTable 'simple'," +
+      " output 'append', trigger '1sec', watermark '10mins')").collect
+    snc.sql("select * from simple").show
+  }
+
+
   test("SnappyData Structured Streaming with Kafka") {
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
