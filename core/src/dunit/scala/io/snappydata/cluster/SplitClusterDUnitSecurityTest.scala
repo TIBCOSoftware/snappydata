@@ -36,7 +36,7 @@ import org.apache.commons.io.FileUtils
 
 import org.apache.spark.TestPackageUtils
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{Row, SnappyContext, TableNotFoundException}
+import org.apache.spark.sql.{Row, SnappyContext, SnappySession, TableNotFoundException}
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -379,8 +379,22 @@ class SplitClusterDUnitSecurityTest(s: String)
     SplitClusterDUnitTest.getConnection(locatorClientPort, props)
   }
 
-  def permit(stmt: Statement, permit: String, op: String, t1: String, t2: String, user: String):
-  Unit = {
+  def permit(session: SnappySession, permit: String, op: String, t1: String, t2: String,
+      user: String): Unit = {
+    val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
+    Seq(t1, t2).foreach(t => session.sql(s"$permit $op on table $t $toFrom $user"))
+    if (op.equalsIgnoreCase("insert") || op.equalsIgnoreCase("update")
+        || op.equalsIgnoreCase("delete")) {
+      // We need select permission for insert, update and delete operation
+      Seq(t1, t2).foreach(t => session.sql(s"$permit select on table $t $toFrom $user"))
+      if (op.equalsIgnoreCase("update")) {
+        Seq(t1, t2).foreach(t => session.sql(s"$permit insert on table $t $toFrom $user"))
+      }
+    }
+  }
+
+  def permitConn(stmt: Statement, permit: String, op: String, t1: String, t2: String,
+      user: String): Unit = {
     val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
     Seq(t1, t2).foreach(t => stmt.execute(s"$permit $op on table $t $toFrom $user"))
     if (op.equalsIgnoreCase("insert") || op.equalsIgnoreCase("update")
@@ -404,7 +418,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     val user1Stmt = user1Conn.createStatement()
     val value = "brought up to zero"
 
-    user2Conn = getConn(jdbcUser2, true)
+    user2Conn = getConn(jdbcUser2, setSNC = true)
     var user2Stmt = user2Conn.createStatement()
 
     adminConn = getConn(adminUser1)
@@ -462,12 +476,12 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
       // grant
-      permit(user1Stmt, "grant", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
+      permitConn(user1Stmt, "grant", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
       sqls.foreach(s => executeSQL(user2Stmt, s))
       sqls.foreach(s => snc.sql(s).collect())
 
       // revoke
-      permit(user1Stmt, "revoke", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
+      permitConn(user1Stmt, "revoke", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
       sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
       sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
       sqls.foreach(s => executeSQL(adminStmt, s))
@@ -654,7 +668,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       DistributedTestBase.waitForCriterion(getWaitCriterion(jobId), 30000, 500, true)
     }
 
-    user2Conn = getConn(jdbcUser2)
+    user2Conn = getConn(jdbcUser2, setSNC = true)
     val stmt = user2Conn.createStatement()
     SplitClusterDUnitTest.createTableUsingJDBC(colTab, "column", user2Conn, stmt,
       Map("COLUMN_BATCH_SIZE" -> "50"))
@@ -663,9 +677,15 @@ class SplitClusterDUnitSecurityTest(s: String)
     submitJob("nogrant") // tells job to verify DMLs without any explicit grant
 
     Seq("select", "insert", "update", "delete").foreach(dml => {
-      permit(stmt, "grant", dml, colTab, rowTab, jdbcUser1)
+      permitConn(stmt, "grant", dml, colTab, rowTab, jdbcUser1)
       submitJob(dml) // tells job to verify respective dml
-      permit(stmt, "revoke", dml, colTab, rowTab, jdbcUser1)
+      permitConn(stmt, "revoke", dml, colTab, rowTab, jdbcUser1)
+    })
+
+    Seq("select", "insert", "update", "delete").foreach(dml => {
+      permit(snc.snappySession, "grant", dml, colTab, rowTab, jdbcUser1)
+      submitJob(dml) // tells job to verify respective dml
+      permit(snc.snappySession, "revoke", dml, colTab, rowTab, jdbcUser1)
     })
 
     // Submit the same job with invalid credentials
