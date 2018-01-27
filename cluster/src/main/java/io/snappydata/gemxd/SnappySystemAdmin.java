@@ -24,6 +24,7 @@ import java.util.Map;
 
 import com.gemstone.gemfire.SystemFailure;
 import com.gemstone.gemfire.internal.GemFireTerminateError;
+import com.gemstone.gemfire.internal.GemFireUtilLauncher;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource;
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain;
@@ -73,10 +74,8 @@ public class SnappySystemAdmin extends GfxdSystemAdmin {
 
   @Override
   protected String getUsageString(String cmd) {
-    final StringBuilder result = new StringBuilder(80);
-    result.append("snappy").append(' ');
-    result.append(this.usageMap.get(cmd.toLowerCase()));
-    return result.toString();
+    return GemFireUtilLauncher.SCRIPT_NAME + ' ' +
+        this.usageMap.get(cmd.toLowerCase());
   }
 
   @Override
