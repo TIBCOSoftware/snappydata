@@ -401,7 +401,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var doProcess = numPositions1 > 0 && numPositions2 > 0
     val noDuplicateElimination = true // TODO VB: true for now
     def isEqualOrGreater(p1: Int, p2: Int) : (Boolean, Boolean) = if (noDuplicateElimination) {
-      (p1.abs == p2.abs, p1.abs > p2.abs)
+      // Handle inverted bytes that denote incremental insert
+      def getPositive(p: Int): Int = if (p < 0) ~p else p
+      (getPositive(p1) == getPositive(p2), getPositive(p1) > getPositive(p2))
     } else (p1 == p2, p1 > p2)
     while (doProcess) {
       encoderPosition += 1

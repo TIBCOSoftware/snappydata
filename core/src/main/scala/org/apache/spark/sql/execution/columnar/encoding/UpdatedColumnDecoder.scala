@@ -84,7 +84,8 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   // Ignore delta2 and delta3 for now
   protected final def moveToNextUpdatedPositionNew(ordinal: Int): Boolean = {
-    if (delta1UpdatedPosition.abs - 1 == ordinal) {
+    // Handle inverted bytes that denote incremental insert
+    if (delta1UpdatedPosition == ordinal || ~delta1UpdatedPosition == ordinal) {
       currentDeltaBuffer = delta1
       delta1.moveUpdatePositionCursor()
       delta1UpdatedPosition = delta1.readUpdatedPosition()
