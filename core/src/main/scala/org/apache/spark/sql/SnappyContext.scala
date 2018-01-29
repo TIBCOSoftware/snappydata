@@ -912,6 +912,10 @@ object SnappyContext extends Logging {
     storeToBlockMap.filter(_._2.blockId != null)
   }
 
+  def hasServerBlockIds: Boolean = {
+    storeToBlockMap.exists(p => p._2.blockId != null && !"driver".equalsIgnoreCase(p._1))
+  }
+
   private[spark] def clearBlockIds(): Unit = {
     storeToBlockMap.clear()
     totalCoreCount.set(0)

@@ -206,9 +206,6 @@ class LeadImpl extends ServerImpl with Lead
 
       val sc = new SparkContext(conf)
 
-      // start the service to gather table statistics
-      SnappyTableStatsProviderService.start(sc)
-
       // This will use GfxdDistributionAdvisor#distributeProfileUpdate
       // which inturn will create a new profile object via #instantiateProfile
       // whereby ClusterCallbacks#getDriverURL should be now returning
@@ -236,6 +233,11 @@ class LeadImpl extends ServerImpl with Lead
         markLauncherRunning(if (startupString ne null) s"Starting $startupString" else null)
       }
 
+      // wait for a while until servers get registered
+      val endWait = System.currentTimeMillis() + 10000
+      while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
+        Thread.sleep(100)
+      }
       // initialize global context
       password match {
         case Some(p) =>
@@ -246,6 +248,9 @@ class LeadImpl extends ServerImpl with Lead
 
         case _ => SnappyContext(sc)
       }
+
+      // start the service to gather table statistics
+      SnappyTableStatsProviderService.start(sc)
 
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
