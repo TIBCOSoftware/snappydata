@@ -67,7 +67,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       // Create a table in snappy store
       snc.createTable(colTable, "column",
-        updatedSchema, Map("buckets" -> "11"))
+        updatedSchema, Map("buckets" -> "16"))
 
       // Populate the table in snappy store
       airlineDF.write.mode(SaveMode.Append).saveAsTable(colTable)
@@ -87,7 +87,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       // Create a sample table sampling parameters.
       snc.createSampleTable(sampleTable, Some("Airline"),
-        Map("buckets" -> "7",
+        Map("buckets" -> "8",
           "qcs" -> "UniqueCarrier, Year_, Month_",
           "fraction" -> "0.03",
           "strataReservoirSize" -> "50"

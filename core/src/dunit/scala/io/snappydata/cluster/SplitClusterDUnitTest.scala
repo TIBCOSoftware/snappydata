@@ -182,12 +182,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val stmt = conn.createStatement()
 
     // embeddedModeTable1 is dropped in split mode. recreate it
-    /*
-    // remove below once SNAP-653 is fixed
-    val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "EMBEDDEDMODETABLE1", numPartitions,
-      registerDestroy = true)
-    */
     if (isComplex) {
       createComplexTableUsingJDBC("embeddedModeTable1", conn, stmt, props)
       selectFromComplexTypeTableUsingJDBC("embeddedModeTable1", 1005, stmt)
@@ -504,7 +498,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val serializer2 = ComplexTypeSerializer.create(tableName, "col4", conn)
     val serializer3 = ComplexTypeSerializer.create(tableName, "col6", conn)
 
-    var rs = stmt.executeQuery(s"SELECT * FROM $tableName")
+    var rs = stmt.executeQuery(s"SELECT * FROM $tableName --+ complexTypeAsJson(0)")
     var numResults = 0
     while (rs.next()) {
       // check access to complex types in different ways
@@ -649,7 +643,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     var output = sparkShellCommand.!!
     logInfo(output)
     output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
-    assert(!output.contains("Exception"), s"Some exception stacktrace seen on spark-shell console.")
+    assert(!output.contains("Exception"),
+      s"Some exception stacktrace seen on spark-shell console: $output")
 
     val conn = getConnection(locatorClientPort, props)
     val stmt = conn.createStatement()

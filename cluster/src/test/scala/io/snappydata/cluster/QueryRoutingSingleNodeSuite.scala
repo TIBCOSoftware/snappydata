@@ -100,7 +100,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
   test("test serialization with lesser dml chunk size") {
 
     snc.sql("create table order_line_col (ol_w_id  integer,ol_d_id STRING) using column " +
-        "options( partition_by 'ol_w_id, ol_d_id', buckets '5')")
+        "options( partition_by 'ol_w_id, ol_d_id', buckets '8')")
 
 
     serverHostPort = TestUtil.startNetServer()
@@ -413,7 +413,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
   test("1655: test Boolean in Row Table") {
 
     snc.sql("create table order_line_row_bool (ol_w_id  Boolean, ol_d_id Long) using row " +
-        "options( partition_by 'ol_w_id, ol_d_id', buckets '5')")
+        "options( partition_by 'ol_w_id, ol_d_id', buckets '8')")
 
     serverHostPort = TestUtil.startNetServer()
     // scalastyle:off println
