@@ -45,7 +45,7 @@ col1 INT ,
 col2 Array<Decimal>, 
 col3 Map<Timestamp, Struct<x: Int, y: String, z: Decimal(10,5)>>, 
 col6 Struct<a: Int, b: String, c: Decimal(10,5)>
-) USING column options(BUCKETS '5')" )
+) USING column options(BUCKETS '8')" )
 ```
 
 To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.

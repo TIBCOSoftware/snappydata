@@ -562,21 +562,20 @@ class RowTableTest
   test("Test Null varchar value for row table inserts") {
     snc.sql(
       s"""CREATE TABLE NYCTAXI (MEDALLION VARCHAR(100) NOT NULL PRIMARY KEY,
-         			HACK_LICENSE VARCHAR(100),
-         			VENDOR_ID VARCHAR(100),
-         			RATE_CODE INTEGER,
-         			STORE_AND_FWD_FLAG VARCHAR(100),
-         			PICKUP_DATETIME VARCHAR(100),
-         			DROPOFF_DATETIME VARCHAR(100),
-         			PASSENGER_COUNT INTEGER,
-         			TRIP_TIME_IN_SECS INTEGER,
-         			TRIP_DISTANCE DOUBLE PRECISION,
-         			PICKUP_LONGITUDE DOUBLE PRECISION,
-         			PICKUP_LATITUDE DOUBLE PRECISION,
-         			DROPOFF_LONGITUDE DOUBLE PRECISION,
-         			DROPOFF_LATITUDE DOUBLE PRECISION
-         			)PARTITION BY COLUMN (MEDALLION)
-         			BUCKETS 5
+            HACK_LICENSE VARCHAR(100),
+            VENDOR_ID VARCHAR(100),
+            RATE_CODE INTEGER,
+            STORE_AND_FWD_FLAG VARCHAR(100),
+            PICKUP_DATETIME VARCHAR(100),
+            DROPOFF_DATETIME VARCHAR(100),
+            PASSENGER_COUNT INTEGER,
+            TRIP_TIME_IN_SECS INTEGER,
+            TRIP_DISTANCE DOUBLE PRECISION,
+            PICKUP_LONGITUDE DOUBLE PRECISION,
+            PICKUP_LATITUDE DOUBLE PRECISION,
+            DROPOFF_LONGITUDE DOUBLE PRECISION,
+            DROPOFF_LATITUDE DOUBLE PRECISION
+            ) USING ROW OPTIONS (PARTITION_BY 'MEDALLION', BUCKETS '8')
         """)
 
     val rdd = sc.parallelize(
@@ -618,9 +617,9 @@ class RowTableTest
     snc.sql("create table row_tab1(col1 Integer,col2 Integer)");
     snc.sql("insert into row_tab1 values(1,2)");
     snc.sql("create table row_tab2 (col1 Integer,col2 Integer) ");
-    snc.sql("create table col_tab1 (col1 Integer,col2 Integer) USING COLUMN options(buckets '5')");
+    snc.sql("create table col_tab1 (col1 Integer,col2 Integer) USING COLUMN options(buckets '8')");
     snc.sql("insert into col_tab1 values(1,2)");
-    snc.sql("create table col_tab2 (col1 Integer,col2 Integer) USING COLUMN options(buckets '5')");
+    snc.sql("create table col_tab2 (col1 Integer,col2 Integer) USING COLUMN options(buckets '8')");
 
     //inserting the data to row table from row table
     snc.sql("insert into row_tab2 select * from row_tab1")
@@ -687,7 +686,7 @@ class RowTableTest
     // Also test long varchar to see if its not breaking the previous implementation
     snc.sql("create table table1 (col1  long, col2 Long,col3 short,col4  TINYINT, col5 " +
       "BYTE, col6 SMALLINT)" +
-      " using row options( partition_by 'col1,col2', buckets '5')")
+      " using row options( partition_by 'col1,col2', buckets '8')")
     for(i <- 1 to 1000){
       snc.sql(s"insert into table1 values($i,${i+1},1,1,1,1)")
     }

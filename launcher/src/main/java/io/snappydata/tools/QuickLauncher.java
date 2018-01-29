@@ -287,7 +287,9 @@ class QuickLauncher extends LauncherBase {
       ArrayList<String> commandLine, HashMap<String, String> env)
       throws FileNotFoundException {
     StringBuilder classPath = new StringBuilder();
-    // add the default product jars directory first
+    // add the conf directory first
+    classPath.append(snappyHome).append("/conf").append(java.io.File.pathSeparator);
+    // then the default product jars directory
     classPath.append(snappyHome).append("/jars/*");
 
     final int numArgs = args.length;

@@ -569,7 +569,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 120 * 100
 
-    val options = "OPTIONS (BUCKETS '5', " +
+    val options = "OPTIONS (BUCKETS '8', " +
       "PARTITION_BY 'Col1')"
 
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
