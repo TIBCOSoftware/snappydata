@@ -78,20 +78,9 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     if (delta2 ne null) delta2.readUpdatedPosition() else Int.MaxValue
 
   protected final var currentDeltaBuffer: ColumnDeltaDecoder = _
-  protected final var nextUpdatedPosition: Int = Int.MaxValue
+  protected final var nextUpdatedPosition: Int = moveToNextUpdatedPosition()
 
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
-
-  // Ignore delta2 and delta3 for now
-  protected final def moveToNextUpdatedPositionNew(ordinal: Int): Boolean = {
-    // Handle inverted bytes that denote incremental insert
-    if (delta1UpdatedPosition == ordinal || ~delta1UpdatedPosition == ordinal) {
-      currentDeltaBuffer = delta1
-      delta1.moveUpdatePositionCursor()
-      delta1UpdatedPosition = delta1.readUpdatedPosition()
-      true
-    } else false
-  }
 
   protected final def moveToNextUpdatedPosition(): Int = {
     var next = Int.MaxValue
@@ -126,24 +115,17 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     while (true) {
       // update the cursor and keep on till ordinal is not reached
       nextUpdatedPosition = moveToNextUpdatedPosition()
-      if (nextUpdatedPosition > ordinal) return true
-      if (nextUpdatedPosition == ordinal) return false
+      if (DeltaWriter.getPositive(nextUpdatedPosition) > ordinal) return true
+      if (DeltaWriter.getPositive(nextUpdatedPosition) == ordinal) return false
     }
     false // never reached
   }
 
   final def unchanged(ordinal: Int, isCaseOfSortedInsert: Boolean): Boolean = {
-    if (isCaseOfSortedInsert) {
-      if (nextUpdatedPosition == Int.MaxValue) {
-        nextUpdatedPosition = moveToNextUpdatedPosition()
-      }
-      // Original
-      if (nextUpdatedPosition > ordinal) true
-      else if (nextUpdatedPosition == ordinal) false
-      else skipUntil(ordinal)
-    } else {
-      !moveToNextUpdatedPositionNew(ordinal)
-    }
+    // Original
+    if (DeltaWriter.getPositive(nextUpdatedPosition) > ordinal) true
+    else if (DeltaWriter.getPositive(nextUpdatedPosition) == ordinal) false
+    else skipUntil(ordinal)
   }
 
   def readNotNull: Boolean

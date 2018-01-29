@@ -408,10 +408,12 @@ private[sql] final case class ColumnTableScan(
     val numBatchRows = s"${batch}NumRows"
     val numBatchUpdatedRows = s"${batch}NumUpdatedRows"
     val batchIndex = s"${batch}Index"
+    val batchUpdatedIndex = s"${batch}UpdatedIndex"
     val buffers = s"${batch}Buffers"
     val numRows = ctx.freshName("numRows")
     val numRowsUpdated = ctx.freshName("numRowsUpdated")
     val batchOrdinal = ctx.freshName("batchOrdinal")
+    val lastBatchOrdinal = ctx.freshName("lastBatchOrdinal") // VB TODO: Remove this, only temporary
     val thisRowFromDelta = ctx.freshName("thisRowFromDelta")
     val isCaseOfUpdate = ctx.freshName("isCaseOfUpdate")
     val isCaseOfSortedInsert = ctx.freshName("isCaseOfSortedInsert")
@@ -426,6 +428,7 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("int", numBatchRows, "")
     ctx.addMutableState("int", numBatchUpdatedRows, "")
     ctx.addMutableState("int", batchIndex, "")
+    ctx.addMutableState("int", batchUpdatedIndex, "")
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
     ctx.addMutableState("boolean", isCaseOfSortedInsert, s"")
@@ -570,11 +573,13 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDelta,
-          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, numRowsUpdated)
+          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, numRowsUpdated,
+          numBatchUpdatedRows, lastBatchOrdinal)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDelta,
-          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, numRowsUpdated)
+          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, numRowsUpdated,
+          numBatchUpdatedRows, lastBatchOrdinal)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -713,6 +718,7 @@ private[sql] final case class ColumnTableScan(
          |    $columnBufferInit
          |  }
          |  $batchIndex = 0;
+         |  $batchUpdatedIndex = 0;
          |  return true;
          |}
       """.stripMargin)
@@ -758,8 +764,7 @@ private[sql] final case class ColumnTableScan(
        |    $assignBatchId
        |    $batchConsume
        |    $deletedDeclaration
-       |    final int $numRowsUpdated = $numBatchUpdatedRows;
-       |    final int $numRows = $numBatchRows$deletedCountCheck;
+       |    final int $numRows = $numBatchRows$deletedCountCheck + $numBatchUpdatedRows;
        |    // TODO VB: Temporary variable. Must go away
        |    boolean $isCaseOfUpdate = ${ordinalIdTerm ne null};
        |    if ($isCaseOfUpdate) {
@@ -770,6 +775,8 @@ private[sql] final case class ColumnTableScan(
        |    } else {
        |      $isCaseOfSortedInsert = false;
        |    }
+       |    int $lastBatchOrdinal = -1;
+       |    int $numRowsUpdated = $batchUpdatedIndex;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      boolean $thisRowFromDelta = false;
@@ -778,10 +785,9 @@ private[sql] final case class ColumnTableScan(
        |      $consumeCode
        |      if (shouldStop()) {
        |        $beforeStop
-       |        if ($isCaseOfSortedInsert || !$thisRowFromDelta) {
-       |          // increment index for return
-       |          $batchIndex = $batchOrdinal + 1;
-       |        }
+       |        // increment index for return
+       |        $batchIndex = $batchOrdinal + 1;
+       |        $batchUpdatedIndex = $numRowsUpdated;
        |        return;
        |      }
        |      if ($isCaseOfSortedInsert) {
@@ -818,8 +824,12 @@ private[sql] final case class ColumnTableScan(
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, thisRowFromDelta: String,
       isCaseOfUpdate: String, isCaseOfSortedInsert: String, numRows: String, colInput: String,
-      inputIsRow: String, numRowsUpdated: String): ExprCode = {
-    val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
+      inputIsRow: String, numRowsUpdated: String, numBatchUpdatedRows: String,
+      lastBatchOrdinal: String): ExprCode = {
+    // scalastyle:on
+    val nonNullPosition = if (attr.nullable) {
+      s"$batchOrdinal - $numNullsVar - $numRowsUpdated"
+    } else s"batchOrdinal - $numRowsUpdated"
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
@@ -910,6 +920,8 @@ private[sql] final case class ColumnTableScan(
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,numRowsUpdated=" + $numRowsUpdated +
+           |    " ,lastBatchOrdinal=" + $lastBatchOrdinal +
+           |    " ,numBatchUpdatedRows=" + $numBatchUpdatedRows +
            |    " ,numRows=" + $numRows);
            |  } else {
            |    $col = $defaultValue;
@@ -918,6 +930,10 @@ private[sql] final case class ColumnTableScan(
            |} else if ($updateDecoder.readNotNull()) {
            |  $thisRowFromDelta = true;
            |  $updatedAssign
+           |  if ($batchOrdinal != $lastBatchOrdinal) {
+           |    $numRowsUpdated++;
+           |  }
+           |  $lastBatchOrdinal = $batchOrdinal;
            |  // TODO VB: Remove this
            |  System.out.println("VB: Scan [updated] " + $col +
            |    " ,batchOrdinal=" + $batchOrdinal +
@@ -927,6 +943,8 @@ private[sql] final case class ColumnTableScan(
            |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,numRowsUpdated=" + $numRowsUpdated +
+           |    " ,lastBatchOrdinal=" + $lastBatchOrdinal +
+           |    " ,numBatchUpdatedRows=" + $numBatchUpdatedRows +
            |    " ,numRows=" + $numRows);
            |  $isNullVar = false;
            |} else {
