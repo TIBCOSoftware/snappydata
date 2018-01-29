@@ -7,6 +7,13 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+Release 1.0.1
+
+- New Features/Fixed Issues
+
+  [SNAP-2086] Snappy Pulse displays list of external tables.
+
+
 Release 1.0.0
 
 - New Features/Fixed Issues

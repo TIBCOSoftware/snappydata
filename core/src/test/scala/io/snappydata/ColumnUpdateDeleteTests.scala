@@ -49,11 +49,11 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '5')")
+        "using column options(buckets '4')")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '5')")
+        "using column options(buckets '4')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
         "using column options(buckets '1')")
 
@@ -208,13 +208,13 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '5', partition_by 'addr')")
+        "using column options(buckets '4', partition_by 'addr')")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '7')")
+        "using column options(buckets '8')")
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
 
     for (_ <- 1 to 3) {
       testBasicDeleteIter(session)

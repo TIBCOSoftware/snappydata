@@ -30,7 +30,7 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.Status
+import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, Status}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
@@ -65,6 +65,8 @@ class LeadImpl extends ServerImpl with Lead
 
   private var notifyStatusChange: ((FabricService.State) => Unit) = _
 
+  @volatile private var servicesStarted: Boolean = _
+
   var _directApiInvoked: Boolean = false
   var isTestSetup = false
 
@@ -83,7 +85,7 @@ class LeadImpl extends ServerImpl with Lead
     // prefix all store properties with "snappydata.store" for SparkConf
 
     // first the passed in bootProperties
-    var propNames = bootProperties.stringPropertyNames().iterator()
+    val propNames = bootProperties.stringPropertyNames().iterator()
     while (propNames.hasNext) {
       val propName = propNames.next()
       if (propName.startsWith(SPARK_PREFIX)) {
@@ -94,7 +96,8 @@ class LeadImpl extends ServerImpl with Lead
           bootProperties.remove(propName)
         }
       } else if (!propName.startsWith(SNAPPY_PREFIX) &&
-          !propName.startsWith(JOBSERVER_PREFIX)) {
+          !propName.startsWith(JOBSERVER_PREFIX) &&
+          !propName.startsWith("zeppelin.")) {
         bootProperties.setProperty(STORE_PREFIX + propName, bootProperties.getProperty(propName))
         bootProperties.remove(propName)
       }
@@ -129,15 +132,8 @@ class LeadImpl extends ServerImpl with Lead
 
     // copy store related properties into a separate properties bag
     // to be used by store boot while original will be used by SparkConf
-    val storeProperties = new Properties()
-    propNames = bootProperties.stringPropertyNames().iterator()
-    while (propNames.hasNext) {
-      val propName = propNames.next()
-      if (propName.startsWith(STORE_PREFIX)) {
-        storeProperties.setProperty(propName.substring(
-          STORE_PREFIX.length), bootProperties.getProperty(propName))
-      }
-    }
+    val storeProperties = ServiceUtils.getStoreProperties(bootProperties.stringPropertyNames()
+        .iterator().asScala.map(k => k -> bootProperties.getProperty(k)).toSeq)
 
     // initialize store and Spark in parallel (Spark will wait in
     // cluster manager start on internalStart)
@@ -158,9 +154,15 @@ class LeadImpl extends ServerImpl with Lead
       conf.set("spark.ui.port",
         bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
 
-      if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
-        "false").equalsIgnoreCase("true")) {
+      // wait for log service to initialize so that Spark also uses the same
+      while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {
+        Thread.sleep(50)
+      }
+      resetLogger()
 
+      val zeppelinEnabled = bootProperties.getProperty(
+        Constant.ENABLE_ZEPPELIN_INTERPRETER, "false").equalsIgnoreCase("true")
+      if (zeppelinEnabled) {
         try {
 
           val zeppelinIntpUtilClass = Utils.classForName(
@@ -188,14 +190,9 @@ class LeadImpl extends ServerImpl with Lead
 
       // The auth service is not yet initialized at this point.
       // So simply check the auth-provider property value.
-      if (Misc.checkAuthProvider(bootProperties.asScala.asJava)) {
+      if (Misc.checkAuthProvider(bootProperties)) {
         logInfo("Enabling user authentication for SnappyData Pulse")
         SparkCallbacks.setAuthenticatorForJettyServer()
-      }
-
-      // wait for log service to initialize so that Spark also uses the same
-      while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {
-        Thread.sleep(50)
       }
 
       // take out the password property from SparkConf so that it is not logged
@@ -209,9 +206,6 @@ class LeadImpl extends ServerImpl with Lead
 
       val sc = new SparkContext(conf)
 
-      // start the service to gather table statistics
-      SnappyTableStatsProviderService.start(sc)
-
       // This will use GfxdDistributionAdvisor#distributeProfileUpdate
       // which inturn will create a new profile object via #instantiateProfile
       // whereby ClusterCallbacks#getDriverURL should be now returning
@@ -219,12 +213,31 @@ class LeadImpl extends ServerImpl with Lead
       logInfo("About to send profile update after initialization completed.")
       ServerGroupUtils.sendUpdateProfile()
 
-      val jobServerWait = Property.JobServerWaitForInit.get(conf)
+      var jobServerWait = false
+      var confFile: Array[String] = null
+      var jobServerConfig: Config = null
+      var startupString: String = null
+      if (Property.JobServerEnabled.get(conf)) {
+        jobServerWait = Property.JobServerWaitForInit.get(conf)
+        confFile = conf.getOption("jobserver.configFile") match {
+          case None => Array[String]()
+          case Some(c) => Array(c)
+        }
+        jobServerConfig = getConfig(confFile)
+        val bindAddress = jobServerConfig.getString("spark.jobserver.bind-address")
+        val port = jobServerConfig.getInt("spark.jobserver.port")
+        startupString = s"job server on: $bindAddress[$port]"
+      }
       if (!jobServerWait) {
-        // mark RUNNING (job server will continue to start in background)
-        notifyRunningInLauncher(Status.RUNNING)
+        // mark RUNNING (job server and zeppelin will continue to start in background)
+        markLauncherRunning(if (startupString ne null) s"Starting $startupString" else null)
       }
 
+      // wait for a while until servers get registered
+      val endWait = System.currentTimeMillis() + 10000
+      while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
+        Thread.sleep(100)
+      }
       // initialize global context
       password match {
         case Some(p) =>
@@ -236,24 +249,29 @@ class LeadImpl extends ServerImpl with Lead
         case _ => SnappyContext(sc)
       }
 
+      // start the service to gather table statistics
+      SnappyTableStatsProviderService.start(sc)
+
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
 
       // start other add-on services (job server)
-      startAddOnServices(conf)
-
-      if (jobServerWait) {
-        // mark RUNNING after job server initialization if so configured
-        notifyRunningInLauncher(Status.RUNNING)
-      }
+      startAddOnServices(conf, confFile, jobServerConfig)
 
       // finally start embedded zeppelin interpreter if configured
-      checkAndStartZeppelinInterpreter(bootProperties)
+      checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
+
+      if (jobServerWait) {
+        // mark RUNNING after job server and zeppelin initialization if so configured
+        markLauncherRunning(if (startupString ne null) s"Started $startupString" else null)
+      }
     }
 
     try {
       internalStart(() => storeProperties)
       Await.result(initServices, Duration.Inf)
+      // mark status as RUNNING at the end in any case
+      markRunning()
     } catch {
       case _: InterruptedException =>
         logInfo(s"Thread interrupted, aborting.")
@@ -273,6 +291,8 @@ class LeadImpl extends ServerImpl with Lead
     checkAuthProvider(storeProps)
 
     super.start(storeProps, ignoreIfStarted = false)
+
+    resetLogger()
 
     val cache = Misc.getGemFireCache
     cache.getDistributionManager.addMembershipListener(SnappyContext.membershipListener)
@@ -327,6 +347,38 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
+  override def serviceStatus(): State = {
+    // show as running only after everything has initialized
+    status() match {
+      case State.RUNNING if !servicesStarted => State.STARTING
+      case state => state
+    }
+  }
+
+  private def markRunning() = {
+    if (GemFireXDUtils.TraceFabricServiceBoot) {
+      logInfo("Accepting RUNNING notification")
+    }
+    notifyRunningInLauncher(Status.RUNNING)
+    serverstatus = State.RUNNING
+    servicesStarted = true
+  }
+
+  private def markLauncherRunning(message: String): Unit = {
+    if ((message ne null) && !message.isEmpty) {
+      val launcher = CacheServerLauncher.getCurrentInstance
+      if (launcher ne null) {
+        val startupMessage = launcher.getServerStartupMessage
+        if (startupMessage eq null) {
+          launcher.setServerStartupMessage(message)
+        } else {
+          launcher.setServerStartupMessage(startupMessage + "\n  " + message)
+        }
+      }
+    }
+    notifyRunningInLauncher(Status.RUNNING)
+  }
+
   private def checkAuthProvider(props: Properties): Unit = {
     doCheck(props.getProperty(Attribute.AUTH_PROVIDER))
     doCheck(props.getProperty(Attribute.SERVER_AUTH_PROVIDER))
@@ -364,6 +416,7 @@ class LeadImpl extends ServerImpl with Lead
     bootProperties.clear()
     val sc = SnappyContext.globalSparkContext
     if (sc != null) sc.stop()
+    servicesStarted = false
     // TODO: [soubhik] find a way to stop jobserver.
     if (null != remoteInterpreterServerObj) {
       val method: Method = remoteInterpreterServerClass.getMethod("isAlive")
@@ -439,22 +492,17 @@ class LeadImpl extends ServerImpl with Lead
     this.notifyStatusChange = f
 
   @throws[Exception]
-  private def startAddOnServices(conf: SparkConf): Unit = this.synchronized {
-    val jobServerEnabled = Property.JobServerEnabled.get(conf)
+  private def startAddOnServices(conf: SparkConf,
+      confFile: Array[String], jobServerConfig: Config): Unit = this.synchronized {
     if (_directApiInvoked && !isTestSetup) {
-      assert(jobServerEnabled,
+      assert(jobServerConfig ne null,
         "JobServer must have been enabled with lead.start(..) invocation")
     }
-    if (jobServerEnabled) {
+    if (jobServerConfig ne null) {
       logInfo("Starting job server...")
 
-      val confFile = conf.getOption("jobserver.configFile") match {
-        case None => Array[String]()
-        case Some(c) => Array(c)
-      }
-
       configureAuthenticatorForSJS()
-      JobServer.start(confFile, getConfig, createActorSystem)
+      JobServer.start(confFile, _ => jobServerConfig, createActorSystem)
     }
   }
 
@@ -576,12 +624,12 @@ class LeadImpl extends ServerImpl with Lead
    * setting "zeppelin.interpreter.enable" to false in leads conf file.User can also specify
    * the port on which intrepreter should listen using  property zeppelin.interpreter.port
    */
-  private def checkAndStartZeppelinInterpreter(bootProperties: Properties): Unit = {
+  private def checkAndStartZeppelinInterpreter(enabled: Boolean,
+      bootProperties: Properties): Unit = {
     // As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
     // [sumedh] Our startup times are already very high and we are looking to
     // cut that down and not increase further with these external utilities.
-    if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER,
-      "false").equalsIgnoreCase("true")) {
+    if (enabled) {
       val port = bootProperties.getProperty(Constant.ZEPPELIN_INTERPRETER_PORT,
         "3768").toInt
       try {

@@ -25,7 +25,7 @@ import java.util.{Timer, TimerTask}
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.{CancelException, DataSerializer}
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
@@ -107,7 +107,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   }
 
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats]) = {
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     try {
       executeStatsStmt(sc)
     } catch {
@@ -116,14 +116,15 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
             "from SnappyData cluster due to " + e.toString)
         logDebug("Exception stack trace: ", e)
         closeConnection()
-        return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats])
+        return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats],
+            Seq.empty[SnappyExternalTableStats])
     }
     val value = getStatsStmt.getBlob(1)
     val bdi: ByteArrayDataInput = new ByteArrayDataInput
     bdi.initialize(value.getBytes(1, value.length().asInstanceOf[Int]), null)
     val regionStats: java.util.List[SnappyRegionStats] =
     DataSerializer.readObject(bdi).asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
-    (regionStats.asScala, Seq.empty[SnappyIndexStats])
+    (regionStats.asScala, Seq.empty[SnappyIndexStats], Seq.empty[SnappyExternalTableStats])
   }
 
   override def stop(): Unit = {

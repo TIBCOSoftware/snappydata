@@ -20,6 +20,7 @@ import java.util.Collections
 
 import scala.collection.JavaConverters._
 
+import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
@@ -151,6 +152,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def isColumnTable(qualifiedName: String): Boolean =
     ColumnFormatRelation.isColumnTable(qualifiedName)
+
+  override def skipEvictionForEntry(entry: LRUEntry): Boolean = {
+    // skip eviction of stats rows (SNAP-2102)
+    entry.getRawKey match {
+      case k: ColumnFormatKey => k.columnIndex == ColumnFormatEntry.STATROW_COL_INDEX
+      case _ => false
+    }
+  }
 
   override def getHashCodeSnappy(dvd: scala.Any, numPartitions: Int): Int = {
     partitioner.computeHash(dvd, numPartitions)
