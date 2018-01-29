@@ -69,7 +69,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
       session.sql("drop table if exists colDeltaTable")
 
       session.sql("create table colDeltaTable (id int, addr string, status boolean) " +
-          "using column options(buckets '2', partition_by 'id')")
+          "using column options(buckets '1', partition_by 'id')")
 
       session.range(numElements).filter(_  % 10 < 6).selectExpr("id",
         "concat('addr', cast(id as string))",
