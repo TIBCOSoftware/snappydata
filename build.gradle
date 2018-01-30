@@ -113,13 +113,13 @@ allprojects {
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
-    jacksonVersion = '2.9.1'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.22.v20170606'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
     metricsVersion = '3.2.5'
+    janinoVersion = '3.0.8'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.6.0'
@@ -588,7 +588,6 @@ subprojects {
   configurations.all {
     resolutionStrategy.force "com.google.guava:guava:${guavaVersion}",
       "org.apache.derby:derby:${derbyVersion}",
-      'xml-apis:xml-apis:1.0.b2',
       "org.apache.hadoop:hadoop-annotations:${hadoopVersion}",
       "org.apache.hadoop:hadoop-auth:${hadoopVersion}",
       "org.apache.hadoop:hadoop-client:${hadoopVersion}",
