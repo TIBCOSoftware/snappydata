@@ -112,19 +112,27 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     next
   }
 
-  private def skipUntil(ordinal: Int): Int = {
+  private def skipUntil(ordinal: Int): Byte = {
     while (true) {
       // update the cursor and keep on till ordinal is not reached
       nextUpdatedPosition = moveToNextUpdatedPosition()
-      if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) return ColumnTableScan.TRUE
-      if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) return ColumnTableScan.FALSE
+      if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) {
+        return ColumnTableScan.NOT_IN_DELTA
+      }
+      if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) {
+        return isInsertOrUpdate(ordinal)
+      }
     }
-    ColumnTableScan.FALSE // never reached
+    ColumnTableScan.UPDATE_IN_DELTA // never reached
   }
 
-  final def unchanged(ordinal: Int): Int = {
-    if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) ColumnTableScan.TRUE
-    else if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) ColumnTableScan.FALSE
+  private def isInsertOrUpdate(ordinal: Int): Byte = if (nextUpdatedPosition < 0) {
+    ColumnTableScan.INSERT_IN_DELTA
+  } else ColumnTableScan.UPDATE_IN_DELTA
+
+  final def unchanged(ordinal: Int): Byte = {
+    if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) ColumnTableScan.NOT_IN_DELTA
+    else if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) isInsertOrUpdate(ordinal)
     else skipUntil(ordinal)
   }
 
