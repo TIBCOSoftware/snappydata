@@ -18,6 +18,7 @@ package org.apache.spark.sql.internal
 
 import io.snappydata.Property
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
@@ -34,7 +35,7 @@ import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappyContext, Sna
   * This class takes the logical plans from SnappyParser
   * and converts it into another plan.
   */
-object ColumnTableBulkOps {
+object ColumnTableBulkOps extends Logging {
 
   val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
@@ -78,8 +79,8 @@ object ColumnTableBulkOps {
           val cacheSize = ExternalStoreUtils.sizeAsBytes(
             Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
             Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
-
-          if (updateSubQuery.statistics.sizeInBytes <= cacheSize) {
+          val forceCache = Property.ForceCachePutIntoInnerJoin.get(sparkSession.sqlContext.conf)
+          if (updateSubQuery.statistics.sizeInBytes <= cacheSize || forceCache) {
             sparkSession.sharedState.cacheManager.
                 cacheQuery(new Dataset(sparkSession,
                   updateSubQuery, RowEncoder(updateSubQuery.schema)))
