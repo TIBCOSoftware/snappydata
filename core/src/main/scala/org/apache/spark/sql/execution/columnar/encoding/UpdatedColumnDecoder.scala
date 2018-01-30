@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.types._
 
 /**
@@ -111,20 +112,19 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     next
   }
 
-  private def skipUntil(ordinal: Int): Boolean = {
+  private def skipUntil(ordinal: Int): Int = {
     while (true) {
       // update the cursor and keep on till ordinal is not reached
       nextUpdatedPosition = moveToNextUpdatedPosition()
-      if (DeltaWriter.getPositive(nextUpdatedPosition) > ordinal) return true
-      if (DeltaWriter.getPositive(nextUpdatedPosition) == ordinal) return false
+      if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) return ColumnTableScan.TRUE
+      if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) return ColumnTableScan.FALSE
     }
-    false // never reached
+    ColumnTableScan.FALSE // never reached
   }
 
-  final def unchanged(ordinal: Int, isCaseOfSortedInsert: Boolean): Boolean = {
-    // Original
-    if (DeltaWriter.getPositive(nextUpdatedPosition) > ordinal) true
-    else if (DeltaWriter.getPositive(nextUpdatedPosition) == ordinal) false
+  final def unchanged(ordinal: Int): Int = {
+    if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) ColumnTableScan.TRUE
+    else if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) ColumnTableScan.FALSE
     else skipUntil(ordinal)
   }
 
