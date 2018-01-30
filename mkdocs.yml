@@ -130,6 +130,7 @@ pages:
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
+    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
 # -- Topic - Reference Guide
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 
@@ -273,7 +274,7 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Documentation': 'apidocsintro.md'
-    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
+#    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
