@@ -413,7 +413,6 @@ private[sql] final case class ColumnTableScan(
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
     val thisRowFromDeltaIsInsert = ctx.freshName("thisRowFromDeltaIsInsert")
-    val isCaseOfUpdate = ctx.freshName("isCaseOfUpdate")
     val isCaseOfSortedInsert = ctx.freshName("isCaseOfSortedInsert")
     val deletedDecoder = s"${batch}Deleted"
     val deletedDecoderLocal = s"${deletedDecoder}Local"
@@ -571,13 +570,11 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDeltaIsInsert,
-          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchDeltaIndex,
-          numBatchUpdatedRows)
+          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchDeltaIndex, numBatchUpdatedRows)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDeltaIsInsert,
-          isCaseOfUpdate, isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchDeltaIndex,
-          numBatchUpdatedRows)
+          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchDeltaIndex, numBatchUpdatedRows)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -763,16 +760,8 @@ private[sql] final case class ColumnTableScan(
        |    $batchConsume
        |    $deletedDeclaration
        |    final int $numRows = $numBatchRows$deletedCountCheck + $numBatchUpdatedRows;
-       |    // TODO VB: Temporary variable. Must go away
-       |    boolean $isCaseOfUpdate = ${ordinalIdTerm ne null};
-       |    if ($isCaseOfUpdate) {
-       |      $isCaseOfSortedInsert = ${ColumnTableScan.isCaseOfSortedInsertValue};
-       |      if ($isCaseOfSortedInsert) {
-       |        $isCaseOfUpdate = false;
-       |      }
-       |    } else {
-       |      $isCaseOfSortedInsert = false;
-       |    }
+       |    $isCaseOfSortedInsert = ${ordinalIdTerm ne null} &&
+       |      ${ColumnTableScan.isCaseOfSortedInsertValue};
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      boolean $thisRowFromDeltaIsInsert = false;
@@ -821,7 +810,7 @@ private[sql] final case class ColumnTableScan(
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, thisRowFromDeltaIsInsert: String,
-      isCaseOfUpdate: String, isCaseOfSortedInsert: String, numRows: String, colInput: String,
+      isCaseOfSortedInsert: String, numRows: String, colInput: String,
       inputIsRow: String, batchDeltaIndex: String, numBatchUpdatedRows: String): ExprCode = {
     // scalastyle:on
     val nonNullPosition = if (attr.nullable) {
@@ -919,7 +908,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchDeltaIndex=" + $batchDeltaIndex +
            |    " ,numBatchUpdatedRows=" + $numBatchUpdatedRows +
            |    " ,numRows=" + $numRows +
-           |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
            |    " ,thisRowFromDeltaIsUpdate=false" +
@@ -942,7 +930,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchDeltaIndex=" + $batchDeltaIndex +
            |    " ,numBatchUpdatedRows=" + $numBatchUpdatedRows +
            |    " ,numRows=" + $numRows +
-           |    " ,isCaseOfUpdate=" + $isCaseOfUpdate +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
            |    " ,thisRowFromDeltaIsUpdate=" + thisRowFromDeltaIsUpdate +
