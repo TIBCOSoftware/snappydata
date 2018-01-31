@@ -19,7 +19,6 @@ package io.snappydata
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.sql.QueryTest.checkAnswer
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession, SparkSession}
@@ -287,8 +286,8 @@ class QueryTest extends SnappyFunSuite {
     }
 
     for (((r1, r2), e) <- results.zip(expectedResults)) {
-      org.apache.spark.sql.QueryTest.checkAnswer(r1, e)
-      org.apache.spark.sql.QueryTest.checkAnswer(r2, e)
+      checkAnswer(r1, e)
+      checkAnswer(r2, e)
     }
 
     // fire updates and check again
@@ -302,8 +301,8 @@ class QueryTest extends SnappyFunSuite {
     }
 
     for (((r1, r2), e) <- results.zip(expectedResults)) {
-      org.apache.spark.sql.QueryTest.checkAnswer(r1, e)
-      org.apache.spark.sql.QueryTest.checkAnswer(r2, e)
+      checkAnswer(r1, e)
+      checkAnswer(r2, e)
     }
   }
 }
