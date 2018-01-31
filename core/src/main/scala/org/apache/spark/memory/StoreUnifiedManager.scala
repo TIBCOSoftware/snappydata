@@ -20,12 +20,13 @@ import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.internal.shared.BufferAllocator
-import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
+import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, FreeMemory, UnsafeHolder}
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.Utils
 import org.apache.spark.{Logging, SparkConf, SparkEnv, TaskContext}
 
@@ -179,7 +180,7 @@ object MemoryManagerCallback extends Logging {
           consumer.freeMemory(consumer.getUsed)
           throw DirectBufferAllocator.instance().lowMemoryException(owner, totalSize)
         }
-        return allocator.allocateCustom(totalSize, new UnsafeHolder.FreeMemoryFactory {
+        return allocator.allocateCustom(totalSize, new FreeMemory.Factory {
           override def newFreeMemory(address: Long, size: Int): ExecutionFreeMemory =
             new ExecutionFreeMemory(consumer, address)
         }).order(ByteOrder.LITTLE_ENDIAN)
@@ -199,14 +200,14 @@ final class DefaultMemoryConsumer(taskMemoryManager: TaskMemoryManager,
 }
 
 final class ExecutionFreeMemory(consumer: DefaultMemoryConsumer,
-    address: Long) extends UnsafeHolder.FreeMemory(address) {
+    address: Long) extends FreeMemory(address) {
 
   override protected def objectName(): String = BufferAllocator.EXECUTION
 
   override def run() {
     val address = tryFree()
     if (address != 0) {
-      UnsafeHolder.getUnsafe.freeMemory(address)
+      Platform.freeMemory(address)
       releaseExecutionMemory()
     }
   }

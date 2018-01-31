@@ -33,11 +33,10 @@ import org.apache.spark.sql.internal.SnappySessionState
  */
 case class CollectAggregateExec(
     @transient basePlan: SnappyHashAggregateExec,
-    child: SparkPlan) extends UnaryExecNode {
+    child: SparkPlan,
+    override val output: Seq[Attribute]) extends UnaryExecNode {
 
   override def nodeName: String = "CollectAggregate"
-
-  override def output: Seq[Attribute] = basePlan.output
 
   override def requiredChildDistribution: List[Distribution] =
     UnspecifiedDistribution :: Nil

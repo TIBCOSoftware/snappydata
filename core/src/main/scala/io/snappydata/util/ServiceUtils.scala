@@ -71,9 +71,12 @@ object ServiceUtils {
       if (storeProps.getProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP) == null) {
         storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
       }
-      // try hard to maintain executor locality
+      // try hard to maintain executor and node locality
       if (storeProps.getProperty("spark.locality.wait.process") == null) {
         storeProps.setProperty("spark.locality.wait.process", "20s")
+      }
+      if (storeProps.getProperty("spark.locality.wait") == null) {
+        storeProps.setProperty("spark.locality.wait", "10s")
       }
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
