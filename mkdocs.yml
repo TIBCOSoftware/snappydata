@@ -33,9 +33,9 @@ pages:
 #    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 #    - 'Migrating from Version 0.9 to Version 1.0.0-RC1 Release': 'migration/migration-0.9-01_rc.md'
 #---
-- 'Concepts': 'howto.md'
-- 'Concepts': 
-    - 'Detecting and Handling Network Segmentation ("Split Brain")': 'concepts/network_partition.md'
+# 1.0 - 'Concepts': 'concepts.md'
+# 1.0 - 'Concepts': 
+# 1.0    - 'Detecting and Handling Network Segmentation ("Split Brain")': 'concepts/network_partition.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
@@ -130,7 +130,7 @@ pages:
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
-    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
+#    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
 # -- Topic - Reference Guide
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 

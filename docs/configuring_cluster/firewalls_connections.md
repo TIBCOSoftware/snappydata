@@ -6,11 +6,9 @@ SnappyData is a network-centric distributed system, so if you have a firewall ru
 
 As one example, firewalls may close connections to SnappyData due to timeout settings. If a firewall senses no activity in a certain time period, it may close a connection and open a new connection when activity resumes, which can cause some confusion about which connections you have.
 
-**Firewall Considerations**
+## Firewall and Port Considerations
 
 You can configure and limit port usage for situations that involve firewalls, for example, between client-server or server-server connections.
-
-## Firewalls and Ports
 
 <a id="port-setting"></a>
 Make sure your port settings are configured correctly for firewalls. For each SnappyData member, there are two different port settings you may need to be concerned with regarding firewalls:
@@ -27,6 +25,8 @@ By default, SnappyData utilizes *ephemeral* ports for UDP messaging and TCP fail
 
 ### Properties for Firewall and Port Configuration
 
+####  Store Layer
+
 This following tables contain properties potentially involved in firewall behavior, with a brief description of each property. The [Configuration Properties](../reference/configuration_parameters/config_parameters.md) section contains detailed information for each property.
 
 | Configuration Area | Property or Setting | Definition |
@@ -35,13 +35,9 @@ This following tables contain properties potentially involved in firewall behavi
 |peer-to-peer config|[membership-port-range](../reference/configuration_parameters/membership-port-range.md)|The range of ephemeral ports available for unicast UDP messaging and for TCP failure detection in the peer-to-peer distributed system.|
 |member config|[-J-Dgemfirexd.hostname-for-clients](../configuring_cluster/property_description.md#host-name)|Hostname or IP address to pass to the client as the location where the server is listening.|
 |member config|[client-port](../reference/command_line_utilities/store-run/) option to the [snappy server](../configuring_cluster/configuring_cluster.md#configuring-data-servers) and [snappy locator](../configuring_cluster/configuring_cluster.md#configuring-locators) commands|Port that the member listens on for client communication.|
-
-| Port Name | Related Configuration Setting |Default Port |
-|--------|--------|--------|
 |Locator|[locator command](../configuring_cluster/configuring_cluster.md#configuring-locators)|10334|
-|Membership Port Range|[membership-port-range](../reference/configuration_parameters/membership-port-range.md)|1024 to 65535|
 
-### Port settings to configure the Spark application 
+#### Spark Layer
 
 The following table lists the Spark properties you can set to configure the ports required for Spark infrastructure.</br>Refer to [Spark Configuration](https://spark.apache.org/docs/latest/configuration.html) in the official documentation for detailed information.
 
@@ -51,17 +47,12 @@ The following table lists the Spark properties you can set to configure the port
 |spark.driver.blockManager.port  |(value of spark.blockManager.port)|Driver-specific port for the block manager to listen on, for cases where it cannot use the same configuration as executors.|
 |spark.driver.port |random	|	Port for the driver to listen on. This is used for communicating with the executors and the standalone Master.|
 |spark.port.maxRetries|16|Maximum number of retries when binding to a port before giving up. When a port is given a specific value (non 0), each subsequent retry will increment the port used in the previous attempt by 1 before retrying. This essentially allows it to try a range of ports from the start port specified to port + maxRetries.
-|spark.ssl.[namespace].port |None|The port where the SSL service will listen on.</p>The port must be defined within a namespace configuration; see SSL Configuration for the available namespaces. </p>When not set, the SSL port will be derived from the non-SSL port for the same service. A value of "0" will make the service bind to an ephemeral port.|
 |spark.shuffle.service.port |7337|Port on which the external shuffle service will run.|
 |spark.ui.port |4040|	Port for your application's dashboard, which shows memory and workload data.|
 |spark.ssl.[namespace].port  |None|The port where the SSL service will listen on.</p>The port must be defined within a namespace configuration; see SSL Configuration for the available namespaces.</p> When not set, the SSL port will be derived from the non-SSL port for the same service. A value of "0" will make the service bind to an ephemeral port.|
-
-|From|To|Default Port|Purpose|Configuration Setting|Notes|
-|--------|--------|--------|--------|--------|--------|
-|Browser|Application|4040|Web UI|spark.ui.port|Jetty-based
-|Browser|History Server|18080|Web UI|spark.history.ui.port|Jetty-based||
-|Driver /Server|Lead|7077|Submit job to cluster /Join cluster|SPARK_MASTER_PORT|Set to "0" to choose a port randomly. |
-|Lead|Server|(random)|Schedule executors|SPARK_WORKER_PORT|Set to "0" to choose a port randomly. |
+|spark.history.ui.port|The port to which the web interface of the history server binds.|18080|
+|SPARK_MASTER_PORT	|Start the master on a different port.|Default: 7077|
+|SPARK_WORKER_PORT	|Start the Spark worker on a specific port.|(Default: random|
 
 ## Locators and Ports
 

@@ -20,7 +20,6 @@ localhost(11131)<v2>:47059
 localhost(10739)<v0>:65055
 
 3 rows selected
-
 ```
 
 The number of rows returned corresponds to the total number of peers, servers, and locators in the cluster.
@@ -37,15 +36,16 @@ localhost(10739)<v0>:65055		|locator(normal)
 
 3 rows selected
 ```
+
 To view the members of cluster, queryl:
 
 ``` pre
 snappy> show members;
 ID	|HOST	|KIND	|STATUS	|THRIFTSERVERS	|SERVERGROUPS
-------------------------------------------------------------------------------------------------------------------------
-localhost(10739)<v0>:65055    |localhost	|locator(normal)	|RUNNING	|localhost/127.0.0.1[1527]     |                              
-localhost(10898)<v1>:55213    |localhost	|datastore(normal)	|RUNNING	|localhost/127.0.0.1[1528]     |                              
-localhost(11131)<v2>:47059    |localhost	|accessor(normal)	|RUNNING	|         	|IMPLICIT_LEADER_SERVERGROUP
+------------------------------------------------------------------------------------------------------------
+localhost(10739)<v0>:65055 |localhost |locator(normal) |RUNNING|localhost/127.0.0.1[1527]|
+localhost(10898)<v1>:55213 |localhost |datastore(normal) |RUNNING|localhost/127.0.0.1[1528]|
+localhost(11131)<v2>:47059 |localhost |accessor(normal) |RUNNING|IMPLICIT_LEADER_SERVERGROUP|
 
 3 rows selected
 ```
@@ -56,100 +56,85 @@ Data store members host data in the cluster, while accessor members do not host 
 The SYS.SYSTABLES table provides information about all tables that are created in the SnappyData system. You can use different queries to obtain details about tables and the server groups that host data for those tables.
 
 -   [Displaying a List of Tables](#display-list-of-tables)
--   [Determining Where Data Is Stored](#determine-data-stored)
 -   [Determining Whether a Table Is Replicated or Partitioned](#determine-replica-partition)
 -   [Determining How Persistent Data Is Stored](#determine-peristent-data)
 -   [Displaying Eviction Settings](#display-eviction-setting)
 -   [Displaying Indexes](#display-indexes)
--   [Displaying Installed AsyncEventListeners](#display_asynceventlisterners)
 
 <a id="display-list-of-tables"></a>
 ### Displaying a List of Tables
 
 To display a list of all tables in the cluster:
 
-``` pre
+``` bash
 select TABLESCHEMANAME, TABLENAME from SYS.SYSTABLES order by TABLESCHEMANAME;
-TABLESCHEMANAME            |TABLENAME
+TABLESCHEMANAME        			    |TABLENAME
 -----------------------------------------------
-APP                        |PIZZA_ORDER_PIZZAS
-APP                        |PIZZA
-APP                        |TOPPING
-APP                        |PIZZA_ORDER
-APP                        |HIBERNATE_SEQUENCES
-APP                        |HOTEL
-APP                        |BASE
-APP                        |PIZZA_TOPPINGS
-APP                        |BOOKING
-APP                        |CUSTOMER
-SYS                        |SYSCONSTRAINTS                                                                                                                  
-SYS                        |ASYNCEVENTLISTENERS                                                                                                             
-SYS                        |SYSCOLPERMS                                                                                                                     
-SYS                        |SYSKEYS                                                                                                                         
-SYS                        |SYSFILES                                                                                                                        
-SYS                        |SYSCONGLOMERATES                                                                                                                
-SYS                        |SYSDEPENDS                                                                                                                      
-SYS                        |SYSROUTINEPERMS                                                                                                                 
-SYS                        |SYSTRIGGERS                                                                                                                     
-SYS                        |SYSTABLES                                                                                                                       
-SYS                        |SYSALIASES                                                                                                                      
-SYS                        |SYSROLES                                                                                                                        
-SYS                        |SYSDISKSTORES                                                                                                                   
-SYS                        |SYSVIEWS                                                                                                                        
-SYS                        |SYSSTATISTICS                                                                                                                   
-SYS                        |SYSCOLUMNS                                                                                                                      
-SYS                        |SYSCHECKS                                                                                                                       
-SYS                        |GATEWAYSENDERS                                                                                                                  
-SYS                        |SYSFOREIGNKEYS                                                                                                                  
-SYS                        |SYSSCHEMAS                                                                                                                      
-SYS                        |SYSTABLEPERMS                                                                                                                   
-SYS                        |SYSSTATEMENTS                                                                                                                   
-SYSIBM                     |SYSDUMMY1                                                                                                                       
-SYSSTAT                    |SYSXPLAIN_SORT_PROPS                                                                                                            
-SYSSTAT                    |SYSXPLAIN_DIST_PROPS                                                                                                            
-SYSSTAT                    |SYSXPLAIN_STATEMENTS                                                                                                            
-SYSSTAT                    |SYSXPLAIN_RESULTSET_TIMINGS                                                                                                     
-SYSSTAT                    |SYSXPLAIN_SCAN_PROPS                                                                                                            
-SYSSTAT                    |SYSXPLAIN_STATEMENT_TIMINGS                                                                                                     
-SYSSTAT                    |SYSXPLAIN_RESULTSETS                                                                                                            
+APP			                     	|PIZZA_ORDER_PIZZAS
+APP			                     	|PIZZA
+APP			                     	|TOPPING
+APP			                     	|PIZZA_ORDER
+APP			                     	|HIBERNATE_SEQUENCES
+APP			         				|HOTEL
+SNAPPY_HIVE_METASTORE				|TBLS
+SNAPPY_HIVE_METASTORE				|PARTITION_PARAMS
+SNAPPY_HIVE_METASTORE				|SKEWED_STRING_LIST_VALUES     
+SNAPPY_HIVE_METASTORE				|FUNCS
+SNAPPY_HIVE_METASTORE				|SDS
+SNAPPY_HIVE_METASTORE				|SD_PARAMS
+SNAPPY_HIVE_METASTORE				|PART_COL_STATS   
+SNAPPY_HIVE_METASTORE				|SKEWED_STRING_LIST
+SNAPPY_HIVE_METASTORE				|DBS
+SNAPPY_HIVE_METASTORE				|PARTITIONS
+SNAPPY_HIVE_METASTORE				|SKEWED_COL_VALUE_LOC_MAP
+SNAPPY_HIVE_METASTORE				|FUNC_RU
+SNAPPY_HIVE_METASTORE				|SORT_COLS
+SNAPPY_HIVE_METASTORE				|ROLES
+SNAPPY_HIVE_METASTORE				|BUCKETING_COLS
+SNAPPY_HIVE_METASTORE				|SKEWED_COL_NAMES
+SNAPPY_HIVE_METASTORE               |TAB_COL_STATS
+SNAPPY_HIVE_METASTORE               |GLOBAL_PRIVS
+SNAPPY_HIVE_METASTORE               |SKEWED_VALUES
+SNAPPY_HIVE_METASTORE               |TABLE_PARAMS
+SNAPPY_HIVE_METASTORE               |VERSION
+SNAPPY_HIVE_METASTORE               |CDS
+SNAPPY_HIVE_METASTORE               |SEQUENCE_TABLE
+SNAPPY_HIVE_METASTORE               |PARTITION_KEYS
+SNAPPY_HIVE_METASTORE               |COLUMNS_V2
+SNAPPY_HIVE_METASTORE               |DATABASE_PARAMS
+SNAPPY_HIVE_METASTORE               |SERDE_PARAMS
+SNAPPY_HIVE_METASTORE               |SERDES
+SNAPPY_HIVE_METASTORE               |PARTITION_KEY_VALS
+SYS                                 |GATEWAYSENDERS
+SYS                                 |SYSSTATEMENTS
+SYS                                 |SYSKEYS
+SYS                                 |SYSROLES
+SYS                                 |SYSFILES
+SYS                                 |SYSROUTINEPERMS
+SYS                                 |SYSCONSTRAINTS
+SYS                                 |SYSCOLPERMS
+SYS                                 |SYSHDFSSTORES
+SYS                                 |SYSDEPENDS
+SYS                                 |SYSALIASES
+SYS                                 |SYSTABLEPERMS
+SYS                                 |SYSTABLES
+SYS                                 |SYSVIEWS
+SYS                                 |ASYNCEVENTLISTENERS
+SYS                                 |SYSCHECKS
+SYS                                 |SYSSTATISTICS
+SYS                                 |SYSCONGLOMERATES
+SYS                                 |GATEWAYRECEIVERS
+SYS                                 |SYSDISKSTORES
+SYS                                 |SYSTRIGGERS
+SYS                                 |SYSSCHEMAS
+SYS                                 |SYSFOREIGNKEYS
+SYS                                 |SYSCOLUMNS
+SYSIBM                              |SYSDUMMY1
+SYSSTAT                             |SYSXPLAIN_RESULTSETS
+SYSSTAT                             |SYSXPLAIN_STATEMENTS
 
-40 rows selected
-```
+62 rows selected
 
-<a id="determine-data-stored"></a>
-
-### Determining Where Data Is Stored
-
-
-To determine which tables are deployed to a specific set of server groups:
-
-``` pre
-select TABLESCHEMANAME, TABLENAME from SYS.SYSTABLES 
-       where GROUPSINTERSECT(SERVERGROUPS, 'SG1,SG2');
-TABLESCHEMANAME          |TABLENAME
---------------------------------------------------------------
-APP                      |PIZZA_ORDER_PIZZAS
-APP                      |PIZZA_ORDER
-APP                      |BASE
-APP                      |PIZZA_TOPPINGS
-
-4 rows selected
-```
-
-For a specific table or set of tables, you can list all of the SnappyData members that host that table's data:
-
-``` pre
-select m.ID from SYS.SYSTABLES t, SYS.MEMBERS m where t.TABLESCHEMANAME='APP' 
-     and t.TABLENAME='PIZZA' and  m.HOSTDATA = 1 
-     and (LENGTH(t.SERVERGROUPS) = 0 or GROUPSINTERSECT(t.SERVERGROUPS, m.SERVERGROUPS));
-ID
--------------------------------------
-vmc-ssrc-rh156(23870)<v1>:23802/60824
-vmc-ssrc-rh154(26751)<v4>:42054/49195
-vmc-ssrc-rh156(23897)<v2>:37163/43747
-vmc-ssrc-rh154(26739)<v3>:9287/48842
-
-4 rows selected
 ```
 
 <a id="determine-replica-partition"></a>
@@ -226,17 +211,3 @@ CONGLOMERATENAME
 
 2 rows selected
 ```
-
-<a id="display_asynceventlisterners"></a>
-### Displaying Installed AsyncEventListeners
-
-If you install AsyncEventListener implementations, you can join the SYSTABLES, MEMBERS, and ASYNCEVENTLISTENERS tables to display the listener implementations associated with a table as well as the data store ID on which the listener is installed:
-
-``` pre
-select t.*, m.ID DSID from SYS.SYSTABLES t, SYS.MEMBERS m, SYS.ASYNCEVENTLISTENERS a
-       where t.tablename='<table>' and groupsintersect(a.SERVER_GROUPS, m.SERVERGROUPS)
-       and groupsintersect(t.ASYNCLISTENERS, a.ID);
-```
-
-See <a href="../../../reference/system_tables/rrefsistabs24269.html#rrefsistabs24269" class="xref" title="Describes the tables and views in the distributed system.">SYSTABLES</a> and <a href="../../../reference/system_tables/asynceventlisteners_table.html#reference_0EC88800DBDF4D18B8EB91EA537ABF6B" class="xref" title="Describes the configuration of AsyncEventListener implementations.">ASYNCEVENTLISTENERS</a>.
-
