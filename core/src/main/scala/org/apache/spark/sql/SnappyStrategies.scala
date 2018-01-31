@@ -455,7 +455,7 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
       CollectAggregateExec(basePlan = finalHashAggregate,
-        child = partialAggregate)
+        child = partialAggregate, output = finalHashAggregate.output)
     } else finalHashAggregate
     finalAggregate :: Nil
   }

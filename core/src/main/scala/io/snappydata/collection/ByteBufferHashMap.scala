@@ -19,7 +19,6 @@ package io.snappydata.collection
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
@@ -227,7 +226,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
             // Inserting the key at newPos
             Platform.putLong(newKeyObject, newOffset, key)
             if (fixedKeySize > 8) {
-              UnsafeHolder.copyMemory(keyObject, keyOffset + 8,
+              Platform.copyMemory(keyObject, keyOffset + 8,
                 newKeyObject, newOffset + 8, fixedKeySize - 8)
             }
             keepGoing = false
@@ -292,7 +291,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
 
   def reset(clearMemory: Boolean): Unit = {
     if (clearMemory) {
-      UnsafeHolder.getUnsafe.setMemory(baseObject, baseOffset,
+      Platform.setMemory(baseObject, baseOffset,
         // use capacity which is likely to be factor of 8 where setMemory
         // will be more efficient
         buffer.capacity(), 0)
