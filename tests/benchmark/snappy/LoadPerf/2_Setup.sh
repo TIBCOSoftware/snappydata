@@ -26,13 +26,13 @@ echo "******************Created conf/servers******************"
 
 
 echo "******************start locators******************"
-sh $SnappyData/sbin/snappy-locators.sh start -classpath=$TPCHJar
+sh $SnappyData/sbin/snappy-locators.sh start
 
 echo "******************start servers******************"
-sh $SnappyData/sbin/snappy-servers.sh start -classpath=$TPCHJar
+sh $SnappyData/sbin/snappy-servers.sh start
 
 echo "******************start leads******************"
-sh $SnappyData/sbin/snappy-leads.sh start -classpath=$TPCHJar
+sh $SnappyData/sbin/snappy-leads.sh start
 
 
 
