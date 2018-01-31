@@ -400,24 +400,25 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var encoderPosition = -1
 
     var doProcess = numPositions1 > 0 && numPositions2 > 0
-    val noDuplicateElimination = true // TODO VB: true for now
-    def isEqualOrGreater(p1: Int, p2: Int) : (Boolean, Boolean) = if (noDuplicateElimination) {
-      (ColumnTableScan.getPositive(p1) == ColumnTableScan.getPositive(p2),
-          ColumnTableScan.getPositive(p1) > ColumnTableScan.getPositive(p2))
-    } else (p1 == p2, p1 > p2)
     while (doProcess) {
       encoderPosition += 1
-      val (areEqual: Boolean, isGreater: Boolean) = isEqualOrGreater(position1, position2)
-      if (isGreater || areEqual) {
+      // Only valid for positive ordinals i.e. meant for update
+      val areDuplicate: Boolean = position1 > 0 && position2 > 0 &&
+        ColumnTableScan.getPositive(position1) == ColumnTableScan.getPositive(position2)
+      // Also include case where equal absolute value ordinals but one meant for update is
+      // deemed greater than ordinal meant for insert.
+      val isGreater: Boolean = (position1 > 0 && position2 < 0 &&
+          ColumnTableScan.getPositive(position1) == ColumnTableScan.getPositive(position2)) ||
+        ColumnTableScan.getPositive(position1) > ColumnTableScan.getPositive(position2)
+      if (isGreater || areDuplicate) {
         // set next update position to be from second
-        if (if (noDuplicateElimination) existingIsDelta else existingIsDelta && !areEqual) {
+        if (existingIsDelta && !areDuplicate) {
           positionsArray(encoderPosition) = position2
         }
         // consume data at position2 and move it if position2 is smaller
         // else if they are equal then newValue gets precedence
         cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
-          columnBytes2, writer, cursor, encoderPosition,
-          doWrite = if (noDuplicateElimination) true else !areEqual)
+          columnBytes2, writer, cursor, encoderPosition, doWrite = !areDuplicate)
         relativePosition2 += 1
         if (relativePosition2 < numPositions2) {
           if (existingIsDelta) {
@@ -432,7 +433,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       }
       // if the two are equal then keep the more recent delta from first
       // write for the second was skipped in the first block above
-      if (if (noDuplicateElimination) !isGreater && !areEqual else !isGreater) {
+      if (!isGreater) {
         // set next update position to be from first
         if (existingIsDelta) positionsArray(encoderPosition) = position1
         // consume data at position1 and move it
