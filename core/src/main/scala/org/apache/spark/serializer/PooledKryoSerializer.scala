@@ -73,7 +73,11 @@ final class PooledKryoSerializer(conf: SparkConf)
   }
 
   override def newKryo(): Kryo = {
+    val oldClassLoader = Thread.currentThread.getContextClassLoader
     val kryo = super.newKryo()
+
+    val classLoader = kryo.getClassLoader
+    kryo.setClassLoader(oldClassLoader)
 
     // specific serialization implementations in Spark and commonly used classes
     kryo.register(classOf[UnsafeRow])
@@ -163,6 +167,7 @@ final class PooledKryoSerializer(conf: SparkConf)
     // to java serializer else use Kryo's FieldSerializer
     kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
 
+    kryo.setClassLoader(classLoader)
     kryo
   }
 
