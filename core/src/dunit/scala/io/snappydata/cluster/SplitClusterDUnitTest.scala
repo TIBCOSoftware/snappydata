@@ -209,6 +209,13 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       selectFromTableUsingJDBC("splitModeTable1", 1005, stmt)
     }
 
+    // check for SNAP-2156/2164
+    val updateSql = s"update splitModeTable1 set col1 = 100 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 1234)"
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount == 0)
+    assert(stmt.executeUpdate(updateSql) == 0)
+
     stmt.execute("drop table if exists embeddedModeTable1")
     stmt.execute("drop table if exists embeddedModeTable2")
     stmt.execute("drop table if exists splitModeTable1")

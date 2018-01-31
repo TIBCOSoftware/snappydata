@@ -193,6 +193,7 @@ class TokenizationTest
   }
 
   test("Test no tokenize for round functions") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     snc.sql(s"Drop Table if exists double_tab")
     snc.sql(s"Create Table double_tab (a INT, d Double) " +
         "using column options()")
