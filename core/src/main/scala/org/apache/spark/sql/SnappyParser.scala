@@ -752,11 +752,15 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def relations: Rule1[LogicalPlan] = rule {
-    (relation + commaSep) ~> ((joins: Seq[LogicalPlan]) =>
-      if (joins.size == 1) joins.head
+    (relation + commaSep) ~ lateralView.* ~> ((joins: Seq[LogicalPlan], views: Any) => {
+      val from = if (joins.size == 1) joins.head
       else joins.tail.foldLeft(joins.head) {
         case (lhs, rel) => Join(lhs, rel, Inner, None)
-      })
+      }
+      views.asInstanceOf[Seq[LogicalPlan => LogicalPlan]].foldLeft(from) {
+        case (child, view) => view(child)
+      }
+    })
   }
 
   protected final def keyWhenThenElse: Rule1[WhenElseType] = rule {
@@ -963,8 +967,24 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       ).*
   }
 
+  protected final def lateralView: Rule1[LogicalPlan => LogicalPlan] = rule {
+    LATERAL ~ VIEW ~ (OUTER ~ push(true)).? ~ functionIdentifier ~ '(' ~ ws ~
+        (expression * commaSep) ~ ')' ~ ws ~ identifier ~ (AS.? ~ (identifier + commaSep)).? ~>
+        ((o: Any, functionName: FunctionIdentifier, e: Any, tableName: String,
+            cols: Any) => (child: LogicalPlan) => {
+          val expressions = e.asInstanceOf[Seq[Expression]]
+          val columnNames = cols.asInstanceOf[Option[Seq[String]]] match {
+            case Some(s) => s.map(UnresolvedAttribute.apply)
+            case None => Seq.empty
+          }
+          Generate(UnresolvedGenerator(functionName, expressions), join = true,
+            outer = o.asInstanceOf[Option[Boolean]].isDefined, Some(tableName),
+            columnNames, child)
+        })
+  }
+
   protected final def insert: Rule1[LogicalPlan] = rule {
-    INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
+    INSERT ~ ((OVERWRITE ~ push(true)) | (INTO ~ push(false))) ~
     TABLE.? ~ relationFactor ~ subSelectQuery ~> ((o: Boolean, r: LogicalPlan,
         s: LogicalPlan) => new Insert(r, Map.empty[String,
         Option[String]], s, OverwriteOptions(o), ifNotExists = false))
