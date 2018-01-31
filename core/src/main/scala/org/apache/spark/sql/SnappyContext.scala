@@ -826,6 +826,15 @@ object SnappyContext extends Logging {
   val TOPK_SOURCE = "approx_topk"
   val TOPK_SOURCE_CLASS = "org.apache.spark.sql.topk.DefaultSource"
 
+  val FILE_STREAM_SOURCE = "file_stream"
+  val DIRECT_KAFKA_STREAM_SOURCE = "directkafka_stream"
+  val KAFKA_STREAM_SOURCE = "kafka_stream"
+  val SOCKET_STREAM_SOURCE = "socket_stream"
+  val RAW_SOCKET_STREAM_SOURCE = "raw_socket_stream"
+  val TEXT_SOCKET_STREAM_SOURCE = "text_socket_stream"
+  val TWITTER_STREAM_SOURCE = "twitter_stream"
+  val RABBITMQ_STREAM_SOURCE = "rabbitmq_stream"
+
   val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
     classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     classOf[execution.row.DefaultSource].getCanonicalName,
@@ -836,16 +845,17 @@ object SnappyContext extends Logging {
     ParserConsts.ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> SAMPLE_SOURCE_CLASS,
     TOPK_SOURCE -> TOPK_SOURCE_CLASS,
-    "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
-    "file_stream" -> classOf[FileStreamSource].getCanonicalName,
-    "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
-    "directkafka_stream" -> classOf[DirectKafkaStreamSource].getCanonicalName,
-    "twitter_stream" -> classOf[TwitterStreamSource].getCanonicalName,
-    "raw_socket_stream" -> classOf[RawSocketStreamSource].getCanonicalName,
-    "text_socket_stream" -> classOf[TextSocketStreamSource].getCanonicalName,
-    "rabbitmq_stream" -> classOf[RabbitMQStreamSource].getCanonicalName,
+    SOCKET_STREAM_SOURCE -> classOf[SocketStreamSource].getCanonicalName,
+    FILE_STREAM_SOURCE -> classOf[FileStreamSource].getCanonicalName,
+    KAFKA_STREAM_SOURCE -> classOf[KafkaStreamSource].getCanonicalName,
+    DIRECT_KAFKA_STREAM_SOURCE -> classOf[DirectKafkaStreamSource].getCanonicalName,
+    TWITTER_STREAM_SOURCE -> classOf[TwitterStreamSource].getCanonicalName,
+    RAW_SOCKET_STREAM_SOURCE -> classOf[RawSocketStreamSource].getCanonicalName,
+    TEXT_SOCKET_STREAM_SOURCE -> classOf[TextSocketStreamSource].getCanonicalName,
+    RABBITMQ_STREAM_SOURCE -> classOf[RabbitMQStreamSource].getCanonicalName,
     "com.databricks.spark.csv" -> classOf[CSVFileFormat].getCanonicalName
   ))
+  private val builtinSourcesShortNames: Map[String, String] = builtinSources.map(p => p._2 -> p._1)
 
   private[this] val INVALID_CONF = new SparkConf(loadDefaults = false) {
     override def getOption(key: String): Option[String] =
@@ -900,6 +910,10 @@ object SnappyContext extends Logging {
 
   def getAllBlockIds: scala.collection.Map[String, BlockAndExecutorId] = {
     storeToBlockMap.filter(_._2.blockId != null)
+  }
+
+  def hasServerBlockIds: Boolean = {
+    storeToBlockMap.exists(p => p._2.blockId != null && !"driver".equalsIgnoreCase(p._1))
   }
 
   private[spark] def clearBlockIds(): Unit = {
@@ -1076,6 +1090,7 @@ object SnappyContext extends Logging {
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
           initMemberBlockMap(sc)
+          SnappySession.tokenize = Property.Tokenize.get(sc.conf)
           _globalContextInitialized = true
         }
       }
@@ -1126,7 +1141,7 @@ object SnappyContext extends Logging {
     }
   }
 
-  private def stopSnappyContext(): Unit = contextLock.synchronized {
+  private def stopSnappyContext(): Unit = synchronized {
     val sc = globalSparkContext
     if (_globalContextInitialized) {
       SnappyTableStatsProviderService.stop()
@@ -1140,17 +1155,21 @@ object SnappyContext extends Logging {
       // clear static objects on the driver
       clearStaticArtifacts()
 
-      _sharedState = null
-      if (_globalClear ne null) {
-        _globalClear()
-        _globalClear = null
+      contextLock.synchronized {
+        _sharedState = null
+        if (_globalClear ne null) {
+          _globalClear()
+          _globalClear = null
+        }
       }
       MemoryManagerCallback.resetMemoryManager()
     }
-    _clusterMode = null
-    _anySNContext = null
-    _globalSNContextInitialized = false
-    _globalContextInitialized = false
+    contextLock.synchronized {
+      _clusterMode = null
+      _anySNContext = null
+      _globalSNContextInitialized = false
+      _globalContextInitialized = false
+    }
   }
 
   /** Cleanup static artifacts on this lead/executor. */
@@ -1199,6 +1218,9 @@ object SnappyContext extends Logging {
       }
     }
   }
+
+  def getProviderShortName(provider: String): String =
+    builtinSourcesShortNames.getOrElse(provider, provider)
 
   def flushSampleTables(): Unit = {
     val sampleRelations = _anySNContext.sessionState.catalog.

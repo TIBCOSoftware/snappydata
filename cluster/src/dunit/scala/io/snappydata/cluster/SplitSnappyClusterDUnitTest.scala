@@ -32,6 +32,7 @@ import org.junit.Assert
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -256,11 +257,18 @@ class SplitSnappyClusterDUnitTest(s: String)
   override def testUpdateDeleteOnColumnTables(): Unit = {
     // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
     val session = new SnappySession(sc)
-    ColumnUpdateDeleteTests.testBasicUpdate(session)
-    ColumnUpdateDeleteTests.testBasicDelete(session)
-    ColumnUpdateDeleteTests.testSNAP1925(session)
-    ColumnUpdateDeleteTests.testSNAP1926(session)
-    ColumnUpdateDeleteTests.testConcurrentOps(session)
+    // using random bucket assignment for this test to check remote iteration
+    // added in SNAP-2012
+    StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = true
+    try {
+      ColumnUpdateDeleteTests.testBasicUpdate(session)
+      ColumnUpdateDeleteTests.testBasicDelete(session)
+      ColumnUpdateDeleteTests.testSNAP1925(session)
+      ColumnUpdateDeleteTests.testSNAP1926(session)
+      ColumnUpdateDeleteTests.testConcurrentOps(session)
+    } finally {
+      StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
+    }
   }
 }
 
@@ -607,23 +615,27 @@ object SplitSnappyClusterDUnitTest
     val testDF = snc.range(10000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar" +
         "(10))) as sym")
     testDF.write.insertInto("snappyTable")
-    // TODO: Fix this. Sleep added to make sure that stats are
+    // TODO: Fix this. wait added to make sure that stats are
     // generated on the embedded cluster and the smart connector
     // mode is able to get those. Ideally if table stats are not
     // present connector should send the table name and
     // get those from embedded side
-    Thread.sleep(21000)
-    val stats = SnappyTableStatsProviderService.getService.
-        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
-    Assert.assertEquals(10000000, stats.getRowCount)
+    var expectedRowCount = 10000000
+    def waitForStats: Boolean = {
+      SnappyTableStatsProviderService.getService.
+          getAggregatedStatsOnDemand._1.get("APP.SNAPPYTABLE") match {
+        case Some(stats) => stats.getRowCount == expectedRowCount
+        case _ => false
+      }
+    }
+    ClusterManagerTestBase.waitForCriterion(waitForStats,
+      s"Expected stats row count to be $expectedRowCount", 30000, 500, throwOnTimeout = true)
     for (i <- 1 to 100) {
       snc.sql(s"insert into snappyTable values($i,'Test$i')")
     }
-    // TODO: Fix this. See the above comment about fixing stats issue
-    Thread.sleep(21000)
-    val stats1 = SnappyTableStatsProviderService.getService.
-        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
-    Assert.assertEquals(10000100, stats1.getRowCount)
+    expectedRowCount = 10000100
+    ClusterManagerTestBase.waitForCriterion(waitForStats,
+      s"Expected stats row count to be $expectedRowCount", 30000, 500, throwOnTimeout = true)
     logInfo("Successful")
   }
 

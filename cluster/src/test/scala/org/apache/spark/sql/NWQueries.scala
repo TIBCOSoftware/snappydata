@@ -19,7 +19,6 @@ package org.apache.spark.sql
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.joins.CartesianProductExec
 
 object NWQueries extends SnappyFunSuite {
 

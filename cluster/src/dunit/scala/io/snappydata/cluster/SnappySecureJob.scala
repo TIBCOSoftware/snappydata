@@ -215,8 +215,8 @@ class SnappySecureJob extends SnappySQLJob {
         } catch {
           case t: Throwable if (t.getMessage.contains(s"does not have ${op.toUpperCase} " +
               s"permission on") ||
-              t.getMessage.contains(s"does not have SELECT permission on")) ||
-              t.getMessage.contains("42502") =>
+              t.getMessage.contains(s"does not have SELECT permission on") ||
+              t.getMessage.contains("42502")) =>
             pw.println(s"Found expected exception for $s")
           // t.getStackTrace.foreach(s => pw.println(s"${t.getMessage}\n  ${s.toString}"))
           case t: Throwable => pw.println(s"UNEXPECTED ERROR FOR $s:\n[${t.getMessage}]")

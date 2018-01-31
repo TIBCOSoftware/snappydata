@@ -280,11 +280,13 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case expressions.StartsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
         Some(sources.StringStartsWith(a.name, v.toString))
 
+      /* (not used in pushdown by column/row tables)
       case expressions.EndsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
         Some(sources.StringEndsWith(a.name, v.toString))
 
       case expressions.Contains(a: Attribute, Literal(v: UTF8String, StringType)) =>
         Some(sources.StringContains(a.name, v.toString))
+      */
 
       case _ => None
     }

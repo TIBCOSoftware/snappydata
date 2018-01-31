@@ -19,27 +19,28 @@
 
 package io.snappydata
 
+import java.util.function.BiFunction
+
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
-import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, ExternalTableMetaData, LocalRegion, PartitionedRegion, RegionEntry}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
+import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
 /*
@@ -96,7 +97,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     if (!doRun) {
       this.synchronized {
         if (!doRun) {
-          val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
+          val delay = sc.getConf.getLong(SPARK_SNAPPY_PREFIX +
               "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
           doRun = true
           Misc.getGemFireCache.getCCPTimer.schedule(
@@ -177,8 +178,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   }
 
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats]) = {
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
+    var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
     try {
       if (dataServers != null && dataServers.size() > 0) {
@@ -188,11 +190,38 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
             .asScala
       }
+
+      // External Tables
+      val hiveTables: java.util.List[ExternalTableMetaData] =
+        Misc.getMemStore.getExternalCatalog.getHiveTables(true)
+      externalTables = hiveTables.asScala.collect {
+        case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
+          new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
+            table.externalStore, table.dataSourcePath, table.driverClass)
+      }
     }
     catch {
       case NonFatal(e) => log.warn(e.getMessage, e)
     }
-    (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
+
+    (result.flatMap(_.getRegionStats.asScala),
+     result.flatMap(_.getIndexStats.asScala),
+     externalTables)
+  }
+
+  type PRIterator = PartitionedRegion#PRLocalScanIterator
+
+  /**
+   * Allows pulling stats rows efficiently if required. For the corner case
+   * of bucket moving away while iterating other buckets.
+   */
+  private val createRemoteIterator = new BiFunction[java.lang.Integer, PRIterator,
+      java.util.Iterator[RegionEntry]] {
+    override def apply(bucketId: Integer,
+        iter: PRIterator): java.util.Iterator[RegionEntry] = {
+      new RemoteEntriesIterator(bucketId, Array.emptyIntArray,
+        iter.getPartitionedRegion, null)
+    }
   }
 
   def publishColumnTableRowCountStats(): Unit = {
@@ -206,16 +235,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
         if (ColumnFormatRelation.isColumnTable(table) &&
             pr.getLocalMaxMemory > 0) {
-          // TODO: this should use a transactional iterator to get a consistent
-          // snapshot (also pass the same transaction to getNumColumnsInTable
-          //   for reading value and delete count)
-          val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
-            true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
           var numColumnsInTable = -1
           // Resetting PR numRows in cached batch as this will be calculated every time.
           var rowsInColumnBatch = 0L
           var offHeapSize = 0L
           if (container ne null) {
+            // TODO: this should use a transactional iterator to get a consistent
+            // snapshot (also pass the same transaction to getNumColumnsInTable
+            //   for reading value and delete count)
+            val itr = new pr.PRLocalScanIterator(true /* primaryOnly */ , null /* no TX */ ,
+              null /* not required since includeValues is false */ ,
+              createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
             // using direct region operations
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[AbstractRegionEntry]
@@ -238,5 +268,4 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
   }
-
 }

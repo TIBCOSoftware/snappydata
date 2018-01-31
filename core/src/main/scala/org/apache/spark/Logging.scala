@@ -132,7 +132,6 @@ trait Logging {
 
   protected def resetLogger(): Unit = {
     Logging.initLock.synchronized {
-      Logging.initialized = false
       log_ = null
     }
   }

@@ -310,7 +310,9 @@ class RowFormatRelation(
   }
 }
 
-final class DefaultSource extends MutableRelationProvider {
+final class DefaultSource extends MutableRelationProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyParserConsts.ROW_SOURCE
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String,

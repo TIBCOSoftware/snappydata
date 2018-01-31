@@ -643,7 +643,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     var output = sparkShellCommand.!!
     logInfo(output)
     output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
-    assert(!output.contains("Exception"), s"Some exception stacktrace seen on spark-shell console.")
+    assert(!output.contains("Exception"),
+      s"Some exception stacktrace seen on spark-shell console: $output")
 
     val conn = getConnection(locatorClientPort, props)
     val stmt = conn.createStatement()
