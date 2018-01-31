@@ -11,9 +11,6 @@ import org.apache.spark.sql.catalyst.util.fileToString
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
-/**
-  * Created by kishor on 10/1/18.
-  */
 object QueryExecutionJob extends SnappySQLJob with Logging{
   var sqlSparkProperties: Array[String] = _
   var queries: Array[String] = _

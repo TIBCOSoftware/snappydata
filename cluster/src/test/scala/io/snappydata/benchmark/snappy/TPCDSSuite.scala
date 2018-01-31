@@ -27,11 +27,6 @@ package io.snappydata.benchmark.snappy
  import scala.collection.mutable.ArrayBuffer
 
 
-/**
-  * Created by sbhokare on 7/7/17.
-  */
-
-
 class TPCDSSuite extends SnappyFunSuite
  with BeforeAndAfterAll {
 
