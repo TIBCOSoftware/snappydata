@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.Attribute
+import io.snappydata.collection.ObjectLongHashMap
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.Logging
@@ -29,6 +30,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -120,11 +122,18 @@ abstract case class JDBCAppendableRelation(
       requiredColumns
     }
 
+    val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
+    (0 until schema.length).foreach(i =>
+      fieldNames.put(Utils.toLowerCase(schema(i).name), i + 1))
+    val projection = requiredColumns.map { c =>
+      val index = fieldNames.getLong(Utils.toLowerCase(c))
+      if (index == 0) Utils.analysisException(s"Column $c does not exist in $tableName")
+      index.toInt
+    }
     readLock {
       externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
-        requestedColumns.map(column => externalStore.columnPrefix + column),
-        prunePartitions,
-        sqlContext.sparkSession, schema)
+        requestedColumns, projection, (filters eq null) || filters.length == 0,
+        prunePartitions, sqlContext.sparkSession, schema)
     }
   }
 

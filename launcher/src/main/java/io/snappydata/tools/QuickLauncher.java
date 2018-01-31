@@ -287,7 +287,9 @@ class QuickLauncher extends LauncherBase {
       ArrayList<String> commandLine, HashMap<String, String> env)
       throws FileNotFoundException {
     StringBuilder classPath = new StringBuilder();
-    // add the default product jars directory first
+    // add the conf directory first
+    classPath.append(snappyHome).append("/conf").append(java.io.File.pathSeparator);
+    // then the default product jars directory
     classPath.append(snappyHome).append("/jars/*");
 
     final int numArgs = args.length;
@@ -307,7 +309,7 @@ class QuickLauncher extends LauncherBase {
         processHeapSize(arg.substring(HEAP_SIZE_OPT.length()), vmArgs);
       } else if (arg.startsWith("-J")) {
         processVMArg(arg.substring(2), vmArgs);
-      } else if (arg.startsWith("-D")) {
+      } else if (arg.startsWith("-D") || arg.startsWith("-XX:")) {
         processVMArg(arg, vmArgs);
       } else if (arg.startsWith(PASSWORD_OPT)) {
         String pwd;

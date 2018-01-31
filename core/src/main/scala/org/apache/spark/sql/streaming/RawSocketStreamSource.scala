@@ -19,14 +19,18 @@ package org.apache.spark.sql.streaming
 
 import scala.reflect.ClassTag
 
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 
-final class RawSocketStreamSource extends StreamPlanProvider {
+final class RawSocketStreamSource extends StreamPlanProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyContext.RAW_SOCKET_STREAM_SOURCE
+
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
       schema: StructType): RawSocketStreamRelation = {

@@ -199,7 +199,7 @@ object QueryRoutingDUnitSecurityTest {
     try {
       stmt1.execute(s"create table $tableName (ol_int_id  integer," +
           s" ol_int2_id  integer, ol_str_id STRING) using column " +
-          "options( partition_by 'ol_int_id, ol_int2_id', buckets '5', COLUMN_BATCH_SIZE '200')")
+          "options( partition_by 'ol_int_id, ol_int2_id', buckets '8', COLUMN_BATCH_SIZE '200')")
     } finally {
       stmt1.close()
       conn.close()
@@ -217,7 +217,7 @@ object QueryRoutingDUnitSecurityTest {
     try {
       stmt1.execute(s"create table $tableName (ol_int_id  integer," +
           s" ol_int2_id  integer, ol_str_id STRING) using row " +
-          "options( partition_by 'ol_int_id, ol_int2_id', buckets '5')")
+          "options( partition_by 'ol_int_id, ol_int2_id', buckets '8')")
     } finally {
       stmt1.close()
       conn.close()

@@ -90,6 +90,21 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
   protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long
 
+  /**
+   * Return the next position of a null value.
+   */
+  def getNextNullPosition: Int
+
+  /**
+   * Fetch next null position and return it as returned by [[getNextNullPosition]].
+   */
+  def findNextNullPosition(columnBytes: AnyRef, nextNullPosition: Int, num: Int): Int
+
+  /**
+   * Return the number of nulls till given ordinal given previous result.
+   */
+  def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int
+
   /** Absolute position null check for random access. */
   def isNullAt(columnBytes: AnyRef, position: Int): Boolean
 
@@ -782,10 +797,12 @@ object ColumnEncoding {
           s"for $dataType($field)$bytesStr")
     }
 
-    val numNullWords = readInt(columnBytes, cursor)
     val decoder = allDecoders(typeId)(columnBytes, cursor, field, initDelta, dataType,
-      // use NotNull version if field is marked so or no nulls in the batch
-      field.nullable && numNullWords != 0)
+      // use NotNull version if field is marked so
+      // don't use NotNull in case this batch has no nulls because switching
+      // between NotNull and Nullable decoders between batches causes JVM inlining
+      // to take a hit in many cases
+      field.nullable)
     if (decoder.typeId != typeId) {
       throw new IllegalStateException(s"typeId for $decoder = " +
           s"${decoder.typeId} does not match $typeId in global registration")
@@ -1011,6 +1028,13 @@ trait NotNullDecoder extends ColumnDecoder {
     startCursor + 4
   }
 
+  override final def getNextNullPosition: Int = Int.MaxValue
+
+  override final def findNextNullPosition(columnBytes: AnyRef, nextNullPosition: Int,
+      num: Int): Int = Int.MaxValue
+
+  override final def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int = 0
+
   override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean = false
 }
 
@@ -1025,27 +1049,75 @@ trait NullableDecoder extends ColumnDecoder {
 
   private[this] final var dataCursor: Long = _
   private[this] final var numNullWords: Int = _
+  private[this] final var nextNullPosition: Int = _
 
-  override protected[sql] final def hasNulls: Boolean = true
+  override protected[sql] final def hasNulls: Boolean = dataCursor != Long.MaxValue
 
   protected[sql] def initializeNulls(columnBytes: AnyRef,
       startCursor: Long, field: StructField): Long = {
     var cursor = startCursor
     var numNullBytes = ColumnEncoding.readInt(columnBytes, cursor)
     cursor += 4
-    this.dataCursor = cursor
-    // expect it to be a factor of 8
-    assert(numNullBytes > 0 && (numNullBytes & 0x7) == 0,
-      s"Expected valid null values but got length = $numNullBytes")
-    // mark this case with a negative "nextPosition" that holds the number of words
-    this.numNullWords = numNullBytes >>> 3
-    // skip null bit set
-    cursor += numNullBytes
+    // for no-nulls case mark dataCursor to be so
+    if (numNullBytes == 0) {
+      this.dataCursor = Long.MaxValue
+      this.numNullWords = 0
+      this.nextNullPosition = Int.MaxValue
+    } else {
+      this.dataCursor = cursor
+      // expect it to be a factor of 8
+      assert((numNullBytes & 0x7) == 0,
+        s"Expected valid null values but got length = $numNullBytes")
+      this.numNullWords = numNullBytes >>> 3
+      // initialize the first nextNullPosition
+      findNextNullPosition(columnBytes, -1, 0)
+      // skip null bit set
+      cursor += numNullBytes
+    }
     cursor
   }
 
+  override final def getNextNullPosition: Int = nextNullPosition
+
+  override final def findNextNullPosition(columnBytes: AnyRef, nextNullPosition: Int,
+      num: Int): Int = {
+    this.nextNullPosition = BitSet.nextSetBit(columnBytes, dataCursor,
+      nextNullPosition + 1, numNullWords)
+    this.nextNullPosition
+  }
+
+  override final def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int = {
+    // find the next null after given ordinal and count the additional nulls till ordinal
+    val baseOffset = this.dataCursor
+    val numWords = this.numNullWords
+    val nextNull = this.nextNullPosition
+    // new nextNullPosition must be inclusive of current ordinal because generated
+    // code will check for nullability of ordinal separately
+    nextNullPosition = BitSet.nextSetBit(columnBytes, baseOffset, ordinal, numWords)
+    // find new number of nulls from the previous null position till ordinal
+    // (search has to be aligned to word boundary)
+    val searchWord = nextNull >>> 6 // a word holds 64 bits
+    // if word boundary is first word then faster to do full recount
+    if (searchWord == 0) {
+      // count excludes the ordinal itself since nextNullPosition above includes it
+      BitSet.cardinality(columnBytes, baseOffset, ordinal, numWords)
+    } else {
+      // address required by BitSet methods is in bytes
+      val searchOffset = baseOffset + (searchWord << 3)
+      val searchOffsetInWord = nextNull & 0x3f
+      // count from the word boundary
+      val countFrom = BitSet.cardinality(columnBytes, searchOffset,
+        // skipping "searchWord" words from start so ordinal, numWords adjusted accordingly
+        ordinal - (searchWord << 6), numWords - searchWord)
+      // reduce the number of nulls till the position within the word (excluding
+      //   searchOffsetInWord as the passed num does not include the previous nextNullPosition)
+      countFrom - BitSet.cardinality(columnBytes, searchOffset, searchOffsetInWord, 1) + num
+    }
+  }
+
   override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean = {
-    BitSet.isSet(columnBytes, dataCursor, position, numNullWords)
+    dataCursor != Long.MaxValue &&
+        BitSet.isSet(columnBytes, dataCursor, position, numNullWords)
   }
 }
 

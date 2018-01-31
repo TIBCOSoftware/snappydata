@@ -37,6 +37,10 @@ fi
 
 function setnewargs() { newargs="$@"; }
 
+if [ -z "${SNAPPY_SCRIPT_NAME}" ]; then
+  export SNAPPY_SCRIPT_NAME=snappy
+fi
+
 if echo $@ | grep -qw "rowstore"; then
   #using rowstore launcher
   newargs=

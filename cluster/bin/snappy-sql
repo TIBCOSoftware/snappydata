@@ -22,4 +22,5 @@ function absPath() {
 }
 bin="$(dirname "$(absPath "$0")")"
 
+export SNAPPY_SCRIPT_NAME=snappy-sql
 exec "$bin/snappy" "$@"

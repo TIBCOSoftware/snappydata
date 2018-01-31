@@ -19,12 +19,13 @@ package io.snappydata.tools
 import java.io.{File, IOException}
 import java.util
 
-import com.gemstone.gemfire.internal.GemFireUtilLauncher.CommandEntry
+import com.gemstone.gemfire.internal.GemFireUtilLauncher.{CommandEntry, SCRIPT_NAME}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
+import com.pivotal.gemfirexd.tools.GfxdUtilLauncher.GET_CANONICAL_PATH_ARG
 import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
 import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
@@ -35,10 +36,10 @@ import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
  */
 class SnappyUtilLauncher extends GfxdUtilLauncher {
 
+  SnappyUtilLauncher.init()
+
   GfxdUtilLauncher.snappyStore = true
   ClientSharedUtils.setThriftDefault(true)
-
-  import SnappyUtilLauncher._
 
   SnappyDataVersion.loadProperties()
 
@@ -103,8 +104,14 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
 object SnappyUtilLauncher {
 
-  private val SCRIPT_NAME: String = "snappy"
-  private val GET_CANONICAL_PATH_ARG: String = "--get-canonical-path"
+  init()
+
+  private def init(): Unit = {
+    SCRIPT_NAME = System.getenv("SNAPPY_SCRIPT_NAME") match {
+      case s if (s eq null) || s.length == 0 => "snappy"
+      case s => s
+    }
+  }
 
   /**
    * @see GemFireUtilLauncher#main(String[])
