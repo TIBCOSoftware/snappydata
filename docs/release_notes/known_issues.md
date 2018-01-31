@@ -18,6 +18,12 @@ The following key issues have been registered as bugs in the SnappyData bug trac
 </thead>
 <tbody>
 <tr class="odd">
+<td><a href="https://jira.snappydata.io/browse/SNAP-1375">SNAP-1375</a></td>
+<td>JVM crash reported</td>
+<td>This was reported on: <br> - RHEL kernel version: 3.10.0-327.13.1.el7.x86_64 <br> - Java version: 1.8.0_121</td>
+<td>To resolve this, use: </br> - RHEL kernel version: 3.10.0-693.2.2.el7.x86_64 </br> - Java version: 1.8.0_144</td>
+</tr>
+<tr class="odd">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1422">SNAP-1422</a></td>
 <td>Catalog in smart connector inconsistent with servers</td>
 <td>Catalog in smart connector inconsistent with servers|When a table is queried from spark-shell (or from an application that uses smart connector mode) the table metadata is cached on the smart connector side. </br>If this table is dropped from SnappyData embedded cluster (by using snappy-shell, or JDBC application, or a Snappy job), the metadata on the smart connector side stays cached even though catalog has changed (table is dropped). </br>In such cases, the user may see unexpected errors like "org.apache.spark.sql.AnalysisException: Table `SNAPPYTABLE` already exists"  in the smart connector app side for example for `DataFrameWriter.saveAsTable()` API if the same table name that was dropped is used in `saveAsTable()`</td>
@@ -55,9 +61,9 @@ select
        and l_shipinstruct = 'DELIVER IN PERSON'
         )
 </code></pre>
-<pre class="pre"><code>  
+<pre class="pre"><code>
 select
-        sum(l_extendedprice) 
+        sum(l_extendedprice)
     from
         LINEITEM,
         PART
@@ -67,9 +73,24 @@ select
 </code></pre>
 </td>
 </tr>
-
-
-
+<tr class="even">
+<td><a href="https://jira.snappydata.io/browse/SNAP-1911">SNAP-1911</a></td>
+<td>JVM crash reported</td>
+<td>This was reported on: <br> -  RHEL kernel version: 3.10.0-327.13.1.el7.x86_64<br> - Java version: 1.8.0_131</td>
+<td>To resolve this, use: </br> - RHEL kernel version: 3.10.0-693.2.2.el7.x86_64</br> - Java version: 1.8.0_144</td>
+</tr>
+<tr class="odd">
+<td><a href="https://jira.snappydata.io/browse/SNAP-1999">SNAP-1999</a></td>
+<td>JVM crash reported</td>
+<td>This was reported on: <br> - RHEL kernel version: 3.10.0-327.13.1.el7.x86_64 <br> - Java version: 1.8.0_131</td>
+<td>To resolve this, use: </br> - RHEL kernel version: 3.10.0-693.2.2.el7.x86_64 </br> - Java version: 1.8.0_144</td>
+</tr>
+<tr class="even">
+<td><a href="https://jira.snappydata.io/browse/SNAP-2017">SNAP-2017</a></td>
+<td>JVM crash reported</td>
+<td>This was reported on: <br> - RHEL kernel version: 3.10.0-514.10.2.el7.x86_64 <br> - Java version: 1.8.0_144</td>
+<td>To resolve this, use: </br> -  RHEL kernel version: 3.10.0-693.2.2.el7.x86_64 </br> - Java version: 1.8.0_144</td>
+</tr>
 
 
 <!--
