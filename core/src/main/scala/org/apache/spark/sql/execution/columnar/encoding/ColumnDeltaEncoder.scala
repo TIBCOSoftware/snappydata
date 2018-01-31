@@ -138,8 +138,6 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   override protected[sql] def getNumNullWords: Int = realEncoder.getNumNullWords
 
-  override protected[sql] def getNullWords: AnyRef = realEncoder.getNullWords
-
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = realEncoder.writeNulls(columnBytes, cursor, numWords)
 
@@ -199,7 +197,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     positionsArray(positionIndex) = position
   }
 
-  override def writeIsNull(ordinal: Int): Unit = {
+  def getRealEncoder: ColumnEncoder = realEncoder
+
+  override def writeIsNull(position: Int): Unit = {
     // write the relative position in the delta rather than absolute position
     // to save quite a bit of space
     realEncoder.writeIsNull(positionIndex)
@@ -227,12 +227,12 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     realEncoder.writeDouble(cursor, value)
 
   override def writeLongDecimal(cursor: Long, value: Decimal,
-      ordinal: Int, precision: Int, scale: Int): Long =
-    realEncoder.writeLongDecimal(cursor, value, ordinal, precision, scale)
+      position: Int, precision: Int, scale: Int): Long =
+    realEncoder.writeLongDecimal(cursor, value, position, precision, scale)
 
   override def writeDecimal(cursor: Long, value: Decimal,
-      ordinal: Int, precision: Int, scale: Int): Long =
-    realEncoder.writeDecimal(cursor, value, ordinal, precision, scale)
+      position: Int, precision: Int, scale: Int): Long =
+    realEncoder.writeDecimal(cursor, value, position, precision, scale)
 
   override def writeDate(cursor: Long, value: Int): Long =
     realEncoder.writeDate(cursor, value)
@@ -255,19 +255,19 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   override def flushWithoutFinish(cursor: Long): Long = realEncoder.flushWithoutFinish(cursor)
 
-  private def consumeDecoder(decoder: ColumnDecoder, decoderNullOrdinal: Int,
+  private def consumeDecoder(decoder: ColumnDecoder, decoderNullPosition: Int,
       decoderBytes: AnyRef, writer: DeltaWriter, encoderCursor: Long,
-      encoderOrdinal: Int, doWrite: Boolean = true): Long = {
-    if (decoderNullOrdinal >= 0) {
+      encoderPosition: Int, doWrite: Boolean = true): Long = {
+    if (decoderNullPosition >= 0) {
       // nulls are always written as per relative position in decoder
-      if (decoder.isNullAt(decoderBytes, decoderNullOrdinal)) {
+      if (decoder.isNullAt(decoderBytes, decoderNullPosition)) {
         // null words are copied as is in initial creation so only write in merge
-        if (doWrite) realEncoder.writeIsNull(encoderOrdinal)
+        if (doWrite) realEncoder.writeIsNull(encoderPosition)
         return encoderCursor
       }
     }
     writer.readAndEncode(decoder, decoderBytes, realEncoder, encoderCursor,
-      encoderOrdinal, doWrite)
+      encoderPosition, doWrite)
   }
 
   private def writeHeader(columnBytes: AnyRef, cursor: Long, numNullWords: Int,
@@ -396,20 +396,20 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     }
     var relativePosition1 = 0
     var relativePosition2 = 0
-    var encoderOrdinal = -1
+    var encoderPosition = -1
 
     var doProcess = numPositions1 > 0 && numPositions2 > 0
     while (doProcess) {
-      encoderOrdinal += 1
+      encoderPosition += 1
       val areEqual = position1 == position2
       val isGreater = position1 > position2
       if (isGreater || areEqual) {
         // set next update position to be from second
-        if (existingIsDelta && !areEqual) positionsArray(encoderOrdinal) = position2
+        if (existingIsDelta && !areEqual) positionsArray(encoderPosition) = position2
         // consume data at position2 and move it if position2 is smaller
         // else if they are equal then newValue gets precedence
         cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
-          columnBytes2, writer, cursor, encoderOrdinal, doWrite = !areEqual)
+          columnBytes2, writer, cursor, encoderPosition, doWrite = !areEqual)
         relativePosition2 += 1
         if (relativePosition2 < numPositions2) {
           if (existingIsDelta) {
@@ -426,10 +426,10 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       // write for the second was skipped in the first block above
       if (!isGreater) {
         // set next update position to be from first
-        if (existingIsDelta) positionsArray(encoderOrdinal) = position1
+        if (existingIsDelta) positionsArray(encoderPosition) = position1
         // consume data at position1 and move it
         cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
-          columnBytes1, writer, cursor, encoderOrdinal)
+          columnBytes1, writer, cursor, encoderPosition)
         relativePosition1 += 1
         if (relativePosition1 < numPositions1) {
           position1 = ColumnEncoding.readInt(columnBytes1, positionCursor1)
@@ -443,26 +443,26 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     //   but doing that for code clarity)
     positionCursor1 -= 4
     while (relativePosition1 < numPositions1) {
-      encoderOrdinal += 1
+      encoderPosition += 1
       // set next update position to be from first
       if (existingIsDelta) {
-        positionsArray(encoderOrdinal) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
+        positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
         positionCursor1 += 4
       }
       cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
-        columnBytes1, writer, cursor, encoderOrdinal)
+        columnBytes1, writer, cursor, encoderPosition)
       relativePosition1 += 1
     }
     positionCursor2 -= 4
     while (relativePosition2 < numPositions2) {
-      encoderOrdinal += 1
+      encoderPosition += 1
       // set next update position to be from second
       if (existingIsDelta) {
-        positionsArray(encoderOrdinal) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
+        positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
         positionCursor2 += 4
       }
       cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
-        columnBytes2, writer, cursor, encoderOrdinal)
+        columnBytes2, writer, cursor, encoderPosition)
       relativePosition2 += 1
     }
 
@@ -490,7 +490,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
     assert(cursor <= realEncoder.columnEndPosition)
 
-    val numElements = encoderOrdinal + 1
+    val numElements = encoderPosition + 1
     val positionsSize = if (existingIsDelta) {
       4 /* numBaseRows */ + 4 /* numPositions */ + (numElements << 2)
     } else 0
@@ -602,7 +602,7 @@ abstract class DeltaWriter {
    * "skipped" in any case).
    */
   def readAndEncode(srcDecoder: ColumnDecoder, srcColumnBytes: AnyRef,
-      destEncoder: ColumnEncoder, destCursor: Long, encoderOrdinal: Int,
+      destEncoder: ColumnEncoder, destCursor: Long, encoderPosition: Int,
       doWrite: Boolean): Long
 }
 
@@ -662,11 +662,11 @@ object DeltaWriter {
              |return new DeltaWriter() {
              |  @Override
              |  public long readAndEncode(ColumnDecoder srcDecoder, Object srcColumnBytes,
-             |      ColumnEncoder destEncoder, long destCursor, int encoderOrdinal,
+             |      ColumnEncoder destEncoder, long destCursor, int encoderPosition,
              |      boolean doWrite) {
-             |    srcDecoder.nonNullOrdinal_$$eq(srcDecoder.nonNullOrdinal() + 1);
+             |    srcDecoder.nonNullPosition_$$eq(srcDecoder.nonNullPosition() + 1);
              |    return doWrite ? destEncoder.write$name(destCursor, srcDecoder.read$name(
-             |        srcColumnBytes, srcDecoder.nonNullOrdinal())) : destCursor;
+             |        srcColumnBytes, srcDecoder.nonNullPosition())) : destCursor;
              |  }
              |};
           """.stripMargin
@@ -675,12 +675,12 @@ object DeltaWriter {
              |return new DeltaWriter() {
              |  @Override
              |  public long readAndEncode(ColumnDecoder srcDecoder, Object srcColumnBytes,
-             |      ColumnEncoder destEncoder, long destCursor, int encoderOrdinal,
-             |      boolean forMerge, boolean doWrite) {
-             |      srcDecoder.nonNullOrdinal_$$eq(srcDecoder.nonNullOrdinal() + 1);
+             |      ColumnEncoder destEncoder, long destCursor, int encoderPosition,
+             |      boolean doWrite) {
+             |    srcDecoder.nonNullPosition_$$eq(srcDecoder.nonNullPosition() + 1);
              |    if (doWrite) {
              |      $complexType data = ($complexType)srcDecoder.read$name(srcColumnBytes,
-             |         srcDecoder.nonNullOrdinal());
+             |         srcDecoder.nonNullPosition());
              |      return destEncoder.writeUnsafeData(destCursor, data.getBaseObject(),
              |         data.getBaseOffset(), data.getSizeInBytes());
              |    } else {
@@ -700,36 +700,36 @@ object DeltaWriter {
   def apply(dataType: DataType): DeltaWriter = Utils.getSQLDataType(dataType) match {
     case StringType => new DeltaWriter {
       override def readAndEncode(srcDecoder: ColumnDecoder, srcColumnBytes: AnyRef,
-          destEncoder: ColumnEncoder, destCursor: Long, encoderOrdinal: Int,
+          destEncoder: ColumnEncoder, destCursor: Long, encoderPosition: Int,
           doWrite: Boolean): Long = {
-        srcDecoder.nonNullOrdinal += 1
+        srcDecoder.nonNullPosition += 1
         if (doWrite) {
           destEncoder.writeUTF8String(destCursor, srcDecoder.readUTF8String(
-            srcColumnBytes, srcDecoder.nonNullOrdinal))
+            srcColumnBytes, srcDecoder.nonNullPosition))
         } else destCursor
       }
     }
     case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS => new DeltaWriter {
       override def readAndEncode(srcDecoder: ColumnDecoder, srcColumnBytes: AnyRef,
-          destEncoder: ColumnEncoder, destCursor: Long, encoderOrdinal: Int,
+          destEncoder: ColumnEncoder, destCursor: Long, encoderPosition: Int,
           doWrite: Boolean): Long = {
-        srcDecoder.nonNullOrdinal += 1
+        srcDecoder.nonNullPosition += 1
         if (doWrite) {
           destEncoder.writeLongDecimal(destCursor, srcDecoder.readLongDecimal(
-            srcColumnBytes, d.precision, d.scale, srcDecoder.nonNullOrdinal),
-            encoderOrdinal, d.precision, d.scale)
+            srcColumnBytes, d.precision, d.scale, srcDecoder.nonNullPosition),
+            encoderPosition, d.precision, d.scale)
         } else destCursor
       }
     }
     case d: DecimalType => new DeltaWriter {
       override def readAndEncode(srcDecoder: ColumnDecoder, srcColumnBytes: AnyRef,
-          destEncoder: ColumnEncoder, destCursor: Long, encoderOrdinal: Int,
+          destEncoder: ColumnEncoder, destCursor: Long, encoderPosition: Int,
           doWrite: Boolean): Long = {
-        srcDecoder.nonNullOrdinal += 1
+        srcDecoder.nonNullPosition += 1
         if (doWrite) {
           destEncoder.writeDecimal(destCursor, srcDecoder.readDecimal(
-            srcColumnBytes, d.precision, d.scale, srcDecoder.nonNullOrdinal),
-            encoderOrdinal, d.precision, d.scale)
+            srcColumnBytes, d.precision, d.scale, srcDecoder.nonNullPosition),
+            encoderPosition, d.precision, d.scale)
         } else destCursor
       }
     }

@@ -493,7 +493,7 @@ class QueryRoutingDUnitTest(val s: String)
 
       val dbmd = conn.getMetaData
       val rSet = dbmd.getTables(null, "APP", null,
-        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+        Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
           "EXTERNAL TABLE", "STREAM TABLE"))
       assert(rSet.next())
 
@@ -523,7 +523,7 @@ class QueryRoutingDUnitTest(val s: String)
       results.clear()
 
       val tableMd = dbmd.getTables(null, "APP%", null,
-        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+        Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
           "EXTERNAL TABLE", "STREAM TABLE"))
       while (tableMd.next()) {
         results += tableMd.getString(2) + '.' + tableMd.getString(3)
@@ -633,7 +633,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     // Simulates 'SHOW TABLES' of ij
     var rSet = dbmd.getTables(null, "APP", null,
-      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+      Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
         "EXTERNAL TABLE", "STREAM TABLE"))
 
     var foundTable = false
@@ -646,7 +646,7 @@ class QueryRoutingDUnitTest(val s: String)
     assert(foundTable)
 
     val rSet2 = dbmd.getTables(null, "APP", null,
-      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+      Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
         "EXTERNAL TABLE", "STREAM TABLE"))
 
     foundTable = false
@@ -824,7 +824,7 @@ class QueryRoutingDUnitTest(val s: String)
     def assertPrimaries(query: String): Unit = {
 
       def hostExecutorId(m: InternalDistributedMember): String =
-        Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
+        Utils.getHostExecutorId(SnappyContext.getBlockId(m.canonicalString()).get.blockId)
 
       val rdd = session.sql(query).queryExecution.executedPlan.execute()
       val region = Misc.getRegionForTable(s"APP.$table", true)

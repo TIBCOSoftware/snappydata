@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql
 
+import scala.util.control.NonFatal
+
 import io.snappydata.Property
 
 import org.apache.spark.sql.JoinStrategy._
@@ -30,12 +32,12 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
-import org.apache.spark.util.{Utils => SparkUtils}
 
 /**
  * This trait is an extension to SparkPlanner and introduces number of
@@ -277,7 +279,8 @@ private[sql] object JoinStrategy {
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <= Property.HashJoinSize.get(conf)
+    plan.statistics.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
+      Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue)
   }
 
   def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
@@ -323,8 +326,16 @@ private[sql] object JoinStrategy {
 class SnappyAggregationStrategy(planner: DefaultPlanner)
     extends Strategy {
 
-  private val maxAggregateInputSize =
-    SparkUtils.byteStringAsBytes(Property.HashAggregateSize.get(planner.conf))
+  private val maxAggregateInputSize = {
+    // if below throws exception then clear the property from conf
+    // else every query will fail in planning here (even reset using SQL will fail)
+    try {
+      ExternalStoreUtils.sizeAsBytes(Property.HashAggregateSize.get(planner.conf),
+        Property.HashAggregateSize.name, -1, Long.MaxValue)
+    } catch {
+      case NonFatal(e) => planner.conf.unsetConf(Property.HashAggregateSize.name); throw e
+    }
+  }
 
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
@@ -334,7 +345,7 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
   def applyAggregation(plan: LogicalPlan,
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
-    resultExpressions, child) if maxAggregateInputSize <= 0 ||
+    resultExpressions, child) if maxAggregateInputSize == 0 ||
         child.statistics.sizeInBytes <= maxAggregateInputSize =>
 
       val (functionsWithDistinct, functionsWithoutDistinct) =
@@ -444,7 +455,7 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
       CollectAggregateExec(basePlan = finalHashAggregate,
-        child = partialAggregate)
+        child = partialAggregate, output = finalHashAggregate.output)
     } else finalHashAggregate
     finalAggregate :: Nil
   }

@@ -52,6 +52,7 @@ import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
+import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
@@ -141,6 +142,12 @@ private[sql] final case class ColumnTableScan(
     // for the input expression to evaluate to `true' based on statistics
     // collected about this partition batch.
     // This code is picked up from InMemoryTableScanExec
+
+    // deal with LIKE patterns that can be optimized in predicate pushdown
+    @transient def convertLike(e: Expression): Expression = e.transformDown {
+      case l@Like(left, Literal(pattern, StringType)) =>
+        LikeEscapeSimplification.simplifyLike(l, left, pattern.toString)
+    }
     @transient def buildFilter: PartialFunction[Expression, Expression] = {
       case And(lhs: Expression, rhs: Expression)
         if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
@@ -215,7 +222,7 @@ private[sql] final case class ColumnTableScan(
         }
         orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
             .sorted.mkString(","))).flatMap { p =>
-          val filter = buildFilter.lift(p)
+          val filter = buildFilter.lift(convertLike(p))
           val boundFilter = filter.map(BindReferences.bindReference(
             _, columnBatchStats, allowFailures = true))
 
@@ -422,7 +429,6 @@ private[sql] final case class ColumnTableScan(
       classOf[StructType].getName)
     val columnBufferInit = new StringBuilder
     val bufferInitCode = new StringBuilder
-    val numNullsUpdateCode = new StringBuilder
     val reservoirRowFetch =
       s"""
          |$stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
@@ -481,7 +487,6 @@ private[sql] final case class ColumnTableScan(
       val updatedDecoder = s"${decoder}Updated"
       val updatedDecoderLocal = s"${decoder}UpdatedLocal"
       val numNullsVar = s"${decoder}NumNulls"
-      val numNullsLocal = s"${decoder}NumNullsLocal"
       val buffer = ctx.freshName("buffer")
       val bufferVar = s"${buffer}Object"
       val initBufferFunction = s"${buffer}Init"
@@ -552,14 +557,12 @@ private[sql] final case class ColumnTableScan(
              |final $updatedDecoderClass $updatedDecoderLocal = $updatedDecoder;
              |final Object $bufferVar = ($buffer == null || $buffer.isDirect())
              |    ? null : $buffer.array();
-             |int $numNullsLocal = $numNullsVar;
           """.stripMargin)
-        numNullsUpdateCode.append(s"$numNullsVar = $numNullsLocal;\n")
       }
 
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName)
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
@@ -752,8 +755,6 @@ private[sql] final case class ColumnTableScan(
        |        $beforeStop
        |        // increment index for return
        |        $batchIndex = $batchOrdinal + 1;
-       |        // update the numNulls
-       |        ${numNullsUpdateCode.toString()}
        |        return;
        |      }
        |    }
@@ -803,12 +804,25 @@ private[sql] final case class ColumnTableScan(
              |    ? $decoderGlobal.getStringDictionary()
              |    : $mutableDecoderGlobal.getStringDictionary();
           """.stripMargin, s"($dictionaryVar == null)", dictionaryVar)
-        val dictionaryIndex = ExprCode(
-          s"""
-             |final int $dictionaryIndexVar = $updateDecoder == null
-             |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
-             |    : $updateDecoder.readDictionaryIndex();
+        val dictionaryIndex = if (attr.nullable) {
+          ExprCode(
+            s"""
+               |${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
+               |  $dictionaryIndexVar = $updateDecoder == null
+               |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
+               |    : $updateDecoder.readDictionaryIndex();
+               |} else {
+               |  $dictionaryIndexVar = $dictionaryVar.size();
+               |}
+               """.stripMargin, "false", dictionaryIndexVar)
+        } else {
+          ExprCode(
+            s"""
+               |$dictionaryIndexVar = $updateDecoder == null
+               |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
+               |    : $updateDecoder.readDictionaryIndex();
           """.stripMargin, "false", dictionaryIndexVar)
+        }
         session.foreach(_.addDictionaryCode(ctx, col,
           DictionaryCode(dictionary, buffer, dictionaryIndex)))
         "UTF8String"
@@ -850,12 +864,11 @@ private[sql] final case class ColumnTableScan(
            |final $jt $col;
            |boolean $isNullVar = false;
            |if ($unchangedCode) {
-           |  $numNullsVar = $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar);
-           |  if ($numNullsVar >= 0) $colAssign
-           |  else {
+           |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
+           |    $colAssign
+           |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
-           |    $numNullsVar = -$numNullsVar;
            |  }
            |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
@@ -877,6 +890,29 @@ private[sql] final case class ColumnTableScan(
       }
       ExprCode(code, "false", col)
     }
+  }
+
+  private def genIfNonNullCode(ctx: CodegenContext, decoder: String,
+      buffer: String, batchOrdinal: String, numNullsVar: String): String = {
+    // nextNullPosition is not updated immediately rather when batchOrdinal
+    // goes just past because a column read code can be invoked multiple
+    // times for the same batchOrdinal like in SNAP-2118;
+    // check below crams in all the conditions in a single check to minimize code
+    // repetition of non-null assignment call that is normally inlined by JVM
+    // and besides this piece of code should get inlined in any case or else
+    // it will be big performance hit for every column nullability check
+    val nextNullPosition = ctx.freshName("nextNullPosition")
+    s"""
+       |int $nextNullPosition = $decoder.getNextNullPosition();
+       |if ($batchOrdinal < $nextNullPosition ||
+       |    // check case when batchOrdinal has gone just past nextNullPosition
+       |    ($batchOrdinal == $nextNullPosition + 1 &&
+       |     $batchOrdinal < ($nextNullPosition = $decoder.findNextNullPosition(
+       |       $buffer, $nextNullPosition, $numNullsVar++))) ||
+       |    // check if batchOrdinal has moved ahead by more than one due to filters
+       |    ($batchOrdinal != $nextNullPosition && (($numNullsVar =
+       |       $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar)) == 0 ||
+       |       $batchOrdinal != $decoder.getNextNullPosition())))""".stripMargin
   }
 }
 

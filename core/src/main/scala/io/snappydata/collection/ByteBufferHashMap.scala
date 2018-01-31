@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,12 +20,10 @@ package io.snappydata.collection
 import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
-import org.apache.spark.unsafe.types.UTF8String
 
 /**
  * A HashMap implementation using a serialized ByteBuffer for key data and
@@ -57,17 +55,16 @@ import org.apache.spark.unsafe.types.UTF8String
  * The value fields are left untouched with the headers of keys having the
  * offsets into value array as before the rehash.
  */
-final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
-    keySize: Int, private val valueSize: Int,
-    private val allocator: BufferAllocator,
-    var keyData: ByteBufferData = null,
-    var valueData: ByteBufferData = null,
-    var valueDataPosition: Long = 0L) {
+class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
+    keySize: Int, protected val valueSize: Int,
+    protected val allocator: BufferAllocator,
+    protected var keyData: ByteBufferData = null,
+    protected var valueData: ByteBufferData = null,
+    protected var valueDataPosition: Long = 0L) {
 
   // round to word size adding 8 bytes for header (offset + hashcode)
   private val fixedKeySize = ((keySize + 15) >>> 3) << 3
-  private var _capacity = ObjectHashSet.nextPowerOf2(
-    initialCapacity, loadFactor)
+  private var _capacity = OpenHashSet.nextPowerOf2(initialCapacity)
   private var _size = 0
   private var growThreshold = (loadFactor * _capacity).toInt
 
@@ -85,26 +82,38 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     valueDataPosition = valueData.baseOffset
   }
 
-  def size: Int = _size
+  final def getKeyData: ByteBufferData = this.keyData
 
-  def valueDataSize: Long = valueDataPosition - valueData.baseOffset
+  final def getValueData: ByteBufferData = this.valueData
+
+  final def size: Int = _size
+
+  final def valueDataSize: Long = valueDataPosition - valueData.baseOffset
+
+  final def capacity: Int = _capacity
 
   /**
-   * Add a new string to the map for dictionaries. The key field has the
-   * index of the value i.e. (n - 1) for nth distinct string added to the map,
-   * with the offset into the value. The string itself is stored back to back
-   * in the value portion with its size at the start being variable length.
-   * This exactly matches the end format of the dictionary encoding that
-   * stores the dictionary string back-to-back in index order and expected
-   * by DictionaryDecoders. So the encoder can use the final
-   * value serialized array as is for putting into the encoded column batch
-   * (followed by the dictionary indexes of actual values themselves).
+   * Insert raw bytes with given hash code into the map if not present.
+   * The key bytes for comparison is assumed to be at the start having
+   * "numKeyBytes" size, while the total size including value is "numBytes".
+   * Normally one would have serialized form of key bytes followed by
+   * self-contained serialized form of value bytes (i.e. including its size).
    *
-   * The encoded values are read in the initialization of DictionaryDecoder
-   * and put into an array, and looked up by its readUTF8String method.
+   * This method will handle writing only the 8 byte key header while
+   * any additional fixed-width bytes to be tracked in read/write should be
+   * taken care of in [[handleExisting]] and [[handleNew]].
+   * These bytes are not part of key equality check itself.
+   *
+   * @param baseObject  the base object for the bytes as required by Unsafe API
+   * @param baseOffset  the base offset for the bytes as required by Unsafe API
+   * @param numKeyBytes number of bytes used by the key which should be at the
+   *                    start of "baseObject" with value after that
+   * @param numBytes    the total number of bytes used by key and value together
+   *                    (excluding the four bytes of "numKeyBytes" itself)
+   * @param hash        the hash code of key bytes
    */
-  def addDictionaryString(key: UTF8String): Int = {
-    val hash = key.hashCode()
+  final def putBufferIfAbsent(baseObject: AnyRef, baseOffset: Long, numKeyBytes: Int,
+      numBytes: Int, hash: Int): Int = {
     val mapKeyObject = keyData.baseObject
     val mapKeyBaseOffset = keyData.baseOffset
     val fixedKeySize = this.fixedKeySize
@@ -116,38 +125,28 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
       val mapKey = Platform.getLong(mapKeyObject, mapKeyOffset)
       // offset will at least be 4 so mapKey can never be zero when occupied
       if (mapKey != 0L) {
-        // first compare the hash codes
-        val mapKeyHash = mapKey.toInt
-        // equalsSize will include check for 4 bytes of numBytes itself
-        if (hash == mapKeyHash && valueData.equalsSize((mapKey >>> 32L).toInt - 4,
-          key.getBaseObject, key.getBaseOffset, key.numBytes())) {
-          return Platform.getInt(mapKeyObject, mapKeyOffset + 8)
+        // first compare the hash codes followed by "equalsSize" that will
+        // include the check for 4 bytes of numKeyBytes itself
+        if (hash == mapKey.toInt && valueData.equalsSize((mapKey >>> 32L).toInt - 4,
+          baseObject, baseOffset, numKeyBytes)) {
+          return handleExisting(mapKeyObject, mapKeyOffset)
         } else {
-          // quadratic probing with position increase by 1, 2, 3, ...
+          // quadratic probing (increase delta)
           pos = (pos + delta) & mask
           delta += 1
         }
       } else {
         // insert into the map and rehash if required
-        val relativeOffset = newInsert(key)
-        val newIndex = _size
+        val relativeOffset = newInsert(baseObject, baseOffset, numKeyBytes, numBytes)
         Platform.putLong(mapKeyObject, mapKeyOffset,
-          (relativeOffset.toLong << 32) | (hash & 0xffffffffL))
-        Platform.putInt(mapKeyObject, mapKeyOffset + 8, newIndex)
-        handleNewInsert()
-        // return negative of index to indicate insert
-        return -newIndex - 1
+          (relativeOffset << 32L) | (hash & 0xffffffffL))
+        return handleNew(mapKeyObject, mapKeyOffset)
       }
     }
-    throw new AssertionError("not expected to reach")
+    0 // not expected to reach
   }
 
-  def duplicate(): ByteBufferHashMap = {
-    new ByteBufferHashMap(_capacity - 1, loadFactor, keySize, valueSize,
-      allocator, keyData.duplicate(), valueData.duplicate(), valueData.baseOffset)
-  }
-
-  def reset(): Unit = {
+  final def reset(): Unit = {
     keyData.reset(clearMemory = true)
     // no need to clear valueData since it will be overwritten completely
     valueData.reset(clearMemory = false)
@@ -155,38 +154,53 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     _size = 0
   }
 
-  def release(): Unit = {
+  final def release(): Unit = {
     keyData.release(allocator)
     valueData.release(allocator)
     keyData = null
     valueData = null
   }
 
-  private def newInsert(s: UTF8String): Int = {
+  protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+    // 0 indicates existing
+    0
+  }
+
+  protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+    handleNewInsert()
+    // 1 indicates new insert
+    1
+  }
+
+  protected final def newInsert(baseObject: AnyRef, baseOffset: Long,
+      numKeyBytes: Int, numBytes: Int): Int = {
     // write into the valueData ByteBuffer growing it if required
-    val numBytes = s.numBytes()
     var position = valueDataPosition
     val dataSize = position - valueData.baseOffset
     if (position + numBytes + 4 > valueData.endPosition) {
       valueData = valueData.resize(numBytes + 4, allocator)
       position = valueData.baseOffset + dataSize
     }
-    valueDataPosition = ColumnEncoding.writeUTF8String(valueData.baseObject,
-      position, s.getBaseObject, s.getBaseOffset, numBytes)
-    // return the relative offset to the start excluding numBytes
+    val valueBaseObject = valueData.baseObject
+    // write the key size followed by the full key+value bytes
+    ColumnEncoding.writeInt(valueBaseObject, position, numKeyBytes)
+    position += 4
+    Platform.copyMemory(baseObject, baseOffset, valueBaseObject, position, numBytes)
+    valueDataPosition = position + numBytes
+    // return the relative offset to the start excluding numKeyBytes
     (dataSize + 4).toInt
   }
 
   /**
    * Double the table's size and re-hash everything.
    */
-  private def handleNewInsert(): Unit = {
+  protected final def handleNewInsert(): Unit = {
     _size += 1
     // check and trigger a rehash if load factor exceeded
     if (_size <= growThreshold) return
 
     val fixedKeySize = this.fixedKeySize
-    val newCapacity = ObjectHashSet.checkCapacity(_capacity << 1, loadFactor)
+    val newCapacity = OpenHashSet.checkCapacity(_capacity << 1)
     val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize, "HASHMAP")
     // clear the key data
     allocator.clearPostAllocate(newKeyBuffer)
@@ -212,7 +226,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
             // Inserting the key at newPos
             Platform.putLong(newKeyObject, newOffset, key)
             if (fixedKeySize > 8) {
-              UnsafeHolder.getUnsafe.copyMemory(keyObject, keyOffset + 8,
+              Platform.copyMemory(keyObject, keyOffset + 8,
                 newKeyObject, newOffset + 8, fixedKeySize - 8)
             }
             keepGoing = false
@@ -277,7 +291,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
 
   def reset(clearMemory: Boolean): Unit = {
     if (clearMemory) {
-      UnsafeHolder.getUnsafe.setMemory(baseObject, baseOffset,
+      Platform.setMemory(baseObject, baseOffset,
         // use capacity which is likely to be factor of 8 where setMemory
         // will be more efficient
         buffer.capacity(), 0)

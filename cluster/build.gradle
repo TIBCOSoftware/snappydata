@@ -112,11 +112,7 @@ dependencies {
     exclude(group: 'com.sun.jersey.contribs')
     exclude(group: 'com.google.protobuf', module: 'protobuf-java')
     exclude(group: 'com.jcraft', module: 'jsch')
-    exclude(group: 'com.amazonaws', module: 'aws-java-sdk')
   }
-  compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-cbor', version: jacksonVersion
-  compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: awsVersion
-  compile group: 'com.amazonaws', name: 'aws-java-sdk-efs', version: awsVersion
 
   testCompile project(':dunit')
   testCompile (project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')) {
@@ -130,7 +126,7 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
-  testCompile "it.unimi.dsi:fastutil:8.1.0"
+  testCompile 'it.unimi.dsi:fastutil:8.1.1'
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {

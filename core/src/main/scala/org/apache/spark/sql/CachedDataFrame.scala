@@ -37,7 +37,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.MemoryConsumer
+import org.apache.spark.memory.DefaultMemoryConsumer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
@@ -47,6 +47,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
+import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
@@ -58,7 +59,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
     val allbcplans: mutable.Map[SparkPlan, ArrayBuffer[Any]] = mutable.Map.empty,
-    val queryHints: Map[String, String] = Map.empty,
+    val queryHints: java.util.Map[String, String] = java.util.Collections.emptyMap(),
     var planProcessingTime: Long = 0,
     var currentExecutionId: Option[Long] = None)
     extends Dataset[Row](session, queryExecution, encoder) with Logging {
@@ -68,7 +69,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
       rddId: Int, hasLocalCollectProcessing: Boolean,
       allLiterals: Array[LiteralValue],
-      queryHints: Map[String, String],
+      queryHints: java.util.Map[String, String],
       planProcessingTime: Long, currentExecutionId: Option[Long]) = {
     // scalastyle:on
     this(ds.sparkSession, ds.queryExecution, ds.exprEnc, queryString, cachedRDD,
@@ -94,6 +95,8 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
 
+  private lazy val rowConverter = UnsafeProjection.create(queryExecution.executedPlan.schema)
+
   private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
     if (numShuffleDeps > 0) {
@@ -114,11 +117,10 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
   }
 
   private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
-  private lazy val unsafe = UnsafeHolder.getUnsafe
   private lazy val rdd_partitions_ = {
     val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
     _f.setAccessible(true)
-    unsafe.objectFieldOffset(_f)
+    UnsafeHolder.getUnsafe.objectFieldOffset(_f)
   }
 
   @tailrec
@@ -134,7 +136,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       case null =>
       case r: RDD[_] =>
         // f.set(r, null)
-        unsafe.putObject(r, rdd_partitions_, null)
+        UnsafeHolder.getUnsafe.putObject(r, rdd_partitions_, null)
     }
     if (children.isEmpty) {
       return
@@ -319,20 +321,18 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
-            val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(rowConverter))._1))
           }
 
-        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan) =>
+        case _: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
-            val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(rowConverter))._1))
           }
 
         case _ =>
@@ -427,7 +427,7 @@ object CachedDataFrame
   private def flushBufferOutput(bufferOutput: Output, position: Int,
       output: ByteBufferDataOutput, codec: CompressionCodec): Unit = {
     if (position > 0) {
-      val compressedBytes = Utils.codecCompress(codec,
+      val compressedBytes = CompressionUtils.codecCompress(codec,
         bufferOutput.getBuffer, position)
       val len = compressedBytes.length
       // write the uncompressed length too
@@ -483,13 +483,9 @@ object CachedDataFrame
         // We will ensure that sufficient memory is available by reserving
         // four times as Kryo serialization will expand its buffer accordingly
         // and transport layer can create another copy.
-        if (context != null) {
+        if (context ne null) {
           // TODO why driver is calling this code with context null ?
-          val memoryConsumer = new MemoryConsumer(context.taskMemoryManager()) {
-            override def spill(size: Long, trigger: MemoryConsumer): Long = {
-              0L
-            }
-          }
+          val memoryConsumer = new DefaultMemoryConsumer(context.taskMemoryManager())
           // TODO Remove the 4 times check once SNAP-1759 is fixed
           val required = 4L * memSize
           val granted = memoryConsumer.acquireMemory(4L * memSize)
@@ -636,7 +632,7 @@ object CachedDataFrame
     var decompressedLen = input.readInt()
     var inputLen = input.readInt()
     val inputPosition = input.position()
-    val bufferInput = new Input(Utils.codecDecompress(codec, data,
+    val bufferInput = new Input(CompressionUtils.codecDecompress(codec, data,
       inputPosition, inputLen, decompressedLen))
     input.setPosition(inputPosition + inputLen)
 
@@ -659,7 +655,7 @@ object CachedDataFrame
           decompressedLen = input.readInt()
           inputLen = input.readInt()
           val inputPosition = input.position()
-          bufferInput.setBuffer(Utils.codecDecompress(codec, data,
+          bufferInput.setBuffer(CompressionUtils.codecDecompress(codec, data,
             inputPosition, inputLen, decompressedLen))
           input.setPosition(inputPosition + inputLen)
           bufferInput.readInt(true)
@@ -707,8 +703,9 @@ object CachedDataFrame
       return Iterator.empty
     }
 
+    val takeRDD = if (n > 0) rdd.mapPartitionsInternal(_.take(n)) else rdd
     var numResults = 0
-    val totalParts = rdd.partitions.length
+    val totalParts = takeRDD.partitions.length
     var partsScanned = 0
     val results = new Array[(R, Int)](totalParts)
     while (numResults < n && partsScanned < totalParts) {
@@ -717,13 +714,16 @@ object CachedDataFrame
       // totalParts in runJob.
       var numPartsToTry = 1L
       if (partsScanned > 0) {
-        // If we didn't find any rows after the first iteration, just try all
-        // partitions next. Otherwise, interpolate the number of partitions
-        // we need to try, but overestimate it by 50%.
+        // If we didn't find any rows after the previous iteration, quadruple and retry.
+        // Otherwise, interpolate the number of partitions we need to try, but overestimate
+        // it by 50%. We also cap the estimation in the end.
+        val limitScaleUpFactor = Math.max(session.sessionState.conf.limitScaleUpFactor, 2)
         if (numResults == 0) {
-          numPartsToTry = totalParts - 1
+          numPartsToTry = partsScanned * limitScaleUpFactor
         } else {
-          numPartsToTry = (1.5 * n * partsScanned / numResults).toInt
+          // the left side of max is >=1 whenever partsScanned >= 2
+          numPartsToTry = Math.max((1.5 * n * partsScanned / numResults).toInt - partsScanned, 1)
+          numPartsToTry = Math.min(numPartsToTry, partsScanned * limitScaleUpFactor)
         }
       }
       // guard against negative num of partitions
@@ -732,7 +732,7 @@ object CachedDataFrame
       val p = partsScanned.until(math.min(partsScanned + numPartsToTry,
         totalParts).toInt)
       val sc = session.sparkContext
-      sc.runJob(rdd, processPartition, p, (index: Int, r: (U, Int)) => {
+      sc.runJob(takeRDD, processPartition, p, (index: Int, r: (U, Int)) => {
         results(partsScanned + index) = (resultHandler(index, r._1), r._2)
         numResults += r._2
       })

@@ -18,7 +18,7 @@ package io.snappydata.cluster
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
-import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, Statement, Timestamp}
+import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -26,6 +26,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
 import scala.util.Random
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
@@ -33,6 +34,7 @@ import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
 import org.junit.Assert
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.util.collection.OpenHashSet
@@ -182,12 +184,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val stmt = conn.createStatement()
 
     // embeddedModeTable1 is dropped in split mode. recreate it
-    /*
-    // remove below once SNAP-653 is fixed
-    val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "EMBEDDEDMODETABLE1", numPartitions,
-      registerDestroy = true)
-    */
     if (isComplex) {
       createComplexTableUsingJDBC("embeddedModeTable1", conn, stmt, props)
       selectFromComplexTypeTableUsingJDBC("embeddedModeTable1", 1005, stmt)
@@ -213,6 +209,30 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     } else {
       createTableUsingJDBC("splitModeTable1", tableType, conn, stmt, props)
       selectFromTableUsingJDBC("splitModeTable1", 1005, stmt)
+    }
+
+    // check for SNAP-2156/2164
+    var updateSql = "update splitModeTable1 set col1 = 100 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 1234)"
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount >= 0) // random value can be 1234
+    assert(stmt.executeUpdate(updateSql) == 0)
+    updateSql = "update splitModeTable1 set col1 = 100 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 1)"
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount >= 1)
+    assert(stmt.executeUpdate(updateSql) == 0)
+    updateSql = "update splitModeTable1 set col1 = 1 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 100)"
+    assert(stmt.executeUpdate(updateSql) >= 1)
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount == 0)
+
+    // check exception should be proper (SNAP-1423/1386)
+    try {
+      stmt.execute("call sys.rebalance_all_bickets()")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "42Y03" => // ignore
     }
 
     stmt.execute("drop table if exists embeddedModeTable1")
@@ -504,7 +524,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val serializer2 = ComplexTypeSerializer.create(tableName, "col4", conn)
     val serializer3 = ComplexTypeSerializer.create(tableName, "col6", conn)
 
-    var rs = stmt.executeQuery(s"SELECT * FROM $tableName")
+    var rs = stmt.executeQuery(s"SELECT * FROM $tableName --+ complexTypeAsJson(0)")
     var numResults = 0
     while (rs.next()) {
       // check access to complex types in different ways
@@ -649,7 +669,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     var output = sparkShellCommand.!!
     logInfo(output)
     output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
-    assert(!output.contains("Exception"), s"Some exception stacktrace seen on spark-shell console.")
+    assert(!output.contains("Exception"),
+      s"Some exception stacktrace seen on spark-shell console: $output")
 
     val conn = getConnection(locatorClientPort, props)
     val stmt = conn.createStatement()

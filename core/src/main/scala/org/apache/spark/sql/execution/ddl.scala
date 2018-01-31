@@ -129,7 +129,7 @@ private[sql] case class AlterTableDropColumnCommand(
     val structField: StructField =
       plan.schema.find(_.name.equalsIgnoreCase(column)) match {
         case None => throw Utils.analysisException(s"$column column" +
-            s" doesn't exists in table ${tableIdent.table}")
+            s" doesn't exist in table ${tableIdent.table}")
         case Some(field) => field
       }
     val table = catalog.newQualifiedTableName(tableIdent)

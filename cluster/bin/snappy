@@ -24,6 +24,8 @@ if [ -z "${SPARK_HOME}" ]; then
   export SPARK_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
 fi
 export SNAPPY_HOME="${SPARK_HOME}"
+# only scala 2.11 supported in SnappyData builds
+export SPARK_SCALA_VERSION="2.11"
 # disable randomized hash for string in Python 3.3+
 export PYTHONHASHSEED=0
 
@@ -35,6 +37,10 @@ fi
 
 function setnewargs() { newargs="$@"; }
 
+if [ -z "${SNAPPY_SCRIPT_NAME}" ]; then
+  export SNAPPY_SCRIPT_NAME=snappy
+fi
+
 if echo $@ | grep -qw "rowstore"; then
   #using rowstore launcher
   newargs=
@@ -44,7 +50,34 @@ if echo $@ | grep -qw "rowstore"; then
     fi
   done
   exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.GfxdUtilLauncher $newargs
+elif [ "$1" = "dataextractor" ]; then
+  shift
+  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.dataextractor.GemFireXDDataExtractor "$@"
+elif [ "$1" = "dataextractloader" ]; then
+  shift
+  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.dataextractor.GemFireXDDataExtractorLoader "$@"
+elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
+       -a '(' "$2" = "start" -o "$2" = "stop" -o "$2" = "status" ')' \
+       -a '(' "$1" = "server" -o "$1" = "leader" -o "$1" = "locator" ')' ]; then
+  # faster route for start/stop/status
+
+  # Find the java binary
+  if [ -n "${JAVA_HOME}" ]; then
+    RUNNER="${JAVA_HOME}/bin/java"
+  else
+    if [ "$(command -v java)" ]; then
+      RUNNER="java"
+    else
+      echo "JAVA_HOME is not set" >&2
+      exit 1
+    fi
+  fi
+
+  . "${SPARK_HOME}"/bin/load-spark-env.sh
+
+  JARS="`echo "${SPARK_HOME}"/jars/snappydata-launcher* "${SPARK_HOME}"/jars/gemfire-shared* | sed 's/ /:/g'`"
+  exec $RUNNER $JAVA_ARGS -Xverify:none -cp "$JARS" io.snappydata.tools.QuickLauncher "$@"
 else
-  #use snappy launcher
+  # use full snappy launcher
   exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS io.snappydata.tools.SnappyUtilLauncher "$@"
 fi

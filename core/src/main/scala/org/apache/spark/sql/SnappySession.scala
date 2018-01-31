@@ -17,10 +17,10 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
@@ -39,6 +39,7 @@ import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
+import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -70,7 +71,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
+import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv}
 
 
 class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
@@ -96,7 +97,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * and a catalog that interacts with external systems.
    */
   @transient
-  override private[sql] lazy val sharedState: SnappySharedState = SnappyContext.sharedState
+  override private[sql] lazy val sharedState: SnappySharedState = {
+    SnappyContext.sharedState(sparkContext)
+  }
 
   /**
    * State isolated across sessions, including SQL configurations, temporary tables, registered
@@ -178,7 +181,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def sqlUncached(sqlText: String): DataFrame =
     snappyContextFunctions.sql(super.sql(sqlText))
 
-  private[sql] final def prepareSQL(sqlText: String): LogicalPlan = {
+  final def prepareSQL(sqlText: String): LogicalPlan = {
     val logical = sessionState.sqlParser.parsePlan(sqlText)
     SparkSession.setActiveSession(this)
     sessionState.analyzerPrepare.execute(logical)
@@ -207,21 +210,28 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   @transient
-  private[sql] val queryHints: TrieMap[String, String] = TrieMap.empty
+  private[sql] val queryHints = new ConcurrentHashMap[String, String](16, 0.7f, 1)
 
-  def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
+  def getPreviousQueryHints: java.util.Map[String, String] =
+    java.util.Collections.unmodifiableMap(queryHints)
 
   @transient
-  private val contextObjects: TrieMap[Any, Any] = TrieMap.empty
+  private val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
 
   @transient
   private[sql] var currentKey: SnappySession.CachedKey = _
+
+  @transient
+  private[sql] var planCaching: Boolean = Property.PlanCaching.get(sessionState.conf)
+
+  @transient
+  private[sql] var wholeStageEnabled: Boolean = sessionState.conf.wholeStageEnabled
 
   /**
    * Get a previously registered context object using [[addContextObject]].
    */
   private[sql] def getContextObject[T](key: Any): Option[T] = {
-    contextObjects.get(key).asInstanceOf[Option[T]]
+    Option(contextObjects.get(key).asInstanceOf[T])
   }
 
   /**
@@ -1452,7 +1462,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
     val tableIdent = sessionCatalog.newQualifiedTableName(baseTable)
     val indexIdent = sessionCatalog.newQualifiedTableName(indexName)
-    createIndex(indexIdent, tableIdent, indexColumns, options)
+    // normalize index column names for API calls
+    val columnsWithDirection = indexColumns.map(p => sessionCatalog.formatName(p._1) -> p._2)
+    createIndex(indexIdent, tableIdent, columnsWithDirection, options)
   }
 
   /**
@@ -1827,6 +1839,8 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
 
+  private[sql] var tokenize: Boolean = _
+
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
@@ -2042,7 +2056,13 @@ object SnappySession extends Logging {
 
     // collect the query hints
     val queryHints = session.synchronized {
-      val hints = session.queryHints.toMap
+      val numHints = session.queryHints.size()
+      val hints = if (numHints == 0) java.util.Collections.emptyMap[String, String]()
+      else {
+        val m = ObjectObjectHashMap.withExpectedSize[String, String](numHints)
+        m.putAll(session.queryHints)
+        m
+      }
       session.clearQueryData()
       hints
     }
@@ -2051,8 +2071,13 @@ object SnappySession extends Logging {
       localCollect, allLiterals, queryHints, executionTime, executionId)
 
     // if this has in-memory caching then don't cache since plan can change
-    // dynamically after caching due to unpersist etc
-    if (executedPlan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
+    // dynamically after caching due to unpersist etc. Also do not cache
+    // if snappy tables are no there
+    if (executedPlan.find {
+      case imse : InMemoryTableScanExec => true
+      case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
+      case _ => false
+    }.isDefined) {
       throw new EntryExistsException("uncached plan", cdf)
     }
     cdf
@@ -2063,20 +2088,17 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): CachedDataFrame = {
         val session = key.session
         session.currentKey = key
-        var df: DataFrame = null
         try {
-          df = session.executeSQL(key.sqlText)
+          val df = session.executeSQL(key.sqlText)
           evaluatePlan(df, session, key.sqlText, key)
         } finally {
           session.currentKey = null
         }
       }
     }
-    val cacheSize = if (SnappyContext.globalSparkContext != null) {
-      Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
-        case Some(size) => size.toInt
-        case None => Property.PlanCacheSize.defaultValue.get
-      }
+    val env = SparkEnv.get
+    val cacheSize = if (env ne null) {
+      Property.PlanCacheSize.get(env.conf)
     } else Property.PlanCacheSize.defaultValue.get
     CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }
@@ -2213,7 +2235,7 @@ object SnappySession extends Logging {
     // set the query hints as would be set at the end of un-cached sql()
     session.synchronized {
       session.queryHints.clear()
-      session.queryHints ++= cachedDF.queryHints
+      session.queryHints.putAll(cachedDF.queryHints)
     }
     cachedDF
   }
@@ -2239,18 +2261,15 @@ object SnappySession extends Logging {
   }
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
-    if (!SnappyTableStatsProviderService.suspendCacheInvalidation &&
-        (SnappyContext.globalSparkContext ne null)) {
+    val sc = SnappyContext.globalSparkContext
+    if (!SnappyTableStatsProviderService.suspendCacheInvalidation && (sc ne null)) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
         CodeGeneration.clearAllCache()
-        val sc = SnappyContext.globalSparkContext
-        if (sc ne null) {
-          Utils.mapExecutors(sc, (_, _) => {
-            CodeGeneration.clearAllCache()
-            Iterator.empty
-          })
-        }
+        Utils.mapExecutors(sc, (_, _) => {
+          CodeGeneration.clearAllCache()
+          Iterator.empty
+        })
       }
     }
   }

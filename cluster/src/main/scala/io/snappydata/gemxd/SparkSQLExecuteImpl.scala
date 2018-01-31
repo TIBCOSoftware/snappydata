@@ -44,7 +44,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -90,14 +90,14 @@ class SparkSQLExecuteImpl(val sql: String,
   // check for query hint to serialize complex types as JSON strings
   private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
-    case None => false
-    case Some(v) => Misc.parseBoolean(v)
+    case null => true
+    case v => Misc.parseBoolean(v)
   }
 
   private val (allAsClob, columnsAsClob) = session.getPreviousQueryHints.get(
     QueryHint.ColumnsAsClob.toString) match {
-    case None => (false, Set.empty[String])
-    case Some(v) => Utils.parseColumnsAsClob(v)
+    case null => (false, Set.empty[String])
+    case v => Utils.parseColumnsAsClob(v)
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,
@@ -237,8 +237,9 @@ class SparkSQLExecuteImpl(val sql: String,
           try {
             StructTypeSerializer.writeType(pooled.kryo, output,
               querySchema(i).dataType)
-            hdos.write(output.getBuffer, 0, output.position())
+            hdos.write(output.toBytes)
           } finally {
+            output.release()
             KryoSerializerPool.release(pooled)
           }
         case _ => // ignore for others
@@ -466,7 +467,7 @@ object SnappySessionPerConnection {
     val session = connectionIdMap.get(connectionID)
     if (session != null) session
     else {
-      val session = SnappyContext(null: SparkContext).snappySession
+      val session = SnappyContext().snappySession
       val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
       if (oldSession == null) session else oldSession
     }

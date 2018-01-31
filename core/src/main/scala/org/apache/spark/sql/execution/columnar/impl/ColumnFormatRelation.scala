@@ -262,7 +262,7 @@ abstract class BaseColumnFormatRelation(
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
     ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, Some(this),
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
       updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
   }
 
@@ -274,7 +274,7 @@ abstract class BaseColumnFormatRelation(
       keyColumns: Seq[Attribute]): SparkPlan = {
     ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
       partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
-      Some(this), keyColumns, connProperties, onExecutor = false)
+      this, keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -379,7 +379,7 @@ abstract class BaseColumnFormatRelation(
       conn.commit()
       conn.close()
     }
-    createActualTable(table, externalStore)
+    createActualTables(table, externalStore)
   }
 
   /**
@@ -419,7 +419,7 @@ abstract class BaseColumnFormatRelation(
 
   // TODO: Suranjan make sure that this table doesn't evict to disk by
   // setting some property, may be MemLRU?
-  private def createActualTable(tableName: String,
+  private def createActualTables(tableName: String,
       externalStore: ExternalStore): Unit = {
     // Create the table if the table didn't exist.
     var conn: Connection = null
@@ -517,7 +517,7 @@ class ColumnFormatRelation(
     _externalStore,
     _partitioningColumns,
     _context)
-  with ParentRelation with DependentRelation {
+  with ParentRelation with DependentRelation with BulkPutRelation {
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
@@ -662,6 +662,23 @@ class ColumnFormatRelation(
 
   /** Name of this relation in the catalog. */
   override def name: String = table
+
+  /**
+    * Get a spark plan for puts. If the row is already present, it gets updated
+    * otherwise it gets inserted into the table represented by this relation.
+    * The result of SparkPlan execution should be a count of number of rows put.
+    */
+  override def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
+    ColumnPutIntoExec(insertPlan, updatePlan)
+  }
+
+  override def getPutKeys(): Option[Seq[String]] = {
+    val keys = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+    keys match {
+      case Some(x) => Some(x.split(",").map(s => s.trim).toSeq)
+      case None => None
+    }
+  }
 }
 
 /**
@@ -771,7 +788,9 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 }
 
 final class DefaultSource extends SchemaRelationProvider
-    with CreatableRelationProvider {
+    with CreatableRelationProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyParserConsts.COLUMN_SOURCE
 
   def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], specifiedSchema: StructType): JDBCAppendableRelation = {

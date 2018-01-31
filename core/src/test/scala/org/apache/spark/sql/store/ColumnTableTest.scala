@@ -19,9 +19,8 @@ package org.apache.spark.sql.store
 import java.sql.{DriverManager, SQLException}
 
 import scala.util.{Failure, Success, Try}
-
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
@@ -30,7 +29,6 @@ import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyF
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
@@ -613,28 +611,8 @@ class ColumnTableTest
   test("Test PR with EVICTION BY") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) " +
-        "USING column " +
-        "options " +
-        "(" +
-        "PARTITION_BY 'OrderId'," +
-        "EVICTION_BY 'LRUMEMSIZE 200')")
-
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-        .asInstanceOf[PartitionedRegion]
-    assert(region.getEvictionAttributes.getAlgorithm ===
-        EvictionAlgorithm.LRU_MEMORY)
-    assert(region.getEvictionAttributes.getAction ===
-        EvictionAction.LOCAL_DESTROY)
-    assert(region.getEvictionAttributes.getMaximum === 200)
-    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-  }
-
-  test("Test PR with EVICTION BY OVERFLOW") {
-    val snc = org.apache.spark.sql.SnappyContext(sc)
-    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT, ItemId INT) USING column options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
     var region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
         .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
@@ -645,62 +623,78 @@ class ColumnTableTest
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
-    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
-    assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.OVERFLOW_TO_DISK)
-    assert(region.getEvictionAttributes.getMaximum === 200)
-    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-
-    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-    " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
-    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
-    assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
-    assert(region.getEvictionAttributes.getMaximum === 200)
-    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-
-    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
-    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
-    assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
-    assert(region.getEvictionAttributes.getMaximum === 200)
-    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-
-    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
       " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
       .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
       EvictionAlgorithm.LRU_MEMORY)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
+      EvictionAction.OVERFLOW_TO_DISK)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    try {
+      snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+          " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
+      assert(false, "OVERFLOW=false is not allowed when EVICTION_BY is specified")
+    } catch {
+      case _: AnalysisException => // Expected
+    }
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    try {
+      snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+          " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
+      assert(false, "OVERFLOW=false is not allowed when EVICTION_BY is specified")
+    } catch {
+      case _: AnalysisException => // Expected
+    }
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    try {
+      snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+          " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUCOUNT 200')")
+      assert(false, "EVICTION_BY=LRUCOUNT is not supported for column tables")
+    } catch {
+      case _: AnalysisException => // Expected
+    }
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUCOUNT 200')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
       .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
+      EvictionAlgorithm.LRU_ENTRY)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
+      EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-      " (PARTITION_BY 'OrderId', OVERFLOW 'true')")
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
       .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
@@ -710,33 +704,65 @@ class ColumnTableTest
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', OVERFLOW 'true')")
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
       .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
       EvictionAlgorithm.LRU_HEAP)
     assert(region.getEvictionAttributes.getAction ===
       EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT, ItemId INT) USING column")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT, ItemId INT) USING row")
+    val r = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[DistributedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent', OVERFLOW 'true')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'none')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_HEAP)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.OVERFLOW_TO_DISK)
+        EvictionAlgorithm.NONE)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent', OVERFLOW 'true')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'NONE')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_HEAP)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.OVERFLOW_TO_DISK)
+        EvictionAlgorithm.NONE)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+        " (PARTITION_BY 'OrderId', OVERFLOW 'false')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.NONE)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+        " (PARTITION_BY 'OrderId', OVERFLOW 'false')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.NONE)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+        " (OVERFLOW 'false')")
+    Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[DistributedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.NONE)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
   }
 
@@ -1114,7 +1140,7 @@ class ColumnTableTest
         "SYS_ORDER_ID VARCHAR(64)" +
         " ,SYS_ORDER_VER INTEGER ," +
         "DATA_SNDG_SYS_NM VARCHAR(128)) " +
-        "USING column OPTIONS(BUCKETS '13', " +
+        "USING column OPTIONS(BUCKETS '16', " +
         "REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT'," +
         " PERSISTENT 'ASYNCHRONOUS')")
 
@@ -1122,7 +1148,7 @@ class ColumnTableTest
         "SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64)," +
         "TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) " +
         "USING column OPTIONS(COLOCATE_WITH 'ORDER_DETAILS_COL', " +
-        "BUCKETS '13', REDUNDANCY '1', " +
+        "BUCKETS '16', REDUNDANCY '1', " +
         "EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS')")
 
     try {
@@ -1233,6 +1259,13 @@ class ColumnTableTest
     assert(rows(0) =="{\"NAME\":\"Yin\",\"CITY\":\"Columbus\",\"STATE\":\"Ohio\",\"DISTRICT\":\"Pune\"}")
     assert(rows(1) == "{\"NAME\":\"Michael\",\"STATE\":\"California\",\"LANE\":\"15\"}")
 
+  }
+
+  test("SNAP-2087 failure in JSON queries with complex types") {
+    val locs = getClass.getResource("/locomotives.json").getPath
+    val ds = snc.read.json(sc.wholeTextFiles(locs).values)
+    assert (ds.count() === 89)
+    assert (ds.filter("model = 'ES44AC'").count() === 12)
   }
 
   test("same generated code for multiple sessions (check statsPredicate ordering)") {

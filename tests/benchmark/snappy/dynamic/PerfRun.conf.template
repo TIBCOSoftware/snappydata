@@ -9,7 +9,7 @@ queries="\"1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22\""
 #spark Properties spefied in lead
 #spark-executor-cores has nothing to do with CPU cores available.
 #sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
-sparkProperties="-heap-size=1g -memory-size=1g -conserve-sockets=false"
+sparkProperties="-heap-size=1g -memory-size=1g"
 
 #Spark Sql properties are specified while executing query
 #spark.sql.shuffle.partitions=${shufflePartitions},spark.sql.inMemoryColumnarStorage.compressed=${inMemoryColumnarStorageCompressed}
@@ -62,10 +62,10 @@ leadDir=/home/kishor/SNAPPY/OUTPUT/TPCH/lead
 serverDir=/home/kishor/SNAPPY/OUTPUT/TPCH/server
 
 #Locator Properties
-locatorProperties="-conserve-sockets=false -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
+locatorProperties="-J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
 
 #Server properties
-serverMemory="-heap-size=1g -memory-size=2g  -conserve-sockets=false-J-XX:NewRatio=9 -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
+serverMemory="-heap-size=1g -memory-size=2g -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
 
 #represent whether query should use dynamic paramters or static
 IsDynamic=false

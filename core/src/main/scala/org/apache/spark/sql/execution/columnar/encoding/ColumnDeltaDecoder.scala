@@ -34,12 +34,14 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
   private val (realDecoder, deltaBytes) =
     ColumnEncoding.getColumnDecoderAndBuffer(buffer, field, initialize)
 
-  private var nonNullOrdinal: Int = _
-  private var numNulls: Int = _
-
   private var positionCursor: Long = _
   private var positionEndCursor: Long = _
-  private var positionOrdinal: Int = _
+
+  /** relative position being read currently in the underlying decoder */
+  private var decoderPosition: Int = _
+  /** relative position of the current non-null value in the underlying decoder */
+  private var nonNullPosition: Int = _
+  private var notNull: Boolean = _
 
   private def initialize(columnBytes: AnyRef, cursor: Long): Long = {
     // read the positions (skip the number of base rows)
@@ -47,16 +49,21 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
 
     // initialize the start and end of mutated positions
     positionCursor = cursor + 8
+    // relative positions are one behind so point to current on increment
+    decoderPosition = -1
+    nonNullPosition = -1
 
     positionEndCursor = positionCursor + (numPositions << 2)
     // round to nearest word to get data start position
     ((positionEndCursor + 7) >> 3) << 3
   }
 
-  private[encoding] def moveToNextPosition(): Int = {
+  /**
+   * Reads the current updated position in the column batch.
+   */
+  private[encoding] def readUpdatedPosition(): Int = {
     val cursor = positionCursor
     if (cursor < positionEndCursor) {
-      positionCursor += 4
       ColumnEncoding.readInt(deltaBytes, cursor)
     } else {
       // convention used by ColumnDeltaDecoder to denote the end
@@ -65,121 +72,66 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     }
   }
 
-  @inline def hasNulls: Boolean = realDecoder.hasNulls
-
-  @inline def readNotNull: Boolean = {
-    val n = realDecoder.numNulls(deltaBytes, positionOrdinal, numNulls)
-    positionOrdinal += 1
-    if (n >= 0) {
-      numNulls = n
-      true
-    } else {
-      numNulls = -n
-      false
-    }
+  /**
+   * Move the cursor to enable reading next updated position.
+   */
+  private[encoding] def moveUpdatePositionCursor(): Unit = {
+    positionCursor += 4
+    decoderPosition += 1
+    notNull = !realDecoder.isNullAt(deltaBytes, decoderPosition)
+    if (notNull) nonNullPosition += 1
   }
 
-  @inline private[encoding] def nextNonNullOrdinal(): Unit = nonNullOrdinal += 1
+  @inline def readNotNull: Boolean = notNull
 
-  @inline def readBoolean: Boolean = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readBoolean(deltaBytes, ordinal)
-  }
+  @inline def readBoolean: Boolean =
+    realDecoder.readBoolean(deltaBytes, nonNullPosition)
 
-  @inline def readByte: Byte = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readByte(deltaBytes, ordinal)
-  }
+  @inline def readByte: Byte =
+    realDecoder.readByte(deltaBytes, nonNullPosition)
 
-  @inline def readShort: Short = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readShort(deltaBytes, ordinal)
-  }
+  @inline def readShort: Short =
+    realDecoder.readShort(deltaBytes, nonNullPosition)
 
-  @inline def readInt: Int = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readInt(deltaBytes, ordinal)
-  }
+  @inline def readInt: Int =
+    realDecoder.readInt(deltaBytes, nonNullPosition)
 
-  @inline def readLong: Long = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readLong(deltaBytes, ordinal)
-  }
+  @inline def readLong: Long =
+    realDecoder.readLong(deltaBytes, nonNullPosition)
 
-  @inline def readFloat: Float = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readFloat(deltaBytes, ordinal)
-  }
+  @inline def readFloat: Float =
+    realDecoder.readFloat(deltaBytes, nonNullPosition)
 
-  @inline def readDouble: Double = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readDouble(deltaBytes, ordinal)
-  }
+  @inline def readDouble: Double =
+    realDecoder.readDouble(deltaBytes, nonNullPosition)
 
-  @inline def readDate: Int = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readDate(deltaBytes, ordinal)
-  }
+  @inline def readDate: Int =
+    realDecoder.readDate(deltaBytes, nonNullPosition)
 
-  @inline def readTimestamp: Long = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readTimestamp(deltaBytes, ordinal)
-  }
+  @inline def readTimestamp: Long =
+    realDecoder.readTimestamp(deltaBytes, nonNullPosition)
 
-  @inline def readLongDecimal(precision: Int, scale: Int): Decimal = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readLongDecimal(deltaBytes, precision, scale, ordinal)
-  }
+  @inline def readLongDecimal(precision: Int, scale: Int): Decimal =
+    realDecoder.readLongDecimal(deltaBytes, precision, scale, nonNullPosition)
 
-  @inline def readDecimal(precision: Int, scale: Int): Decimal = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readDecimal(deltaBytes, precision, scale, ordinal)
-  }
+  @inline def readDecimal(precision: Int, scale: Int): Decimal =
+    realDecoder.readDecimal(deltaBytes, precision, scale, nonNullPosition)
 
-  @inline def readUTF8String: UTF8String = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readUTF8String(deltaBytes, ordinal)
-  }
+  @inline def readUTF8String: UTF8String =
+    realDecoder.readUTF8String(deltaBytes, nonNullPosition)
 
-  @inline def readInterval: CalendarInterval = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readInterval(deltaBytes, ordinal)
-  }
+  @inline def readInterval: CalendarInterval =
+    realDecoder.readInterval(deltaBytes, nonNullPosition)
 
-  @inline def readBinary: Array[Byte] = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readBinary(deltaBytes, ordinal)
-  }
+  @inline def readBinary: Array[Byte] =
+    realDecoder.readBinary(deltaBytes, nonNullPosition)
 
-  @inline def readArray: ArrayData = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readArray(deltaBytes, ordinal)
-  }
+  @inline def readArray: ArrayData =
+    realDecoder.readArray(deltaBytes, nonNullPosition)
 
-  @inline def readMap: MapData = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readMap(deltaBytes, ordinal)
-  }
+  @inline def readMap: MapData =
+    realDecoder.readMap(deltaBytes, nonNullPosition)
 
-  @inline def readStruct(numFields: Int): InternalRow = {
-    val ordinal = nonNullOrdinal
-    nonNullOrdinal = ordinal + 1
-    realDecoder.readStruct(deltaBytes, numFields, ordinal)
-  }
+  @inline def readStruct(numFields: Int): InternalRow =
+    realDecoder.readStruct(deltaBytes, numFields, nonNullPosition)
 }

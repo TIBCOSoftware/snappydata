@@ -67,7 +67,6 @@ allprojects {
   apply plugin: 'maven'
   apply plugin: 'scalaStyle'
   apply plugin: 'idea'
-  apply plugin: 'eclipse'
   apply plugin: "build-time-tracker"
   apply plugin: "nebula.ospackage"
   apply plugin: 'nebula.ospackage-base'
@@ -114,14 +113,13 @@ allprojects {
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
-    awsVersion = '1.11.211'
-    jacksonVersion = '2.9.1'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.22.v20170606'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
     metricsVersion = '3.2.5'
+    janinoVersion = '3.0.8'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.6.0'
@@ -590,7 +588,6 @@ subprojects {
   configurations.all {
     resolutionStrategy.force "com.google.guava:guava:${guavaVersion}",
       "org.apache.derby:derby:${derbyVersion}",
-      'xml-apis:xml-apis:1.0.b2',
       "org.apache.hadoop:hadoop-annotations:${hadoopVersion}",
       "org.apache.hadoop:hadoop-auth:${hadoopVersion}",
       "org.apache.hadoop:hadoop-client:${hadoopVersion}",
@@ -615,13 +612,6 @@ subprojects {
   }
   artifacts {
     testOutput packageTests
-  }
-
-  eclipse {
-    classpath {
-      defaultOutputDir = file('build-artifacts/eclipse')
-      downloadSources = true
-    }
   }
 
   dependencies {
@@ -716,8 +706,10 @@ task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
+  dependsOn ':snappy-launcher:jar'
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
+  def launcherProject = project(':snappy-launcher')
   def targetProject = clusterProject
   def isEnterpriseProduct = new File(rootDir, 'aqp/build.gradle').exists() &&
       rootProject.hasProperty('snappydata.enterprise')
@@ -773,6 +765,12 @@ task product(type: Zip) {
       }
       from targetProject.jar.outputs
       into "${snappyProductDir}/jars"
+    }
+    // copy the launcher jar
+    copy {
+      from launcherProject.jar.destinationDir
+      into "${snappyProductDir}/jars"
+      include launcherProject.jar.archiveName
     }
 
     // create the RELEASE file
@@ -941,8 +939,6 @@ ospackage {
   link('/usr/bin/snappy', "/opt/${packageName}/bin/snappy")
   link('/usr/bin/snappy-sql', "/opt/${packageName}/bin/snappy-sql")
   link('/usr/bin/snappy-job.sh', "/opt/${packageName}/bin/snappy-job.sh")
-  link('/etc/profile.d/snappydata.sh', "/opt/${packageName}/profile.d/snappydata.sh")
-  link('/etc/profile.d/snappydata.csh', "/opt/${packageName}/profile.d/snappydata.csh")
 }
 
 buildRpm {

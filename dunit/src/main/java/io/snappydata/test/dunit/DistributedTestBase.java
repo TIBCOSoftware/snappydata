@@ -45,7 +45,6 @@ import com.gemstone.gemfire.cache.TimeoutException;
 import com.gemstone.gemfire.distributed.DistributedSystem;
 import com.gemstone.gemfire.distributed.internal.DistributionConfig;
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
-import com.gemstone.gemfire.internal.SocketCreator;
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl;
 import com.gemstone.gemfire.internal.shared.NativeCalls;
 import io.snappydata.test.dunit.standalone.DUnitBB;
@@ -844,16 +843,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         : host.getHostName();
   }
 
-  /** get the IP literal name for the current host, use this instead of
-   * "localhost" to avoid IPv6 name resolution bugs in the JDK/machine config.
-   * @return an ip literal, this method honors java.net.preferIPvAddresses
-   */
   public static String getIPLiteral() {
-    try {
-      return SocketCreator.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      throw new Error("problem determining host IP address", e);
-    }
+    return "localhost";
   }
 
   /**

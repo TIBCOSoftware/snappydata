@@ -47,9 +47,15 @@ import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructTyp
  */
 final class ColumnDelta extends ColumnFormatValue with Delta {
 
-  def this(buffer: ByteBuffer) = {
+  def this(buffer: ByteBuffer, codecId: Int, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean = true) = {
     this()
-    setBuffer(buffer)
+    setBuffer(buffer, codecId, isCompressed, changeOwnerToStorage)
+  }
+
+  override protected def copy(buffer: ByteBuffer, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean): ColumnDelta = synchronized {
+    new ColumnDelta(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
   override def apply(putEvent: EntryEvent[_, _]): AnyRef = {
@@ -59,13 +65,14 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   }
 
   override def apply(region: Region[_, _], key: AnyRef, oldValue: AnyRef,
-      prepareForOffHeap: Boolean): AnyRef = {
+      prepareForOffHeap: Boolean): AnyRef = synchronized {
     if (oldValue eq null) {
       // first delta, so put as is
-      val result = new ColumnFormatValue(columnBuffer)
+      val result = new ColumnFormatValue(columnBuffer, compressionCodecId, isCompressed)
       // buffer has been transferred and should be removed from delta
       // which would no longer be usable after this point
       columnBuffer = DiskEntry.Helper.NULL_BUFFER
+      decompressionState = -1
       result
     } else {
       // merge with existing delta
@@ -74,17 +81,25 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         // TODO: SW: merge stats
         oldValue
       } else {
-        val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex)
+        val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
         val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
         val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
-            .fetchHiveMetaData(false).schema.asInstanceOf[StructType]
-        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue]
-        val existingBuffer = oldColumnValue.getBufferRetain
+            .fetchHiveMetaData(false) match {
+          case null => throw new IllegalStateException(
+            s"Table for region ${region.getFullPath} not found in hive metadata")
+          case m => m.schema.asInstanceOf[StructType]
+        }
+        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
+          decompress = true, compress = false)
+        val existingBuffer = oldColumnValue.getBuffer
+        val newValue = getValueRetain(decompress = true, compress = false)
         try {
-          new ColumnFormatValue(encoder.merge(columnBuffer, existingBuffer,
-            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)))
+          new ColumnFormatValue(encoder.merge(newValue.getBuffer, existingBuffer,
+            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)),
+            oldColumnValue.compressionCodecId, isCompressed = false)
         } finally {
           oldColumnValue.release()
+          newValue.release()
           // release own buffer too and delta should be unusable now
           release()
         }
@@ -109,10 +124,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_FORMAT_DELTA
 
-  override def toString: String = {
-    val buffer = columnBuffer.duplicate()
-    s"ColumnDelta[size=${buffer.remaining()} $buffer"
-  }
+  override protected def className: String = "ColumnDelta"
 }
 
 object ColumnDelta {
@@ -128,6 +140,12 @@ object ColumnDelta {
    * till the full column value.
    */
   val MAX_DEPTH = 3
+
+  /**
+   * This is the currently used maximum depth which must be <= [[MAX_DEPTH]].
+   * It should only be used by transient execution-time structures and never in storage.
+   */
+  val USED_MAX_DEPTH = 2
 
   val mutableKeyNamePrefix = "SNAPPYDATA_INTERNAL_COLUMN_"
   /**
@@ -154,10 +172,11 @@ object ColumnDelta {
   } else -1
 
   /**
-   * Returns 0 based table column index (while that stored in region is 1 based).
+   * Returns 1 based table column index for given delta or table column index
+   * (table column index stored in region key is 1 based).
    */
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
-    (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH
+    (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX + MAX_DEPTH - 1) / MAX_DEPTH
   } else deltaColumnIndex
 
   /**

@@ -35,8 +35,8 @@ import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, RefreshTable}
-import org.apache.spark.sql.sources.ExternalSchemaRelationProvider
+import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -66,6 +66,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def EXISTS: Rule0 = rule { keyword(Consts.EXISTS) }
   final def FALSE: Rule0 = rule { keyword(Consts.FALSE) }
   final def FROM: Rule0 = rule { keyword(Consts.FROM) }
+  final def GRANT: Rule0 = rule { keyword(Consts.GRANT) }
   final def GROUP: Rule0 = rule { keyword(Consts.GROUP) }
   final def HAVING: Rule0 = rule { keyword(Consts.HAVING) }
   final def IN: Rule0 = rule { keyword(Consts.IN) }
@@ -83,6 +84,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def OR: Rule0 = rule { keyword(Consts.OR) }
   final def ORDER: Rule0 = rule { keyword(Consts.ORDER) }
   final def OUTER: Rule0 = rule { keyword(Consts.OUTER) }
+  final def REVOKE: Rule0 = rule { keyword(Consts.REVOKE) }
   final def RIGHT: Rule0 = rule { keyword(Consts.RIGHT) }
   final def SCHEMA: Rule0 = rule { keyword(Consts.SCHEMA) }
   final def SELECT: Rule0 = rule { keyword(Consts.SELECT) }
@@ -267,7 +269,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected final def beforeDDLEnd: Rule0 = rule {
-    noneOf("uUoOaA-/")
+    noneOf("uUoOaA-;/")
   }
 
   protected final def ddlEnd: Rule1[TableEnd] = rule {
@@ -464,6 +466,23 @@ abstract class SnappyDDLParser(session: SparkSession)
           isTemp = te.asInstanceOf[Option[Boolean]].isDefined))
   }
 
+  /**
+   * GRANT/REVOKE on a table (only for column and row tables).
+   *
+   * Example:
+   * {{{
+   *   GRANT SELECT ON table TO user1, user2;
+   *   GRANT INSERT ON table TO ldapGroup: group1;
+   * }}}
+   */
+  protected def grantRevoke: Rule1[LogicalPlan] = rule {
+    (GRANT | REVOKE) ~ ANY.* ~> (() => DMLExternalTable(
+      TableIdentifier("SYSDUMMY1", Some("SYSIBM")) /* dummy table */ ,
+      LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
+        SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
+        "", None)), input.sliceString(0, input.length)))
+  }
+
   protected def streamContext: Rule1[LogicalPlan] = rule {
     STREAMING ~ (
         INIT ~ durationUnit ~> ((batchInterval: Duration) =>
@@ -638,7 +657,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     createTable | describeTable | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView |
     alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | show
+    createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show
   }
 
   protected def query: Rule1[LogicalPlan]
