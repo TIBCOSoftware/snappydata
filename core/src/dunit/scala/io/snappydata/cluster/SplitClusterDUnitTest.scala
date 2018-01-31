@@ -18,7 +18,7 @@ package io.snappydata.cluster
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
-import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, Statement, Timestamp}
+import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -26,6 +26,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
 import scala.util.Random
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
@@ -33,6 +34,7 @@ import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
 import org.junit.Assert
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.util.collection.OpenHashSet
@@ -210,11 +212,28 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     }
 
     // check for SNAP-2156/2164
-    val updateSql = s"update splitModeTable1 set col1 = 100 where exists " +
+    var updateSql = "update splitModeTable1 set col1 = 100 where exists " +
         s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 1234)"
     assert(!stmt.execute(updateSql))
-    assert(stmt.getUpdateCount == 0)
+    assert(stmt.getUpdateCount >= 0) // random value can be 1234
     assert(stmt.executeUpdate(updateSql) == 0)
+    updateSql = "update splitModeTable1 set col1 = 100 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 1)"
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount >= 1)
+    assert(stmt.executeUpdate(updateSql) == 0)
+    updateSql = "update splitModeTable1 set col1 = 1 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 100)"
+    assert(stmt.executeUpdate(updateSql) >= 1)
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount == 0)
+
+    // check exception should be proper (SNAP-1423/1386)
+    try {
+      stmt.execute("call sys.rebalance_all_bickets()")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "42Y03" => // ignore
+    }
 
     stmt.execute("drop table if exists embeddedModeTable1")
     stmt.execute("drop table if exists embeddedModeTable2")
