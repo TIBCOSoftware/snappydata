@@ -270,10 +270,11 @@ class QueryTest extends SnappyFunSuite {
       "select count(*), city from $t group by city",
       "select count(*), city from $t where country like 'country_1%' group by city",
       "select count(*), city, collect_list(airport_id), collect_list(name), " +
-          "collect_list(country) from (select * from $t order by airport_id) as t group by city",
+          "collect_list(country) from (select * from $t order by airport_id, name, country) " +
+          "as t group by city order by city",
       "select count(*), city, collect_list(airport_id), collect_list(name), " +
           "collect_list(country) from (select * from $t where country like 'country_1%' " +
-          "  order by airport_id) as t group by city"
+          "  order by airport_id, name, country) as t group by city order by city"
     )
 
     // To validate the results against queries directly on data disabling snappy aggregation.
