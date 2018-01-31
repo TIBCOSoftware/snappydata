@@ -79,7 +79,7 @@ spark.snappydata.store.password <password>
 
 ## Using Snappy Jobs
 
-When submitting Snappy jobs, using `snappy-job.sh`, provide user credentials through a configuration file using the option `--passfile`. 
+When submitting Snappy jobs using `snappy-job.sh`, provide user credentials through a configuration file using the option `--passfile`. 
 
 For example, a sample configuration file is provided below: 
 
@@ -98,6 +98,8 @@ $ bin/snappy-job.sh submit  \
     --passfile /home/user1/snappy/job.config
 ```
 !!! Note:
+
+	* When checking the status of a job using `snappyjob.sh status --jobid`, provide user credentials through a configuration file using the option `--passfile`
 
 	* Only trusted users should be allowed to submit jobs, as an untrusted user may be able to do harm through jobs by invoking internal APIs which can bypass the authorization checks. 
 	
