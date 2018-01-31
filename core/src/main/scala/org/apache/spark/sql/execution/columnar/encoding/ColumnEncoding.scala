@@ -634,7 +634,7 @@ trait ColumnEncoder extends ColumnEncoding {
     }
     val baseTypeOffset = offset(position).toInt
     // initialize the null bytes to zeros
-    allocator.clearBuffer(columnData, baseTypeOffset, numNullBytes)
+    allocator.fill(columnData, 0, baseTypeOffset, numNullBytes)
     this.baseTypeOffset = baseTypeOffset
     this.baseDataOffset = baseTypeOffset + numNullBytes
     if (writeNumElements) {
