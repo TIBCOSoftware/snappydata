@@ -62,7 +62,7 @@ class TAQTest extends SnappyFunSuite {
       op = CreateOp.Trade, runSparkCaching = false)
   }
 
-  test("select queries with random data (eviction) - query") {
+  test("select queries with random data - query") {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1

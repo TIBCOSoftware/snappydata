@@ -25,6 +25,7 @@ import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
 import io.snappydata.util.TestUtils
+import org.scalatest.Assertions
 
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, PredicateSubquery, ScalarSubquery}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, OneRowRelation, Sample}
@@ -197,6 +198,11 @@ abstract class SnappyFunSuite
     // scalastyle:on
   }
 
+  def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit =
+    SnappyFunSuite.checkAnswer(df, expectedAnswer)
+}
+
+object SnappyFunSuite extends Assertions {
   def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit = {
     val analyzedDF = try df catch {
       case ae: AnalysisException =>
