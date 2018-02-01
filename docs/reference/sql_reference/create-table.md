@@ -231,13 +231,13 @@ Use eviction settings to keep your table within a specified limit, either by rem
 
 	- Total bytes used.
 
-	- Percentage of JVM heap used. This uses the GemFire XD resource manager. When the manager determines that eviction is required, the manager orders the eviction controller to start evicting from all tables where the eviction criterion is set to LRUHEAPPERCENT.
+	- Percentage of JVM heap used. This uses the SnappyData resource manager. When the manager determines that eviction is required, the manager orders the eviction controller to start evicting from all tables where the eviction criterion is set to LRUHEAPPERCENT.
 
 2. Decide what action to take when the limit is reached:
 	- Locally destroy the row (partitioned tables only).
 	- Overflow the row data to disk.
 
-3. If you want to overflow data to disk (or persist the entire table to disk), configure a named disk store to use for the overflow data. If you do not specify a disk store when creating an overflow table, GemFire XD stores the overflow data in the default disk store.
+3. If you want to overflow data to disk (or persist the entire table to disk), configure a named disk store to use for the overflow data. If you do not specify a disk store when creating an overflow table, SnappyData stores the overflow data in the default disk store.
 
 4. Create the table with the required eviction configuration.
 
