@@ -19,7 +19,6 @@ package io.snappydata
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.sql.QueryTest.checkAnswer
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession, SparkSession}
@@ -271,10 +270,11 @@ class QueryTest extends SnappyFunSuite {
       "select count(*), city from $t group by city",
       "select count(*), city from $t where country like 'country_1%' group by city",
       "select count(*), city, collect_list(airport_id), collect_list(name), " +
-          "collect_list(country) from (select * from $t order by airport_id) as t group by city",
+          "collect_list(country) from (select * from $t order by airport_id, name, country) " +
+          "as t group by city order by city",
       "select count(*), city, collect_list(airport_id), collect_list(name), " +
           "collect_list(country) from (select * from $t where country like 'country_1%' " +
-          "  order by airport_id) as t group by city"
+          "  order by airport_id, name, country) as t group by city order by city"
     )
 
     // To validate the results against queries directly on data disabling snappy aggregation.
@@ -287,8 +287,8 @@ class QueryTest extends SnappyFunSuite {
     }
 
     for (((r1, r2), e) <- results.zip(expectedResults)) {
-      org.apache.spark.sql.QueryTest.checkAnswer(r1, e)
-      org.apache.spark.sql.QueryTest.checkAnswer(r2, e)
+      checkAnswer(r1, e)
+      checkAnswer(r2, e)
     }
 
     // fire updates and check again
@@ -302,8 +302,8 @@ class QueryTest extends SnappyFunSuite {
     }
 
     for (((r1, r2), e) <- results.zip(expectedResults)) {
-      org.apache.spark.sql.QueryTest.checkAnswer(r1, e)
-      org.apache.spark.sql.QueryTest.checkAnswer(r2, e)
+      checkAnswer(r1, e)
+      checkAnswer(r2, e)
     }
   }
 }
