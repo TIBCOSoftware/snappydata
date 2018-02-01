@@ -97,39 +97,39 @@ object SparkApp {
 
     var partitionBy : String = "cr_order_number"
     var tableName : String = "catalog_returns"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "cs_order_number"
     tableName = "catalog_sales"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "c_customer_sk"
     tableName = "customer"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "ca_address_sk"
     tableName = "customer_address"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "inv_item_sk"
     tableName = "inventory"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "sr_item_sk"
     tableName = "store_returns"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "ss_item_sk"
     tableName = "store_sales"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "wr_order_number"
     tableName = "web_returns"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy =  "ws_order_number"
     tableName = "web_sales"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName)
+    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
 
     var avgFileStream: FileOutputStream = new FileOutputStream(
@@ -197,10 +197,10 @@ object SparkApp {
 
 
   def createPartitionedTables(sc: SparkSession, dataLocation: String,
-                                    partitionBy: String , tableName: String): Unit = {
+                                    partitionBy: String , tableName: String, buckets: Int): Unit = {
     val df = sc.sqlContext.read.parquet(s"$dataLocation/$tableName")
     df.createOrReplaceTempView(tableName)
-    df.repartition(223, df(partitionBy)).createOrReplaceTempView(tableName)
+    df.repartition(buckets, df(partitionBy)).createOrReplaceTempView(tableName)
     df.createOrReplaceTempView(tableName)
     sc.sqlContext.cacheTable(tableName)
     // tableName -> sc.table(tableName).count()
