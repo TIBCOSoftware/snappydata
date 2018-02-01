@@ -997,8 +997,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   protected final def update: Rule1[LogicalPlan] = rule {
     UPDATE ~ relationFactor ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
         '=' ~ ws ~ expression ~> ((cols: Seq[String], e: Expression) =>
-      UnresolvedAttribute(cols) -> e)) + commaSep) ~
-        (FROM ~ relations).? ~ (WHERE ~ expression).? ~ TOKENIZE_END ~>
+      UnresolvedAttribute(cols) -> e)) + commaSep) ~ TOKENIZE_END ~
+        (FROM ~ relations).? ~ (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
         ((t: Any, updateExprs: Seq[(UnresolvedAttribute,
             Expression)], relations : Any, whereExpr: Any) => {
           val table = t.asInstanceOf[LogicalPlan]
@@ -1046,8 +1046,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() => tokenize = session.planCaching &&
-        SnappySession.tokenize && canTokenize && session.wholeStageEnabled)
+    MATCH ~> (() => tokenize = SnappySession.tokenize && canTokenize && session.wholeStageEnabled)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
