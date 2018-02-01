@@ -684,7 +684,7 @@ final class ColumnarStorePartitionedRDD(
           region.asInstanceOf[PartitionedRegion])
         allPartitions
       case bucketId: Int =>
-        if (java.lang.Boolean.getBoolean("DISABLE_PARTITION_PRUNING")) {
+        if (!session.partitionPruning) {
           allPartitions = session.sessionState.getTablePartitions(
             region.asInstanceOf[PartitionedRegion])
           allPartitions
