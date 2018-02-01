@@ -111,5 +111,5 @@ If you need to set a trace flag in a running system, use the [SYS.SET_TRACE_FLAG
 snappy> call sys.set_trace_flag('traceindex', 'true');
 Statement executed.
 ```
-
-
+!!! Note:
+	Trace flags work only for `snappy` and `jdbc` and not for `snappy-sql`.

@@ -33,7 +33,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.joins.HashJoinExec
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{AnalysisException, DataFrame, QueryTest, Row, SaveMode, SnappyContext}
+import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SnappyContext}
 
 class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   self =>
@@ -234,10 +234,10 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val ds = snContext.createDataset(data)
     ds.write.insertInto(tableName)
 
-    QueryTest.checkAnswer(snContext.sql(s"select * from $tableName"), data)
-    QueryTest.checkAnswer(snContext.sql(
+    checkAnswer(snContext.sql(s"select * from $tableName"), data)
+    checkAnswer(snContext.sql(
       s"""select "value" from $tableName where `version`=111"""), Seq(Row("aaa")))
-    QueryTest.checkAnswer(snContext.sql(s"""select * from $tableName where "version" >= 555"""),
+    checkAnswer(snContext.sql(s"""select * from $tableName where "version" >= 555"""),
       Seq(Row(555, "ccc"), Row(666, "ccc")))
 
     snContext.sql("drop table " + tableName)
@@ -261,10 +261,10 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     ds.write.insertInto(tableName)
 
-    QueryTest.checkAnswer(snContext.table(tableName), data)
-    QueryTest.checkAnswer(snContext.table(tableName).filter($"version" === 111)
+    checkAnswer(snContext.table(tableName), data)
+    checkAnswer(snContext.table(tableName).filter($"version" === 111)
         .select($"value"), Seq(Row("aaa")))
-    QueryTest.checkAnswer(snContext.table(tableName).filter($"version" >= 555),
+    checkAnswer(snContext.table(tableName).filter($"version" >= 555),
       Seq(Row(555, "ccc"), Row(666, "ccc")))
 
     snContext.setConf(SQLConf.CASE_SENSITIVE, false)

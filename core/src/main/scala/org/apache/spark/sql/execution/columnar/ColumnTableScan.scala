@@ -161,16 +161,36 @@ private[sql] final case class ColumnTableScan(
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
       case EqualTo(l: DynamicReplacableConstant, a: AttributeReference) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+      case EqualTo(a: AttributeReference, l: Literal) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+      case EqualTo(l: Literal, a: AttributeReference) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
 
+      case LessThan(a: AttributeReference, l: DynamicReplacableConstant) =>
+        statsFor(a).lowerBound < l
+      case LessThan(l: DynamicReplacableConstant, a: AttributeReference) =>
+        l < statsFor(a).upperBound
       case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
       case LessThan(l: Literal, a: AttributeReference) => l < statsFor(a).upperBound
 
+      case LessThanOrEqual(a: AttributeReference, l: DynamicReplacableConstant) =>
+        statsFor(a).lowerBound <= l
+      case LessThanOrEqual(l: DynamicReplacableConstant, a: AttributeReference) =>
+        l <= statsFor(a).upperBound
       case LessThanOrEqual(a: AttributeReference, l: Literal) => statsFor(a).lowerBound <= l
       case LessThanOrEqual(l: Literal, a: AttributeReference) => l <= statsFor(a).upperBound
 
+      case GreaterThan(a: AttributeReference, l: DynamicReplacableConstant) =>
+        l < statsFor(a).upperBound
+      case GreaterThan(l: DynamicReplacableConstant, a: AttributeReference) =>
+        statsFor(a).lowerBound < l
       case GreaterThan(a: AttributeReference, l: Literal) => l < statsFor(a).upperBound
       case GreaterThan(l: Literal, a: AttributeReference) => statsFor(a).lowerBound < l
 
+      case GreaterThanOrEqual(a: AttributeReference, l: DynamicReplacableConstant) =>
+        l <= statsFor(a).upperBound
+      case GreaterThanOrEqual(l: DynamicReplacableConstant, a: AttributeReference) =>
+        statsFor(a).lowerBound <= l
       case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
       case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
 
@@ -617,8 +637,9 @@ private[sql] final case class ColumnTableScan(
     val filterFunction = generateStatPredicate(ctx, numBatchRows)
     val unsafeRow = ctx.freshName("unsafeRow")
     val colNextBytes = ctx.freshName("colNextBytes")
-    val numColumnsInStatBlob =
-      relationSchema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+    val numTableColumns = if (ordinalIdTerm eq null) relationSchema.size
+    else relationSchema.size - ColumnDelta.mutableKeyNames.length // for update/delete
+    val numColumnsInStatBlob = numTableColumns * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
       s"$numOutputRows.${metricAdd(s"$numBatchRows - $deletedCount")};"

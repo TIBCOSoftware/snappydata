@@ -95,6 +95,9 @@ For persistent tables, setting this to 'true' will overflow the table evicted ro
 
 Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) link to understand how to configure [OVERFLOW](../reference/sql_reference/create-table.md#overflow) and [EVICTION_BY](../reference/sql_reference/create-table.md#eviction-by) clauses.
 
+!!! Tip:
+	By default eviction is set to `Overflow`.
+
 ## Known Limitation
 
 ### Change NOT IN queries to use NOT EXISTS if possible

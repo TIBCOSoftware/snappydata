@@ -18,20 +18,13 @@ package org.apache.spark.sql.execution
 
 import io.snappydata.{Property, SnappyFunSuite}
 
-import org.apache.spark.sql.{DataFrame, QueryTest, Row, SnappySession, SparkSession}
+import org.apache.spark.sql.{Row, SnappySession, SparkSession}
 
 class AggregationSuite extends SnappyFunSuite {
 
-  private def checkAnswer(result: DataFrame, expected: Seq[Row]): Unit = {
-    QueryTest.checkAnswer(result, expected) match {
-      case Some(errMessage) => throw new RuntimeException(errMessage)
-      case None => // all good
-    }
-  }
-
   test("AVG plan failure for nullables") {
     val spark = new SparkSession(sc)
-    val snappy = new SnappySession(sc)
+    val snappy = snc.snappySession
     snappy.sql(s"set ${Property.ColumnBatchSize.name}=5000")
 
     val checkDF = spark.range(10000).selectExpr("id", "(id * 12) as k",
@@ -72,5 +65,19 @@ class AggregationSuite extends SnappyFunSuite {
     expectedAnswer = checkDF.join(symDF, "s").selectExpr("avg(k)").collect().toSeq
     result = snappy.sql(query)
     checkAnswer(result, expectedAnswer)
+  }
+
+  test("support for LATERAL VIEW in SnappyParser") {
+    val snappy = snc.snappySession
+    val json =
+      """{ "id": 1, "name": "A green door", "price": 12.50, "tags": ["home", "green"],
+        | "parts" : [ { "lock" : "One lock", "key" : "single key" },
+        | { "lock" : "2 lock", "key" : "2 key" } ] }""".stripMargin
+    val rdd = sc.makeRDD(Seq(json))
+    val ds = snappy.read.json(rdd)
+    ds.createOrReplaceTempView("json")
+    val res = snappy.sql("SELECT id, part.lock, part.key FROM json " +
+        "LATERAL VIEW explode(parts) partTable AS part")
+    checkAnswer(res, Seq(Row(1, "One lock", "single key"), Row(1, "2 lock", "2 key")))
   }
 }
