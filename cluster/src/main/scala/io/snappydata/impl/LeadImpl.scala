@@ -657,6 +657,10 @@ class LeadImpl extends ServerImpl with Lead
 
     }
   }
+
+  def getInterpreterServerClass(): Class[_] = {
+    remoteInterpreterServerClass
+  }
 }
 
 object LeadImpl {
