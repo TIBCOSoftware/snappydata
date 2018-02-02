@@ -81,6 +81,8 @@ Below is the list of all the configuration properties and links for each propert
 
 - [enable-time-statistics](enable-time-statistics.md)
 
+- [enable-timestats](enable-timestats.md)
+
 - [enforce-unique-host](enforce-unique-host.md)
 
 - [init-scripts](init-scripts.md)

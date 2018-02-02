@@ -37,7 +37,7 @@ localhost(10739)<v0>:65055		|locator(normal)
 3 rows selected
 ```
 
-To view the members of cluster, queryl:
+To view the members of cluster, query:
 
 ``` pre
 snappy> show members;

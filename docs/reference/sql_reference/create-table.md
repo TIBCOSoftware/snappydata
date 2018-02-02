@@ -86,7 +86,9 @@ In this release, LONG is supported only for column tables. It is recommended to 
 The COLOCATE_WITH clause specifies a partitioned table to colocate with. The referenced table must already exist. 
 <a id="partition-by"></a>
 `PARTITION_BY`</br>
-Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. </br>If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
+Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. </br>
+If not specified, for row table (mentioned further for case of column table) it is a 'replicated row table'.</br> 
+Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
 <a id="buckets"></a>
 `BUCKETS` </br>
@@ -231,13 +233,13 @@ Use eviction settings to keep your table within a specified limit, either by rem
 
 	- Total bytes used.
 
-	- Percentage of JVM heap used. This uses the GemFire XD resource manager. When the manager determines that eviction is required, the manager orders the eviction controller to start evicting from all tables where the eviction criterion is set to LRUHEAPPERCENT.
+	- Percentage of JVM heap used. This uses the SnappyData resource manager. When the manager determines that eviction is required, the manager orders the eviction controller to start evicting from all tables where the eviction criterion is set to LRUHEAPPERCENT.
 
 2. Decide what action to take when the limit is reached:
 	- Locally destroy the row (partitioned tables only).
 	- Overflow the row data to disk.
 
-3. If you want to overflow data to disk (or persist the entire table to disk), configure a named disk store to use for the overflow data. If you do not specify a disk store when creating an overflow table, GemFire XD stores the overflow data in the default disk store.
+3. If you want to overflow data to disk (or persist the entire table to disk), configure a named disk store to use for the overflow data. If you do not specify a disk store when creating an overflow table, SnappyData stores the overflow data in the default disk store.
 
 4. Create the table with the required eviction configuration.
 
