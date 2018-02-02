@@ -8,9 +8,6 @@ import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
-/**
-  * Created by kishor on 10/1/18.
-  */
 object TableCreationJob extends SnappySQLJob{
 
   var sqlSparkProperties: Array[String] = _

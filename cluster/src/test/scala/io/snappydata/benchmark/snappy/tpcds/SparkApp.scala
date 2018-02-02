@@ -23,9 +23,6 @@ import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import org.apache.spark.sql.catalyst.util.fileToString
 import org.apache.spark.sql.{Row, SparkSession}
 
-/**
-  * Created by sbhokare on 31/8/17.
-  */
 object SparkApp {
 
   def main(args: Array[String]) {

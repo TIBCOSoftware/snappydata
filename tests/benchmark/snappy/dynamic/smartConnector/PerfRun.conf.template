@@ -11,19 +11,19 @@ queries="1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22-21"
 #sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
 sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g"
 
-leadProperties="-heap-size=2g"
+leadProperties="-heap-size=2g -conserve-sockets=false"
 
-locatorProperties=""
+locatorProperties="-conserve-sockets=false"
 
-serverProperties="-heap-size=3g -memory-size=3g"
+serverProperties="-heap-size=3g -memory-size=3g -conserve-sockets=false"
 
 #Machine Setup
-master=pnq-kbachhav
-slave=(pnq-kbachhav)
+master=localhost
+slave=(localhost)
 
-locator=pnq-kbachhav
-leads=pnq-kbachhav
-servers=(pnq-kbachhav)
+locator=localhost
+leads=localhost
+servers=(localhost)
 
 #Log Directories
 locatorDir=/home/kishor/SNAPPY/OUTPUT/TPCH/locator
@@ -85,7 +85,7 @@ WarmupRuns=2
 AverageRuns=3
 
 # location of jar which has TPCH related class files
-TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.9-tests.jar
+TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar
 
 #Size of the TPCH data. Do not chage format
 dataSize=1GB_Stages
