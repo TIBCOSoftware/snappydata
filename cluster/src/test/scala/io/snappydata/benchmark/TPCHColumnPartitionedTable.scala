@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -120,7 +120,7 @@ object TPCHColumnPartitionedTable {
   var CREATE_PARQUET: Boolean = java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
 
   def createPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -164,7 +164,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if (!isSnappy) {
-      unionOrderDF.createOrReplaceTempView("ORDERS")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionOrderDF.repartition(buckets.toInt,
+          unionOrderDF("o_orderkey"))
+        rePartitionedDF.createOrReplaceTempView("ORDERS")
+      } else {
+        unionOrderDF.createOrReplaceTempView("ORDERS")
+      }
       sqlContext.cacheTable("ORDERS")
       sqlContext.table("ORDERS").count()
     }
@@ -199,7 +205,7 @@ object TPCHColumnPartitionedTable {
 
 
   def createPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -243,7 +249,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if(!isSnappy){
-      unionLineItemDF.createOrReplaceTempView("LINEITEM")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionLineItemDF.repartition(buckets.toInt,
+          unionLineItemDF("l_orderkey"))
+        rePartitionedDF.createOrReplaceTempView("LINEITEM")
+        } else {
+          unionLineItemDF.createOrReplaceTempView("LINEITEM")
+        }
       sqlContext.cacheTable("LINEITEM")
       sqlContext.table("LINEITEM").count()
     }
@@ -279,7 +291,7 @@ object TPCHColumnPartitionedTable {
   }
 
   def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -324,7 +336,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if(!isSnappy){
-      unionCustomerDF.createOrReplaceTempView("CUSTOMER")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionCustomerDF.repartition(buckets.toInt,
+          unionCustomerDF("c_custkey"))
+        rePartitionedDF.createOrReplaceTempView("CUSTOMER")
+      } else {
+        unionCustomerDF.createOrReplaceTempView("CUSTOMER")
+      }
       sqlContext.cacheTable("CUSTOMER")
       sqlContext.table("CUSTOMER").count()
     }
@@ -336,7 +354,7 @@ object TPCHColumnPartitionedTable {
 
 
   def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -379,7 +397,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if(!isSnappy){
-      unionPartDF.createOrReplaceTempView("PART")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionPartDF.repartition(buckets.toInt,
+          unionPartDF("p_partkey"))
+        rePartitionedDF.createOrReplaceTempView("PART")
+      } else {
+        unionPartDF.createOrReplaceTempView("PART")
+      }
       sqlContext.cacheTable("PART")
       sqlContext.table("PART").count()
     }
@@ -390,7 +414,7 @@ object TPCHColumnPartitionedTable {
   }
 
   def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -434,7 +458,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if (!isSnappy) {
-      unionPartSuppDF.createOrReplaceTempView("PARTSUPP")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionPartSuppDF.repartition(buckets.toInt,
+          unionPartSuppDF("ps_partkey"))
+        rePartitionedDF.createOrReplaceTempView("PARTSUPP")
+      } else {
+        unionPartSuppDF.createOrReplaceTempView("PARTSUPP")
+      }
       sqlContext.cacheTable("PARTSUPP")
       sqlContext.table("PARTSUPP").count()
     }
@@ -523,7 +553,7 @@ object TPCHColumnPartitionedTable {
   }
 
   def createAndPopulateSupplierTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false): Unit = {
     val sc = sqlContext.sparkContext
@@ -533,8 +563,9 @@ object TPCHColumnPartitionedTable {
 
     for (i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
-      if (isParquet) {
-        suppDF = sqlContext.read.format("parquet").load(s"$path/parquet_supplier_$i")
+      val parquetDir = s"$path/parquet_supplier_$i"
+      if (isParquet && new File(parquetDir).exists()) {
+        suppDF = sqlContext.read.format("parquet").load(parquetDir)
       } else {
         val suppData = sc.textFile(s"$path/supplier.tbl.$i")
         val suppReadings = suppData.map(s => s.split('|')).map(s => TPCHTableSchema
@@ -568,7 +599,13 @@ object TPCHColumnPartitionedTable {
       }
     }
     if (!isSnappy) {
-      unionSuppDF.createOrReplaceTempView("SUPPLIER")
+      if (!buckets.equals("0")) {
+        val rePartitionedDF = unionSuppDF.repartition(buckets.toInt,
+          unionSuppDF("S_SUPPKEY"))
+        rePartitionedDF.createOrReplaceTempView("SUPPLIER")
+      } else {
+        unionSuppDF.createOrReplaceTempView("SUPPLIER")
+      }
       sqlContext.cacheTable("SUPPLIER")
       sqlContext.table("SUPPLIER").count()
     }

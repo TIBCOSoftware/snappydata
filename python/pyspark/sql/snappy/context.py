@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 #
@@ -17,7 +17,6 @@
 
 from py4j.protocol import Py4JError
 from pyspark.sql.context import SQLContext
-from pyspark.sql.snappy.snappysession import SnappySession
 from pyspark.sql.types import StructType
 from pyspark.sql.dataframe import DataFrame
 
@@ -31,14 +30,13 @@ class SnappyContext(SQLContext):
         :class:`SnappyContext` in the JVM, instead we make all calls to this object.
     """
 
-    def __init__(self, sparkContext, snappyContext=None):
+    def __init__(self, sparkContext, snappyContext=None, jsparkSession=None):
         self._sc = sparkContext
         self._jsc = self._sc._jsc
         self._jvm = self._sc._jvm
-        snappySession = SnappySession(sparkContext)
-        SQLContext.__init__(self, sparkContext, snappySession)
+        self._jsparkSession = jsparkSession
         if snappyContext:
-            self._scala_SnappyContext = snappyContext
+           self._scala_SnappyContext = snappyContext
 
 
     @property
@@ -52,7 +50,7 @@ class SnappyContext(SQLContext):
                             "./gradlew product ", e)
 
     def _get_snappy_ctx(self):
-        return self._jvm.SnappyContext(self.sparkSession._jsparkSession)
+        return self._jvm.SnappyContext(self._jsparkSession)
 
     def createTable(self, tableName, provider=None, schema=None, allowExisting=True, **options):
         """
@@ -151,6 +149,3 @@ class SnappyContext(SQLContext):
         :return: number of rows deleted
         """
         return self._ssql_ctx.delete(tableName, filterExpr)
-
-
-

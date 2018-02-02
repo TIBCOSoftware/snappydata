@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,7 +18,7 @@ package io.snappydata.cluster
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
-import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, Statement, Timestamp}
+import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -28,11 +28,11 @@ import scala.sys.process._
 import scala.util.Random
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
-import org.apache.commons.io.FileUtils
 import org.junit.Assert
 
 import org.apache.spark.sql.SnappyContext
@@ -73,7 +73,7 @@ class SplitClusterDUnitTest(s: String)
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
-  override protected val productDir =
+  override protected val productDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
   override protected def locatorClientPort = { testObject.locatorNetPort }
@@ -81,13 +81,15 @@ class SplitClusterDUnitTest(s: String)
   override def beforeClass(): Unit = {
     super.beforeClass()
 
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
     val port = SplitClusterDUnitTest.locatorPort
     val netPort = SplitClusterDUnitTest.locatorNetPort
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
+
+    logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
+
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
@@ -130,36 +132,7 @@ class SplitClusterDUnitTest(s: String)
 
   // test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
-    // perform some operation thru spark-shell
-    val jars = Files.newDirectoryStream(Paths.get(s"$snappyProductDir/../distributions/"),
-      "snappydata-core*.jar")
-    val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
-    // SparkSqlTestCode.txt file contains the commands executed on spark-shell
-    val scriptFile: String = getClass.getResource("/SparkSqlTestCode.txt").getPath
-    val sparkShellCommand = productDir + "/bin/spark-shell  --master local[3]" +
-        " --conf spark.snappydata.connection=localhost:" + locatorClientPort +
-        s" --jars $snappyDataCoreJar" +
-        s" -i $scriptFile"
-
-    val cwd = new java.io.File("spark-shell-out")
-    FileUtils.deleteQuietly(cwd)
-    cwd.mkdirs()
-    logInfo(s"about to invoke spark-shell with command: $sparkShellCommand in $cwd")
-
-    Process(sparkShellCommand, cwd).!!
-    FileUtils.deleteQuietly(cwd)
-
-    val conn = testObject.getConnection(locatorClientPort)
-    val stmt = conn.createStatement()
-
-    // accessing tables created thru spark-shell
-    val rs1 = stmt.executeQuery("select count(*) from coltable")
-    rs1.next()
-    assert(rs1.getInt(1) == 5)
-
-    val rs2 = stmt.executeQuery("select count(*) from rowtable")
-    rs2.next()
-    assert(rs2.getInt(1) == 5)
+    testObject.invokeSparkShell(snappyProductDir, locatorClientPort)
   }
 }
 
@@ -211,12 +184,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val stmt = conn.createStatement()
 
     // embeddedModeTable1 is dropped in split mode. recreate it
-    /*
-    // remove below once SNAP-653 is fixed
-    val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "EMBEDDEDMODETABLE1", numPartitions,
-      registerDestroy = true)
-    */
     if (isComplex) {
       createComplexTableUsingJDBC("embeddedModeTable1", conn, stmt, props)
       selectFromComplexTypeTableUsingJDBC("embeddedModeTable1", 1005, stmt)
@@ -242,6 +209,30 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     } else {
       createTableUsingJDBC("splitModeTable1", tableType, conn, stmt, props)
       selectFromTableUsingJDBC("splitModeTable1", 1005, stmt)
+    }
+
+    // check for SNAP-2156/2164
+    var updateSql = "update splitModeTable1 set col1 = 100 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 1234)"
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount >= 0) // random value can be 1234
+    assert(stmt.executeUpdate(updateSql) == 0)
+    updateSql = "update splitModeTable1 set col1 = 100 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 1)"
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount >= 1)
+    assert(stmt.executeUpdate(updateSql) == 0)
+    updateSql = "update splitModeTable1 set col1 = 1 where exists " +
+        s"(select 1 from splitModeTable1 t where t.col1 = splitModeTable1.col1 and t.col1 = 100)"
+    assert(stmt.executeUpdate(updateSql) >= 1)
+    assert(!stmt.execute(updateSql))
+    assert(stmt.getUpdateCount == 0)
+
+    // check exception should be proper (SNAP-1423/1386)
+    try {
+      stmt.execute("call sys.rebalance_all_bickets()")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "42Y03" => // ignore
     }
 
     stmt.execute("drop table if exists embeddedModeTable1")
@@ -281,7 +272,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val data = ArrayBuffer(Data(1, "2", Decimal("3.2")),
       Data(7, "8", Decimal("9.8")), Data(9, "2", Decimal("3.9")),
       Data(4, "2", Decimal("2.4")), Data(5, "6", Decimal("7.6")))
-    for (i <- 1 to 1000) {
+    for (_ <- 1 to 1000) {
       data += Data(Random.nextInt(), Integer.toString(Random.nextInt()),
         Decimal(Random.nextInt(100).toString + '.' + Random.nextInt(100)))
     }
@@ -533,7 +524,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val serializer2 = ComplexTypeSerializer.create(tableName, "col4", conn)
     val serializer3 = ComplexTypeSerializer.create(tableName, "col6", conn)
 
-    var rs = stmt.executeQuery(s"SELECT * FROM $tableName")
+    var rs = stmt.executeQuery(s"SELECT * FROM $tableName --+ complexTypeAsJson(0)")
     var numResults = 0
     while (rs.next()) {
       // check access to complex types in different ways
@@ -628,6 +619,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   private def checkValidJsonString(s: String): Unit = {
     logInfo(s"Checking valid JSON for $s")
+    assert(s.trim().length() > 0)
     try {
       val parser = new ObjectMapper().getFactory.createParser(s)
       while (parser.nextToken() != null) {
@@ -650,6 +642,47 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     logInfo(s"Stopping spark cluster in $productDir/work")
     if (sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
+  }
+
+  def invokeSparkShell(productDir: String, locatorClientPort: Integer, props: Properties = new
+          Properties()): Unit = {
+    // perform some operation thru spark-shell
+    val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
+      "snappydata-core*.jar")
+    var securityConf = ""
+    if (props.containsKey(Attribute.USERNAME_ATTR)) {
+      securityConf = s" --conf spark.snappydata.store.user=${props.getProperty(Attribute
+          .USERNAME_ATTR)}" +
+          s" --conf spark.snappydata.store.password=${props.getProperty(Attribute.PASSWORD_ATTR)}"
+    }
+    val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
+    // SparkSqlTestCode.txt file contains the commands executed on spark-shell
+    val scriptFile: String = getClass.getResource("/SparkSqlTestCode.txt").getPath
+    val sparkShellCommand = productDir + "/bin/spark-shell  --master local[3]" +
+        " --conf spark.snappydata.connection=localhost:" + locatorClientPort +
+        s" --jars $snappyDataCoreJar" +
+        securityConf +
+        s" -i $scriptFile"
+
+    logInfo(s"About to invoke spark-shell with command: $sparkShellCommand")
+
+    var output = sparkShellCommand.!!
+    logInfo(output)
+    output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
+    assert(!output.contains("Exception"),
+      s"Some exception stacktrace seen on spark-shell console: $output")
+
+    val conn = getConnection(locatorClientPort, props)
+    val stmt = conn.createStatement()
+
+    // accessing tables created thru spark-shell
+    val rs1 = stmt.executeQuery("select count(*) from coltable")
+    rs1.next()
+    assert(rs1.getInt(1) == 5)
+
+    val rs2 = stmt.executeQuery("select count(*) from rowtable")
+    rs2.next()
+    assert(rs2.getInt(1) == 5)
   }
 }
 

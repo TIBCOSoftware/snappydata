@@ -20,10 +20,10 @@ With no arguments, `snappy` starts an [interactive SQL command shell](../../refe
 snappy
 ```
 
-To specify a system property for an interactive `snappy` session, you must define the JAVA_ARGS environment variable before starting `snappy`. For example, `snappy` uses the `gfxd.history` system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA_ARGS variable:
+To specify a system property for an interactive `snappy` session, you must define the JAVA_ARGS environment variable before starting `snappy`. For example, `snappy` uses the `snappy.history` system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA_ARGS variable:
 
 ``` pre
-$ export JAVA_ARGS="-Dgfxd.history=/Users/user1/snappystore-history.sql" 
+$ export JAVA_ARGS="-Dsnappy.history=/Users/user1/snappystore-history.sql"
 $ snappy
 ```
 
@@ -43,8 +43,12 @@ In addition to launching various utilities provided with SnappyData, when launch
 
 <!--The launcher uses the `java` executable that is found in the PATH. To override this behavior, set the <mark> TO VERIFY `GFXD_JAVA`</mark> environment variable to point to the desired Java executable. (note the supported JRE versions in [Supported Configurations and System Requirements](../../sys_requirement.md).-->
 
--   **[backup](../../reference/command_line_utilities/store-backup.md)**
+-   **[backup and restore](../../reference/command_line_utilities/store-backup.md)**
     Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.
+
+-   **[compact-all-disk-stores](store-compact-all-disk-stores.md)** Performs online compaction of SnappyData disk stores.
+
+-   **[compact-disk-store](store-compact-disk-store.md)** Performs offline compaction of a single SnappyData disk store.
 
 -   **[list-missing-disk-stores](../../reference/command_line_utilities/store-list-missing-disk-stores.md)**
     Lists all disk stores with the most recent data for which other members are waiting.

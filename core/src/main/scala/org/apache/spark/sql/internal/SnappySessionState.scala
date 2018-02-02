@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,16 +23,16 @@ import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.{EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -47,7 +47,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.DecimalType
+import org.apache.spark.sql.types.{DecimalType, StringType}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.{Partition, SparkConf}
 
@@ -67,23 +67,54 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  private[sql] var disableStoreOptimizations : Boolean = false
+  private[sql] var disableStoreOptimizations: Boolean = false
+
+  // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
+  // Rest all rules, even if redundant, are same as analyzer for maintainability reason
+  lazy val analyzerPrepare: Analyzer = new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Resolution") =>
+        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
+          case PromoteStrings => false
+          case _ => true
+        }): _*)
+      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+    }
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
+  def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
+    new PreprocessTableInsertOrPut(conf) ::
+        new FindDataSourceTable(snappySession) ::
+        DataSourceAnalysis(conf) ::
+        ResolveRelationsExtended ::
+        AnalyzeMutableOperations(snappySession, analyzer) ::
+        ResolveQueryHints(snappySession) ::
+        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
+            Nil else Nil)
+
+  def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
+    Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
+  }
 
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      new PreprocessTableInsertOrPut(conf) ::
-          new FindDataSourceTable(snappySession) ::
-          DataSourceAnalysis(conf) ::
-          ResolveRelationsExtended ::
-          AnalyzeMutableOperations(snappySession, this) ::
-          ResolveQueryHints(snappySession) ::
-          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
+      getExtendedResolutionRules(this)
 
-    override val extendedCheckRules = Seq(
-      datasources.PreWriteCheck(conf, catalog),
-      PrePutCheck)
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
+
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
       implicit val ss = snappySession
@@ -102,8 +133,9 @@ class SnappySessionState(snappySession: SnappySession)
       }
 
       modified :+
+          Batch("Like escape simplification", Once, LikeEscapeSimplification) :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
-          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets) :+
+          Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets(conf)) :+
           Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
     }
   }
@@ -162,17 +194,19 @@ class SnappySessionState(snappySession: SnappySession)
    * be created for tables to be the same as number of buckets. This will avoid
    * exchange on one side of a non-collocated join in many cases.
    */
-  object LinkPartitionsToBuckets extends Rule[LogicalPlan] {
+  final class LinkPartitionsToBuckets(conf: SQLConf) extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan.foreach {
+        case _ if Property.ForceLinkPartitionsToBuckets.get(conf) =>
+          // always create one partition per bucket
+          snappySession.linkPartitionsToBuckets(flag = true)
         case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
         case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges
           snappySession.linkPartitionsToBuckets(flag = true)
-        case PhysicalOperation(_, _, LogicalRelation(
-        _: IndexColumnFormatRelation, _, _)) =>
+        case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }
@@ -211,9 +245,10 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
-      analyzer: Analyzer) extends Rule[LogicalPlan] {
+      analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
 
-    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
+    private def getKeyAttributes(table: LogicalPlan,
+        child: LogicalPlan,
         plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
@@ -243,11 +278,12 @@ class SnappySessionState(snappySession: SnappySession)
           mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
           mutablePlan.get
       }
+
       mutablePlan match {
         case Some(sourcePlan) =>
           val keyAttrs = keyColumns.map { name =>
             analysis.withPosition(sourcePlan) {
-              newChild.resolveChildren(
+              sourcePlan.resolve(
                 name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve key column $name"))
             }
@@ -276,7 +312,7 @@ class SnappySessionState(snappySession: SnappySession)
           // resolve the columns being updated and cast the expressions if required
           val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
             val attr = analysis.withPosition(relation) {
-              newChild.resolveChildren(
+              relation.resolve(
                 c.name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve update column ${c.name}"))
             }
@@ -317,6 +353,10 @@ class SnappySessionState(snappySession: SnappySession)
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
+      case d@DeleteFromTable(_, child) if child.resolved =>
+        ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
+      case p@PutIntoTable(_, child) if child.resolved =>
+        ColumnTableBulkOps.transformPutPlan(sparkSession, p)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -411,17 +451,6 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
-
-  var isPreparePhase: Boolean = false
-
-  var pvs: Option[ParameterValueSet] = None
-
-  var questionMarkCounter: Int = 0
-
-  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit = {
-    isPreparePhase = preparePhase
-    pvs = paramSet
-  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
@@ -454,7 +483,8 @@ class SnappyConf(@transient val session: SnappySession)
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
-         Property.HashAggregateSize.name => session.clearPlanCache()
+         Property.HashAggregateSize.name |
+         Property.ForceLinkPartitionsToBuckets.name => session.clearPlanCache()
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {
@@ -468,8 +498,37 @@ class SnappyConf(@transient val session: SnappySession)
         case None => Property.SchedulerPool.defaultValue.get
         case Some(pool) if session.sparkContext.getAllPools.exists(_.name == pool) =>
           pool.toString
-        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool ${pool}")
+        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
+
+    case Property.PlanCaching.name =>
+      value match {
+        case Some(boolVal) =>
+          if (boolVal.toString.toBoolean) {
+            session.clearPlanCache()
+          }
+          session.planCaching = boolVal.toString.toBoolean
+        case None => session.planCaching = Property.PlanCaching.defaultValue.get
+      }
+
+    case Property.PlanCachingAll.name =>
+      value match {
+        case Some(boolVal) =>
+          val clearCache = !boolVal.toString.toBoolean
+          if (clearCache) SnappySession.getPlanCache.asMap().clear()
+        case None =>
+      }
+
+    case Property.Tokenize.name =>
+      value match {
+        case Some(boolVal) => SnappySession.tokenize = boolVal.toString.toBoolean
+        case None => SnappySession.tokenize = Property.Tokenize.defaultValue.get
+      }
+
+    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => value match {
+      case Some(b) => session.wholeStageEnabled = b.toString.toBoolean
+      case None => session.wholeStageEnabled = SQLConf.WHOLESTAGE_CODEGEN_ENABLED.defaultValue.get
+    }
     case _ => // ignore others
   }
 
@@ -620,6 +679,36 @@ trait AltName[T] {
     }
   }
 
+  private def get(conf: SparkConf, name: String,
+      defaultValue: String): T = {
+    configEntry.entry.defaultValue match {
+      case Some(_) => configEntry.valueConverter[T](
+        conf.get(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](
+        conf.get(name, defaultValue)).get
+    }
+  }
+
+  def get(conf: SparkConf): T = if (altName == null) {
+    get(conf, name, configEntry.defaultValueString)
+  } else {
+    if (conf.contains(name)) {
+      if (!conf.contains(altName)) get(conf, name, configEntry.defaultValueString)
+      else {
+        throw new IllegalArgumentException(
+          s"Both $name and $altName configured. Only one should be set.")
+      }
+    } else {
+      get(conf, altName, configEntry.defaultValueString)
+    }
+  }
+
+  def get(properties: Properties): T = {
+    val propertyValue = getProperty(properties)
+    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
+    else defaultValue.get
+  }
+
   def getProperty(properties: Properties): String = if (altName == null) {
     properties.getProperty(name)
   } else {
@@ -671,12 +760,6 @@ trait SQLAltName[T] extends AltName[T] {
     }
   }
 
-  def get(properties: Properties): T = {
-    val propertyValue = getProperty(properties)
-    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
-    else defaultValue.get
-  }
-
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {
     if (conf.contains(name)) Some(get(conf, name, "<undefined>"))
     else defaultValue
@@ -715,7 +798,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
   }
 
   private val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, LocalJoinStrategies)
+    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,
@@ -793,6 +876,10 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           }
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 
+        case l@LogicalRelation(dr: MutableRelation, _, _) =>
+          // First, make sure the where column(s) of the delete are in schema of the relation.
+          val expectedOutput = l.output
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
         case _ => d
       }
 
@@ -951,11 +1038,69 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
         } else {
           // OK
         }
-
       case PutIntoTable(table, _) =>
         throw Utils.analysisException(s"$table does not allow puts.")
-
       case _ => // OK
     }
+  }
+}
+
+private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: datasources.PreWriteCheck)
+    extends (LogicalPlan => Unit) {
+  def apply(plan: LogicalPlan): Unit = {
+    plan match {
+      case PutIntoColumnTable(_, _, _) => // Do nothing
+      case _ => sparkPreWriteCheck.apply(plan)
+    }
+  }
+}
+
+/**
+ * Deals with any escape characters in the LIKE pattern in optimization.
+ * Does not deal with startsAndEndsWith equivalent of Spark's LikeSimplification
+ * so 'a%b' kind of pattern with additional escaped chars will not be optimized.
+ */
+object LikeEscapeSimplification extends Rule[LogicalPlan] {
+  def simplifyLike(expr: Expression, left: Expression, pattern: String): Expression = {
+    val len_1 = pattern.length - 1
+    if (len_1 == -1) return EqualTo(left, Literal(""))
+    val str = new StringBuilder(pattern.length)
+    var wildCardStart = false
+    var i = 0
+    while (i < len_1) {
+      pattern.charAt(i) match {
+        case '\\' =>
+          val c = pattern.charAt(i + 1)
+          c match {
+            case '_' | '%' | '\\' => // literal char
+            case _ => return expr
+          }
+          str.append(c)
+          // if next character is last one then it is literal
+          if (i == len_1 - 1) {
+            if (wildCardStart) return EndsWith(left, Literal(str.toString))
+            else return EqualTo(left, Literal(str.toString))
+          }
+          i += 1
+        case '%' if i == 0 => wildCardStart = true
+        case '%' | '_' => return expr // wildcards in middle are left as is
+        case c => str.append(c)
+      }
+      i += 1
+    }
+    pattern.charAt(len_1) match {
+      case '%' =>
+        if (wildCardStart) Contains(left, Literal(str.toString))
+        else StartsWith(left, Literal(str.toString))
+      case '_' | '\\' => expr
+      case c =>
+        str.append(c)
+        if (wildCardStart) EndsWith(left, Literal(str.toString))
+        else EqualTo(left, Literal(str.toString))
+    }
+  }
+
+  def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+    case l@Like(left, Literal(pattern, StringType)) => simplifyLike(l, left, pattern.toString)
   }
 }

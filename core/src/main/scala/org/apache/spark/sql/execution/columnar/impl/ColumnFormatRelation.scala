@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -29,6 +29,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, DynamicReplacableConstant, Expression, SortDirection, SpecificInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -261,7 +262,7 @@ abstract class BaseColumnFormatRelation(
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
     ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, Some(this),
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
       updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
   }
 
@@ -273,7 +274,7 @@ abstract class BaseColumnFormatRelation(
       keyColumns: Seq[Attribute]): SparkPlan = {
     ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
       partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
-      Some(this), keyColumns, connProperties, onExecutor = false)
+      this, keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -378,7 +379,7 @@ abstract class BaseColumnFormatRelation(
       conn.commit()
       conn.close()
     }
-    createActualTable(table, externalStore)
+    createActualTables(table, externalStore)
   }
 
   /**
@@ -409,7 +410,7 @@ abstract class BaseColumnFormatRelation(
 
     // if the numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
-    createTable(externalStore, s"create table $tableName (uuid varchar(46) " +
+    createTable(externalStore, s"create table $tableName (uuid bigint " +
         "not null, partitionId integer, columnIndex integer, data blob, " +
         s"$primaryKey) $partitionStrategy $colocationClause " +
         s"$encoderClause $concurrency $ddlExtensionForShadowTable",
@@ -418,7 +419,7 @@ abstract class BaseColumnFormatRelation(
 
   // TODO: Suranjan make sure that this table doesn't evict to disk by
   // setting some property, may be MemLRU?
-  private def createActualTable(tableName: String,
+  private def createActualTables(tableName: String,
       externalStore: ExternalStore): Unit = {
     // Create the table if the table didn't exist.
     var conn: Connection = null
@@ -429,8 +430,13 @@ abstract class BaseColumnFormatRelation(
       if (!tableExists) {
         val sql =
           s"CREATE TABLE $tableName $schemaExtensions ENABLE CONCURRENCY CHECKS"
+        val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
+        if (pass != null) {
+          connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
+            pass.asInstanceOf[String])
+        }
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
@@ -511,13 +517,13 @@ class ColumnFormatRelation(
     _externalStore,
     _partitioningColumns,
     _context)
-  with ParentRelation with DependentRelation {
+  with ParentRelation with DependentRelation with BulkPutRelation {
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     // keyColumns should match the key fields required for update/delete
-    if (keyColumns.takeRight(3) != ColumnDelta.mutableKeyNames) {
+    if (keyColumns.takeRight(4) != ColumnDelta.mutableKeyNames) {
       throw new IllegalStateException(s"Unexpected keyColumns=$keyColumns, " +
           s"required=${ColumnDelta.mutableKeyNames}")
     }
@@ -583,13 +589,12 @@ class ColumnFormatRelation(
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val indexTblName = snappySession.getIndexTable(indexIdent).toString()
-    val caseInsensitiveMap = new CaseInsensitiveMutableHashMap(tableRelation.origOptions)
-    val tempOptions = caseInsensitiveMap.filterNot(pair => {
+    val tempOptions = tableRelation.origOptions.filterNot(pair => {
       pair._1.equalsIgnoreCase(StoreUtils.PARTITION_BY) ||
           pair._1.equalsIgnoreCase(StoreUtils.COLOCATE_WITH) ||
           pair._1.equalsIgnoreCase(JdbcExtendedUtils.DBTABLE_PROPERTY) ||
           pair._1.equalsIgnoreCase(ExternalStoreUtils.INDEX_NAME)
-    }).toMap + (StoreUtils.PARTITION_BY -> indexColumns.keys.mkString(",")) +
+    }) + (StoreUtils.PARTITION_BY -> indexColumns.keys.mkString(",")) +
         (StoreUtils.GEM_INDEXED_TABLE -> tableIdent.toString) +
         (JdbcExtendedUtils.DBTABLE_PROPERTY -> indexTblName)
 
@@ -657,6 +662,23 @@ class ColumnFormatRelation(
 
   /** Name of this relation in the catalog. */
   override def name: String = table
+
+  /**
+    * Get a spark plan for puts. If the row is already present, it gets updated
+    * otherwise it gets inserted into the table represented by this relation.
+    * The result of SparkPlan execution should be a count of number of rows put.
+    */
+  override def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
+    ColumnPutIntoExec(insertPlan, updatePlan)
+  }
+
+  override def getPutKeys(): Option[Seq[String]] = {
+    val keys = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+    keys match {
+      case Some(x) => Some(x.split(",").map(s => s.trim).toSeq)
+      case None => None
+    }
+  }
 }
 
 /**
@@ -766,7 +788,9 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 }
 
 final class DefaultSource extends SchemaRelationProvider
-    with CreatableRelationProvider {
+    with CreatableRelationProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyParserConsts.COLUMN_SOURCE
 
   def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], specifiedSchema: StructType): JDBCAppendableRelation = {
@@ -776,6 +800,7 @@ final class DefaultSource extends SchemaRelationProvider
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
+    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)
@@ -823,7 +848,7 @@ final class DefaultSource extends SchemaRelationProvider
       partitions, tableName, schema)
 
     // create an index relation if it is an index table
-    val baseTable = options.get(StoreUtils.GEM_INDEXED_TABLE)
+    val baseTable = parameters.get(StoreUtils.GEM_INDEXED_TABLE)
     val relation = baseTable match {
       case Some(btable) => new IndexColumnFormatRelation(
         tableName,
@@ -832,7 +857,7 @@ final class DefaultSource extends SchemaRelationProvider
         schema,
         schemaExtension,
         ddlExtensionForShadowTable,
-        options,
+        tableOptions,
         externalStore,
         partitioningColumns,
         sqlContext,
@@ -844,12 +869,12 @@ final class DefaultSource extends SchemaRelationProvider
         schema,
         schemaExtension,
         ddlExtensionForShadowTable,
-        options,
+        tableOptions,
         externalStore,
         partitioningColumns,
         sqlContext)
     }
-    val isRelationforSample = options.get(ExternalStoreUtils.RELATION_FOR_SAMPLE)
+    val isRelationforSample = parameters.get(ExternalStoreUtils.RELATION_FOR_SAMPLE)
         .exists(_.toBoolean)
 
     try {
@@ -858,7 +883,7 @@ final class DefaultSource extends SchemaRelationProvider
         catalog.registerDataSourceTable(qualifiedTableName, Some(relation.schema),
           partitioningColumns.toArray,
           classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
-          options, relation)
+          tableOptions, Some(relation))
       }
       success = true
       relation
@@ -869,6 +894,7 @@ final class DefaultSource extends SchemaRelationProvider
       }
     }
   }
+
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -78,9 +78,10 @@ object FileCleaner {
 object LocalSparkConf {
 
   def newConf(addOn: (SparkConf) => SparkConf = null): SparkConf = {
-    val conf = new SparkConf().
-        setIfMissing("spark.master", "local[4]").
-        setAppName(getClass.getName)
+    val conf = new SparkConf()
+        .setIfMissing("spark.master", "local[4]")
+        .setIfMissing("spark.memory.debugFill", "true")
+        .setAppName(getClass.getName)
     if (addOn != null) {
       addOn(conf)
     }

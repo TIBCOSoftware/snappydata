@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,18 +22,17 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
-import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.{Row, SnappySession}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -52,20 +51,17 @@ class SparkSQLPrepareImpl(val sql: String,
   private[this] val session = SnappySessionPerConnection
       .getSnappySessionForConnection(ctx.getConnId)
 
-  session.setSchema(schema)
-
-  session.setPreparedQuery(true, None)
-
-  private[this] val sessionState: SnappySessionState = {
-    val field = classOf[SnappySession].getDeclaredField("sessionState")
-    field.setAccessible(true)
-    field.get(session).asInstanceOf[SnappySessionState]
+  if (ctx.getUserName != null && !ctx.getUserName.isEmpty) {
+    session.conf.set(Attribute.USERNAME_ATTR, ctx.getUserName)
+    session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
+  session.setSchema(schema)
+
+  session.setPreparedQuery(preparePhase = true, None)
+
   private[this] val analyzedPlan: LogicalPlan = {
-    val method = classOf[SnappySession].getDeclaredMethod("prepareSQL", classOf[String])
-    method.setAccessible(true)
-    method.invoke(session, sql).asInstanceOf[LogicalPlan]
+    session.prepareSQL(sql)
   }
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
@@ -76,15 +72,16 @@ class SparkSQLPrepareImpl(val sql: String,
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
-    if (sessionState.questionMarkCounter > 0) {
+    val questionMarkCounter = session.snappyParser.questionMarkCounter
+    if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
       allParamLiterals(analyzedPlan, paramLiterals)
-      if (paramLiterals.size < sessionState.questionMarkCounter) {
+      if (paramLiterals.size < questionMarkCounter) {
         remainingParamLiterals(analyzedPlan, paramLiterals)
       }
       val paramLiteralsAtPrepare = paramLiterals.toArray.sortBy(_.pos)
       val paramCount = paramLiteralsAtPrepare.length
-      if (paramCount != sessionState.questionMarkCounter) {
+      if (paramCount != questionMarkCounter) {
         throw new UnsupportedOperationException("This query is unsupported for prepared statement")
       }
       val types = new Array[Int](paramCount * 4 + 1)
@@ -205,10 +202,10 @@ class SparkSQLPrepareImpl(val sql: String,
   def remainingParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
       case c@Cast(ParamLiteral(Row(pos: Int), NullType, 0), castType: DataType) =>
-        addParamLiteral(pos, castType, false, result)
+        addParamLiteral(pos, castType, nullable = false, result)
         c
       case cc@Cast(CaseWhen(branches, elseValue), castType: DataType) =>
-        handleCase(branches, elseValue, castType, false, result)
+        handleCase(branches, elseValue, castType, nullable = false, result)
         cc
     }
     handleSubQuery(allParams(plan), allParams)

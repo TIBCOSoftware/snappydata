@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,7 @@ import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.SparkConf
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.util.SnappyUtils
 
 
@@ -40,15 +40,20 @@ class SnappySessionFactory extends SparkContextFactory {
 
 object SnappySessionFactory {
 
-  private[this] val snappySession =
-    new SnappySession(LeadImpl.getInitializingSparkContext)
-
-  def updateCredentials(snc: SnappySession, jobConfig: Config): Config = {
+  def updateCredentials(snc: SnappySession, jobConfig: Config,
+      fromStreamCtx: Boolean = false): Config = {
     if (Misc.isSecurityEnabled) {
       try {
         // Pass job credentials to snappy session
         val username = jobConfig.getString("snappydata.user")
         val password = jobConfig.getString("snappydata.password")
+        if (fromStreamCtx) {
+          val old = snc.sqlContext.getConf(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
+          if (!old.isEmpty && !old.equalsIgnoreCase(username)) {
+            throw new UnsupportedOperationException("Cannot submit a streaming job using an " +
+                "existing streaming context and a different username, when cluster is secure.")
+          }
+        }
         snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, username)
         snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, password)
         // Clear admin user/password from jobConfig before passing it to user job.
@@ -71,7 +76,7 @@ object SnappySessionFactory {
   }
 
   protected def newSession(): SnappySession with ContextLike =
-    new SnappySession(snappySession.sparkContext) with ContextLike {
+    new SnappySession(SparkContext.getActive.get) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 
@@ -94,7 +99,7 @@ trait SnappySQLJob extends SparkJobBase {
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession],
-      SnappySessionFactory.cleanJobConfig(config)))
+      SnappySessionFactory.updateCredentials(sc.asInstanceOf[SnappySession], config)))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {

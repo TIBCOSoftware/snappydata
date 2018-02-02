@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -211,6 +211,12 @@ public class SnappyPrms extends BasePrms {
    * the gemfirexd.table-default-partitioned to false.
    */
   public static Long tableDefaultPartitioned;
+
+  /**
+   * (boolean) - whether to enable/disable PERSIST-INDEXES. Product default value will be used in
+   * case not provided.
+   */
+  public static Long persistIndexes;
 
   /**
    * (boolean) - whether test is long running.
@@ -468,6 +474,54 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long hasDynamicAppProps;
 
+  /**
+   * (Boolean) parameter to enable security for snappyJob,by default it is false.
+   */
+  public static Long isSecurity;
+
+  /**
+   * (String) User credentials that will be used when submittimg a snappyJob to a secure cluster
+   */
+  public static Long credentialFile;
+
+  /**
+   * Parameter used to get the user specified table List required for validation.
+   * (VectorsetValues of Strings) A list of values for table List
+   */
+  public static Long tableList;
+
+  /**
+   * Parameter used to get the user specified index List required for validation.
+   * (VectorsetValues of Strings) A list of values for index List
+   */
+  public static Long indexList;
+
+  /**
+   * Parameter used to get the user specified List of connetcion properties and set them on the
+   * jdbc connection.
+   * (VectorsetValues of Strings) A list of values for connetcion properties list
+   */
+  public static Long connPropsList;
+
+  /**
+   * Parameter used to get the number of Rows in each table provided in table List. This is
+   * required for validating recovery after cluster restart.
+   * (VectorsetValues of Strings) A list of values for number of rows in each table in table list
+   */
+  public static Long numRowsList;
+
+
+  public static String getCredentialFile() {
+    Long key = credentialFile;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+
+  public static boolean isSecurityOn() {
+    Long key = isSecurity;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   public static int getRetryCountForJob() {
     Long key = numTimesToRetry;
     return tasktab().intAt(key, tab().intAt(key, 5));
@@ -585,7 +639,7 @@ public class SnappyPrms extends BasePrms {
 
   public static int getShufflePartitions() {
     Long key = shufflePartitions;
-    return tasktab().intAt(key, tab().intAt(key, 1));
+    return tasktab().intAt(key, tab().intAt(key, 200));
   }
 
   public static String getCommaSepAPPProps() {
@@ -637,8 +691,14 @@ public class SnappyPrms extends BasePrms {
 
   public static boolean getTableDefaultDataPolicy() {
     Long key = tableDefaultPartitioned;
-
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static String getPersistIndexes() {
+    Long key = persistIndexes;
+    boolean persistIndexesFlag = tasktab().booleanAt(key, tab().booleanAt(key, true));
+    String persistIndexes = " -J-Dgemfirexd.persist-indexes=" + persistIndexesFlag;
+    return persistIndexes;
   }
 
   public static String getTimeStatistics() {
@@ -798,7 +858,7 @@ public class SnappyPrms extends BasePrms {
     return executorMem;
   }
 
-  public static boolean hasDynamicAppProps(){
+  public static boolean hasDynamicAppProps() {
     Long key = hasDynamicAppProps;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
@@ -806,6 +866,26 @@ public class SnappyPrms extends BasePrms {
   public static Vector getKafkaTopic() {
     Long key = kafkaTopic;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+  }
+
+  public static Vector getTableList() {
+    Long key = tableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getNumRowsList() {
+    Long key = numRowsList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getIndexList() {
+    Long key = indexList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getConnPropsList() {
+    Long key = connPropsList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
   static {

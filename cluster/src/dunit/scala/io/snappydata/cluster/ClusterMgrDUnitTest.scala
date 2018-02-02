@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -44,11 +44,15 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // connect with this new lead.
     // In this case servers are already running and a lead comes
     // and join
-    vm3.invoke(getClass, "startSnappyLead", startArgs)
-    vm3.invoke(getClass, "startSparkJob")
-    vm3.invoke(getClass, "startGemJob")
-    vm3.invoke(getClass, "stopSpark")
-    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    try {
+      vm3.invoke(getClass, "stopAny")
+      vm3.invoke(getClass, "startSnappyLead", startArgs)
+      vm3.invoke(getClass, "startSparkJob")
+      vm3.invoke(getClass, "startGemJob")
+    } finally {
+      vm3.invoke(getClass, "stopSpark")
+      ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    }
   }
 
   def testUncaughtExceptionInExecutor(): Unit = {
@@ -96,7 +100,7 @@ object ClusterMgrDUnitTest {
 
   def failTheExecutors: Unit = {
     sc.parallelize(1 until 100, 5).map { i =>
-      throw new InternalError()
+      throw new OutOfMemoryError("Some message")
     }.collect()
   }
 
@@ -158,11 +162,10 @@ object ClusterMgrDUnitTest {
     try {
       new SparkContext(conf)
       assert(assertion = false,
-        "Expected SparkContext creation to fail due to existing lead")
+        "Expected SparkContext creation to fail without launcher")
     } catch {
       case e: org.apache.spark.SparkException =>
-        if (!e.getMessage.startsWith("Primary Lead node (Spark Driver) is " +
-            "already running in the system")) {
+        if (!e.getMessage.contains("only supported from ServiceManager")) {
           throw e
         } // else ok
     }

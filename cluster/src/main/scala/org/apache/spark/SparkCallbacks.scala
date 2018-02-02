@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,8 +19,10 @@ package org.apache.spark
 import org.apache.spark
 
 import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.memory.StoreUnifiedManager
 import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{RetrieveSparkAppConfig, SparkAppConfig}
+import org.apache.spark.ui.{JettyUtils, SnappyBasicAuthenticator}
 
 /**
  * Calls that are needed to be sent to snappy-cluster classes because
@@ -48,6 +50,8 @@ object SparkCallbacks {
   def stopExecutor(env: SparkEnv): Unit = {
     if (env != null) {
       SparkHadoopUtil.get.runAsSparkUser { () =>
+        // Copy the memory state to boot memory manager
+        SparkEnv.get.memoryManager.asInstanceOf[StoreUnifiedManager].close
         env.stop()
         SparkEnv.set(null)
         SparkHadoopUtil.get.stopCredentialUpdater()
@@ -81,4 +85,14 @@ object SparkCallbacks {
         SparkEnv.get.executorId == SparkContext.DRIVER_IDENTIFIER
   }
 
+  def setAuthenticatorForJettyServer(): Unit = {
+    if (JettyUtils.customAuthenticator.isEmpty) {
+      // create and set SnappyBasicAuthenticator
+      JettyUtils.customAuthenticator = Some(new SnappyBasicAuthenticator)
+    }
+  }
+
+  def setSparkConf(sc: SparkContext, key: String, value: String): Unit = {
+    if (value ne null) sc.conf.set(key, value) else sc.conf.remove(key)
+  }
 }

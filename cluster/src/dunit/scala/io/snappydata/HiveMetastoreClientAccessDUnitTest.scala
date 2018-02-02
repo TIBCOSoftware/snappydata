@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -168,7 +168,7 @@ object HiveMetastoreClientAccessDUnitTest extends Logging {
         .set(Property.Locators.name, locStr)
 
     if (setMaster != null) {
-      conf.setMaster(setMaster).set(Property.Embedded.name, "true")
+      conf.setMaster(setMaster)
     }
 
     val sc = new org.apache.spark.SparkContext(conf)

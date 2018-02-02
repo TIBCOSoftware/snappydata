@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,7 +31,7 @@ class SnappyContextFunctions {
 
   def clearStatic(): () => Unit = () => {}
 
-  def postRelationCreation(relation: BaseRelation, session: SnappySession): Unit = {}
+  def postRelationCreation(relation: Option[BaseRelation], session: SnappySession): Unit = {}
 
   def registerAQPErrorFunctions(session: SnappySession) {}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import java.sql.{Connection, ResultSet, Statement}
 import java.util.GregorianCalendar
 
 import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
@@ -38,8 +39,8 @@ import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
+import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
-import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext}
 
@@ -169,9 +170,24 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   }
 
   def computeResultSet(
-      thePart: Partition): (Connection, Statement, ResultSet) = {
+      thePart: Partition, context: TaskContext): (Connection, Statement, ResultSet) = {
     val conn = ExternalStoreUtils.getConnection(tableName,
       connProperties, forExecutor = true)
+
+    if (context ne null) {
+      val partitionId = context.partitionId()
+      context.addTaskCompletionListener { _ =>
+        logDebug(s"closed connection for task from listener $partitionId")
+        try {
+          conn.commit()
+          conn.close()
+          logDebug("closed connection for task " + context.partitionId())
+        } catch {
+          case NonFatal(e) => logWarning("Exception closing connection", e)
+        }
+      }
+    }
+
     if (isPartitioned) {
       val ps = conn.prepareStatement(
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
@@ -216,7 +232,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext): Unit = {
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      val tx = TXManagerImpl.snapshotTxState.get()
+      val tx = TXManagerImpl.getCurrentSnapshotTXState
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
         val txMgr = tx.getTxMgr
         txMgr.masqueradeAs(tx)
@@ -241,7 +257,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         }
       }
       // we always iterate here for column table
-      val (conn, stmt, rs) = computeResultSet(thePart)
+      val (conn, stmt, rs) = computeResultSet(thePart, context)
       val itr = new ResultSetTraversal(conn, stmt, rs, context)
       if (commitTx && pushProjections) {
         commitTxBeforeTaskCompletion(Option(conn), context)
@@ -268,7 +284,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         val txId = if (tx ne null) tx.getTransactionId else null
         new CompactExecRowIteratorOnScan(container, bucketIds, txId)
       } else {
-        val (conn, stmt, rs) = computeResultSet(thePart)
+        val (conn, stmt, rs) = computeResultSet(thePart, context)
         val ers = rs match {
           case e: EmbedResultSet => e
           case p: ProxyResultSet =>
@@ -297,13 +313,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (parts != null && parts.length > 0) {
       return parts
     }
-
-    // To be removed by SNAP-1872
-    val redundantConn = ConnectionPool.getPoolConnection(tableName,
-      connProperties.dialect, connProperties.poolProps,
-      connProperties.connProps, connProperties.hikariCP)
-    redundantConn.commit()
-    redundantConn.close()
 
     Misc.getRegionForTable(tableName, true).asInstanceOf[CacheDistributionAdvisee] match {
       case pr: PartitionedRegion => session.sessionState.getTablePartitions(pr)
@@ -396,18 +405,23 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 abstract class PRValuesIterator[T](container: GemFireContainer,
     region: LocalRegion, bucketIds: java.util.Set[Integer]) extends Iterator[T] {
 
+  protected type PRIterator = PartitionedRegion#PRLocalScanIterator
+
   protected final var hasNextValue = true
   protected final var doMove = true
   // transaction started by row buffer scan should be used here
-  private val tx = TXManagerImpl.snapshotTxState.get()
-  private[execution] final val itr = if (container ne null) {
+  private val tx = TXManagerImpl.getCurrentSnapshotTXState
+  private[execution] final val itr = createIterator(container, region, tx)
+
+  protected def createIterator(container: GemFireContainer, region: LocalRegion,
+      tx: TXStateInterface): PRIterator = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
-      false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+      false, true).asInstanceOf[PRIterator]
   } else if (region ne null) {
     region.getDataView(tx).getLocalEntriesIterator(
       bucketIds.asInstanceOf[java.util.Set[Integer]], false, false, true,
-      region, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+      region, true).asInstanceOf[PRIterator]
   } else null
 
   protected def currentVal: T

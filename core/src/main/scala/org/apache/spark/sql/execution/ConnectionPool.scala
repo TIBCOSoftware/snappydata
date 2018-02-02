@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -116,6 +116,7 @@ object ConnectionPool {
               if (connectionProps != null) {
                 tconf.setDbProperties(connectionProps)
               }
+              tconf.setUseStatementFacade(false)
               new TDataSource(tconf)
             }
             pools(poolKey) = (newDS, mutable.Set(id))

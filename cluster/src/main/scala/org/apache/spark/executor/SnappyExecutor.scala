@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,11 +18,16 @@ package org.apache.spark.executor
 
 import java.io.File
 import java.net.URL
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.tcp.ConnectionTable
+import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
@@ -36,8 +41,33 @@ class SnappyExecutor(
     userClassPath: Seq[URL] = Nil,
     exceptionHandler: SnappyUncaughtExceptionHandler,
     isLocal: Boolean = false)
-    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) with
-    SparkCallBack {
+    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) {
+
+  {
+    // set a thread-factory for the thread pool for cleanup
+    val threadGroup = Thread.currentThread().getThreadGroup
+    val threadFactory = new ThreadFactory {
+
+      private val threadNum = new AtomicInteger(0)
+
+      override def newThread(command: Runnable): Thread = {
+        val r = new Runnable {
+          override def run(): Unit = {
+            try {
+              command.run()
+            } finally {
+              ConnectionTable.releaseThreadsSockets()
+            }
+          }
+        }
+        val thread = new Thread(threadGroup, r,
+          "Executor task launch worker-" + threadNum.getAndIncrement())
+        thread.setDaemon(true)
+        thread
+      }
+    }
+    threadPool.setThreadFactory(threadFactory)
+  }
 
   if (!isLocal) {
     // Setup an uncaught exception handler for non-local mode.
@@ -107,6 +137,27 @@ class SnappyExecutor(
       }
     }
   }
+
+  override def isStoreCloseException(t: Throwable): Boolean = {
+    try {
+      Misc.checkIfCacheClosing(t)
+      false
+    } catch {
+      case _: CancelException => true
+      case _: Throwable => false
+    }
+  }
+
+  override def isStoreException(t: Throwable): Boolean = {
+    GemFireXDUtils.retryToBeDone(t)
+  }
+
+  override def isFatalError(t: Throwable): Boolean = {
+    t match {
+      case err: Error => SystemFailure.isJVMFailureError(err)
+      case _ => false
+    }
+  }
 }
 
 class SnappyMutableURLClassLoader(urls: Array[URL],
@@ -155,9 +206,14 @@ private class SnappyUncaughtExceptionHandler(
         }
       }
     } catch {
-      // Exception while handling an uncaught exception. we cannot do much here
-      case _: OutOfMemoryError => Runtime.getRuntime.halt(SparkExitCode.OOM)
-      case _: Throwable => Runtime.getRuntime.halt(SparkExitCode.UNCAUGHT_EXCEPTION_TWICE)
+      case t: Throwable => try {
+        if (t.isInstanceOf[OutOfMemoryError]) System.exit(SparkExitCode.OOM)
+        else System.exit(SparkExitCode.UNCAUGHT_EXCEPTION)
+      } catch {
+        // Exception while handling an uncaught exception. we cannot do much here
+        case _: OutOfMemoryError => Runtime.getRuntime.halt(SparkExitCode.OOM)
+        case _: Throwable => Runtime.getRuntime.halt(SparkExitCode.UNCAUGHT_EXCEPTION_TWICE)
+      }
     }
   }
 }

@@ -19,17 +19,16 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.cache.{EntryEvent, Region}
+import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
 import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSeq, BindReferences}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
-import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding}
+import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
 /**
  * Encapsulates a delta for update to be applied to column table and also
@@ -48,9 +47,15 @@ import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructFiel
  */
 final class ColumnDelta extends ColumnFormatValue with Delta {
 
-  def this(buffer: ByteBuffer) = {
+  def this(buffer: ByteBuffer, codecId: Int, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean = true) = {
     this()
-    setBuffer(buffer)
+    setBuffer(buffer, codecId, isCompressed, changeOwnerToStorage)
+  }
+
+  override protected def copy(buffer: ByteBuffer, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean): ColumnDelta = synchronized {
+    new ColumnDelta(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
   override def apply(putEvent: EntryEvent[_, _]): AnyRef = {
@@ -60,13 +65,14 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   }
 
   override def apply(region: Region[_, _], key: AnyRef, oldValue: AnyRef,
-      prepareForOffHeap: Boolean): AnyRef = {
+      prepareForOffHeap: Boolean): AnyRef = synchronized {
     if (oldValue eq null) {
       // first delta, so put as is
-      val result = new ColumnFormatValue(columnBuffer)
+      val result = new ColumnFormatValue(columnBuffer, compressionCodecId, isCompressed)
       // buffer has been transferred and should be removed from delta
       // which would no longer be usable after this point
       columnBuffer = DiskEntry.Helper.NULL_BUFFER
+      decompressionState = -1
       result
     } else {
       // merge with existing delta
@@ -75,17 +81,25 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         // TODO: SW: merge stats
         oldValue
       } else {
-        val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex)
+        val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
         val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
         val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
-            .fetchHiveMetaData(false).schema.asInstanceOf[StructType]
-        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue]
-        val existingBuffer = oldColumnValue.getBufferRetain
+            .fetchHiveMetaData(false) match {
+          case null => throw new IllegalStateException(
+            s"Table for region ${region.getFullPath} not found in hive metadata")
+          case m => m.schema.asInstanceOf[StructType]
+        }
+        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
+          decompress = true, compress = false)
+        val existingBuffer = oldColumnValue.getBuffer
+        val newValue = getValueRetain(decompress = true, compress = false)
         try {
-          new ColumnFormatValue(encoder.merge(columnBuffer, existingBuffer,
-            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)))
+          new ColumnFormatValue(encoder.merge(newValue.getBuffer, existingBuffer,
+            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)),
+            oldColumnValue.compressionCodecId, isCompressed = false)
         } finally {
           oldColumnValue.release()
+          newValue.release()
           // release own buffer too and delta should be unusable now
           release()
         }
@@ -110,10 +124,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_FORMAT_DELTA
 
-  override def toString: String = {
-    val buffer = columnBuffer.duplicate()
-    s"ColumnDelta[size=${buffer.remaining()} $buffer"
-  }
+  override protected def className: String = "ColumnDelta"
 }
 
 object ColumnDelta {
@@ -130,6 +141,12 @@ object ColumnDelta {
    */
   val MAX_DEPTH = 3
 
+  /**
+   * This is the currently used maximum depth which must be <= [[MAX_DEPTH]].
+   * It should only be used by transient execution-time structures and never in storage.
+   */
+  val USED_MAX_DEPTH = 2
+
   val mutableKeyNamePrefix = "SNAPPYDATA_INTERNAL_COLUMN_"
   /**
    * These are the virtual columns that are injected in the select plan for
@@ -138,34 +155,82 @@ object ColumnDelta {
   val mutableKeyNames: Seq[String] = Seq(
     mutableKeyNamePrefix + "ROW_ORDINAL",
     mutableKeyNamePrefix + "BATCH_ID",
-    mutableKeyNamePrefix + "BUCKET_ORDINAL"
+    mutableKeyNamePrefix + "BUCKET_ORDINAL",
+    mutableKeyNamePrefix + "BATCH_NUMROWS"
   )
   val mutableKeyFields: Seq[StructField] = Seq(
     StructField(mutableKeyNames.head, LongType, nullable = false),
-    StructField(mutableKeyNames(1), StringType, nullable = true),
-    StructField(mutableKeyNames(2), IntegerType, nullable = false)
+    StructField(mutableKeyNames(1), LongType, nullable = false),
+    StructField(mutableKeyNames(2), IntegerType, nullable = false),
+    StructField(mutableKeyNames(3), IntegerType, nullable = false)
   )
-  def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
-  def bindKeyColumns(keyColumns: Seq[Attribute], ctx: CodegenContext,
-      input: Seq[ExprCode], output: AttributeSeq): (ExprCode, ExprCode, ExprCode) = {
-    ctx.INPUT_ROW = null
-    ctx.currentVars = input
-    val ordinalId = BindReferences.bindReference(keyColumns.head, output).genCode(ctx)
-    val batchId = BindReferences.bindReference(keyColumns(1), output).genCode(ctx)
-    val bucketId = BindReferences.bindReference(keyColumns(2), output).genCode(ctx)
-    ctx.currentVars = null
-    (ordinalId, batchId, bucketId)
-  }
+  def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
   def deltaHierarchyDepth(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) % MAX_DEPTH
   } else -1
 
+  /**
+   * Returns 1 based table column index for given delta or table column index
+   * (table column index stored in region key is 1 based).
+   */
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
-    (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH
+    (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX + MAX_DEPTH - 1) / MAX_DEPTH
   } else deltaColumnIndex
 
+  /**
+   * Returns the delta column index as store in region key given the 0 based
+   * table column index (table column index stored in region key is 1 based).
+   */
   def deltaColumnIndex(tableColumnIndex: Int, hierarchyDepth: Int): Int =
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1 - hierarchyDepth
+
+  /**
+   * Check if all the rows in a batch have been deleted.
+   */
+  private[columnar] def checkBatchDeleted(deleteBuffer: ByteBuffer): Boolean = {
+    val allocator = ColumnEncoding.getAllocator(deleteBuffer)
+    val bufferBytes = allocator.baseObject(deleteBuffer)
+    val bufferCursor = allocator.baseOffset(deleteBuffer) + 4
+    val numBaseRows = ColumnEncoding.readInt(bufferBytes, bufferCursor)
+    val numDeletes = ColumnEncoding.readInt(bufferBytes, bufferCursor + 4)
+    numDeletes >= numBaseRows
+  }
+
+  /**
+   * Delete entire batch from column store for the batchId and partitionId
+   * matching those of given key.
+   */
+  private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _],
+      columnTableName: String, forUpdate: Boolean): Unit = {
+
+    // delete all the rows with matching batchId
+    def destroyKey(key: ColumnFormatKey): Unit = {
+      try {
+        columnRegion.destroy(key)
+      } catch {
+        case _: EntryNotFoundException => // ignore
+      }
+    }
+
+    val numColumns = key.getNumColumnsInTable(columnTableName)
+    // delete the stats rows first
+    destroyKey(key.withColumnIndex(ColumnFormatEntry.STATROW_COL_INDEX))
+    if (forUpdate) {
+      destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
+    }
+    // column values and deltas next
+    for (columnIndex <- 1 to numColumns) {
+      destroyKey(key.withColumnIndex(columnIndex))
+      for (depth <- 0 until MAX_DEPTH) {
+        destroyKey(key.withColumnIndex(deltaColumnIndex(
+          columnIndex - 1 /* zero based */ , depth)))
+      }
+    }
+    // lastly the delete delta row itself
+    if (forUpdate) {
+      destroyKey(key.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX))
+    }
+  }
 }

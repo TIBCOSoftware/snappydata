@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,23 +21,29 @@ import java.io.File
 import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
 import com.gemstone.gemfire.distributed.DistributedMember
-
 import scala.collection.mutable
+import scala.collection.JavaConverters._
+
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant._
+import io.snappydata.Property
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import junit.framework.TestCase
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, TPCHUtils}
+import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, SnappySession, TPCHUtils}
 import org.apache.spark.util.Benchmark
 
 /**
@@ -179,11 +185,15 @@ class QueryRoutingDUnitTest(val s: String)
     }
     assert(cnt == 5)
 
-    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR")
+    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR where spark_partition_id() > -1")
     assert(deleted == 5)
     s.execute("select col1 from TEST.ColumnTableQR order by col1")
     assert(!s.getResultSet.next())
-
+    createTableAndInsertData()
+    val deleted2 = s.executeUpdate("delete from TEST.ColumnTableQR")
+    assert(deleted2 == 5)
+    s.execute("select * from TEST.ColumnTableQR")
+    assert(!s.getResultSet.next())
     conn.close()
   }
 
@@ -356,6 +366,28 @@ class QueryRoutingDUnitTest(val s: String)
     ps2.close()
   }
 
+  def testSnap1945_putdmlvariation(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    stmt.execute("create table dest(col1 int, col2 int not null primary key) using row options()")
+    stmt.execute("create table source(col1 int, col2 int) using row options()")
+    stmt.executeUpdate("insert into source values (1, 2), (2, 3)")
+    stmt.executeUpdate("put into dest select * from source")
+    stmt.execute("select count(*) from dest")
+    val rs = stmt.getResultSet
+    assert(rs.next())
+    assert(2 == rs.getInt(1))
+    assert(!rs.next())
+    rs.close()
+    stmt.execute("drop table source")
+    stmt.execute("drop table dest")
+    stmt.close()
+    conn.close()
+  }
+
   def testSNAP193_607_8_9(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
@@ -448,6 +480,8 @@ class QueryRoutingDUnitTest(val s: String)
       var schemaname = rs.getString("tableschemaname")
       assert("APP".equals(schemaname))
 
+      // just check few metadata for internal column table absence
+      checkDBAPIsForNonInclusionOfInternalColTable(conn)
       s.execute(s"CREATE TABLE $rowTable (Col1 INT, Col2 INT, Col3 INT) USING row")
       s.execute(s"select * from sys.systables where tablename='$rowTable'")
       rs = s.getResultSet
@@ -459,7 +493,7 @@ class QueryRoutingDUnitTest(val s: String)
 
       val dbmd = conn.getMetaData
       val rSet = dbmd.getTables(null, "APP", null,
-        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+        Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
           "EXTERNAL TABLE", "STREAM TABLE"))
       assert(rSet.next())
 
@@ -489,13 +523,13 @@ class QueryRoutingDUnitTest(val s: String)
       results.clear()
 
       val tableMd = dbmd.getTables(null, "APP%", null,
-        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+        Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
           "EXTERNAL TABLE", "STREAM TABLE"))
       while (tableMd.next()) {
         results += tableMd.getString(2) + '.' + tableMd.getString(3)
       }
-      // 2 for column table and 1 for parquet external table
-      assert(results.size == 3, s"Got size = ${results.size} [$results] but expected 3.")
+      // 1 for column table and 1 for parquet external table
+      assert(results.size == 2, s"Got size = ${results.size} [$results] but expected 2.")
       assert(results.contains(s"APP.$colTable"))
       assert(results.contains(s"APP_PARQUET.$parquetTable"))
       results.clear()
@@ -519,6 +553,35 @@ class QueryRoutingDUnitTest(val s: String)
         newConn.close()
       }
       FileUtils.deleteDirectory(dataDir)
+    }
+  }
+
+  def checkDBAPIsForNonInclusionOfInternalColTable(conn: Connection): Unit = {
+    var rs = conn.getMetaData.getTables(null, null, "%", null)
+    var ncols = rs.getMetaData.getColumnCount
+    while (rs.next()) {
+      // 3rd index the table name
+      assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+    }
+    rs.close()
+    rs = conn.getMetaData.getColumns(null, null, "%", "%")
+    ncols = rs.getMetaData.getColumnCount
+    while (rs.next()) {
+      // 3rd index the table name
+      for (i <- 1 to ncols) {
+        // 3rd index the table name
+        assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+      }
+    }
+    rs.close()
+    rs = conn.getMetaData.getTablePrivileges(null, null, "%")
+    ncols = rs.getMetaData.getColumnCount
+    while (rs.next()) {
+      // 3rd index the table name
+      for (i <- 1 to ncols) {
+        // 3rd index the table name
+        assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+      }
     }
   }
 
@@ -570,7 +633,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     // Simulates 'SHOW TABLES' of ij
     var rSet = dbmd.getTables(null, "APP", null,
-      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+      Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
         "EXTERNAL TABLE", "STREAM TABLE"))
 
     var foundTable = false
@@ -583,7 +646,7 @@ class QueryRoutingDUnitTest(val s: String)
     assert(foundTable)
 
     val rSet2 = dbmd.getTables(null, "APP", null,
-      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+      Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
         "EXTERNAL TABLE", "STREAM TABLE"))
 
     foundTable = false
@@ -594,7 +657,8 @@ class QueryRoutingDUnitTest(val s: String)
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
       }
     }
-    assert(foundTable)
+    // internal column tables are no longer visible in getTables
+    assert(!foundTable)
 
     // Simulates 'SHOW MEMBERS' of ij
     rSet = s.executeQuery("SELECT * FROM SYS.MEMBERS ORDER BY ID ASC")
@@ -744,6 +808,54 @@ class QueryRoutingDUnitTest(val s: String)
 
     // (1 to 5).foreach(d => query())
     limitQuery(serverHostPort, tableName)
+  }
+
+  def testPrimaryPreferenceInRouting(): Unit = {
+    val session = new SnappySession(sc)
+    Property.ColumnBatchSize.set(session.sessionState.conf, "10k")
+    Property.ForceLinkPartitionsToBuckets.set(session.sessionState.conf, true)
+    Property.PreferPrimariesInQuery.set(session.sessionState.conf, true)
+
+    val table = "UPDATETABLE"
+    val df = session.range(100000).selectExpr("id", "concat('addr', cast(id as string)) addr")
+    df.write.mode(SaveMode.Overwrite).format("column").option("redundancy", "1")
+        .saveAsTable(table)
+
+    def assertPrimaries(query: String): Unit = {
+
+      def hostExecutorId(m: InternalDistributedMember): String =
+        Utils.getHostExecutorId(SnappyContext.getBlockId(m.canonicalString()).get.blockId)
+
+      val rdd = session.sql(query).queryExecution.executedPlan.execute()
+      val region = Misc.getRegionForTable(s"APP.$table", true)
+          .asInstanceOf[PartitionedRegion]
+      val adviser = region.getRegionAdvisor
+      rdd.partitions.foreach { split =>
+        val preferredLocations = rdd.preferredLocations(split)
+        val primary = adviser.getPrimaryMemberForBucket(split.index)
+        val owners = adviser.getBucketOwners(split.index)
+
+        assert(preferredLocations.head == hostExecutorId(primary))
+        assert(owners.size() > 1)
+        assert(owners.asScala.map(hostExecutorId) == preferredLocations.toSet)
+      }
+    }
+
+    assertPrimaries(s"select * from $table where id < 1000")
+    assertPrimaries(s"select * from $table")
+
+    // also for partitioned tables
+    val schema = session.table(table).schema
+    session.dropTable(table)
+
+    session.createTable(table, "column", schema,
+      Map("partition_by" -> "id", "redundancy" -> "1"))
+    df.write.insertInto(table)
+
+    assertPrimaries(s"select * from $table where id < 1000")
+    assertPrimaries(s"select * from $table")
+
+    session.dropTable(table)
   }
 
   def limitInsertRows(numRows: Int, serverHostPort: Int, tableName: String): Unit = {

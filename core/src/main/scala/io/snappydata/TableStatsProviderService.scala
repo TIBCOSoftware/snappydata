@@ -17,36 +17,40 @@
 
 package io.snappydata
 
+import java.util.concurrent.atomic.AtomicReference
+
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.util.control.Breaks._
 
 import com.gemstone.gemfire.CancelException
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
 
-import scala.util.control.Breaks._
-
 trait TableStatsProviderService extends Logging {
 
   @volatile
   private var tableSizeInfo = Map.empty[String, SnappyRegionStats]
+  private var externalTableSizeInfo = Map.empty[String, SnappyExternalTableStats]
   @volatile
   private var indexesInfo = Map.empty[String, SnappyIndexStats]
   protected val membersInfo: TrieMap[String, mutable.Map[String, Any]] =
     TrieMap.empty[String, mutable.Map[String, Any]]
 
-  private var _snc: Option[SnappyContext] = None
+  private val _snc: AtomicReference[SnappyContext] = new AtomicReference[SnappyContext]()
 
-  protected def snc: SnappyContext = synchronized {
-    _snc.getOrElse {
-      val context = SnappyContext()
-      _snc = Option(context)
-      context
-    }
+  protected def snc: SnappyContext = {
+    val context = _snc.get()
+    if (context ne null) context
+    else if (doRun) {
+      val newContext = SnappyContext()
+      _snc.compareAndSet(null, newContext)
+      _snc.get()
+    } else null
   }
 
   var memberStatsUpdater: Option[Thread] = None
@@ -61,7 +65,7 @@ trait TableStatsProviderService extends Logging {
             // update membersInfo
             fillAggregatedMemberStatsOnDemand()
           }
-        });
+        })
         Option(th)
       }
     }
@@ -80,9 +84,10 @@ trait TableStatsProviderService extends Logging {
         val prevTableSizeInfo = tableSizeInfo
         running = true
         try {
-          val (tableStats, indexStats) = getAggregatedStatsOnDemand
+          val (tableStats, indexStats, extTableStats) = getAggregatedStatsOnDemand
           tableSizeInfo = tableStats
           indexesInfo = indexStats // populating indexes stats
+          externalTableSizeInfo = extTableStats
 
           // Commenting this call to avoid periodic refresh of members stats
           // get members details
@@ -129,16 +134,16 @@ trait TableStatsProviderService extends Logging {
     var infoToBeReturned: mutable.Map[String, mutable.Map[String, Any]] =
       TrieMap.empty[String, mutable.Map[String, Any]]
     val prevMembersInfo = membersInfo.synchronized{membersInfo}
-    val waitTime: Int = 500;
+    val waitTime: Int = 500
 
     // get member stats updater thread
-    val msUpdater = getMemberStatsUpdater;
+    val msUpdater = getMemberStatsUpdater
     if (!msUpdater.isAlive) {
       // start updater thread to update members stats
-      msUpdater.start();
+      msUpdater.start()
     }
 
-    val endTimeMillis = System.currentTimeMillis() + 5000;
+    val endTimeMillis = System.currentTimeMillis() + 5000
     if (msUpdater.isAlive) {
       breakable {
         while (msUpdater.isAlive) {
@@ -149,7 +154,7 @@ trait TableStatsProviderService extends Logging {
           }
           try {
             // Wait
-            logInfo("Obtaining updated Members Statistics in progress.." +
+            logDebug("Obtaining updated Members Statistics in progress.." +
                 "Waiting for " + waitTime + " ms")
             Thread.sleep(waitTime)
           } catch {
@@ -178,9 +183,9 @@ trait TableStatsProviderService extends Logging {
     doRun = false
     // wait for it to end for sometime
     synchronized {
-      if (running) wait(20000)
+      if (running) wait(10000)
     }
-    _snc = None
+    _snc.set(null)
   }
 
   def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
@@ -217,15 +222,21 @@ trait TableStatsProviderService extends Logging {
     tableSizeInfo.get(fullyQualifiedTableName)
   }
 
+  def getExternalTableStatsFromService(
+      fullyQualifiedTableName: String): Option[SnappyExternalTableStats] = {
+    externalTableSizeInfo.get(fullyQualifiedTableName)
+  }
+
   def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
-      Map[String, SnappyIndexStats]) = {
+      Map[String, SnappyIndexStats], Map[String, SnappyExternalTableStats]) = {
     val snc = this.snc
-    if (snc == null) return (Map.empty, Map.empty)
-    val (tableStats, indexStats) = getStatsFromAllServers()
+    if (snc eq null) return (Map.empty, Map.empty, Map.empty)
+    val (tableStats, indexStats, externalTableStats) = getStatsFromAllServers()
 
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
+    val aggregatedExtTableStats = scala.collection.mutable.Map[String, SnappyExternalTableStats]()
     val aggregatedStatsIndex = scala.collection.mutable.Map[String, SnappyIndexStats]()
-    if (!doRun) return (Map.empty, Map.empty)
+    if (!doRun) return (Map.empty, Map.empty, Map.empty)
     // val samples = getSampleTableList(snc)
     tableStats.foreach { stat =>
       aggregatedStats.get(stat.getRegionName) match {
@@ -239,7 +250,12 @@ trait TableStatsProviderService extends Logging {
     indexStats.foreach { stat =>
       aggregatedStatsIndex.put(stat.getIndexName, stat)
     }
-    (Utils.immutableMap(aggregatedStats), Utils.immutableMap(aggregatedStatsIndex))
+    externalTableStats.foreach { stat =>
+      aggregatedExtTableStats.put(stat.getTableName, stat)
+    }
+    (Utils.immutableMap(aggregatedStats),
+        Utils.immutableMap(aggregatedStatsIndex),
+        Utils.immutableMap(aggregatedExtTableStats))
   }
 
   /*
@@ -255,5 +271,5 @@ trait TableStatsProviderService extends Logging {
   */
 
   def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats])
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats])
 }

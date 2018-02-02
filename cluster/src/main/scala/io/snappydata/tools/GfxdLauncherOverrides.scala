@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -41,10 +41,10 @@ class ServerLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   override protected def usage(): Unit = {
     val script: String = LocalizedMessages.res.getTextMessage("SD_SERVER_SCRIPT")
     val name: String = LocalizedMessages.res.getTextMessage("SD_SERVER_NAME")
-    val extraHelp = LocalizedResource.getMessage("FS_EXTRA_HELP",
+    val extraHelp = LocalizedResource.getMessage("FS_SNAPPY_EXTRA_HELP",
       LocalizedMessages.res.getTextMessage("FS_PRODUCT"))
     val usageOutput: String = LocalizedResource.getMessage("SERVER_HELP",
-      script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"), extraHelp)
+      script, name, LocalizedResource.getMessage("FS_SNAPPY_ADDRESS_ARG"), extraHelp)
 
     printUsage(usageOutput, SanityManager.DEFAULT_MAX_OUT_LINES)
   }

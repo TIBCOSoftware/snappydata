@@ -3,7 +3,7 @@ SELECT * FROM user2.employees limit 5;
 SELECT count(*) FROM user2.categories;
 SELECT * FROM user2.categories;
 SELECT City, COUNT(EmployeeID) AS NumEmployees FROM user2.employees WHERE Title = 'Sales Representative' GROUP BY City HAVING COUNT(EmployeeID) > 1 ORDER BY NumEmployees;
-INSERT into user2.employees values(2,'empFirstName2','empLastName2','VicePresidentSales','Mrs.','1952-02-19 00:00:00.000','1992-08-14 00:00:00.000','908W.CapitalWay','Tacoma','WA','98401','USA','(206)555-9482',3457,'000','StudiedMBA.',NULL,'http://accweb/emmployees/fuller.bmp');
+INSERT INTO user2.employees values(2,'empFirstName2','empLastName2','VicePresidentSales','Mrs.','1952-02-19 00:00:00.000','1992-08-14 00:00:00.000','908W.CapitalWay','Tacoma','WA','98401','USA','(206)555-9482',3457,'000','StudiedMBA.',NULL,'http://accweb/emmployees/fuller.bmp');
 INSERT INTO user2.categories values(10,'Pulses','dalandsprouts','00');
 UPDATE user2.employees SET LastName = 'last name' WHERE EmployeeID = 7;
 DELETE FROM user2.employees WHERE LastName = 'last name' AND EmployeeID = 7;
@@ -17,6 +17,6 @@ SELECT ProductID, AVG(UnitPrice) AS AveragePrice FROM user2.products GROUP BY Pr
 INSERT into user2.customers values('custID4','abc','custName7','MarketingManager','aasdfasdfasd7','Strasbourg',NULL,'67000','France','88.60.15.31','88.60.15.32');
 INSERT into user2.order_details values(10253,41,7.7,10,0);
 INSERT into user2.orders values(10251,'AROUT',4,'1996-07-08 00:00:00.000','1996-08-05 00:00:00.000','1996-07-15 00:00:00.000',4,41.34,'Victuaillesenstock2','rueduCommerce','Lyon',NULL,'69004','France');
-UPDATE user2.customers SET companyName = 'New Company' WHERE CustomerId = 'ANTON'
+UPDATE user2.customers SET companyName = 'New Company' WHERE CustomerId = 'ANTON';
 UPDATE user2.orders SET ShipCountry = 'INDIA' WHERE OrderID = 10250;
 DELETE FROM user2.orders WHERE ShipCountry = 'INDIA' AND OrderID = 10250;

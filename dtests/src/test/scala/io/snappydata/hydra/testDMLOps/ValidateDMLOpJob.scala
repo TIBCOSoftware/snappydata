@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,7 +47,7 @@ class ValidateDMLOpJob extends SnappySQLJob {
       val df = snc.sql(stmt)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
-      pw.println(df);
+      pw.println(df.show);
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")
       println(s"Operation completed successfully. See ${getCurrentDirectory}/${outputFile}")
       pw.println(s"Operation completed successfully.")

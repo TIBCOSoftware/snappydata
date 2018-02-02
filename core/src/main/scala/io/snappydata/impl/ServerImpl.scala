@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -40,7 +40,8 @@ class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
   @throws[SQLException]
   override def start(bootProps: Properties, ignoreIfStarted: Boolean): Unit = {
-    super.start(ServiceUtils.setCommonBootDefaults(bootProps), ignoreIfStarted)
+    super.start(ServiceUtils.setCommonBootDefaults(bootProps, forLocator = false),
+      ignoreIfStarted)
   }
 
   override def isServer: Boolean = true

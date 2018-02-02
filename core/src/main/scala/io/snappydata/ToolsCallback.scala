@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,24 +18,20 @@ package io.snappydata
 
 import java.io.File
 
-import org.apache.hadoop.conf.Configuration
-
-import org.apache.spark.{SecurityManager, SparkConf, SparkContext}
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
 trait ToolsCallback {
 
-  def invokeLeadStartAddonService(sc: SparkContext): Unit
-
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
       partitionColumnAliases: Seq[Seq[Attribute]],
-      numPartitions: Int, numBuckets: Int): Partitioning
+      numPartitions: Int, numBuckets: Int, tableBuckets: Int): Partitioning
 
   def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
-      (Seq[Expression], Seq[Seq[Attribute]], Int, Int)]
+      (Seq[Expression], Seq[Seq[Attribute]], Int, Int, Int)]
 
-  def updateUI(scUI: Option[Any]): Unit // Option[SparkUI] is expected
+  def updateUI(sc: SparkContext): Unit
 
   def removeAddedJar(sc: SparkContext, jarName : String): Unit
 

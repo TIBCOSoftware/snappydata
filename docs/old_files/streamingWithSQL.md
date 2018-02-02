@@ -36,7 +36,7 @@ We offer the following enhancements over Spark Streaming :
 
 3. __Continuous queries and time windows__: Similar to popular stream processing products, applications can register “continuous” queries on streams. By default, spark streaming emits batches once every second and any registered queries would be executed each time a batch is emitted. To support arbitrary time ranges, we extend the standard SQL to be able to specify the time window for the query. 
 
-4. __OLAP optimizations__: By integrating and collocating stream processing with our hybrid in-memory storage engine, we leverage our optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with our row store.
+4. __OLAP optimizations__: By integrating and colocating stream processing with our hybrid in-memory storage engine, we leverage our optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with our row store.
 
 5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
 

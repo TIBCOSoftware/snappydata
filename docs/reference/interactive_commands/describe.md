@@ -12,7 +12,7 @@ DESCRIBE { table-Name | view-Name }
 
 Provides a description of the specified table or view. For a list of tables in the current schema, use the Show Tables command. For a list of views in the current schema, use the Show Views command. For a list of available schemas, use the Show Schemas command.
 
-If the table or view is in a particular schema, qualify it with the schema name. If the table or view name is case-sensitive, enclose it in single quotes. You can display all the columns from all the tables and views in a single schema in a single display by using the wildcard character '\*'. See the examples below.
+If the table or view is in a particular schema, qualify it with the schema name. If the table or view name is case-sensitive, enclose it in single quotes. You can display all the columns from all the tables and views in a single schema in a single display by using the wildcard character '\*'. 
 
 ## Example
 

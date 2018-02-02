@@ -27,163 +27,111 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 /**
  * Internal class to decode values from a single delta as obtained from
  * [[ColumnDeltaEncoder]]. Should not be used directly rather the combined
- * decoder [[MutatedColumnDecoder]] should be the one used.
+ * decoder [[UpdatedColumnDecoder]] should be the one used.
  */
-final class ColumnDeltaDecoder(realDecoder: ColumnDecoder) {
+final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
 
-  private var deltaBytes: AnyRef = _
-  private var deltaCursor: Long = _
+  private val (realDecoder, deltaBytes) =
+    ColumnEncoding.getColumnDecoderAndBuffer(buffer, field, initialize)
 
   private var positionCursor: Long = _
   private var positionEndCursor: Long = _
-  private var positionOrdinal: Int = _
 
-  private[encoding] def initialize(buffer: ByteBuffer, field: StructField): Long = {
-    val allocator = ColumnEncoding.getAllocator(buffer)
-    val columnBytes = allocator.baseObject(buffer)
-    var offset = allocator.baseOffset(buffer) + buffer.position()
+  /** relative position being read currently in the underlying decoder */
+  private var decoderPosition: Int = _
+  /** relative position of the current non-null value in the underlying decoder */
+  private var nonNullPosition: Int = _
+  private var notNull: Boolean = _
 
-    // initialize base decoder header first
-    offset = realDecoder.initializeNulls(columnBytes, offset, field)
+  private def initialize(columnBytes: AnyRef, cursor: Long): Long = {
+    // read the positions (skip the number of base rows)
+    val numPositions = ColumnEncoding.readInt(columnBytes, cursor + 4)
 
-    // read the positions next
-    val numPositions = ColumnEncoding.readInt(columnBytes, offset)
-    offset += 4
+    // initialize the start and end of mutated positions
+    positionCursor = cursor + 8
+    // relative positions are one behind so point to current on increment
+    decoderPosition = -1
+    nonNullPosition = -1
 
-    // find the start of data after padding
-    deltaBytes = columnBytes
-
-    positionEndCursor = offset + (numPositions << 2)
-    val nextPosition = ColumnEncoding.readInt(columnBytes, offset)
-    offset += 4
-    positionCursor = offset
-
+    positionEndCursor = positionCursor + (numPositions << 2)
     // round to nearest word to get data start position
-    offset = ((positionEndCursor + 7) >> 3) << 3
-
-    // the actual cursor is tracked as a field while return value is the
-    // next update position
-    deltaCursor = realDecoder.initializeCursor(columnBytes, offset, field)
-
-    nextPosition
+    ((positionEndCursor + 7) >> 3) << 3
   }
 
-  private[encoding] def moveToNextPosition(): Int = {
+  /**
+   * Reads the current updated position in the column batch.
+   */
+  private[encoding] def readUpdatedPosition(): Int = {
     val cursor = positionCursor
     if (cursor < positionEndCursor) {
-      positionCursor += 4
-      positionOrdinal += 1
       ColumnEncoding.readInt(deltaBytes, cursor)
     } else {
-      // convention used by MutableColumnDecoder to denote the end
+      // convention used by ColumnDeltaDecoder to denote the end
       // which is greater than everything so will never get selected
       Int.MaxValue
     }
   }
 
-  @inline def hasNulls: Boolean = realDecoder.hasNulls
-
-  @inline def isNull: Int = realDecoder.isNull(deltaBytes, positionOrdinal)
-
-  @inline def nextBoolean(): Unit = {
-    deltaCursor = realDecoder.nextBoolean(deltaBytes, deltaCursor)
+  /**
+   * Move the cursor to enable reading next updated position.
+   */
+  private[encoding] def moveUpdatePositionCursor(): Unit = {
+    positionCursor += 4
+    decoderPosition += 1
+    notNull = !realDecoder.isNullAt(deltaBytes, decoderPosition)
+    if (notNull) nonNullPosition += 1
   }
 
-  @inline def readBoolean: Boolean = realDecoder.readBoolean(deltaBytes, deltaCursor)
+  @inline def readNotNull: Boolean = notNull
 
-  @inline def nextByte(): Unit = {
-    deltaCursor = realDecoder.nextByte(deltaBytes, deltaCursor)
-  }
+  @inline def readBoolean: Boolean =
+    realDecoder.readBoolean(deltaBytes, nonNullPosition)
 
-  @inline def readByte: Byte = realDecoder.readByte(deltaBytes, deltaCursor)
+  @inline def readByte: Byte =
+    realDecoder.readByte(deltaBytes, nonNullPosition)
 
-  @inline def nextShort(): Unit = {
-    deltaCursor = realDecoder.nextShort(deltaBytes, deltaCursor)
-  }
+  @inline def readShort: Short =
+    realDecoder.readShort(deltaBytes, nonNullPosition)
 
-  @inline def readShort: Short = realDecoder.readShort(deltaBytes, deltaCursor)
+  @inline def readInt: Int =
+    realDecoder.readInt(deltaBytes, nonNullPosition)
 
-  @inline def nextInt(): Unit = {
-    deltaCursor = realDecoder.nextInt(deltaBytes, deltaCursor)
-  }
+  @inline def readLong: Long =
+    realDecoder.readLong(deltaBytes, nonNullPosition)
 
-  @inline def readInt: Int = realDecoder.readInt(deltaBytes, deltaCursor)
+  @inline def readFloat: Float =
+    realDecoder.readFloat(deltaBytes, nonNullPosition)
 
-  @inline def nextLong(): Unit = {
-    deltaCursor = realDecoder.nextLong(deltaBytes, deltaCursor)
-  }
+  @inline def readDouble: Double =
+    realDecoder.readDouble(deltaBytes, nonNullPosition)
 
-  @inline def readLong: Long = realDecoder.readLong(deltaBytes, deltaCursor)
+  @inline def readDate: Int =
+    realDecoder.readDate(deltaBytes, nonNullPosition)
 
-  @inline def nextFloat(): Unit = {
-    deltaCursor = realDecoder.nextFloat(deltaBytes, deltaCursor)
-  }
+  @inline def readTimestamp: Long =
+    realDecoder.readTimestamp(deltaBytes, nonNullPosition)
 
-  @inline def readFloat: Float = realDecoder.readFloat(deltaBytes, deltaCursor)
+  @inline def readLongDecimal(precision: Int, scale: Int): Decimal =
+    realDecoder.readLongDecimal(deltaBytes, precision, scale, nonNullPosition)
 
-  @inline def nextDouble(): Unit = {
-    deltaCursor = realDecoder.nextDouble(deltaBytes, deltaCursor)
-  }
-
-  @inline def readDouble: Double = realDecoder.readDouble(deltaBytes, deltaCursor)
-
-  @inline def readDate(): Int = realDecoder.readDate(deltaBytes, deltaCursor)
-
-  @inline def readTimestamp(): Long = realDecoder.readTimestamp(deltaBytes, deltaCursor)
-
-  @inline def nextLongDecimal(): Unit = {
-    deltaCursor = realDecoder.nextLongDecimal(deltaBytes, deltaCursor)
-  }
-
-  @inline def readLongDecimal(precision: Int, scale: Int): Decimal = {
-    realDecoder.readLongDecimal(deltaBytes, precision, scale, deltaCursor)
-  }
-
-  @inline def nextDecimal(): Unit = {
-    deltaCursor = realDecoder.nextDecimal(deltaBytes, deltaCursor)
-  }
-
-  @inline def readDecimal(precision: Int, scale: Int): Decimal = {
-    realDecoder.readDecimal(deltaBytes, precision, scale, deltaCursor)
-  }
-
-  @inline def nextUTF8String(): Unit = {
-    deltaCursor = realDecoder.nextUTF8String(deltaBytes, deltaCursor)
-  }
+  @inline def readDecimal(precision: Int, scale: Int): Decimal =
+    realDecoder.readDecimal(deltaBytes, precision, scale, nonNullPosition)
 
   @inline def readUTF8String: UTF8String =
-    realDecoder.readUTF8String(deltaBytes, deltaCursor)
-
-  @inline def nextInterval(): Unit = {
-    deltaCursor = realDecoder.nextInterval(deltaBytes, deltaCursor)
-  }
+    realDecoder.readUTF8String(deltaBytes, nonNullPosition)
 
   @inline def readInterval: CalendarInterval =
-    realDecoder.readInterval(deltaBytes, deltaCursor)
+    realDecoder.readInterval(deltaBytes, nonNullPosition)
 
-  @inline def nextBinary(): Unit = {
-    deltaCursor = realDecoder.nextBinary(deltaBytes, deltaCursor)
-  }
+  @inline def readBinary: Array[Byte] =
+    realDecoder.readBinary(deltaBytes, nonNullPosition)
 
-  @inline def readBinary: Array[Byte] = realDecoder.readBinary(deltaBytes, deltaCursor)
+  @inline def readArray: ArrayData =
+    realDecoder.readArray(deltaBytes, nonNullPosition)
 
-  @inline def nextArray(): Unit = {
-    deltaCursor = realDecoder.nextArray(deltaBytes, deltaCursor)
-  }
+  @inline def readMap: MapData =
+    realDecoder.readMap(deltaBytes, nonNullPosition)
 
-  @inline def readArray: ArrayData = realDecoder.readArray(deltaBytes, deltaCursor)
-
-  @inline def nextMap(): Unit = {
-    deltaCursor = realDecoder.nextMap(deltaBytes, deltaCursor)
-  }
-
-  @inline def readMap: MapData = realDecoder.readMap(deltaBytes, deltaCursor)
-
-  @inline def nextStruct(): Unit = {
-    deltaCursor = realDecoder.nextStruct(deltaBytes, deltaCursor)
-  }
-
-  @inline def readStruct(numFields: Int): InternalRow = {
-    realDecoder.readStruct(deltaBytes, numFields, deltaCursor)
-  }
+  @inline def readStruct(numFields: Int): InternalRow =
+    realDecoder.readStruct(deltaBytes, numFields, nonNullPosition)
 }

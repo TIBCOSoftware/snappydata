@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -20,35 +20,52 @@
 # Start all snappy daemons - locator, lead and server on the nodes specified in the
 # conf/locators, conf/leads and conf/servers files respectively
 
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
 
 # Load the Spark configuration
-. "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
-MEMBERS_FILE="$SPARK_HOME/work/members.txt"
+MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
 if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
 
-# Check for foreground start
 BACKGROUND=-bg
-if [ "$1" = "-bg" -o "$1" = "--background" ]; then
+clustermode=
+
+while (( "$#" )); do
+  param="$1"
+  case $param in
+    -bg | --background)
+      # Check for background start
+      BACKGROUND=-bg
+    ;;
+    -fg | --foreground)
+      # Check for foreground start
+      BACKGROUND=""
+    ;;
+    rowstore)
+      clustermode="rowstore"
+    ;;
+    *)
+      echo "Invalid option: $param"
+    ;;
+  esac
   shift
-fi
-if [ "$1" = "-fg" -o "$1" = "--foreground" ]; then
-  BACKGROUND=""
-  shift
-fi
-  
+done
+
+
 # Start Locators
-"$sbin"/snappy-locators.sh start "$@"
+"$sbin"/snappy-locators.sh start $clustermode "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh $BACKGROUND start "$@"
+"$sbin"/snappy-servers.sh $BACKGROUND start $clustermode "$@"
 
 # Start Leads
-if [ "$1" != "rowstore" ]; then
+if [ "$clustermode" != "rowstore" ]; then
   "$sbin"/snappy-leads.sh start
 fi

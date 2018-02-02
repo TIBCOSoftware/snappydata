@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{DriverManager, ResultSet}
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -91,7 +91,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(4, 300)
       prepStatement.setString(5, "%0")
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry-1", prepStatement.executeQuery,
-        Array(100, 200, 300), 0)
+        Array(100, 200, 300), 1)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 600)
@@ -99,7 +99,15 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(4, 800)
       prepStatement.setString(5, "%0")
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry-2", prepStatement.executeQuery,
-        Array(600, 700, 800), 0)
+        Array(600, 700, 800), 1)
+
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 600)
+      prepStatement.setInt(3, 700)
+      prepStatement.setInt(4, 800)
+      prepStatement.setString(5, "%0%")
+      PreparedQueryRoutingSingleNodeSuite.verifyResults("qry-2.2", prepStatement.executeQuery,
+        Array(600, 700, 800), 2)
 
       val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -113,13 +121,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement1.setInt(2, 100)
       prepStatement1.setInt(3, 200)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry1-1", prepStatement1.executeQuery,
-        Array(100, 200, 300), 1)
+        Array(100, 200, 300), 3)
 
       prepStatement1.setInt(1, 500)
       prepStatement1.setInt(2, 100)
       prepStatement1.setInt(3, 400)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry1-2", prepStatement1.executeQuery,
-        Array(100, 400, 300), 1)
+        Array(100, 400, 300), 3)
 
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -132,13 +140,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement2.setInt(2, 600)
       prepStatement2.setInt(3, 700)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry2-1", prepStatement2.executeQuery,
-        Array(600, 700, 800), 1)
+        Array(600, 700, 800), 3)
 
       prepStatement2.setInt(1, 900)
       prepStatement2.setInt(2, 400)
       prepStatement2.setInt(3, 500)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry2-2", prepStatement2.executeQuery,
-        Array(400, 500, 800), 1)
+        Array(400, 500, 800), 3)
 
       val qry3 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -153,14 +161,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement3.setInt(3, 200)
       prepStatement3.setInt(4, 300)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry3-1", prepStatement3.executeQuery,
-        Array(100, 200, 300), 1)
+        Array(100, 200, 300), 3)
 
       prepStatement3.setInt(1, 900)
       prepStatement3.setInt(2, 600)
       prepStatement3.setInt(3, 700)
       prepStatement3.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry3-2", prepStatement3.executeQuery,
-        Array(600, 700, 800), 1)
+        Array(600, 700, 800), 3)
 
       val qry4 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -175,14 +183,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement4.setInt(3, 200)
       prepStatement4.setInt(4, 300)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry4-1", prepStatement4.executeQuery,
-        Array(100, 200, 300), 2)
+        Array(100, 200, 300), 4)
 
       prepStatement4.setInt(1, 900)
       prepStatement4.setInt(2, 600)
       prepStatement4.setInt(3, 700)
       prepStatement4.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry4-2", prepStatement4.executeQuery,
-        Array(600, 700, 800), 2)
+        Array(600, 700, 800), 4)
 
       val qry5 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -197,14 +205,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement5.setInt(3, 200)
       prepStatement5.setInt(4, 300)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry5-1", prepStatement5.executeQuery,
-        Array(100, 200, 300), 3)
+        Array(100, 200, 300), 5)
 
       prepStatement5.setDouble(1, 900.01)
       prepStatement5.setInt(2, 600)
       prepStatement5.setInt(3, 700)
       prepStatement5.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("qry5-2", prepStatement5.executeQuery,
-        Array(600, 700, 800), 3)
+        Array(600, 700, 800), 5)
 
       // Thread.sleep(1000000)
     } finally {
@@ -452,9 +460,371 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("update delete on column table") {
+    val snc = this.snc
     val serverHostPort = TestUtil.startNetServer()
     // println("network server started")
     PreparedQueryRoutingSingleNodeSuite.updateDeleteOnColumnTable(snc, serverHostPort)
+  }
+
+  test("SNAP-1981: Equality on string columns") {
+    val snc = this.snc
+    val serverHostPort = TestUtil.startNetServer()
+    // println("network server started")
+    PreparedQueryRoutingSingleNodeSuite.equalityOnStringColumn(snc, serverHostPort)
+  }
+
+  test("SNAP-1994 Test functions and expressions") {
+    snc.sql(s"Drop Table if exists double_tab")
+    snc.sql(s"Create Table double_tab (a INT, d Double, s String) " +
+        "using column options()")
+    snc.sql(s"insert into double_tab values(1, 1.111111, '1a'), (2, 2.222222, '2b')," +
+        s" (3, 3.33333, '3c')")
+    snc.sql(s"Create Table double_tab_2 (a INT, d Double, s String) " +
+        "using column options()")
+    snc.sql(s"insert into double_tab_2 values(1, 1.111111, '1a'), (2, 2.222222, '2b')," +
+        s" (3, 3.33333, '3c')")
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    cacheMap.clear()
+    assert( cacheMap.size() == 0)
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    try {
+      def close(prepStatement: java.sql.PreparedStatement): Unit = if (prepStatement != null) {
+        prepStatement.close()
+      }
+      val prepStatement0 = conn.prepareStatement(s"select * from double_tab" +
+          s" where round(d, 2) < ?")
+      assert(cacheMap.size() == 0)
+      prepStatement0.setDouble(1, 3.33)
+      var update = prepStatement0.executeQuery()
+      var index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"1-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1 || i == 2)
+      }
+      // scalastyle:off println
+      println(s"1-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      assert(cacheMap.size() == 1)
+
+      prepStatement0.setDouble(1, 4.3333)
+      update = prepStatement0.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"2-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1 || i == 2 || i == 3)
+      }
+      // scalastyle:off println
+      println(s"2-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 3)
+      assert(cacheMap.size() == 1)
+      close(prepStatement0)
+
+      val prepStatement1 = conn.prepareStatement(s"select a + ?, d from double_tab")
+      assert(cacheMap.size() == 1)
+      prepStatement1.setInt(1, 2)
+      update = prepStatement1.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"3-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i > 2 && i < 6)
+      }
+      // scalastyle:off println
+      println(s"3-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 3)
+      assert(cacheMap.size() == 2)
+
+      prepStatement1.setInt(1, 3)
+      update = prepStatement1.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"4-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i > 3 && i < 7)
+      }
+      // scalastyle:off println
+      println(s"4-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 3)
+      assert(cacheMap.size() == 2)
+      close(prepStatement1)
+
+      val prepStatement2 = conn.prepareStatement(s"select a," +
+          s" d from double_tab where UPPER(s) = ?")
+      assert(cacheMap.size() == 2)
+      prepStatement2.setString(1, "1A")
+      update = prepStatement2.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getString(2)
+        // scalastyle:off println
+        println(s"5-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1)
+      }
+      // scalastyle:off println
+      println(s"5-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 1)
+      assert(cacheMap.size() == 3)
+
+      prepStatement2.setString(1, "2B")
+      update = prepStatement2.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getString(2)
+        // scalastyle:off println
+        println(s"6-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 2)
+      }
+      // scalastyle:off println
+      println(s"6-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 1)
+      assert(cacheMap.size() == 3)
+      close(prepStatement2)
+
+      val prepStatement3: PreparedStatement = conn.prepareStatement(s"select * from double_tab t1"
+          + s" inner join double_tab_2 t2 on t1.a = t2.a where t1.d > ? and " +
+          s" t1.a in ( select a from double_tab_2 where d < ? )")
+      assert(cacheMap.size() == 3)
+      // Anyway TableStatsProviderService.aggregateStats clear stats
+      // So clearing here for better assertion in testing
+      cacheMap.clear()
+      prepStatement3.setInt(1, 1)
+      prepStatement3.setInt(2, 3)
+      update = prepStatement3.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        // scalastyle:off println
+        println(s"7-row($index) $i")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1 || i == 2)
+      }
+      // scalastyle:off println
+      println(s"7-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      assert(cacheMap.size() == 0)
+
+      prepStatement3.setInt(1, 2)
+      prepStatement3.setInt(2, 4)
+      update = prepStatement3.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        // scalastyle:off println
+        println(s"8-row($index) $i")
+        // scalastyle:on println
+        index += 1
+        assert(i == 2 || i == 3)
+      }
+      // scalastyle:off println
+      println(s"8-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      assert(cacheMap.size() == 0)
+      close(prepStatement3)
+
+      val prepStatement4 = conn.prepareStatement(s"select * from double_tab" +
+          s" where round(d, ?) < round(?, ?)")
+      assert(cacheMap.size() == 0)
+      prepStatement4.setInt(1, 2)
+      prepStatement4.setDouble(2, 3.33)
+      prepStatement4.setInt(3, 2)
+      update = prepStatement4.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"9-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1 || i == 2)
+      }
+      // scalastyle:off println
+      println(s"9-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      assert(cacheMap.size() == 1)
+      close(prepStatement4)
+
+      val prepStatement5 = conn.prepareStatement(s"select a," +
+          s" nvl(d, ?) from double_tab where UPPER(s) = ?")
+      assert(cacheMap.size() == 1)
+      prepStatement5.setInt(1, 2)
+      prepStatement5.setString(2, "1A")
+      update = prepStatement5.executeQuery()
+      index = 0
+      while (update.next()) {
+        val i = update.getInt(1)
+        val j = update.getBigDecimal(2)
+        // scalastyle:off println
+        println(s"10-row($index) $i $j")
+        // scalastyle:on println
+        index += 1
+        assert(i == 1)
+      }
+      // scalastyle:off println
+      println(s"10-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 1)
+      assert(cacheMap.size() == 2)
+      close(prepStatement5)
+    } finally {
+      conn.close()
+    }
+  }
+
+  test("Test broadcast hash joins and scalar sub-queries") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    var conn: Connection = null
+    try {
+      val ddlStr = "(YearI INT," + // NOT NULL
+          "MonthI INT," + // NOT NULL
+          "DayOfMonth INT," + // NOT NULL
+          "DayOfWeek INT," + // NOT NULL
+          "DepTime INT," +
+          "CRSDepTime INT," +
+          "ArrTime INT," +
+          "CRSArrTime INT," +
+          "UniqueCarrier VARCHAR(20)," + // NOT NULL
+          "FlightNum INT," +
+          "TailNum VARCHAR(20)," +
+          "ActualElapsedTime INT," +
+          "CRSElapsedTime INT," +
+          "AirTime INT," +
+          "ArrDelay INT," +
+          "DepDelay INT," +
+          "Origin VARCHAR(20)," +
+          "Dest VARCHAR(20)," +
+          "Distance INT," +
+          "TaxiIn INT," +
+          "TaxiOut INT," +
+          "Cancelled INT," +
+          "CancellationCode VARCHAR(20)," +
+          "Diverted INT," +
+          "CarrierDelay INT," +
+          "WeatherDelay INT," +
+          "NASDelay INT," +
+          "SecurityDelay INT," +
+          "LateAircraftDelay INT," +
+          "ArrDelaySlot INT)"
+
+      val hfile: String = getClass.getResource("/2015.parquet").getPath
+      val snContext = snc
+      snContext.sql("set spark.sql.shuffle.partitions=6")
+
+      val airlineDF = snContext.read.load(hfile)
+      val airlineparquetTable = "airlineparquetTable"
+      airlineDF.registerTempTable(airlineparquetTable)
+
+      val colTableName = "airlineColTable"
+      snc.sql(s"CREATE TABLE $colTableName $ddlStr" +
+          "USING column options()")
+
+      airlineDF.write.insertInto(colTableName)
+
+      def close(prepStatement: java.sql.PreparedStatement): Unit = if (prepStatement != null) {
+        prepStatement.close()
+      }
+      val cacheMap = SnappySession.getPlanCache.asMap()
+      cacheMap.clear()
+      assert( cacheMap.size() == 0)
+      val serverHostPort = TestUtil.startNetServer()
+      conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+      val prepStatement1 = conn.prepareStatement("select avg(taxiin + taxiout)avgTaxiTime," +
+          s" count( * ) numFlights, " +
+          s" dest, avg(arrDelay) arrivalDelay from $colTableName " +
+          s" where (taxiin > ? or taxiout > ?) and dest in  (select dest from $colTableName " +
+          s" group by dest having count ( * ) > ?) group by dest order " +
+          s" by avgTaxiTime desc")
+      assert(cacheMap.size() == 0)
+      prepStatement1.setInt(1, 10)
+      prepStatement1.setInt(2, 10)
+      prepStatement1.setInt(3, 10000)
+      var update = prepStatement1.executeQuery()
+      var index = 0
+      val result1 = List("ORD", "LAX", "LGA", "MIA", "JFK", "DFW", "CLT", "EWR", "MCO", "ATL",
+        "DTW", "BOS", "DEN", "CLE", "IAH", "FLL", "PHL", "PHX", "SFO", "IAD", "LAS", "RSW",
+        "BNA", "MSP", "SEA", "DCA", "MDW", "RDU", "MKE", "HNL", "SLC", "TPA", "BWI", "AUS",
+        "MCI", "STL", "MSY", "SAT", "SNA", "DAL", "PDX", "SMF", "HOU", "SAN", "OAK", "SJC")
+      while (update.next()) {
+        val s = update.getString(3)
+        // scalastyle:off println
+        // println(s"1-row($index) $s ")
+        // scalastyle:on println
+        result1.contains(s)
+        index += 1
+      }
+      // scalastyle:off println
+      println(s"1-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 46)
+      assert(cacheMap.size() == 0)
+
+      prepStatement1.setInt(1, 5)
+      prepStatement1.setInt(2, 5)
+      prepStatement1.setInt(3, 5000)
+      update = prepStatement1.executeQuery()
+      index = 0
+      val result2 = List( "ORD", "LGA", "LAX", "MIA", "JFK", "CLT", "EWR", "DFW", "SJU", "CVG",
+        "ATL", "PBI", "DTW", "BOS", "MCO", "CLE", "PHL", "IAH", "IAD", "RIC", "FLL", "DEN",
+        "SFO", "MEM", "MSP", "CMH", "JAX", "RSW", "SEA", "DCA", "PHX", "PIT", "MKE", "RDU",
+        "IND", "SLC", "BNA", "LAS", "BDL", "TUS", "TPA", "BUF", "OMA", "OKC", "AUS", "MDW",
+        "MCI", "OGG", "TUL", "MSY", "BWI", "STL", "ABQ", "SAT", "PDX", "SNA", "HNL", "SAN",
+        "SMF", "ONT", "SJC", "OAK", "HOU", "DAL", "BUR")
+      while (update.next()) {
+        val s = update.getString(3)
+        // scalastyle:off println
+        // println(s"2-row($index) $s ")
+        // scalastyle:on println
+        result2.contains(s)
+        index += 1
+      }
+      // scalastyle:off println
+      println(s"2-Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 65)
+      assert(cacheMap.size() == 0)
+      close(prepStatement1)
+    }
+    finally {
+      if (conn != null) {
+        conn.close()
+      }
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
   }
 }
 
@@ -465,28 +835,35 @@ object PreparedQueryRoutingSingleNodeSuite{
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
 
     val rows = (1 to numRows).toSeq
-    val stmt = conn.createStatement()
+    val prepareStatement = conn.prepareStatement(s"insert into $tableName values(?, ?, ?)")
     try {
       var i = 1
       rows.foreach(d => {
-        stmt.addBatch(s"insert into $tableName values($d, $d, '$d')")
+        prepareStatement.setInt(1, d)
+        prepareStatement.setInt(2, d)
+        prepareStatement.setString(3, s"$d")
+        prepareStatement.addBatch()
         i += 1
         if (i % 1000 == 0) {
-          stmt.executeBatch()
+          val ret = prepareStatement.executeBatch()
+          ret.foreach(r => assert(r == 1))
+          assert(ret.length == 999, ret.length)
           i = 0
         }
       })
-      stmt.executeBatch()
+      val ret = prepareStatement.executeBatch()
+      ret.foreach(r => assert(r == 1))
       // scalastyle:off println
       println(s"committed $numRows rows")
       // scalastyle:on println
     } finally {
-      stmt.close()
+      prepareStatement.close()
       conn.close()
     }
   }
 
-  def verifyResults(qry: String, rs: ResultSet, results: Array[Int], cacheMapSize: Int): Unit = {
+  def verifyResults(qry: String, rs: ResultSet, results: Array[Int],
+      cacheMapSize: Int): Unit = {
     val cacheMap = SnappySession.getPlanCache.asMap()
 
     var index = 0
@@ -498,7 +875,6 @@ object PreparedQueryRoutingSingleNodeSuite{
       println(s"$qry row($index) $i $j $s ")
       // scalastyle:on println
       index += 1
-
       assert(results.contains(i))
     }
 
@@ -524,7 +900,6 @@ object PreparedQueryRoutingSingleNodeSuite{
     var prepStatement3: java.sql.PreparedStatement = null
     var prepStatement4: java.sql.PreparedStatement = null
     var prepStatement5: java.sql.PreparedStatement = null
-    val s = conn.createStatement()
     try {
       prepStatement0 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
           s" from $tableName1" +
@@ -535,16 +910,17 @@ object PreparedQueryRoutingSingleNodeSuite{
         Array(1, 2, 998, 999, 1000), cacheMapSize)
       prepStatement1 = conn.prepareStatement(s"delete from $tableName1 where ol_1_int2_id < ? ")
       prepStatement1.setInt(1, 400)
-      val delete1 = prepStatement1.executeUpdate
-      assert(delete1 == 399, delete1)
+      prepStatement1.addBatch()
       prepStatement1.setInt(1, 500)
-      val delete2 = prepStatement1.executeUpdate
-      assert(delete2 == 100, delete2)
+      prepStatement1.addBatch()
+      val delete1 = prepStatement1.executeBatch()
+      assert(delete1(0) == 399, delete1(0))
+      assert(delete1(1) == 100, delete1(1))
 
       prepStatement2 = conn.prepareStatement(s"delete from $tableName1 where ol_1_int2_id > ? ")
       prepStatement2.setInt(1, 502)
-      val delete3 = prepStatement2.executeUpdate
-      assert(delete3 == 498, delete3)
+      val delete2 = prepStatement2.executeUpdate
+      assert(delete2 == 498, delete2)
 
       prepStatement3 =
           conn.prepareStatement(s"update $tableName1 set ol_1_int_id = ? where ol_1_int2_id = ? ")
@@ -554,11 +930,16 @@ object PreparedQueryRoutingSingleNodeSuite{
       assert(update1 == 1, update1)
 
       prepStatement4 =
-          conn.prepareStatement(s"update $tableName1 set ol_1_int_id = ? where ol_1_int2_id > ? ")
+        conn.prepareStatement(s"update $tableName1 set ol_1_int_id = ? where ol_1_int2_id > ? ")
+      prepStatement4.setInt(1, 2000)
+      prepStatement4.setInt(2, 501)
+      prepStatement4.addBatch()
       prepStatement4.setInt(1, 2000)
       prepStatement4.setInt(2, 500)
-      val update2 = prepStatement4.executeUpdate
-      assert(update2 == 2, update2)
+      prepStatement4.addBatch()
+      val update2 = prepStatement4.executeBatch()
+      assert(update2(0) == 1, update2(0))
+      assert(update2(1) == 2, update2(1))
 
       prepStatement5 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
           s" from $tableName1" +
@@ -581,12 +962,52 @@ object PreparedQueryRoutingSingleNodeSuite{
         Array(4000, 5000, 5000), cacheMapSize + 1)
       // Thread.sleep(1000000)
     } finally {
+      def close(prepStatement: java.sql.PreparedStatement) =
+        if (prepStatement != null) prepStatement.close()
+      close(prepStatement0)
+      close(prepStatement1)
+      close(prepStatement2)
+      close(prepStatement3)
+      close(prepStatement4)
+      close(prepStatement5)
+      conn.close()
+    }
+  }
+
+  def update_delete_query2(tableName1: String, cacheMapSize: Int, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement0: java.sql.PreparedStatement = null
+    var prepStatement1: java.sql.PreparedStatement = null
+    val s = conn.createStatement()
+    try {
+      prepStatement0 =
+          conn.prepareStatement(s"update $tableName1 set ol_1_str_id = ? where ol_1_int2_id = ? ")
+      prepStatement0.setString(1, "7777")
+      prepStatement0.setInt(2, 500)
+      val update1 = prepStatement0.executeUpdate
+      assert(update1 == 1, update1)
+
+      prepStatement1 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
+          s" from $tableName1" +
+          " where ol_1_str_id like ?")
+      prepStatement1.setString(1, "7777")
+      verifyResults("update_delete_query2-select1", prepStatement1.executeQuery, Array(4000),
+        cacheMapSize)
+
+      prepStatement0.setString(1, "8888")
+      prepStatement0.setInt(2, 501)
+      val update2 = prepStatement0.executeUpdate
+      assert(update2 == 1, update2)
+
+      prepStatement1.setString(1, "8888")
+      verifyResults("update_delete_query2-select1", prepStatement1.executeQuery, Array(5000),
+        cacheMapSize)
+      // Thread.sleep(1000000)
+    } finally {
       if (prepStatement0 != null) prepStatement0.close()
       if (prepStatement1 != null) prepStatement1.close()
-      if (prepStatement2 != null) prepStatement2.close()
-      if (prepStatement3 != null) prepStatement3.close()
-      if (prepStatement4 != null) prepStatement4.close()
-      if (prepStatement5 != null) prepStatement4.close()
       s.close()
       conn.close()
     }
@@ -613,6 +1034,95 @@ object PreparedQueryRoutingSingleNodeSuite{
       insertRows(tableName2, 1000, serverHostPort)
       update_delete_query1(tableName1, 1, serverHostPort)
       update_delete_query1(tableName2, 3, serverHostPort)
+      update_delete_query2(tableName1, 5, serverHostPort)
+      update_delete_query2(tableName2, 6, serverHostPort)
+    } finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
+  def equalityOnStringColumn_query1(tableName1: String, cacheMapSize: Int,
+      serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement0: java.sql.PreparedStatement = null
+    var prepStatement1: java.sql.PreparedStatement = null
+    var prepStatement2: java.sql.PreparedStatement = null
+    try {
+      prepStatement0 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
+          s" from $tableName1" +
+          s" where ol_1_str_id = ? or ol_1_str_id = ? or ol_1_str_id like ? ")
+      prepStatement0.setString(1, "1")
+      prepStatement0.setString(2, "2")
+      prepStatement0.setString(3, "99%")
+      verifyResults("equalityOnStringColumn_query1-select0", prepStatement0.executeQuery,
+        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize)
+
+      prepStatement0.setString(1, "3")
+      prepStatement0.setString(2, "4")
+      prepStatement0.setString(3, "94%")
+      verifyResults("equalityOnStringColumn_query1-select1", prepStatement0.executeQuery,
+        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize)
+
+      prepStatement1 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
+          s" from $tableName1" +
+          s" where ol_1_str_id = ? or ol_1_str_id = ? or ol_1_str_id like ?" +
+          s" limit 20")
+      prepStatement1.setString(1, "1")
+      prepStatement1.setString(2, "2")
+      prepStatement1.setString(3, "99%")
+      verifyResults("equalityOnStringColumn_query2-select0", prepStatement1.executeQuery,
+        Array(1, 2, 99, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999), cacheMapSize + 1)
+
+      prepStatement1.setString(1, "3")
+      prepStatement1.setString(2, "4")
+      prepStatement1.setString(3, "94%")
+      verifyResults("equalityOnStringColumn_query2-select1", prepStatement1.executeQuery,
+        Array(3, 4, 94, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949), cacheMapSize + 1)
+
+      prepStatement2 = conn.prepareStatement( s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id" +
+          s" from $tableName1" +
+          s" where ol_1_str_id = ? or ol_1_str_id = ?")
+      prepStatement2.setString(1, "5")
+      prepStatement2.setString(2, "6")
+      verifyResults("equalityOnStringColumn_query3-select0", prepStatement2.executeQuery,
+        Array(5, 6), cacheMapSize + 2)
+
+      prepStatement2.setString(1, "7")
+      prepStatement2.setString(2, "8")
+      verifyResults("equalityOnStringColumn_query3-select1", prepStatement2.executeQuery,
+        Array(7, 8), cacheMapSize + 2)
+    } finally {
+      def close(prepStatement: java.sql.PreparedStatement) =
+        if (prepStatement != null) prepStatement.close()
+      close(prepStatement0)
+      close(prepStatement1)
+      close(prepStatement2)
+      conn.close()
+    }
+  }
+
+  def equalityOnStringColumn(snc: SnappyContext, serverHostPort: String): Unit = {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    try {
+      val tableName1 = "order_line_1_col_eq"
+      val tableName2 = "order_line_2_row_eq"
+      snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+          "options( partition_by 'ol_1_int2_id', buckets '2'," +
+          " COLUMN_BATCH_SIZE '100')")
+
+      snc.sql(s"create table $tableName2 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
+          "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+      insertRows(tableName1, 1000, serverHostPort)
+      insertRows(tableName2, 1000, serverHostPort)
+      equalityOnStringColumn_query1(tableName1, 1, serverHostPort)
+      equalityOnStringColumn_query1(tableName2, 4, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }

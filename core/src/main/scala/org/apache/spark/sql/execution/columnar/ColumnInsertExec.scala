@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,7 +16,10 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import io.snappydata.Property
+import scala.collection.mutable.ArrayBuffer
+
+import io.snappydata.{Constant, Property}
+
 import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
@@ -25,10 +28,9 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
+import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
 import org.apache.spark.util.TaskCompletionListener
-
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * Generated code plan for bulk insertion into a column table.
@@ -80,6 +82,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   def columnMaxDeltaRows: Int = batchParams._2
 
+  val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(batchParams._3)
+
   override protected def opType: String = "Inserted"
 
   override protected def isInsert: Boolean = true
@@ -119,12 +123,12 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     // add a task completion listener to close the encoders
     val contextClass = classOf[TaskContext].getName
     val listenerClass = classOf[TaskCompletionListener].getName
-    val context = ctx.freshName("taskContext")
+    val getContext = Utils.genTaskContextFunction(ctx)
+
     ctx.addMutableState("int", defaultBatchSizeTerm,
       s"""
-         |final $contextClass $context = $contextClass.get();
-         |if ($context != null) {
-         |  $context.addTaskCompletionListener(new $listenerClass() {
+         |if ($getContext() != null) {
+         |  $getContext().addTaskCompletionListener(new $listenerClass() {
          |    @Override
          |    public void onTaskCompletion($contextClass context) {
          |      if ($numInsertions >= 0) $closeEncodersFunction();
@@ -133,7 +137,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |}
       """.stripMargin)
     s"""
-       |if ($numInsertions >= 0 && $contextClass.get() == null) {
+       |if ($numInsertions >= 0 && $getContext() == null) {
        |  $closeEncodersFunction();
        |}""".stripMargin
   }
@@ -145,7 +149,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     * This will impact the performance, but code gen will not fail till store column limit of 1012.
     */
   private def doProduceWideTable(ctx: CodegenContext): String = {
-    val encodingClass = classOf[ColumnEncoding].getName
+    val encodingClass = ColumnEncoding.encodingClassName
     val encoderClass = classOf[ColumnEncoder].getName
     val numInsertedRowsMetric = if (onExecutor) null
     else metricTerm(ctx, "numInsertedRows")
@@ -187,7 +191,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val initEncoderCode =
       s"""
-         |this.$encoderArrayTerm[i] = $encodingClass$$.MODULE$$.getColumnEncoder(
+         |this.$encoderArrayTerm[i] = $encodingClass.getColumnEncoder(
          |    $schemaTerm.fields()[i]);
        """.stripMargin
 
@@ -263,10 +267,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |finally {
        |if ($txIdConnArray[1] != null) {
-       |  if(success)
-       |    $commitSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |  else
-       |    $rollbackSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  if (success) {
+       |    $commitSnapshotTx((String)$txIdConnArray[1],
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  } else {
+       |    $rollbackSnapshotTx((String)$txIdConnArray[1],
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  }
        |}
        |else {
        |  $closeConnection(new scala.Some((java.sql.Connection)$txIdConnArray[0]));
@@ -279,7 +286,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     if (tableSchema.length > MAX_CURSOR_DECLARATIONS) {
       return doProduceWideTable(ctx)
     }
-    val encodingClass = classOf[ColumnEncoding].getName
+    val encodingClass = ColumnEncoding.encodingClassName
     val encoderClass = classOf[ColumnEncoder].getName
     val numInsertedRowsMetric = if (onExecutor) null
     else metricTerm(ctx, "numInsertedRows")
@@ -323,7 +330,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       val (encoder, cursor) = encoderCursorTerms(i)
       ctx.addMutableState(encoderClass, encoder,
         s"""
-           |this.$encoder = $encodingClass$$.MODULE$$.getColumnEncoder(
+           |this.$encoder = $encodingClass.getColumnEncoder(
            |  $schemaTerm.fields()[$i]);
         """.stripMargin)
       val cursorDeclaration = if (useMemberVariables) {
@@ -388,10 +395,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |finally {
        |if ($txIdConnArray[1] != null) {
-       |  if(success)
-       |    $commitSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |  else
-       |    $rollbackSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  if (success) {
+       |    $commitSnapshotTx((String)$txIdConnArray[1],
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  } else {
+       |    $rollbackSnapshotTx((String)$txIdConnArray[1],
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  }
        |}
        |else {
        |  $closeConnection(new scala.Some((java.sql.Connection)$txIdConnArray[0]));
@@ -543,6 +553,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
     val sizeTerm = ctx.freshName("size")
+    val sizeExceededTerm = ctx.freshName("sizeExceeded")
     cursorsArrayTerm = ctx.freshName("cursors")
 
     val mutableRow = ctx.freshName("mutableRow")
@@ -595,8 +606,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val calculateSize = loop(encoderLoopCode, schema.length)
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
-    val batchUUID = ctx.addReferenceObj("batchUUID", None,
-      classOf[Option[_]].getName)
+    val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
     val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
@@ -644,7 +654,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm, $conn);
+         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
+         |      ${compressionCodec.id}, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -686,10 +697,15 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&
        |    $batchSizeTerm > 0) {
        |  // check if batch size has exceeded max allowed
-       |  long $sizeTerm = 0L;
-       |  $calculateSize
-       |  if ($sizeTerm >= $columnBatchSize) {
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  boolean $sizeExceededTerm = $batchSizeTerm >= ${Constant.MAX_ROWS_IN_BATCH};
+       |  if (!$sizeExceededTerm) {
+       |    long $sizeTerm = 0L;
+       |    $calculateSize
+       |    $sizeExceededTerm = $sizeTerm >= $columnBatchSize;
+       |  }
+       |  if ($sizeExceededTerm) {
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs,
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }
@@ -712,6 +728,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
     val sizeTerm = ctx.freshName("size")
+    val sizeExceededTerm = ctx.freshName("sizeExceeded")
 
     val encoderClass = classOf[ColumnEncoder].getName
     val buffersCode = new StringBuilder
@@ -746,8 +763,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
-    val batchUUID = ctx.addReferenceObj("batchUUID", None,
-      classOf[Option[_]].getName)
+    val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
     val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
@@ -787,7 +803,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm, $conn);
+         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
+         |      ${compressionCodec.id}, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -824,11 +841,16 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&
        |    $batchSizeTerm > 0) {
        |  // check if batch size has exceeded max allowed
-       |  long $sizeTerm = 0L;
-       |  ${calculateSize.toString()}
-       |  if ($sizeTerm >= $columnBatchSize) {
+       |  boolean $sizeExceededTerm = $batchSizeTerm >= ${Constant.MAX_ROWS_IN_BATCH};
+       |  if (!$sizeExceededTerm) {
+       |    long $sizeTerm = 0L;
+       |    ${calculateSize.toString()}
+       |    $sizeExceededTerm = $sizeTerm >= $columnBatchSize;
+       |  }
+       |  if ($sizeExceededTerm) {
        |    $cursorsArrayCreate
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs,
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }
@@ -842,7 +864,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   private def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
       nullable: Boolean, encoder: String, cursorTerm: String,
       ev: ExprCode): String = {
-    ColumnWriter.genCodeColumnWrite(ctx, dataType, nullable, encoder,
+    ColumnWriter.genCodeColumnWrite(ctx, dataType, nullable, encoder, encoder,
       cursorTerm, ev, batchSizeTerm)
   }
 
@@ -915,14 +937,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   override def simpleString: String = s"ColumnInsert($columnTable) partitionColumns=" +
       s"${partitionColumns.mkString("[", ",", "]")} numBuckets = $numBuckets " +
-      s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows"
+      s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows compression=$compressionCodec"
 }
 
 object ColumnWriter {
 
   def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
-      nullable: Boolean, encoder: String, cursorTerm: String, ev: ExprCode,
-      batchSizeTerm: String, offsetTerm: String = null,
+      nullable: Boolean, encoder: String, nullEncoder: String, cursorTerm: String,
+      ev: ExprCode, batchSizeTerm: String, offsetTerm: String = null,
       baseOffsetTerm: String = null): String = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
@@ -1001,7 +1023,7 @@ object ColumnWriter {
     if (nullable) {
       s"""
          |if ($isNull) {
-         |  $encoder.writeIsNull($batchSizeTerm);
+         |  $nullEncoder.writeIsNull($batchSizeTerm);
          |} else {
          |  $writeValue
          |}""".stripMargin
@@ -1162,7 +1184,7 @@ object ColumnWriter {
     val serializeValue =
       s"""
          |final long $fieldOffset = $baseDataOffset + ($index << 3);
-         |${genCodeColumnWrite(ctx, dt, nullable = false, encoder,
+         |${genCodeColumnWrite(ctx, dt, nullable = false, encoder, encoder,
             cursorTerm, ExprCode("", "false", value), batchSizeTerm,
             fieldOffset, baseOffset)}
       """.stripMargin

@@ -1,8 +1,10 @@
-# backup
+# backup and restore
 Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.
 
 !!!Note:
-	 SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </p>
+	SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed.</br> 
+       If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
+
 -   [Syntax](store-backup.md#syntax)
 
 -   [Description](store-backup.md#description)
@@ -21,31 +23,32 @@ Creates a backup of operational disk stores for all members running in the distr
 
 <a id="syntax"></a>
 
-# Syntax
+## Syntax
 
-Use the -locator option, on the command line to connect to the SnappyData cluster.
+Use the `-locator` option, on the command line to connect to the SnappyData cluster.
 
 ``` pre
 snappy backup [-baseline=<baseline directory>] <target directory> [-J-D<vmprop>=<prop-value>]
- [-locators=<addresses>] [-bind-address=<address>] [-<prop-name>=<prop-value>]*
+ <-locators=<addresses>> [-bind-address=<address>] [-<prop-name>=<prop-value>]*
 ```
 
-Alternatively, you can specify these and other distributed system properties in a gemfirexd.properties file that is available in the directory where you run the `snappy` command.
+!!! Note
+	The <_target directory_> must be provided immediately after `- snappy backup [-baseline]` followed by the other arguments. `-baseline` is optional.
 
-The table describes options for snappy backup.
+The table describes options for `snappy backup`:
 
 |Option|Description|
 |-|-|
-|-baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the `-baseline` option.|
+|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/SnappyDataBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option.|
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#backup_directory).|
-|-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
-|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
-|-prop-name|Any other SnappyData distributed system property.|
-|-J-D<vmprop>=<prop-value>|Sets Java system property to the specified value.|
+|locators| List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
+|bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
+|prop-name|Any other SnappyData distributed system property.|
+|J-D<vmprop>=<prop-value>|Sets Java system property to the specified value.|
 
 <a id="description"></a>
 
-# Description
+## Description
 
 An online backup saves the following:
 
@@ -53,13 +56,11 @@ An online backup saves the following:
 
 -   Configuration files from the member startup.
 
--   gemfirexd.properties, with the properties the member was started with.
-
 -   A restore script, written for the member's operating system, that copies the files back to their original locations. For example, in Windows, the file is restore.bat and in Linux, it is restore.sh.
 
 <a id="prereq"></a>
 
-# Prerequisites and Best Practices
+## Prerequisites and Best Practices
 
 -   Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.
 
@@ -73,7 +74,7 @@ An online backup saves the following:
 
 <a id="backup_directory"></a>
 
-# Specifying the Backup Directory
+## Specifying the Backup Directory
 
 The directory you specify for backup can be used multiple times. Each backup first creates a top level directory for the backup, under the directory you specify, identified to the minute. You can use one of two formats:
 
@@ -83,7 +84,7 @@ The directory you specify for backup can be used multiple times. Each backup fir
 
 <a id="example"></a>
 
-# Example
+## Example
 
 Using a backup directory that is local to all host machines in the system:
 
@@ -106,7 +107,7 @@ snappy backup -baseline=./snappyStoreBackupLocation/2012-10-01-12-30 ./snappySto
 
 <a id="output_messages"></a>
 
-# Output Messages from snappy backup
+## Output Messages from snappy backup
 
 When you run `snappy backup`, it reports on the outcome of the operation.
 
@@ -125,8 +126,8 @@ Connecting to distributed system: -locators=localhost:10334
 The following disk stores were backed up:
 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
 	4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
-	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
-	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
+	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
 Backup successful.
 ```
 
@@ -137,8 +138,8 @@ Connecting to distributed system: -locators=localhost:10334
 The following disk stores were backed up:
 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
 	4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
-	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
-	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
+	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
 The backup may be incomplete. The following disk stores are not online:
 ```
 
@@ -146,7 +147,7 @@ A member that fails to complete its backup is noted in this ending status messag
 
 <a id="directory_structure"></a>
 
-# Backup Directory Structure and Its Contents
+## Backup Directory Structure and Its Contents
 
 Below is the structure of files and directories backed up in a distributed system:
 
@@ -169,13 +170,13 @@ BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
 
 <a id="restore_online_backup"></a>
 
-# Restoring Files
+## Restoring Files
 
 The restore script (restore.sh restore.bat) copies files back to their original locations. You can do this manually if you wish:
 
 1.  Restore your disk stores when your members are offline and the system is down.
 
-2.  Read the restore scripts to see where they the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.
+2.  Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.
 
 3.  Run the restore scripts. Run each script on the host where the backup originated.
 

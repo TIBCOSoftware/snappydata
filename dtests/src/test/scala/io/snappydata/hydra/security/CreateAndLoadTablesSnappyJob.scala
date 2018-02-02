@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -35,7 +35,7 @@ object CreateAndLoadTablesSnappyJob extends SnappySQLJob {
     val queryArray = scala.io.Source.fromFile(queryFile).getLines().mkString.split(";")
     val schema1: String = jobConfig.getString("schema1")
     val schema2: String = jobConfig.getString("schema2")
-    val passfile: String = jobConfig.getString("passfile1")
+  //  val passfile: String = jobConfig.getString("passfile1")
     val isGrant: Boolean = jobConfig.getBoolean("isGrant")
     val expectedCntWithGrant: Int = jobConfig.getInt("expectedCntWithGrant")
     val unExpectedCntWithGrant: Int = jobConfig.getInt("unExpectedCntWithGrant")
@@ -44,6 +44,7 @@ object CreateAndLoadTablesSnappyJob extends SnappySQLJob {
     userSchema(0) = schema1;
     userSchema(1) = schema2;
 
+    val isSelect = true;
     val props = Map[String, String]()
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
@@ -55,7 +56,7 @@ object CreateAndLoadTablesSnappyJob extends SnappySQLJob {
       NWQueries.dataFilesLocation = dataFilesLocation
       SecurityTestUtil.createColRowTables(snc)
       SecurityTestUtil.runQueries(snc, queryArray, expectedCntWithGrant,
-      unExpectedCntWithGrant, isGrant, userSchema, pw)
+      unExpectedCntWithGrant, isGrant, userSchema, isSelect, pw)
      runQuery()
    /*   snc.sql("select * from user2.airline limit 10").show()
       println("SELECT successful")

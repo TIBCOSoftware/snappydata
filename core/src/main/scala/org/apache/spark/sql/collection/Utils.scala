@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,30 +30,27 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.fasterxml.jackson.core.JsonGenerator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, ToolsCallback}
-import net.jpountz.lz4.LZ4Factory
 import org.apache.commons.math3.distribution.NormalDistribution
-import org.xerial.snappy.Snappy
 
-import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
+import org.apache.spark._
+import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
-import org.apache.spark.unsafe.types.UTF8String
-// import org.apache.spark.sql.execution.datasources.json.JacksonGenerator
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
@@ -63,12 +60,12 @@ import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
+  private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
 
   // 1 - (1 - 0.95) / 2 = 0.975
   final val Z95Percent: Double = new NormalDistribution().
@@ -173,7 +170,7 @@ object Utils {
         try {
           vs.toLong
         } catch {
-          case nfe: NumberFormatException => throw analysisException(
+          case _: NumberFormatException => throw analysisException(
             s"$module: Cannot parse int '$option' from string '$vs'")
         }
       case vl: Long => vl
@@ -198,7 +195,7 @@ object Utils {
         try {
           vs.toDouble
         } catch {
-          case nfe: NumberFormatException => throw analysisException(
+          case _: NumberFormatException => throw analysisException(
             s"$module: Cannot parse double '$option' from string '$vs'")
         }
       case vf: Float => vf.toDouble
@@ -244,7 +241,7 @@ object Utils {
   }
 
   /** string specification for time intervals */
-  final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
+  private final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
 
   /**
     * Parse the given time interval value as long milliseconds.
@@ -277,11 +274,11 @@ object Utils {
     try {
       ts.toLong
     } catch {
-      case nfe: NumberFormatException =>
+      case _: NumberFormatException =>
         try {
           CastLongTime.getMillis(java.sql.Timestamp.valueOf(ts))
         } catch {
-          case iae: IllegalArgumentException =>
+          case _: IllegalArgumentException =>
             throw analysisException(
               s"$module: Cannot parse timestamp '$col'=$ts")
         }
@@ -331,7 +328,7 @@ object Utils {
       case StringType => classOf[String]
       case DateType => classOf[Int]
       case TimestampType => classOf[Long]
-      case d: DecimalType => classOf[Decimal]
+      case _: DecimalType => classOf[Decimal]
       // case "binary" => org.apache.spark.sql.types.BinaryType
       // case "raw" => org.apache.spark.sql.types.BinaryType
       // case "logical" => org.apache.spark.sql.types.BooleanType
@@ -359,19 +356,7 @@ object Utils {
   }
 
   final def isLoner(sc: SparkContext): Boolean =
-    sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
-
-  def toLowerCase(k: String): String = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isUpperCase(k.charAt(index))) {
-        return k.toLowerCase(java.util.Locale.ENGLISH)
-      }
-      index += 1
-    }
-    k
-  }
+    (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
   def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
@@ -393,17 +378,9 @@ object Utils {
     false
   }
 
-  def toUpperCase(k: String): String = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isLowerCase(k.charAt(index))) {
-        return k.toUpperCase(java.util.Locale.ENGLISH)
-      }
-      index += 1
-    }
-    k
-  }
+  def toLowerCase(k: String): String = k.toLowerCase(java.util.Locale.ENGLISH)
+
+  def toUpperCase(k: String): String = k.toUpperCase(java.util.Locale.ENGLISH)
 
   /**
    * Utility function to return a metadata for a StructField of StringType, to ensure that the
@@ -608,9 +585,9 @@ object Utils {
 
     private[this] val map = m
 
-    override def size = map.size
+    override def size: Int = map.size
 
-    override def -(elem: A) = {
+    override def -(elem: A): Map[A, B] = {
       if (map.contains(elem)) {
         val builder = Map.newBuilder[A, B]
         for (pair <- map) if (pair._1 != elem) {
@@ -630,11 +607,17 @@ object Utils {
       builder.result()
     }
 
-    override def iterator = map.iterator
+    override def iterator: Iterator[(A, B)] = map.iterator
 
-    override def foreach[U](f: ((A, B)) => U) = map.foreach(f)
+    override def foreach[U](f: ((A, B)) => U): Unit = map.foreach(f)
 
-    override def get(key: A) = map.get(key)
+    override def get(key: A): Option[B] = map.get(key)
+  }
+
+  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): ObjectObjectHashMap[K, V] = {
+    val m = ObjectObjectHashMap.withExpectedSize[K, V](map.size)
+    map.foreach(p => m.put(p._1, p._2))
+    m
   }
 
   def createScalaConverter(dataType: DataType): Any => Any =
@@ -655,31 +638,6 @@ object Utils {
 
   def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
     new ChunkedByteBuffer(chunks)
-
-  def codecCompress(codec: CompressionCodec, input: Array[Byte],
-      inputLen: Int): Array[Byte] = codec match {
-    case _: LZFCompressionCodec => LZFEncoder.encode(input, 0, inputLen)
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastCompressor().compress(input, 0, inputLen)
-    case _: SnappyCompressionCodec =>
-      Snappy.rawCompress(input, inputLen)
-  }
-
-  def codecDecompress(codec: CompressionCodec, input: Array[Byte],
-      inputOffset: Int, inputLen: Int,
-      outputLen: Int): Array[Byte] = codec match {
-    case _: LZFCompressionCodec =>
-      val output = new Array[Byte](outputLen)
-      LZFDecoder.decode(input, inputOffset, inputLen, output)
-      output
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
-        inputOffset, outputLen)
-    case _: SnappyCompressionCodec =>
-      val output = new Array[Byte](outputLen)
-      Snappy.uncompress(input, inputOffset, inputLen, output, 0)
-      output
-  }
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
@@ -730,12 +688,21 @@ object Utils {
     }
   }
 
-  def generateJson(dataType: DataType, gen: JsonGenerator,
-      row: InternalRow): Unit = {
-    // JacksonGenerator(StructType(Seq(StructField("", dataType))), gen)(row)
-    // compatibility with both Spark 2.0.0 and 2.0.2
-    TypeUtilities.jacksonApply(StructType(Seq(StructField("", dataType))), gen, row)
+  def getJsonGenerator(dataType: DataType, columnName: String,
+      writer: java.io.Writer): AnyRef = {
+    val schema = StructType(Seq(StructField(columnName, dataType)))
+    JacksonUtils.verifySchema(schema)
+    new JacksonGenerator(schema, writer, new JSONOptions(Map.empty[String, String]))
   }
+
+  def generateJson(gen: AnyRef, row: InternalRow, columnIndex: Int,
+      columnType: DataType): Unit = {
+    val generator = gen.asInstanceOf[JacksonGenerator]
+    generator.write(InternalRow(row.get(columnIndex, columnType)))
+    generator.flush()
+  }
+
+  def closeJsonGenerator(gen: AnyRef): Unit = gen.asInstanceOf[JacksonGenerator].close()
 
   def getNumColumns(partitioning: Partitioning): Int = partitioning match {
     case c: PartitioningCollection =>
@@ -759,57 +726,22 @@ object Utils {
     row
   }
 
-  def compare(left: UTF8String, right: UTF8String): Int = {
-    val rightBase = right.getBaseObject
-    var rightOffset = right.getBaseOffset
-    val leftBase = left.getBaseObject
-    var leftOffset = left.getBaseOffset
-
-    val len = Math.min(left.numBytes, right.numBytes)
-    var endOffset = leftOffset + len
-    // for architectures that support unaligned accesses, read 8 bytes at a time
-    if (Platform.unaligned() || (((leftOffset & 0x7) == 0) && ((rightOffset & 0x7) == 0))) {
-      endOffset -= 8
-      while (leftOffset <= endOffset) {
-        // Longs should be read in big-endian format for proper comparison order
-        // of individual string bytes.
-        val ll = ColumnEncoding.readLongBigEndian(leftBase, leftOffset)
-        val rl = ColumnEncoding.readLongBigEndian(rightBase, rightOffset)
-        // In UTF-8, the byte should be unsigned, so we should compare them as unsigned long.
-        val res = ll - rl
-        // If the sign of both values is same then "res" is with correct sign.
-        // If the sign of values is different then "res" has opposite sign.
-        // The XOR operations will revert the sign bit of res if sign of values is different.
-        // After that converting to signum is "(1 + ((v >> 63) << 1))"
-        //   where (v >> 63) will flow the sign to give -1 or 0, and (1 + 2 times)
-        //   of that will give -1 or 1 respectively.
-        if (res != 0) return (1 + (((ll ^ rl ^ res) >> 63) << 1)).toInt
-        leftOffset += 8
-        rightOffset += 8
-      }
-      endOffset += 4
-      if (leftOffset <= endOffset) {
-        // In UTF-8, the byte should be unsigned, so we should compare them as unsigned int
-        // which is done by converting to unsigned longs.
-        // After that conversion to signed integer is "(1 + ((v >> 63) << 1))" as above.
-        val res = (ColumnEncoding.readIntBigEndian(leftBase, leftOffset) & 0xffffffffL) -
-            (ColumnEncoding.readIntBigEndian(rightBase, rightOffset) & 0xffffffffL)
-        if (res != 0) return (1 + ((res >> 63) << 1)).toInt
-        leftOffset += 4
-        rightOffset += 4
-      }
-      endOffset += 4
+  def genTaskContextFunction(ctx: CodegenContext): String = {
+    // use common taskContext variable so it is obtained only once for a plan
+    if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
+      val taskContextVar = ctx.freshName("taskContext")
+      val contextClass = classOf[TaskContext].getName
+      ctx.addMutableState(contextClass, taskContextVar, "")
+      ctx.addNewFunction(TASKCONTEXT_FUNCTION,
+        s"""
+           |private $contextClass $TASKCONTEXT_FUNCTION() {
+           |  final $contextClass context = $taskContextVar;
+           |  if (context != null) return context;
+           |  return ($taskContextVar = $contextClass.get());
+           |}
+        """.stripMargin)
     }
-    // finish the remaining bytes
-    while (leftOffset < endOffset) {
-      // In UTF-8, the byte should be unsigned, so we should compare them as unsigned int.
-      val res = (Platform.getByte(leftBase, leftOffset) & 0xff) -
-          (Platform.getByte(rightBase, rightOffset) & 0xff)
-      if (res != 0) return res
-      leftOffset += 1
-      rightOffset += 1
-    }
-    left.numBytes - right.numBytes
+    TASKCONTEXT_FUNCTION
   }
 }
 
@@ -842,8 +774,15 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     if (part.blockId.host != thisBlockId.host ||
         part.blockId.executorId != thisBlockId.executorId) {
-      throw new IllegalStateException(
-        s"Unexpected execution of $part on $thisBlockId")
+      // kill the task and force a retry
+      val msg = s"Unexpected execution of $part on $thisBlockId"
+      logWarning(msg)
+      if (context.attemptNumber() < 10) {
+        throw new TaskKilledException
+      } else {
+        // fail after many retries (other executor is likely gone)
+        throw new IllegalStateException(msg)
+      }
     }
 
     f(context, part)
@@ -1014,15 +953,39 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-class ExecutorMultiBucketLocalShellPartition(override val index: Int,
-    val buckets: mutable.HashSet[Int],
-    val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
+final class SmartExecutorBucketPartition(private var _index: Int,
+    var hostList: mutable.ArrayBuffer[(String, String)])
+    extends Partition with KryoSerializable {
+
+  override def index: Int = _index
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    output.writeVarInt(_index, true)
+    val numHosts = hostList.length
+    output.writeVarInt(numHosts, true)
+    for ((host, url) <- hostList) {
+      output.writeString(host)
+      output.writeString(url)
+    }
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    _index = input.readVarInt(true)
+    val numHosts = input.readVarInt(true)
+    hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
+    for (_ <- 0 until numHosts) {
+      val host = input.readString()
+      val url = input.readString()
+      hostList += host -> url
+    }
+  }
+
   override def toString: String =
-    s"ExecutorMultiBucketLocalShellPartition($index, $buckets, $hostList"
+    s"SmartExecutorBucketPartition($index, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {
-  final val toolsCallback = {
+  final val toolsCallback: ToolsCallback = {
     try {
       val c = org.apache.spark.util.Utils.classForName(
         "io.snappydata.ToolsCallbackImpl$")
@@ -1030,7 +993,7 @@ object ToolsCallbackInit extends Logging {
       logInfo("toolsCallback initialized")
       tc
     } catch {
-      case cnf: ClassNotFoundException =>
+      case _: ClassNotFoundException =>
         logWarning("toolsCallback couldn't be INITIALIZED." +
             "DriverURL won't get published to others.")
         null
@@ -1040,7 +1003,7 @@ object ToolsCallbackInit extends Logging {
 
 object OrderlessHashPartitioningExtract {
   def unapply(partitioning: Partitioning): Option[(Seq[Expression],
-      Seq[Seq[Attribute]], Int, Int)] = {
+      Seq[Seq[Attribute]], Int, Int, Int)] = {
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks ne null) {
       callbacks.checkOrderlessHashPartitioning(partitioning)

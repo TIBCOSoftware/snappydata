@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -68,6 +68,18 @@ trait RowPutRelation extends DestroyRelation {
    * The result of SparkPlan execution should be a count of number of rows put.
    */
   def getPutPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
+}
+
+trait BulkPutRelation extends DestroyRelation {
+
+
+  def getPutKeys() : Option[Seq[String]]
+  /**
+    * Get a spark plan for puts. If the row is already present, it gets updated
+    * otherwise it gets inserted into the table represented by this relation.
+    * The result of SparkPlan execution should be a count of number of rows put.
+    */
+  def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan
 }
 
 @DeveloperApi

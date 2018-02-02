@@ -1,19 +1,15 @@
 from __future__ import print_function
 from pyspark.streaming import StreamingContext
 from pyspark import SparkContext , SparkConf
-from pyspark.sql import DataFrame
-from pyspark.sql.snappy import SnappyContext
+from pyspark.sql.snappy import SnappySession
 from pyspark.sql.types import StructType , StructField
 from py4j.java_gateway import java_import, JavaObject
 from pyspark.streaming.util import TransformFunction, TransformFunctionSerializer
 from pyspark.serializers import NoOpSerializer, UTF8Deserializer, CloudPickleSerializer
 from pyspark.streaming.dstream import DStream
 from pyspark.streaming.snappy.snappydstream import  SchemaDStream
-import os
-import sys
-from threading import RLock, Timer
 
-from pyspark.serializers import BatchedSerializer, PickleSerializer, UTF8Deserializer
+
 class SnappyStreamingContext(StreamingContext):
     """
     Main entry point for Snappy Spark Streaming functionality. A SnappyStreamingContext
@@ -38,7 +34,8 @@ class SnappyStreamingContext(StreamingContext):
         self._sc = sparkContext
         self._jvm = self._sc._jvm
         self._jssc = jssc or self._initialize_context(self._sc, batchDuration)
-        self._snappycontext = SnappyContext(sparkContext)
+        self._snappySession = SnappySession(sparkContext)
+        # self._snappycontext = SnappyContext(sparkContext, snappySession)
 
     @classmethod
     def _ensure_initialized(cls):
@@ -145,7 +142,7 @@ class SnappyStreamingContext(StreamingContext):
         """Returns a :class:`DataFrame` representing the result of the given query.
         :return: :class:`DataFrame`
         """
-        return self._snappycontext.sql(sqlText)
+        return self._snappySession.sql(sqlText)
 
     def union(self, *dstreams):
         """

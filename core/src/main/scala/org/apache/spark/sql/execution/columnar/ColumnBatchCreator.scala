@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,15 +16,13 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.util.UUID
-
 import scala.collection.AbstractIterator
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
-import io.snappydata.Property
+import io.snappydata.collection.OpenHashSet
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -45,8 +43,8 @@ final class ColumnBatchCreator(
     val compressionCodec: String) extends Logging {
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
-      batchID: UUID, bucketID: Int,
-      dependents: Seq[ExternalTableMetaData]): java.util.HashSet[AnyRef] = {
+      batchID: Long, bucketID: Int,
+      dependents: Seq[ExternalTableMetaData]): OpenHashSet[AnyRef] = {
     var connectedExternalStore: ConnectedExternalStore = null
     var success: Boolean = false
     try {
@@ -61,7 +59,7 @@ final class ColumnBatchCreator(
       }
       val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
       memHeapScanController.setAddRegionAndKey()
-      val keySet = new java.util.HashSet[AnyRef]
+      val keySet = new OpenHashSet[AnyRef]
       val execRows = new AbstractIterator[AbstractCompactExecRow] {
 
         var hasNext: Boolean = memHeapScanController.next()
@@ -87,8 +85,8 @@ final class ColumnBatchCreator(
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
           val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
-            numBuckets = -1, isPartitioned = false, None, (-bufferRegion.getColumnBatchSize, -1,
-                Property.CompressionCodec.defaultValue.get), tableName,
+            numBuckets = -1, isPartitioned = false, None,
+            (-bufferRegion.getColumnBatchSize, -1, compressionCodec), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD semantics
@@ -106,7 +104,7 @@ final class ColumnBatchCreator(
         // the index of the batchId (and bucketId after that) has already
         // been pushed in during compilation above
         val batchIdRef = references(references.length - 1).asInstanceOf[Int]
-        references(batchIdRef) = Some(batchID.toString)
+        references(batchIdRef) = batchID
         references(batchIdRef + 1) = bucketID
         references(batchIdRef + 2) = tableName
         // no harm in passing a references array with an extra element at end
@@ -132,8 +130,8 @@ final class ColumnBatchCreator(
    * insertion of rows as they appear. Currently used by sampler that
    * does not have any indexes so there is no dependents handling here.
    */
-  def createColumnBatchBuffer(columnBatchSize: Int, columnMaxDeltaRows: Int,
-      compressionCodec: String): ColumnBatchRowsBuffer = {
+  def createColumnBatchBuffer(columnBatchSize: Int,
+      columnMaxDeltaRows: Int): ColumnBatchRowsBuffer = {
     val gen = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held

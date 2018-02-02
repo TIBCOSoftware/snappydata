@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,11 +16,13 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.util.{Collections, UUID}
+import java.util.Collections
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.cache.lru.LRUEntry
+import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -56,7 +58,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ColumnFormatEntry.registerTypes()
   }
 
-  override def createColumnBatch(region: BucketRegion, batchID: UUID,
+  override def createColumnBatch(region: BucketRegion, batchID: Long,
       bucketID: Int): java.util.Set[AnyRef] = {
     val pr = region.getPartitionedRegion
     val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
@@ -133,6 +135,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     }
   }
 
+  override def invokeColumnStorePutCallbacks(bucket: BucketRegion,
+      events: Array[EntryEventImpl]): Unit = {
+    val container = bucket.getPartitionedRegion.getUserAttribute
+        .asInstanceOf[GemFireContainer]
+    if ((container ne null) && container.isObjectStore) {
+      container.getRowEncoder.afterColumnStorePuts(bucket, events)
+    }
+  }
+
   def getInternalTableSchemas: java.util.List[String] = {
     val schemas = new java.util.ArrayList[String](1)
     schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
@@ -141,6 +152,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def isColumnTable(qualifiedName: String): Boolean =
     ColumnFormatRelation.isColumnTable(qualifiedName)
+
+  override def skipEvictionForEntry(entry: LRUEntry): Boolean = {
+    // skip eviction of stats rows (SNAP-2102)
+    entry.getRawKey match {
+      case k: ColumnFormatKey => k.columnIndex == ColumnFormatEntry.STATROW_COL_INDEX
+      case _ => false
+    }
+  }
 
   override def getHashCodeSnappy(dvd: scala.Any, numPartitions: Int): Int = {
     partitioner.computeHash(dvd, numPartitions)
@@ -195,15 +214,20 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val isBuiltIn = context.getIsBuiltIn
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating table $tableIdent")
+        // don't attempt resolution for external tables
         session.createTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
-          provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
+          provider, userSpecifiedSchema, schemaDDL, mode, options,
+          isBuiltIn, resolveRelation = isBuiltIn)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_TABLE =>
         val tableIdent = context.getTableIdentifier
         val ifExists = context.getIfExists
+        val isBuiltIn = context.getIsBuiltIn
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp dropping table $tableIdent")
-        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent), ifExists)
+        // don't attempt resolution for external tables
+        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
+          ifExists, resolveRelation = isBuiltIn)
 
       case LeadNodeSmartConnectorOpContext.OpType.CREATE_INDEX =>
         val tableIdent = context.getTableIdentifier
@@ -273,8 +297,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def acquireStorageMemory(objectName: String, numBytes: Long,
       buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
     val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
-    MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
-      MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
+    if (numBytes > 0) {
+      return MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
+        MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
+    } else if (numBytes < 0) {
+      MemoryManagerCallback.memoryManager.releaseStorageMemoryForObject(
+        objectName, -numBytes, mode)
+    }
+    true
   }
 
   override def releaseStorageMemory(objectName: String, numBytes: Long,
@@ -288,6 +318,27 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     // off-heap will be cleared via ManagedDirectBufferAllocator
     MemoryManagerCallback.memoryManager.
       dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
+
+  override def waitForRuntimeManager(maxWaitMillis: Long): Unit = {
+    val memoryManager = MemoryManagerCallback.memoryManager
+    if (memoryManager.bootManager) {
+      val endWait = System.currentTimeMillis() + math.max(10, maxWaitMillis)
+      do {
+        var interrupt: InterruptedException = null
+        try {
+          Thread.sleep(10)
+        } catch {
+          case ie: InterruptedException => interrupt = ie
+        }
+        val cache = Misc.getGemFireCacheNoThrow
+        if (cache ne null) {
+          cache.getCancelCriterion.checkCancelInProgress(interrupt)
+          if (interrupt ne null) Thread.currentThread().interrupt()
+        }
+      } while (MemoryManagerCallback.memoryManager.bootManager &&
+          System.currentTimeMillis() < endWait)
+    }
+  }
 
   override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
 
@@ -320,6 +371,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def shouldStopRecovery(): Boolean =
     MemoryManagerCallback.memoryManager.shouldStopRecovery()
+
+  override def initMemoryStats(stats: MemoryManagerStats): Unit =
+    MemoryManagerCallback.memoryManager.initMemoryStats(stats)
 }
 
 trait StoreCallback extends Serializable {

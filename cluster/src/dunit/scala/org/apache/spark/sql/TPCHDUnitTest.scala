@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,9 +22,8 @@ import java.sql.PreparedStatement
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 import io.snappydata.SnappyTableStatsProviderService
-import io.snappydata.benchmark.snappy.TPCH_Snappy
-import io.snappydata.benchmark.snappy.tpch.{QueryExecutor, TPCH_Queries}
-import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
+import io.snappydata.benchmark.snappy.tpch.QueryExecutor
+import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
@@ -167,9 +166,9 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
         Array[String], Array[String], String)] = new ListBuffer()
 
     queries.foreach(f = qNum => {
-      var queryToBeExecuted1 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
-      var queryToBeExecuted2 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
-      var queryToBeExecuted3 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
+      var queryToBeExecuted1 = removeLimitClause(TPCH_Queries.getQuery(qNum, true, true))
+      var queryToBeExecuted2 = removeLimitClause(TPCH_Queries.getQuery(qNum, true, true))
+      var queryToBeExecuted3 = removeLimitClause(TPCH_Queries.getQuery(qNum, true, true))
       if (!qNum.equals("15")) {
         val df = snc.sqlUncached(queryToBeExecuted1)
         val res = df.collect()
@@ -236,7 +235,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     val snc = SnappyContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
     val conn = getANetConnection(locatorNetPort)
-    val prepStatement = conn.prepareStatement(TPCH_Snappy.getQuery10)
+    val prepStatement = conn.prepareStatement(TPCH_Queries.getQuery10_ForPrepareStatement)
     verifyResultSnap1296_1297(prepStatement)
     prepStatement.close()
 
@@ -439,6 +438,8 @@ object TPCHUtils extends Logging {
 //    queries.foreach(query => TPCH_Snappy.execute(query, snc,
 //      isResultCollection, isSnappy, warmup = warmup,
 //      runsForAverage = runsForAverage, avgPrintStream = System.out))
-    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection, isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage, avgPrintStream = System.out))
+    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection,
+      isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage,
+      avgPrintStream = System.out))
   }
 }

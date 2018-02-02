@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import scala.collection.mutable
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
@@ -29,13 +30,15 @@ import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputD
 import org.apache.spark.streaming.{SnappyStreamingContext, StreamUtils, StreamingContextState, Time}
 import org.apache.spark.{Logging, util}
 
-abstract class StreamBaseRelation(options: Map[String, String])
+abstract class StreamBaseRelation(opts: Map[String, String])
     extends ParentRelation with StreamPlan with TableScan
         with DestroyRelation with Serializable with Logging {
 
   final def context: SnappyStreamingContext =
     SnappyStreamingContext.getInstance().getOrElse(
       throw new IllegalStateException("No initialized streaming context"))
+
+  protected val options = new CaseInsensitiveMap(opts)
 
   @transient val tableName = options(JdbcExtendedUtils.DBTABLE_PROPERTY)
 

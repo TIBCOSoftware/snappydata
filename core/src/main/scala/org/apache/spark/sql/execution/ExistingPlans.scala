@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -96,7 +96,7 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
-    if (numPartitions == 1) {
+    if (numPartitions == 1 && numBuckets == 1) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
       val callbacks = ToolsCallbackInit.toolsCallback
@@ -106,7 +106,7 @@ private[sql] abstract class PartitionedPhysicalScan(
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         callbacks.getOrderlessHashPartitioning(partitionColumns,
           partitionColumnAliases, numPartitions,
-          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets)
+          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets, numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
@@ -222,8 +222,14 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
           CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key)))
     }
-    CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
-      queryString, child.treeString(verbose = true), planInfo) {
+    val sc = session.sparkContext
+    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+    if (oldExecutionId eq null) {
+      CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+        queryString, child.treeString(verbose = true), planInfo) {
+        child.executeCollect()
+      }
+    } else {
       child.executeCollect()
     }
   }
@@ -422,16 +428,18 @@ trait BatchConsumer extends CodegenSupport {
  * Extended information for ExprCode variable to also hold the variable having
  * dictionary reference and its index when dictionary encoding is being used.
  */
-case class DictionaryCode(private var dictionaryCode: String,
-    valueAssignCode: String, dictionary: String, dictionaryIndex: String,
-    dictionaryLen: String) {
+case class DictionaryCode(dictionary: ExprCode, bufferVar: String, dictionaryIndex: ExprCode) {
 
-  def evaluateDictionaryCode(ev: ExprCode): String = {
+  private def evaluate(ev: ExprCode): String = {
     if (ev.code.isEmpty) ""
     else {
-      val code = dictionaryCode
-      dictionaryCode = ""
+      val code = ev.code
+      ev.code = ""
       code
     }
   }
+
+  def evaluateDictionaryCode(): String = evaluate(dictionary)
+
+  def evaluateIndexCode(): String = evaluate(dictionaryIndex)
 }

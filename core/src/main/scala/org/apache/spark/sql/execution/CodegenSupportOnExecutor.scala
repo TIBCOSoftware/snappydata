@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution
 
+import com.gemstone.gemfire.internal.cache.BucketRegion
+
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 
 /**
@@ -23,6 +25,8 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
  * a SparkContext.
  */
 trait CodegenSupportOnExecutor extends CodegenSupport {
+
+  protected final def invalidUUID: Long = BucketRegion.INVALID_UUID
 
   /**
    * Returns Java source code to process the rows from input RDD that

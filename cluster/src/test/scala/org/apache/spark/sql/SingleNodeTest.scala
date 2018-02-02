@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -29,7 +29,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
   var existingSkipSPSCompile = false
 
   override def beforeAll(): Unit = {
-    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
     existingSkipSPSCompile = FabricDatabase.SKIP_SPS_PRECOMPILE
@@ -38,7 +38,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
   }
 
   override def afterAll(): Unit = {
-    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
     FabricDatabase.SKIP_SPS_PRECOMPILE = existingSkipSPSCompile

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -38,6 +38,7 @@ abstract class ClusterManagerLDAPTestBase(s: String, val adminUser: String = "ge
       getClass.getResource("/auth.ldif").getPath)
     setSecurityProps(ldapProperties)
     super.beforeClass()
+    SplitClusterDUnitSecurityTest.bootExistingAuthModule(ldapProperties)
   }
 
   override def afterClass(): Unit = {

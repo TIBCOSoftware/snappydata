@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -173,7 +173,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             mappedProjects,
             scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
               ._1.asInstanceOf[RDD[InternalRow]],
-            relation.relation, UnknownPartitioning(0), metadata,
+            baseRelation, UnknownPartitioning(0), metadata,
             relation.catalogTable.map(_.identifier))
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
@@ -203,7 +203,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             mappedProjects,
             scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
               ._1.asInstanceOf[RDD[InternalRow]],
-            relation.relation, UnknownPartitioning(0), metadata,
+            baseRelation, UnknownPartitioning(0), metadata,
             relation.catalogTable.map(_.identifier))
       }
       execution.ProjectExec(projects,
@@ -280,11 +280,13 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case expressions.StartsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
         Some(sources.StringStartsWith(a.name, v.toString))
 
+      /* (not used in pushdown by column/row tables)
       case expressions.EndsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
         Some(sources.StringEndsWith(a.name, v.toString))
 
       case expressions.Contains(a: Attribute, Literal(v: UTF8String, StringType)) =>
         Some(sources.StringContains(a.name, v.toString))
+      */
 
       case _ => None
     }

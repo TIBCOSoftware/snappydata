@@ -92,7 +92,12 @@ public class DerbyTestUtils {
 
 
   protected Connection getDerbyConnection() {
-    Connection conn = (Connection)derbyConnection.get();
+    Connection conn = null;
+    try {
+      conn = (Connection)derbyConnection.get();
+    } catch (NullPointerException npe) { //in case of sub threads
+      conn = null;
+    }
     try {
       if (conn == null || (Boolean)resetDerbyConnection.get() || conn.isClosed()) {
         Log.getLogWriter().info("derbyConnection is not set yet");
@@ -101,10 +106,14 @@ public class DerbyTestUtils {
         } catch (SQLException e) {
           SQLHelper.printSQLException(e);
           throw new TestException("Not able to get Derby Connection:\n " + TestHelper.getStackTrace(e));
+        } catch(Exception e){
+          Log.getLogWriter().info("Not able to get Derby Connection:\n " + TestHelper.getStackTrace(e));
         }
         derbyConnection.set(conn);
         resetDerbyConnection.set(false);
       }
+    } catch (NullPointerException npe) {
+      // /in case of sub threads
     } catch (Exception e) {
       throw new TestException("Exception while getting derby connection " + " : " + e.getMessage());
     }

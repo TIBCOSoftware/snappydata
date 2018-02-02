@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,9 +17,7 @@
 package org.apache.spark.sql
 
 import scala.util.control.NonFatal
-
 import io.snappydata.SnappyFunSuite
-
 import org.apache.spark.Logging
 import org.apache.spark.scheduler._
 
@@ -28,6 +26,17 @@ import org.apache.spark.scheduler._
  */
 class MiscTest extends SnappyFunSuite with Logging {
 
+  test("With Clause") {
+    snc.sql("drop table if exists nulls_table")
+    snc.sql(s"create table table1 (ol_1_int_id  integer," +
+      s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+      "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+    snc.sql("WITH temp_table AS ( SELECT ol_1_int2_id  as col1," +
+      " sum(ol_1_int_id) AS col2 FROM table1 GROUP BY ol_1_int2_id)" +
+      " SELECT ol_1_int2_id FROM temp_table ," +
+      " table1 WHERE ol_1_int2_id  = col1 LIMIT 100 ").show
+  }
   test("Pool test") {
     // create a dummy pool
     val rootPool = new Pool("lowlatency", SchedulingMode.FAIR, 0, 0)

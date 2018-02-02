@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -22,24 +22,26 @@
 
 usage="Usage: snappy-locator.sh (start|stop|status) -dir=directory"
 
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
+function absPath() {
+  perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+sbin="$(dirname "$(absPath "$0")")"
 
 mode=$1
 shift
 
-. "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+. "$sbin/spark-config.sh"
 
 
-. "$SPARK_HOME/bin/load-spark-env.sh"
-. "$SPARK_HOME/bin/load-snappy-env.sh"
+. "$SNAPPY_HOME/bin/load-spark-env.sh"
+. "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
 
 
 # Start up  the locator instance
 function start_instance {
-  "$SPARK_HOME"/bin/snappy locator "$mode" "$@"
+  "$SNAPPY_HOME"/bin/snappy locator "$mode" "$@"
 }
 
 start_instance "$@"
