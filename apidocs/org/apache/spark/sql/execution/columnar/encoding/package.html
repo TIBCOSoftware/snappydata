@@ -236,6 +236,44 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.BooleanRunLengthDecoder" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="BooleanRunLengthDecoderextendsRunLengthDecoding"></a>
+      <a id="BooleanRunLengthDecoder:BooleanRunLengthDecoder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="BooleanRunLengthDecoder.html"><span class="name">BooleanRunLengthDecoder</span></a><span class="result"> extends <a href="RunLengthDecoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.RunLengthDecoding">RunLengthDecoding</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@BooleanRunLengthDecoderextendsRunLengthDecoding" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Run length encoding optimized for booleans.</p><div class="fullcomment"><div class="comment cmt"><p>Run length encoding optimized for booleans. Each short run-length value
+represents the run-length with the value. Even numbered run-lengths indicate
+a run of false values having half the length, while odd numbered run-lengths
+are for true values (having length = run / 2 + 1).
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.BooleanRunLengthEncoder" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BooleanRunLengthEncoderextendsAnyRef"></a>
+      <a id="BooleanRunLengthEncoder:BooleanRunLengthEncoder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="BooleanRunLengthEncoder.html"><span class="name">BooleanRunLengthEncoder</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@BooleanRunLengthEncoderextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ColumnDecoderextendsColumnEncoding"></a>
       <a id="ColumnDecoder:ColumnDecoder"></a>
@@ -637,7 +675,7 @@ simpler Janino &quot;createFastEvaluator&quot; API.</p>
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="NullableDecoderextendsColumnDecoder"></a>
       <a id="NullableDecoder:NullableDecoder"></a>
       <h4 class="signature">
@@ -653,7 +691,14 @@ simpler Janino &quot;createFastEvaluator&quot; API.</p>
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Nulls are stored either as a bitset or as a sequence of positions
+(or inverse sequence of missing positions) if the number of nulls
+is small (or non-nulls is small).</p><div class="fullcomment"><div class="comment cmt"><p>Nulls are stored either as a bitset or as a sequence of positions
+(or inverse sequence of missing positions) if the number of nulls
+is small (or non-nulls is small). This is indicated by the count
+field which is negative for the latter case. The decoder for latter
+keeps track of next null position and compares against that.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableEncoder" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="NullableEncoderextendsNotNullEncoder"></a>
       <a id="NullableEncoder:NullableEncoder"></a>
@@ -718,6 +763,23 @@ simpler Janino &quot;createFastEvaluator&quot; API.</p>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@RunLengthDecoderNullableextendsRunLengthDecoderBasewithNullableDecoder" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.RunLengthDecoding" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="RunLengthDecodingextendsAnyRef"></a>
+      <a id="RunLengthDecoding:RunLengthDecoding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="RunLengthDecoding.html"><span class="name">RunLengthDecoding</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@RunLengthDecodingextendsAnyRef" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

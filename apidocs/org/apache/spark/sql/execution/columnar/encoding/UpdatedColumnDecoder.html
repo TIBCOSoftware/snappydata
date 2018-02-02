@@ -96,7 +96,7 @@ a nullable or non-nullable version as appropriate.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(decoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,field:org.apache.spark.sql.types.StructField,delta1Position:Int,delta1:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder,delta2Position:Int,delta2:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder,delta3Position:Int,delta3:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder):org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder"></a>
+      <a id="&lt;init&gt;(decoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,field:org.apache.spark.sql.types.StructField,delta1:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder,delta2:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder):org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder"></a>
       <a id="&lt;init&gt;:UpdatedColumnDecoder"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -104,10 +104,10 @@ a nullable or non-nullable version as appropriate.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">UpdatedColumnDecoder</span><span class="params">(<span name="decoder">decoder: <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="delta1Position">delta1Position: <span class="extype" name="scala.Int">Int</span></span>, <span name="delta1">delta1: <a href="ColumnDeltaDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</a></span>, <span name="delta2Position">delta2Position: <span class="extype" name="scala.Int">Int</span></span>, <span name="delta2">delta2: <a href="ColumnDeltaDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</a></span>, <span name="delta3Position">delta3Position: <span class="extype" name="scala.Int">Int</span></span>, <span name="delta3">delta3: <a href="ColumnDeltaDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</a></span>)</span>
+        <span class="name">UpdatedColumnDecoder</span><span class="params">(<span name="decoder">decoder: <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="delta1">delta1: <a href="ColumnDeltaDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</a></span>, <span name="delta2">delta2: <a href="ColumnDeltaDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder@&lt;init&gt;(decoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,field:org.apache.spark.sql.types.StructField,delta1Position:Int,delta1:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder,delta2Position:Int,delta2:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder,delta3Position:Int,delta3:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder):org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder@&lt;init&gt;(decoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,field:org.apache.spark.sql.types.StructField,delta1:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder,delta2:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder):org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -372,18 +372,18 @@ a nullable or non-nullable version as appropriate.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase#moveToNextUpdatedPosition" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="moveToNextUpdatedPosition(ordinal:Int):Int"></a>
-      <a id="moveToNextUpdatedPosition(Int):Int"></a>
+      <a id="moveToNextUpdatedPosition():Int"></a>
+      <a id="moveToNextUpdatedPosition():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">moveToNextUpdatedPosition</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">moveToNextUpdatedPosition</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder@moveToNextUpdatedPosition(ordinal:Int):Int" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder@moveToNextUpdatedPosition():Int" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -405,23 +405,6 @@ a nullable or non-nullable version as appropriate.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase#nextDeltaBuffer" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="nextDeltaBuffer:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder"></a>
-      <a id="nextDeltaBuffer:ColumnDeltaDecoder"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">var</span>
-      </span>
-      <span class="symbol">
-        <span class="name">nextDeltaBuffer</span><span class="result">: <a href="ColumnDeltaDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder@nextDeltaBuffer:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="UpdatedColumnDecoderBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase">UpdatedColumnDecoderBase</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase#nextUpdatedPosition" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nextUpdatedPosition:Int"></a>
       <a id="nextUpdatedPosition:Int"></a>
@@ -524,26 +507,6 @@ a nullable or non-nullable version as appropriate.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder">UpdatedColumnDecoder</a> → <a href="UpdatedColumnDecoderBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase">UpdatedColumnDecoderBase</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase#skipUpdatedPosition" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="skipUpdatedPosition(delta:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder):Unit"></a>
-      <a id="skipUpdatedPosition(ColumnDeltaDecoder):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">skipUpdatedPosition</span><span class="params">(<span name="delta">delta: <a href="ColumnDeltaDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoder@skipUpdatedPosition(delta:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder):Unit" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="UpdatedColumnDecoderBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase">UpdatedColumnDecoderBase</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@inline</span><span class="args">()</span>
-              
-        </dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

@@ -168,6 +168,23 @@ across client connections or applications.
       <p class="shortcomment cmt">Create a SnappyStreamingContext by providing the configuration necessary
 for a new SparkContext.</p><div class="fullcomment"><div class="comment cmt"><p>Create a SnappyStreamingContext by providing the configuration necessary
 for a new SparkContext.</p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>a org.apache.spark.SparkConf object specifying Spark parameters</p></dd><dt class="param">batchDuration</dt><dd class="cmt"><p>the time interval at which streaming data will be divided into batches</p></dd></dl></div>
+    </li><li name="org.apache.spark.streaming.SnappyStreamingContext#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(snappySession:org.apache.spark.sql.SnappySession,batchDuration:org.apache.spark.streaming.Duration):org.apache.spark.streaming.SnappyStreamingContext"></a>
+      <a id="&lt;init&gt;:SnappyStreamingContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SnappyStreamingContext</span><span class="params">(<span name="snappySession">snappySession: <a href="../sql/SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="batchDuration">batchDuration: <a href="Duration.html" class="extype" name="org.apache.spark.streaming.Duration">Duration</a></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.SnappyStreamingContext@&lt;init&gt;(snappySession:org.apache.spark.sql.SnappySession,batchDuration:org.apache.spark.streaming.Duration):org.apache.spark.streaming.SnappyStreamingContext" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.streaming.SnappyStreamingContext#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="&lt;init&gt;(sparkContext:org.apache.spark.SparkContext,batchDuration:org.apache.spark.streaming.Duration):org.apache.spark.streaming.SnappyStreamingContext"></a>
       <a id="&lt;init&gt;:SnappyStreamingContext"></a>
@@ -186,7 +203,7 @@ for a new SparkContext.</p></div><dl class="paramcmts block"><dt class="param">c
     </span>
       <p class="shortcomment cmt">Create a SnappyStreamingContext using an existing SparkContext.</p><div class="fullcomment"><div class="comment cmt"><p>Create a SnappyStreamingContext using an existing SparkContext.</p></div><dl class="paramcmts block"><dt class="param">sparkContext</dt><dd class="cmt"><p>existing SparkContext</p></dd><dt class="param">batchDuration</dt><dd class="cmt"><p>the time interval at which streaming data will be divided into batches</p></dd></dl></div>
     </li><li name="org.apache.spark.streaming.SnappyStreamingContext#&lt;init&gt;" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(sc_:org.apache.spark.SparkContext,cp_:org.apache.spark.streaming.Checkpoint,batchDur_:org.apache.spark.streaming.Duration):org.apache.spark.streaming.SnappyStreamingContext"></a>
+      <a id="&lt;init&gt;(sc_:org.apache.spark.SparkContext,cp_:org.apache.spark.streaming.Checkpoint,batchDur_:org.apache.spark.streaming.Duration,reuseSnappySession:Option[org.apache.spark.sql.SnappySession],currentSnappySession:Option[org.apache.spark.sql.SnappySession]):org.apache.spark.streaming.SnappyStreamingContext"></a>
       <a id="&lt;init&gt;:SnappyStreamingContext"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -194,10 +211,10 @@ for a new SparkContext.</p></div><dl class="paramcmts block"><dt class="param">c
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SnappyStreamingContext</span><span class="params">(<span name="sc_">sc_: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="cp_">cp_: <span class="extype" name="org.apache.spark.streaming.Checkpoint">Checkpoint</span></span>, <span name="batchDur_">batchDur_: <a href="Duration.html" class="extype" name="org.apache.spark.streaming.Duration">Duration</a></span>)</span>
+        <span class="name">SnappyStreamingContext</span><span class="params">(<span name="sc_">sc_: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="cp_">cp_: <span class="extype" name="org.apache.spark.streaming.Checkpoint">Checkpoint</span></span>, <span name="batchDur_">batchDur_: <a href="Duration.html" class="extype" name="org.apache.spark.streaming.Duration">Duration</a></span>, <span name="reuseSnappySession">reuseSnappySession: <span class="extype" name="scala.Option">Option</span>[<a href="../sql/SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a>] = <span class="symbol"><span class="name"><a href="../../../../scala/package.html">None</a></span></span></span>, <span name="currentSnappySession">currentSnappySession: <span class="extype" name="scala.Option">Option</span>[<a href="../sql/SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a>] = <span class="symbol"><span class="name"><a href="../../../../scala/package.html">None</a></span></span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.streaming.SnappyStreamingContext@&lt;init&gt;(sc_:org.apache.spark.SparkContext,cp_:org.apache.spark.streaming.Checkpoint,batchDur_:org.apache.spark.streaming.Duration):org.apache.spark.streaming.SnappyStreamingContext" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.streaming.SnappyStreamingContext@&lt;init&gt;(sc_:org.apache.spark.SparkContext,cp_:org.apache.spark.streaming.Checkpoint,batchDur_:org.apache.spark.streaming.Duration,reuseSnappySession:Option[org.apache.spark.sql.SnappySession],currentSnappySession:Option[org.apache.spark.sql.SnappySession]):org.apache.spark.streaming.SnappyStreamingContext" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

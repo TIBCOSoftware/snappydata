@@ -43,7 +43,7 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -91,7 +91,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(_value:Any,_dataType:org.apache.spark.sql.types.DataType,pos:Int):org.apache.spark.sql.catalyst.expressions.ParamLiteral"></a>
+      <a id="&lt;init&gt;(value:Any,_dataType:org.apache.spark.sql.types.DataType,pos:Int):org.apache.spark.sql.catalyst.expressions.ParamLiteral"></a>
       <a id="&lt;init&gt;:ParamLiteral"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ParamLiteral</span><span class="params">(<span name="_value">_value: <span class="extype" name="scala.Any">Any</span></span>, <span name="_dataType">_dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="pos">pos: <span class="extype" name="scala.Int">Int</span></span>)</span>
+        <span class="name">ParamLiteral</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Any">Any</span></span>, <span name="_dataType">_dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="pos">pos: <span class="extype" name="scala.Int">Int</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@&lt;init&gt;(_value:Any,_dataType:org.apache.spark.sql.types.DataType,pos:Int):org.apache.spark.sql.catalyst.expressions.ParamLiteral" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@&lt;init&gt;(value:Any,_dataType:org.apache.spark.sql.types.DataType,pos:Int):org.apache.spark.sql.catalyst.expressions.ParamLiteral" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -243,6 +243,23 @@ pasted in the REPL to build an equivalent Tree.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#canEqual" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canEqual(that:Any):Boolean"></a>
+      <a id="canEqual(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEqual</span><span class="params">(<span name="that">that: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@canEqual(that:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → Equals</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#canonicalized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="canonicalized:org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="canonicalized:Expression"></a>
@@ -1455,7 +1472,7 @@ unchanged.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Literal#value" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#value" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="value:Any"></a>
       <a id="value:Any"></a>
       <h4 class="signature">
@@ -1471,7 +1488,7 @@ unchanged.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#verboseString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="verboseString:String"></a>
       <a id="verboseString:String"></a>

@@ -49,10 +49,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A MemoryManager which simply delegates to configured Spark memory manager.
-This manager will be used in Connector mode. All SnappyData execution memory
-like encoder etc will account memory here.
-</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -202,6 +199,23 @@ like encoder etc will account memory here.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.memory.DefaultMemoryManager#bootManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bootManager:Boolean"></a>
+      <a id="bootManager:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bootManager</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.DefaultMemoryManager@bootManager:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.DefaultMemoryManager">DefaultMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.DefaultMemoryManager#changeOffHeapOwnerToStorage" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="changeOffHeapOwnerToStorage(buffer:java.nio.ByteBuffer,allowNonAllocator:Boolean):Unit"></a>
       <a id="changeOffHeapOwnerToStorage(ByteBuffer,Boolean):Unit"></a>
@@ -510,18 +524,18 @@ by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be als
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.DefaultMemoryManager">DefaultMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
-      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">initializeLogIfNecessary</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.DefaultMemoryManager@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.memory.DefaultMemoryManager@initializeLogIfNecessary():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -883,6 +897,23 @@ by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be als
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.DefaultMemoryManager">DefaultMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#resetLogger" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resetLogger():Unit"></a>
+      <a id="resetLogger():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetLogger</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.DefaultMemoryManager@resetLogger():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.DefaultMemoryManager#shouldStopRecovery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="shouldStopRecovery():Boolean"></a>
       <a id="shouldStopRecovery():Boolean"></a>

@@ -569,18 +569,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
-      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">initializeLogIfNecessary</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.impl.LeadImpl@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.impl.LeadImpl@initializeLogIfNecessary():Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1015,7 +1015,7 @@
       <a id="notifyStop(Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -1027,7 +1027,24 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>FabricServiceImpl</dd></dl></div>
-    </li><li name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl#notifyWaiting" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl#notifyTableInitialized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyTableInitialized():Unit"></a>
+      <a id="notifyTableInitialized():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyTableInitialized</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.LeadImpl@notifyTableInitialized():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>FabricServerImpl</dd></dl></div>
+    </li><li name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl#notifyWaiting" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyWaiting(x$1:String,x$2:java.util.Set[com.gemstone.gemfire.internal.cache.persistence.PersistentMemberID],x$3:java.util.Set[Integer],x$4:com.gemstone.gemfire.internal.cache.persistence.PersistentMemberID,x$5:String):Unit"></a>
       <a id="notifyWaiting(String,Set[PersistentMemberID],Set[Integer],PersistentMemberID,String):Unit"></a>
       <h4 class="signature">
@@ -1043,7 +1060,7 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>FabricServiceImpl</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>FabricServerImpl → FabricServiceImpl</dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl#reconnecting" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="reconnecting():Unit"></a>
       <a id="reconnecting():Unit"></a>
@@ -1061,6 +1078,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$internal$engine$fabricservice.html" class="extype" name="com.pivotal.gemfirexd.internal.engine.fabricservice">com.pivotal.gemfirexd.internal.engine.fabricservice</a>] </dd><dt>Definition Classes</dt><dd>FabricServiceImpl</dd></dl></div>
+    </li><li name="org.apache.spark.Logging#resetLogger" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resetLogger():Unit"></a>
+      <a id="resetLogger():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetLogger</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.LeadImpl@resetLogger():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl#serviceShutdown" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="serviceShutdown():Unit"></a>
       <a id="serviceShutdown():Unit"></a>
@@ -1084,6 +1118,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="io.snappydata.impl.LeadImpl#serviceStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serviceStatus():com.pivotal.gemfirexd.FabricService.State"></a>
+      <a id="serviceStatus():State"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serviceStatus</span><span class="params">()</span><span class="result">: <span class="extype" name="com.pivotal.gemfirexd.FabricService.State">State</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.LeadImpl@serviceStatus():com.pivotal.gemfirexd.FabricService.State" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.impl.LeadImpl">LeadImpl</a> → FabricService</dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl#setShutdownAllIdentifier" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setShutdownAllIdentifier():Unit"></a>
       <a id="setShutdownAllIdentifier():Unit"></a>
@@ -1433,6 +1484,29 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl#waitTableInitialized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="waitTableInitialized():Unit"></a>
+      <a id="waitTableInitialized():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">waitTableInitialized</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.LeadImpl@waitTableInitialized():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>FabricServerImpl</dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>

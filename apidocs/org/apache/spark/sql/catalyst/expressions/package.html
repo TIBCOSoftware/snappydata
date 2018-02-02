@@ -1577,7 +1577,7 @@ but parent isn't. That way we locate the exact point where an expression is safe
 once instead of evaluating every row.
 <br><br></p><p>Expressions like <code> select c from tab where
  case col2 when 1 then col3 else 'y' end = 22 </code>
-like queries doesn't converts literal evaluation into init method.
+like queries don't convert literal evaluation into init method.
 </p></div><dl class="paramcmts block"><dt class="param">expr</dt><dd class="cmt"><p>minimal expression tree that can be evaluated only once and turn into a constant.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="DynamicReplacableConstantextendsAnyRef"></a>
@@ -4124,7 +4124,7 @@ plan. This is used for correlated subqueries.
       <a id="ParamLiteral:ParamLiteral"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">

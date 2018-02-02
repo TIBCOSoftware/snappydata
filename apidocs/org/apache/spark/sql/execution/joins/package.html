@@ -195,9 +195,9 @@ relation is not shuffled.
       </a>
     </span>
       <p class="shortcomment cmt">:: DeveloperApi ::
-Performs an local hash join of two child relations.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
-Performs an local hash join of two child relations. If a relation
-(out of a datasource) is already replicated accross all nodes then rather
+Performs a local hash join of two child relations.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Performs a local hash join of two child relations. If a relation
+(out of a datasource) is already replicated across all nodes then rather
 than doing a Broadcast join which can be expensive, this join just
 scans through the single partition of the replicated relation while
 streaming through the other relation.

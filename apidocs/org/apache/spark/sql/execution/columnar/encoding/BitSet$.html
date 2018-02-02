@@ -149,7 +149,7 @@ but respects platform endian-ness so is suitable for storage.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.BitSet#anySet" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="anySet(baseObject:AnyRef,baseAddress:Long,sizeInBytes:Long):Boolean"></a>
+      <a id="anySet(baseObject:AnyRef,baseAddress:Long,sizeInWords:Long):Boolean"></a>
       <a id="anySet(AnyRef,Long,Long):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -157,10 +157,10 @@ but respects platform endian-ness so is suitable for storage.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">anySet</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseAddress">baseAddress: <span class="extype" name="scala.Long">Long</span></span>, <span name="sizeInBytes">sizeInBytes: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">anySet</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseAddress">baseAddress: <span class="extype" name="scala.Long">Long</span></span>, <span name="sizeInWords">sizeInWords: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BitSet$@anySet(baseObject:AnyRef,baseAddress:Long,sizeInBytes:Long):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BitSet$@anySet(baseObject:AnyRef,baseAddress:Long,sizeInWords:Long):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -183,7 +183,7 @@ but respects platform endian-ness so is suitable for storage.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.BitSet#cardinality" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="cardinality(baseObject:AnyRef,baseAddress:Long,position:Int,sizeInBytes:Int):Int"></a>
+      <a id="cardinality(baseObject:AnyRef,baseAddress:Long,position:Int,sizeInWords:Int):Int"></a>
       <a id="cardinality(AnyRef,Long,Int,Int):Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -191,10 +191,10 @@ but respects platform endian-ness so is suitable for storage.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">cardinality</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseAddress">baseAddress: <span class="extype" name="scala.Long">Long</span></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>, <span name="sizeInBytes">sizeInBytes: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">cardinality</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseAddress">baseAddress: <span class="extype" name="scala.Long">Long</span></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>, <span name="sizeInWords">sizeInWords: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BitSet$@cardinality(baseObject:AnyRef,baseAddress:Long,position:Int,sizeInBytes:Int):Int" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BitSet$@cardinality(baseObject:AnyRef,baseAddress:Long,position:Int,sizeInWords:Int):Int" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -348,7 +348,7 @@ but respects platform endian-ness so is suitable for storage.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.BitSet#isSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isSet(baseObject:AnyRef,baseAddress:Long,position:Int,maxBytes:Int):Boolean"></a>
+      <a id="isSet(baseObject:AnyRef,baseAddress:Long,position:Int,maxWords:Int):Boolean"></a>
       <a id="isSet(AnyRef,Long,Int,Int):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -356,18 +356,21 @@ but respects platform endian-ness so is suitable for storage.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isSet</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseAddress">baseAddress: <span class="extype" name="scala.Long">Long</span></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>, <span name="maxBytes">maxBytes: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isSet</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseAddress">baseAddress: <span class="extype" name="scala.Long">Long</span></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>, <span name="maxWords">maxWords: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BitSet$@isSet(baseObject:AnyRef,baseAddress:Long,position:Int,maxBytes:Int):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BitSet$@isSet(baseObject:AnyRef,baseAddress:Long,position:Int,maxWords:Int):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Returns true if the bit is set at the specified index
-given maximum size of nulls bitmask in bytes.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if the bit is set at the specified index
-given maximum size of nulls bitmask in bytes.
+given maximum size of nulls bitmask in words (8-bytes).</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if the bit is set at the specified index
+given maximum size of nulls bitmask in words (8-bytes).
 Returns true if the bit is set at the specified index.
-</p></div></div>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.BitSet#isSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isSet(baseObject:AnyRef,baseAddress:Long,position:Int):Boolean"></a>
       <a id="isSet(AnyRef,Long,Int):Boolean"></a>
@@ -407,7 +410,7 @@ Returns true if the bit is set at the specified index.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.BitSet#nextSetBit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="nextSetBit(baseObject:AnyRef,baseAddress:Long,startIndex:Int,sizeInBytes:Int):Int"></a>
+      <a id="nextSetBit(baseObject:AnyRef,baseAddress:Long,startIndex:Int,sizeInWords:Int):Int"></a>
       <a id="nextSetBit(AnyRef,Long,Int,Int):Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -415,10 +418,10 @@ Returns true if the bit is set at the specified index.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">nextSetBit</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseAddress">baseAddress: <span class="extype" name="scala.Long">Long</span></span>, <span name="startIndex">startIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="sizeInBytes">sizeInBytes: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">nextSetBit</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseAddress">baseAddress: <span class="extype" name="scala.Long">Long</span></span>, <span name="startIndex">startIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="sizeInWords">sizeInWords: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BitSet$@nextSetBit(baseObject:AnyRef,baseAddress:Long,startIndex:Int,sizeInBytes:Int):Int" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BitSet$@nextSetBit(baseObject:AnyRef,baseAddress:Long,startIndex:Int,sizeInWords:Int):Int" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

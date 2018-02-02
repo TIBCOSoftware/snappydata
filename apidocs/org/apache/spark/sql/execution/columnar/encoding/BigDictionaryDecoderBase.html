@@ -115,7 +115,43 @@
 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#hasNulls" visbl="prt" data-isabs="true" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#findNextNullPosition" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="findNextNullPosition(columnBytes:AnyRef,nextNullPosition:Int,num:Int):Int"></a>
+      <a id="findNextNullPosition(AnyRef,Int,Int):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">findNextNullPosition</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="nextNullPosition">nextNullPosition: <span class="extype" name="scala.Int">Int</span></span>, <span name="num">num: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BigDictionaryDecoderBase@findNextNullPosition(columnBytes:AnyRef,nextNullPosition:Int,num:Int):Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Fetch next null position and return it as returned by <a href="ColumnDecoder.html#getNextNullPosition:Int" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#getNextNullPosition">getNextNullPosition</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Fetch next null position and return it as returned by <a href="ColumnDecoder.html#getNextNullPosition:Int" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#getNextNullPosition">getNextNullPosition</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#getNextNullPosition" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getNextNullPosition:Int"></a>
+      <a id="getNextNullPosition:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNextNullPosition</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BigDictionaryDecoderBase@getNextNullPosition:Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the next position of a null value.</p><div class="fullcomment"><div class="comment cmt"><p>Return the next position of a null value.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#hasNulls" visbl="prt" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="hasNulls:Boolean"></a>
       <a id="hasNulls:Boolean"></a>
       <h4 class="signature">
@@ -149,6 +185,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#isNullAt" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="isNullAt(columnBytes:AnyRef,position:Int):Boolean"></a>
+      <a id="isNullAt(AnyRef,Int):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNullAt</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BigDictionaryDecoderBase@isNullAt(columnBytes:AnyRef,position:Int):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Absolute position null check for random access.</p><div class="fullcomment"><div class="comment cmt"><p>Absolute position null check for random access.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#numNulls" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="numNulls(columnBytes:AnyRef,ordinal:Int,num:Int):Int"></a>
       <a id="numNulls(AnyRef,Int,Int):Int"></a>
@@ -166,10 +219,6 @@
       </a>
     </span>
       <p class="shortcomment cmt">Return the number of nulls till given ordinal given previous result.</p><div class="fullcomment"><div class="comment cmt"><p>Return the number of nulls till given ordinal given previous result.
-If result is &lt; 0 then current value was null (and num to be passed
-in subsequent calls should be -ve of that) else it was not (and
-num passed in subsequent calls should be that return value).
-The initial value of num that should be passed is 0.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li></ol>
             </div>
@@ -428,10 +477,10 @@ The initial value of num that should be passed is 0.
       <p class="shortcomment cmt">Initialization will fill in the dictionaries as written by the
 DictionaryEncoder.</p><div class="fullcomment"><div class="comment cmt"><p>Initialization will fill in the dictionaries as written by the
 DictionaryEncoder. For string maps it reads in the value array
-written using <span class="extype" name="ByteBufferHashMap">ByteBufferHashMap</span> by the encoder expecting the
+written using <span class="extype" name="DictionaryMap">DictionaryMap</span> by the encoder expecting the
 size of UTF8 encoded string followed by the string contents.
 Long and integer dictionaries are still using the old ObjectHashSet
-which needs to be moved to <span class="extype" name="ByteBufferHashMap">ByteBufferHashMap</span> once DictionaryEncoder
+which needs to be moved to <span class="extype" name="DictionaryMap">DictionaryMap</span> once DictionaryEncoder
 adds support for long/integer dictionary encoding.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="DictionaryDecoderBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderBase">DictionaryDecoderBase</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderBase#intDictionary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -468,23 +517,6 @@ adds support for long/integer dictionary encoding.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#isNullAt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isNullAt(columnBytes:AnyRef,position:Int):Boolean"></a>
-      <a id="isNullAt(AnyRef,Int):Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isNullAt</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BigDictionaryDecoderBase@isNullAt(columnBytes:AnyRef,position:Int):Boolean" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Absolute ordinal null check for random access.</p><div class="fullcomment"><div class="comment cmt"><p>Absolute ordinal null check for random access.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderBase#longDictionary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="longDictionary:Array[Long]"></a>
       <a id="longDictionary:Array[Long]"></a>
@@ -519,25 +551,25 @@ adds support for long/integer dictionary encoding.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#nonNullOrdinal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="nonNullOrdinal:Int"></a>
-      <a id="nonNullOrdinal:Int"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#nonNullPosition" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="nonNullPosition:Int"></a>
+      <a id="nonNullPosition:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">var</span>
       </span>
       <span class="symbol">
-        <span class="name">nonNullOrdinal</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">nonNullPosition</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BigDictionaryDecoderBase@nonNullOrdinal:Int" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BigDictionaryDecoderBase@nonNullPosition:Int" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Not used by decoders themselves but by delta writer that stores the
-current nonNullOrdinal for the decoder.</p><div class="fullcomment"><div class="comment cmt"><p>Not used by decoders themselves but by delta writer that stores the
-current nonNullOrdinal for the decoder.
+current nonNullPosition for the decoder.</p><div class="fullcomment"><div class="comment cmt"><p>Not used by decoders themselves but by delta writer that stores the
+current nonNullPosition for the decoder.
 Initialized to -1 so that first increment starts at 0.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -574,26 +606,6 @@ Initialized to -1 so that first increment starts at 0.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#numNonNullsUntilPosition" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="numNonNullsUntilPosition(columnBytes:AnyRef,position:Int):Int"></a>
-      <a id="numNonNullsUntilPosition(AnyRef,Int):Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">numNonNullsUntilPosition</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BigDictionaryDecoderBase@numNonNullsUntilPosition(columnBytes:AnyRef,position:Int):Int" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Get the number of null values till given 0-based position (exclusive)
-for random access.</p><div class="fullcomment"><div class="comment cmt"><p>Get the number of null values till given 0-based position (exclusive)
-for random access.
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#readArray" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readArray(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.ArrayData"></a>
       <a id="readArray(AnyRef,Int):ArrayData"></a>

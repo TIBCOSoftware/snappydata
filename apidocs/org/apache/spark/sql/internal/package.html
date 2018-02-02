@@ -209,6 +209,23 @@ are subject to change between minor releases.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.internal.PutIntoColumnTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PutIntoColumnTableextendsBinaryNodewithProductwithSerializable"></a>
+      <a id="PutIntoColumnTable:PutIntoColumnTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PutIntoColumnTable.html"><span class="name">PutIntoColumnTable</span></a><span class="params">(<span name="table">table: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="insert">insert: <a href="../sources/Insert.html" class="extype" name="org.apache.spark.sql.sources.Insert">Insert</a></span>, <span name="update">update: <a href="../sources/Update.html" class="extype" name="org.apache.spark.sql.sources.Update">Update</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/BinaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.BinaryNode">BinaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@PutIntoColumnTableextendsBinaryNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.internal.SQLAltName" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="SQLAltName[T]extendsAltName[T]"></a>
       <a id="SQLAltName[T]:SQLAltName[T]"></a>
@@ -358,7 +375,27 @@ modify the hints by programmatically calling the setters and getters of this cla
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.internal.ContextJarUtils" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.internal.ColumnTableBulkOps" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ColumnTableBulkOps"></a>
+      <a id="ColumnTableBulkOps:ColumnTableBulkOps"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnTableBulkOps$.html"><span class="name">ColumnTableBulkOps</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@ColumnTableBulkOps" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper object for PutInto operations for column tables.</p><div class="fullcomment"><div class="comment cmt"><p>Helper object for PutInto operations for column tables.
+This class takes the logical plans from SnappyParser
+and converts it into another plan.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ContextJarUtils"></a>
       <a id="ContextJarUtils:ContextJarUtils"></a>
       <h4 class="signature">
@@ -398,6 +435,26 @@ adding classloader at query time.</p></div></div>
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.internal.LikeEscapeSimplification" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LikeEscapeSimplification"></a>
+      <a id="LikeEscapeSimplification:LikeEscapeSimplification"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LikeEscapeSimplification$.html"><span class="name">LikeEscapeSimplification</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@LikeEscapeSimplification" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Deals with any escape characters in the LIKE pattern in optimization.</p><div class="fullcomment"><div class="comment cmt"><p>Deals with any escape characters in the LIKE pattern in optimization.
+Does not deal with startsAndEndsWith equivalent of Spark's LikeSimplification
+so 'a%b' kind of pattern with additional escaped chars will not be optimized.
+</p></div></div>
     </li><li name="org.apache.spark.sql.internal.SQLConf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SQLConf"></a>
       <a id="SQLConf:SQLConf"></a>

@@ -311,18 +311,18 @@
               
         </dd></dl></div>
     </li><li name="io.snappydata.TableStatsProviderService#getAggregatedStatsOnDemand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getAggregatedStatsOnDemand:(Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats],Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats])"></a>
-      <a id="getAggregatedStatsOnDemand:(Map[String,SnappyRegionStats],Map[String,SnappyIndexStats])"></a>
+      <a id="getAggregatedStatsOnDemand:(Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats],Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats],Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats])"></a>
+      <a id="getAggregatedStatsOnDemand:(Map[String,SnappyRegionStats],Map[String,SnappyIndexStats],Map[String,SnappyExternalTableStats])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getAggregatedStatsOnDemand</span><span class="result">: (<span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats">SnappyRegionStats</span>], <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats">SnappyIndexStats</span>])</span>
+        <span class="name">getAggregatedStatsOnDemand</span><span class="result">: (<span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats">SnappyRegionStats</span>], <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats">SnappyIndexStats</span>], <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats">SnappyExternalTableStats</span>])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.SnappyThinConnectorTableStatsProvider$@getAggregatedStatsOnDemand:(Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats],Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats])" title="Permalink" target="_top">
+      <a href="../../index.html#io.snappydata.SnappyThinConnectorTableStatsProvider$@getAggregatedStatsOnDemand:(Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats],Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats],Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats])" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -344,6 +344,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="io.snappydata.TableStatsProviderService#getExternalTableStatsFromService" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getExternalTableStatsFromService(fullyQualifiedTableName:String):Option[com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats]"></a>
+      <a id="getExternalTableStatsFromService(String):Option[SnappyExternalTableStats]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getExternalTableStatsFromService</span><span class="params">(<span name="fullyQualifiedTableName">fullyQualifiedTableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats">SnappyExternalTableStats</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.SnappyThinConnectorTableStatsProvider$@getExternalTableStatsFromService(fullyQualifiedTableName:String):Option[com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats]" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TableStatsProviderService.html" class="extype" name="io.snappydata.TableStatsProviderService">TableStatsProviderService</a></dd></dl></div>
     </li><li name="io.snappydata.TableStatsProviderService#getIndexesStatsFromService" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getIndexesStatsFromService:Map[String,com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats]"></a>
       <a id="getIndexesStatsFromService:Map[String,SnappyIndexStats]"></a>
@@ -413,18 +430,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TableStatsProviderService.html" class="extype" name="io.snappydata.TableStatsProviderService">TableStatsProviderService</a></dd></dl></div>
     </li><li name="io.snappydata.SnappyThinConnectorTableStatsProvider#getStatsFromAllServers" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getStatsFromAllServers(sc:Option[org.apache.spark.SparkContext]):(Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats],Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats])"></a>
-      <a id="getStatsFromAllServers(Option[SparkContext]):(Seq[SnappyRegionStats],Seq[SnappyIndexStats])"></a>
+      <a id="getStatsFromAllServers(sc:Option[org.apache.spark.SparkContext]):(Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats],Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats],Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats])"></a>
+      <a id="getStatsFromAllServers(Option[SparkContext]):(Seq[SnappyRegionStats],Seq[SnappyIndexStats],Seq[SnappyExternalTableStats])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getStatsFromAllServers</span><span class="params">(<span name="sc">sc: <span class="extype" name="scala.Option">Option</span>[<a href="../../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a>] = <span class="symbol"><span class="name"><a href="../../scala/package.html">None</a></span></span></span>)</span><span class="result">: (<a href="../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats">SnappyRegionStats</span>], <a href="../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats">SnappyIndexStats</span>])</span>
+        <span class="name">getStatsFromAllServers</span><span class="params">(<span name="sc">sc: <span class="extype" name="scala.Option">Option</span>[<a href="../../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a>] = <span class="symbol"><span class="name"><a href="../../scala/package.html">None</a></span></span></span>)</span><span class="result">: (<a href="../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats">SnappyRegionStats</span>], <a href="../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats">SnappyIndexStats</span>], <a href="../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats">SnappyExternalTableStats</span>])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.SnappyThinConnectorTableStatsProvider$@getStatsFromAllServers(sc:Option[org.apache.spark.SparkContext]):(Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats],Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats])" title="Permalink" target="_top">
+      <a href="../../index.html#io.snappydata.SnappyThinConnectorTableStatsProvider$@getStatsFromAllServers(sc:Option[org.apache.spark.SparkContext]):(Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats],Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyIndexStats],Seq[com.pivotal.gemfirexd.internal.engine.ui.SnappyExternalTableStats])" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -498,18 +515,18 @@
     </span>
       
     </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
-      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">initializeLogIfNecessary</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.SnappyThinConnectorTableStatsProvider$@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../index.html#io.snappydata.SnappyThinConnectorTableStatsProvider$@initializeLogIfNecessary():Unit" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -871,6 +888,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.Logging#resetLogger" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resetLogger():Unit"></a>
+      <a id="resetLogger():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetLogger</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.SnappyThinConnectorTableStatsProvider$@resetLogger():Unit" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="io.snappydata.TableStatsProviderService#snc" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="snc:org.apache.spark.sql.SnappyContext"></a>
       <a id="snc:SnappyContext"></a>

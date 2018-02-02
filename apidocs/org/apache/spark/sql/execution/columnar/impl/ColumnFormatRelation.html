@@ -47,13 +47,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnFormatRelation</span><span class="result"> extends <a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> with <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a> with <a href="../../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a></span>
+        <span class="name">ColumnFormatRelation</span><span class="result"> extends <a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> with <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a> with <a href="../../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a> with <a href="../../../sources/BulkPutRelation.html" class="extype" name="org.apache.spark.sql.sources.BulkPutRelation">BulkPutRelation</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a>, <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a>, <a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a>, <a href="../../../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a>, <a href="../../../sources/RowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.RowInsertableRelation">RowInsertableRelation</a>, <a href="../../../sources/SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a>, <a href="../../PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a>, <a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../sources/IndexableRelation.html" class="extype" name="org.apache.spark.sql.sources.IndexableRelation">IndexableRelation</a>, <a href="../../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a>, <a href="../../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>, <a href="../../../sources/InsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</a>, <a href="../../../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a>, <a href="../../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../sources/BulkPutRelation.html" class="extype" name="org.apache.spark.sql.sources.BulkPutRelation">BulkPutRelation</a>, <a href="../../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a>, <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a>, <a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a>, <a href="../../../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a>, <a href="../../../sources/RowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.RowInsertableRelation">RowInsertableRelation</a>, <a href="../../../sources/SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a>, <a href="../../PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a>, <a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../sources/IndexableRelation.html" class="extype" name="org.apache.spark.sql.sources.IndexableRelation">IndexableRelation</a>, <a href="../../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a>, <a href="../../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>, <a href="../../../sources/InsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</a>, <a href="../../../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a>, <a href="../../../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -71,7 +71,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation"><span>ColumnFormatRelation</span></li><li class="in" name="org.apache.spark.sql.sources.DependentRelation"><span>DependentRelation</span></li><li class="in" name="org.apache.spark.sql.sources.ParentRelation"><span>ParentRelation</span></li><li class="in" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation"><span>BaseColumnFormatRelation</span></li><li class="in" name="org.apache.spark.sql.sources.MutableRelation"><span>MutableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.RowInsertableRelation"><span>RowInsertableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.SingleRowInsertableRelation"><span>SingleRowInsertableRelation</span></li><li class="in" name="org.apache.spark.sql.execution.PartitionedDataSourceScan"><span>PartitionedDataSourceScan</span></li><li class="in" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation"><span>JDBCAppendableRelation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.sources.IndexableRelation"><span>IndexableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.PlanInsertableRelation"><span>PlanInsertableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.DestroyRelation"><span>DestroyRelation</span></li><li class="in" name="org.apache.spark.sql.sources.InsertableRelation"><span>InsertableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan"><span>PrunedUnsafeFilteredScan</span></li><li class="in" name="org.apache.spark.sql.sources.BaseRelation"><span>BaseRelation</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation"><span>ColumnFormatRelation</span></li><li class="in" name="org.apache.spark.sql.sources.BulkPutRelation"><span>BulkPutRelation</span></li><li class="in" name="org.apache.spark.sql.sources.DependentRelation"><span>DependentRelation</span></li><li class="in" name="org.apache.spark.sql.sources.ParentRelation"><span>ParentRelation</span></li><li class="in" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation"><span>BaseColumnFormatRelation</span></li><li class="in" name="org.apache.spark.sql.sources.MutableRelation"><span>MutableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.RowInsertableRelation"><span>RowInsertableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.SingleRowInsertableRelation"><span>SingleRowInsertableRelation</span></li><li class="in" name="org.apache.spark.sql.execution.PartitionedDataSourceScan"><span>PartitionedDataSourceScan</span></li><li class="in" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation"><span>JDBCAppendableRelation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.sources.IndexableRelation"><span>IndexableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.PlanInsertableRelation"><span>PlanInsertableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.DestroyRelation"><span>DestroyRelation</span></li><li class="in" name="org.apache.spark.sql.sources.InsertableRelation"><span>InsertableRelation</span></li><li class="in" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan"><span>PrunedUnsafeFilteredScan</span></li><li class="in" name="org.apache.spark.sql.sources.BaseRelation"><span>BaseRelation</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -652,6 +652,23 @@ dropping the external table that this relation represents.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#getCompressionCodec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getCompressionCodec:String"></a>
+      <a id="getCompressionCodec:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCompressionCodec</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@getCompressionCodec:String" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#getDeletePlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getDeletePlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan,keyColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="getDeletePlan(LogicalRelation,SparkPlan,Seq[Attribute]):SparkPlan"></a>
@@ -727,6 +744,43 @@ be a count of number of inserted rows.
 UPDATE and DELETE operations for affecting the selected rows.</p><div class="fullcomment"><div class="comment cmt"><p>Get the &quot;key&quot; columns for the table that need to be projected out by
 UPDATE and DELETE operations for affecting the selected rows.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> → <a href="../../../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation#getPutKeys" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getPutKeys():Option[Seq[String]]"></a>
+      <a id="getPutKeys():Option[Seq[String]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPutKeys</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@getPutKeys():Option[Seq[String]]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation">ColumnFormatRelation</a> → <a href="../../../sources/BulkPutRelation.html" class="extype" name="org.apache.spark.sql.sources.BulkPutRelation">BulkPutRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation#getPutPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getPutPlan(insertPlan:org.apache.spark.sql.execution.SparkPlan,updatePlan:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getPutPlan(SparkPlan,SparkPlan):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPutPlan</span><span class="params">(<span name="insertPlan">insertPlan: <a href="../../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="updatePlan">updatePlan: <a href="../../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@getPutPlan(insertPlan:org.apache.spark.sql.execution.SparkPlan,updatePlan:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get a spark plan for puts.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan for puts. If the row is already present, it gets updated
+otherwise it gets inserted into the table represented by this relation.
+The result of SparkPlan execution should be a count of number of rows put.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation">ColumnFormatRelation</a> → <a href="../../../sources/BulkPutRelation.html" class="extype" name="org.apache.spark.sql.sources.BulkPutRelation">BulkPutRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#getUpdatePlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getUpdatePlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan,updateColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],updateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],keyColumns:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="getUpdatePlan(LogicalRelation,SparkPlan,Seq[Attribute],Seq[Expression],Seq[Attribute]):SparkPlan"></a>
@@ -747,18 +801,18 @@ UPDATE and DELETE operations for affecting the selected rows.
 execution should be a count of number of updated rows.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> → <a href="../../../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
-      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">initializeLogIfNecessary</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@initializeLogIfNecessary():Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1351,6 +1405,23 @@ being created.
       </a>
     </span>
       <p class="shortcomment cmt">Used by <code>DependentRelation</code>s to unregister with parent</code></p><div class="fullcomment"><div class="comment cmt"><p>Used by <code>DependentRelation</code>s to unregister with parent</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation">ColumnFormatRelation</a> → <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#resetLogger" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resetLogger():Unit"></a>
+      <a id="resetLogger():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetLogger</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@resetLogger():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#resolvedName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="resolvedName:String"></a>
       <a id="resolvedName:String"></a>
@@ -1698,7 +1769,9 @@ avoid double filtering when they are capable of processing a filter internally.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.sources.DependentRelation">
+        <div class="parent" name="org.apache.spark.sql.sources.BulkPutRelation">
+              <h3>Inherited from <a href="../../../sources/BulkPutRelation.html" class="extype" name="org.apache.spark.sql.sources.BulkPutRelation">BulkPutRelation</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.sources.DependentRelation">
               <h3>Inherited from <a href="../../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.sources.ParentRelation">
               <h3>Inherited from <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a></h3>

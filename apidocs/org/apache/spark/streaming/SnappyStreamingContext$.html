@@ -310,9 +310,11 @@ does not exist in the provided, then create a new StreamingContext by calling th
     </span>
       <p class="shortcomment cmt">:: Experimental ::
 Either return the &quot;active&quot; StreamingContext (that is, started but not stopped), or create a
-new StreamingContext that is started by the creating function</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+new StreamingContext that is started by the creating function
+</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
 Either return the &quot;active&quot; StreamingContext (that is, started but not stopped), or create a
-new StreamingContext that is started by the creating function</p></div><dl class="paramcmts block"><dt class="param">creatingFunc</dt><dd class="cmt"><p>Function to create a new StreamingContext</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+new StreamingContext that is started by the creating function
+</p></div><dl class="paramcmts block"><dt class="param">creatingFunc</dt><dd class="cmt"><p>Function to create a new StreamingContext</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd></dl></div>
@@ -380,6 +382,32 @@ will be created by called the provided <code>creatingFunc</code>.
                       file system</p></dd><dt class="param">createOnError</dt><dd class="cmt"><p>Optional, whether to create a new SnappyStreamingContext if there is an
                       error in reading checkpoint data. By default, an exception will be
                       thrown on error.</p></dd></dl></div>
+    </li><li name="org.apache.spark.streaming.SnappyStreamingContext#getOrCreateWithUseCredential" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getOrCreateWithUseCredential(checkpointPath:String,creatingFunc:()=&gt;org.apache.spark.streaming.SnappyStreamingContext,currentSession:org.apache.spark.sql.SnappySession,hadoopConf:org.apache.hadoop.conf.Configuration,createOnError:Boolean):org.apache.spark.streaming.SnappyStreamingContext"></a>
+      <a id="getOrCreateWithUseCredential(String,()⇒SnappyStreamingContext,SnappySession,Configuration,Boolean):SnappyStreamingContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getOrCreateWithUseCredential</span><span class="params">(<span name="checkpointPath">checkpointPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="creatingFunc">creatingFunc: () ⇒ <a href="SnappyStreamingContext.html" class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a></span>, <span name="currentSession">currentSession: <a href="../sql/SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="hadoopConf">hadoopConf: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span> = <span class="symbol"><span class="name"><a href="../../../package.html">SparkHadoopUtil.get.conf</a></span></span></span>, <span name="createOnError">createOnError: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="SnappyStreamingContext.html" class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.SnappyStreamingContext$@getOrCreateWithUseCredential(checkpointPath:String,creatingFunc:()=&gt;org.apache.spark.streaming.SnappyStreamingContext,currentSession:org.apache.spark.sql.SnappySession,hadoopConf:org.apache.hadoop.conf.Configuration,createOnError:Boolean):org.apache.spark.streaming.SnappyStreamingContext" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Either recreate a SnappyStreamingContext from checkpoint data or create a
+new SnappyStreamingContext.</p><div class="fullcomment"><div class="comment cmt"><p>Either recreate a SnappyStreamingContext from checkpoint data or create a
+new SnappyStreamingContext. If checkpoint data exists in the provided
+<code>checkpointPath</code>, then SnappyStreamingContext will be recreated from the
+checkpoint data. If the data does not exist, then the StreamingContext
+will be created by called the provided <code>creatingFunc</code>.
+</p></div><dl class="paramcmts block"><dt class="param">checkpointPath</dt><dd class="cmt"><p>Checkpoint directory used in an earlier StreamingContext program</p></dd><dt class="param">creatingFunc</dt><dd class="cmt"><p>Function to create a new SnappyStreamingContext</p></dd><dt class="param">currentSession</dt><dd class="cmt"><p>Current SnappySession instance from which to use the credentials</p></dd><dt class="param">hadoopConf</dt><dd class="cmt"><p>Optional Hadoop configuration if necessary for reading from the
+                      file system</p></dd><dt class="param">createOnError</dt><dd class="cmt"><p>Optional, whether to create a new SnappyStreamingContext if there is an
+                      error in reading checkpoint data. By default, an exception will be
+                      thrown on error.</p></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -398,18 +426,18 @@ will be created by called the provided <code>creatingFunc</code>.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
-      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
+      <a id="initializeLogIfNecessary():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">initializeLogIfNecessary</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.streaming.SnappyStreamingContext$@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.streaming.SnappyStreamingContext$@initializeLogIfNecessary():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -737,6 +765,23 @@ will be created by called the provided <code>creatingFunc</code>.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.Logging#resetLogger" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resetLogger():Unit"></a>
+      <a id="resetLogger():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetLogger</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.SnappyStreamingContext$@resetLogger():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

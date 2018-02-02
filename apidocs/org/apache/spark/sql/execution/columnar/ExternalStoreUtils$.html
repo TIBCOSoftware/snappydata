@@ -252,18 +252,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#COMPRESSION_CODEC" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="COMPRESSION_CODEC:String(&quot;COMPRESSION_CODEC&quot;)"></a>
-      <a id="COMPRESSION_CODEC:String(&quot;COMPRESSION_CODEC&quot;)"></a>
+      <a id="COMPRESSION_CODEC:String(&quot;COMPRESSION&quot;)"></a>
+      <a id="COMPRESSION_CODEC:String(&quot;COMPRESSION&quot;)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">COMPRESSION_CODEC</span><span class="result">: String(&quot;COMPRESSION_CODEC&quot;)</span>
+        <span class="name">COMPRESSION_CODEC</span><span class="result">: String(&quot;COMPRESSION&quot;)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@COMPRESSION_CODEC:String(&quot;COMPRESSION_CODEC&quot;)" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@COMPRESSION_CODEC:String(&quot;COMPRESSION&quot;)" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -319,6 +319,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#KEY_COLUMNS" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="KEY_COLUMNS:String(&quot;KEY_COLUMNS&quot;)"></a>
+      <a id="KEY_COLUMNS:String(&quot;KEY_COLUMNS&quot;)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">KEY_COLUMNS</span><span class="result">: String(&quot;KEY_COLUMNS&quot;)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@KEY_COLUMNS:String(&quot;KEY_COLUMNS&quot;)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#PARTITION_BY" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PARTITION_BY:String(&quot;PARTITION_BY&quot;)"></a>
       <a id="PARTITION_BY:String(&quot;PARTITION_BY&quot;)"></a>
@@ -370,40 +387,6 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#SOME_FALSE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SOME_FALSE:Some[Boolean]"></a>
-      <a id="SOME_FALSE:Some[Boolean]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">SOME_FALSE</span><span class="result">: <span class="extype" name="scala.Some">Some</span>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@SOME_FALSE:Some[Boolean]" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#SOME_TRUE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SOME_TRUE:Some[Boolean]"></a>
-      <a id="SOME_TRUE:Some[Boolean]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">SOME_TRUE</span><span class="result">: <span class="extype" name="scala.Some">Some</span>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@SOME_TRUE:Some[Boolean]" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#USER_SPECIFIED_SCHEMA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="USER_SPECIFIED_SCHEMA:String(&quot;USER_SCHEMA&quot;)"></a>
       <a id="USER_SPECIFIED_SCHEMA:String(&quot;USER_SCHEMA&quot;)"></a>
@@ -438,6 +421,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#checkPositiveNum" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="checkPositiveNum(n:Int,propertyName:String):Int"></a>
+      <a id="checkPositiveNum(Int,String):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">checkPositiveNum</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>, <span name="propertyName">propertyName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@checkPositiveNum(n:Int,propertyName:String):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -526,23 +526,6 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@defaultColumnMaxDeltaRows(session:org.apache.spark.sql.SparkSession):Int" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#defaultCompressionCodec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="defaultCompressionCodec(session:org.apache.spark.sql.SparkSession):String"></a>
-      <a id="defaultCompressionCodec(SparkSession):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">defaultCompressionCodec</span><span class="params">(<span name="session">session: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@defaultCompressionCodec(session:org.apache.spark.sql.SparkSession):String" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -911,18 +894,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#handledFilter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="handledFilter(f:org.apache.spark.sql.sources.Filter,indexedCols:scala.collection.Set[String]):Option[Boolean]"></a>
-      <a id="handledFilter(Filter,Set[String]):Option[Boolean]"></a>
+      <a id="handledFilter(f:org.apache.spark.sql.sources.Filter,indexedCols:scala.collection.Set[String]):Option[org.apache.spark.sql.sources.Filter]"></a>
+      <a id="handledFilter(Filter,Set[String]):Option[Filter]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">handledFilter</span><span class="params">(<span name="f">f: <a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a></span>, <span name="indexedCols">indexedCols: <span class="extype" name="scala.collection.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Boolean">Boolean</span>]</span>
+        <span class="name">handledFilter</span><span class="params">(<span name="f">f: <a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a></span>, <span name="indexedCols">indexedCols: <span class="extype" name="scala.collection.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@handledFilter(f:org.apache.spark.sql.sources.Filter,indexedCols:scala.collection.Set[String]):Option[Boolean]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@handledFilter(f:org.apache.spark.sql.sources.Filter,indexedCols:scala.collection.Set[String]):Option[org.apache.spark.sql.sources.Filter]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1064,6 +1047,23 @@
     </span>
       <p class="shortcomment cmt">Prune all but the specified columns from the specified Catalyst schema.</p><div class="fullcomment"><div class="comment cmt"><p>Prune all but the specified columns from the specified Catalyst schema.
 </p></div><dl class="paramcmts block"><dt class="param">fieldMap</dt><dd class="cmt"><p>- The Catalyst column name to metadata of the master table</p></dd><dt class="param">columns</dt><dd class="cmt"><p>- The list of desired columns</p></dd><dt>returns</dt><dd class="cmt"><p>A Catalyst schema corresponding to columns in the given order.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#registerBuiltinDrivers" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="registerBuiltinDrivers():Unit"></a>
+      <a id="registerBuiltinDrivers():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">registerBuiltinDrivers</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@registerBuiltinDrivers():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#removeCachedObjects" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="removeCachedObjects(table:String):()=&gt;Iterator[Unit]"></a>
       <a id="removeCachedObjects(String):()⇒Iterator[Unit]"></a>
@@ -1145,6 +1145,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@setStatementParameters(stmt:java.sql.PreparedStatement,row:scala.collection.mutable.ArrayBuffer[Any]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#sizeAsBytes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sizeAsBytes(str:String,propertyName:String,minSize:Long,maxSize:Long):Long"></a>
+      <a id="sizeAsBytes(String,String,Long,Long):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sizeAsBytes</span><span class="params">(<span name="str">str: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="propertyName">propertyName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="minSize">minSize: <span class="extype" name="scala.Long">Long</span></span>, <span name="maxSize">maxSize: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@sizeAsBytes(str:String,propertyName:String,minSize:Long,maxSize:Long):Long" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

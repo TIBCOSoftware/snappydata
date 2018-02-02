@@ -54,7 +54,7 @@
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Launcher extension for GFXD locator launcher to use Snappy service manager.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator">GfxdDistributionLocator</span>, <span class="extype" name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher">GfxdServerLauncher</span>, <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher">CacheServerLauncher</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator">GfxdDistributionLocator</span>, <span class="extype" name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher">GfxdServerLauncher</span>, <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher">CacheServerLauncher</span>, <span class="extype" name="com.gemstone.gemfire.internal.shared.LauncherBase">LauncherBase</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -72,7 +72,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="io.snappydata.tools.LocatorLauncher"><span>LocatorLauncher</span></li><li class="in" name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator"><span>GfxdDistributionLocator</span></li><li class="in" name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher"><span>GfxdServerLauncher</span></li><li class="in" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher"><span>CacheServerLauncher</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="io.snappydata.tools.LocatorLauncher"><span>LocatorLauncher</span></li><li class="in" name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator"><span>GfxdDistributionLocator</span></li><li class="in" name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher"><span>GfxdServerLauncher</span></li><li class="in" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher"><span>CacheServerLauncher</span></li><li class="in" name="com.gemstone.gemfire.internal.shared.LauncherBase"><span>LauncherBase</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -222,8 +222,8 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#checkStatusForWait" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="checkStatusForWait(x$1:com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status):Boolean"></a>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#checkStatusForWait" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="checkStatusForWait(x$1:com.gemstone.gemfire.internal.cache.Status):Boolean"></a>
       <a id="checkStatusForWait(Status):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -231,14 +231,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">checkStatusForWait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status">Status</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">checkStatusForWait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@checkStatusForWait(x$1:com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status):Boolean" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@checkStatusForWait(x$1:com.gemstone.gemfire.internal.cache.Status):Boolean" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools$internal.html" class="extype" name="com.pivotal.gemfirexd.tools.internal">com.pivotal.gemfirexd.tools.internal</a>] </dd><dt>Definition Classes</dt><dd>GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -296,6 +296,63 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools$internal.html" class="extype" name="com.pivotal.gemfirexd.tools.internal">com.pivotal.gemfirexd.tools.internal</a>] </dd><dt>Definition Classes</dt><dd>GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#createStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createStatus(x$1:Int,x$2:Int,x$3:String,x$4:Throwable):com.gemstone.gemfire.internal.cache.Status"></a>
+      <a id="createStatus(Int,Int,String,Throwable):Status"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Int">Int</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>, <span name="arg2">arg2: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg3">arg3: <span class="extype" name="java.lang.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@createStatus(x$1:Int,x$2:Int,x$3:String,x$4:Throwable):com.gemstone.gemfire.internal.cache.Status" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#createStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createStatus(x$1:Int,x$2:Int):com.gemstone.gemfire.internal.cache.Status"></a>
+      <a id="createStatus(Int,Int):Status"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Int">Int</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@createStatus(x$1:Int,x$2:Int):com.gemstone.gemfire.internal.cache.Status" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#deleteStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="deleteStatus():Unit"></a>
+      <a id="deleteStatus():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deleteStatus</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@deleteStatus():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.io.IOException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#disconnect" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="disconnect(x$1:com.gemstone.gemfire.cache.Cache):Unit"></a>
       <a id="disconnect(Cache):Unit"></a>
@@ -386,7 +443,7 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools.html" class="extype" name="com.pivotal.gemfirexd.tools">com.pivotal.gemfirexd.tools</a>] </dd><dt>Definition Classes</dt><dd>GfxdDistributionLocator → GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools.html" class="extype" name="com.pivotal.gemfirexd.tools">com.pivotal.gemfirexd.tools</a>] </dd><dt>Definition Classes</dt><dd>GfxdDistributionLocator → GfxdServerLauncher → LauncherBase</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -404,6 +461,40 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator#getDefaultHeapSizeMB" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDefaultHeapSizeMB(x$1:Boolean):Long"></a>
+      <a id="getDefaultHeapSizeMB(Boolean):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDefaultHeapSizeMB</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getDefaultHeapSizeMB(x$1:Boolean):Long" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools.html" class="extype" name="com.pivotal.gemfirexd.tools">com.pivotal.gemfirexd.tools</a>] </dd><dt>Definition Classes</dt><dd>GfxdDistributionLocator → LauncherBase</dd></dl></div>
+    </li><li name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator#getDefaultSmallHeapSizeMB" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDefaultSmallHeapSizeMB(x$1:Boolean):Long"></a>
+      <a id="getDefaultSmallHeapSizeMB(Boolean):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDefaultSmallHeapSizeMB</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getDefaultSmallHeapSizeMB(x$1:Boolean):Long" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools.html" class="extype" name="com.pivotal.gemfirexd.tools">com.pivotal.gemfirexd.tools</a>] </dd><dt>Definition Classes</dt><dd>GfxdDistributionLocator → LauncherBase</dd></dl></div>
     </li><li name="io.snappydata.tools.LocatorLauncher#getFabricServiceInstance" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getFabricServiceInstance():com.pivotal.gemfirexd.FabricService"></a>
       <a id="getFabricServiceInstance():FabricService"></a>
@@ -424,6 +515,46 @@
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="defval" name="scala.this.throws.&lt;init&gt;$default$1[Exception]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#getHostNameAndDir" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getHostNameAndDir():String"></a>
+      <a id="getHostNameAndDir():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getHostNameAndDir</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getHostNameAndDir():String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$cache.html" class="extype" name="com.gemstone.gemfire.internal.cache">com.gemstone.gemfire.internal.cache</a>] </dd><dt>Definition Classes</dt><dd>CacheServerLauncher</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#getLastModifiedStatusNanos" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getLastModifiedStatusNanos():Long"></a>
+      <a id="getLastModifiedStatusNanos():Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getLastModifiedStatusNanos</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getLastModifiedStatusNanos():Long" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.io.IOException]</span>
     </span>)</span>
               
         </dd></dl></div>
@@ -518,6 +649,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#getServerStartupMessage" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getServerStartupMessage():String"></a>
+      <a id="getServerStartupMessage():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getServerStartupMessage</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getServerStartupMessage():String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>CacheServerLauncher</dd></dl></div>
     </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#getStartOptions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStartOptions(x$1:Array[String]):java.util.Map[String,Object]"></a>
       <a id="getStartOptions(Array[String]):Map[String,AnyRef]"></a>
@@ -541,8 +689,8 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#getStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getStatus():com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status"></a>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#getStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getStatus():com.gemstone.gemfire.internal.cache.Status"></a>
       <a id="getStatus():Status"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -550,20 +698,31 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getStatus</span><span class="params">()</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status">Status</span></span>
+        <span class="name">getStatus</span><span class="params">()</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getStatus():com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getStatus():com.gemstone.gemfire.internal.cache.Status" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$cache.html" class="extype" name="com.gemstone.gemfire.internal.cache">com.gemstone.gemfire.internal.cache</a>] </dd><dt>Definition Classes</dt><dd>CacheServerLauncher</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="symbol">classOf[java.lang.Exception]</span>
-    </span>)</span>
-              
-        </dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#getStatusPath" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getStatusPath():java.nio.file.Path"></a>
+      <a id="getStatusPath():Path"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getStatusPath</span><span class="params">()</span><span class="result">: <span class="extype" name="java.nio.file.Path">Path</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getStatusPath():java.nio.file.Path" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
     </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#getStopOptions" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStopOptions(x$1:Array[String]):java.util.Map[String,Object]"></a>
       <a id="getStopOptions(Array[String]):Map[String,AnyRef]"></a>
@@ -587,6 +746,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#getWorkingDirPath" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getWorkingDirPath():java.nio.file.Path"></a>
+      <a id="getWorkingDirPath():Path"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getWorkingDirPath</span><span class="params">()</span><span class="result">: <span class="extype" name="java.nio.file.Path">Path</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@getWorkingDirPath():java.nio.file.Path" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$cache.html" class="extype" name="com.gemstone.gemfire.internal.cache">com.gemstone.gemfire.internal.cache</a>] </dd><dt>Definition Classes</dt><dd>CacheServerLauncher → LauncherBase</dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -604,6 +780,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator#initKnownOptions" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initKnownOptions():Unit"></a>
+      <a id="initKnownOptions():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initKnownOptions</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@initKnownOptions():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools.html" class="extype" name="com.pivotal.gemfirexd.tools">com.pivotal.gemfirexd.tools</a>] </dd><dt>Definition Classes</dt><dd>GfxdDistributionLocator → GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -740,26 +933,26 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#pollCacheServerForShutdown" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="pollCacheServerForShutdown():Unit"></a>
-      <a id="pollCacheServerForShutdown():Unit"></a>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#pollCacheServerForShutdown" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pollCacheServerForShutdown(x$1:java.nio.file.Path):Unit"></a>
+      <a id="pollCacheServerForShutdown(Path):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">pollCacheServerForShutdown</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">pollCacheServerForShutdown</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.nio.file.Path">Path</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@pollCacheServerForShutdown():Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@pollCacheServerForShutdown(x$1:java.nio.file.Path):Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$cache.html" class="extype" name="com.gemstone.gemfire.internal.cache">com.gemstone.gemfire.internal.cache</a>] </dd><dt>Definition Classes</dt><dd>CacheServerLauncher</dd><dt>Annotations</dt><dd>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
-      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+      <span class="symbol">classOf[java.io.IOException]</span>
     </span>)</span>
               
         </dd></dl></div>
@@ -929,6 +1122,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#processHeapSize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processHeapSize(x$1:String,x$2:java.util.List[String]):Unit"></a>
+      <a id="processHeapSize(String,List[String]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processHeapSize</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="java.lang.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@processHeapSize(x$1:String,x$2:java.util.List[String]):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#processServerEnv" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="processServerEnv(x$1:java.util.Properties):Unit"></a>
       <a id="processServerEnv(Properties):Unit"></a>
@@ -952,6 +1162,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#processServerOption" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processServerOption(x$1:String,x$2:String,x$3:java.util.Map[String,Object],x$4:java.util.Properties):Unit"></a>
+      <a id="processServerOption(String,String,Map[String,AnyRef],Properties):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processServerOption</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg2">arg2: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="java.lang.String">String</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>, <span name="arg3">arg3: <span class="extype" name="java.util.Properties">Properties</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@processServerOption(x$1:String,x$2:String,x$3:java.util.Map[String,Object],x$4:java.util.Properties):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools$internal.html" class="extype" name="com.pivotal.gemfirexd.tools.internal">com.pivotal.gemfirexd.tools.internal</a>] </dd><dt>Definition Classes</dt><dd>GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#processStartArg" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="processStartArg(x$1:String,x$2:String,x$3:java.util.Map[String,Object],x$4:java.util.List[String],x$5:java.util.Properties):Unit"></a>
       <a id="processStartArg(String,String,Map[String,AnyRef],List[String],Properties):Unit"></a>
@@ -1015,6 +1242,40 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools$internal.html" class="extype" name="com.pivotal.gemfirexd.tools.internal">com.pivotal.gemfirexd.tools.internal</a>] </dd><dt>Definition Classes</dt><dd>GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#processVMArg" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processVMArg(x$1:String,x$2:java.util.List[String]):Unit"></a>
+      <a id="processVMArg(String,List[String]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processVMArg</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="java.lang.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@processVMArg(x$1:String,x$2:java.util.List[String]):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#processWaitForSync" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processWaitForSync(x$1:String):Unit"></a>
+      <a id="processWaitForSync(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processWaitForSync</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@processWaitForSync(x$1:String):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#readPassword" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readPassword(x$1:java.util.Map[String,String]):Unit"></a>
       <a id="readPassword(Map[String,String]):Unit"></a>
@@ -1039,18 +1300,18 @@
               
         </dd></dl></div>
     </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#readStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="readStatus(x$1:Boolean):com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status"></a>
-      <a id="readStatus(Boolean):Status"></a>
+      <a id="readStatus():com.gemstone.gemfire.internal.cache.Status"></a>
+      <a id="readStatus():Status"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status">Status</span></span>
+        <span class="name">readStatus</span><span class="params">()</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@readStatus(x$1:Boolean):com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@readStatus():com.gemstone.gemfire.internal.cache.Status" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1058,11 +1319,6 @@
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="symbol">classOf[java.io.IOException]</span>
-    </span>)</span>
-              
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="defval" name="classOf[java.io.FileNotFoundException]">...</span>
     </span>)</span>
               
                 <span class="name">@throws</span><span class="args">(<span>
@@ -1168,25 +1424,25 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator#setDefaultHeapSize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setDefaultHeapSize():Boolean"></a>
-      <a id="setDefaultHeapSize():Boolean"></a>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#setDefaultVMArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setDefaultVMArgs(x$1:java.util.Map[String,Object],x$2:java.util.Map[_,_],x$3:java.util.List[String]):Unit"></a>
+      <a id="setDefaultVMArgs(Map[String,AnyRef],Map[_,_],List[String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setDefaultHeapSize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">setDefaultVMArgs</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="java.lang.String">String</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>, <span name="arg1">arg1: <span class="extype" name="java.util.Map">Map</span>[_, _]</span>, <span name="arg2">arg2: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="java.lang.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@setDefaultHeapSize():Boolean" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@setDefaultVMArgs(x$1:java.util.Map[String,Object],x$2:java.util.Map[_,_],x$3:java.util.List[String]):Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools.html" class="extype" name="com.pivotal.gemfirexd.tools">com.pivotal.gemfirexd.tools</a>] </dd><dt>Definition Classes</dt><dd>GfxdDistributionLocator → GfxdServerLauncher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#setRunningStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setRunningStatus(x$1:com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status,x$2:com.gemstone.gemfire.distributed.internal.InternalDistributedSystem):Unit"></a>
+      <a id="setRunningStatus(x$1:com.gemstone.gemfire.internal.cache.Status,x$2:com.gemstone.gemfire.distributed.internal.InternalDistributedSystem):Unit"></a>
       <a id="setRunningStatus(Status,InternalDistributedSystem):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1194,14 +1450,20 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setRunningStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status">Status</span></span>, <span name="arg1">arg1: <span class="extype" name="com.gemstone.gemfire.distributed.internal.InternalDistributedSystem">InternalDistributedSystem</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setRunningStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>, <span name="arg1">arg1: <span class="extype" name="com.gemstone.gemfire.distributed.internal.InternalDistributedSystem">InternalDistributedSystem</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@setRunningStatus(x$1:com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status,x$2:com.gemstone.gemfire.distributed.internal.InternalDistributedSystem):Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@setRunningStatus(x$1:com.gemstone.gemfire.internal.cache.Status,x$2:com.gemstone.gemfire.distributed.internal.InternalDistributedSystem):Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools$internal.html" class="extype" name="com.pivotal.gemfirexd.tools.internal">com.pivotal.gemfirexd.tools.internal</a>] </dd><dt>Definition Classes</dt><dd>GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools$internal.html" class="extype" name="com.pivotal.gemfirexd.tools.internal">com.pivotal.gemfirexd.tools.internal</a>] </dd><dt>Definition Classes</dt><dd>GfxdServerLauncher → CacheServerLauncher</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Exception]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#setServerError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setServerError(x$1:String,x$2:Throwable):Unit"></a>
       <a id="setServerError(String,Throwable):Unit"></a>
@@ -1219,6 +1481,40 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$cache.html" class="extype" name="com.gemstone.gemfire.internal.cache">com.gemstone.gemfire.internal.cache</a>] </dd><dt>Definition Classes</dt><dd>CacheServerLauncher</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#setServerStartupMessage" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setServerStartupMessage(x$1:String):Unit"></a>
+      <a id="setServerStartupMessage(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setServerStartupMessage</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@setServerStartupMessage(x$1:String):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>CacheServerLauncher</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#setStatusField" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setStatusField(x$1:com.gemstone.gemfire.internal.cache.Status):Unit"></a>
+      <a id="setStatusField(Status):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setStatusField</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@setStatusField(x$1:com.gemstone.gemfire.internal.cache.Status):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#setWaitingStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setWaitingStatus(x$1:String,x$2:java.util.Set[com.gemstone.gemfire.internal.cache.persistence.PersistentMemberID],x$3:java.util.Set[Integer],x$4:com.gemstone.gemfire.internal.cache.persistence.PersistentMemberID,x$5:String):Unit"></a>
       <a id="setWaitingStatus(String,Set[PersistentMemberID],Set[Integer],PersistentMemberID,String):Unit"></a>
@@ -1236,23 +1532,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
-    </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#spinReadStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="spinReadStatus(x$1:Boolean):com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status"></a>
-      <a id="spinReadStatus(Boolean):Status"></a>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#spinReadStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="spinReadStatus(x$1:java.nio.file.Path):com.gemstone.gemfire.internal.cache.Status"></a>
+      <a id="spinReadStatus(Path):Status"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">spinReadStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status">Status</span></span>
+        <span class="name">spinReadStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.nio.file.Path">Path</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@spinReadStatus(x$1:Boolean):com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@spinReadStatus(x$1:java.nio.file.Path):com.gemstone.gemfire.internal.cache.Status" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$cache.html" class="extype" name="com.gemstone.gemfire.internal.cache">com.gemstone.gemfire.internal.cache</a>] </dd><dt>Definition Classes</dt><dd>CacheServerLauncher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd></dl></div>
     </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#start" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="start(x$1:Array[String]):Unit"></a>
       <a id="start(Array[String]):Unit"></a>
@@ -1299,7 +1595,7 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator#startRebalanceFactory" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher#startRebalanceFactory" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="startRebalanceFactory(x$1:com.gemstone.gemfire.cache.Cache,x$2:java.util.Map[String,Object]):Unit"></a>
       <a id="startRebalanceFactory(Cache,Map[String,AnyRef]):Unit"></a>
       <h4 class="signature">
@@ -1315,7 +1611,7 @@
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools.html" class="extype" name="com.pivotal.gemfirexd.tools">com.pivotal.gemfirexd.tools</a>] </dd><dt>Definition Classes</dt><dd>GfxdDistributionLocator → CacheServerLauncher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$pivotal$gemfirexd$tools$internal.html" class="extype" name="com.pivotal.gemfirexd.tools.internal">com.pivotal.gemfirexd.tools.internal</a>] </dd><dt>Definition Classes</dt><dd>GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
     </li><li name="com.pivotal.gemfirexd.tools.GfxdDistributionLocator#startServerVM" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="startServerVM(x$1:java.util.Properties):Unit"></a>
       <a id="startServerVM(Properties):Unit"></a>
@@ -1459,6 +1755,29 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.tools.LocatorLauncher">LocatorLauncher</a> → GfxdDistributionLocator → GfxdServerLauncher → CacheServerLauncher</dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#verifyAndClearStatus" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="verifyAndClearStatus():String"></a>
+      <a id="verifyAndClearStatus():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">verifyAndClearStatus</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@verifyAndClearStatus():String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.io.IOException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -1529,29 +1848,6 @@
               
         </dd></dl></div>
     </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#waitForRunning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="waitForRunning(x$1:java.util.Properties):Unit"></a>
-      <a id="waitForRunning(Properties):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">waitForRunning</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.Properties">Properties</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@waitForRunning(x$1:java.util.Properties):Unit" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$cache.html" class="extype" name="com.gemstone.gemfire.internal.cache">com.gemstone.gemfire.internal.cache</a>] </dd><dt>Definition Classes</dt><dd>CacheServerLauncher</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="symbol">classOf[java.lang.Exception]</span>
-    </span>)</span>
-              
-        </dd></dl></div>
-    </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#waitForRunning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="waitForRunning(x$1:Array[String]):Unit"></a>
       <a id="waitForRunning(Array[String]):Unit"></a>
       <h4 class="signature">
@@ -1574,8 +1870,36 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.shared.LauncherBase#waitForRunning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="waitForRunning(x$1:String):Int"></a>
+      <a id="waitForRunning(String):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">waitForRunning</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@waitForRunning(x$1:String):Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../com$gemstone$gemfire$internal$shared.html" class="extype" name="com.gemstone.gemfire.internal.shared">com.gemstone.gemfire.internal.shared</a>] </dd><dt>Definition Classes</dt><dd>LauncherBase</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.io.IOException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="com.gemstone.gemfire.internal.cache.CacheServerLauncher#writeStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="writeStatus(x$1:com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status):Unit"></a>
+      <a id="writeStatus(x$1:com.gemstone.gemfire.internal.cache.Status):Unit"></a>
       <a id="writeStatus(Status):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1583,10 +1907,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status">Status</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">writeStatus</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.gemstone.gemfire.internal.cache.Status">Status</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@writeStatus(x$1:com.gemstone.gemfire.internal.cache.CacheServerLauncher.Status):Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.tools.LocatorLauncher@writeStatus(x$1:com.gemstone.gemfire.internal.cache.Status):Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1612,6 +1936,8 @@
               <h3>Inherited from <span class="extype" name="com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher">GfxdServerLauncher</span></h3>
             </div><div class="parent" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher">
               <h3>Inherited from <span class="extype" name="com.gemstone.gemfire.internal.cache.CacheServerLauncher">CacheServerLauncher</span></h3>
+            </div><div class="parent" name="com.gemstone.gemfire.internal.shared.LauncherBase">
+              <h3>Inherited from <span class="extype" name="com.gemstone.gemfire.internal.shared.LauncherBase">LauncherBase</span></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

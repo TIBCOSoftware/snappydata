@@ -296,6 +296,24 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder#findNextNullPosition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="findNextNullPosition(columnBytes:AnyRef,nextNullPosition:Int,num:Int):Int"></a>
+      <a id="findNextNullPosition(AnyRef,Int,Int):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">findNextNullPosition</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="nextNullPosition">nextNullPosition: <span class="extype" name="scala.Int">Int</span></span>, <span name="num">num: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetDecoderNullable@findNextNullPosition(columnBytes:AnyRef,nextNullPosition:Int,num:Int):Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Fetch next null position and return it as returned by <a href="NullableDecoder.html#getNextNullPosition:Int" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder#getNextNullPosition">getNextNullPosition</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Fetch next null position and return it as returned by <a href="NullableDecoder.html#getNextNullPosition:Int" class="extmbr" name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder#getNextNullPosition">getNextNullPosition</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NullableDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder">NullableDecoder</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -313,6 +331,24 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder#getNextNullPosition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNextNullPosition:Int"></a>
+      <a id="getNextNullPosition:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNextNullPosition</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetDecoderNullable@getNextNullPosition:Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the next position of a null value.</p><div class="fullcomment"><div class="comment cmt"><p>Return the next position of a null value.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NullableDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder">NullableDecoder</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#getStringDictionary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStringDictionary:org.apache.spark.sql.execution.columnar.encoding.StringDictionary"></a>
       <a id="getStringDictionary:StringDictionary"></a>
@@ -431,7 +467,7 @@
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Absolute ordinal null check for random access.</p><div class="fullcomment"><div class="comment cmt"><p>Absolute ordinal null check for random access.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NullableDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder">NullableDecoder</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
+      <p class="shortcomment cmt">Absolute position null check for random access.</p><div class="fullcomment"><div class="comment cmt"><p>Absolute position null check for random access.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NullableDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder">NullableDecoder</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -449,25 +485,25 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#nonNullOrdinal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="nonNullOrdinal:Int"></a>
-      <a id="nonNullOrdinal:Int"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#nonNullPosition" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="nonNullPosition:Int"></a>
+      <a id="nonNullPosition:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">var</span>
       </span>
       <span class="symbol">
-        <span class="name">nonNullOrdinal</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">nonNullPosition</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetDecoderNullable@nonNullOrdinal:Int" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetDecoderNullable@nonNullPosition:Int" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Not used by decoders themselves but by delta writer that stores the
-current nonNullOrdinal for the decoder.</p><div class="fullcomment"><div class="comment cmt"><p>Not used by decoders themselves but by delta writer that stores the
-current nonNullOrdinal for the decoder.
+current nonNullPosition for the decoder.</p><div class="fullcomment"><div class="comment cmt"><p>Not used by decoders themselves but by delta writer that stores the
+current nonNullPosition for the decoder.
 Initialized to -1 so that first increment starts at 0.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -504,26 +540,6 @@ Initialized to -1 so that first increment starts at 0.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder#numNonNullsUntilPosition" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="numNonNullsUntilPosition(columnBytes:AnyRef,position:Int):Int"></a>
-      <a id="numNonNullsUntilPosition(AnyRef,Int):Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">numNonNullsUntilPosition</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetDecoderNullable@numNonNullsUntilPosition(columnBytes:AnyRef,position:Int):Int" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Get the number of null values till given 0-based position (exclusive)
-for random access.</p><div class="fullcomment"><div class="comment cmt"><p>Get the number of null values till given 0-based position (exclusive)
-for random access.
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="NullableDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder">NullableDecoder</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder#numNulls" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="numNulls(columnBytes:AnyRef,ordinal:Int,num:Int):Int"></a>
       <a id="numNulls(AnyRef,Int,Int):Int"></a>
@@ -541,10 +557,6 @@ for random access.
       </a>
     </span>
       <p class="shortcomment cmt">Return the number of nulls till given ordinal given previous result.</p><div class="fullcomment"><div class="comment cmt"><p>Return the number of nulls till given ordinal given previous result.
-If result is &lt; 0 then current value was null (and num to be passed
-in subsequent calls should be -ve of that) else it was not (and
-num passed in subsequent calls should be that return value).
-The initial value of num that should be passed is 0.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NullableDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder">NullableDecoder</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#readArray" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readArray(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.ArrayData"></a>

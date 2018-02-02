@@ -191,23 +191,6 @@ to allocate the space.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#SPARK_CACHE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SPARK_CACHE:String"></a>
-      <a id="SPARK_CACHE:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">SPARK_CACHE</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@SPARK_CACHE:String" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#acquireStorageMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="acquireStorageMemory(blockId:org.apache.spark.storage.BlockId,numBytes:Long,memoryMode:org.apache.spark.memory.MemoryMode):Boolean"></a>
       <a id="acquireStorageMemory(BlockId,Long,MemoryMode):Boolean"></a>
@@ -297,7 +280,7 @@ memory and acquiring unroll memory. For instance, the memory management model in
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>UnifiedMemoryManager</dd></dl></div>
-    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#bootManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#bootManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="bootManager:Boolean"></a>
       <a id="bootManager:Boolean"></a>
       <h4 class="signature">
@@ -313,7 +296,7 @@ memory and acquiring unroll memory. For instance, the memory management model in
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#changeOffHeapOwnerToStorage" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="changeOffHeapOwnerToStorage(buffer:java.nio.ByteBuffer,allowNonAllocator:Boolean):Unit"></a>
       <a id="changeOffHeapOwnerToStorage(ByteBuffer,Boolean):Unit"></a>
@@ -1361,23 +1344,6 @@ This must be set after construction due to initialization ordering constraints.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#threadsWaitingForStorage" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="threadsWaitingForStorage:java.util.concurrent.atomic.AtomicInteger"></a>
-      <a id="threadsWaitingForStorage:AtomicInteger"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">threadsWaitingForStorage</span><span class="result">: <span class="extype" name="java.util.concurrent.atomic.AtomicInteger">AtomicInteger</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@threadsWaitingForStorage:java.util.concurrent.atomic.AtomicInteger" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -1396,18 +1362,18 @@ This must be set after construction due to initialization ordering constraints.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#tryExplicitGC" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tryExplicitGC():Unit"></a>
-      <a id="tryExplicitGC():Unit"></a>
+      <a id="tryExplicitGC(numBytes:Long):Unit"></a>
+      <a id="tryExplicitGC(Long):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">tryExplicitGC</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">tryExplicitGC</span><span class="params">(<span name="numBytes">numBytes: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@tryExplicitGC():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@tryExplicitGC(numBytes:Long):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

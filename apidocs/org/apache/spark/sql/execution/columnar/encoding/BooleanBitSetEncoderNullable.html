@@ -782,23 +782,6 @@ The encoder can be reused for new column data of same type again.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableEncoder#getNullWords" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getNullWords:AnyRef"></a>
-      <a id="getNullWords:AnyRef"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getNullWords</span><span class="result">: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncoderNullable@getNullWords:AnyRef" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="NullableEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NullableEncoder">NullableEncoder</a> → <a href="NotNullEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.NotNullEncoder">NotNullEncoder</a> → <a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableEncoder#getNumNullWords" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getNumNullWords:Int"></a>
       <a id="getNumNullWords:Int"></a>
@@ -1765,7 +1748,7 @@ storage being used by column store in embedded mode.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder#writeDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="writeDecimal(cursor:Long,value:org.apache.spark.sql.types.Decimal,ordinal:Int,precision:Int,scale:Int):Long"></a>
+      <a id="writeDecimal(cursor:Long,value:org.apache.spark.sql.types.Decimal,position:Int,precision:Int,scale:Int):Long"></a>
       <a id="writeDecimal(Long,Decimal,Int,Int,Int):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1773,10 +1756,10 @@ storage being used by column store in embedded mode.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeDecimal</span><span class="params">(<span name="cursor">cursor: <span class="extype" name="scala.Long">Long</span></span>, <span name="value">value: <a href="../../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>, <span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>, <span name="scale">scale: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">writeDecimal</span><span class="params">(<span name="cursor">cursor: <span class="extype" name="scala.Long">Long</span></span>, <span name="value">value: <a href="../../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>, <span name="scale">scale: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncoderNullable@writeDecimal(cursor:Long,value:org.apache.spark.sql.types.Decimal,ordinal:Int,precision:Int,scale:Int):Long" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncoderNullable@writeDecimal(cursor:Long,value:org.apache.spark.sql.types.Decimal,position:Int,precision:Int,scale:Int):Long" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1920,7 +1903,7 @@ normally be written by <a href="BooleanBitSetEncoderBase.html#finish(mask:Long):
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableEncoder#writeIsNull" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="writeIsNull(ordinal:Int):Unit"></a>
+      <a id="writeIsNull(position:Int):Unit"></a>
       <a id="writeIsNull(Int):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1928,10 +1911,10 @@ normally be written by <a href="BooleanBitSetEncoderBase.html#finish(mask:Long):
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeIsNull</span><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">writeIsNull</span><span class="params">(<span name="position">position: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncoderNullable@writeIsNull(ordinal:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncoderNullable@writeIsNull(position:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1954,7 +1937,7 @@ normally be written by <a href="BooleanBitSetEncoderBase.html#finish(mask:Long):
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder#writeLongDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="writeLongDecimal(cursor:Long,value:org.apache.spark.sql.types.Decimal,ordinal:Int,precision:Int,scale:Int):Long"></a>
+      <a id="writeLongDecimal(cursor:Long,value:org.apache.spark.sql.types.Decimal,position:Int,precision:Int,scale:Int):Long"></a>
       <a id="writeLongDecimal(Long,Decimal,Int,Int,Int):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1962,10 +1945,10 @@ normally be written by <a href="BooleanBitSetEncoderBase.html#finish(mask:Long):
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeLongDecimal</span><span class="params">(<span name="cursor">cursor: <span class="extype" name="scala.Long">Long</span></span>, <span name="value">value: <a href="../../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>, <span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>, <span name="scale">scale: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">writeLongDecimal</span><span class="params">(<span name="cursor">cursor: <span class="extype" name="scala.Long">Long</span></span>, <span name="value">value: <a href="../../../types/Decimal.html" class="extype" name="org.apache.spark.sql.types.Decimal">Decimal</a></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>, <span name="precision">precision: <span class="extype" name="scala.Int">Int</span></span>, <span name="scale">scale: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncoderNullable@writeLongDecimal(cursor:Long,value:org.apache.spark.sql.types.Decimal,ordinal:Int,precision:Int,scale:Int):Long" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.BooleanBitSetEncoderNullable@writeLongDecimal(cursor:Long,value:org.apache.spark.sql.types.Decimal,position:Int,precision:Int,scale:Int):Long" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

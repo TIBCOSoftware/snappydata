@@ -88,7 +88,7 @@
       <a id="ByteBufferHashMap:ByteBufferHashMap"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -122,6 +122,26 @@ endianness or memory layout of the data.</p><p>Rehash of the map (when loadFacto
 fields to create a new array as per the new hash locations.
 The value fields are left untouched with the headers of keys having the
 offsets into value array as before the rehash.
+</p></div></div>
+    </li><li name="io.snappydata.collection.DictionaryMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DictionaryMapextendsByteBufferHashMap"></a>
+      <a id="DictionaryMap:DictionaryMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DictionaryMap.html"><span class="name">DictionaryMap</span></a><span class="result"> extends <a href="ByteBufferHashMap.html" class="extype" name="io.snappydata.collection.ByteBufferHashMap">ByteBufferHashMap</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.package@DictionaryMapextendsByteBufferHashMap" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An extension of <a href="ByteBufferHashMap.html" class="extype" name="io.snappydata.collection.ByteBufferHashMap">ByteBufferHashMap</a> to store string keys.</p><div class="fullcomment"><div class="comment cmt"><p>An extension of <a href="ByteBufferHashMap.html" class="extype" name="io.snappydata.collection.ByteBufferHashMap">ByteBufferHashMap</a> to store string keys. The dictionary
+index is stored as part of key bytes while the variable length string value
+is stored in the value bytes.
 </p></div></div>
     </li><li name="io.snappydata.collection.LongKey" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="LongKeyextendsAnyRef"></a>
@@ -187,27 +207,7 @@ java interfaces to keep byte code overheads minimal.
 
         
 
-        <div id="values" class="values members">
-              <h3>Value Members</h3>
-              <ol><li name="io.snappydata.collection.ObjectHashSet" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ObjectHashSet"></a>
-      <a id="ObjectHashSet:ObjectHashSet"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="ObjectHashSet$.html"><span class="name">ObjectHashSet</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.collection.package@ObjectHashSet" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li></ol>
-            </div>
+        
 
         
 

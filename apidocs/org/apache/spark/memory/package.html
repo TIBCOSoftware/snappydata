@@ -121,7 +121,24 @@ they handle the sizing of their memory pools:</p><ul><li><span class="extype" na
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.memory.DefaultMemoryManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.memory.DefaultMemoryConsumer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DefaultMemoryConsumerextendsMemoryConsumer"></a>
+      <a id="DefaultMemoryConsumer:DefaultMemoryConsumer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DefaultMemoryConsumer.html"><span class="name">DefaultMemoryConsumer</span></a><span class="result"> extends <a href="MemoryConsumer.html" class="extype" name="org.apache.spark.memory.MemoryConsumer">MemoryConsumer</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.package@DefaultMemoryConsumerextendsMemoryConsumer" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.memory.DefaultMemoryManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DefaultMemoryManagerextendsStoreUnifiedManagerwithLogging"></a>
       <a id="DefaultMemoryManager:DefaultMemoryManager"></a>
       <h4 class="signature">
@@ -137,10 +154,24 @@ they handle the sizing of their memory pools:</p><ul><li><span class="extype" na
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">A MemoryManager which simply delegates to configured Spark memory manager.</p><div class="fullcomment"><div class="comment cmt"><p>A MemoryManager which simply delegates to configured Spark memory manager.
-This manager will be used in Connector mode. All SnappyData execution memory
-like encoder etc will account memory here.
-</p></div></div>
+      
+    </li><li name="org.apache.spark.memory.ExecutionFreeMemory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExecutionFreeMemoryextendsFreeMemory"></a>
+      <a id="ExecutionFreeMemory:ExecutionFreeMemory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExecutionFreeMemory.html"><span class="name">ExecutionFreeMemory</span></a><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.internal.shared.unsafe.FreeMemory">FreeMemory</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.package@ExecutionFreeMemoryextendsFreeMemory" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.memory.MemoryConsumer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="MemoryConsumerextendsObject"></a>
       <a id="MemoryConsumer:MemoryConsumer"></a>

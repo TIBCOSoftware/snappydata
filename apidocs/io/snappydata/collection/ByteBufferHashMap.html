@@ -41,7 +41,7 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -74,7 +74,10 @@ offsets into value array as before the rehash.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
-        </div></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent"><a href="DictionaryMap.html" class="extype" name="io.snappydata.collection.DictionaryMap">DictionaryMap</a></div>
+          </div></div>
         
 
       <div id="mbrsel">
@@ -187,33 +190,23 @@ offsets into value array as before the rehash.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="io.snappydata.collection.ByteBufferHashMap#addDictionaryString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addDictionaryString(key:org.apache.spark.unsafe.types.UTF8String):Int"></a>
-      <a id="addDictionaryString(UTF8String):Int"></a>
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#allocator" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="allocator:com.gemstone.gemfire.internal.shared.BufferAllocator"></a>
+      <a id="allocator:BufferAllocator"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">addDictionaryString</span><span class="params">(<span name="key">key: <a href="../../../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">allocator</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.shared.BufferAllocator">BufferAllocator</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@addDictionaryString(key:org.apache.spark.unsafe.types.UTF8String):Int" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@allocator:com.gemstone.gemfire.internal.shared.BufferAllocator" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Add a new string to the map for dictionaries.</p><div class="fullcomment"><div class="comment cmt"><p>Add a new string to the map for dictionaries. The key field has the
-index of the value i.e. (n - 1) for nth distinct string added to the map,
-with the offset into the value. The string itself is stored back to back
-in the value portion with its size at the start being variable length.
-This exactly matches the end format of the dictionary encoding that
-stores the dictionary string back-to-back in index order and expected
-by DictionaryDecoders. So the encoder can use the final
-value serialized array as is for putting into the encoded column batch
-(followed by the dictionary indexes of actual values themselves).</p><p>The encoded values are read in the initialization of DictionaryDecoder
-and put into an array, and looked up by its readUTF8String method.
-</p></div></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -231,6 +224,23 @@ and put into an array, and looked up by its readUTF8String method.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#capacity" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="capacity:Int"></a>
+      <a id="capacity:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">capacity</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@capacity:Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -254,23 +264,6 @@ and put into an array, and looked up by its readUTF8String method.
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="io.snappydata.collection.ByteBufferHashMap#duplicate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="duplicate():io.snappydata.collection.ByteBufferHashMap"></a>
-      <a id="duplicate():ByteBufferHashMap"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">duplicate</span><span class="params">()</span><span class="result">: <a href="" class="extype" name="io.snappydata.collection.ByteBufferHashMap">ByteBufferHashMap</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@duplicate():io.snappydata.collection.ByteBufferHashMap" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -345,6 +338,92 @@ and put into an array, and looked up by its readUTF8String method.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#getKeyData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getKeyData:io.snappydata.collection.ByteBufferData"></a>
+      <a id="getKeyData:ByteBufferData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getKeyData</span><span class="result">: <a href="ByteBufferData.html" class="extype" name="io.snappydata.collection.ByteBufferData">ByteBufferData</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@getKeyData:io.snappydata.collection.ByteBufferData" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#getValueData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getValueData:io.snappydata.collection.ByteBufferData"></a>
+      <a id="getValueData:ByteBufferData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getValueData</span><span class="result">: <a href="ByteBufferData.html" class="extype" name="io.snappydata.collection.ByteBufferData">ByteBufferData</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@getValueData:io.snappydata.collection.ByteBufferData" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#handleExisting" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="handleExisting(mapKeyObject:AnyRef,mapKeyOffset:Long):Int"></a>
+      <a id="handleExisting(AnyRef,Long):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">handleExisting</span><span class="params">(<span name="mapKeyObject">mapKeyObject: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="mapKeyOffset">mapKeyOffset: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@handleExisting(mapKeyObject:AnyRef,mapKeyOffset:Long):Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#handleNew" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="handleNew(mapKeyObject:AnyRef,mapKeyOffset:Long):Int"></a>
+      <a id="handleNew(AnyRef,Long):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">handleNew</span><span class="params">(<span name="mapKeyObject">mapKeyObject: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="mapKeyOffset">mapKeyOffset: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@handleNew(mapKeyObject:AnyRef,mapKeyOffset:Long):Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#handleNewInsert" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="handleNewInsert():Unit"></a>
+      <a id="handleNewInsert():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">handleNewInsert</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@handleNewInsert():Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Double the table's size and re-hash everything.</p><div class="fullcomment"><div class="comment cmt"><p>Double the table's size and re-hash everything.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -379,7 +458,7 @@ and put into an array, and looked up by its readUTF8String method.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="io.snappydata.collection.ByteBufferHashMap#keyData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#keyData" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="keyData:io.snappydata.collection.ByteBufferData"></a>
       <a id="keyData:ByteBufferData"></a>
       <h4 class="signature">
@@ -395,7 +474,7 @@ and put into an array, and looked up by its readUTF8String method.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="io.snappydata.collection.ByteBufferHashMap#loadFactor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="loadFactor:Double"></a>
       <a id="loadFactor:Double"></a>
@@ -430,6 +509,23 @@ and put into an array, and looked up by its readUTF8String method.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#newInsert" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newInsert(baseObject:AnyRef,baseOffset:Long,numKeyBytes:Int,numBytes:Int):Int"></a>
+      <a id="newInsert(AnyRef,Long,Int,Int):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newInsert</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseOffset">baseOffset: <span class="extype" name="scala.Long">Long</span></span>, <span name="numKeyBytes">numKeyBytes: <span class="extype" name="scala.Int">Int</span></span>, <span name="numBytes">numBytes: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@newInsert(baseObject:AnyRef,baseOffset:Long,numKeyBytes:Int,numBytes:Int):Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -464,12 +560,39 @@ and put into an array, and looked up by its readUTF8String method.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#putBufferIfAbsent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="putBufferIfAbsent(baseObject:AnyRef,baseOffset:Long,numKeyBytes:Int,numBytes:Int,hash:Int):Int"></a>
+      <a id="putBufferIfAbsent(AnyRef,Long,Int,Int,Int):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">putBufferIfAbsent</span><span class="params">(<span name="baseObject">baseObject: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="baseOffset">baseOffset: <span class="extype" name="scala.Long">Long</span></span>, <span name="numKeyBytes">numKeyBytes: <span class="extype" name="scala.Int">Int</span></span>, <span name="numBytes">numBytes: <span class="extype" name="scala.Int">Int</span></span>, <span name="hash">hash: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@putBufferIfAbsent(baseObject:AnyRef,baseOffset:Long,numKeyBytes:Int,numBytes:Int,hash:Int):Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Insert raw bytes with given hash code into the map if not present.</p><div class="fullcomment"><div class="comment cmt"><p>Insert raw bytes with given hash code into the map if not present.
+The key bytes for comparison is assumed to be at the start having
+&quot;numKeyBytes&quot; size, while the total size including value is &quot;numBytes&quot;.
+Normally one would have serialized form of key bytes followed by
+self-contained serialized form of value bytes (i.e. including its size).</p><p>This method will handle writing only the 8 byte key header while
+any additional fixed-width bytes to be tracked in read/write should be
+taken care of in <a href="#handleExisting(mapKeyObject:AnyRef,mapKeyOffset:Long):Int" class="extmbr" name="io.snappydata.collection.ByteBufferHashMap#handleExisting">handleExisting</a> and <a href="#handleNew(mapKeyObject:AnyRef,mapKeyOffset:Long):Int" class="extmbr" name="io.snappydata.collection.ByteBufferHashMap#handleNew">handleNew</a>.
+These bytes are not part of key equality check itself.
+</p></div><dl class="paramcmts block"><dt class="param">baseObject</dt><dd class="cmt"><p>the base object for the bytes as required by Unsafe API</p></dd><dt class="param">baseOffset</dt><dd class="cmt"><p>the base offset for the bytes as required by Unsafe API</p></dd><dt class="param">numKeyBytes</dt><dd class="cmt"><p>number of bytes used by the key which should be at the
+                   start of &quot;baseObject&quot; with value after that</p></dd><dt class="param">numBytes</dt><dd class="cmt"><p>the total number of bytes used by key and value together
+                   (excluding the four bytes of &quot;numKeyBytes&quot; itself)</p></dd><dt class="param">hash</dt><dd class="cmt"><p>the hash code of key bytes</p></dd></dl></div>
     </li><li name="io.snappydata.collection.ByteBufferHashMap#release" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="release():Unit"></a>
       <a id="release():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -486,7 +609,7 @@ and put into an array, and looked up by its readUTF8String method.
       <a id="reset():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -503,7 +626,7 @@ and put into an array, and looked up by its readUTF8String method.
       <a id="size:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -549,7 +672,7 @@ and put into an array, and looked up by its readUTF8String method.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="io.snappydata.collection.ByteBufferHashMap#valueData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#valueData" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="valueData:io.snappydata.collection.ByteBufferData"></a>
       <a id="valueData:ByteBufferData"></a>
       <h4 class="signature">
@@ -565,8 +688,8 @@ and put into an array, and looked up by its readUTF8String method.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="io.snappydata.collection.ByteBufferHashMap#valueDataPosition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#valueDataPosition" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="valueDataPosition:Long"></a>
       <a id="valueDataPosition:Long"></a>
       <h4 class="signature">
@@ -582,13 +705,13 @@ and put into an array, and looked up by its readUTF8String method.
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="io.snappydata.collection.ByteBufferHashMap#valueDataSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="valueDataSize:Long"></a>
       <a id="valueDataSize:Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -600,6 +723,23 @@ and put into an array, and looked up by its readUTF8String method.
       </a>
     </span>
       
+    </li><li name="io.snappydata.collection.ByteBufferHashMap#valueSize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="valueSize:Int"></a>
+      <a id="valueSize:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">valueSize</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.collection.ByteBufferHashMap@valueSize:Int" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

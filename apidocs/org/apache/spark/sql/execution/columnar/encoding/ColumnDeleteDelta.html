@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(buffer:java.nio.ByteBuffer):org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta"></a>
+      <a id="&lt;init&gt;(buffer:java.nio.ByteBuffer,codecId:Int,isCompressed:Boolean,changeOwnerToStorage:Boolean):org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta"></a>
       <a id="&lt;init&gt;:ColumnDeleteDelta"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnDeleteDelta</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>)</span>
+        <span class="name">ColumnDeleteDelta</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="codecId">codecId: <span class="extype" name="scala.Int">Int</span></span>, <span name="isCompressed">isCompressed: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="changeOwnerToStorage">changeOwnerToStorage: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@&lt;init&gt;(buffer:java.nio.ByteBuffer):org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@&lt;init&gt;(buffer:java.nio.ByteBuffer,codecId:Int,isCompressed:Boolean,changeOwnerToStorage:Boolean):org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -267,6 +267,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → SerializedDiskBuffer</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta#className" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="className:String"></a>
+      <a id="className:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">className</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@className:String" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta">ColumnDeleteDelta</a> → <a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -324,6 +341,40 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#compressionCodecId" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compressionCodecId:Byte"></a>
+      <a id="compressionCodecId:Byte"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compressionCodecId</span><span class="result">: <span class="extype" name="scala.Byte">Byte</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@compressionCodecId:Byte" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql.execution.columnar">org.apache.spark.sql.execution.columnar</a>] </dd><dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta#copy" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="copy(buffer:java.nio.ByteBuffer,isCompressed:Boolean,changeOwnerToStorage:Boolean):org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta"></a>
+      <a id="copy(ByteBuffer,Boolean,Boolean):ColumnDeleteDelta"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">copy</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="isCompressed">isCompressed: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="changeOwnerToStorage">changeOwnerToStorage: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta">ColumnDeleteDelta</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@copy(buffer:java.nio.ByteBuffer,isCompressed:Boolean,changeOwnerToStorage:Boolean):org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta">ColumnDeleteDelta</a> → <a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#copyToHeap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="copyToHeap(owner:String):Unit"></a>
       <a id="copyToHeap(String):Unit"></a>
@@ -341,6 +392,48 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → SerializedDiskBuffer</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#decompressionState" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="decompressionState:Byte"></a>
+      <a id="decompressionState:Byte"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">decompressionState</span><span class="result">: <span class="extype" name="scala.Byte">Byte</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@decompressionState:Byte" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This keeps track of whether the buffer is compressed or not.</p><div class="fullcomment"><div class="comment cmt"><p>This keeps track of whether the buffer is compressed or not.
+In addition it keeps a count of how many times compression was done on
+the buffer without intervening decompression, and if it exceeds
+<span class="extype" name="ColumnFormatEntry.MAX_CONSECUTIVE_COMPRESSIONS">ColumnFormatEntry.MAX_CONSECUTIVE_COMPRESSIONS</span> and no one is using
+the decompressed buffer, then replace columnBuffer with compressed version.</p><p>A negative value indicates that the buffer is not compressible (too small
+or not enough compression can be achieved), a zero indicates a compressed
+buffer while a positive count indicates a decompressed buffer and number
+of times compression was done.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
+    </li><li name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer#decrementReference" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="decrementReference():Boolean"></a>
+      <a id="decrementReference():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">decrementReference</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@decrementReference():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../../com$gemstone$gemfire$internal$cache$store.html" class="extype" name="com.gemstone.gemfire.internal.cache.store">com.gemstone.gemfire.internal.cache.store</a>] </dd><dt>Definition Classes</dt><dd>SerializedDiskBuffer</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#diskId" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="diskId:com.gemstone.gemfire.internal.cache.DiskId"></a>
       <a id="diskId:DiskId"></a>
@@ -358,29 +451,12 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#diskRegion" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="diskRegion:com.gemstone.gemfire.internal.cache.persistence.DiskRegionView"></a>
-      <a id="diskRegion:DiskRegionView"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">var</span>
-      </span>
-      <span class="symbol">
-        <span class="name">diskRegion</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.persistence.DiskRegionView">DiskRegionView</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@diskRegion:com.gemstone.gemfire.internal.cache.persistence.DiskRegionView" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#duplicateBuffer" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="duplicateBuffer(buffer:java.nio.ByteBuffer):java.nio.ByteBuffer"></a>
       <a id="duplicateBuffer(ByteBuffer):ByteBuffer"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -469,6 +545,42 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → DataSerializableFixedID</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#fromDisk" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fromDisk:Boolean"></a>
+      <a id="fromDisk:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromDisk</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@fromDisk:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#getBuffer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getBuffer():java.nio.ByteBuffer"></a>
+      <a id="getBuffer():ByteBuffer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getBuffer</span><span class="params">()</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@getBuffer():java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the data as a ByteBuffer.</p><div class="fullcomment"><div class="comment cmt"><p>Return the data as a ByteBuffer. Should be invoked only after a <a href="../impl/ColumnFormatValue.html#retain():Boolean" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#retain">retain</a>
+or <a href="../impl/ColumnFormatValue.html#getValueRetain(decompress:Boolean,compress:Boolean):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#getValueRetain">getValueRetain</a> call.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → ByteBufferReference</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#getBufferRetain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getBufferRetain():java.nio.ByteBuffer"></a>
       <a id="getBufferRetain():ByteBuffer"></a>
@@ -530,23 +642,6 @@ about the same.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → DataSerializableFixedID</dd></dl></div>
-    </li><li name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer#getDiskBufferRetain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getDiskBufferRetain():com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer"></a>
-      <a id="getDiskBufferRetain():SerializedDiskBuffer"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getDiskBufferRetain</span><span class="params">()</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer">SerializedDiskBuffer</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@getDiskBufferRetain():com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SerializedDiskBuffer</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta#getGfxdID" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getGfxdID():Byte"></a>
       <a id="getGfxdID():Byte"></a>
@@ -615,6 +710,23 @@ about the same.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → Sizeable</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#getValueRetain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getValueRetain(decompress:Boolean,compress:Boolean):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue"></a>
+      <a id="getValueRetain(Boolean,Boolean):ColumnFormatValue"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getValueRetain</span><span class="params">(<span name="decompress">decompress: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="compress">compress: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@getValueRetain(decompress:Boolean,compress:Boolean):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → SerializedDiskBuffer → ByteBufferReference</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta#getVersionTag" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getVersionTag():com.gemstone.gemfire.internal.cache.versions.VersionTag[_&lt;:com.gemstone.gemfire.internal.cache.versions.VersionSource[_]]"></a>
       <a id="getVersionTag():VersionTag[_&lt;:VersionSource[_]]"></a>
@@ -649,23 +761,43 @@ about the same.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#isDirect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isDirect:Boolean"></a>
-      <a id="isDirect:Boolean"></a>
+    </li><li name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer#incrementReference" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="incrementReference():Boolean"></a>
+      <a id="incrementReference():Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isDirect</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">incrementReference</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@isDirect:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@incrementReference():Boolean" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../../com$gemstone$gemfire$internal$cache$store.html" class="extype" name="com.gemstone.gemfire.internal.cache.store">com.gemstone.gemfire.internal.cache.store</a>] </dd><dt>Definition Classes</dt><dd>SerializedDiskBuffer</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#isCompressed" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isCompressed:Boolean"></a>
+      <a id="isCompressed:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isCompressed</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@isCompressed:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@GuardedBy</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -768,23 +900,40 @@ about the same.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer#refCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="refCount():Int"></a>
-      <a id="refCount():Int"></a>
+    </li><li name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer#referenceCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="referenceCount():Int"></a>
+      <a id="referenceCount():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">refCount</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">referenceCount</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@refCount():Int" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@referenceCount():Int" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SerializedDiskBuffer → ByteBufferReference</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#regionContext" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="regionContext:com.gemstone.gemfire.internal.cache.RegionEntryContext"></a>
+      <a id="regionContext:RegionEntryContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">regionContext</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.RegionEntryContext">RegionEntryContext</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@regionContext:com.gemstone.gemfire.internal.cache.RegionEntryContext" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
     </li><li name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer#release" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="release():Unit"></a>
       <a id="release():Unit"></a>
@@ -837,35 +986,35 @@ about the same.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SerializedDiskBuffer → ByteBufferReference</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#setBuffer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setBuffer(buffer:java.nio.ByteBuffer,changeOwnerToStorage:Boolean):Unit"></a>
-      <a id="setBuffer(ByteBuffer,Boolean):Unit"></a>
+      <a id="setBuffer(buffer:java.nio.ByteBuffer,codecId:Int,isCompressed:Boolean,changeOwnerToStorage:Boolean):Unit"></a>
+      <a id="setBuffer(ByteBuffer,Int,Boolean,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setBuffer</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="changeOwnerToStorage">changeOwnerToStorage: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setBuffer</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="codecId">codecId: <span class="extype" name="scala.Int">Int</span></span>, <span name="isCompressed">isCompressed: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="changeOwnerToStorage">changeOwnerToStorage: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@setBuffer(buffer:java.nio.ByteBuffer,changeOwnerToStorage:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@setBuffer(buffer:java.nio.ByteBuffer,codecId:Int,isCompressed:Boolean,changeOwnerToStorage:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#setDiskId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setDiskId(id:com.gemstone.gemfire.internal.cache.DiskId,dr:com.gemstone.gemfire.internal.cache.persistence.DiskRegionView):Unit"></a>
-      <a id="setDiskId(DiskId,DiskRegionView):Unit"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#setDiskLocation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setDiskLocation(id:com.gemstone.gemfire.internal.cache.DiskId,context:com.gemstone.gemfire.internal.cache.RegionEntryContext):Unit"></a>
+      <a id="setDiskLocation(DiskId,RegionEntryContext):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setDiskId</span><span class="params">(<span name="id">id: <span class="extype" name="com.gemstone.gemfire.internal.cache.DiskId">DiskId</span></span>, <span name="dr">dr: <span class="extype" name="com.gemstone.gemfire.internal.cache.persistence.DiskRegionView">DiskRegionView</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setDiskLocation</span><span class="params">(<span name="id">id: <span class="extype" name="com.gemstone.gemfire.internal.cache.DiskId">DiskId</span></span>, <span name="context">context: <span class="extype" name="com.gemstone.gemfire.internal.cache.RegionEntryContext">RegionEntryContext</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@setDiskId(id:com.gemstone.gemfire.internal.cache.DiskId,dr:com.gemstone.gemfire.internal.cache.persistence.DiskRegionView):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta@setDiskLocation(id:com.gemstone.gemfire.internal.cache.DiskId,context:com.gemstone.gemfire.internal.cache.RegionEntryContext):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -938,7 +1087,7 @@ about the same.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → DataSerializableFixedID</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -954,7 +1103,7 @@ about the same.
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta">ColumnDeleteDelta</a> → <a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../impl/ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

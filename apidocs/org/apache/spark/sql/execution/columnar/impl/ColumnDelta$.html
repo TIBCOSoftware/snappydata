@@ -185,6 +185,25 @@ smallest delta, which is merged with larger delta, then larger, ...</p><div clas
 smallest delta, which is merged with larger delta, then larger, ...
 till the full column value.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnDelta#USED_MAX_DEPTH" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="USED_MAX_DEPTH:Int"></a>
+      <a id="USED_MAX_DEPTH:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">USED_MAX_DEPTH</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnDelta$@USED_MAX_DEPTH:Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is the currently used maximum depth which must be &lt;= <a href="#MAX_DEPTH:Int" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnDelta#MAX_DEPTH">MAX_DEPTH</a>.</p><div class="fullcomment"><div class="comment cmt"><p>This is the currently used maximum depth which must be &lt;= <a href="#MAX_DEPTH:Int" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnDelta#MAX_DEPTH">MAX_DEPTH</a>.
+It should only be used by transient execution-time structures and never in storage.
+</p></div></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -521,7 +540,8 @@ update/delete so that those operations can actually apply the changes.</p>
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns 0 based table column index (while that stored in region is 1 based).</p>
+      <p class="shortcomment cmt">Returns 1 based table column index for given delta or table column index
+(table column index stored in region key is 1 based).</p>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

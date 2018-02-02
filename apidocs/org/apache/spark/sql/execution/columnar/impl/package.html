@@ -95,6 +95,27 @@ One can insert a single or multiple rows into this table as well
 as do a bulk insert by a Spark DataFrame.
 Bulk insert example is shown above.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ClusteredColumnIterator" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ClusteredColumnIteratorextendsCloseableIterator[com.gemstone.gemfire.internal.cache.RegionEntry]"></a>
+      <a id="ClusteredColumnIterator:ClusteredColumnIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ClusteredColumnIterator.html"><span class="name">ClusteredColumnIterator</span></a><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator">CloseableIterator</span>[<span class="extype" name="com.gemstone.gemfire.internal.cache.RegionEntry">RegionEntry</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ClusteredColumnIteratorextendsCloseableIterator[com.gemstone.gemfire.internal.cache.RegionEntry]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Base trait for iterators that are capable of reading and returning
+the entire set of columns of a column batch.</p><div class="fullcomment"><div class="comment cmt"><p>Base trait for iterators that are capable of reading and returning
+the entire set of columns of a column batch. These can be local region
+iterators or those fetching entries from remote nodes.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnDelta" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ColumnDeltaextendsColumnFormatValuewithDelta"></a>
       <a id="ColumnDelta:ColumnDelta"></a>
@@ -139,8 +160,32 @@ code checks the type of object for Delta and makes assumptions about it
       </a>
     </span>
       <p class="shortcomment cmt">A <span class="extype" name="RowEncoder">RowEncoder</span> implementation for <a href="ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> and child classes.</p>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatIterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ColumnFormatIteratorextendsClusteredColumnIteratorwithDiskRegionIterator"></a>
+      <a id="ColumnFormatIterator:ColumnFormatIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnFormatIterator.html"><span class="name">ColumnFormatIterator</span></a><span class="result"> extends <a href="ClusteredColumnIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ClusteredColumnIterator">ClusteredColumnIterator</a> with <span class="extype" name="com.gemstone.gemfire.internal.cache.DiskRegionIterator">DiskRegionIterator</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatIteratorextendsClusteredColumnIteratorwithDiskRegionIterator" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A customized iterator for column store tables that projects out the required
+columns and returns those column batches first that have all their columns
+in the memory.</p><div class="fullcomment"><div class="comment cmt"><p>A customized iterator for column store tables that projects out the required
+columns and returns those column batches first that have all their columns
+in the memory. Further this will make use of <span class="extype" name="DiskBlockSortManager">DiskBlockSortManager</span> to
+allow for concurrent partition iterators to do cross-partition disk block
+sorting and fault-in for best disk read performance (SNAP-2012).
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnFormatKeyextendsGfxdDataSerializablewithColumnBatchKeywithRegionKeywithSerializablewithLogging"></a>
+      <a id="ColumnFormatKeyextendsGfxdDataSerializablewithColumnBatchKeywithRegionKeywithSerializable"></a>
       <a id="ColumnFormatKey:ColumnFormatKey"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -148,16 +193,16 @@ code checks the type of object for Delta and makes assumptions about it
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnFormatKey.html"><span class="name">ColumnFormatKey</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.internal.engine.GfxdDataSerializable">GfxdDataSerializable</span> with <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey">ColumnBatchKey</span> with <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.RegionKey">RegionKey</span> with <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <a href="ColumnFormatKey.html"><span class="name">ColumnFormatKey</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.internal.engine.GfxdDataSerializable">GfxdDataSerializable</span> with <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey">ColumnBatchKey</span> with <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.RegionKey">RegionKey</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatKeyextendsGfxdDataSerializablewithColumnBatchKeywithRegionKeywithSerializablewithLogging" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatKeyextendsGfxdDataSerializablewithColumnBatchKeywithRegionKeywithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Key object in the column store.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelationwithDependentRelation"></a>
+      <a id="ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelationwithDependentRelationwithBulkPutRelation"></a>
       <a id="ColumnFormatRelation:ColumnFormatRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -165,10 +210,10 @@ code checks the type of object for Delta and makes assumptions about it
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnFormatRelation.html"><span class="name">ColumnFormatRelation</span></a><span class="result"> extends <a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> with <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a> with <a href="../../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a></span>
+        <a href="ColumnFormatRelation.html"><span class="name">ColumnFormatRelation</span></a><span class="result"> extends <a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> with <a href="../../../sources/ParentRelation.html" class="extype" name="org.apache.spark.sql.sources.ParentRelation">ParentRelation</a> with <a href="../../../sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a> with <a href="../../../sources/BulkPutRelation.html" class="extype" name="org.apache.spark.sql.sources.BulkPutRelation">BulkPutRelation</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelationwithDependentRelation" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelationwithDependentRelationwithBulkPutRelation" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -235,7 +280,7 @@ transferring data to the channels.
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.impl.DefaultSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DefaultSourceextendsSchemaRelationProviderwithCreatableRelationProvider"></a>
+      <a id="DefaultSourceextendsSchemaRelationProviderwithCreatableRelationProviderwithDataSourceRegister"></a>
       <a id="DefaultSource:DefaultSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -243,10 +288,10 @@ transferring data to the channels.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DefaultSource.html"><span class="name">DefaultSource</span></a><span class="result"> extends <a href="../../../sources/SchemaRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.SchemaRelationProvider">SchemaRelationProvider</a> with <a href="../../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a></span>
+        <a href="DefaultSource.html"><span class="name">DefaultSource</span></a><span class="result"> extends <a href="../../../sources/SchemaRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.SchemaRelationProvider">SchemaRelationProvider</a> with <a href="../../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a> with <a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@DefaultSourceextendsSchemaRelationProviderwithCreatableRelationProvider" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@DefaultSourceextendsSchemaRelationProviderwithCreatableRelationProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -286,6 +331,23 @@ to allow adding of any index specific functionality in future.</p>
       </a>
     </span>
       <p class="shortcomment cmt">Column Store implementation for GemFireXD.</p>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.RemoteEntriesIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RemoteEntriesIteratorextendsClusteredColumnIterator"></a>
+      <a id="RemoteEntriesIterator:RemoteEntriesIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RemoteEntriesIterator.html"><span class="name">RemoteEntriesIterator</span></a><span class="result"> extends <a href="ClusteredColumnIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ClusteredColumnIterator">ClusteredColumnIterator</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@RemoteEntriesIteratorextendsClusteredColumnIterator" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <a href="ClusteredColumnIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ClusteredColumnIterator">ClusteredColumnIterator</a> that fetches entries from a remote bucket.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SmartConnectorColumnRDDextendsRDDKryo[Any]withKryoSerializable"></a>
       <a id="SmartConnectorColumnRDD:SmartConnectorColumnRDD"></a>
@@ -387,7 +449,7 @@ to allow adding of any index specific functionality in future.</p>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="ColumnFormatEntry$.html"><span class="name">ColumnFormatEntry</span></a><span class="result"> extends <a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <a href="ColumnFormatEntry$.html"><span class="name">ColumnFormatEntry</span></a>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatEntry" title="Permalink" target="_top">
@@ -408,6 +470,23 @@ to allow adding of any index specific functionality in future.</p>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatRelation" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StatsFilter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StatsFilter"></a>
+      <a id="StatsFilter:StatsFilter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StatsFilter$.html"><span class="name">StatsFilter</span></a><span class="result"> extends <span class="extype" name="java.util.function.Predicate">Predicate</span>[<a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@StatsFilter" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

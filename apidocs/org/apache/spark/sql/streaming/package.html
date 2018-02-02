@@ -134,7 +134,7 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
     </span>
       
     </li><li name="org.apache.spark.sql.streaming.DirectKafkaStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DirectKafkaStreamSourceextendsStreamPlanProvider"></a>
+      <a id="DirectKafkaStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
       <a id="DirectKafkaStreamSource:DirectKafkaStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -142,10 +142,10 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DirectKafkaStreamSource.html"><span class="name">DirectKafkaStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a></span>
+        <a href="DirectKafkaStreamSource.html"><span class="name">DirectKafkaStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DirectKafkaStreamSourceextendsStreamPlanProvider" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DirectKafkaStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -168,7 +168,7 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
     </span>
       
     </li><li name="org.apache.spark.sql.streaming.FileStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FileStreamSourceextendsStreamPlanProvider"></a>
+      <a id="FileStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
       <a id="FileStreamSource:FileStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -176,10 +176,10 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="FileStreamSource.html"><span class="name">FileStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a></span>
+        <a href="FileStreamSource.html"><span class="name">FileStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@FileStreamSourceextendsStreamPlanProvider" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@FileStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -219,7 +219,7 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
     </span>
       
     </li><li name="org.apache.spark.sql.streaming.KafkaStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="KafkaStreamSourceextendsStreamPlanProvider"></a>
+      <a id="KafkaStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
       <a id="KafkaStreamSource:KafkaStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -227,10 +227,10 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="KafkaStreamSource.html"><span class="name">KafkaStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a></span>
+        <a href="KafkaStreamSource.html"><span class="name">KafkaStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@KafkaStreamSourceextendsStreamPlanProvider" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@KafkaStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -404,7 +404,7 @@ df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SEC
     </span>
       
     </li><li name="org.apache.spark.sql.streaming.RabbitMQStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="RabbitMQStreamSourceextendsStreamPlanProvider"></a>
+      <a id="RabbitMQStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
       <a id="RabbitMQStreamSource:RabbitMQStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -412,10 +412,10 @@ df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SEC
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="RabbitMQStreamSource.html"><span class="name">RabbitMQStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a></span>
+        <a href="RabbitMQStreamSource.html"><span class="name">RabbitMQStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQStreamSourceextendsStreamPlanProvider" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -455,7 +455,7 @@ df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SEC
     </span>
       
     </li><li name="org.apache.spark.sql.streaming.RawSocketStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="RawSocketStreamSourceextendsStreamPlanProvider"></a>
+      <a id="RawSocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
       <a id="RawSocketStreamSource:RawSocketStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -463,10 +463,10 @@ df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SEC
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="RawSocketStreamSource.html"><span class="name">RawSocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a></span>
+        <a href="RawSocketStreamSource.html"><span class="name">RawSocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RawSocketStreamSourceextendsStreamPlanProvider" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RawSocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -574,7 +574,7 @@ during a trigger. See <a href="StreamingQueryProgress.html" class="extype" name=
     </span>
       
     </li><li name="org.apache.spark.sql.streaming.SocketStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SocketStreamSourceextendsStreamPlanProvider"></a>
+      <a id="SocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
       <a id="SocketStreamSource:SocketStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -582,10 +582,10 @@ during a trigger. See <a href="StreamingQueryProgress.html" class="extype" name=
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SocketStreamSource.html"><span class="name">SocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a></span>
+        <a href="SocketStreamSource.html"><span class="name">SocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SocketStreamSourceextendsStreamPlanProvider" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -897,7 +897,7 @@ Reports information about the instantaneous status of a streaming query.
     </span>
       
     </li><li name="org.apache.spark.sql.streaming.TextSocketStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="TextSocketStreamSourceextendsStreamPlanProvider"></a>
+      <a id="TextSocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
       <a id="TextSocketStreamSource:TextSocketStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -905,10 +905,10 @@ Reports information about the instantaneous status of a streaming query.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="TextSocketStreamSource.html"><span class="name">TextSocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a></span>
+        <a href="TextSocketStreamSource.html"><span class="name">TextSocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TextSocketStreamSourceextendsStreamPlanProvider" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TextSocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1007,7 +1007,7 @@ Used to indicate how often results should be produced by a <a href="StreamingQue
     </span>
       
     </li><li name="org.apache.spark.sql.streaming.TwitterStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="TwitterStreamSourceextendsStreamPlanProvider"></a>
+      <a id="TwitterStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
       <a id="TwitterStreamSource:TwitterStreamSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1015,10 +1015,10 @@ Used to indicate how often results should be produced by a <a href="StreamingQue
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="TwitterStreamSource.html"><span class="name">TwitterStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a></span>
+        <a href="TwitterStreamSource.html"><span class="name">TwitterStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TwitterStreamSourceextendsStreamPlanProvider" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TwitterStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
