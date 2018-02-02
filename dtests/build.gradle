@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -44,7 +44,6 @@ ext {
 dependencies {
     compile 'org.scala-lang:scala-library:' + scalaVersion
     compile 'org.scala-lang:scala-reflect:' + scalaVersion
-    compile 'org.scala-lang:scala-compiler:' + scalaVersion
 
     compile (project(':snappy-core_' + scalaBinaryVersion)) {
        exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
@@ -81,13 +80,13 @@ dependencies {
     }
 
     if (new File(rootDir, 'store/build.gradle').exists()) {
-        testCompile project(':snappy-store:gemfirexd-client')
-        testCompile project(':snappy-store:gemfirexd-core')
-        testCompile project(':snappy-store:gemfirexd-tools')
-        testCompile project(':snappy-store:gemfirexd-tests')
+        testCompile project(':snappy-store:snappydata-store-client')
+        testCompile project(':snappy-store:snappydata-store-core')
+        testCompile project(':snappy-store:snappydata-store-tools')
+        testCompile project(':snappy-store:snappydata-store-tests')
         testCompile project(':snappy-store:gemfire-tests')
         testCompile project(':snappy-store:gemfire-core')
-        testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+        testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
     } else {
         testCompile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
         testCompile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
@@ -110,6 +109,10 @@ dependencies {
 
 }
 
+task buildDtests {
+  dependsOn ':cleanScalaTest', ':snappy-store:storeProduct', ':product', packageTests
+}
+
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
     classifier = 'javadoc'
     from scaladoc
@@ -127,12 +130,11 @@ if (rootProject.hasProperty('enablePublish')) {
 archivesBaseName = 'snappydata-store-scala-tests'
 
 scalaTest {
-    dependsOn ':cleanScalaTest'
+    dependsOn buildDtests
     doFirst {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)
     }
-    testOutput '/dev/tty'
     doLast {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)
@@ -149,7 +151,7 @@ testClasses.doLast {
           include '**/*.inc'
           include '**/*.sql'
       }
-          into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+      into project(':snappy-store:snappydata-store-tests').sourceSets.main.output.classesDir
     }
   }
 }

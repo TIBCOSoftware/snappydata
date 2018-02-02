@@ -17,21 +17,17 @@
 
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.Connection
-
-import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
-import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener, ColumnDelta}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder}
+import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.util.TaskCompletionListener
 
 /**
  * Generated code plan for updates into a column table.
@@ -40,13 +36,16 @@ import org.apache.spark.util.TaskCompletionListener
 case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression], numBuckets: Int,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
-    relation: Option[DestroyRelation], updateColumns: Seq[Attribute],
+    appendableRelation: JDBCAppendableRelation, updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
+    connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
-  override def resolvedName: String = externalStore.tableName
+  override def relation: Option[DestroyRelation] = Some(appendableRelation)
+
+  val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
+    appendableRelation.getCompressionCodec)
 
   private lazy val schemaAttributes = tableSchema.toAttributes
   /**
@@ -66,6 +65,14 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
   override def nodeName: String = "ColumnUpdate"
 
+  // Require per-partition sort on batchId+ordinal because deltas are accumulated for
+  // consecutive batchIds+ordinals else it will  be very inefficient for bulk updates
+  // (e.g. for putInto). BatchId attribute is always third last in the keyColumns
+  // while ordinal (index of row in the batch) is the one before that.
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] =
+  Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
+    StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
+
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
     else Map(
@@ -75,47 +82,13 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
         "number of updates to column batches"))
   }
 
-  override def simpleString: String =
-    s"${super.simpleString} update: columns=$updateColumns expressions=$updateExpressions"
+  override def simpleString: String = s"${super.simpleString} update: columns=$updateColumns " +
+      s"expressions=$updateExpressions compression=$compressionCodec"
 
   @transient private var batchOrdinal: String = _
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
   @transient protected var txId: String = _
-  @transient protected var taskListener: String = _
-
-  override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
-    val connectionClass = classOf[Connection].getName
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-    val listenerClass = classOf[SnapshotConnectionListener].getName
-    taskListener = ctx.freshName("taskListener")
-    connTerm = ctx.freshName("connection")
-
-    val contextClass = classOf[TaskContext].getName
-    val context = ctx.freshName("taskContext")
-
-    ctx.addMutableState(listenerClass, taskListener, "")
-    ctx.addMutableState(connectionClass, connTerm, "")
-
-    val initCode =
-      s"""
-         |$taskListener = new org.apache.spark.sql.execution.columnar.impl.SnapshotConnectionListener(
-         |(org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore)$externalStoreTerm);
-         |$connTerm = $taskListener.getConn();
-         |final $contextClass $context = $contextClass.get();
-         |if ($context != null) {
-         |   $context.addTaskCompletionListener($taskListener);
-         |}
-         | """.stripMargin
-
-    val endCode =
-      s"""
-         |""".stripMargin
-    val commitCode =
-      s"""
-       """.stripMargin
-    (initCode, commitCode, endCode)
-  }
 
   override protected def doProduce(ctx: CodegenContext): String = {
 
@@ -125,8 +98,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       escapeQuotes = true, separator = ", ")
     sql.append(" WHERE ")
     // only the ordinalId is required apart from partitioning columns
-    if (keyColumns.length > 3) {
-      JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.dropRight(3).map(_.name),
+    if (keyColumns.length > 4) {
+      JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.dropRight(4).map(_.name),
         escapeQuotes = true)
       sql.append(" AND ")
     }
@@ -135,7 +108,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
-         |  $finishUpdate(null, -1); // force a finish
+         |  $finishUpdate($invalidUUID, -1, -1); // force a finish
          |}
          |$taskListener.setSuccess();
       """.stripMargin)
@@ -150,6 +123,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     batchOrdinal = ctx.freshName("batchOrdinal")
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
     val lastBucketId = ctx.freshName("lastBucketId")
+    val lastNumRows = ctx.freshName("lastNumRows")
     finishUpdate = ctx.freshName("finishUpdate")
     val initializeEncoders = ctx.freshName("initializeEncoders")
 
@@ -163,6 +137,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
     val numColumns = updateColumns.length
     val deltaEncoderClass = classOf[ColumnDeltaEncoder].getName
+    val encoderClass = classOf[ColumnEncoder].getName
     val columnBatchClass = classOf[ColumnBatch].getName
 
     ctx.addMutableState(s"$deltaEncoderClass[]", deltaEncoders, "")
@@ -173,33 +148,40 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |$initializeEncoders();
       """.stripMargin)
     ctx.addMutableState("int", batchOrdinal, "")
-    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
+    ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
     ctx.addMutableState("int", lastBucketId, "")
+    ctx.addMutableState("int", lastNumRows, "")
 
     // last three columns in keyColumns should be internal ones
-    val keyCols = keyColumns.takeRight(3)
+    val keyCols = keyColumns.takeRight(4)
     assert(keyCols.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
     assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
     assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
+    assert(keyCols(3).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(3)))
 
     // bind the update expressions
     ctx.INPUT_ROW = null
     ctx.currentVars = input
     val allExpressions = updateExpressions ++ keyColumns
-    val updateInput = ctx.generateExpressions(allExpressions.map(
-      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
-        u, child.output))), doSubexpressionElimination = true)
+    val boundUpdateExpr = allExpressions.map(
+      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(u, child.output)))
+    val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(boundUpdateExpr)
+    val effectiveCodes = subExprs.codes.mkString("\n")
+    val updateInput = ctx.withSubExprEliminationExprs(subExprs.states) {
+      boundUpdateExpr.map(_.genCode(ctx))
+    }
     ctx.currentVars = null
 
-    val keyVars = updateInput.takeRight(3)
+    val keyVars = updateInput.takeRight(4)
     val ordinalIdVar = keyVars.head.value
     val batchIdVar = keyVars(1).value
     val bucketVar = keyVars(2).value
+    val numRowsVar = keyVars(3).value
 
     val updateVarsCode = evaluateVariables(updateInput)
-    // row buffer needs to select the rowId and partitioning columns so drop last two
-    val rowConsume = super.doConsume(ctx, updateInput.dropRight(2),
-      StructType(getUpdateSchema(allExpressions.dropRight(2))))
+    // row buffer needs to select the rowId and partitioning columns so drop last three
+    val rowConsume = super.doConsume(ctx, updateInput.dropRight(3),
+      StructType(getUpdateSchema(allExpressions.dropRight(3))))
 
     ctx.addNewFunction(initializeEncoders,
       s"""
@@ -220,16 +202,19 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val isNull = ctx.freshName("isNull")
       val field = ctx.freshName("field")
       val dataType = col.dataType
-      val encoderTerm = s"$deltaEncoders[$i]"
+      val encoderTerm = ctx.freshName("deltaEncoder")
+      val realEncoderTerm = s"${encoderTerm}_realEncoder"
       val cursorTerm = s"$cursors[$i]"
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
            |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
+           |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
+           |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
            |  $encoderTerm.setUpdatePosition($ordinalIdVar);
-           |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
-                cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
+           |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
+                encoderTerm, cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
@@ -237,42 +222,44 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
-         |private void $finishUpdate(UTF8String batchId, int bucketId) {
-         |  if (batchId == null || !batchId.equals($lastColumnBatchId)) {
-         |    if ($lastColumnBatchId == null) {
+         |private void $finishUpdate(long batchId, int bucketId, int numRows) {
+         |  if (batchId == $invalidUUID || batchId != $lastColumnBatchId) {
+         |    if ($lastColumnBatchId == $invalidUUID) {
          |      // first call
          |      $lastColumnBatchId = batchId;
          |      $lastBucketId = bucketId;
+         |      $lastNumRows = numRows;
          |      return;
          |    }
          |    // finish previous encoders, put into table and re-initialize
          |    final java.nio.ByteBuffer[] buffers = new java.nio.ByteBuffer[$numColumns];
          |    for (int $index = 0; $index < $numColumns; $index++) {
-         |      buffers[$index] = $deltaEncoders[$index].finish($cursors[$index]);
+         |      buffers[$index] = $deltaEncoders[$index].finish($cursors[$index], $lastNumRows);
          |    }
          |    // TODO: SW: delta stats row (can have full limits for those columns)
          |    // for now put dummy bytes in delta stats row
          |    final $columnBatchClass columnBatch = $columnBatchClass.apply(
          |        $batchOrdinal, buffers, new byte[] { 0, 0, 0, 0 }, $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
-         |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch,
-         |        $lastBucketId, $lastColumnBatchId, -1, new scala.Some($connTerm));
+         |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
+         |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();
          |    $lastColumnBatchId = batchId;
          |    $lastBucketId = bucketId;
+         |    $lastNumRows = numRows;
          |    $batchOrdinal = 0;
          |  }
          |}
       """.stripMargin)
 
     s"""
-       |$updateVarsCode
-       |if ($batchIdVar != null) {
+       |$effectiveCodes$updateVarsCode
+       |if ($batchIdVar != $invalidUUID) {
        |  // finish and apply update if the next column batch ID is seen
        |  if ($batchIdVar != $lastColumnBatchId) {
-       |    $finishUpdate($batchIdVar, $bucketVar);
+       |    $finishUpdate($batchIdVar, $bucketVar, $numRowsVar);
        |  }
        |  // write to the encoders
        |  $callEncoders

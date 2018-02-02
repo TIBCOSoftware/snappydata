@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,7 +26,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, OverwriteOptions}
+import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -143,8 +143,13 @@ case class JDBCMutableRelation(
       // Create the table if the table didn't exist.
       if (!tableExists) {
         val sql = s"CREATE TABLE $table $userSpecifiedString"
-        logInfo(s"Applying DDL (url=$connProperties.url; " +
+        val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
+        logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
+        if (pass != null) {
+          connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
+            pass.asInstanceOf[String])
+        }
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table,
@@ -251,10 +256,10 @@ case class JDBCMutableRelation(
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    // use the InsertIntoTable plan for best performance
+    // use the Insert plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
     sqlContext.sessionState.executePlan(
-      InsertIntoTable(
+      new Insert(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
@@ -466,4 +471,7 @@ case class JDBCMutableRelation(
   }
 }
 
-final class DefaultSource extends MutableRelationProvider
+final class DefaultSource extends MutableRelationProvider with DataSourceRegister {
+
+  override def shortName(): String = "jdbc_mutable"
+}

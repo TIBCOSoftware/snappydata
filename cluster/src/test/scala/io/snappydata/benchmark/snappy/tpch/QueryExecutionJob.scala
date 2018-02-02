@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,7 +22,6 @@ import java.io.{File, FileOutputStream, PrintStream}
 import scala.language.implicitConversions
 
 import com.typesafe.config.Config
-import io.snappydata.benchmark.snappy.TPCH_Snappy
 
 import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
@@ -63,7 +62,7 @@ object QueryExecutionJob extends SnappySQLJob {
     avgPrintStream.close()
     avgFileStream.close()
 
-    TPCH_Snappy.close
+    QueryExecutor.close
   }
 
   def main(args: Array[String]): Unit = {

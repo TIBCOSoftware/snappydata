@@ -54,13 +54,18 @@ case class RowUpdateExec(child: SparkPlan, resolvedName: String,
     ctx.currentVars = input
     // bind the update expressions followed by key columns
     val allExpressions = updateExpressions ++ keyColumns
-    val stmtInput = ctx.generateExpressions(allExpressions.map(
-      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
-        u, child.output))), doSubexpressionElimination = true)
+    val boundUpdateExpr = allExpressions.map(
+      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(u, child.output)))
+    val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(boundUpdateExpr)
+    val effectiveCodes = subExprs.codes.mkString("\n")
+    val stmtInput = ctx.withSubExprEliminationExprs(subExprs.states) {
+      boundUpdateExpr.map(_.genCode(ctx))
+    }
     ctx.currentVars = null
 
     val stmtSchema = StructType(getUpdateSchema(updateExpressions) ++
         StructType.fromAttributes(keyColumns))
-    super.doConsume(ctx, stmtInput, stmtSchema)
+    val code = super.doConsume(ctx, stmtInput, stmtSchema)
+    if (effectiveCodes.isEmpty) code else effectiveCodes + code
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,7 +20,8 @@ import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
-import org.apache.spark.SparkConf
+
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation, SnappySessionFactory}
 import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.util.SnappyUtils
@@ -31,7 +32,8 @@ abstract class SnappyStreamingJob extends SparkJobBase {
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyStreamingContext],
-      SnappySessionFactory.cleanJobConfig(config)))
+      SnappySessionFactory.updateCredentials(sc.asInstanceOf[SnappyStreamingContext]
+          .snappySession, config, fromStreamCtx = true)))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
@@ -42,7 +44,8 @@ abstract class SnappyStreamingJob extends SparkJobBase {
         appName = this.getClass.getCanonicalName,
         classLoader = Thread.currentThread().getContextClassLoader)
 
-      runSnappyJob(snc, SnappySessionFactory.cleanJobConfig(jobConfig))
+      runSnappyJob(snc, SnappySessionFactory.updateCredentials(snc.snappySession, jobConfig,
+        fromStreamCtx = true))
     } finally {
     }
   }
@@ -60,7 +63,7 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
   override def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
     val interval = config.getInt("streaming.batch_interval")
 
-    new SnappyStreamingContext(LeadImpl.getInitializingSparkContext,
+    new SnappyStreamingContext(SparkContext.getActive.get,
       Milliseconds(interval)) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean =

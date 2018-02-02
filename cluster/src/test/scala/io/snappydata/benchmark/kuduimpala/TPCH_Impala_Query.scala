@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,11 +16,8 @@
  */
 package io.snappydata.benchmark.kuduimpala
 
-import java.io.{File, FileOutputStream, PrintStream}
-import java.sql.{DriverManager, ResultSet}
+import java.sql.DriverManager
 
-import io.snappydata.benchmark.memsql.TPCH_Memsql
-import io.snappydata.benchmark.snappy.TPCH_Snappy
 
 object TPCH_Impala_Query {
 

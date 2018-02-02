@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,6 +22,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
+import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
 import org.apache.spark.{Partition, TaskContext}
 
@@ -189,9 +190,18 @@ object snappy extends Serializable {
         Project(inputDataCols ++ inputPartCols, df.logicalPlan)
       }.getOrElse(df.logicalPlan)
 
-      df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
-          .executedPlan.executeCollect()
+      try {
+        df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
+          session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+            .executedPlan.executeCollect()
+      } finally {
+        df.sparkSession.asInstanceOf[SnappySession].
+            getContextObject[LogicalPlan](ColumnTableBulkOps.CACHED_PUTINTO_UPDATE_PLAN).
+            map { cachedPlan =>
+              df.sparkSession.
+                  sharedState.cacheManager.uncacheQuery(df.sparkSession, cachedPlan, true)
+            }
+      }
     }
 
     def deleteFrom(tableName: String): Unit = {

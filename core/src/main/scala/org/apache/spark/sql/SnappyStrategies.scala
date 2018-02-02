@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,28 +16,28 @@
  */
 package org.apache.spark.sql
 
+import scala.util.control.NonFatal
+
 import io.snappydata.Property
 
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Expression, NamedExpression, RowOrdering, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
-import org.apache.spark.sql.execution.columnar.{ColumnDeleteExec, ColumnUpdateExec}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
-import org.apache.spark.util.{Utils => SparkUtils}
 
 /**
  * This trait is an extension to SparkPlanner and introduces number of
@@ -73,7 +73,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  object LocalJoinStrategies extends Strategy {
+  object HashJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
@@ -279,7 +279,8 @@ private[sql] object JoinStrategy {
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <= Property.HashJoinSize.get(conf)
+    plan.statistics.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
+      Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue)
   }
 
   def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
@@ -325,8 +326,16 @@ private[sql] object JoinStrategy {
 class SnappyAggregationStrategy(planner: DefaultPlanner)
     extends Strategy {
 
-  private val maxAggregateInputSize =
-    SparkUtils.byteStringAsBytes(Property.HashAggregateSize.get(planner.conf))
+  private val maxAggregateInputSize = {
+    // if below throws exception then clear the property from conf
+    // else every query will fail in planning here (even reset using SQL will fail)
+    try {
+      ExternalStoreUtils.sizeAsBytes(Property.HashAggregateSize.get(planner.conf),
+        Property.HashAggregateSize.name, -1, Long.MaxValue)
+    } catch {
+      case NonFatal(e) => planner.conf.unsetConf(Property.HashAggregateSize.name); throw e
+    }
+  }
 
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
@@ -336,7 +345,7 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
   def applyAggregation(plan: LogicalPlan,
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
-    resultExpressions, child) if maxAggregateInputSize <= 0 ||
+    resultExpressions, child) if maxAggregateInputSize == 0 ||
         child.statistics.sizeInBytes <= maxAggregateInputSize =>
 
       val (functionsWithDistinct, functionsWithoutDistinct) =
@@ -446,7 +455,7 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
       CollectAggregateExec(basePlan = finalHashAggregate,
-        child = partialAggregate)
+        child = partialAggregate, output = finalHashAggregate.output)
     } else finalHashAggregate
     finalAggregate :: Nil
   }
@@ -660,40 +669,25 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
       }
 
     case t: TableExec =>
-      // For column update/delete add explicit per-partition sort on batchId
-      // if there was an exchange in the plan. This is because those plans
-      // will accumulate delta batches grouped by batchId else it will be
-      // too inefficient for bulk updates/deletes (e.g. for putInto).
-      // batchId attribute is always second last in the keyColumns
-      val sortAttribute = t match {
-        case u: ColumnUpdateExec => Some(u.keyColumns(u.keyColumns.length - 2))
-        case d: ColumnDeleteExec => Some(d.keyColumns(d.keyColumns.length - 2))
-        case _ => None
-      }
-      assert(sortAttribute.isEmpty ||
-          sortAttribute.get.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
-      var addSort = sortAttribute.isDefined
-      val plan = if (t.partitioned &&
-          t.child.outputPartitioning.numPartitions != t.numBuckets) {
+      val addShuffle = if (t.partitioned) {
         // force shuffle when inserting into a table with different partitions
+        t.child.outputPartitioning match {
+          case OrderlessHashPartitioningExtract(_, _, _, _, buckets) => buckets != t.numBuckets
+          case p => p.numPartitions != t.numBuckets
+        }
+      } else false
+      if (addShuffle) {
         t.withNewChildren(Seq(ShuffleExchange(HashPartitioning(
           t.requiredChildDistribution.head.asInstanceOf[ClusteredDistribution]
               .clustering, t.numBuckets), t.child)))
-      } else {
-        if (addSort) addSort = t.child.find(_.isInstanceOf[ShuffleExchange]).isDefined
-        t
-      }
-      if (addSort) {
-        plan.withNewChildren(Seq(SortExec(Seq(SortOrder(sortAttribute.get, Ascending)),
-          global = false, plan.children.head)))
-      } else plan
+      } else t
   }
 }
 
 /**
-  * Rule to collapse the partial and final aggregates if the grouping keys
-  * match or are superset of the child distribution.
-  */
+ * Rule to insert a helper plan to collect information for other entities
+ * like parameterized literals.
+ */
 case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     extends Rule[SparkPlan] {
   private def addFallback(plan: SparkPlan): SparkPlan = {

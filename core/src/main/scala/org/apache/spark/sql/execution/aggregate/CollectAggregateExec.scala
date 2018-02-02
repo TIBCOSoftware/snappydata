@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -33,11 +33,10 @@ import org.apache.spark.sql.internal.SnappySessionState
  */
 case class CollectAggregateExec(
     @transient basePlan: SnappyHashAggregateExec,
-    child: SparkPlan) extends UnaryExecNode {
+    child: SparkPlan,
+    override val output: Seq[Attribute]) extends UnaryExecNode {
 
   override def nodeName: String = "CollectAggregate"
-
-  override def output: Seq[Attribute] = basePlan.output
 
   override def requiredChildDistribution: List[Distribution] =
     UnspecifiedDistribution :: Nil

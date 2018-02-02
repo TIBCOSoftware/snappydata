@@ -16,7 +16,7 @@
  */
 
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -139,12 +139,14 @@ class SnappyCatalogSuite extends SnappyFunSuite
         }
     assume(tableMetadata.schema.nonEmpty, "bad test")
     // assume(tableMetadata.partitionColumnNames.nonEmpty, "bad test")
-    assume(tableMetadata.bucketSpec.nonEmpty, "bad test")
+    // assume(tableMetadata.bucketSpec.nonEmpty, "bad test")
     assert(columns.collect().map(_.name).toSet == tableMetadata.schema.map(_.name).toSet)
+    /*
     columns.collect().foreach { col =>
       assert(col.isPartition == tableMetadata.partitionColumnNames.contains(col.name))
       assert(col.isBucket == tableMetadata.bucketSpec.contains(col.name))
     }
+    */
   }
 
 

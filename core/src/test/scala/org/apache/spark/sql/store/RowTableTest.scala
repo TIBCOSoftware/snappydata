@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -264,7 +264,7 @@ class RowTableTest
     println("Successful")
   }
 
-  test("Test Creation using SQL with Primary Key and PUT INTO SLECT AS ") {
+  test("Test Creation using SQL with Primary Key and PUT INTO SELECT AS ") {
     snc.sql("CREATE TABLE tempTable  (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options)
 
@@ -562,21 +562,20 @@ class RowTableTest
   test("Test Null varchar value for row table inserts") {
     snc.sql(
       s"""CREATE TABLE NYCTAXI (MEDALLION VARCHAR(100) NOT NULL PRIMARY KEY,
-         			HACK_LICENSE VARCHAR(100),
-         			VENDOR_ID VARCHAR(100),
-         			RATE_CODE INTEGER,
-         			STORE_AND_FWD_FLAG VARCHAR(100),
-         			PICKUP_DATETIME VARCHAR(100),
-         			DROPOFF_DATETIME VARCHAR(100),
-         			PASSENGER_COUNT INTEGER,
-         			TRIP_TIME_IN_SECS INTEGER,
-         			TRIP_DISTANCE DOUBLE PRECISION,
-         			PICKUP_LONGITUDE DOUBLE PRECISION,
-         			PICKUP_LATITUDE DOUBLE PRECISION,
-         			DROPOFF_LONGITUDE DOUBLE PRECISION,
-         			DROPOFF_LATITUDE DOUBLE PRECISION
-         			)PARTITION BY COLUMN (MEDALLION)
-         			BUCKETS 5
+            HACK_LICENSE VARCHAR(100),
+            VENDOR_ID VARCHAR(100),
+            RATE_CODE INTEGER,
+            STORE_AND_FWD_FLAG VARCHAR(100),
+            PICKUP_DATETIME VARCHAR(100),
+            DROPOFF_DATETIME VARCHAR(100),
+            PASSENGER_COUNT INTEGER,
+            TRIP_TIME_IN_SECS INTEGER,
+            TRIP_DISTANCE DOUBLE PRECISION,
+            PICKUP_LONGITUDE DOUBLE PRECISION,
+            PICKUP_LATITUDE DOUBLE PRECISION,
+            DROPOFF_LONGITUDE DOUBLE PRECISION,
+            DROPOFF_LATITUDE DOUBLE PRECISION
+            ) USING ROW OPTIONS (PARTITION_BY 'MEDALLION', BUCKETS '8')
         """)
 
     val rdd = sc.parallelize(
@@ -618,9 +617,9 @@ class RowTableTest
     snc.sql("create table row_tab1(col1 Integer,col2 Integer)");
     snc.sql("insert into row_tab1 values(1,2)");
     snc.sql("create table row_tab2 (col1 Integer,col2 Integer) ");
-    snc.sql("create table col_tab1 (col1 Integer,col2 Integer) USING COLUMN options(buckets '5')");
+    snc.sql("create table col_tab1 (col1 Integer,col2 Integer) USING COLUMN options(buckets '8')");
     snc.sql("insert into col_tab1 values(1,2)");
-    snc.sql("create table col_tab2 (col1 Integer,col2 Integer) USING COLUMN options(buckets '5')");
+    snc.sql("create table col_tab2 (col1 Integer,col2 Integer) USING COLUMN options(buckets '8')");
 
     //inserting the data to row table from row table
     snc.sql("insert into row_tab2 select * from row_tab1")
@@ -687,7 +686,7 @@ class RowTableTest
     // Also test long varchar to see if its not breaking the previous implementation
     snc.sql("create table table1 (col1  long, col2 Long,col3 short,col4  TINYINT, col5 " +
       "BYTE, col6 SMALLINT)" +
-      " using row options( partition_by 'col1,col2', buckets '5')")
+      " using row options( partition_by 'col1,col2', buckets '8')")
     for(i <- 1 to 1000){
       snc.sql(s"insert into table1 values($i,${i+1},1,1,1,1)")
     }
@@ -695,5 +694,17 @@ class RowTableTest
     snc.sql("drop table table1")
     assert(cnt == 1000,s"Expceted count is 1000 but actual count is $cnt")
 
+  }
+
+  test("create table without explicit schema (SNAP-2047)") {
+    val hfile = getClass.getResource("/2015.parquet").getPath
+    val session = this.snc
+
+    session.createExternalTable("staging_airline", "parquet", Map("path" -> hfile))
+    session.sql("create table airline using row options(partition_by 'FlightNum') " +
+        "AS (SELECT * FROM staging_airline limit 100000)")
+    assert(session.table("airline").count() === 100000)
+
+    session.sql("drop table airline")
   }
 }

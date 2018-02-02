@@ -25,12 +25,13 @@ import java.util.{Timer, TimerTask}
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.{CancelException, DataSerializer}
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
+
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
-
 import scala.collection.JavaConverters._
+import scala.util.control.NonFatal
 
 object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
 
@@ -50,7 +51,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
       case None =>
     }
     val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "",
-      Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
+      Map("driver" -> Constant.JDBC_CLIENT_DRIVER))
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     getStatsStmt = conn.prepareCall("call sys.GET_SNAPPY_TABLE_STATS(?)")
     getStatsStmt.registerOutParameter(1, java.sql.Types.BLOB)
@@ -93,8 +94,20 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
     getStatsStmt.execute()
   }
 
+  private def closeConnection(): Unit = {
+    val c = this.conn
+    if (c ne null) {
+      try {
+        c.close()
+      } catch {
+        case NonFatal(_) => // ignore
+      }
+      conn = null
+    }
+  }
+
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats]) = {
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     try {
       executeStatsStmt(sc)
     } catch {
@@ -102,15 +115,20 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         logWarning("Warning: unable to retrieve table stats " +
             "from SnappyData cluster due to " + e.toString)
         logDebug("Exception stack trace: ", e)
-        conn = null
-        return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats])
+        closeConnection()
+        return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats],
+            Seq.empty[SnappyExternalTableStats])
     }
     val value = getStatsStmt.getBlob(1)
     val bdi: ByteArrayDataInput = new ByteArrayDataInput
     bdi.initialize(value.getBytes(1, value.length().asInstanceOf[Int]), null)
     val regionStats: java.util.List[SnappyRegionStats] =
     DataSerializer.readObject(bdi).asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
-    (regionStats.asScala, Seq.empty[SnappyIndexStats])
+    (regionStats.asScala, Seq.empty[SnappyIndexStats], Seq.empty[SnappyExternalTableStats])
   }
 
+  override def stop(): Unit = {
+    super.stop()
+    closeConnection()
+  }
 }

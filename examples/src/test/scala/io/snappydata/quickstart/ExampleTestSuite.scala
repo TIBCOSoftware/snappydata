@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,12 +19,12 @@ package io.snappydata.quickstart
 import io.snappydata.SnappyTestRunner
 
 /**
- * Extending SnappyTestRunner. This class tests the old quickstart as well as the examples enumerated in
- * Snappy examples folder
+ * Extending SnappyTestRunner. This class tests the old quickstart as well as
+ * the examples enumerated in Snappy examples folder
  */
 class ExampleTestSuite extends SnappyTestRunner {
 
-  def quickStartJar = s"$snappyHome/examples/jars/quickstart.jar"
+  def quickStartJar: String = s"$snappyHome/examples/jars/quickstart.jar"
 
   val localLead = "localhost:8090"
   val snappyExamples = "org.apache.spark.examples.snappydata"
@@ -57,13 +57,19 @@ class ExampleTestSuite extends SnappyTestRunner {
 
   }
 
-  test("Create Table in Python"){
+  test("Create Table in Python") {
     SparkSubmit("CreateTable", appClass = "", None,
       confs = Seq.empty[String],
       appJar = s"$snappyHome/quickstart/python/CreateTable.py")
   }
 
-  test("QuickStart.scala script"){
+  test("KMeans in Python") {
+    SparkSubmit("KMeansWeather", appClass = "", None,
+      confs = Seq.empty[String],
+      appJar = s"$snappyHome/quickstart/python/KMeansWeather.py")
+  }
+
+  test("QuickStart.scala script") {
     SparkShell(Seq.empty[String], "--driver-memory=4g --driver-java-options=" +
       "\"-XX:+UseConcMarkSweepGC\" \"-XX:+UseParNewGC\" \"-XX:+CMSClassUnloadingEnabled\"" +
       " \"-XX:MaxNewSize=1g\"",
@@ -84,8 +90,8 @@ class ExampleTestSuite extends SnappyTestRunner {
   }
 
   test("CreateColumnTable") {
-    Job(s"$snappyExamples.CreateColumnTable",
-      localLead, quickStartJar, Seq(s"data_resource_folder=$snappyHome/quickstart/src/main/resources"))
+    Job(s"$snappyExamples.CreateColumnTable", localLead, quickStartJar,
+      Seq(s"data_resource_folder=$snappyHome/quickstart/src/main/resources"))
   }
 
   test("CreatePartitionedRowTable") {
@@ -110,7 +116,8 @@ class ExampleTestSuite extends SnappyTestRunner {
   }
 
   test("WorkingWithJson With main") {
-    RunExample("WorkingWithJson_main", "snappydata.WorkingWithJson", Seq(s"$snappyHome/quickstart/src/main/resources"))
+    RunExample("WorkingWithJson_main", "snappydata.WorkingWithJson",
+      Seq(s"$snappyHome/quickstart/src/main/resources"))
   }
 
   test("SmartConnectorExample") {
@@ -120,7 +127,9 @@ class ExampleTestSuite extends SnappyTestRunner {
       s"insert into SNAPPY_COL_TABLE VALUES(2,2);",
       "exit;"))
 
-    RunExample("SmartConnectorExample", "snappydata.SmartConnectorExample")
+    RunExample("SmartConnectorExample",
+      "snappydata.SmartConnectorExample",
+      Seq("spark.snappydata.connection=localhost:1527"))
   }
 
   test("StreamingExample") {

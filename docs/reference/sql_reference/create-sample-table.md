@@ -7,7 +7,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
     USING column_sample
     OPTIONS (
     baseTable 'baseTableName',
-    BUCKETS  'num-partitions', // Default 113. Must be an integer.
+    BUCKETS  'num-partitions', // Default 128. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  ‘ASYNCHRONOUS | SYNCHRONOUS’,
@@ -26,7 +26,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
 CREATE SAMPLE TABLE table_name ON base_table_name
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
-    BUCKETS  'num-partitions', // Default 113. Must be an integer.
+    BUCKETS  'num-partitions', // Default 128. Must be an integer.
     REDUNDANCY        'num-redundant-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  ‘ASYNCHRONOUS | SYNCHRONOUS’,
@@ -83,4 +83,4 @@ snappy>CREATE SAMPLE TABLE CUSTOMER_SAMPLE on CUSTOMER_BASE
 ```    
 
 !!! Note
-	Refer to [create sample tables in SDE section](/../../aqp.md#create-sample-tables) for more information on creating sample tables on datasets that can be sourced from any source supported in Spark/SnappyData.
+	Refer to [create sample tables in SDE section](/../../sde/working_with_stratified_samples.md#create-sample-tables) for more information on creating sample tables on datasets that can be sourced from any source supported in Spark/SnappyData.

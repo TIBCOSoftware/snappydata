@@ -45,7 +45,7 @@ Create columnar tables using API. Other than `create` and `drop` table, rest are
 
 ##### Scala
 ```scala
-  val props1 = Map("BUCKETS" -> "2")  // Number of partitions to use in the SnappyStore
+  val props1 = Map("BUCKETS" -> "8")  // Number of partitions to use in the SnappyStore
   case class Data(COL1: Int, COL2: Int, COL3: Int)
   val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
   val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
@@ -72,7 +72,7 @@ Create columnar tables using API. Other than `create` and `drop` table, rest are
 ```java
 
     Map<String, String> props1 = new HashMap<>();
-    props1.put("buckets", "11");
+    props1.put("buckets", "16");
 
     JavaRDD<Row> jrdd = jsc.parallelize(Arrays.asList(
         RowFactory.create(1,2,3),
@@ -123,7 +123,7 @@ dataDF = snc.createDataFrame(rdd, schema)
 snc.dropTable("COLUMN_TABLE", True)
 #"column" is the table format (that is row or column)
 #dataDF.schema provides the schema for table
-snc.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="11")
+snc.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="16")
 
 #append dataDF into the table
 dataDF.write.insertInto("COLUMN_TABLE")
@@ -314,7 +314,7 @@ Following command submits [CreateAndLoadAirlineDataJob](https://github.com/Snapp
 
 ```
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
@@ -340,7 +340,7 @@ The status returned by the utility is shown below:
 This job ID can be used to query the status of the running job. 
 ```
 $ bin/snappy-job.sh status  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 
 {
@@ -356,7 +356,7 @@ $ bin/snappy-job.sh status  \
 Once the tables are created, they can be queried by firing another job. Please refer to [AirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) from [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for the implementation of the job. 
 ```
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
@@ -380,7 +380,7 @@ For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata
 
 ```
 $ bin/snappy-job.sh submit  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
@@ -399,13 +399,13 @@ User needs to stop the currently running streaming job followed by its streaming
 
 ```
 $ bin/snappy-job.sh stop  \
-    --lead hostNameOfLead:8090  \
+    --lead localhost:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
 
 $ bin/snappy-job.sh listcontexts  \
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 ["snappyContext1452598154529305363", "snappyStreamingContext1463987084945028747", "snappyStreamingContext"]
 
 $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
-    --lead hostNameOfLead:8090
+    --lead localhost:8090
 ```

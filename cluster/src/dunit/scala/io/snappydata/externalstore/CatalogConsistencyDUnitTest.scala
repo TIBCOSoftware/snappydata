@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -212,26 +212,26 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
 
     snc.sql(s"create table $baseRowTable(SINGLE_ORDER_DID BIGINT ,SYS_ORDER_ID VARCHAR(64) , " +
-        "SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128)) USING row OPTIONS(BUCKETS '13', " +
+        "SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128)) USING row OPTIONS(BUCKETS '16', " +
         "REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS',PARTITION_BY  " +
         "'SINGLE_ORDER_DID')");
 
 
     snc.sql(s"create table $colloactedRowTable(EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID " +
         "VARCHAR (64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) USING row OPTIONS" +
-        s"(COLOCATE_WITH '$baseRowTable', BUCKETS '13', REDUNDANCY '1', EVICTION_BY  " +
+        s"(COLOCATE_WITH '$baseRowTable', BUCKETS '16', REDUNDANCY '1', EVICTION_BY  " +
         "'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS',PARTITION_BY 'EXEC_DID')");
 
 
 
     snc.sql(s"create table $baseColumnTable(SINGLE_ORDER_DID BIGINT ,SYS_ORDER_ID VARCHAR(64) ," +
         s"SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128)) USING column OPTIONS(BUCKETS " +
-        s"'13', REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS'," +
+        s"'16', REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS'," +
         s"PARTITION_BY  'SINGLE_ORDER_DID')");
 
     snc.sql(s"create table $colloactedColumnTable(EXEC_DID BIGINT,SYS_EXEC_VER INTEGER," +
         s"SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) USING column " +
-        s"OPTIONS (COLOCATE_WITH '$baseColumnTable', BUCKETS '13', REDUNDANCY '1', EVICTION_BY " +
+        s"OPTIONS (COLOCATE_WITH '$baseColumnTable', BUCKETS '16', REDUNDANCY '1', EVICTION_BY " +
         s"'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS',PARTITION_BY 'EXEC_DID')");
 
     try {

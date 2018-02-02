@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -38,12 +38,11 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
 
   val options = Map("PARTITION_BY" -> "col1",
     "EVICTION_BY" -> "LRUHEAPPERCENT",
-    "OVERFLOW" -> "true", "PERSISTENCE" -> "none")
+    "PERSISTENCE" -> "none")
   val coptions = Map("PARTITION_BY" -> "col1",
-    "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT",
-    "OVERFLOW" -> "true")
-  val cwoptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-  val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
+    "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT")
+  val cwoptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT")
+  val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT")
 
   val memoryMode = MemoryMode.ON_HEAP
 
@@ -118,10 +117,12 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
           snSession.insert("t1", row)
           rows += 1
         }
+        fail("Should not have reached here due to LowMemory")
       }
     } catch {
       case e: Exception => {
         assert(memoryIncreaseDuetoEviction > 0)
+        assert(snappyMemoryManager.wrapperStats.getNumFailedEvictionRequest(false) > 1)
       }
     }
     snappyMemoryManager.dropAllObjects(memoryMode)

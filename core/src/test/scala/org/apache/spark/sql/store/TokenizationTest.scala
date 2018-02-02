@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,9 +18,8 @@ package org.apache.spark.sql.store
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.app.Data1
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import io.snappydata.core.{Data, TestData2}
+import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -42,17 +41,21 @@ class TokenizationTest
   val all_typetable = "my_table3"
 
   override def beforeAll(): Unit = {
-    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
     super.beforeAll()
   }
 
   override def afterAll(): Unit = {
-    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
     super.afterAll()
+  }
+
+  before {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
   }
 
   after {
@@ -62,6 +65,66 @@ class TokenizationTest
     snc.dropTable(s"$table2", ifExists = true)
     snc.dropTable(s"$all_typetable", ifExists = true)
     snc.dropTable(s"$colTableName", ifExists = true)
+  }
+
+  test("SNAP-2031 tpcds") {
+    val sqlstr = s"WITH ss AS (SELECT s_store_sk, sum(ss_ext_sales_price) AS sales, " +
+        s"sum(ss_net_profit) AS profit FROM store_sales, date_dim, store WHERE ss_sold_date_sk" +
+        s" = d_date_sk AND d_date BETWEEN cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE)" +
+        s" + INTERVAL 30 days) AND ss_store_sk = s_store_sk GROUP BY s_store_sk), sr AS" +
+        s" (SELECT s_store_sk, sum(sr_return_amt) AS returns, sum(sr_net_loss) AS profit_loss" +
+        s" FROM store_returns, date_dim, store WHERE sr_returned_date_sk = d_date_sk AND d_date" +
+        s" BETWEEN cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE) + INTERVAL 30 days)" +
+        s" AND sr_store_sk = s_store_sk GROUP BY s_store_sk), cs AS (SELECT cs_call_center_sk," +
+        s" sum(cs_ext_sales_price) AS sales, sum(cs_net_profit) AS profit FROM catalog_sales," +
+        s" date_dim WHERE cs_sold_date_sk = d_date_sk AND d_date BETWEEN cast('2000-08-03' AS DATE)" +
+        s" AND (cast('2000-08-03' AS DATE) + INTERVAL 30 days) GROUP BY cs_call_center_sk)," +
+        s" cr AS (SELECT sum(cr_return_amount) AS returns, sum(cr_net_loss) AS profit_loss FROM" +
+        s" catalog_returns, date_dim WHERE cr_returned_date_sk = d_date_sk AND d_date BETWEEN" +
+        s" cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE) + INTERVAL 30 days))," +
+        s" ws AS (SELECT wp_web_page_sk, sum(ws_ext_sales_price) AS sales, sum(ws_net_profit)" +
+        s" AS profit FROM web_sales, date_dim, web_page WHERE ws_sold_date_sk = d_date_sk AND" +
+        s" d_date BETWEEN cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE)" +
+        s" + INTERVAL 30 days) AND ws_web_page_sk = wp_web_page_sk GROUP BY wp_web_page_sk)," +
+        s" wr AS (SELECT wp_web_page_sk, sum(wr_return_amt) AS returns, sum(wr_net_loss) " +
+        s"AS profit_loss FROM web_returns, date_dim, web_page WHERE wr_returned_date_sk = d_date_sk" +
+        s" AND d_date BETWEEN cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE) + INTERVAL 30 days)" +
+        s" AND wr_web_page_sk = wp_web_page_sk GROUP BY wp_web_page_sk) SELECT channel, id, sum(sales)" +
+        s" AS sales, sum(returns) AS returns, sum(profit) AS profit FROM (SELECT  'store channel' AS channel," +
+        s"  ss.s_store_sk AS id,  sales,  coalesce(returns, 0) AS returns,  (profit - coalesce(profit_loss, 0))" +
+        s" AS profit  FROM ss  LEFT JOIN sr  ON ss.s_store_sk = sr.s_store_sk  UNION ALL " +
+        s" SELECT  'catalog channel' AS channel,  cs_call_center_sk AS id,  sales,  returns," +
+        s"  (profit - profit_loss) AS profit  FROM cs, cr  UNION ALL  SELECT  'web channel' AS channel," +
+        s"  ws.wp_web_page_sk AS id,  sales,  coalesce(returns, 0) returns,  (profit - coalesce(profit_loss, 0))" +
+        s" AS profit  FROM ws  LEFT JOIN wr  ON ws.wp_web_page_sk = wr.wp_web_page_sk ) x GROUP BY ROLLUP (channel, id)" +
+        s" ORDER BY channel, id LIMIT 100"
+    try {
+      snc.sql(sqlstr)
+      fail(s"this should have given TableNotFoundException")
+    } catch {
+      case tnfe: TableNotFoundException =>
+      case t: Throwable => fail(s"unexpected exception $t")
+    }
+  }
+
+  test("partition by interval - tpcds query") {
+    val sqlstr = s"SELECT i_item_desc, i_category, " +
+        s"i_class, i_current_price, sum(ws_ext_sales_price) " +
+        s"AS itemrevenue, sum(ws_ext_sales_price) * 100 / sum(sum(ws_ext_sales_price))" +
+        s" OVER (PARTITION BY i_class) AS revenueratio FROM " +
+        s"web_sales, item, date_dim WHERE ws_item_sk = i_item_sk AND i_category " +
+        s"IN ('Sports', 'Books', 'Home')" +
+        s" AND ws_sold_date_sk = d_date_sk AND d_date BETWEEN cast('1999-02-22' AS DATE) " +
+        s"AND (cast('1999-02-22' AS DATE) + INTERVAL 30 days) GROUP BY i_item_id, " +
+        s"i_item_desc, i_category, i_class, i_current_price ORDER BY i_category, " +
+        s"i_class, i_item_id, i_item_desc, revenueratio LIMIT 100"
+    try {
+      snc.sql(sqlstr)
+      fail(s"this should have given TableNotFoundException")
+    } catch {
+      case tnfe: TableNotFoundException =>
+      case t: Throwable => fail(s"unexpected exception $t")
+    }
   }
 
   test("sql range operator") {
@@ -79,7 +142,6 @@ class TokenizationTest
   }
 
   test("like queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 100
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -91,11 +153,9 @@ class TokenizationTest
       var result2 = snc.sql(q2).collect()
       assert(!(result.sameElements(result2)) && result.length > 0)
     }
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   test("same session from different thread") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 2
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -125,7 +185,6 @@ class TokenizationTest
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
     }
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   def getAllValidKeys(): Int = {
@@ -148,7 +207,6 @@ class TokenizationTest
   }
 
   test("Test some more foldable expressions and limit in where clause") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
     val cacheMap = SnappySession.getPlanCache.asMap()
@@ -161,8 +219,8 @@ class TokenizationTest
     createSimpleTableWithAStringColumnAndPoupulateData(100, "tab_str", true)
     res = snc.sql(s"select * from tab_str where b = 'aa12bb' and b like 'aa1%'").collect()
     assert(res.length == 1)
-    // This should not be tokenized and so cachemap size should be 0
-    assert( cacheMap.size() == 0)
+    // this is converted to Literal by parser so plan is cached
+    assert(cacheMap.size() == 1)
 
     // An n-tile query ... but this is not affecting Tokenization as ntile is
     // not in where clause but in from clause only.
@@ -199,11 +257,115 @@ class TokenizationTest
     snc.sql("SELECT json_tuple('{\"f1\": \"value11\", \"f2\": \"value22\"}','f1')"
     ).collect().foreach(println)
 
-    assert( cacheMap.size() == 2)
+    assert(cacheMap.size() == 0) // no caching since JsonTuple is not code-generated
+  }
+
+  test("Test external tables no plan caching") {
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    val airline = snc.read.parquet(hfile)
+    snc.sql(s"CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet options(path '$hfile')")
+    snc.sql(s"select count(*) from STAGING_AIRLINE").collect()
+    assert( cacheMap.size() == 0)
+    snc.sql(s"select * from STAGING_AIRLINE where MonthI = 2").collect()
+    assert( cacheMap.size() == 0)
+    snc.sql(s"drop table STAGING_AIRLINE")
+  }
+
+  test("Test no tokenize if plan caching disabled in session") {
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    try {
+      val q = (0 until numRows) map { x =>
+        s"select * from $table where a = $x"
+      }
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = snc.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      val newSession = new SnappySession(snc.sparkSession.sparkContext)
+
+      val cacheMap = SnappySession.getPlanCache.asMap()
+      assert(cacheMap.size() == 1)
+
+      newSession.sql(s"set snappydata.sql.planCaching=false").collect()
+      assert(cacheMap.size() == 1)
+
+      var query = s"select * from $table where a = 0"
+      newSession.sql(query).collect()
+      assert(cacheMap.size() == 2)
+
+      query = s"select * from $table where a = 1"
+      newSession.sql(query).collect()
+      assert(cacheMap.size() == 3)
+
+      query = s"select * from $table where b = 1"
+      var res2 = newSession.sql(query).collect()
+      assert(cacheMap.size() == 4)
+
+      newSession.sql(s"set snappydata.sql.planCachingAll=false").collect()
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+      assert(cacheMap.size() == 10)
+
+      cacheMap.clear()
+
+      val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
+      newSession2.sql(s"set snappydata.sql.planCachingAll=true").collect()
+
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession2.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      assert(cacheMap.size() == 1)
+      newSession.clear()
+      newSession2.clear()
+      cacheMap.clear()
+
+      val newSession3 = new SnappySession(snc.sparkSession.sparkContext)
+      newSession3.sql(s"set snappydata.sql.tokenize=false").collect()
+
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession3.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      assert(cacheMap.size() == 10)
+
+      newSession3.clear()
+      cacheMap.clear()
+
+    } finally {
+      snc.sql("set spark.sql.caseSensitive = false")
+      snc.sql("set schema = APP")
+      snc.sql(s"set snappydata.sql.tokenize=true").collect()
+    }
   }
 
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -246,6 +408,19 @@ class TokenizationTest
       var res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 4)
 
+      // test fetch first syntax also
+      // Cache map size doesn't change because fetch first converts into limit
+      // itself and the exact same thing is fired above
+      query = s"select * from $table where a = 0 fetch first 1 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 4)
+
+      // Cache map size doesn't change because fetch first converts into limit
+      // itself and the exact same thing is fired above
+      query = s"select * from $table where a = 0 fetch first 10 rows only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 4)
+
       // test constants in projection
       query = s"select a, 'x' from $table where a = 0"
       res1 = snc.sql(query).collect()
@@ -253,19 +428,39 @@ class TokenizationTest
 
       query = s"select a, 'y' from $table where a = 0"
       res2 = snc.sql(query).collect()
-      assert( cacheMap.size() == 6)
+      assert( cacheMap.size() == 5)
 
       // check in based queries
       query = s"select * from $table where a in (0, 1)"
       res1 = snc.sql(query).collect()
-      assert( cacheMap.size() == 7)
+      assert( cacheMap.size() == 6)
 
-      assert( getAllValidKeys() == 7)
+      assert( getAllValidKeys() == 6)
       // new plan should not be generated so size should be same
       query = s"select * from $table where a in (5, 7)"
       res2 = snc.sql(query).collect()
-      assert( cacheMap.size() == 7)
+      assert( cacheMap.size() == 6)
       assert(!(res1.sameElements(res2)))
+
+      // test fetch first syntax also
+      // Cache map size changes because limit '3' is different
+      query = s"select * from $table where a = 0 fetch first 3 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 7)
+
+      // Cache map size changes because limit '4' is different
+      query = s"select * from $table where a = 0 fetch first 4 rows only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 8)
+
+      // fetch first with actual result validation
+      query = s"select a from $table order by a desc fetch first 1 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 9)
+      assert (res1.size == 1)
+      res1 foreach { r =>
+        assert (r.get(0) == 10)
+      }
 
       // let us clear the plan cache
       snc.clear()
@@ -291,11 +486,12 @@ class TokenizationTest
 
       query = s"select * from $table t1, $table2 t2 where t1.a = t2.a"
       snc.sql(query).collect()
-      assert( cacheMap.size() == 3)
+      // broadcast join not cached
+      assert( cacheMap.size() == 2)
 
       query = s"select * from $table t1, $table2 t2 where t1.a = t2.b"
       snc.sql(query).collect()
-      assert( cacheMap.size() == 4)
+      assert( cacheMap.size() == 2)
 
       // let us clear the plan cache
       snc.clear()
@@ -319,7 +515,6 @@ class TokenizationTest
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
     logInfo("Successful")
   }
@@ -329,7 +524,6 @@ class TokenizationTest
     createAllTypeTableAndPoupulateData(numRows, s"$all_typetable")
 
     try {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = true
       val q = (0 until numRows).zipWithIndex.map { case (_, i) =>
         s"select * from $all_typetable where s = 'abc$i'"
       }
@@ -354,14 +548,12 @@ class TokenizationTest
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
 
     logInfo("Successful")
   }
 
   test("Test tokenize for sub-queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     snc.sql(s"set spark.sql.crossJoin.enabled=true")
     val numRows = 10
@@ -400,11 +592,9 @@ class TokenizationTest
     assert( cacheMap.size() == 1)
 
     logInfo("Successful")
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   test("Test tokenize for joins and sub-queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
@@ -425,7 +615,6 @@ class TokenizationTest
       println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
     })
     assert( cacheMap.size() == 1)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
     assert(!result1.sameElements(result2))
     assert(result1.length > 0)
     assert(result2.length > 0)
@@ -437,7 +626,7 @@ class TokenizationTest
     val snap = snc
     val row = identity[(java.lang.Integer, java.lang.Double)](_)
 
-    import  snap.implicits._
+    import snap.implicits._
     lazy val l = Seq(
       row(1, 2.0),
       row(1, 2.0),
@@ -467,14 +656,6 @@ class TokenizationTest
       " from r, l where l.a = r.c").collect.foreach(r => assert(r.get(0) == 6))
     assert(snc.sql("select l.a from l where (select case when count(*) = 1" +
       " then null else count(*) end as cnt from r where l.a = r.c) = 0").count == 4)
-  }
-
-  test("Test tokenize for nulls") {
-    logInfo("Successful")
-  }
-
-  test("Test tokenize for cast queries") {
-    logInfo("Successful")
   }
 
   private def createSimpleTableWithAStringColumnAndPoupulateData(numRows: Int, name: String,
@@ -546,7 +727,6 @@ class TokenizationTest
   val colTableName = "airlineColTable"
 
   test("Test broadcast hash joins and scalar sub-queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     try {
       val ddlStr = "(YearI INT," + // NOT NULL
           "MonthI INT," + // NOT NULL
@@ -624,14 +804,94 @@ class TokenizationTest
       val rows11 = rs11.collect()
       assert(!rows11.sameElements(rows1))
       assert(cacheMap.size() == 1)
+
+    // Test broadcast hash joins and scalar sub-queries - 2
+
+    var df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
+        s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
+        s" where (taxiin > 10 or taxiout > 10) and dest in  (select dest from $colTableName " +
+        s" where distance = 100 group by dest having count ( * ) > 100) group by dest order " +
+        s" by avgTaxiTime desc")
+    // df.explain(true)
+    val res1 = df.collect()
+    val r1 = normalizeRow(res1)
+    df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
+        s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
+        s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
+        s" where distance = 658 group by dest having count ( * ) > 100) group by dest order " +
+        s" by avgTaxiTime desc")
+    var res2 = df.collect()
+    val r2 = normalizeRow(res2)
+    assert(!r1.sameElements(r2))
+    // assert( SnappySession.getPlanCache.asMap().size() == 1)
+
+    // also check partial delete followed by a full delete
+    val count = snc.table(colTableName).count()
+
+    // null, non-null combinations of updates
+
+    // implicit int to string cast will cause it to be null (SNAP-2039)
+    res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+    val numUpdated0 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated0 > 0)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 350 and dest is not null").collect().length === 0)
+
+    // check null updates
+    res2 = snc.sql(s"update $colTableName set DEST = null where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+    val numUpdated1 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated1 > 0)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 350 and dest is not null").collect().length === 0)
+
+    // check normal non-null updates
+    res2 = snc.sql(s"update $colTableName set DEST = 'DEST__UPDATED' where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+    val numUpdated2 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated1 === numUpdated2)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 350 and dest not like '%__UPDATED'").collect().length === 0)
+
+    // new overlapping null updates
+    res2 = snc.sql(s"update $colTableName set DEST = null where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 250").collect()
+    val numUpdated3 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated3 > numUpdated1)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 250 and dest is not null").collect().length === 0)
+
+    // new overlapping non-null updates
+    res2 = snc.sql(s"update $colTableName set DEST = concat(DEST, '__UPDATED') where " +
+        "depdelay = 0 and arrdelay > 0 and airtime > 100").collect()
+    val numUpdated4 = res2.foldLeft(0L)(_ + _.getLong(0))
+    assert(numUpdated4 > numUpdated3)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        s"and airtime > 250 and dest is not null").collect().length === 0)
+    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
+        "and airtime > 100 and airtime <= 250 and dest not like '%__UPDATED'")
+        .collect().length === 0)
+
+    val del1 = snc.sql(s"delete from $colTableName where depdelay = 0 and arrdelay > 0")
+    val delCount1 = del1.collect().foldLeft(0L)(_ + _.getLong(0))
+    assert(delCount1 > 0)
+    val del2 = snc.sql(s"delete from $colTableName")
+    val delCount2 = del2.collect().foldLeft(0L)(_ + _.getLong(0))
+    assert(delCount2 > 0)
+    assert(delCount1 + delCount2 === count)
+    assert(snc.table(colTableName).count() === 0)
+    assert(snc.table(colTableName).collect().length === 0)
+    assert(snc.sql(s"select * from $colTableName").collect().length === 0)
+
+    snc.dropTable(colTableName)
+
     }
     finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
   }
 
   test("Test BUG SNAP-1642") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val maxquery = s"select * from $table where a = (select max(a) from $table)"
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
@@ -650,75 +910,6 @@ class TokenizationTest
 
     var uncachedResult = snc.sqlUncached(maxquery).collect()
     assert(rows2.sameElements(uncachedResult))
-  }
-
-  test("Test broadcast hash joins and scalar sub-queries - 2") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
-    // val th = 10L * 1024 * 1024 * 1024
-    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=-1")
-    val ddlStr = "(YearI INT," + // NOT NULL
-        "MonthI INT," + // NOT NULL
-        "DayOfMonth INT," + // NOT NULL
-        "DayOfWeek INT," + // NOT NULL
-        "DepTime INT," +
-        "CRSDepTime INT," +
-        "ArrTime INT," +
-        "CRSArrTime INT," +
-        "UniqueCarrier VARCHAR(20)," + // NOT NULL
-        "FlightNum INT," +
-        "TailNum VARCHAR(20)," +
-        "ActualElapsedTime INT," +
-        "CRSElapsedTime INT," +
-        "AirTime INT," +
-        "ArrDelay INT," +
-        "DepDelay INT," +
-        "Origin VARCHAR(20)," +
-        "Dest VARCHAR(20)," +
-        "Distance INT," +
-        "TaxiIn INT," +
-        "TaxiOut INT," +
-        "Cancelled INT," +
-        "CancellationCode VARCHAR(20)," +
-        "Diverted INT," +
-        "CarrierDelay INT," +
-        "WeatherDelay INT," +
-        "NASDelay INT," +
-        "SecurityDelay INT," +
-        "LateAircraftDelay INT," +
-        "ArrDelaySlot INT)"
-
-    val hfile: String = getClass.getResource("/2015.parquet").getPath
-    val snContext = snc
-    snContext.sql("set spark.sql.shuffle.partitions=6")
-
-    val airlineDF = snContext.read.load(hfile)
-    val airlineparquetTable = "airlineparquetTable"
-    airlineDF.registerTempTable(airlineparquetTable)
-
-    snc.sql(s"CREATE TABLE $colTableName $ddlStr" +
-        "USING column options()")
-
-    airlineDF.write.insertInto(colTableName)
-
-    var df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
-        s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
-        s" where (taxiin > 10 or taxiout > 10) and dest in  (select dest from $colTableName " +
-        s" where distance = 100 group by dest having count ( * ) > 100) group by dest order " +
-        s" by avgTaxiTime desc")
-    // df.explain(true)
-    val res1 = df.collect()
-    val r1 = normalizeRow(res1)
-    df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
-        s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
-        s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
-        s" where distance = 658 group by dest having count ( * ) > 100) group by dest order " +
-        s" by avgTaxiTime desc")
-    val res2 = df.collect()
-    val r2 = normalizeRow(res2)
-    assert(!r1.sameElements(r2))
-    // assert( SnappySession.getPlanCache.asMap().size() == 1)
-
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   test("Test CachedDataFrame.head ") {

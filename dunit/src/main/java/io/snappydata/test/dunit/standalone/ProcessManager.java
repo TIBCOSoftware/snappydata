@@ -18,7 +18,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -182,12 +182,14 @@ public class ProcessManager {
       "-D" + DUnitLauncher.VM_NUM_PARAM + "=" + vmNum,
       "-D" + DUnitLauncher.WORKSPACE_DIR_PARAM + "=" + new File(".").getAbsolutePath(),
       "-DlogLevel=" + DUnitLauncher.LOG_LEVEL,
+      "-Dgemfire.log-level=" + DUnitLauncher.LOG_LEVEL,
       "-DsecurityLogLevel=" + DUnitLauncher.SECURITY_LOG_LEVEL,
+      "-Dgemfire.security-log-level=" + DUnitLauncher.SECURITY_LOG_LEVEL,
       "-Djava.library.path=" + System.getProperty("java.library.path"),
-      "-Xrunjdwp:transport=dt_socket,server=y,suspend=n",
+      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n",
       "-XX:+HeapDumpOnOutOfMemoryError",
-      "-Xmx1536m",
-      "-Xms1536m",
+      "-Xmx1g",
+      "-Xms1g",
       "-XX:+UseParNewGC",
       "-XX:+UseConcMarkSweepGC",
       "-XX:CMSInitiatingOccupancyFraction=50",
@@ -200,7 +202,7 @@ public class ProcessManager {
       "-Dsun.rmi.transport.tcp.handshakeTimeout=3600000",
       "-ea",
       agent,
-      "io.snappydata.test.dunit.standalone.ChildVM"
+      ChildVM.class.getName()
     };
   }
 

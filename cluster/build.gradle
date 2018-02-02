@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -28,7 +28,6 @@ sourceSets.test.java.srcDirs = [ ]
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
-  compile 'org.scala-lang:scala-compiler:' + scalaVersion
 
   compile 'org.slf4j:slf4j-api:' + slf4jVersion
   compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
@@ -85,7 +84,7 @@ dependencies {
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
-    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+    testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
   } else {
     testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
   }
@@ -93,6 +92,26 @@ dependencies {
     compile project(':spark-jobserver_' + scalaBinaryVersion)
   } else {
     compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: sparkJobServerVersion
+  }
+  // support AWS URLs
+  compile(group: 'org.apache.hadoop', name: 'hadoop-aws', version: hadoopVersion) {
+    exclude(group: 'asm', module: 'asm')
+    exclude(group: 'org.codehaus.jackson', module: 'jackson-mapper-asl')
+    exclude(group: 'org.ow2.asm', module: 'asm')
+    exclude(group: 'org.apache.zookeeper', module: 'zookeeper')
+    exclude(group: 'org.jboss.netty', module: 'netty')
+    exclude(group: 'jline', module: 'jline')
+    exclude(group: 'commons-logging', module: 'commons-logging')
+    exclude(group: 'org.mockito', module: 'mockito-all')
+    exclude(group: 'org.mortbay.jetty', module: 'servlet-api-2.5')
+    exclude(group: 'javax.servlet', module: 'servlet-api')
+    exclude(group: 'junit', module: 'junit')
+    exclude(group: 'com.google.guava', module: 'guava')
+    exclude(group: 'com.sun.jersey')
+    exclude(group: 'com.sun.jersey.jersey-test-framework')
+    exclude(group: 'com.sun.jersey.contribs')
+    exclude(group: 'com.google.protobuf', module: 'protobuf-java')
+    exclude(group: 'com.jcraft', module: 'jsch')
   }
 
   testCompile project(':dunit')
@@ -107,6 +126,7 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
+  testCompile 'it.unimi.dsi:fastutil:8.1.1'
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
@@ -126,7 +146,7 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
     def props = [
       'Product-Name'      : productName,
       'Product-Version'   : version,
-      'Build-Id'          : System.env.USER + ' ' + buildNumber,
+      'Build-Id'          : buildIdPrefix + buildNumber,
       'Build-Date'        : buildDate,
       'Build-Platform'    : osName.getName() + osVersion + osArch,
       'Build-Java-Version': jdkVersion,
@@ -176,5 +196,9 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
+check.dependsOn test, scalaTest, dunitTest
+if (rootProject.hasProperty('snappydata.enterprise')) {
+    check.dependsOn dunitSecurityTest
+}
+
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion

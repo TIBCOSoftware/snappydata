@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,14 +18,13 @@ package io.snappydata.gemxd
 
 import java.io.{CharArrayWriter, DataOutput}
 
-import com.pivotal.gemfirexd.Attribute
-
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
-import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -45,7 +44,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -75,7 +74,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setSchema(schema)
 
-  session.setPreparedQuery(false, pvs)
+  session.setPreparedQuery(preparePhase = false, pvs)
 
   private[this] val df = session.sql(sql)
 
@@ -91,14 +90,14 @@ class SparkSQLExecuteImpl(val sql: String,
   // check for query hint to serialize complex types as JSON strings
   private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
-    case Some(v) => Misc.parseBoolean(v)
-    case None => false
+    case null => true
+    case v => Misc.parseBoolean(v)
   }
 
   private val (allAsClob, columnsAsClob) = session.getPreviousQueryHints.get(
     QueryHint.ColumnsAsClob.toString) match {
-    case Some(v) => Utils.parseColumnsAsClob(v)
-    case None => (false, Set.empty[String])
+    case null => (false, Set.empty[String])
+    case v => Utils.parseColumnsAsClob(v)
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,
@@ -238,8 +237,9 @@ class SparkSQLExecuteImpl(val sql: String,
           try {
             StructTypeSerializer.writeType(pooled.kryo, output,
               querySchema(i).dataType)
-            hdos.write(output.getBuffer, 0, output.position())
+            hdos.write(output.toBytes)
           } finally {
+            output.release()
             KryoSerializerPool.release(pooled)
           }
         case _ => // ignore for others
@@ -349,17 +349,20 @@ object SparkSQLExecuteImpl {
   def getRowIterator(dvds: Array[DataValueDescriptor], types: Array[Int],
       precisions: Array[Int], scales: Array[Int], dataTypes: Array[AnyRef],
       input: ByteArrayDataInput): java.util.Iterator[ValueRow] = {
-    // initialize JSON generator if required
-    var continue = true
-    var writer: CharArrayWriter = null
-    var gen: JsonGenerator = null
-    for (d <- dataTypes if continue) {
+    // initialize JSON generators if required
+    var writers: ArrayBuffer[CharArrayWriter] = null
+    var generators: ArrayBuffer[AnyRef] = null
+    for (d <- dataTypes) {
       if (d ne null) {
-        writer = new CharArrayWriter()
-        // create the Generator without separator inserted between 2 records
-        gen = new JsonFactory().createGenerator(writer)
-            .setRootValueSeparator(null)
-        continue = false
+        if (writers eq null) {
+          writers = new ArrayBuffer[CharArrayWriter](2)
+          generators = new ArrayBuffer[AnyRef](2)
+        }
+        val size = writers.length
+        val writer = new CharArrayWriter()
+        writers += writer
+        generators += Utils.getJsonGenerator(d.asInstanceOf[DataType],
+          s"COL_$size", writer)
       }
     }
     val execRow = new ValueRow(dvds)
@@ -368,6 +371,7 @@ object SparkSQLExecuteImpl {
       input.array(), input.position(), input.available())
     unsafeRows.map { row =>
       var index = 0
+      var writeIndex = 0
       while (index < numFields) {
         val dvd = dvds(index)
         if (row.isNullAt(index)) {
@@ -425,12 +429,14 @@ object SparkSQLExecuteImpl {
               dvd.setValue(row.getDouble(index))
             case StoredFormatIds.REF_TYPE_ID =>
               // convert to Json using JacksonGenerator
-              val dataType = dataTypes(index).asInstanceOf[DataType]
-              Utils.generateJson(dataType, gen, row)
-              gen.flush()
+              val writer = writers(writeIndex)
+              val generator = generators(writeIndex)
+              Utils.generateJson(generator, row, index,
+                dataTypes(index).asInstanceOf[DataType])
               val json = writer.toString
               writer.reset()
               dvd.setValue(json)
+              writeIndex += 1
             case StoredFormatIds.SQL_BLOB_ID =>
               // all complex types too work with below because all of
               // Array, Map, Struct (as well as Binary itself) transport
@@ -442,7 +448,9 @@ object SparkSQLExecuteImpl {
           index += 1
         }
       }
-      if ((gen ne null) && !unsafeRows.hasNext) gen.close()
+      if ((generators ne null) && !unsafeRows.hasNext) {
+        generators.foreach(Utils.closeJsonGenerator)
+      }
 
       execRow
     }.asJava
@@ -459,7 +467,7 @@ object SnappySessionPerConnection {
     val session = connectionIdMap.get(connectionID)
     if (session != null) session
     else {
-      val session = SnappyContext(null: SparkContext).snappySession
+      val session = SnappyContext().snappySession
       val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
       if (oldSession == null) session else oldSession
     }

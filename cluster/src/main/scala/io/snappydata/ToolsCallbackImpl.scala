@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,39 +18,30 @@ package io.snappydata
 
 import java.io.File
 
-import io.snappydata.impl.LeadImpl
-import org.apache.hadoop.conf.Configuration
-
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
-import org.apache.spark.ui.{SnappyDashboardTab, SparkUI}
+import org.apache.spark.ui.SnappyDashboardTab
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{SparkConf, SparkContext}
 
 object ToolsCallbackImpl extends ToolsCallback {
 
-  override def invokeLeadStartAddonService(sc: SparkContext): Unit = {
-    LeadImpl.invokeLeadStartAddonService(sc)
-  }
-
   def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
       partitionColumnAliases: Seq[Seq[Attribute]],
-      numPartitions: Int, numBuckets: Int): Partitioning = {
+      numPartitions: Int, numBuckets: Int, tableBuckets: Int): Partitioning = {
     OrderlessHashPartitioning(partitionColumns, partitionColumnAliases,
-      numPartitions, numBuckets)
+      numPartitions, numBuckets, tableBuckets)
   }
 
   override def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
-      (Seq[Expression], Seq[Seq[Attribute]], Int, Int)] = partitioning match {
+      (Seq[Expression], Seq[Seq[Attribute]], Int, Int, Int)] = partitioning match {
     case p: OrderlessHashPartitioning => Some(p.expressions, p.aliases,
-      p.numPartitions, p.numBuckets)
+      p.numPartitions, p.numBuckets, p.tableBuckets)
     case _ => None
   }
 
-  override def updateUI(scUI: Option[Any]): Unit = {
-    scUI.foreach { ui =>
-      new SnappyDashboardTab(ui.asInstanceOf[SparkUI])
-    }
+  override def updateUI(sc: SparkContext): Unit = {
+    SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
   }
 
   override def removeAddedJar(sc: SparkContext, jarName: String) : Unit =

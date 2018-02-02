@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -131,12 +131,12 @@ case class SnappyHashAggregateExec(
     if (callbacks ne null) {
       partitioning match {
         case OrderlessHashPartitioningExtract(expressions, aliases,
-        nPartitions, nBuckets) => callbacks.getOrderlessHashPartitioning(
-          expressions, getAliases(expressions, aliases), nPartitions, nBuckets)
+        nPartitions, nBuckets, tBuckets) => callbacks.getOrderlessHashPartitioning(
+          expressions, getAliases(expressions, aliases), nPartitions, nBuckets, tBuckets)
 
         case HashPartitioning(expressions, nPartitions) =>
           callbacks.getOrderlessHashPartitioning(expressions,
-            getAliases(expressions, Nil), nPartitions, 0)
+            getAliases(expressions, Nil), nPartitions, 0, 0)
 
         case _ => partitioning
       }
@@ -255,11 +255,11 @@ case class SnappyHashAggregateExec(
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String = {
-    if (groupingExpressions.isEmpty) ""
+    if (groupingExpressions.isEmpty || !canConsume(plan)) ""
     else {
       // create an empty method to populate the dictionary array
       // which will be actually filled with code in consume if the dictionary
-      // optimization is possible using the incoming ExprCodeEx
+      // optimization is possible using the incoming DictionaryCode
       val className = keyBufferAccessor.getClassName
       // this array will be used at batch level for grouping if possible
       dictionaryArrayTerm = ctx.freshName("dictionaryArray")
@@ -423,7 +423,7 @@ case class SnappyHashAggregateExec(
        | // do aggregate
        | // common sub-expressions
        | $effectiveCodes
-       | // evaluate aggregate function
+       | // evaluate aggregate functions
        | ${evaluateVariables(aggVals)}
        | // update aggregation buffer
        | ${updates.mkString("\n").trim}

@@ -15,7 +15,7 @@ Create table DDL for Row and Column tables allows tables to be partitioned on pr
     OPTIONS (
     COLOCATE_WITH 'table_name',  // Default none
     PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a replicated table.
-    BUCKETS  'NumPartitions', // Default 113
+    BUCKETS  'NumPartitions', // Default 128
     REDUNDANCY        '1' ,
     RECOVER_DELAY     '-1',
     MAX_PART_SIZE      '50',
@@ -31,11 +31,11 @@ Create table DDL for Row and Column tables allows tables to be partitioned on pr
 For row format tables column definition can take underlying GemFire XD syntax to create a table.e.g.note the PRIMARY KEY clause below.
 
     snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
-             USING row options(BUCKETS '5')" )
+             USING row options(BUCKETS '8')" )
 
 But for column table it's restricted to Spark syntax for column definition e.g.
 
-    snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
+    snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '8')" )
 Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 
 ##### Spark API for managing tables
@@ -64,7 +64,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    1. COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
    2. PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified, it will be a replicated table.
-   3. BUCKETS  : The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
+   3. BUCKETS  : The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 128.
    4. REDUNDANCY : Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
    5. RECOVER_DELAY : Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members will wait before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.
    6. MAX_PART_SIZE : The MAXPARTSIZE attribute specifies the maximum memory for any partition on a member in megabytes. Use it to load-balance partitions among available members. If you omit MAXPARTSIZE, then GemFire XD calculates a default value for the table based on available heap memory. You can view the MAXPARTSIZE setting by querying the EVICTIONATTRS column in SYSTABLES.

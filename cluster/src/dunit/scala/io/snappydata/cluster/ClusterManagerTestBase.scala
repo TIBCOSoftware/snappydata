@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,6 +22,7 @@ import java.util.Properties
 import scala.language.postfixOps
 import scala.sys.process._
 
+import com.gemstone.gemfire.internal.shared.NativeCalls
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
@@ -47,17 +48,34 @@ abstract class ClusterManagerTestBase(s: String)
   import ClusterManagerTestBase._
 
   val bootProps: Properties = new Properties()
+  val sysProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
-  bootProps.setProperty("log-level", "config")
+  val logLevel: String = System.getProperty("logLevel", "config")
+  bootProps.setProperty("log-level", logLevel)
+  // set DistributionManager.VERBOSE for log-level fine or higher
+  if (logLevel.startsWith("fine") || logLevel == "all") {
+    sysProps.setProperty("DistributionManager.VERBOSE", "true")
+  }
+  bootProps.setProperty("security-log-level",
+    System.getProperty("securityLogLevel", "config"))
   // Easier to switch ON traces. thats why added this.
-  //bootProps.setProperty("gemfirexd.debug.true",
-  //   "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
+//   bootProps.setProperty("gemfirexd.debug.true",
+//     "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
+  bootProps.setProperty("bind-address", "localhost")
   bootProps.setProperty("spark.executor.cores",
     TestUtils.defaultCores.toString)
   bootProps.setProperty("spark.memory.manager",
     "org.apache.spark.memory.SnappyUnifiedMemoryManager")
   bootProps.setProperty("critical-heap-percentage", "95")
+
+  // reduce startup time
+  sysProps.setProperty("p2p.discoveryTimeout", "1000")
+  sysProps.setProperty("p2p.joinTimeout", "2000")
+  sysProps.setProperty("p2p.minJoinTries", "1")
+
+  // spark memory fill to detect any uninitialized memory accesses
+  sysProps.setProperty("spark.memory.debugFill", "true")
 
   var host: Host = _
   var vm0: VM = _
@@ -80,6 +98,8 @@ abstract class ClusterManagerTestBase(s: String)
   val locatorNetProps = new Properties()
   val stopNetServersInTearDown = true
 
+  locatorNetProps.setProperty("bind-address", "localhost")
+
   // SparkContext is initialized on the lead node and hence,
   // this can be used only by jobs running on Lead node
   def sc: SparkContext = SnappyContext.globalSparkContext
@@ -90,8 +110,10 @@ abstract class ClusterManagerTestBase(s: String)
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
     val locPort = ClusterManagerTestBase.locPort
+    val sysProps = this.sysProps
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
         val loc: Locator = ServiceManager.getLocatorInstance
 
         if (loc.status != FabricService.State.RUNNING) {
@@ -109,6 +131,7 @@ abstract class ClusterManagerTestBase(s: String)
     val nodeProps = bootProps
     val startNode = new SerializableRunnable() {
       override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
         val node = ServiceManager.currentFabricServiceInstance
         if (node == null || node.status != FabricService.State.RUNNING) {
           startSnappyServer(locPort, nodeProps)
@@ -121,7 +144,12 @@ abstract class ClusterManagerTestBase(s: String)
       }
     }
 
-    Array(vm0, vm1, vm2).foreach(_.invoke(startNode))
+    Array(vm0, vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
+    vm3.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
+      }
+    })
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
@@ -144,6 +172,7 @@ abstract class ClusterManagerTestBase(s: String)
     TestUtil.currentTestClass = getTestClass
     TestUtil.skipDefaultPartitioned = true
     TestUtil.doCommonSetup(bootProps)
+    ClusterManagerTestBase.setSystemProperties(sysProps)
     GemFireXDUtils.IS_TEST_MODE = true
 
     getLogWriter.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
@@ -180,12 +209,15 @@ abstract class ClusterManagerTestBase(s: String)
   }
 
   def getANetConnection(netPort: Int,
-      useGemXDURL: Boolean = false): Connection = {
+      useGemXDURL: Boolean = false,
+      disableQueryRouting: Boolean = false): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
       url = "jdbc:gemfirexd:thrift://localhost:" + netPort + "/"
+    } else if (disableQueryRouting) {
+      url = "jdbc:snappydata://localhost:" + netPort + "/route-query=false"
     } else {
       url = "jdbc:snappydata://localhost:" + netPort + "/"
     }
@@ -218,6 +250,14 @@ object ClusterManagerTestBase extends Logging {
   this can be used only by jobs running on Lead node */
   def sc: SparkContext = SnappyContext.globalSparkContext
 
+  def setSystemProperties(props: Properties): Unit = {
+    val sysPropNames = props.stringPropertyNames().iterator()
+    while (sysPropNames.hasNext) {
+      val propName = sysPropNames.next()
+      System.setProperty(propName, props.getProperty(propName))
+    }
+  }
+
   /**
    * Start a snappy lead. This code starts a Spark server and at the same time
    * also starts a SparkContext and hence it kind of becomes lead. We will use
@@ -226,6 +266,8 @@ object ClusterManagerTestBase extends Logging {
    * Only a single instance of SnappyLead should be started.
    */
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
+    NativeCalls.getInstance().setEnvironment("SPARK_LOCAL_IP", "localhost")
+    NativeCalls.getInstance().setEnvironment("SPARK_PUBLIC_DNS", "localhost")
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     props.setProperty(Property.JobServerEnabled.name, "false")
     props.setProperty("isTest", "true")
@@ -238,6 +280,7 @@ object ClusterManagerTestBase extends Logging {
    * Start a snappy server. Any number of snappy servers can be started.
    */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
+    NativeCalls.getInstance().setEnvironment("SPARK_LOCAL_IP", "localhost")
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     // bootProps.setProperty("log-level", "info")
     val server: Server = ServiceManager.getServerInstance
@@ -252,6 +295,7 @@ object ClusterManagerTestBase extends Logging {
 
   def cleanupTestData(testClass: String, testName: String): Unit = {
     // cleanup metastore
+    if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
       TestUtils.dropAllTables(snc)
@@ -328,8 +372,7 @@ object ClusterManagerTestBase extends Logging {
       val itr = txMgr.getHostedTransactionsInProgress.iterator()
       while (itr.hasNext) {
         val tx = itr.next()
-        if (tx.isSnapshot)
-          assert(tx.isClosed, s"${tx} is not closed. ")
+        if (tx.isSnapshot) assert(tx.isClosed, s"$tx is not closed. ")
       }
     }
   }

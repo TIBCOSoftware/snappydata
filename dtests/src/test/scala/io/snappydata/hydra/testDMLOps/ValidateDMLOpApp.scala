@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -38,13 +38,13 @@ object ValidateDMLOpApp {
     val stmt = args(0)
 
     // scalastyle:off println
-    pw.println(s"dataFilesLocation : ${stmt}")
+    pw.println(s"stmt : ${stmt}")
     val tableName = args(1)
     pw.println(s"Executing ${stmt}")
     val startTime = System.currentTimeMillis
     val df = snc.sql(stmt)
     val endTime = System.currentTimeMillis
-    pw.println(df);
+    pw.println(df.show);
     val totalTime = (endTime - startTime) / 1000
     pw.println(s"Total time for execution is :: ${totalTime} seconds.")
     println(s"Operation completed successfully. See ${getCurrentDirectory}/${outputFile}")

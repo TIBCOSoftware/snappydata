@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,12 +21,14 @@ import java.util.Properties
 
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
+
 import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OverwriteOptions}
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode, SnappySession, SparkSession}
@@ -104,7 +106,7 @@ object JdbcExtendedUtils extends Logging {
     }
     val sb = new StringBuilder()
     schema.fields.foreach { field =>
-      val dataType = field.dataType
+      val dataType = Utils.getSQLDataType(field.dataType)
       val typeString: String =
         jdbcType(dataType, field.metadata).map(_.databaseTypeDefinition).getOrElse(
           dataType match {
@@ -344,7 +346,7 @@ object JdbcExtendedUtils extends Logging {
         table = UnresolvedRelation(tableIdent),
         child = ds.logicalPlan)
     } else {
-      InsertIntoTable(
+      new Insert(
         table = UnresolvedRelation(tableIdent),
         partition = Map.empty[String, Option[String]],
         child = ds.logicalPlan,
