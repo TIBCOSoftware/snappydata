@@ -25,10 +25,11 @@ import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 object CTTestUtil {
 
-  def getCurrentDirectory = new java.io.File(".").getCanonicalPath
+  def getCurrentDirectory: String = new java.io.File(".").getCanonicalPath
 
   def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String, pw: PrintWriter):
   Any = {
+    // scalastyle:off println
     pw.println(s"Query execution for $queryNum")
     val df = snc.sql(sqlString)
     pw.println("Number of Rows for  : " + sqlString + " is :" + df.count())
@@ -40,61 +41,76 @@ object CTTestUtil {
   }
 
   def createPersistReplicatedRowTables(snc: SnappyContext, persistenceMode: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " persistent")
-    snc.sql(CTQueries.exec_details_create_ddl + " persistent")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (PERSISTENT '" +
+        persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (PERSISTENT '" +
+        persistenceMode + "')")
   }
 
   def createPartitionedRowTables(snc: SnappyContext, redundancy: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) buckets '11' " +
-        "redundancy '" + redundancy + "'")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) buckets '11' redundancy '" + redundancy + "'")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "')")
   }
 
-  def createPersistPartitionedRowTables(snc: SnappyContext, persistenceMode: String, redundancy: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) buckets '11' " +
-        "redundancy '" + redundancy + "' PERSISTENT")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) buckets '11' redundancy '" + redundancy + "' PERSISTENT")
+  def createPersistPartitionedRowTables(snc: SnappyContext,
+      persistenceMode: String, redundancy: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS(partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "', PERSISTENT '" +
+        persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + "  USING row OPTIONS(partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "', PERSISTENT '" + persistenceMode + "')")
   }
 
   def createColocatedRowTables(snc: SnappyContext, redundancy: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) redundancy '"
-        + redundancy + "' buckets '11'")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) colocate with " +
-        "(orders_details) redundancy '" + redundancy + "' buckets '11'")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', redundancy '" + redundancy + "', buckets '11')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID', " +
+        "COLOCATE_WITH 'orders_details', redundancy '" + redundancy + "', buckets '11')")
   }
 
-  def createPersistColocatedTables(snc: SnappyContext, redundancy: String, persistenceMode: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) redundancy '"
-        + redundancy + "' buckets '11' persistent")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) colocate with " +
-        "(orders_details) redundancy '" + redundancy + "' buckets '11' persistent")
+  def createPersistColocatedTables(snc: SnappyContext, redundancy: String, persistenceMode:
+  String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', REDUNDANCY '" + redundancy + "', buckets '11', PERSISTENT '" +
+        persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID' " +
+        "colocate_with 'orders_details', redundancy '" + redundancy + "', buckets '11', " +
+        "PERSISTENT '" + persistenceMode + "')")
   }
 
   // to add evition attributes
   def createRowTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) buckets '11' " +
-        "redundancy '" + redundancy + "'")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) buckets '11' redundancy '" + redundancy + "'")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "')")
   }
 
-  //to add eviction attributes
-  def createColocatedRowTablesWithEviction(snc: SnappyContext, redundancy: String, persistenceMode: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) redundancy '"
-        + redundancy + "' buckets '11' persistent")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) colocate with " +
-        "(orders_details) redundancy '" + redundancy + "' buckets '11' persistent ")
+  // to add eviction attributes
+  def createColocatedRowTablesWithEviction(snc: SnappyContext, redundancy: String,
+      persistenceMode: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', redundancy '" + redundancy + "', buckets '11', PERSISTENT '" +
+        persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID' " +
+        "colocate_with 'orders_details', redundancy '" + redundancy + "', buckets '11', " +
+        "PERSISTENT '" + persistenceMode + "')")
   }
 
   def createColumnTables(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " using column options(redundancy '" +
         redundancy + "')")
-    snc.sql(CTQueries.exec_details_create_ddl + " using column options(redundancy '" + redundancy + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " using column options(redundancy '" + redundancy
+        + "')")
   }
 
   def createPersistColumnTables(snc: SnappyContext, persistenceMode: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " using column options(PERSISTENT '" +
         persistenceMode + "')")
-    snc.sql(CTQueries.exec_details_create_ddl + " using column options(PERSISTENT '" + persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " using column options(PERSISTENT '" +
+        persistenceMode + "')")
   }
 
   def createColocatedColumnTables(snc: SnappyContext, redundancy: String): Unit = {
@@ -104,21 +120,25 @@ object CTTestUtil {
         "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS')")
   }
 
-  def createPersistColocatedColumnTables(snc: SnappyContext, redundancy: String, persistenceMode: String): Unit = {
+  def createPersistColocatedColumnTables(snc: SnappyContext, redundancy: String, persistenceMode:
+  String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
-        "'SINGLE_ORDER_DID', buckets '11', PERSISTENT '" + persistenceMode + "', redundancy '" + redundancy + "') ")
+        "'SINGLE_ORDER_DID', buckets '11', PERSISTENT '" + persistenceMode + "', redundancy '" +
+        redundancy + "') ")
     snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
-        "buckets '11', PERSISTENT '" + persistenceMode + "', redundancy '" + redundancy + "',  COLOCATE_WITH 'ORDERS_DETAILS')")
+        "buckets '11', PERSISTENT '" + persistenceMode + "', redundancy '" + redundancy + "',  " +
+        "COLOCATE_WITH 'ORDERS_DETAILS')")
   }
 
   // to add eviction attributes
   def createColumnTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
-    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', buckets '11', redundancy '" + redundancy + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "')")
   }
 
-  //to add eviction attributes
+  // to add eviction attributes
   def createColocatedColumnTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
@@ -152,64 +172,66 @@ object CTTestUtil {
     TestUtil.validateFullResultSet = fullResultSetValidation
     TestUtil.tableType = tblType
     var failedQueries = ""
-    if (TestUtil.validateFullResultSet)
+    if (TestUtil.validateFullResultSet) {
       CTTestUtil.createAndLoadSparkTables(sqlContext)
+    }
 
     for (q <- CTQueries.queries) {
       var hasValidationFailed = false;
       q._1 match {
-        case "Q1" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query1, 1, "Q1",
+        case "Q1" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query1, 1, "Q1",
           pw, sqlContext)
-        case "Q2" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query2, 1, "Q2",
+        case "Q2" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query2, 1, "Q2",
           pw, sqlContext)
-        case "Q3" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query3, 1, "Q3",
+        case "Q3" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query3, 1, "Q3",
           pw, sqlContext)
-        case "Q4" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query4, 1, "Q4",
+        case "Q4" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query4, 1, "Q4",
           pw, sqlContext)
-        case "Q5" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query5, 1, "Q5",
+        case "Q5" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query5, 1, "Q5",
           pw, sqlContext)
-        case "Q6" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query6, 5, "Q6",
+        case "Q6" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query6, 5, "Q6",
           pw, sqlContext)
-        case "Q7" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query7, 5, "Q7",
+        case "Q7" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query7, 5, "Q7",
           pw, sqlContext)
-        case "Q8" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query8, 5, "Q8",
+        case "Q8" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query8, 5, "Q8",
           pw, sqlContext)
-        case "Q9" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query9, 1, "Q9",
+        case "Q9" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query9, 1, "Q9",
           pw, sqlContext)
-        case "Q10" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query10, 1, "Q10",
+        case "Q10" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query10, 1, "Q10",
           pw, sqlContext)
-        case "Q11" => hasValidationFailed = TestUtil.assertJoin(snc,CTQueries.query11, 2706, "Q11",
+        case "Q11" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query11, 2706, "Q11",
           pw, sqlContext)
-        case "Q12" => hasValidationFailed = TestUtil.assertJoin(snc,CTQueries.query12, 150, "Q12",
+        case "Q12" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query12, 150, "Q12",
           pw, sqlContext)
-        case "Q13" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query13, 149, "Q13",
+        case "Q13" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query13, 149, "Q13",
           pw, sqlContext)
-        case "Q14" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query14, 149, "Q14",
+        case "Q14" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query14, 149, "Q14",
           pw, sqlContext)
-        case "Q15" => hasValidationFailed = TestUtil.assertJoin(snc,CTQueries.query15, 2620, "Q15",
+        case "Q15" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query15, 2620, "Q15",
           pw, sqlContext)
-        case "Q16" => hasValidationFailed = TestUtil.assertJoin(snc,CTQueries.query16, 150, "Q16",
+        case "Q16" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query16, 150, "Q16",
           pw, sqlContext)
-        case "Q17" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query17, 2, "Q17",
+        case "Q17" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query17, 2, "Q17",
           pw, sqlContext)
-        case "Q18" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query18, 0, "Q18",
+        case "Q18" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query18, 0, "Q18",
           pw, sqlContext)
-        case "Q19" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query19, 47, "Q19",
+        case "Q19" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query19, 47, "Q19",
           pw, sqlContext)
-        case "Q20" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query20, 100, "Q20",
+        case "Q20" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query20, 100, "Q20",
           pw, sqlContext)
-        case "Q21" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query21, 2, "Q21",
+        case "Q21" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query21, 2, "Q21",
           pw, sqlContext)
-        case "Q22" => hasValidationFailed = TestUtil.assertJoin(snc,CTQueries.query22, 1, "Q22",
+        case "Q22" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query22, 1, "Q22",
           pw, sqlContext)
-        //case "Q23" => hasValidationFailed = TestUtil.assertJoin(snc,CTQueries.query23,0,"Q23",
+        // case "Q23" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query23,0,"Q23",
         //   pw,sqlContext)
-        case "Q24" => hasValidationFailed = TestUtil.assertQuery(snc,CTQueries.query24, 999, "Q24",
+        case "Q24" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query24, 999, "Q24",
           pw, sqlContext)
         case _ => pw.println(s"Query not be executed ${q._1}")
       }
-      if (hasValidationFailed)
+      if (hasValidationFailed) {
         failedQueries = TestUtil.addToFailedQueryList(failedQueries, q._1)
+      }
     }
     return failedQueries;
   }
