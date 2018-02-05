@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeRefer
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
@@ -70,7 +71,9 @@ object ColumnTableBulkOps {
 
         val keyColumns = getKeyColumns(table)
         val updateSubQuery = Join(table, subQuery, Inner, condition)
-        val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
+        val updateColumns = if (!ColumnTableScan.isCaseOfSortedInsertValue) {
+          table.output.filterNot(a => keyColumns.contains(a.name))
+        } else table.output
 
         val cacheSize = Property.PutIntoInnerJoinCacheSize
             .getOption(sparkSession.sparkContext.conf) match {
@@ -90,7 +93,9 @@ object ColumnTableBulkOps {
             Option[String]], Project(subQuery.output, notExists),
           OverwriteOptions(false), ifNotExists = false)
 
-        val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
+        val updateExpressions = if (!ColumnTableScan.isCaseOfSortedInsertValue) {
+          notExists.output.filterNot(a => keyColumns.contains(a.name))
+        } else notExists.output
         val updatePlan = Update(table, updateSubQuery, Seq.empty,
           updateColumns, updateExpressions)
 
@@ -125,7 +130,10 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = (joinPairs.map(EqualTo.tupled)).reduceOption(And)
+    val newCondition = if (!ColumnTableScan.isCaseOfSortedInsertValue) {
+      (joinPairs.map(EqualTo.tupled)).reduceOption(And)
+    } else joinPairs.
+        map(org.apache.spark.sql.catalyst.expressions.GreaterThanOrEqual.tupled).reduceOption(And)
     newCondition
   }
 
