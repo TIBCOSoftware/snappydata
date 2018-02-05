@@ -109,10 +109,9 @@ object ExternalStoreUtils {
     } else tableName
   }
 
-  private def addProperty(props: Map[String, String], key: String,
-      default: String): Map[String, String] = {
-    if (props.contains(key)) props
-    else props + (key -> default)
+  private def addProperty(props: mutable.Map[String, String], key: String,
+      default: String): Unit = {
+    if (!props.contains(key)) props.put(key, default)
   }
 
   private def defaultMaxExternalPoolSize: String =
@@ -125,24 +124,29 @@ object ExternalStoreUtils {
       poolProps: Map[String, String], hikariCP: Boolean,
       isEmbedded: Boolean): Map[String, String] = {
     // setup default pool properties
-    var props = poolProps
+    val props = new mutable.HashMap[String, String]()
+    if (poolProps.nonEmpty) props ++= poolProps
     if (driver != null && !driver.isEmpty) {
-      props = addProperty(props, "driverClassName", driver)
+      addProperty(props, "driverClassName", driver)
     }
     val defaultMaxPoolSize = if (isEmbedded) defaultMaxEmbeddedPoolSize
     else defaultMaxExternalPoolSize
     if (hikariCP) {
-      props = props + ("jdbcUrl" -> url)
-      props = addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
-      props = addProperty(props, "minimumIdle", "10")
-      props = addProperty(props, "idleTimeout", "120000")
+      props.put("jdbcUrl", url)
+      addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
+      addProperty(props, "minimumIdle", "10")
+      addProperty(props, "idleTimeout", "120000")
     } else {
-      props = props + ("url" -> url)
-      props = addProperty(props, "maxActive", defaultMaxPoolSize)
-      props = addProperty(props, "maxIdle", defaultMaxPoolSize)
-      props = addProperty(props, "initialSize", "4")
+      props.put("url", url)
+      addProperty(props, "maxActive", defaultMaxPoolSize)
+      addProperty(props, "maxIdle", defaultMaxPoolSize)
+      addProperty(props, "initialSize", "4")
+      addProperty(props, "testOnBorrow", "true")
+      // embedded validation check is cheap
+      if (isEmbedded) addProperty(props, "validationInterval", "0")
+      else addProperty(props, "validationInterval", "5000")
     }
-    props
+    props.toMap
   }
 
   def getDriver(url: String, dialect: JdbcDialect): String = {

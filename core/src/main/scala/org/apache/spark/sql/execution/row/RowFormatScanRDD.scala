@@ -29,6 +29,7 @@ import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
@@ -53,11 +54,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var isPartitioned: Boolean,
     @transient private val columns: Array[String],
     var pushProjections: Boolean,
-    var useResultSet: Boolean,
+    protected var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-      Array.empty[Partition], var commitTx: Boolean)
+      Array.empty[Partition],
+    protected var commitTx: Boolean, protected var delayRollover: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -226,6 +228,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     embedConn.getTR.setupContextStack()
     rs.pushStatementContext(lcc, true)
     */
+    // set the delayRollover flag on current transaction
+    val tx = TXManagerImpl.getCurrentTXState
+    if (tx ne null) {
+      tx.getProxy.setColumnRolloverDisabled(delayRollover)
+    }
     (conn, stmt, rs)
   }
 
@@ -234,6 +241,10 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
       val tx = TXManagerImpl.getCurrentSnapshotTXState
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+        // if rollover was marked as delayed, then do the rollover before commit
+        if (delayRollover) {
+          GfxdSystemProcedures.flushLocalBuckets(tableName, false)
+        }
         val txMgr = tx.getTxMgr
         txMgr.masqueradeAs(tx)
         txMgr.commit()
@@ -322,11 +333,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
-    output.writeBoolean(commitTx)
     output.writeString(tableName)
     output.writeBoolean(isPartitioned)
     output.writeBoolean(pushProjections)
     output.writeBoolean(useResultSet)
+    output.writeBoolean(commitTx)
+    output.writeBoolean(delayRollover)
 
     output.writeString(columnList)
     val filterArgs = filterWhereArgs
@@ -350,11 +362,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
-    commitTx = input.readBoolean()
     tableName = input.readString()
     isPartitioned = input.readBoolean()
     pushProjections = input.readBoolean()
     useResultSet = input.readBoolean()
+    commitTx = input.readBoolean()
+    delayRollover = input.readBoolean()
 
     columnList = input.readString()
     val numFilters = input.readVarInt(true)
