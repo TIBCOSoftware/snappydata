@@ -523,4 +523,25 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "select * from updateTable EXCEPT select * from checkTable2").collect()
     assert(res.length === 0)
   }
+
+  def testSNAP2124(session: SnappySession): Unit = {
+    val filePath = getClass.getResource("/sample_records.json").getPath
+    session.sql("CREATE TABLE domaindata (cntno_l string,cntno_m string," +
+        "day1 string,day2 string,day3 string,day4 string,day5 string," +
+        "day6 string,day7 string,dr string,ds string,email string," +
+        "id BIGINT NOT NULL,idinfo_1 string,idinfo_2 string,idinfo_3 string," +
+        "idinfo_4 string,lang_1 string,lang_2 string,lang_3 string,name string) " +
+        "USING COLUMN OPTIONS (PARTITION_BY 'id',BUCKETS '40', COLUMN_BATCH_SIZE '10')")
+    session.read.json(filePath).write.insertInto("domaindata")
+
+    var ds = session.sql("select ds, dr from domaindata where id = 40L")
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcinewsemail.com']", "[]")))
+
+    ds = session.sql("UPDATE domaindata SET ds = '[''cbcin.com'']', dr = '[]' WHERE id = 40")
+    // below checks both the result and partition pruning (only one row)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
+
+    ds = session.sql("select ds, dr from domaindata where id = 40")
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcin.com']", "[]")))
+  }
 }

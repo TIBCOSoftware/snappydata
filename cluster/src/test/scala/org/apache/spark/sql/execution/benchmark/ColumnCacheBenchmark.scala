@@ -40,7 +40,6 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.SparkConf
-import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.internal.SQLConf
@@ -62,22 +61,8 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   }
 
   override protected def newSparkConf(
-      addOn: SparkConf => SparkConf = null): SparkConf = {
-    val conf = new SparkConf()
-        .setIfMissing("spark.master", s"local[$cores]")
-        .setAppName("microbenchmark")
-    conf.set("snappydata.store.critical-heap-percentage", "95")
-    if (SnappySession.isEnterpriseEdition) {
-      conf.set("snappydata.store.memory-size", "1200m")
-    }
-    conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
-    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    if (addOn != null) {
-      addOn(conf)
-    }
-    conf
-  }
+      addOn: SparkConf => SparkConf = null): SparkConf =
+    TAQTest.newSparkConf(addOn)
 
   private lazy val sparkSession = new SparkSession(sc)
   private lazy val snappySession = snc.snappySession

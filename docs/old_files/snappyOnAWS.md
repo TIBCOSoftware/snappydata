@@ -105,9 +105,9 @@ This will retain the security groups created for this cluster. To delete them as
 
 **Starting cluster with Apache Zeppelin**
 
-Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. You can start it in two modes: embedded and non-embedded. In the former mode, the Apache Zeppelin server would be launched on lead instance while in the latter, it would be launched on a separate EC2 instance.
+Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. The Zeppelin server is launched on the same EC2 instance where the lead node is running.
 ````
-./snappy-ec2 -k ec2-keypair-name -i /path/to/keypair/private/key/file --with-zeppelin=embedded launch cluster-name
+./snappy-ec2 -k ec2-keypair-name -i /path/to/keypair/private/key/file --with-zeppelin launch cluster-name
 ````
 
 **More options**
@@ -152,10 +152,10 @@ Options:
   -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
                         Version of SnappyData to use: 'X.Y.Z' (default:
                         LATEST)
-  --with-zeppelin=WITH_ZEPPELIN
-                        Launch Apache Zeppelin server with the cluster. Use
-                        'embedded' to launch it on lead node and 'non-
-                        embedded' to launch it on a separate instance.
+  --with-zeppelin
+                        Launch Apache Zeppelin server with the cluster. It'll
+                        be launched on the same instance where lead node will
+                        be running.
   --deploy-root-dir=DEPLOY_ROOT_DIR
                         A directory to copy into / on the first master. Must
                         be absolute. Note that a trailing slash is handled as

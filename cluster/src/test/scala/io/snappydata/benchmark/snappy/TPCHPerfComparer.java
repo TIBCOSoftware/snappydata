@@ -52,10 +52,10 @@ public class TPCHPerfComparer {
     //treat first value are base and divide subsequent values with this base value and plot values
 
     Path p = Paths.get(args[0]);
-    final int maxDepth = 4;
+    final int maxDepth = 5;
     List<String> errorList = new ArrayList<String>();
     try {
-      SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss") ;
+      SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss") ;
       FileOutputStream reportOutputStream  = new FileOutputStream(new File(p.toString(), "ComparisonReport_"+dateFormat.format(new Date())+".txt"));
       PrintStream reportPrintStream = new PrintStream(reportOutputStream);
 

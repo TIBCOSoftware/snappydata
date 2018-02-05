@@ -117,7 +117,7 @@ The  names and details of the members are automatically derived from the provide
 **Example**
 
 ```
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch my-cluster
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch my-cluster
 ```
 
 In the above example, you are launching a SnappyData cluster named **my-cluster** with 2 stores (or servers). The locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
@@ -127,8 +127,6 @@ The example assumes that you have the key file (my-ec2-key.pem) in your home dir
 
 !!! Note:
 	By default, the cluster is launched in the US East (N. Virginia) region on AWS. To launch the cluster in a specific region ensure that you set the region property `--region=`.
-
-To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`.
 
 #### Specifying properties
 
@@ -202,10 +200,10 @@ This retains the security groups created for this cluster. To delete this, use i
 
 #### Starting cluster with Apache Zeppelin
 
-Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. You can start it either on a lead node's instance (`--with-zeppelin=embedded`) or on a separate instance (`--with-zeppelin=non-embedded`).
+Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. The Zeppelin server is launched on the same EC2 instance where the lead node is running.
 
 ````
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin=embedded launch cluster-name
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin launch cluster-name
 ````
 
 ### More options
@@ -251,10 +249,10 @@ Options:
   -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
                         Version of SnappyData to use: 'X.Y.Z' (default:
                         LATEST)
-  --with-zeppelin=WITH_ZEPPELIN
-                        Launch Apache Zeppelin server with the cluster. Use
-                        'embedded' to launch it on lead node and 'non-
-                        embedded' to launch it on a separate instance.
+  --with-zeppelin
+                        Launch Apache Zeppelin server with the cluster. It'll
+                        be launched on the same instance where lead node will
+                        be running.
   --deploy-root-dir=DEPLOY_ROOT_DIR
                         A directory to copy into/on the first master. Must
                         be absolute. Note that a trailing slash is handled as

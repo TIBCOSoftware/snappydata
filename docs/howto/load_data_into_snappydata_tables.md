@@ -22,8 +22,10 @@ Next, use it in any SQL query or DDL. For example,
 
 ```scala
 CREATE EXTERNAL TABLE STAGING_CUSTOMER USING parquet OPTIONS(path 'quickstart/src/main/resources/customerparquet')
+
 CREATE TABLE CUSTOMER USING column OPTIONS(buckets '8') AS ( SELECT * FROM STAGING_CUSTOMER)
 ```
+>>>>>>> origin/master
 
 **Example - Load from CSV**
 

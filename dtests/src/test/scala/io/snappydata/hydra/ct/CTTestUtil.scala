@@ -27,68 +27,83 @@ object CTTestUtil {
 
   def getCurrentDirectory: String = new java.io.File(".").getCanonicalPath
 
+  def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String, pw: PrintWriter):
+  Any = {
+    // scalastyle:off println
+    pw.println(s"Query execution for $queryNum")
+    val df = snc.sql(sqlString)
+    pw.println("Number of Rows for  : " + sqlString + " is :" + df.count())
+  }
+
   def createReplicatedRowTables(snc: SnappyContext): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl)
     snc.sql(CTQueries.exec_details_create_ddl)
   }
 
   def createPersistReplicatedRowTables(snc: SnappyContext, persistenceMode: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " persistent")
-    snc.sql(CTQueries.exec_details_create_ddl + " persistent")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (PERSISTENT '" +
+        persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (PERSISTENT '" +
+        persistenceMode + "')")
   }
 
   def createPartitionedRowTables(snc: SnappyContext, redundancy: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) buckets '11' " +
-        "redundancy '" + redundancy + "'")
-    snc.sql(CTQueries.exec_details_create_ddl +  " partition by (EXEC_DID) buckets '11' " +
-        "redundancy '" + redundancy + "'")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "')")
   }
 
-  def createPersistPartitionedRowTables(snc: SnappyContext, persistenceMode: String, redundancy:
-  String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) buckets '11'" +
-        "redundancy '" + redundancy + "' PERSISTENT")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) buckets '11' redundancy" +
-        " '"  + redundancy + "' PERSISTENT")
+  def createPersistPartitionedRowTables(snc: SnappyContext,
+      persistenceMode: String, redundancy: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS(partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "', PERSISTENT '" +
+        persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + "  USING row OPTIONS(partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "', PERSISTENT '" + persistenceMode + "')")
   }
 
   def createColocatedRowTables(snc: SnappyContext, redundancy: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) redundancy '"
-        + redundancy + "' buckets '11'")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) colocate with " +
-        "(orders_details) redundancy '" + redundancy + "' buckets '11'")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', redundancy '" + redundancy + "', buckets '11')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID', " +
+        "COLOCATE_WITH 'orders_details', redundancy '" + redundancy + "', buckets '11')")
   }
 
   def createPersistColocatedTables(snc: SnappyContext, redundancy: String, persistenceMode:
   String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) redundancy '"
-        + redundancy + "' buckets '11' persistent")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) colocate with " +
-        "(orders_details) redundancy '" + redundancy + "' buckets '11' persistent")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', REDUNDANCY '" + redundancy + "', buckets '11', PERSISTENT '" +
+        persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID' " +
+        "colocate_with 'orders_details', redundancy '" + redundancy + "', buckets '11', " +
+        "PERSISTENT '" + persistenceMode + "')")
   }
 
   // to add evition attributes
   def createRowTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) buckets '11' " +
-        "redundancy '" + redundancy + "'")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) buckets '11' redundancy" +
-        " '"  + redundancy + "'")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "')")
   }
 
   // to add eviction attributes
   def createColocatedRowTablesWithEviction(snc: SnappyContext, redundancy: String,
       persistenceMode: String): Unit = {
-    snc.sql(CTQueries.orders_details_create_ddl + " partition by (SINGLE_ORDER_DID) redundancy '"
-        + redundancy + "' buckets '11' persistent")
-    snc.sql(CTQueries.exec_details_create_ddl + " partition by (EXEC_DID) colocate with " +
-        "(orders_details) redundancy '" + redundancy + "' buckets '11' persistent ")
+    snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', redundancy '" + redundancy + "', buckets '11', PERSISTENT '" +
+        persistenceMode + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING row OPTIONS (partition_by 'EXEC_DID' " +
+        "colocate_with 'orders_details', redundancy '" + redundancy + "', buckets '11', " +
+        "PERSISTENT '" + persistenceMode + "')")
   }
 
   def createColumnTables(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " using column options(redundancy '" +
         redundancy + "')")
-    snc.sql(CTQueries.exec_details_create_ddl + " using column options(redundancy '" +
-        redundancy + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " using column options(redundancy '" + redundancy
+        + "')")
   }
 
   def createPersistColumnTables(snc: SnappyContext, persistenceMode: String): Unit = {
@@ -119,8 +134,8 @@ object CTTestUtil {
   def createColumnTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
-    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID'," +
-        " buckets '11', redundancy '" + redundancy + "')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "')")
   }
 
   // to add eviction attributes
@@ -221,7 +236,7 @@ object CTTestUtil {
           pw.println(s"Query ${q._1} will not  be executed.")
           queryExecuted = false
       }
-      if(queryExecuted){
+      if (queryExecuted) {
         pw.println(s"Execution completed for query ${q._1}")
       }
       if (hasValidationFailed) {
