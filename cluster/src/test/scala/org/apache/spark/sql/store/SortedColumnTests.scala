@@ -23,7 +23,7 @@ import io.snappydata.Property
 import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
-import org.apache.spark.sql.{Dataset, Row, SnappySession}
+import org.apache.spark.sql.SnappySession
 
 /**
  * Tests for column table having sorted columns.
@@ -61,72 +61,24 @@ class SortedColumnTests extends ColumnTablesTestBase {
   object SortedColumnTests extends Logging {
 
     def testBasicInsert(session: SnappySession): Unit = {
-      // session.conf.set(Property.ColumnBatchSize.name, "10k")
-      session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+      session.conf.set(Property.ColumnMaxDeltaRows.name, "7") // TODO VB: 100
 
-      val numElements = 551
+      val numElements = 11 // TODO VB: 551
 
       session.sql("drop table if exists colDeltaTable")
 
       session.sql("create table colDeltaTable (id int, addr string, status boolean) " +
-          "using column options(buckets '2', partition_by 'id')")
+          "using column options(buckets '1', partition_by 'id', key_columns 'id')") // TODO VB: 2
+
+      snc.sql("create table row_table(id int, addr string, status boolean)")
 
       session.range(numElements).filter(_  % 10 < 6).selectExpr("id",
         "concat('addr', cast(id as string))",
         "case when (id % 2) = 0 then true else false end").write.insertInto("colDeltaTable")
 
-      def upsert(rs1: Array[Row], callCount: Int): Unit = rs1.foreach(rs => {
-        val idU = rs.getLong(0)
-        val addrU = rs.getString(1)
-        val statusU = rs.getBoolean(2)
-        var update_count: Long = 0
-        try {
-          ColumnTableScan.isCaseOfSortedInsertValue = true
-          val rs2 = session.sql(s"update colDeltaTable set " +
-              s" id = $idU, " +
-              s" addr = '$addrU', " +
-              s" status = $statusU " +
-              s" where (id = $idU)").collect()
-          update_count = rs2.map(_.getLong(0)).sum
-          // scalastyle:off println
-          println("")
-          println(s"upsert: $idU update-count = " + update_count)
-          println("")
-        } finally {
-          ColumnTableScan.isCaseOfSortedInsertValue = false
-        }
-        // scalastyle:on println
-        if (update_count == 0) {
-          val rs3 = session.sql(s"insert into colDeltaTable values ( " +
-              s" $idU, " +
-              s" '$addrU', " +
-              s" $statusU " +
-              s" )").collect()
-          assert(rs3.map(_.getInt(0)).sum > 0)
-        } else assert(callCount > 1, callCount)
-
-        // scalastyle:off println
-        println("")
-        println(s"upsert: $idU done")
-        println("")
-        // scalastyle:on println
-      })
-
-      def callUpsert(rsAfterFilter: Dataset[java.lang.Long],
-          assertCount: Int, callCount: Int) : Unit = {
-        val cnt = rsAfterFilter.count()
-        assert(cnt == assertCount)
-        val rs1 = rsAfterFilter.selectExpr("id",
-          "concat('addr', cast(id as string))",
-          "case when (id % 2) = 0 then true else false end").collect()
-        assert(rs1.length === assertCount, rs1.length)
-        upsert(rs1, callCount)
-        // scalastyle:off println
-        println("")
-        println(s"callUpsert: Done $callCount")
-        println("")
-        // scalastyle:on println
-      }
+      session.range(numElements).filter(_  % 10 > 5).selectExpr("id",
+        "concat('addr', cast(id as string))",
+        "case when (id % 2) = 0 then true else false end").write.insertInto("row_table")
 
       def verifyTotalRows(assertCount: Int, callCount: Int) : Unit = {
         val rs1 = session.sql("select * from colDeltaTable").collect()
@@ -161,10 +113,18 @@ class SortedColumnTests extends ColumnTablesTestBase {
       }
 
       try {
-        val num2ndPhase = 220
-        // callUpsert(session.range(numElements).filter(_ % 10 < 6), numElements - num2ndPhase, 1)
+        val num2ndPhase = 4 // TODO VB: 220
         verifyTotalRows(numElements - num2ndPhase, 1)
-        callUpsert(session.range(numElements).filter(_ % 10 > 5), 220, 2)
+        try {
+          ColumnTableScan.isCaseOfSortedInsertValue = true
+          // snc.sql("put into table colDeltaTable select * from row_table") // TODO VB: Keep This
+          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 6")
+          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 7")
+          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 8")
+          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 9")
+        } finally {
+          ColumnTableScan.isCaseOfSortedInsertValue = false
+        }
         verifyTotalRows(numElements, 2)
       } catch {
         case t: Throwable =>
