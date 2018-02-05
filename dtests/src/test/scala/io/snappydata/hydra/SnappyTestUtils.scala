@@ -34,33 +34,47 @@ object SnappyTestUtils {
   Executes the join query, matches the result with expected result, returns false if the query
   validation has failed.
   */
-  def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
-       pw: PrintWriter): Any = {
+  def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, pw:
+  PrintWriter, sqlContext: SQLContext): Boolean = {
+    var validationFailed = false
     snc.sql("set spark.sql.crossJoin.enabled = true")
-    assertQuery(snc, sqlString, numRows, queryNum, pw )
+    validationFailed = assertQuery(snc, sqlString, numRows, queryNum, pw, sqlContext)
+    return validationFailed
   }
 
-
   /*
- Executes the query, matches the result with expected result, returns false if the query
- validation has failed.
- */
-  def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
-      pw: PrintWriter): Any = {
+   Executes the query, matches the result with expected result, returns false if the query
+   validation has failed.
+   */
+  def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, pw:
+  PrintWriter, sqlContext: SQLContext): Boolean = {
+    var validationFailed = false
     val df = snc.sql(sqlString)
-    val count = df.count()
+    val count = df.count
     // scalastyle:off println
     println(s"Query $queryNum")
     df.explain(true)
-    pw.println(s"Query ${queryNum} \n df.count is : ${count} \n Expected numRows : ${numRows} " +
-        s"\n Table Type : ${tableType}")
-    println(s"Query ${queryNum} \n df.count is : ${count} \n Expected numRows : ${numRows} \n " +
-        s"Table Type : ${tableType}")
-    // scalastyle:on println
-    assert(df.count() == numRows,
-      s"Mismatch got for query ${queryNum} : df.count -> ${count} but expected numRows " +
-          s"-> $numRows for query = $sqlString Table Type : $tableType")
+    if (SnappyTestUtils.numRowsValidation) {
+      pw.println(s"No. rows in resultset for query ${queryNum} is : ${count} for " +
+          s"${SnappyTestUtils.tableType} table")
+      if (df.count() != numRows) {
+        pw.println(s"Result mismatch for query ${queryNum} : found ${count} rows but expected " +
+            s" ${numRows} rows.")
+        validationFailed = true
+      }
+      pw.flush()
+    }
+    if (SnappyTestUtils.validateFullResultSet) {
+      validationFailed = assertQueryFullResultSet(snc, sqlString, queryNum,
+        pw, sqlContext)
+    }
+
+    if (validationFailed) {
+      pw.println(s"Failed Query : " + sqlString + "\n Table Type : " + SnappyTestUtils.tableType
+          + "\n")
+    }
     pw.flush()
+    return validationFailed
   }
 
   def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,

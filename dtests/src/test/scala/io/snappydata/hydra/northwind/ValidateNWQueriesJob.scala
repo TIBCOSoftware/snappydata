@@ -50,7 +50,7 @@ class ValidateNWQueriesJob extends SnappySQLJob {
         // scalastyle:off println
         pw.println(s"Validate ${tableType} tables Queries Test started at : " + System
             .currentTimeMillis)
-        NWTestUtil.validateQueries(snc, tableType, pw)
+        NWTestUtil.validateQueries(snc, tableType, pw, sqlContext)
         pw.println(s"Validate ${tableType} tables Queries Test completed successfully at : " +
             System.currentTimeMillis)
       }
@@ -67,12 +67,14 @@ class ValidateNWQueriesJob extends SnappySQLJob {
           NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw, sqlContext)
         }
         else {
-          val failedQueries = NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+          val failedQueries = NWTestUtil.validateQueries(snc, tableType, pw, sqlContext)
           if(!failedQueries.isEmpty) {
-            println(s"Validation failed for ${tableType} for queries ${failedQueries}. See ${getCurrentDirectory}/${outputFile}")
+            println(s"Validation failed for ${tableType} for queries ${failedQueries}. " +
+                s"See ${getCurrentDirectory}/${outputFile}")
             pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
             pw.close()
-            throw new TestException(s"Validation task failed for ${tableType}. See ${getCurrentDirectory}/${outputFile}")
+            throw new TestException(s"Validation task failed for ${tableType}. " +
+                s"See ${getCurrentDirectory}/${outputFile}")
           }
         }
         pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed  " +

@@ -19,9 +19,11 @@ package io.snappydata.hydra.northwind
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
-import org.apache.spark.sql._
 
+import org.apache.spark.sql._
 import scala.util.{Failure, Success, Try}
+
+import org.apache.spark.SparkContext
 
 object NWTestJob extends SnappySQLJob {
   var regions, categories, shippers, employees, customers, orders, order_details, products,
@@ -33,6 +35,8 @@ object NWTestJob extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File("NWTestSnappyJob.out"), true));
     Try {
       val snc = snappySession.sqlContext
+      val sc = SparkContext.getOrCreate()
+      val sqlContext = SQLContext.getOrCreate(sc)
       snc.sql("set spark.sql.shuffle.partitions=6")
       val dataLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataLocation)
@@ -75,21 +79,21 @@ object NWTestJob extends SnappySQLJob {
       // scalastyle:off println
       println("Test replicated row tables queries started")
       NWTestUtil.createAndLoadReplicatedTables(snc)
-      NWTestUtil.validateQueries(snc, "Replicated Row Table", pw)
+      NWTestUtil.validateQueries(snc, "Replicated Row Table", pw, sqlContext)
       println("Test replicated row tables queries completed successfully")
       NWTestUtil.dropTables(snc)
       println("Test partitioned row tables queries started")
       NWTestUtil.createAndLoadPartitionedTables(snc)
-      NWTestUtil.validateQueries(snc, "Partitioned Row Table", pw)
+      NWTestUtil.validateQueries(snc, "Partitioned Row Table", pw, sqlContext)
       println("Test partitioned row tables queries completed successfully")
       NWTestUtil.dropTables(snc)
       println("Test column tables queries started")
       NWTestUtil.createAndLoadColumnTables(snc)
-      NWTestUtil.validateQueries(snc, "Column Table", pw)
+      NWTestUtil.validateQueries(snc, "Column Table", pw, sqlContext)
       println("Test column tables queries completed successfully")
       NWTestUtil.dropTables(snc)
       NWTestUtil.createAndLoadColocatedTables(snc)
-      NWTestUtil.validateQueries(snc, "Colocated Table", pw)
+      NWTestUtil.validateQueries(snc, "Colocated Table", pw, sqlContext)
       pw.close()
     } match {
       case Success(v) => pw.close()
