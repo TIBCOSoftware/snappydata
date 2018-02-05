@@ -27,3 +27,5 @@ The following topics are covered in this section:
 * [SSL Setup for Client-Server](configuring_cluster/ssl_setup.md)
 
 * [List of Properties](configuring_cluster/property_description.md)
+
+* [Firewalls and Connections](configuring_cluster/firewalls_connections.md)

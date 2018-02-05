@@ -501,6 +501,11 @@ class SnappyConf(@transient val session: SnappySession)
         case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
 
+    case Property.PartitionPruning.name => value match {
+      case Some(b) => session.partitionPruning = b.toString.toBoolean
+      case None => session.partitionPruning = Property.PartitionPruning.defaultValue.get
+    }
+
     case Property.PlanCaching.name =>
       value match {
         case Some(boolVal) =>

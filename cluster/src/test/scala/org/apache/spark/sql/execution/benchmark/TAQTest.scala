@@ -62,7 +62,7 @@ class TAQTest extends SnappyFunSuite {
       op = CreateOp.Trade, runSparkCaching = false)
   }
 
-  test("select queries with random data (eviction) - query") {
+  test("select queries with random data - query") {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1
@@ -273,7 +273,7 @@ object TAQTest extends Logging with Assertions {
   }
 
   def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
-    val cores = math.min(8, Runtime.getRuntime.availableProcessors())
+    val cores = math.min(16, Runtime.getRuntime.availableProcessors())
     val conf = new SparkConf()
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")

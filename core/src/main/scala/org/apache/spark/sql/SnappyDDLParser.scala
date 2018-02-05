@@ -183,11 +183,12 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def WEEK: Rule0 = rule { intervalUnit(Consts.WEEK) }
   final def YEAR: Rule0 = rule { intervalUnit(Consts.YEAR) }
 
-  // cube, rollup, grouping sets
+  // cube, rollup, grouping sets etc
   final def CUBE: Rule0 = rule { keyword(Consts.CUBE) }
   final def ROLLUP: Rule0 = rule { keyword(Consts.ROLLUP) }
   final def GROUPING: Rule0 = rule { keyword(Consts.GROUPING) }
   final def SETS: Rule0 = rule { keyword(Consts.SETS) }
+  final def LATERAL: Rule0 = rule { keyword(Consts.LATERAL) }
 
   // DDLs, SET, SHOW etc
 

@@ -18,7 +18,6 @@ package org.apache.spark.sql
 
 import io.snappydata.SnappyFunSuite
 
-import org.apache.spark.sql.catalyst.util.stackTraceToString
 import org.apache.spark.sql.test.SQLTestData.TestData2
 
 class SnappySQLQuerySuite extends SnappyFunSuite {
@@ -47,30 +46,6 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
           "ON x.b = y.a and x.a >= y.b + 1"),
       Seq(Row(2, 1), Row(2, 2), Row(3, 1), Row(3, 2))
     )
-  }
-
-  protected def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit = {
-    val analyzedDF = try df catch {
-      case ae: AnalysisException =>
-        if (ae.plan.isDefined) {
-          fail(
-            s"""
-               |Failed to analyze query: $ae
-               |${ae.plan.get}
-               |
-               |${stackTraceToString(ae)}
-               |""".stripMargin)
-        } else {
-          throw ae
-        }
-    }
-
-    assertEmptyMissingInput(analyzedDF)
-
-    QueryTest.checkAnswer(analyzedDF, expectedAnswer) match {
-      case Some(errorMessage) => fail(errorMessage)
-      case None =>
-    }
   }
 
   test("SNAP-1884 Join with temporary table not returning rows") {
@@ -187,19 +162,6 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     session.dropTable("l", ifExists = true)
     session.dropTable("r", ifExists = true)
   }
-
-  /**
-    * Asserts that a given [[Dataset]] does not have missing inputs in all the analyzed plans.
-    */
-  def assertEmptyMissingInput(query: Dataset[_]): Unit = {
-    assert(query.queryExecution.analyzed.missingInput.isEmpty,
-      s"The analyzed logical plan has missing inputs:\n${query.queryExecution.analyzed}")
-    assert(query.queryExecution.optimizedPlan.missingInput.isEmpty,
-      s"The optimized logical plan has missing inputs:\n${query.queryExecution.optimizedPlan}")
-    assert(query.queryExecution.executedPlan.missingInput.isEmpty,
-      s"The physical plan has missing inputs:\n${query.queryExecution.executedPlan}")
-  }
-
 }
 
 case class LowerCaseData(n: Int, l: String)
