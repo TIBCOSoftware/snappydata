@@ -144,7 +144,7 @@ object ExternalStoreUtils {
       addProperty(props, "testOnBorrow", "true")
       // embedded validation check is cheap
       if (isEmbedded) addProperty(props, "validationInterval", "0")
-      else addProperty(props, "validationInterval", "5000")
+      else addProperty(props, "validationInterval", "10000")
     }
     props.toMap
   }

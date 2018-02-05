@@ -229,9 +229,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     rs.pushStatementContext(lcc, true)
     */
     // set the delayRollover flag on current transaction
-    val tx = TXManagerImpl.getCurrentTXState
-    if (tx ne null) {
-      tx.getProxy.setColumnRolloverDisabled(delayRollover)
+    if (delayRollover) {
+      val tx = TXManagerImpl.getCurrentTXState
+      if (tx ne null) {
+        tx.getProxy.setColumnRolloverDisabled(true)
+      }
     }
     (conn, stmt, rs)
   }
