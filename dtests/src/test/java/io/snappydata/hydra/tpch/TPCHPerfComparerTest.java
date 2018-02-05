@@ -82,7 +82,7 @@ public class TPCHPerfComparerTest extends SnappyTest {
         lineNum++;
       }
       if (!degradedPerfs.isEmpty()) {
-        throw new TestException("Performance degradation observed for below queries " + degradedPerfs);
+        throw new TestException("Performance degradation observed for below queries \n" + degradedPerfs);
       }
       buffer.close();
       snappyBR.close();
