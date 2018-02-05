@@ -547,7 +547,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
             connProperties.hikariCP),
-          schema, this, parts, embdClusterRelDestroyVersion, delayRollover)
+          schema, this, parts, prunePartitions, embdClusterRelDestroyVersion, delayRollover)
     }
   }
 
@@ -780,22 +780,23 @@ final class SmartConnectorColumnRDD(
     private var connProperties: ConnectionProperties,
     private var schema: StructType,
     @transient private val store: ExternalStore,
-    private val parts: Array[Partition],
+    @transient private val allParts: Array[Partition],
+    @(transient @param) partitionPruner: => Int,
     private var relDestroyVersion: Int,
     private var delayRollover: Boolean)
-    extends RDDKryo[Any](session.sparkContext, Nil)
-        with KryoSerializable {
+    extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SparkConnectorRDDHelper
-    val conn: Connection = helper.getConnection(connProperties, split)
+    val part = split.asInstanceOf[SmartExecutorBucketPartition]
+    val conn: Connection = helper.getConnection(connProperties, part)
 
-    val partitionId = split.index
+    val partitionId = part.bucketId
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(tableName,
       partitionId, requiredColumns, schema)
     // fetch the stats
-    val (statement, rs, txId) = helper.executeQuery(conn, tableName, split,
+    val (statement, rs, txId) = helper.executeQuery(conn, tableName, part,
       fetchStatsQuery, relDestroyVersion)
     val itr = new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs,
       context, partitionId, fetchColQuery)
@@ -830,7 +831,14 @@ final class SmartConnectorColumnRDD(
         .hostList.map(_._1.asInstanceOf[String])
   }
 
-  override def getPartitions: Array[Partition] = parts
+  def getPartitionEvaluator: () => Array[Partition] = () => partitionPruner match {
+    case -1 => allParts
+    case bucketId =>
+      val part = allParts(bucketId).asInstanceOf[SmartExecutorBucketPartition]
+      Array(new SmartExecutorBucketPartition(0, bucketId, part.hostList))
+  }
+
+  override def getPartitions: Array[Partition] = getPartitionEvaluator()
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
@@ -864,8 +872,8 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _isPartitioned: Boolean,
     _columns: Array[String],
     _connProperties: ConnectionProperties,
-    _filters: Array[Filter] = Array.empty[Filter],
-    _partEval: () => Array[Partition] = () => Array.empty[Partition],
+    _filters: Array[Filter],
+    _partEval: () => Array[Partition],
     _relDestroyVersion: Int,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
@@ -894,7 +902,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       thePart: Partition, context: TaskContext): (Connection, Statement, ResultSet) = {
     val helper = new SparkConnectorRDDHelper
     val conn: Connection = helper.getConnection(
-      connProperties, thePart)
+      connProperties, thePart.asInstanceOf[SmartExecutorBucketPartition])
     if (context ne null) {
       val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
