@@ -306,7 +306,7 @@ class TokenizationTest
 
       query = s"select * from $table where b = 1"
       var res2 = newSession.sql(query).collect()
-      assert(cacheMap.size() == 1)
+      assert(cacheMap.size() == 2)
 
       newSession.sql(s"set snappydata.sql.planCachingAll=false").collect()
       assert(cacheMap.size() == 0)
@@ -318,7 +318,7 @@ class TokenizationTest
           assert(r.get(0) == r.get(1) && r.get(2) == i)
         })
       }
-      assert(cacheMap.size() == 0)
+      assert(cacheMap.size() == 1)
 
       cacheMap.clear()
 
