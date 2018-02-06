@@ -172,7 +172,7 @@ abstract class BaseColumnFormatRelation(
     val rdd = scanTable(table, columns, filters, -1)
     val partitionEvaluator = rdd match {
       case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
-      case r => () => r.partitions
+      case s => s.asInstanceOf[SmartConnectorColumnRDD].getPartitionEvaluator
     }
     // select the rowId from row buffer for update/delete keys
     val numColumns = columns.length

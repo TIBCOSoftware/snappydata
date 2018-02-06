@@ -106,7 +106,8 @@ private[sql] abstract class PartitionedPhysicalScan(
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         callbacks.getOrderlessHashPartitioning(partitionColumns,
           partitionColumnAliases, numPartitions,
-          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets, numBuckets)
+          if (session.hasLinkPartitionsToBuckets || session.preferPrimaries) 0 else numBuckets,
+          numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
