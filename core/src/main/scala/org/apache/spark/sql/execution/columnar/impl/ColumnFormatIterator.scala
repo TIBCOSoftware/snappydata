@@ -167,7 +167,8 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     }
   }
 
-  override def getColumnValue(column: Int): AnyRef = {
+  override def getColumnValue(columnIndex: Int): AnyRef = {
+    val column = columnIndex & 0xffffffffL
     if (entryIterator ne null) inMemoryBatches.get(inMemoryBatchIndex).get(column)
     else currentDiskBatch.entryMap.get(column)
   }
@@ -187,7 +188,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       // try once more
       v = entry.getValue(currentRegion)
     }
-    if (v ne null) uuidMap.justPut(columnIndex, v)
+    if (v ne null) uuidMap.justPut(columnIndex & 0xffffffffL, v)
   }
 
   def advanceToNextBatchSet(): Boolean = {
@@ -333,7 +334,7 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
             case _ => v
           } else v
         } else re.getValueInVMOrDiskWithoutFaultIn(region)
-        map.justPut(re.getRawKey.asInstanceOf[ColumnFormatKey].columnIndex, v)
+        map.justPut(re.getRawKey.asInstanceOf[ColumnFormatKey].columnIndex & 0xffffffffL, v)
         i += 1
       }
       diskEntries = null
