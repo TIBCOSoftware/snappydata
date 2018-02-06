@@ -235,7 +235,7 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       // wait for a while until servers get registered
-      val endWait = System.currentTimeMillis() + 10000
+      val endWait = System.currentTimeMillis() + 120000
       while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
         Thread.sleep(100)
       }
