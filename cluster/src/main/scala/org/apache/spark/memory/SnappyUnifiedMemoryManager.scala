@@ -785,6 +785,10 @@ class SnappyUnifiedMemoryManager private[memory](
     wrapperStats.setMemoryManagerStats(stats)
   }
 
+  /**
+    * Initializes the memoryManager
+    */
+  override def init(): Unit = memoryForObject
 }
 
 object SnappyUnifiedMemoryManager extends Logging {

@@ -4,6 +4,31 @@ The SQL type system determines the compile-time and runtime type of an expressio
 
 The special value NULL, denotes an unassigned or missing value of any of the types (columns that have been assigned as non-nullable using NOT NULL clause or the primary key columns cannot have a NULL value). The supported types are given below.
 
+- [BIGINT](#bigint)
+- [BINARY](#binary)
+- [BLOB](#blob)
+- [BOOLEAN](#boolean)
+- [BYTE](#byte)
+- [CLOB](#clob)
+- [CHAR](#char)
+- [DATE](#date)
+- [DECIMAL](#decimal)
+- [DOUBLE](#double)
+- [FLOAT](#float)
+- [INT](#int)
+- [INTEGER](#integer)
+- [LONG](#long)
+- [NUMERIC](#numeric)
+- [REAL](#real)
+- [SHORT](#short)
+- [SMALLINT](#smallint)
+- [STRING](#string)
+- [TIMESTAMP](#timestamp)
+- [TINYINT](#tinyint)
+- [VARBINARY](#varbinary)
+- [VARCHAR](#varchar)
+
+<!--
 | Data Type | Description |
 |--------|--------|
 | [BIGINT](#bigint)|Provides 8-byte integer for long integer values|
@@ -29,7 +54,7 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 | [TINYINT](#tinyint)|Stores a very small integer. The signed range is -128 to 127.|
 | [VARBINARY](#varbinary)|Stores binary byte strings rather than non-binary character strings|
 | [VARCHAR](#varchar)|Stores character strings of varying length (up to 255 bytes); collation is in code-set order|
-
+-->
 <a id="bigint"></a>
 ## BIGINT
 
