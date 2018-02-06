@@ -547,6 +547,8 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     }
 
     ds = session.sql("select ds, dr from domaindata where id = 40")
+    // pruning for selects is available in all modes (SNAP-2194)
+    assert(ds.rdd.getNumPartitions === 1)
     SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcin.com']", "[]")))
   }
 }
