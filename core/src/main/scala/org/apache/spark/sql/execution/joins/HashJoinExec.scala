@@ -478,7 +478,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val beforeMap = ctx.freshName("beforeMap")
     val skipScan = skipProcessForEmptyMap()
     val skipCondition = if (skipScan) {
-      s"if($mapDataTerm.length == 0) return;"
+      s"if($hashMapTerm.size() == 0) return;"
     } else ""
 
     s"""
