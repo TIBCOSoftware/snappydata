@@ -24,7 +24,7 @@ import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, PartitionedRegi
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.message.GetAllExecutorMessage
 import com.pivotal.gemfirexd.internal.engine.sql.execute.GemFireResultSet
-import io.snappydata.collection.IntObjectHashMap
+import io.snappydata.collection.LongObjectHashMap
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.{DELETE_MASK_COL_INDEX, STATROW_COL_INDEX}
 
@@ -67,7 +67,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   }
 
   private var currentStatsKey: ColumnFormatKey = _
-  private val currentValueMap = IntObjectHashMap.withExpectedSize[AnyRef](8)
+  private val currentValueMap = LongObjectHashMap.withExpectedSize[AnyRef](8)
 
   private def fetchUsingGetAll(keys: Array[AnyRef]): Seq[(AnyRef, AnyRef)] = {
     val msg = new GetAllExecutorMessage(pr, keys, null, null, null, null,
@@ -76,6 +76,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     allMemberResults.flatMap { case v: ListResultCollectorValue =>
       msg.getKeysPerMember(v.memberID).asScala.zip(
         v.resultOfSingleExecution.asInstanceOf[java.util.List[AnyRef]].asScala)
+
     }
   }
 

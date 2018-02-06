@@ -42,7 +42,7 @@ trait ExternalStore extends Serializable {
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
       projection: Array[Int], fullScan: Boolean, prunePartitions: => Int,
-      session: SparkSession, schema: StructType, delayRollover: Boolean): RDD[Any]
+      session: SparkSession, schema: StructType): RDD[Any]
 
   def getConnectedExternalStore(tableName: String,
       onExecutor: Boolean): ConnectedExternalStore

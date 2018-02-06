@@ -90,8 +90,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   @transient private var updateMetric: String = _
   @transient protected var txId: String = _
 
-  override protected def delayRollover: Boolean = true
-
   override protected def doProduce(ctx: CodegenContext): String = {
 
     val sql = new StringBuilder

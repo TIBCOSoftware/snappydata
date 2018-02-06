@@ -79,7 +79,7 @@ final class SparkConnectorRDDHelper {
     val partition = split.asInstanceOf[SmartExecutorBucketPartition]
     val statement = conn.createStatement()
     val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get() match {
-      case "" => null
+      case "null" => null
       case id => id
     }
     statement match {

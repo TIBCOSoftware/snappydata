@@ -22,7 +22,6 @@ import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.Constant
 
@@ -215,7 +214,7 @@ abstract class BaseColumnFormatRelation(
           Array.empty[Filter],
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          commitTx = false, delayRollover)
+          commitTx = false)
       case _ =>
         new SmartConnectorRowRDD(
           session,
@@ -227,7 +226,8 @@ abstract class BaseColumnFormatRelation(
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
           relInfo.embdClusterRelDestroyVersion,
-          _commitTx = false, delayRollover)
+          _commitTx = false
+        )
     }
   }
 
@@ -486,10 +486,10 @@ abstract class BaseColumnFormatRelation(
       case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
         // force flush all the buckets into the column store
         Utils.mapExecutors(sqlContext, () => {
-          GfxdSystemProcedures.flushLocalBuckets(resolvedName, true)
+          ColumnFormatRelation.flushLocalBuckets(resolvedName)
           Iterator.empty
         }).count()
-        GfxdSystemProcedures.flushLocalBuckets(resolvedName, true)
+        ColumnFormatRelation.flushLocalBuckets(resolvedName)
       case _ =>
     }
   }
@@ -529,11 +529,9 @@ class ColumnFormatRelation(
     }
     val cr = relation.relation.asInstanceOf[ColumnFormatRelation]
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
-    val newRelation = new ColumnFormatRelation(cr.table, cr.provider,
+    relation.copy(relation = new ColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
-      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext)
-    newRelation.delayRollover = true
-    relation.copy(relation = newRelation,
+      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext),
       expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
   }
 
@@ -720,11 +718,9 @@ class IndexColumnFormatRelation(
       keyColumns: Seq[String]): LogicalRelation = {
     val cr = relation.relation.asInstanceOf[IndexColumnFormatRelation]
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
-    val newRelation = new IndexColumnFormatRelation(cr.table, cr.provider,
+    relation.copy(relation = new IndexColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable, cr.origOptions,
-      cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName)
-    newRelation.delayRollover = true
-    relation.copy(relation = newRelation,
+      cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName),
       expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
   }
 
@@ -743,6 +739,23 @@ class IndexColumnFormatRelation(
 object ColumnFormatRelation extends Logging with StoreCallback {
 
   type IndexUpdateStruct = ((PreparedStatement, InternalRow) => Int, PreparedStatement)
+
+  // register the call backs with the JDBCSource so that
+  // bucket region can insert into the column table
+
+  def flushLocalBuckets(resolvedName: String): Unit = {
+    val pr = Misc.getRegionForTable(resolvedName, false)
+        .asInstanceOf[PartitionedRegion]
+    if (pr != null) {
+      val ds = pr.getDataStore
+      if (ds != null) {
+        val itr = ds.getAllLocalPrimaryBucketRegions.iterator()
+        while (itr.hasNext) {
+          itr.next().createAndInsertColumnBatch(true)
+        }
+      }
+    }
+  }
 
   final def columnBatchTableName(table: String): String = {
     val schemaDot = table.indexOf('.')

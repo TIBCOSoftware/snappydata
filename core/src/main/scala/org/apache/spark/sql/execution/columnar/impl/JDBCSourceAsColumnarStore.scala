@@ -27,12 +27,10 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SparkConnectorRDDHelper
@@ -106,7 +104,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   // begin should decide the connection which will be used by insert/commit/rollback
-  def beginTx(delayRollover: Boolean): Array[_ <: Object] = {
+  def beginTx(): Array[_ <: Object] = {
     val conn = self.getConnection(tableName, onExecutor = true)
 
     assert(!conn.isClosed)
@@ -118,9 +116,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             if (context == null ||
                 (context.getSnapshotTXState == null && context.getTXState == null)) {
               val txMgr = Misc.getGemFireCache.getCacheTransactionManager
-              val tx = txMgr.beginTX(TXManagerImpl.getOrCreateTXContext(),
-                IsolationLevel.SNAPSHOT, null, null)
-              tx.setColumnRolloverDisabled(delayRollover)
+              txMgr.begin(com.gemstone.gemfire.cache.IsolationLevel.SNAPSHOT, null)
               Array(conn, txMgr.getTransactionId.stringFormat())
             } else {
               Array(conn, null)
@@ -129,11 +125,10 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             val txId = SparkConnectorRDDHelper.snapshotTxIdForWrite.get
             if (txId == null) {
               logDebug(s"Going to start the transaction on server on conn $conn ")
-              val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID(?,?)")
-              startAndGetSnapshotTXId.setBoolean(1, delayRollover)
-              startAndGetSnapshotTXId.registerOutParameter(2, java.sql.Types.VARCHAR)
+              val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID (?)")
+              startAndGetSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
               startAndGetSnapshotTXId.execute()
-              val txid = startAndGetSnapshotTXId.getString(2)
+              val txid: String = startAndGetSnapshotTXId.getString(1)
               startAndGetSnapshotTXId.close()
               SparkConnectorRDDHelper.snapshotTxIdForWrite.set(txid)
               logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
@@ -141,7 +136,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             } else {
               logDebug(s"Going to use the transaction $txId on server on conn $conn ")
               // it should always be not null.
-              if (!txId.isEmpty) {
+              if (!txId.equals("null")) {
                 val statement = conn.createStatement()
                 statement.execute(
                   s"call sys.USE_SNAPSHOT_TXID('$txId')")
@@ -153,23 +148,18 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }(Some(conn))
   }
 
-  def commitTx(txId: String, delayRollover: Boolean, conn: Option[Connection]): Unit = {
+  def commitTx(txId: String, conn: Option[Connection]): Unit = {
     tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true)(conn => {
       var success = false
       try {
         connectionType match {
           case ConnectionType.Embedded =>
-            // if rollover was marked as delayed, then do the rollover before commit
-            if (delayRollover) {
-              GfxdSystemProcedures.flushLocalBuckets(tableName, false)
-            }
             // if(SparkConnectorRDDHelper.snapshotTxIdForRead.get)
             Misc.getGemFireCache.getCacheTransactionManager.commit()
           case _ =>
             logDebug(s"Going to commit $txId the transaction on server conn is $conn")
-            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-            ps.setString(1, if (txId ne null) txId else "")
-            ps.setString(2, if (delayRollover) tableName else "")
+            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
+            ps.setString(1, if (txId == null) "null" else txId)
             try {
               ps.executeUpdate()
               logDebug(s"The txid being committed is $txId")
@@ -204,7 +194,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case _ =>
             logDebug(s"Going to rollback $txId the transaction on server on wconn $conn ")
             val ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
-            ps.setString(1, if (txId ne null) txId else "")
+            ps.setString(1, if (txId == null) "null" else txId)
             try {
               ps.executeUpdate()
               logDebug(s"The txid being rolledback is $txId")
@@ -519,8 +509,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       fullScan: Boolean,
       prunePartitions: => Int,
       session: SparkSession,
-      schema: StructType,
-      delayRollover: Boolean): RDD[Any] = {
+      schema: StructType): RDD[Any] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
@@ -546,8 +535,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           tableName, requiredColumns, ConnectionProperties(connProperties.url,
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
-            connProperties.hikariCP),
-          schema, this, parts, embdClusterRelDestroyVersion, delayRollover)
+            connProperties.hikariCP), schema, this, parts, embdClusterRelDestroyVersion)
     }
   }
 
@@ -781,8 +769,7 @@ final class SmartConnectorColumnRDD(
     private var schema: StructType,
     @transient private val store: ExternalStore,
     private val parts: Array[Partition],
-    private var relDestroyVersion: Int,
-    private var delayRollover: Boolean)
+    private var relDestroyVersion: Int = -1)
     extends RDDKryo[Any](session.sparkContext, Nil)
         with KryoSerializable {
 
@@ -805,9 +792,8 @@ final class SmartConnectorColumnRDD(
         logDebug(s"The txid going to be committed is $txId " + tableName)
 
         // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-        ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, if (delayRollover) tableName else "")
+        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
+        ps.setString(1, if (txId eq null) "null" else txId)
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
@@ -843,7 +829,6 @@ final class SmartConnectorColumnRDD(
     ConnectionPropertiesSerializer.write(kryo, output, connProperties)
     StructTypeSerializer.write(kryo, output, schema)
     output.writeVarInt(relDestroyVersion, false)
-    output.writeBoolean(delayRollover)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
@@ -855,7 +840,6 @@ final class SmartConnectorColumnRDD(
     connProperties = ConnectionPropertiesSerializer.read(kryo, input)
     schema = StructTypeSerializer.read(kryo, input, c = null)
     relDestroyVersion = input.readVarInt(false)
-    delayRollover = input.readBoolean()
   }
 }
 
@@ -866,11 +850,11 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _connProperties: ConnectionProperties,
     _filters: Array[Filter] = Array.empty[Filter],
     _partEval: () => Array[Partition] = () => Array.empty[Partition],
-    _relDestroyVersion: Int,
-    _commitTx: Boolean, _delayRollover: Boolean)
+    _relDestroyVersion: Int = -1,
+    _commitTx: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-    _filters, _partEval, _commitTx, _delayRollover) {
+    _filters, _partEval, _commitTx) {
 
 
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
@@ -879,9 +863,8 @@ class SmartConnectorRowRDD(_session: SnappySession,
       val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get
       logDebug(s"The txid going to be committed is $txId " + tableName)
       // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-        ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, if (delayRollover) tableName else "")
+        val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
+        ps.setString(1, if (txId == null) "null" else txId)
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
@@ -949,7 +932,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (thriftConn ne null) {
       stmt.asInstanceOf[ClientPreparedStatement].setSnapshotTransactionId(txId)
     } else if (txId != null) {
-      if (!txId.isEmpty) {
+      if (!txId.equals("null")) {
         statement.execute(
           s"call sys.USE_SNAPSHOT_TXID('$txId')")
       }
@@ -958,9 +941,8 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val rs = stmt.executeQuery()
 
     // get the txid which was used to take the snapshot.
-    if (!commitTx) {
-      val getSnapshotTXId = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID(?)")
-      getSnapshotTXId.setBoolean(1, delayRollover)
+    if (!_commitTx) {
+      val getSnapshotTXId = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID()")
       val rs = getSnapshotTXId.executeQuery()
       rs.next()
       val txId = rs.getString(1)
@@ -990,9 +972,8 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
 }
 
-class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
-    delayRollover: Boolean) extends TaskCompletionListener {
-  val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
+class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore) extends TaskCompletionListener {
+  val connAndTxId: Array[_ <: Object] = store.beginTx()
   var isSuccess = false
 
   override def onTaskCompletion(context: TaskContext): Unit = {
@@ -1000,7 +981,7 @@ class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
     val conn = connAndTxId(0).asInstanceOf[Connection]
     if (connAndTxId(1) != null) {
       if (success()) {
-        store.commitTx(txId, delayRollover, Some(conn))
+        store.commitTx(txId, Some(conn))
       }
       else {
         store.rollbackTx(txId, Some(conn))

@@ -145,7 +145,8 @@ class RowFormatRelation(
           useResultSet = false,
           connProperties,
           handledFilters,
-          commitTx = true, delayRollover = false)
+          commitTx = true
+        )
 
       case _ =>
         new SmartConnectorRowRDD(
@@ -157,7 +158,8 @@ class RowFormatRelation(
           handledFilters,
           _partEval = () => relInfo.partitions,
           relInfo.embdClusterRelDestroyVersion,
-          _commitTx = true, _delayRollover = false)
+          _commitTx = true
+        )
     }
     (rdd, Nil)
   }

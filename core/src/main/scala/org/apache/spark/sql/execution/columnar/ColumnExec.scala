@@ -35,8 +35,6 @@ trait ColumnExec extends RowExec {
 
   override def resolvedName: String = externalStore.tableName
 
-  protected def delayRollover: Boolean = false
-
   override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
@@ -51,7 +49,7 @@ trait ColumnExec extends RowExec {
 
     val initCode =
       s"""
-         |$taskListener = new $listenerClass(($storeClass)$externalStoreTerm, $delayRollover);
+         |$taskListener = new $listenerClass(($storeClass)$externalStoreTerm);
          |$connTerm = $taskListener.getConn();
          |if ($getContext() != null) {
          |   $getContext().addTaskCompletionListener($taskListener);
