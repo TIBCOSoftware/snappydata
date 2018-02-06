@@ -137,4 +137,9 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
   override def clear(): Unit = {
     memoryForObject.clear()
   }
+
+  /**
+    * Initializes the memoryManager
+    */
+  override def init(): Unit = {}
 }

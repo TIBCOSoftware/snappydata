@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -284,6 +285,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     getContextObject[Boolean](StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED)
         .getOrElse(false)
   }
+
+  private[sql] def preferPrimaries: Boolean =
+    Property.PreferPrimariesInQuery.get(sessionState.conf)
 
   private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
     val depth = getContextObject[Int](ctx, "D", "depth").getOrElse(0) + 1
@@ -2007,8 +2011,12 @@ object SnappySession extends Logging {
             // add profile listener for all regions that are using cached
             // partitions of their "leader" region
             if (rdd.getNumPartitions > 0) {
-              session.sessionState.leaderPartitions.keysIterator.foreach(
-                addBucketProfileListener)
+              session.sessionState.leaderPartitions.keySet().forEach(
+                new Consumer[PartitionedRegion] {
+                  override def accept(pr: PartitionedRegion): Unit = {
+                    addBucketProfileListener(pr)
+                  }
+                })
             }
         }
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false,
