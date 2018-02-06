@@ -16,36 +16,35 @@
  */
 
 package io.snappydata.benchmark.snappy
- import java.io.{File, FileOutputStream, PrintStream}
 
- import io.snappydata.{Constant, SnappyFunSuite}
- import org.apache.spark.{SparkConf, SparkContext}
- import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SparkSession}
- import org.apache.spark.sql.execution.benchmark.{TPCDSQueryBenchmark, TPCDSQuerySnappyBenchmark}
- import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import java.io.{File, FileOutputStream, PrintStream}
 
- import scala.collection.mutable.ArrayBuffer
+import io.snappydata.SnappyFunSuite
+import org.apache.spark.sql.execution.benchmark.TPCDSQuerySnappyBenchmark
+import org.apache.spark.sql.{SnappySession, SparkSession}
+import org.apache.spark.{SparkConf, SparkContext}
+import org.scalatest.BeforeAndAfterAll
 
 
 class TPCDSSuite extends SnappyFunSuite
- with BeforeAndAfterAll {
+    with BeforeAndAfterAll {
 
   var tpcdsQueries = Seq[String]()
 
 
   val conf =
     new SparkConf()
-      .setMaster("local[*]")
-      .setAppName("test-sql-context")
-      .set("spark.driver.allowMultipleContexts", "true")
-      .set("spark.sql.shuffle.partitions", "4")
-      .set("spark.driver.memory", "1g")
-      .set("spark.executor.memory", "1g")
-      .set("spark.sql.autoBroadcastJoinThreshold", (20 * 1024 * 1024).toString)
+        .setMaster("local[*]")
+        .setAppName("test-sql-context")
+        .set("spark.driver.allowMultipleContexts", "true")
+        .set("spark.sql.shuffle.partitions", "4")
+        .set("spark.driver.memory", "1g")
+        .set("spark.executor.memory", "1g")
+        .set("spark.sql.autoBroadcastJoinThreshold", (20 * 1024 * 1024).toString)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-     tpcdsQueries = Seq(
+    tpcdsQueries = Seq(
       "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11",
       "q12", "q13", "q14a", "q14b", "q15", "q16", "q17", "q18", "q19", "q20",
       "q21", "q22", "q23a", "q23b", "q24a", "q24b", "q25", "q26", "q27", "q28", "q29", "q30",
@@ -58,28 +57,32 @@ class TPCDSSuite extends SnappyFunSuite
       "q91", "q92", "q93", "q94", "q95", "q96", "q97", "q98", "q99")
   }
 
-  test("Test with Spark") {
-    TPCDSQuerySnappyBenchmark.spark = SparkSession.builder.config(conf).getOrCreate()
-    val dataLocation = "Directory location for TPCDS data"
-    val snappyRepo = "Directory path of snappy repo"
-
-  TPCDSQuerySnappyBenchmark.execute(dataLocation,
-     queries = tpcdsQueries, false, s"$snappyRepo/spark/sql/core/src/test/resources/tpcds")
-
-
-  }
-
   test("Test with Snappy") {
     val sc = new SparkContext(conf)
     TPCDSQuerySnappyBenchmark.snappy = new SnappySession(sc)
-    val dataLocation = "Directory location for TPCDS data"
-    val snappyRepo = "Directory path of snappy repo"
+    val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
+    val snappyHome = System.getenv("SNAPPY_HOME")
+    val snappyRepo = s"$snappyHome/../../.."
 
     TPCDSQuerySnappyBenchmark.execute(dataLocation,
       queries = tpcdsQueries, true, s"$snappyRepo/spark/sql/core/src/test/resources/tpcds")
   }
 
-  test("Validate Results") {
+  test("Test with Spark") {
+    TPCDSQuerySnappyBenchmark.spark = SparkSession.builder.config(conf).getOrCreate()
+    val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
+    val snappyHome = System.getenv("SNAPPY_HOME")
+    val snappyRepo = s"$snappyHome/../../..";
+
+    TPCDSQuerySnappyBenchmark.execute(dataLocation,
+      queries = tpcdsQueries, false, s"$snappyRepo/spark/sql/core/src/test/resources/tpcds")
+
+  }
+
+  // Disabling the validation for now as this requires the expected result files to be created
+  // using stock spark before hand.
+
+  ignore("Validate Results") {
 
     for (query <- tpcdsQueries) {
 
@@ -98,8 +101,8 @@ class TPCDSSuite extends SnappyFunSuite
       if (!actualLineSet.equals(expectedLineSet)) {
         if (!(expectedLineSet.size == actualLineSet.size)) {
           resultOutputStream.println(s"For $query " +
-            s"result count mismatched observed with " +
-            s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
+              s"result count mismatched observed with " +
+              s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
         } else {
           for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
             if (!expectedLine.equals(actualLine)) {
