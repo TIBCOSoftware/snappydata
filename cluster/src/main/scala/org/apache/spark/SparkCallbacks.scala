@@ -39,8 +39,10 @@ object SparkCallbacks {
       ioEncryptionKey: Option[Array[Byte]],
       isLocal: Boolean): SparkEnv = {
 
-    SparkEnv.createExecutorEnv(driverConf, executorId, hostname,
+    val env = SparkEnv.createExecutorEnv(driverConf, executorId, hostname,
       port, numCores, ioEncryptionKey, isLocal)
+    env.memoryManager.asInstanceOf[StoreUnifiedManager].init()
+    env
   }
 
   def getRpcEnv(sparkEnv: SparkEnv): RpcEnv = {
