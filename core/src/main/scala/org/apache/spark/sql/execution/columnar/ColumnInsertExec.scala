@@ -677,14 +677,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(beginSnapshotTx,
       s"""
          |private final Object[] $beginSnapshotTx() {
-         |  return $externalStoreTerm.beginTx();
+         |  return $externalStoreTerm.beginTx(false);
          |}
       """.stripMargin)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
          |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.commitTx($txId, $conn);
+         |  $externalStoreTerm.commitTx($txId, false, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
@@ -826,14 +826,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(beginSnapshotTx,
       s"""
          |private final Object[] $beginSnapshotTx() {
-         |  return $externalStoreTerm.beginTx();
+         |  return $externalStoreTerm.beginTx(false);
          |}
       """.stripMargin)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
          |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.commitTx($txId, $conn);
+         |  $externalStoreTerm.commitTx($txId, false, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")

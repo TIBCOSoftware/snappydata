@@ -179,12 +179,10 @@ object StoreUtils {
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
-      region: PartitionedRegion,
-      linkBucketsToPartitions: Boolean): Array[Partition] = {
+      region: PartitionedRegion, linkBucketsToPartitions: Boolean,
+      preferPrimaries: Boolean): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    val preferPrimaries = Property.PreferPrimariesInQuery.get(
-      session.sessionState.conf)
     if (!linkBucketsToPartitions && callbacks != null) {
       allocateBucketsToPartitions(session, region, preferPrimaries)
     } else {

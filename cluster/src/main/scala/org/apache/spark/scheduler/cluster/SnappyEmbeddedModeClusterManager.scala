@@ -50,7 +50,6 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
           (split(0).trim, split(1).trim)
         }
         else if (locator.isEmpty ||
-            locator == "" ||
             locator == "null" ||
             !ServiceUtils.LOCATOR_URL_PATTERN.matcher(locator).matches()
         ) {
