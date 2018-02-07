@@ -20,10 +20,10 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import util.TestException
 import com.typesafe.config.Config
-import io.snappydata.hydra.northwind
+import io.snappydata.hydra.{SnappyTestUtils, northwind}
+
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
-
 import scala.util.{Failure, Success, Try}
 
 class ValidateNWQueriesJob extends SnappySQLJob {
@@ -38,48 +38,41 @@ class ValidateNWQueriesJob extends SnappySQLJob {
     val isSmokeRun: Boolean = jobConfig.getString("isSmokeRun").toBoolean
     val fullResultSetValidation: Boolean = jobConfig.getString("fullResultSetValidation").toBoolean
     val numRowsValidation: Boolean = jobConfig.getString("numRowsValidation").toBoolean
+    SnappyTestUtils.validateFullResultSet = fullResultSetValidation
+    SnappyTestUtils.numRowsValidation = numRowsValidation
+    SnappyTestUtils.tableType = tableType
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)
     Try {
+      var failedQueries: String = "";
       snc.sql("set spark.sql.shuffle.partitions=23")
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataFilesLocation)
       northwind.NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataFilesLocation
-      if (numRowsValidation) {
-        // scalastyle:off println
-        pw.println(s"Validate ${tableType} tables Queries Test started at : " + System
-            .currentTimeMillis)
-        NWTestUtil.validateQueries(snc, tableType, pw, sqlContext)
-        pw.println(s"Validate ${tableType} tables Queries Test completed successfully at : " +
-            System.currentTimeMillis)
+      // scalastyle:off println
+      val startTime = System.currentTimeMillis()
+      pw.println(s"ValidateQueries for ${tableType} tables started ..")
+      if (isSmokeRun) {
+        failedQueries = NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw,
+          sqlContext)
       }
-      if (fullResultSetValidation) {
-        pw.println(s"createAndLoadSparkTables Test started at : " + System.currentTimeMillis)
-        NWTestUtil.createAndLoadSparkTables(sqlContext)
-        println(s"createAndLoadSparkTables Test completed successfully at : " + System
-            .currentTimeMillis)
-        pw.println(s"createAndLoadSparkTables Test completed successfully at : " + System
-            .currentTimeMillis)
-        pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at" +
-            s" :  " + System.currentTimeMillis)
-        if (isSmokeRun) {
-          NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw, sqlContext)
-        }
-        else {
-          val failedQueries = NWTestUtil.validateQueries(snc, tableType, pw, sqlContext)
-          if(!failedQueries.isEmpty) {
-            println(s"Validation failed for ${tableType} for queries ${failedQueries}. " +
-                s"See ${getCurrentDirectory}/${outputFile}")
-            pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
-            pw.close()
-            throw new TestException(s"Validation task failed for ${tableType}. " +
-                s"See ${getCurrentDirectory}/${outputFile}")
-          }
-        }
-        pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed  " +
-            s"successfully at : " + System.currentTimeMillis)
+      else {
+        failedQueries = NWTestUtil.validateQueries(snc, tableType, pw, sqlContext)
       }
+      val finishTime = System.currentTimeMillis()
+      val totalTime = (finishTime -startTime)/1000
+      if (!failedQueries.isEmpty) {
+        println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. " +
+            s"See ${getCurrentDirectory}/${outputFile}")
+        pw.println(s"Total execution took ${totalTime} seconds.")
+        pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
+        pw.close()
+        throw new TestException(s"Validation task failed for ${tableType}. " +
+            s"See ${getCurrentDirectory}/${outputFile}")
+      }
+      pw.println(s"ValidateQueries for ${tableType} tables completed successfully in " +
+          totalTime + " seconds ")
       pw.close()
     } match {
       case Success(v) => pw.close()

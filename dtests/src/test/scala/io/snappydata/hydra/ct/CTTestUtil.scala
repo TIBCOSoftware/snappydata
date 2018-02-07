@@ -158,17 +158,23 @@ object CTTestUtil {
   }
 
   /*
-  Performs validation for tables with the queries. Returns failed queries in a string.
+  Method for validating queires results for ct schema for 1.5GB data.
+  For any other data size, this method can be used for comparing full resultsets by setting
+  numRowsValidation to false.
+  Returns failed queries in a string.
    */
-  def executeQueries(snc: SnappyContext, tblType: String, pw: PrintWriter,
-      fullResultSetValidation: Boolean, sqlContext: SQLContext, numRowsValidation: Boolean): String
-  = {
-    SnappyTestUtils.validateFullResultSet = fullResultSetValidation
+  def executeQueries(snc: SnappyContext, tblType: String, pw: PrintWriter, sqlContext:
+  SQLContext): String = {
     SnappyTestUtils.tableType = tblType
-    SnappyTestUtils.numRowsValidation = numRowsValidation
     var failedQueries = ""
     if (SnappyTestUtils.validateFullResultSet) {
+      // scalastyle:off println
+      pw.println(s"createAndLoadSparkTables started ...")
+      val startTime = System.currentTimeMillis
       CTTestUtil.createAndLoadSparkTables(sqlContext)
+      val finishTime = System.currentTimeMillis()
+      pw.println(s"createAndLoadSparkTables completed successfully in : " + ((finishTime -
+          startTime)/1000) + " seconds")
     }
 
     for (q <- CTQueries.queries) {

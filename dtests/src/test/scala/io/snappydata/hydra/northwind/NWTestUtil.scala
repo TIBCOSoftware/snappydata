@@ -62,14 +62,22 @@ object NWTestUtil {
   }
 
   /*
-  Method for validating number of rows and fullresultset with default data for northwind schema
-  size data
+  Method for validating queires results for northwind schema with default size data.
+  For larger data size, this method can be used for comparing full resultsets by setting
+  numRowsValidation to false.
+    Returns failed queries in a string.
   */
   def validateQueries(snc: SnappyContext, tableType: String, pw: PrintWriter, sqlContext:
   SQLContext): String = {
     var failedQueries = ""
     if (SnappyTestUtils.validateFullResultSet) {
+      // scalastyle:off println
+      pw.println(s"createAndLoadSparkTables started ...")
+      val startTime = System.currentTimeMillis
       NWTestUtil.createAndLoadSparkTables(sqlContext)
+      val finishTime = System.currentTimeMillis()
+      pw.println(s"createAndLoadSparkTables completed successfully in : " + ((finishTime -
+          startTime)/1000) + " seconds")
     }
     for (q <- NWQueries.queries) {
       var queryExecuted = true;
@@ -196,7 +204,7 @@ object NWTestUtil {
           "Q60", pw, sqlContext)
         // scalastyle:off println
         case _ =>
-          pw.println(s"Query ${q._1} has not been executed.")
+          pw.println(s"Did not execute ${q._1}.")
           queryExecuted = false
       }
       if (queryExecuted) {
@@ -210,9 +218,22 @@ object NWTestUtil {
   }
 
   def validateSelectiveQueriesFullResultSet(snc: SnappyContext, tableType: String, pw:
-  PrintWriter, sqlContext: SQLContext): Unit = {
+  PrintWriter, sqlContext: SQLContext): String = {
+    SnappyTestUtils.numRowsValidation = false
     SnappyTestUtils.validateFullResultSet = true
+    var failedQueries = ""
+    if (SnappyTestUtils.validateFullResultSet) {
+      // scalastyle:off println
+      pw.println(s"createAndLoadSparkTables started ...")
+      val startTime = System.currentTimeMillis
+      NWTestUtil.createAndLoadSparkTables(sqlContext)
+      val finishTime = System.currentTimeMillis()
+      println(s"createAndLoadSparkTables completed successfully in : " + (finishTime - startTime) +
+          " seconds")
+    }
     for (q <- NWQueries.queries) {
+      var queryExecuted = true;
+      var hasValidationFailed = false;
       q._1 match {
         // case "Q1" => SnappyTestUtils.assertQuery(snc, NWQueries.Q1, "Q1",
         //  pw, sqlContext)
@@ -337,8 +358,17 @@ object NWTestUtil {
         // scalastyle:off println
         case _ => println(s"Did not execute query ${q._1}")
         // scalastyle:on println
+          queryExecuted = false
+      }
+      if (queryExecuted) {
+        // scalastyle:off println
+        pw.println(s"Execution completed for query ${q._1}")
+      }
+      if (hasValidationFailed) {
+        failedQueries = SnappyTestUtils.addToFailedQueryList(failedQueries, q._1)
       }
     }
+    return failedQueries;
   }
 
   def createAndLoadPartitionedTables(snc: SnappyContext,
@@ -600,5 +630,4 @@ object NWTestUtil {
     println("territories table dropped successfully.");
     // scalastyle:on println
   }
-
 }

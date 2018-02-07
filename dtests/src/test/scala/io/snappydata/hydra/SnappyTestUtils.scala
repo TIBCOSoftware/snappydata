@@ -51,6 +51,9 @@ object SnappyTestUtils {
       pw: PrintWriter, sqlContext: SQLContext): Boolean = {
     var validationFailed = false
     snc.sql("set spark.sql.crossJoin.enabled = true")
+    if (validateFullResultSet) {
+      sqlContext.sql("set spark.sql.crossJoin.enabled = true")
+    }
     validationFailed = assertQuery(snc, sqlString, numRows, queryNum, pw, sqlContext)
     return validationFailed
   }
@@ -77,8 +80,7 @@ object SnappyTestUtils {
     println(s"Query $queryNum")
     snappyDF.explain(true)
     if (numRowsValidation) {
-      pw.println(s"No. of rows in resultset for query ${queryNum} is ${count} for " +
-          s"${tableType} table")
+      pw.println(s"Query ${queryNum} returned ${count} rows for ${tableType} table")
       if (count != numRows) {
         pw.println(s"Result mismatch for query ${queryNum} : found ${count} rows but expected " +
             s" ${numRows} rows.")
@@ -93,13 +95,13 @@ object SnappyTestUtils {
       val snappyDest: String = getQueryResultDir("snappyQueryFiles") +
           File.separator + snappyQueryFileName
       // scalastyle:off println
-      pw.println(s"Snappy query results are at : ${snappyDest}")
+      // pw.println(s"Snappy query results are at : ${snappyDest}")
       val snappyFile: File = new java.io.File(snappyDest)
 
       val sparkQueryFileName = s"Spark_${queryNum}"
       val sparkDest: String = getQueryResultDir("sparkQueryFiles") + File.separator +
           sparkQueryFileName
-      pw.println(s"Snappy query results are at : ${sparkDest}")
+      // pw.println(s"Spark query results are at : ${sparkDest}")
       val sparkFile: File = new java.io.File(sparkDest)
       var sparkDF = sqlContext.sql(sqlString)
 
@@ -206,6 +208,14 @@ object SnappyTestUtils {
     return queryResultDir.getAbsolutePath
   }
 
+  /* In case of round-off, there is a difference of .1 is snappy and spark. We can ignore such
+  differences
+   */
+  def isIgnorable(actualLine: String, expectedLine: String): Boolean = {
+    var canBeIgnored = false
+    return canBeIgnored
+  }
+
   def compareFiles(snappyFile: File, sparkFile: File, pw: PrintWriter, validationFailed: Boolean):
   Boolean = {
     var hasValidationFailed = validationFailed
@@ -218,6 +228,7 @@ object SnappyTestUtils {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
       if (!actualLine.equals(expectedLine)) {
+        isIgnorable(actualLine, expectedLine)
         hasValidationFailed = true
         pw.println(s"Expected Result : $expectedLine")
         pw.println(s"Actual Result   : $actualLine")
