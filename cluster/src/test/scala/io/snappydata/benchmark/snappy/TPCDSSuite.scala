@@ -57,7 +57,11 @@ class TPCDSSuite extends SnappyFunSuite
       "q91", "q92", "q93", "q94", "q95", "q96", "q97", "q98", "q99")
   }
 
-  test("Test with Snappy") {
+  // Disabling the test run from precheckin as it takes around an hour.
+  // TODO : Add TPCDS tests to be run as a part of smokePerf bt which will run on a dedicated
+  // machine.
+
+  ignore("Test with Snappy") {
     val sc = new SparkContext(conf)
     TPCDSQuerySnappyBenchmark.snappy = new SnappySession(sc)
     val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
@@ -68,7 +72,11 @@ class TPCDSSuite extends SnappyFunSuite
       queries = tpcdsQueries, true, s"$snappyRepo/spark/sql/core/src/test/resources/tpcds")
   }
 
-  test("Test with Spark") {
+  // Disabling the test run from precheckin as it takes around an hour.
+  // TODO : Add TPCDS tests to be run as a part of smokePerf bt which will run on a dedicated
+  // machine.
+
+  ignore("Test with Spark") {
     TPCDSQuerySnappyBenchmark.spark = SparkSession.builder.config(conf).getOrCreate()
     val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
     val snappyHome = System.getenv("SNAPPY_HOME")
