@@ -89,7 +89,7 @@ sudo swapon /var/swapfile.1
 ```
 
 <a id="smartconnector-local-settings"></a>
-## SnappyData Smart Connector mode and Local mode Settings
+## SnappyData Smart Connector mode and Local mode settings
 
 ### Managing Executor Memory
 For efficient loading of data from a Smart Connector application or a Local Mode application, all the partitions of the input data are processed in parallel by making use of all the available cores. Further, to have better ingestion speed, small internal columnar storage structures are created in the Spark application's cluster itself, which is then directly inserted into the required buckets of the column table in the SnappyData cluster.
@@ -99,8 +99,24 @@ For example, if there are 32 cores for the Smart Connector application and the n
 You can modify this setting in the `spark.executor.memory` property. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/configuration.html#available-properties).
 
 ### JVM settings for optimal performance
-The JVM setting is set by default and the following is recommended only for local mode:
+The following JVM settings are set by default and is recommended only for local mode.
 
-```-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k```
+*  -XX:+UseParNewGC
+*  -XX:+UseConcMarkSweepGC
+*  -XX:CMSInitiatingOccupancyFraction=50
+*  -XX:+CMSClassUnloadingEnabled
+*  -XX:-DontCompileHugeMethods
+*   -XX:CompileThreshold=2000
+*   -XX:+UnlockDiagnosticVMOptions
+*   -XX:ParGCCardsPerStrideChunk=4k
+*   -Djdk.nio.maxCachedBufferSize=131072
+
+**Example**:
+
+```
+-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k
+```
+CMS collector with ParNew is used by default as above and recommended. GC settings set above have been seen to work best in representative workloads and can be tuned further as per application. For enterprise users `off-heap` is recommended for best performance.
+
 
 Set in the **conf/locators**, **conf/leads**, and **conf/servers** file.

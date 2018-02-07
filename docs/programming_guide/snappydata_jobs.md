@@ -182,6 +182,7 @@ $ bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
+    --conf streaming.batch_interval=5000 \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
     --stream
 

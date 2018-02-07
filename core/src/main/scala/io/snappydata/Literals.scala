@@ -277,6 +277,10 @@ object Property extends Enumeration {
         "scalability of queries in the interest of reduced memory usage for " +
         "secondary buckets. Default is false.", Some(false), Constant.SPARK_PREFIX)
 
+  val PartitionPruning: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.partitionPruning",
+    "Property to set/unset partition pruning of queries", Some(true))
+
   val PlanCaching: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
     "Property to set/unset plan caching", Some(true))

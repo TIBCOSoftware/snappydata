@@ -18,8 +18,8 @@
 package org.apache.spark.sql.internal
 
 import java.util.Properties
+import java.util.concurrent.ConcurrentHashMap
 
-import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
@@ -220,8 +220,8 @@ class SnappySessionState(snappySession: SnappySession)
    * The partition mapping selected for the lead partitioned region in
    * a collocated chain for current execution
    */
-  private[spark] val leaderPartitions = new TrieMap[PartitionedRegion,
-      Array[Partition]]()
+  private[spark] val leaderPartitions = new ConcurrentHashMap[PartitionedRegion,
+      Array[Partition]](16, 0.7f, 1)
 
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
@@ -436,17 +436,21 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
     val leaderRegion = ColocationHelper.getLeaderRegion(region)
-    leaderPartitions.getOrElseUpdate(leaderRegion, {
-      val linkPartitionsToBuckets = snappySession.hasLinkPartitionsToBuckets
-      if (linkPartitionsToBuckets) {
-        // also set the default shuffle partitions for this execution
-        // to minimize exchange
-        snappySession.sessionState.conf.setExecutionShufflePartitions(
-          region.getTotalNumberOfBuckets)
-      }
-      StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion,
-        linkPartitionsToBuckets)
-    })
+    leaderPartitions.computeIfAbsent(leaderRegion,
+      new java.util.function.Function[PartitionedRegion, Array[Partition]] {
+        override def apply(pr: PartitionedRegion): Array[Partition] = {
+          val linkPartitionsToBuckets = snappySession.hasLinkPartitionsToBuckets
+          val preferPrimaries = snappySession.preferPrimaries
+          if (linkPartitionsToBuckets || preferPrimaries) {
+            // also set the default shuffle partitions for this execution
+            // to minimize exchange
+            snappySession.sessionState.conf.setExecutionShufflePartitions(
+              region.getTotalNumberOfBuckets)
+          }
+          StoreUtils.getPartitionsPartitionedTable(snappySession, pr,
+            linkPartitionsToBuckets, preferPrimaries)
+        }
+      })
   }
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
@@ -500,6 +504,11 @@ class SnappyConf(@transient val session: SnappySession)
           pool.toString
         case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
+
+    case Property.PartitionPruning.name => value match {
+      case Some(b) => session.partitionPruning = b.toString.toBoolean
+      case None => session.partitionPruning = Property.PartitionPruning.defaultValue.get
+    }
 
     case Property.PlanCaching.name =>
       value match {

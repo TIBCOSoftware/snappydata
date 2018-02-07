@@ -481,11 +481,12 @@ object SnappyParserConsts {
   final val WEEK: Keyword = nonReservedKeyword("week")
   final val YEAR: Keyword = nonReservedKeyword("year")
 
-  // cube, rollup, grouping sets are not reserved
+  // cube, rollup, grouping sets etc are not reserved
   final val CUBE: Keyword = nonReservedKeyword("cube")
   final val ROLLUP: Keyword = nonReservedKeyword("rollup")
   final val GROUPING: Keyword = nonReservedKeyword("grouping")
   final val SETS: Keyword = nonReservedKeyword("sets")
+  final val LATERAL: Keyword = nonReservedKeyword("lateral")
 
   // datatypes are not reserved
   final val ARRAY: Keyword = nonReservedKeyword("array")

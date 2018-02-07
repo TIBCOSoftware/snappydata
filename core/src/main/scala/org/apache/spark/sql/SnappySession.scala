@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -225,6 +226,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] var planCaching: Boolean = Property.PlanCaching.get(sessionState.conf)
 
   @transient
+  private[sql] var partitionPruning: Boolean = Property.PartitionPruning.get(sessionState.conf)
+
+  @transient
   private[sql] var wholeStageEnabled: Boolean = sessionState.conf.wholeStageEnabled
 
   /**
@@ -281,6 +285,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     getContextObject[Boolean](StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED)
         .getOrElse(false)
   }
+
+  private[sql] def preferPrimaries: Boolean =
+    Property.PreferPrimariesInQuery.get(sessionState.conf)
 
   private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
     val depth = getContextObject[Int](ctx, "D", "depth").getOrElse(0) + 1
@@ -2004,8 +2011,12 @@ object SnappySession extends Logging {
             // add profile listener for all regions that are using cached
             // partitions of their "leader" region
             if (rdd.getNumPartitions > 0) {
-              session.sessionState.leaderPartitions.keysIterator.foreach(
-                addBucketProfileListener)
+              session.sessionState.leaderPartitions.keySet().forEach(
+                new Consumer[PartitionedRegion] {
+                  override def accept(pr: PartitionedRegion): Unit = {
+                    addBucketProfileListener(pr)
+                  }
+                })
             }
         }
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false,
@@ -2192,7 +2203,7 @@ object SnappySession extends Logging {
     val key = CachedKey(session, lp, sqlText, currentWrappedConstants)
     try {
       var cachedDF = planCache.getUnchecked(key)
-      if (!key.valid) {
+      if (!key.valid || !session.planCaching) {
         logDebug(s"Invalidating cached plan for sql: ${key.sqlText}")
         planCache.invalidate(key)
       }
@@ -2201,7 +2212,7 @@ object SnappySession extends Logging {
         val df = session.executeSQL(sqlText)
         cachedDF = evaluatePlan(df, session, sqlText)
         // default is enable caching
-        if (!java.lang.Boolean.getBoolean("DISABLE_PLAN_CACHING")) {
+        if (session.planCaching) {
           planCache.put(key, cachedDF)
         }
       }

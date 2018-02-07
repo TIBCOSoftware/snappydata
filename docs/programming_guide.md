@@ -21,8 +21,6 @@ The following topics are covered in this section:
 
 * [Working with Hadoop YARN Cluster Manager](programming_guide/working_with_hadoop_yarn_cluster_manager.md)
 
-* [Using Transactions](programming_guide/using_transactions.md)
-
 * [Using JDBC with SnappyData](programming_guide/using_jdbc_with_snappydata.md)
 
 * [Multiple Language Binding using Thrift Protocol](programming_guide/multiple_language_binding_using_thrift_protocol.md)
