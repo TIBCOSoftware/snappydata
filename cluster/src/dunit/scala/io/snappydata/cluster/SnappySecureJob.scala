@@ -21,11 +21,14 @@ import java.io.{FileOutputStream, PrintWriter}
 
 import com.pivotal.gemfirexd.Attribute
 import com.typesafe.config.{Config, ConfigException}
-import io.snappydata.Constant
+import io.snappydata.{Constant, ServiceManager}
+import io.snappydata.impl.LeadImpl
+import org.apache.spark.SparkCallbacks
 import org.apache.spark.sql.types.{DecimalType, IntegerType, StructField, StructType}
 import org.apache.spark.sql._
 import org.apache.spark.sql.streaming.SnappyStreamingJob
 import org.apache.spark.streaming.SnappyStreamingContext
+import org.apache.spark.ui.SnappyBasicAuthenticator
 
 // scalastyle:off println
 class SnappySecureJob extends SnappySQLJob {
@@ -56,6 +59,12 @@ class SnappySecureJob extends SnappySQLJob {
       } else {
         accessAndModifyTablesOwnedByOthers(snSession, jobConfig)
       }
+      // Confirm that our zeppelin interpreter is not initialized.
+      assert(ServiceManager.getLeadInstance.asInstanceOf[LeadImpl].getInterpreterServerClass() ==
+          null, "Zeppelin interpreter must not be initialized in secure cluster")
+      // Check SnappyData Pulse UI is secured by our custom authenticator.
+      assert(SparkCallbacks.getAuthenticatorForJettyServer().get
+          .isInstanceOf[SnappyBasicAuthenticator], "SnappyData Pulse UI not secured")
       pw.println(msg)
     } finally {
       pw.close()

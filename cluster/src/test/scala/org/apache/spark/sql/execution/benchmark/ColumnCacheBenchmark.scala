@@ -325,6 +325,14 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           val max = counts.max
           assert(max - min <= 800000, "Unexpectedly large data skew: " +
               results.map(r => s"${r.getInt(1)}=${r.getLong(0)}").mkString(","))
+          // check for SNAP-2200 by forcing overflow with updates
+          snappySession.sql("update test set id = id + 1")
+          snappySession.sql("update test set k = k + 1.0")
+          ColumnCacheBenchmark.collect(snappySession.sql(
+            "select max(id), min(id) from test"), Seq(Row(size, 1L)))
+          // repopulate for the benchmark test
+          snappySession.sql("truncate table test")
+          testDF2.write.insertInto("test")
           ColumnCacheBenchmark.collect(snappySession.sql(query), expectedAnswer2)
         } else {
           ColumnCacheBenchmark.collect(sparkSession.sql(query), expectedAnswer)
