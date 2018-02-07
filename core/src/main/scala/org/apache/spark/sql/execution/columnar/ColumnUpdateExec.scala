@@ -215,7 +215,20 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
            |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
            |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
-           |  $encoderTerm.setUpdatePosition($ordinalIdVar);
+           |  final int updatedOrdinalIdVar;
+           |  if ($ordinalIdVar < 0) {
+           |    updatedOrdinalIdVar = ~(~$ordinalIdVar + $ordinal);
+           |  } else {
+           |    updatedOrdinalIdVar = $ordinalIdVar;
+           |  }
+           |  // VB TODO: Remove this
+           |  System.out.println("vivek ordinal=" + $ordinal +
+           |     " ,ordinal-id=" + $ordinalIdVar +
+           |     " ,ordinal-id=" + ~$ordinalIdVar +
+           |     " ,updated-ordinal-id=" + updatedOrdinalIdVar +
+           |     " ,updated-ordinal-id=" + ~updatedOrdinalIdVar +
+           |     " ,field=" + $field);
+           |  $encoderTerm.setUpdatePosition(updatedOrdinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
                 encoderTerm, cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}

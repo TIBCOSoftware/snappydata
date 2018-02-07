@@ -117,11 +117,8 @@ class SortedColumnTests extends ColumnTablesTestBase {
         verifyTotalRows(numElements - num2ndPhase, 1)
         try {
           ColumnTableScan.isCaseOfSortedInsertValue = true
-          // snc.sql("put into table colDeltaTable select * from row_table") // TODO VB: Keep This
-          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 6")
-          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 7")
-          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 8")
-          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 9")
+          snc.sql("put into table colDeltaTable select * from row_table")
+//        snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 6")
         } finally {
           ColumnTableScan.isCaseOfSortedInsertValue = false
         }
