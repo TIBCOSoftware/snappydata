@@ -204,10 +204,8 @@ For example, using the following command, you can start a SnappyData cluster nam
 The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
 ```
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster 
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch snappydata-cluster
 ```
-To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`. 
-
 For a comprehensive list of command options, simply run `./snappy-ec2` in the command prompt.
 
 <a id="dataAWSS3"></a>

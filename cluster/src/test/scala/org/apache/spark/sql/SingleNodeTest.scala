@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql
 
-import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import io.snappydata.benchmark.TPCHColumnPartitionedTable
 import io.snappydata.{PlanTest, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
@@ -26,14 +25,11 @@ import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 
 class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
-  var existingSkipSPSCompile = false
 
   override def beforeAll(): Unit = {
     // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
-    existingSkipSPSCompile = FabricDatabase.SKIP_SPS_PRECOMPILE
-    FabricDatabase.SKIP_SPS_PRECOMPILE = true
     super.beforeAll()
   }
 
@@ -41,7 +37,6 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
     // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
-    FabricDatabase.SKIP_SPS_PRECOMPILE = existingSkipSPSCompile
     super.afterAll()
   }
 
@@ -87,7 +82,7 @@ object SingleNodeTest {
     val tpchDataPath = TPCHColumnPartitionedTable.getClass.getResource("/TPCH").getPath
     val buckets_Order_Lineitem = "5"
     TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath,
-      true, buckets_Order_Lineitem, null)
+      isSnappy = true, buckets_Order_Lineitem, null)
 
     def validateSinglePartition(df: DataFrame, bucketId: Int): Unit = {
       val scanRDD = df.queryExecution.executedPlan.collectFirst {

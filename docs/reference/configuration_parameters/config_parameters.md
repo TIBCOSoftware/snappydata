@@ -81,9 +81,13 @@ Below is the list of all the configuration properties and links for each propert
 
 - [enable-time-statistics](enable-time-statistics.md)
 
+- [enable-timestats](enable-timestats.md)
+
 - [enforce-unique-host](enforce-unique-host.md)
 
 - [init-scripts](init-scripts.md)
+
+- [load-balance](load-balance.md)
 
 - [locators](locators.md)
 
@@ -93,7 +97,19 @@ Below is the list of all the configuration properties and links for each propert
 
 - [member-timeout](member-timeout.md)
 
+- [membership-port-range](membership-port-range.md)
+
+- [password](password.md)
+
+- [read-timeout](read-timeout.md)
+
 - [redundancy-zone](redundancy-zone.md)
+
+- [secondary-locators](secondary-locators.md)
+
+- [skip-constraint-checks](skip-constraint-checks.md)
+
+- [ssl](ssl.md)
 
 - [start-locator](start-locator.md)
 
@@ -102,6 +118,8 @@ Below is the list of all the configuration properties and links for each propert
 - [statistic-sample-rate](statistic-sample-rate.md)
 
 - [statistic-sampling-enabled](statistic-sampling-enabled.md)
+
+- [sync-commits](sync-commits.md)
 
 - [sys-disk-dir](sys-disk-dir.md)
 

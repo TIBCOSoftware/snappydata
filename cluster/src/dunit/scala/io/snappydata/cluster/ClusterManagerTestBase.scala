@@ -75,7 +75,7 @@ abstract class ClusterManagerTestBase(s: String)
   sysProps.setProperty("p2p.minJoinTries", "1")
 
   // spark memory fill to detect any uninitialized memory accesses
-  // sysProps.setProperty("spark.memory.debugFill", "true")
+  sysProps.setProperty("spark.memory.debugFill", "true")
 
   var host: Host = _
   var vm0: VM = _

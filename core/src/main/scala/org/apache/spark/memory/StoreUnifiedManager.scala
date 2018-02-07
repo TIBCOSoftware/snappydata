@@ -86,6 +86,11 @@ trait StoreUnifiedManager {
     * Closes the memory manager.
     */
   def close()
+
+  /**
+    * Initializes the memoryManager
+    */
+  def init()
 }
 
 
