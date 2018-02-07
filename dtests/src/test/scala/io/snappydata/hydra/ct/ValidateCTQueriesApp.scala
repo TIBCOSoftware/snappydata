@@ -19,8 +19,10 @@ package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
+import io.snappydata.hydra.SnappyTestUtils
+
 import org.apache.spark.sql.{SQLContext, SnappyContext}
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{SparkConf, SparkContext}
 
 object ValidateCTQueriesApp {
 
@@ -47,23 +49,19 @@ object ValidateCTQueriesApp {
     val tableType = args(1)
     val fullResultSetValidation: Boolean = args(2).toBoolean
     val numRowsValidation: Boolean = args(3).toBoolean
+    SnappyTestUtils.numRowsValidation = numRowsValidation
+    SnappyTestUtils.validateFullResultSet = fullResultSetValidation
     pw.println(s"Validation for queries with ${tableType} tables started")
-    if (fullResultSetValidation) {
-      pw.println(s"Test will perform fullResultSetValidation")
-    }
-    else {
-      pw.println(s"Test will not perform fullResultSetValidation")
-    }
+
     val startTime = System.currentTimeMillis
-    val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-      sqlContext, numRowsValidation)
+    val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, sqlContext)
     val endTime = System.currentTimeMillis
     val totalTime = (endTime - startTime) / 1000
     pw.println(s"Total time for execution is :: ${totalTime} seconds.")
     if (!failedQueries.isEmpty) {
-      println(s"Validation failed for ${tableType} for queries ${failedQueries}.. See " +
+      println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. See " +
           s"${getCurrentDirectory}/${outputFile}")
-      pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
+      pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
       pw.close()
       throw new Exception(s"Validation task failed for ${tableType}. See " +
           s"${getCurrentDirectory}/${outputFile}")

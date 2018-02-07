@@ -18,13 +18,15 @@
 package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
+
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
+import io.snappydata.hydra.SnappyTestUtils
 import util.TestException
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SnappySession, SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 class ValidateCTQueriesJob extends SnappySQLJob {
 
@@ -46,34 +48,27 @@ class ValidateCTQueriesJob extends SnappySQLJob {
       pw.println(s"Validation for $tableType tables started in snappy Job")
       val numRowsValidation: Boolean = jobConfig.getBoolean("numRowsValidation")
       val fullResultSetValidation: Boolean = jobConfig.getBoolean("fullResultSetValidation")
+      SnappyTestUtils.validateFullResultSet = fullResultSetValidation
+      SnappyTestUtils.numRowsValidation = numRowsValidation
       val sc = SparkContext.getOrCreate()
       val sqlContext = SQLContext.getOrCreate(sc)
-      if(numRowsValidation){
-
-      }
-      if (fullResultSetValidation) {
-        pw.println(s"Test will perform fullResultSetValidation")
-      }
-      else {
-        pw.println(s"Test will not perform fullResultSetValidation")
-      }
       val startTime = System.currentTimeMillis
-      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-        sqlContext, numRowsValidation)
+      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, sqlContext)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
-      pw.println(s"Total time for execution is :: ${totalTime} seconds.")
       if(!failedQueries.isEmpty) {
-        println(s"Validation failed for ${tableType} for queries ${failedQueries}. " +
+        println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. " +
             s"See ${getCurrentDirectory}/${outputFile}")
-        pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
+        pw.println(s"Total execution took ${totalTime} seconds.")
+        pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
         pw.close()
         throw new TestException(s"Validation task failed for ${tableType}. " +
             s"See ${getCurrentDirectory}/${outputFile}")
       }
-      println(s"Validation for $tableType tables completed. " +
+      println(s"Validation for $tableType tables completed sucessfully. " +
           s"See ${getCurrentDirectory}/${outputFile}")
-      pw.println(s"Validation for $tableType tables completed.")
+      pw.println(s"ValidateQueries for ${tableType} tables completed successfully in " +
+          totalTime + " seconds ")
       pw.close()
     } match {
       case Success(v) => pw.close()
