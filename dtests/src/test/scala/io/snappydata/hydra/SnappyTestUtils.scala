@@ -31,11 +31,24 @@ object SnappyTestUtils {
   var tableType: String = null
 
   /*
+  Executes the join query, matches only the full result with expected result, returns false if the
+  query
+  validation has failed.
+  */
+  def assertJoin(snc: SnappyContext, sqlString: String, queryNum: String, pw: PrintWriter,
+      sqlContext: SQLContext): Boolean = {
+    var validationFailed = false
+    numRowsValidation = false
+    validationFailed = assertJoin(snc, sqlString, 0, queryNum, pw, sqlContext)
+    return validationFailed
+  }
+
+  /*
   Executes the join query, matches the result with expected result, returns false if the query
   validation has failed.
   */
-  def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, pw:
-  PrintWriter, sqlContext: SQLContext): Boolean = {
+  def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
+      pw: PrintWriter, sqlContext: SQLContext): Boolean = {
     var validationFailed = false
     snc.sql("set spark.sql.crossJoin.enabled = true")
     validationFailed = assertQuery(snc, sqlString, numRows, queryNum, pw, sqlContext)
@@ -43,45 +56,91 @@ object SnappyTestUtils {
   }
 
   /*
+   Executes the query, matches only the full resultSet with expected result, returns false if the
+   query validation has failed.
+ */
+  def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String,
+      pw: PrintWriter, sqlContext: SQLContext): Boolean = {
+    numRowsValidation = false
+    assertQuery(snc, sqlString, 0, queryNum, pw, sqlContext)
+  }
+  /*
    Executes the query, matches the result with expected result, returns false if the query
    validation has failed.
    */
-  def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, pw:
-  PrintWriter, sqlContext: SQLContext): Boolean = {
+  def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
+      pw: PrintWriter, sqlContext: SQLContext): Boolean = {
     var validationFailed = false
-    val df = snc.sql(sqlString)
-    val count = df.count
+    var snappyDF = snc.sql(sqlString)
+    val count = snappyDF.count
     // scalastyle:off println
     println(s"Query $queryNum")
-    df.explain(true)
-    if (SnappyTestUtils.numRowsValidation) {
-      pw.println(s"No. rows in resultset for query ${queryNum} is : ${count} for " +
-          s"${SnappyTestUtils.tableType} table")
-      if (df.count() != numRows) {
+    snappyDF.explain(true)
+    if (numRowsValidation) {
+      pw.println(s"No. of rows in resultset for query ${queryNum} is ${count} for " +
+          s"${tableType} table")
+      if (count != numRows) {
         pw.println(s"Result mismatch for query ${queryNum} : found ${count} rows but expected " +
             s" ${numRows} rows.")
         validationFailed = true
       }
       pw.flush()
     }
-    if (SnappyTestUtils.validateFullResultSet) {
-      validationFailed = assertQueryFullResultSet(snc, sqlString, queryNum,
-        pw, sqlContext)
+    var fullRSValidationFailed = false
+    if (validateFullResultSet) {
+
+      val snappyQueryFileName = s"Snappy_${queryNum}"
+      val snappyDest: String = getQueryResultDir("snappyQueryFiles") +
+          File.separator + snappyQueryFileName
+      // scalastyle:off println
+      pw.println(s"Snappy query results are at : ${snappyDest}")
+      val snappyFile: File = new java.io.File(snappyDest)
+
+      val sparkQueryFileName = s"Spark_${queryNum}"
+      val sparkDest: String = getQueryResultDir("sparkQueryFiles") + File.separator +
+          sparkQueryFileName
+      pw.println(s"Snappy query results are at : ${sparkDest}")
+      val sparkFile: File = new java.io.File(sparkDest)
+      var sparkDF = sqlContext.sql(sqlString)
+
+      try {
+        if (!snappyFile.exists()) {
+          val snap_col1 = snappyDF.schema.fieldNames(0)
+          val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
+          snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
+          writeToFile(snappyDF, snappyDest, snc)
+          // writeResultSetToCsv(snappyDF, snappyFile)
+          pw.println(s"${queryNum} Result Collected in file ${snappyDest}")
+        }
+        if (!sparkFile.exists()) {
+          val col1 = sparkDF.schema.fieldNames(0)
+          val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
+          sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
+          writeToFile(sparkDF, sparkDest, snc)
+          // writeResultSetToCsv(sparkDF, sparkFile)
+          pw.println(s"${queryNum} Result Collected in file ${sparkDest}")
+        }
+        fullRSValidationFailed = compareFiles(snappyFile, sparkFile, pw, fullRSValidationFailed)
+      } catch {
+        case ex: Exception => {
+          fullRSValidationFailed = true
+          pw.println(s"Full resultSet validation failed for ${queryNum} with following " +
+              s"exception:\n")
+          ex.printStackTrace(pw)
+        }
+      }
+      pw.flush()
     }
 
     if (validationFailed) {
-      pw.println(s"Failed Query : " + sqlString + "\n Table Type : " + SnappyTestUtils.tableType
-          + "\n")
+      pw.println(s"\nNumRows validation failed for query ${queryNum} on {$tableType} table.")
+    }
+    if(fullRSValidationFailed){
+      pw.println(s"\nFull resultset validation failed for query ${queryNum} on {$tableType} table.")
+      validationFailed = true
     }
     pw.flush()
     return validationFailed
-  }
-
-  def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
-                              pw: PrintWriter, sqlContext: SQLContext): Boolean = {
-    snc.sql("set spark.sql.crossJoin.enabled = true")
-    sqlContext.sql("set spark.sql.crossJoin.enabled = true")
-    assertQueryFullResultSet(snc, sqlString, queryNum, pw, sqlContext)
   }
 
   def dataTypeConverter(row: Row): Row = {
@@ -147,58 +206,6 @@ object SnappyTestUtils {
     return queryResultDir.getAbsolutePath
   }
 
-  /*
-   Performs full resultSet validation from snappy for a select query against results in a
-   goldenFile.
- */
-  def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
-                               pw: PrintWriter, sqlContext: SQLContext): Boolean = {
-    var hasValidationFailed = false
-
-    val snappyQueryFileName = s"Snappy_${queryNum}"
-    val snappyDest: String = SnappyTestUtils.getQueryResultDir("snappyQueryFiles") +
-        File.separator + snappyQueryFileName
-    // scalastyle:off println
-    pw.println(snappyDest)
-    val snappyFile: File = new java.io.File(snappyDest)
-    var snappyDF = snc.sql(sqlString)
-
-    val sparkQueryFileName = s"Spark_${queryNum}"
-    val sparkDest: String = SnappyTestUtils.getQueryResultDir("sparkQueryFiles") + File.separator +
-        sparkQueryFileName
-    pw.println(sparkDest)
-    val sparkFile: File = new java.io.File(sparkDest)
-    var sparkDF = sqlContext.sql(sqlString)
-
-    try {
-      if (!snappyFile.exists()) {
-        val snap_col1 = snappyDF.schema.fieldNames(0)
-        val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
-        snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
-        writeToFile(snappyDF, snappyDest, snc)
-        // writeResultSetToCsv(snappyDF, snappyFile)
-        pw.println(s"${queryNum} Result Collected in file ${snappyDest}")
-      }
-      if (!sparkFile.exists()) {
-        val col1 = sparkDF.schema.fieldNames(0)
-        val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-        sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
-        writeToFile(sparkDF, sparkDest, snc)
-        // writeResultSetToCsv(sparkDF, sparkFile)
-        pw.println(s"${queryNum} Result Collected in file ${sparkDest}")
-      }
-      hasValidationFailed = compareFiles(snappyFile, sparkFile, pw, hasValidationFailed)
-    } catch {
-      case ex: Exception => {
-        hasValidationFailed = true
-        pw.println(s"Full resultSet Validation failed for ${queryNum} with following exception:\n")
-        ex.printStackTrace(pw)
-      }
-    }
-    pw.flush()
-    return hasValidationFailed
-  }
-
   def compareFiles(snappyFile: File, sparkFile: File, pw: PrintWriter, validationFailed: Boolean):
   Boolean = {
     var hasValidationFailed = validationFailed
@@ -261,7 +268,7 @@ object SnappyTestUtils {
     var hasValidationFailed = validationFailed
 
     val snappyQueryFileName = s"Snappy_${queryNum}"
-    val snappyDest: String = SnappyTestUtils.getQueryResultDir("snappyQueryFiles") +
+    val snappyDest: String = getQueryResultDir("snappyQueryFiles") +
         File.separator + snappyQueryFileName
     pw.println(snappyDest)
     val snappyFile: File = new java.io.File(snappyDest)
@@ -278,7 +285,7 @@ object SnappyTestUtils {
         val snap_col1 = snappyDF.schema.fieldNames(0)
         val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
         snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
-        SnappyTestUtils.writeToFile(snappyDF, snappyDest, snc)
+        writeToFile(snappyDF, snappyDest, snc)
         // writeResultSetToCsv(snappyDF, snappyFile)
         pw.println(s"${queryNum} Result Collected in file $snappyDest")
       }
@@ -293,13 +300,13 @@ object SnappyTestUtils {
         val col1 = goldenDF.schema.fieldNames(0)
         val col = goldenDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
         goldenDF = goldenDF.repartition(1).sortWithinPartitions(col1, col: _*)
-        SnappyTestUtils.writeToFile(goldenDF, sortedGoldenDest, snc)
+        writeToFile(goldenDF, sortedGoldenDest, snc)
         // writeResultSetToCsv(goldenDF, sortedGoldenFile)
         pw.println(s"${queryNum} Result Collected in file ${sortedGoldenDest}")
       } else {
         pw.println(s"zero results in query $queryNum.")
       }
-      hasValidationFailed = SnappyTestUtils.compareFiles(snappyFile, sortedGoldenFile, pw,
+      hasValidationFailed = compareFiles(snappyFile, sortedGoldenFile, pw,
         hasValidationFailed)
 
     } catch {
