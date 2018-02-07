@@ -18,6 +18,8 @@ package io.snappydata.hydra.northwind
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
+import io.snappydata.hydra.SnappyTestUtils
+
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -40,6 +42,8 @@ object NWTestSparkApp {
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation
     val pw = new PrintWriter(new FileOutputStream(new File("NWTestSparkApp.out"), true));
+    SnappyTestUtils.numRowsValidation = true
+    SnappyTestUtils.validateFullResultSet = true
     NWTestUtil.dropTables(snc)
     println("Test replicated row tables queries started")
     NWTestUtil.createAndLoadReplicatedTables(snc)

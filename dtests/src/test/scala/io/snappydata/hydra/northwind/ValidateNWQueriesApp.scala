@@ -18,6 +18,8 @@ package io.snappydata.hydra.northwind
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
+import io.snappydata.hydra.SnappyTestUtils
+
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -39,6 +41,8 @@ object ValidateNWQueriesApp {
     val tableType = args(1)
     val fullResultSetValidation: Boolean = args(2).toBoolean
     val numRowsValidation: Boolean = args(4).toBoolean
+    SnappyTestUtils.validateFullResultSet = fullResultSetValidation
+    SnappyTestUtils.numRowsValidation = numRowsValidation
     val isSmokeRun: Boolean = args(3).toBoolean
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val threadID = Thread.currentThread().getId
