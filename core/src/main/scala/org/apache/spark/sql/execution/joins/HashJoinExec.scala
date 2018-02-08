@@ -476,10 +476,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val produced = streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
 
     val beforeMap = ctx.freshName("beforeMap")
-    val skipScan = skipProcessForEmptyMap()
-    val skipCondition = if (skipScan) {
-      s"if($hashMapTerm.size() == 0) return;"
-    } else ""
 
     s"""
       boolean $keyIsUniqueTerm = true;
@@ -495,19 +491,11 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
       long $numRowsTerm = 0L;
       try {
-        $skipCondition
         ${session.evaluateFinallyCode(ctx, produced)}
       } finally {
         $numOutputRows.${metricAdd(numRowsTerm)};
       }
     """
-  }
-
-  private def skipProcessForEmptyMap() : Boolean = {
-    joinType match {
-      case Inner | LeftSemi => true
-      case _ => false
-    }
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
