@@ -70,8 +70,8 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("critical-heap-percentage", "95")
 
   // reduce startup time
-  sysProps.setProperty("p2p.discoveryTimeout", "1000")
-  sysProps.setProperty("p2p.joinTimeout", "2000")
+  // sysProps.setProperty("p2p.discoveryTimeout", "1000")
+  // sysProps.setProperty("p2p.joinTimeout", "2000")
   sysProps.setProperty("p2p.minJoinTries", "1")
 
   // spark memory fill to detect any uninitialized memory accesses
