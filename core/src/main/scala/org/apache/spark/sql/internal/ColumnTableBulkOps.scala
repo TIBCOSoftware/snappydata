@@ -18,11 +18,13 @@ package org.apache.spark.sql.internal
 
 import io.snappydata.Property
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
@@ -33,13 +35,13 @@ import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappyContext, Sna
   * This class takes the logical plans from SnappyParser
   * and converts it into another plan.
   */
-object ColumnTableBulkOps {
+object ColumnTableBulkOps extends Logging {
 
   val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
-  def validateOp(originalPlan: PutIntoTable) {
+  def validateOp(originalPlan: BulkUpdate) {
     originalPlan match {
-      case PutIntoTable(LogicalRelation(t: BulkPutRelation, _, _), query) =>
+      case BulkUpdate(LogicalRelation(t: BulkUpdateRelation, _, _), query, _) =>
         val srcRelations = query.collect {
           case LogicalRelation(src: BaseRelation, _, _) => src
         }
@@ -53,49 +55,73 @@ object ColumnTableBulkOps {
     }
   }
 
-  def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
+  def transformUpdatePlan(sparkSession: SparkSession, originalPlan: BulkUpdate): LogicalPlan = {
     validateOp(originalPlan)
     val table = originalPlan.table
+    val isPutInto = originalPlan.isPutInto
     val subQuery = originalPlan.child
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) => {
-        val putKeys = mutable.getPutKeys()
-        if (!putKeys.isDefined) {
+      case LogicalRelation(mutable: BulkUpdateRelation, _, _) => {
+        val keys = mutable.getUpdateKeys()
+        if (!keys.isDefined) {
           throw new AnalysisException(
-            s"PutInto in a column table requires key column(s) but got empty string")
+            s"Bulk update/putInto on a column table requires key column(s) but got empty string")
         }
-        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
+        val condition = prepareCondition(sparkSession, table, subQuery, keys.get)
 
         val keyColumns = getKeyColumns(table)
         val updateSubQuery = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
 
-        val cacheSize = Property.PutIntoInnerJoinCacheSize
-            .getOption(sparkSession.sparkContext.conf) match {
-          case Some(size) => size.toInt
-          case None => Property.PutIntoInnerJoinCacheSize.defaultValue.get
+        if (isPutInto) {
+          val cacheSize = ExternalStoreUtils.sizeAsBytes(
+            Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
+            Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
+          val forceCache = Property.ForceCachePutIntoInnerJoin.get(sparkSession.sqlContext.conf)
+          if (updateSubQuery.statistics.sizeInBytes <= cacheSize || forceCache) {
+            sparkSession.sharedState.cacheManager.
+                cacheQuery(new Dataset(sparkSession,
+                  updateSubQuery, RowEncoder(updateSubQuery.schema)))
+            sparkSession.asInstanceOf[SnappySession].
+                addContextObject(CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
+          }
+
+          val notExists = Join(subQuery, updateSubQuery, LeftAnti, condition)
+          val insertPlan = new Insert(table, Map.empty[String,
+              Option[String]], Project(subQuery.output, notExists),
+            OverwriteOptions(false), ifNotExists = false)
+
+          val updateExpressions =
+            notExists.output.filterNot(a => keyColumns.contains(a.name))
+          val updatePlan = Update(table, updateSubQuery, Seq.empty,
+            updateColumns, updateExpressions)
+
+          transFormedPlan = PutIntoColumnTable(table, insertPlan, updatePlan)
+        } else {
+          val updateExpressions =
+            subQuery.output.filterNot(a => keyColumns.contains(a.name))
+          transFormedPlan = Update(table, updateSubQuery, Seq.empty,
+            updateColumns, updateExpressions)
         }
-        if (updateSubQuery.statistics.sizeInBytes <= cacheSize) {
-          sparkSession.sharedState.cacheManager.
-              cacheQuery(new Dataset(sparkSession,
-                updateSubQuery, RowEncoder(updateSubQuery.schema)))
-          sparkSession.asInstanceOf[SnappySession].
-              addContextObject(CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
-        }
 
-        val notExists = Join(subQuery, updateSubQuery, LeftAnti, condition)
-        val insertPlan = new Insert(table, Map.empty[String,
-            Option[String]], Project(subQuery.output, notExists),
-          OverwriteOptions(false), ifNotExists = false)
-
-        val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
-        val updatePlan = Update(table, updateSubQuery, Seq.empty,
-          updateColumns, updateExpressions)
-
-        transFormedPlan = PutIntoColumnTable(table, insertPlan, updatePlan)
       }
+      case LogicalRelation(mutable: RowPutRelation, _, _) if !isPutInto =>
+        // For row tables get the actual key columns
+        val keyColumns = getKeyColumns(table)
+        if (keyColumns.isEmpty) {
+          throw new AnalysisException(
+            s"Empty key columns for update/delete on $mutable")
+        }
+        val condition = prepareCondition(sparkSession, table, subQuery, keyColumns)
+        val updateSubQuery = Join(table, subQuery, Inner, condition)
+        val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
+
+        val updateExpressions =
+          subQuery.output.filterNot(a => keyColumns.contains(a.name))
+        transFormedPlan = Update(table, updateSubQuery, Seq.empty,
+          updateColumns, updateExpressions)
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan
@@ -146,13 +172,13 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) => {
-        val putKeys = mutable.getPutKeys()
-        if (!putKeys.isDefined) {
+      case LogicalRelation(mutable: BulkUpdateRelation, _, _) => {
+        val keys = mutable.getUpdateKeys()
+        if (!keys.isDefined) {
           throw new AnalysisException(
             s"DeleteFrom in a column table requires key column(s) but got empty string")
         }
-        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
+        val condition = prepareCondition(sparkSession, table, subQuery, keys.get)
         val exists = Join(subQuery, table, Inner, condition)
         transFormedPlan = Delete(table, exists, Seq.empty[Attribute])
       }

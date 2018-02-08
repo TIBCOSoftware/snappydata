@@ -23,7 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
 import org.apache.spark.sql.internal.ColumnTableBulkOps
-import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
+import org.apache.spark.sql.sources.{DeleteFromTable, BulkUpdate}
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -165,12 +165,12 @@ object snappy extends Serializable {
       extends Serializable {
 
     /**
-     * "Puts" the content of the [[DataFrame]] to the specified table. It
-     * requires that the schema of the [[DataFrame]] is the same as the schema
-     * of the table. If some rows are already present then they are updated.
-     *
-     * This ignores all SaveMode.
-     */
+      * "Puts" the content of the [[DataFrame]] to the specified table. It
+      * requires that the schema of the [[DataFrame]] is the same as the schema
+      * of the table. If some rows are already present then they are updated.
+      *
+      * This ignores all SaveMode.
+      */
     def putInto(tableName: String): Unit = {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
@@ -191,13 +191,13 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       try {
-        df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-          session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+        df.sparkSession.sessionState.executePlan(BulkUpdate(UnresolvedRelation(
+          session.sessionState.catalog.newQualifiedTableName(tableName)), input, isPutInto = true))
             .executedPlan.executeCollect()
       } finally {
         df.sparkSession.asInstanceOf[SnappySession].
             getContextObject[LogicalPlan](ColumnTableBulkOps.CACHED_PUTINTO_UPDATE_PLAN).
-            map { cachedPlan =>
+            foreach { cachedPlan =>
               df.sparkSession.
                   sharedState.cacheManager.uncacheQuery(df.sparkSession, cachedPlan, true)
             }
@@ -228,7 +228,32 @@ object snappy extends Serializable {
           .executedPlan.executeCollect()
     }
 
+    def update(tableName: String): Unit = {
+      val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
+      val session = df.sparkSession match {
+        case sc: SnappySession => sc
+        case _ => sys.error("Expected a SnappyContext for putInto operation")
+      }
+      val normalizedParCols = parColsMethod.invoke(writer)
+          .asInstanceOf[Option[Seq[String]]]
+      // A partitioned relation's schema can be different from the input
+      // logicalPlan, since partition columns are all moved after data columns.
+      // We Project to adjust the ordering.
+      // TODO: this belongs to the analyzer.
+      val input = normalizedParCols.map { parCols =>
+        val (inputPartCols, inputDataCols) = df.logicalPlan.output.partition {
+          attr => parCols.contains(attr.name)
+        }
+        Project(inputDataCols ++ inputPartCols, df.logicalPlan)
+      }.getOrElse(df.logicalPlan)
+
+      df.sparkSession.sessionState.executePlan(BulkUpdate(UnresolvedRelation(
+        session.sessionState.catalog.newQualifiedTableName(tableName)), input, isPutInto = false))
+          .executedPlan.executeCollect()
+
+    }
   }
+
 }
 
 private[sql] case class SnappyDataFrameOperations(session: SnappySession,

@@ -355,10 +355,16 @@ object Property extends Enumeration {
       s". Default is true.", Some(true), null, false)
 
   val PutIntoInnerJoinCacheSize =
-    SQLVal[Long](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
-    "The putInto inner join would be cached if the table is of size less " +
-        "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
+    SQLVal[String](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
+    "The putInto inner join would be cached if the result of " +
+        "join with incoming Dataset is of size less " +
+        "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
 
+  val ForceCachePutIntoInnerJoin =
+    SQLVal[Boolean](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResult",
+      "if this property is set, The putInto inner join would be cached irrespective of size." +
+          "Primarily used in Streaming sources where correct stats can not be calculated." +
+          "", Some(false))
 
 }
 
