@@ -77,6 +77,7 @@ object ColumnTableBulkOps {
           case Some(size) => size.toInt
           case None => Property.PutIntoInnerJoinCacheSize.defaultValue.get
         }
+
         val doInsertJoin = if (updateSubQuery.statistics.sizeInBytes <= cacheSize) {
           val joinDS = new Dataset(sparkSession,
             updateSubQuery, RowEncoder(updateSubQuery.schema))
@@ -84,7 +85,7 @@ object ColumnTableBulkOps {
           sparkSession.asInstanceOf[SnappySession].
               addContextObject(CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
           joinDS.count() > 0
-        } else false
+        } else true
 
         val insertChild = if (doInsertJoin) {
           Join(subQuery, updateSubQuery, LeftAnti, condition)

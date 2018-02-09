@@ -335,12 +335,32 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.createTable("col_table", "column", df1.schema, Map("key_columns" -> "col2"))
 
     df1.write.insertInto("col_table") // insert initial data
+    df2.cache()
+    df2.count()
     df2.write.putInto("col_table") // update & insert subsequent data
 
     val resultdf = snc.table("col_table").collect()
     assert(resultdf.length == 7)
     assert(resultdf.contains(Row(8, 8, 8)))
     assert(resultdf.contains(Row(88, 88, 90)))
+  }
+
+  test("PutInto with API for pure inserts") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val df2 = snc.range(100, 110).selectExpr("id", "id", "id")
+
+    snc.createTable("col_table", "column", df1.schema, Map("key_columns" -> "col2"))
+
+    df1.write.insertInto("col_table") // insert initial data
+    df2.cache()
+    df2.count()
+    df2.write.putInto("col_table") // update & insert subsequent data
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 16)
+    assert(resultdf.contains(Row(100, 100, 100)))
   }
 
   test("PutInto with different column names") {
