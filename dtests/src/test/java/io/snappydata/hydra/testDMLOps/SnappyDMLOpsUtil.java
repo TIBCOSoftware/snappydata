@@ -669,7 +669,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
         if(stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(conn,stmt,true);
+          getAndExecuteSelect(dConn,stmt,true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
@@ -722,7 +722,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
         if(stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(conn,stmt,true);
+          getAndExecuteSelect(dConn,stmt,true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Deleted " + derbyRows + " rows in derby.");
