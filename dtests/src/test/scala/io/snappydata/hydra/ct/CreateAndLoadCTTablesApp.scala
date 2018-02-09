@@ -25,10 +25,8 @@ import org.apache.spark.{SparkContext, SparkConf}
 object CreateAndLoadCTTablesApp {
 
   def main(args: Array[String]) {
-    val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("CreateAndLoadCTTables Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("CreateAndLoadCTTables Application")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)

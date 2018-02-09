@@ -2073,10 +2073,11 @@ public class SnappyTest implements Serializable {
             SnappyPrms.getExecutorMemory() + " " +
             " --jars " + getStoreTestsJar() +
             SnappyPrms.getSparkSubmitExtraPrms() + " " +
+            " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort +
             " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
             " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-            userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
+            userAppArgs;
         Log.getLogWriter().info("spark-submit command is : " + command);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;

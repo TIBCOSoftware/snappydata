@@ -24,10 +24,8 @@ import org.apache.spark.{SparkContext, SparkConf}
 object CreateAndLoadNWTablesSparkApp {
 
   def main(args: Array[String]) {
-    val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("CreateAndLoadNWTablesSpark Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("CreateAndLoadNWTablesSpark Application")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)

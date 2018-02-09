@@ -27,10 +27,8 @@ import org.apache.spark.{SparkConf, SparkContext}
 object ValidateCTQueriesApp {
 
   def main(args: Array[String]) {
-    val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("ValidateCTQueriesApp Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("ValidateCTQueriesApp Application")
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)

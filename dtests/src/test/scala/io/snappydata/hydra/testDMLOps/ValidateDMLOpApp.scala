@@ -25,10 +25,8 @@ import org.apache.spark.{SparkConf, SparkContext}
 object ValidateDMLOpApp {
 
   def main(args: Array[String]) {
-    val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("DMLOp Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("DMLOp Application")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
