@@ -25,10 +25,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scala.util.{Failure, Success, Try}
 
 object InstallJarTestSparkApp {
-  val conf = new SparkConf().
-      setAppName("InstallJarTest Application")
-  val sc = new SparkContext(conf)
-  val snc = SnappyContext(sc)
 
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf().
