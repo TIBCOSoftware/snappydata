@@ -1,7 +1,7 @@
 io/snappydata/hydra/startUp/nwTestWithServerHA_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column","PartitionedRow","ReplicatedRow","Colocated"
@@ -14,7 +14,7 @@ io/snappydata/hydra/startUp/nwTestWithServerHA_clusterRestart.conf
 io/snappydata/hydra/startUp/nwTestWithLeadHA_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column","PartitionedRow","ReplicatedRow","Colocated"
@@ -66,7 +66,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterR
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
@@ -91,7 +91,7 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpDuringLocatorHA
 io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterLocatorStop_ClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
@@ -103,7 +103,7 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterLocatorSto
 io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterAllLocatorStop_ClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
@@ -115,7 +115,7 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterAllLocator
 io/snappydata/hydra/startUp/executeAndVerifyOpsAfterAllLocatorsStopAndClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
@@ -127,7 +127,7 @@ io/snappydata/hydra/startUp/executeAndVerifyOpsAfterAllLocatorsStopAndClusterRes
 io/snappydata/hydra/startUp/nwTestWithServerHAWithRebalance_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   E=newStore newStoreHosts=1 newStoreVMsPerHost=1 newStoreThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
@@ -140,7 +140,7 @@ io/snappydata/hydra/startUp/nwTestWithServerHAWithRebalance_clusterRestart.conf
 io/snappydata/hydra/startUp/nwTestWithOpsDuringServerHA_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   E=newStore newStoreHosts=1 newStoreVMsPerHost=1 newStoreThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
@@ -153,7 +153,7 @@ io/snappydata/hydra/startUp/nwTestWithOpsDuringServerHA_clusterRestart.conf
 io/snappydata/hydra/startUp/nwTestWithNewServerRebalance_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   E=newStore newStoreHosts=1 newStoreVMsPerHost=1 newStoreThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
