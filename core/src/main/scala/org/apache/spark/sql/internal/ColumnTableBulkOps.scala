@@ -83,7 +83,7 @@ object ColumnTableBulkOps {
           joinDS.cache()
           sparkSession.asInstanceOf[SnappySession].
               addContextObject(CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
-          false // joinDS.count() > 0
+          joinDS.count() > 0
         } else false
 
         val insertChild = if (doInsertJoin) {
