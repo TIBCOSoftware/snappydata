@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
+import java.sql.{Connection, ResultSet, Statement}
 import java.util.Collections
 
 import scala.annotation.meta.param
@@ -202,19 +202,15 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case ConnectionType.Embedded =>
             Misc.getGemFireCache.getCacheTransactionManager.rollback()
           case _ =>
-            var ps: PreparedStatement = null
+            logDebug(s"Going to rollback $txId the transaction on server on wconn $conn ")
+            val ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
+            ps.setString(1, if (txId ne null) txId else "")
             try {
-              logDebug(s"Going to rollback $txId the transaction on server on wconn $conn ")
-              ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
-              ps.setString(1, if (txId ne null) txId else "")
               ps.executeUpdate()
               logDebug(s"The txid being rolledback is $txId")
-            } catch {
-              case NonFatal(e) => logWarning(e.toString, e)
-            } finally {
-              if (ps ne null) {
-                ps.close()
-              }
+            }
+            finally {
+              ps.close()
               SparkConnectorRDDHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Rolled back $txId the transaction on server ")
             }
