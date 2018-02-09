@@ -2280,7 +2280,7 @@ object SnappySession extends Logging {
         Utils.mapExecutors(sc, (_, _) => {
           CodeGeneration.clearAllCache()
           Iterator.empty
-        })
+        }).count()
       }
     }
   }
