@@ -24,10 +24,8 @@ import org.apache.spark.{SparkConf, SparkContext}
 object NWSparkTablesAndQueriesApp {
 
   def main(args: Array[String]) {
-    val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("NWSparkTablesAndQueriesApp Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("NWSparkTablesAndQueriesApp Application")
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
