@@ -77,20 +77,25 @@ object ColumnTableBulkOps {
           case Some(size) => size.toInt
           case None => Property.PutIntoInnerJoinCacheSize.defaultValue.get
         }
-        if (updateSubQuery.statistics.sizeInBytes <= cacheSize) {
-          sparkSession.sharedState.cacheManager.
-              cacheQuery(new Dataset(sparkSession,
-                updateSubQuery, RowEncoder(updateSubQuery.schema)))
+
+        val doInsertJoin = if (updateSubQuery.statistics.sizeInBytes <= cacheSize) {
+          val joinDS = new Dataset(sparkSession,
+            updateSubQuery, RowEncoder(updateSubQuery.schema))
+          joinDS.cache()
           sparkSession.asInstanceOf[SnappySession].
               addContextObject(CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
-        }
+          joinDS.count() > 0
+        } else true
 
-        val notExists = Join(subQuery, updateSubQuery, LeftAnti, condition)
+        val insertChild = if (doInsertJoin) {
+          Join(subQuery, updateSubQuery, LeftAnti, condition)
+        } else subQuery
+
         val insertPlan = new Insert(table, Map.empty[String,
-            Option[String]], Project(subQuery.output, notExists),
+            Option[String]], Project(subQuery.output, insertChild),
           OverwriteOptions(false), ifNotExists = false)
 
-        val updateExpressions = notExists.output.filterNot(a => keyColumns.contains(a.name))
+        val updateExpressions = insertChild.output.filterNot(a => keyColumns.contains(a.name))
         val updatePlan = Update(table, updateSubQuery, Seq.empty,
           updateColumns, updateExpressions)
 
