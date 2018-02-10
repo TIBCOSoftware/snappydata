@@ -18,7 +18,7 @@ package org.apache.spark.sql.internal
 
 import io.snappydata.Property
 
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
@@ -26,7 +26,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
-import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappyContext, SnappySession, SparkSession}
+import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSession}
 
 /**
   * Helper object for PutInto operations for column tables.
@@ -60,9 +60,9 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) => {
+      case LogicalRelation(mutable: BulkPutRelation, _, _) =>
         val putKeys = mutable.getPutKeys()
-        if (!putKeys.isDefined) {
+        if (putKeys.isEmpty) {
           throw new AnalysisException(
             s"PutInto in a column table requires key column(s) but got empty string")
         }
@@ -93,14 +93,13 @@ object ColumnTableBulkOps {
 
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
-          OverwriteOptions(false), ifNotExists = false)
+          OverwriteOptions(enabled = false), ifNotExists = false)
 
         val updateExpressions = insertChild.output.filterNot(a => keyColumns.contains(a.name))
-        val updatePlan = Update(table, updateSubQuery, Seq.empty,
+        val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
 
         transFormedPlan = PutIntoColumnTable(table, insertPlan, updatePlan)
-      }
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan
@@ -130,15 +129,13 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = (joinPairs.map(EqualTo.tupled)).reduceOption(And)
+    val newCondition = joinPairs.map(EqualTo.tupled).reduceOption(And)
     newCondition
   }
 
   def getKeyColumns(table: LogicalPlan): Seq[String] = {
     table.collectFirst {
-      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
-        val ks = mutable.getKeyColumns
-        ks
+      case LogicalRelation(mutable: MutableRelation, _, _) => mutable.getKeyColumns
     }.getOrElse(throw new AnalysisException(
       s"Update/Delete requires a MutableRelation but got $table"))
 
@@ -151,16 +148,15 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) => {
+      case LogicalRelation(mutable: BulkPutRelation, _, _) =>
         val putKeys = mutable.getPutKeys()
-        if (!putKeys.isDefined) {
+        if (putKeys.isEmpty) {
           throw new AnalysisException(
             s"DeleteFrom in a column table requires key column(s) but got empty string")
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
         val exists = Join(subQuery, table, Inner, condition)
-        transFormedPlan = Delete(table, exists, Seq.empty[Attribute])
-      }
+        transFormedPlan = Delete(table, exists, Nil)
       case _ => // Do nothing, original DeleteFromTable plan is enough
     }
     transFormedPlan

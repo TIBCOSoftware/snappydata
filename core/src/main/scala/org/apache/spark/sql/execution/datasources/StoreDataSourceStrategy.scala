@@ -55,7 +55,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         projects,
         filters,
         0,
-        Seq.empty[String],
+        Nil,
         (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
     case _ => Nil
   }
@@ -127,7 +127,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       joinedCols.map(j => projects.collect {
         case a@Alias(child, _) if child.semanticEquals(j) => a.toAttribute
       })
-    } else Seq.empty
+    } else Nil
     val metadata: Map[String, String] = if (numBuckets > 0) {
       Map.empty[String, String]
     } else {

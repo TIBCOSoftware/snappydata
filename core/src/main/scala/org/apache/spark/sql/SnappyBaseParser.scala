@@ -121,9 +121,12 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   protected def start: Rule1[LogicalPlan]
 
+  protected final def unquotedIdentifier: Rule1[String] = rule {
+    atomic(capture(Consts.alphaUnderscore ~ Consts.identifier.*)) ~ delimiter
+  }
+
   protected final def identifier: Rule1[String] = rule {
-    atomic(capture(Consts.alphaUnderscore ~ Consts.identifier.*)) ~
-        delimiter ~> { (s: String) =>
+    unquotedIdentifier ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.reservedKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
@@ -146,8 +149,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
    * interpreted as a strictIdentifier.
    */
   protected final def strictIdentifier: Rule1[String] = rule {
-    atomic(capture(CharPredicate.Alpha ~ Consts.identifier.*)) ~
-        delimiter ~> { (s: String) =>
+    unquotedIdentifier ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.allKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)

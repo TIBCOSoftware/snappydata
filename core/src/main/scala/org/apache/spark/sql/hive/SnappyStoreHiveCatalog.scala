@@ -226,7 +226,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
 
         (LogicalRelation(relation, catalogTable = Some(table)), table, RelationInfo(
-          0, isPartitioned = false, Seq.empty, Array.empty, Array.empty, Array.empty, -1))
+          0, isPartitioned = false, Nil, Array.empty, Array.empty, Array.empty, -1))
       }
     }
 
@@ -644,7 +644,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             schema
           case None => relation match {
             case Some(r) => r.schema
-            case _ => StructType(Seq.empty)
+            case _ => StructType(Nil)
           }
         }
         val schemaJsonString = tableSchema.json
@@ -1105,7 +1105,7 @@ object SnappyStoreHiveCatalog {
       Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
     new CacheLoader[QualifiedTableName, Seq[(LogicalPlan, String)]]() {
       override def load(in: QualifiedTableName): Seq[(LogicalPlan, String)] = {
-        Seq.empty
+        Nil
       }
     })
 

@@ -409,27 +409,34 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           for (String schema : schemas) {
             List<String> tables = hmc.getAllTables(schema);
             for (String tableName : tables) {
-              Table table = hmc.getTable(schema, tableName);
-              String tblDataSourcePath = table.getMetadata().getProperty("path");
-              tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
-              String driverClass = table.getMetadata().getProperty("driver");
-              driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
-              String tableType = ExternalTableType.getTableType(table);
-              if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType)) {
-                // TODO: FIX ME: should not convert to upper case blindly
-                // but unfortunately hive meta-store is not case-sensitive
-                ExternalTableMetaData metaData = new ExternalTableMetaData(
-                    Utils.toUpperCase(table.getTableName()),
-                    Utils.toUpperCase(table.getDbName()),
-                    tableType, null, -1, -1,
-                    null, null, null, null,
-                    tblDataSourcePath, driverClass);
-                metaData.provider = table.getParameters().get(
-                    SnappyStoreHiveCatalog.HIVE_PROVIDER());
-                metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
-                metaData.columns = ExternalStoreUtils.getColumnMetadata(
-                    ExternalStoreUtils.getTableSchema(table));
-                externalTables.add(metaData);
+              try {
+                Table table = hmc.getTable(schema, tableName);
+                Properties metadata = table.getMetadata();
+                String tblDataSourcePath = metadata.getProperty("path");
+                tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+                String driverClass = metadata.getProperty("driver");
+                driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
+                String tableType = ExternalTableType.getTableType(table);
+                if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType)) {
+                  // TODO: FIX ME: should not convert to upper case blindly
+                  // but unfortunately hive meta-store is not case-sensitive
+                  ExternalTableMetaData metaData = new ExternalTableMetaData(
+                      Utils.toUpperCase(table.getTableName()),
+                      Utils.toUpperCase(table.getDbName()),
+                      tableType, null, -1, -1,
+                      null, null, null, null,
+                      tblDataSourcePath, driverClass);
+                  metaData.provider = table.getParameters().get(
+                      SnappyStoreHiveCatalog.HIVE_PROVIDER());
+                  metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
+                  metaData.columns = ExternalStoreUtils.getColumnMetadata(
+                      ExternalStoreUtils.getTableSchema(table));
+                  externalTables.add(metaData);
+                }
+              } catch (Exception e) {
+                // ignore exception and move to next
+                Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                    "Failed to retrieve information for " + tableName + ": " + e);
               }
             }
           }
