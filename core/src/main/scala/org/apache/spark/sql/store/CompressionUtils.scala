@@ -112,12 +112,14 @@ object CompressionUtils {
       output
   }
 
-  def codecDecompress(input: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
+  /** decompress the given buffer if compressed else return the original */
+  def codecDecompressIfRequired(input: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
     assert(input.order() eq ByteOrder.LITTLE_ENDIAN)
     val position = input.position()
-    val codecId = -input.getInt(position)
-    if (codecId > 0) codecDecompress(input, allocator, position, codecId)
-    else input
+    val codec = -input.getInt(position)
+    if (CompressionCodecId.isCompressed(codec)) {
+      codecDecompress(input, allocator, position, codec)
+    } else input
   }
 
   private[sql] def codecDecompress(input: ByteBuffer,
