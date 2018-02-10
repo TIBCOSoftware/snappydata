@@ -75,7 +75,7 @@ final class ColumnFormatEncoder extends RowEncoder {
     columnBuffer.rewind()
     columnBuffer = columnBuffer.order(ByteOrder.LITTLE_ENDIAN)
     val codec = -columnBuffer.getInt(0)
-    val isCompressed = codec > 0
+    val isCompressed = CompressionCodecId.isCompressed(codec)
     val codecId = if (isCompressed) codec
     else CompressionCodecId.fromName(container.getRegion.getColumnCompressionCodec).id
     // set the buffer into ColumnFormatValue, ColumnDelta or ColumnDeleteDelta
