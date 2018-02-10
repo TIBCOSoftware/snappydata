@@ -86,6 +86,8 @@ object ColumnFormatEntry {
   // table index mapping code depends on this being the smallest meta-column
   // (see ColumnDelta.tableColumnIndex and similar methods)
   val DELETE_MASK_COL_INDEX: Int = -3
+
+  private[columnar] val dummyStats = new DummyCachePerfStats
 }
 
 /**
@@ -428,7 +430,10 @@ class ColumnFormatValue extends SerializedDiskBuffer
 
   @inline private def getCachePerfStats(context: RegionEntryContext): CachePerfStats = {
     if (context ne null) context.getCachePerfStats
-    else GemFireCacheImpl.getExisting.getCachePerfStats
+    else {
+      val cache = GemFireCacheImpl.getInstance()
+      if (cache ne null) cache.getCachePerfStats else ColumnFormatEntry.dummyStats
+    }
   }
 
   private def decompressValue(buffer: ByteBuffer): ColumnFormatValue = {

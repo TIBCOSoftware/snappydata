@@ -29,6 +29,7 @@ import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
+import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
@@ -56,6 +57,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   bootProps.setProperty("log-level", "config")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
+  System.setProperty(Constant.COMPRESSION_MIN_SIZE, compressionMinSize)
 
   var adminConn = null: Connection
   var user1Conn = null: Connection
@@ -135,13 +137,15 @@ class SplitClusterDUnitSecurityTest(s: String)
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val confDir = s"$snappyProductDir/conf"
+    val compressionArg = this.compressionArg
     val ldapConf = getLdapConf
-    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort $ldapConf",
+    writeToFile(
+      s"localhost  -peer-discovery-port=$port -client-port=$netPort $compressionArg $ldapConf",
       s"$confDir/locators")
     writeToFile(s"localhost  -locators=localhost[$port] $ldapConf", s"$confDir/leads")
     writeToFile(
-      s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $ldapConf
-          |localhost  -locators=localhost[$port] -client-port=$netPort2 $ldapConf
+      s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg $ldapConf
+          |localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
           |""".stripMargin, s"$confDir/servers")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 

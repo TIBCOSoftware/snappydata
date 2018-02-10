@@ -19,9 +19,10 @@ package org.apache.spark.sql.store
 
 import java.nio.{ByteBuffer, ByteOrder}
 
-import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
 import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
+import io.snappydata.Constant
 import net.jpountz.lz4.LZ4Factory
 import org.xerial.snappy.Snappy
 
@@ -45,7 +46,8 @@ object CompressionUtils {
   private[this] val COMPRESSION_HEADER_SIZE = 8
   private[this] val MIN_COMPRESSION_RATIO = 0.75
   /** minimum size of buffer that will be considered for compression */
-  private[sql] val MIN_COMPRESSION_SIZE = 2048
+  private[sql] val MIN_COMPRESSION_SIZE =
+    SystemProperties.getServerInstance.getInteger(Constant.COMPRESSION_MIN_SIZE, 2048)
 
   private def writeCompressionHeader(codecId: Int,
       uncompressedLen: Int, buffer: ByteBuffer): Unit = {

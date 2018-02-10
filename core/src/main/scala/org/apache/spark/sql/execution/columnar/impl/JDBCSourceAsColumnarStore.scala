@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, ResultSet, Statement}
+import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 import java.util.Collections
 
 import scala.annotation.meta.param
@@ -54,14 +54,14 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.util.TaskCompletionListener
-import org.apache.spark.{Logging, Partition, TaskContext}
+import org.apache.spark.{Partition, TaskContext}
 
 /**
  * Column Store implementation for GemFireXD.
  */
 class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionProperties,
     var numPartitions: Int, private var _tableName: String, var schema: StructType)
-    extends ExternalStore with KryoSerializable with Logging {
+    extends ExternalStore with KryoSerializable {
 
   self =>
 
@@ -184,7 +184,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       } finally {
         try {
           if (!success && !conn.isClosed) {
-            conn.rollback()
+            handleRollback(conn.rollback)
           }
         } finally {
           conn.close()
@@ -202,18 +202,18 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case ConnectionType.Embedded =>
             Misc.getGemFireCache.getCacheTransactionManager.rollback()
           case _ =>
-            logDebug(s"Going to rollback $txId the transaction on server on wconn $conn ")
-            val ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
-            ps.setString(1, if (txId ne null) txId else "")
-            try {
+            logDebug(s"Going to rollback transaction $txId on server using $conn")
+            var ps: PreparedStatement = null
+            handleRollback(() => {
+              ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
+              ps.setString(1, if (txId ne null) txId else "")
               ps.executeUpdate()
-              logDebug(s"The txid being rolledback is $txId")
-            }
-            finally {
-              ps.close()
+              logDebug(s"The transaction ID being rolled back is $txId")
+            }, () => {
+              if (ps ne null) ps.close()
               SparkConnectorRDDHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Rolled back $txId the transaction on server ")
-            }
+            })
         }
       }
     }(conn)
@@ -588,12 +588,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         tableName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
           val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
-            otherRDDs = Seq.empty, numBuckets = -1,
-            partitionColumns = Seq.empty, partitionColumnAliases = Seq.empty,
-            baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs,
+            otherRDDs = Nil, numBuckets = -1,
+            partitionColumns = Nil, partitionColumnAliases = Nil,
+            baseRelation = null, schema, allFilters = Nil, schemaAttrs,
             caseSensitive = true)
           val insertPlan = RowInsertExec(tableScan, putInto = true,
-            Seq.empty, Seq.empty, numBuckets = -1, isPartitioned = false, schema,
+            Nil, Nil, numBuckets = -1, isPartitioned = false, schema,
             None, onExecutor = true, tableName, connProperties)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD

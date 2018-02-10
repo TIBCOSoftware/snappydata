@@ -76,6 +76,8 @@ abstract class ClusterManagerTestBase(s: String)
 
   // spark memory fill to detect any uninitialized memory accesses
   sysProps.setProperty("spark.memory.debugFill", "true")
+  // reduce minimum compression size so that it happens for all the values for testing
+  sysProps.setProperty(Constant.COMPRESSION_MIN_SIZE, "128")
 
   var host: Host = _
   var vm0: VM = _

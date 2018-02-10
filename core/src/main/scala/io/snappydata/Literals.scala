@@ -102,6 +102,9 @@ object Constant {
   // should be started
   val ZEPPELIN_INTERPRETER_PORT = "zeppelin.interpreter.port"
 
+  // System property for minimum size of buffer to consider for compression.
+  val COMPRESSION_MIN_SIZE: String = PROPERTY_PREFIX + "compression.minSize"
+
   val CHAR_TYPE_BASE_PROP = "base"
 
   val CHAR_TYPE_SIZE_PROP = "size"

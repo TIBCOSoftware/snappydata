@@ -141,7 +141,7 @@ abstract case class JDBCAppendableRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    new ColumnInsertExec(child, Seq.empty, Seq.empty, this, table)
+    new ColumnInsertExec(child, Nil, Nil, this, table)
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
