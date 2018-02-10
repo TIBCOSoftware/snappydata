@@ -223,7 +223,7 @@ private[sql] case class DeleteFromTable(
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
 
-  override def output: Seq[Attribute] = Seq.empty
+  override def output: Seq[Attribute] = Nil
 
   override lazy val resolved: Boolean = childrenResolved &&
       child.output.zip(table.output).forall {

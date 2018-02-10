@@ -101,9 +101,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             val tables = Misc.getMemStore.getAllContainers.asScala.
                 map(x => (x.getSchemaName + "." + x.getTableName, x.fetchHiveMetaData(false)))
             catalogEntry.dependents.toSeq.map(x => tables.find(x == _._1).get._2)
-          } else {
-            Seq.empty
-          }
+          } else Nil
 
           val tableName = container.getQualifiedTableName
           // add weightage column for sample tables if required

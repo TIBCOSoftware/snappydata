@@ -22,6 +22,9 @@ package io.snappydata
 import java.sql.{CallableStatement, Connection}
 import java.util.{Timer, TimerTask}
 
+import scala.collection.JavaConverters._
+import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.{CancelException, DataSerializer}
 import com.pivotal.gemfirexd.Attribute
@@ -30,14 +33,12 @@ import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
-import scala.collection.JavaConverters._
-import scala.util.control.NonFatal
 
 object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
 
-  private var conn: Connection = null
-  private var getStatsStmt: CallableStatement = null
-  private var _url: String = null
+  private var conn: Connection = _
+  private var getStatsStmt: CallableStatement = _
+  private var _url: String = _
 
   def initializeConnection(context: Option[SparkContext] = None): Unit = {
     var securePart = ""
@@ -116,15 +117,14 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
             "from SnappyData cluster due to " + e.toString)
         logDebug("Exception stack trace: ", e)
         closeConnection()
-        return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats],
-            Seq.empty[SnappyExternalTableStats])
+        return (Nil, Nil, Nil)
     }
     val value = getStatsStmt.getBlob(1)
     val bdi: ByteArrayDataInput = new ByteArrayDataInput
     bdi.initialize(value.getBytes(1, value.length().asInstanceOf[Int]), null)
     val regionStats: java.util.List[SnappyRegionStats] =
-    DataSerializer.readObject(bdi).asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
-    (regionStats.asScala, Seq.empty[SnappyIndexStats], Seq.empty[SnappyExternalTableStats])
+      DataSerializer.readObject(bdi).asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
+    (regionStats.asScala, Nil, Nil)
   }
 
   override def stop(): Unit = {

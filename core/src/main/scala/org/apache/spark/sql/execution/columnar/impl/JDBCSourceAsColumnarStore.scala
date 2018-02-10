@@ -588,12 +588,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         tableName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
           val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
-            otherRDDs = Seq.empty, numBuckets = -1,
-            partitionColumns = Seq.empty, partitionColumnAliases = Seq.empty,
-            baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs,
+            otherRDDs = Nil, numBuckets = -1,
+            partitionColumns = Nil, partitionColumnAliases = Nil,
+            baseRelation = null, schema, allFilters = Nil, schemaAttrs,
             caseSensitive = true)
           val insertPlan = RowInsertExec(tableScan, putInto = true,
-            Seq.empty, Seq.empty, numBuckets = -1, isPartitioned = false, schema,
+            Nil, Nil, numBuckets = -1, isPartitioned = false, schema,
             None, onExecutor = true, tableName, connProperties)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD

@@ -43,7 +43,7 @@ private[sql] case class CreateMetastoreTableUsing(
     snc.createTable(snc.sessionState.catalog
         .newQualifiedTableName(tableIdent), provider, userSpecifiedSchema,
       schemaDDL, mode, snc.addBaseTableOption(baseTable, options), isBuiltIn)
-    Seq.empty
+    Nil
   }
 }
 
@@ -65,7 +65,7 @@ private[sql] case class CreateMetastoreTableUsingSelect(
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, partitionColumns, mode,
       snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
-    Seq.empty
+    Nil
   }
 }
 
@@ -87,7 +87,7 @@ private[sql] case class DropTableOrViewCommand(isView: Boolean, ifExists: Boolea
         "Cannot drop a view with DROP TABLE. Please use DROP VIEW instead")
     }
     snc.dropTable(qualifiedName, ifExists, resolveRelation = true)
-    Seq.empty
+    Nil
   }
 }
 
@@ -99,7 +99,7 @@ private[sql] case class TruncateManagedTableCommand(ifExists: Boolean,
     val catalog = snc.sessionState.catalog
     snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
       ifExists, ignoreIfUnsupported = false)
-    Seq.empty
+    Nil
   }
 }
 
@@ -110,7 +110,7 @@ private[sql] case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
     snc.alterTable(catalog.newQualifiedTableName(tableIdent), isAddColumn = true, addColumn)
-    Seq.empty
+    Nil
   }
 }
 
@@ -134,7 +134,7 @@ private[sql] case class AlterTableDropColumnCommand(
       }
     val table = catalog.newQualifiedTableName(tableIdent)
     snc.alterTable(table, isAddColumn = false, structField)
-    Seq.empty
+    Nil
   }
 }
 
@@ -149,7 +149,7 @@ private[sql] case class CreateIndexCommand(indexName: TableIdentifier,
     val tableIdent = catalog.newQualifiedTableName(baseTable)
     val indexIdent = catalog.newQualifiedTableName(indexName)
     snc.createIndex(indexIdent, tableIdent, indexColumns, options)
-    Seq.empty
+    Nil
   }
 }
 
@@ -162,7 +162,7 @@ private[sql] case class DropIndexCommand(
     val catalog = snc.sessionState.catalog
     val indexIdent = catalog.newQualifiedTableName(indexName)
     snc.dropIndex(indexIdent, ifExists)
-    Seq.empty
+    Nil
   }
 }
 
@@ -170,7 +170,7 @@ private[sql] case class SetSchemaCommand(schemaName: String) extends RunnableCom
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     sparkSession.asInstanceOf[SnappySession].setSchema(schemaName)
-    Seq.empty[Row]
+    Nil
   }
 }
 
@@ -208,6 +208,6 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
           // "There is no running Streaming Context to be stopped")
         }
     }
-    Seq.empty[Row]
+    Nil
   }
 }

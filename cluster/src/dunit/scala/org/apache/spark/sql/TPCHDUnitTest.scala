@@ -383,7 +383,7 @@ object TPCHUtils extends Logging {
             for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
               if (!expectedLine.equals(actualLine)) {
                 resultOutputStream.println(s"For $query result mismatched observed")
-                resultOutputStream.println(s"Excpected : $expectedLine")
+                resultOutputStream.println(s"Expected  : $expectedLine")
                 resultOutputStream.println(s"Found     : $actualLine")
                 resultOutputStream.println(s"-------------------------------------")
               }
@@ -424,7 +424,7 @@ object TPCHUtils extends Logging {
         s"Query result match Observed. Look at Result_Snappy_Tokenization.out for detailed failure")
       if (resultOutputFile.count() != 0) {
         logWarning(
-          s"QUERY RESYLT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
+          s"QUERY RESULT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
               s" failure")
       }
     }

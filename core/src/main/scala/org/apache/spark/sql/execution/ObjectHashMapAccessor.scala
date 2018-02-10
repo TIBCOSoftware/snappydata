@@ -286,7 +286,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   override protected def doExecute(): RDD[InternalRow] =
     throw new UnsupportedOperationException("unexpected invocation")
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = Seq.empty
+  override def inputRDDs(): Seq[RDD[InternalRow]] = Nil
 
   override protected def doProduce(ctx: CodegenContext): String =
     throw new UnsupportedOperationException("unexpected invocation")

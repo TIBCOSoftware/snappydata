@@ -330,7 +330,7 @@ abstract class SnappyDDLParser(session: SparkSession)
       }
       val userCols = cols.asInstanceOf[Option[Seq[(String, Option[String])]]] match {
         case Some(seq) => seq
-        case None => Seq.empty
+        case None => Nil
       }
       CreateViewCommand(
         name = table,
@@ -611,7 +611,9 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected final def qualifiedName: Rule1[String] = rule {
-    capture((Consts.identifier | '.').*) ~ delimiter
+    (unquotedIdentifier + ('.' ~ ws)) ~>
+        ((ids: Seq[String]) => ids.mkString(".")) |
+    quotedIdentifier
   }
 
   protected def column: Rule1[StructField] = rule {
