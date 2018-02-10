@@ -331,7 +331,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 
   private def decompress(buffer: ByteBuffer): ByteBuffer = {
     val allocator = ColumnEncoding.getAllocator(buffer)
-    val result = CompressionUtils.codecDecompress(buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
+    val result = CompressionUtils.codecDecompressIfRequired(
+      buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
     if (result ne buffer) {
       UnsafeHolder.releaseIfDirectBuffer(buffer)
     }
