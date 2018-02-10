@@ -37,12 +37,14 @@ object CompressionCodecId extends Enumeration {
   val LZ4 = Value(LZ4_ID, "LZ4")
   val Snappy = Value(SNAPPY_ID, "Snappy")
 
-  // The case of codec > MAX_ID should ideally be error but due to backward compatibility
-  // the stats row does not have any header to determine compression or not so can fail
-  // in rare cases if first integer is a negative value. However it should never be match
-  // with the IDs here because negative of codecId which is written are -1, -2, -3 resolve
-  // to 0xfffffff... which should never happen since first fields like COUNT
-  // in the UnsafeRow is non-nullable so the null bitset will have first bit as zero
+  /**
+   * The case of codec > MAX_ID should ideally be error but due to backward compatibility
+   * the stats row does not have any header to determine compression or not so can fail
+   * in rare cases if first integer is a negative value. However it should never be match
+   * with the IDs here because negative of codecId which is written are -1, -2, -3 resolve
+   * to 0xfffffff... which should never happen since nullCount fields are non-nullable
+   * in the UnsafeRow created, so bitset cannot have 'ff' kind of patterns.
+   */
   def isCompressed(codec: Int): Boolean = codec > 0 && codec <= MAX_ID
 
   def fromName(name: String): CompressionCodecId.Type =

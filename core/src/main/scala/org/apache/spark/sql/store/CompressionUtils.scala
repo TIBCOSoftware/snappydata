@@ -123,12 +123,14 @@ object CompressionUtils {
   private[sql] def codecDecompress(input: ByteBuffer,
       allocator: BufferAllocator, position: Int, codecId: Int): ByteBuffer = {
     val outputLen = input.getInt(position + 4)
-    val result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
+    var result: ByteBuffer = null
     codecId match {
       case CompressionCodecId.LZ4_ID =>
+        result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
         LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
           position + 8, result, 0, outputLen)
       case CompressionCodecId.SNAPPY_ID =>
+        result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
         input.position(position + 8)
         if (input.isDirect) {
           Snappy.uncompress(input, result)

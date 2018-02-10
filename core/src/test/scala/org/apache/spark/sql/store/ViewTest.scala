@@ -18,7 +18,7 @@
 package org.apache.spark.sql.store
 
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, HashJoinExec}
 import org.apache.spark.sql.{AnalysisException, Row, SnappySession}
@@ -224,6 +224,20 @@ class ViewTest extends SnappyFunSuite {
     checkAnswer(session2.sql("describe viewOnTable"), viewMeta)
     checkAnswer(session2.sql("select * from viewOnTable"), expectedResult)
 
+    // test for SNAP-2205: see CompressionCodecId.isCompressed for a description of the problem
+    session.conf.set(Property.ColumnBatchSize.name, "10k")
+    // 21 columns mean 63 for ColumnStatsSchema so total of 64 fields including the COUNT
+    // in the stats row which will fit in exactly one long for the nulls bitset
+    val cols = (1 to 21).map(i => s"col$i string").mkString(", ")
+    session.sql(s"CREATE TABLE test2205 ($cols) using column options (buckets '4')")
+
+    val numElements = 10000
+    val projection = (1 to 21).map(i => s"null as col$i")
+    session.range(numElements).selectExpr(projection: _*).write.insertInto("test2205")
+
+    checkAnswer(session.sql("select count(*), count(col10) from test2205"),
+      Seq(Row(numElements, 0)))
+
     // should be available after a restart
     session.close()
     session2.close()
@@ -238,6 +252,9 @@ class ViewTest extends SnappyFunSuite {
     checkAnswer(session2.sql("describe viewOnTable"), viewMeta)
     checkAnswer(session2.sql("select * from viewOnTable"), expectedResult)
 
+    checkAnswer(session2.sql("select count(*), count(col10) from test2205"),
+      Seq(Row(numElements, 0)))
+
     try {
       session2.sql("drop table viewOnTable")
       fail("expected drop table to fail for view")
@@ -247,6 +264,7 @@ class ViewTest extends SnappyFunSuite {
     // drop and check unavailability
     session2.sql("drop view viewOnTable")
     assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    session2.sql("drop table test2205")
 
     // check colocated joins with VIEWs (SNAP-2204)
 
