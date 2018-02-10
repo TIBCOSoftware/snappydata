@@ -714,7 +714,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       }
       buffer = buffer.order(ByteOrder.LITTLE_ENDIAN)
       val codecId = -buffer.getInt(buffer.position())
-      val isCompressed = codecId > 0
+      val isCompressed = CompressionCodecId.isCompressed(codecId)
       // owner is already marked for storage
       // if not compressed set the default codecId while the actual one will be
       // set when the value is placed in region (in setDiskLocation) that will
