@@ -36,7 +36,7 @@ import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSes
   */
 object ColumnTableBulkOps {
 
-  val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
+
 
   def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
@@ -71,10 +71,9 @@ object ColumnTableBulkOps {
         val doInsertJoin = if (subQuery.statistics.sizeInBytes <= cacheSize) {
           val joinDS = new Dataset(sparkSession,
             updateSubQuery, RowEncoder(updateSubQuery.schema))
-          if (sparkSession.sharedState.cacheManager
-              .lookupCachedData(updateSubQuery).isDefined){
-            joinDS.unpersist(blocking = true)
-          }
+
+          sparkSession.asInstanceOf[SnappySession].
+              addContextObject(SnappySession.CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
           joinDS.cache()
           joinDS.count() > 0
         } else true
