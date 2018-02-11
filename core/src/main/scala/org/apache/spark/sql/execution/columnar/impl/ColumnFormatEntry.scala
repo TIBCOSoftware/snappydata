@@ -460,30 +460,43 @@ class ColumnFormatValue extends SerializedDiskBuffer
       val perfStats = getCachePerfStats(context)
       val startDecompression = perfStats.startDecompression()
       val decompressed = CompressionUtils.codecDecompress(buffer, allocator, position, -typeId)
-      // update decompression stats
-      perfStats.endDecompression(startDecompression)
-      val newValue = copy(decompressed, isCompressed = false, changeOwnerToStorage = false)
-      if (!isDirect || this.refCount <= 2) {
-        val updateStats = (context ne null) && !fromDisk
-        if (updateStats && !isDirect) {
-          StoreCallbacksImpl.acquireStorageMemory(context.getFullPath,
-            decompressed.capacity() - buffer.capacity(), buffer = null,
-            offHeap = false, shouldEvict = true)
+      val isManagedDirect = allocator.isManagedDirect
+      try {
+        // update decompression stats
+        perfStats.endDecompression(startDecompression)
+        val newValue = copy(decompressed, isCompressed = false, changeOwnerToStorage = false)
+        if (!isDirect || this.refCount <= 2) {
+          val updateStats = (context ne null) && !fromDisk
+          if (updateStats && !isManagedDirect) {
+            // acquire the increased memory after decompression
+            val numBytes = decompressed.capacity() - buffer.capacity()
+            if (!StoreCallbacksImpl.acquireStorageMemory(context.getFullPath,
+              numBytes, buffer = null, offHeap = false, shouldEvict = true)) {
+              throw LocalRegion.lowMemoryException(null, numBytes)
+            }
+          }
+          val newBuffer = transferToStorage(decompressed, allocator)
+          // update the statistics before changing self
+          if (updateStats) {
+            context.updateMemoryStats(this, newValue)
+          }
+          this.columnBuffer = newBuffer
+          this.decompressionState = 1
+          if (isDirect) {
+            UnsafeHolder.releaseDirectBuffer(buffer)
+          }
+          this
+        } else {
+          perfStats.incDecompressedReplaceSkipped()
+          newValue
         }
-        val newBuffer = transferToStorage(decompressed, allocator)
-        // update the statistics before changing self
-        if (updateStats) {
-          context.updateMemoryStats(this, newValue)
+      } finally {
+        if (!isManagedDirect) {
+          // release the memory acquired for decompression
+          // (any on-the-fly returned buffer will be part of runtime overhead)
+          StoreCallbacksImpl.releaseStorageMemory(CompressionUtils.DECOMPRESSION_OWNER,
+            decompressed.capacity(), offHeap = false)
         }
-        this.columnBuffer = newBuffer
-        this.decompressionState = 1
-        if (isDirect) {
-          UnsafeHolder.releaseDirectBuffer(buffer)
-        }
-        this
-      } else {
-        perfStats.incDecompressedReplaceSkipped()
-        newValue
       }
     }
   }
@@ -508,43 +521,53 @@ class ColumnFormatValue extends SerializedDiskBuffer
         val compressed = CompressionUtils.codecCompress(compressionCodecId,
           buffer, bufferLen, allocator)
         if (compressed ne buffer) {
-          // update compression stats
-          perfStats.endCompression(startCompression, bufferLen, compressed.limit())
-          if (maxCompressionsExceeded && (!isDirect || this.refCount <= 2)) {
-            val updateStats = (context ne null) && !fromDisk
-            // trim to size if there is wasted space
-            val size = compressed.limit()
-            val newBuffer = if (compressed.capacity() >= size + 32) {
-              val trimmed = allocator.allocateForStorage(size).order(ByteOrder.LITTLE_ENDIAN)
-              trimmed.put(compressed)
-              if (isDirect) {
-                UnsafeHolder.releaseDirectBuffer(compressed)
+          val isManagedDirect = allocator.isManagedDirect
+          try {
+            // update compression stats
+            perfStats.endCompression(startCompression, bufferLen, compressed.limit())
+            if (maxCompressionsExceeded && (!isDirect || this.refCount <= 2)) {
+              val updateStats = (context ne null) && !fromDisk
+              // trim to size if there is wasted space
+              val size = compressed.limit()
+              val newBuffer = if (compressed.capacity() >= size + 32) {
+                val trimmed = allocator.allocateForStorage(size).order(ByteOrder.LITTLE_ENDIAN)
+                trimmed.put(compressed)
+                if (isDirect) {
+                  UnsafeHolder.releaseDirectBuffer(compressed)
+                }
+                trimmed.rewind()
+                trimmed
+              } else transferToStorage(compressed, allocator)
+              // update the statistics before changing self
+              if (updateStats) {
+                val newValue = copy(newBuffer, isCompressed = true, changeOwnerToStorage = false)
+                context.updateMemoryStats(this, newValue)
               }
-              trimmed.rewind()
-              trimmed
-            } else transferToStorage(compressed, allocator)
-            // update the statistics before changing self
-            if (updateStats) {
-              val newValue = copy(newBuffer, isCompressed = true, changeOwnerToStorage = false)
-              context.updateMemoryStats(this, newValue)
+              this.columnBuffer = newBuffer
+              this.decompressionState = 0
+              if (isDirect) {
+                UnsafeHolder.releaseDirectBuffer(buffer)
+              }
+              // release storage memory
+              if (updateStats && !isManagedDirect) {
+                StoreCallbacksImpl.releaseStorageMemory(context.getFullPath,
+                  buffer.capacity() - newBuffer.capacity(), offHeap = false)
+              }
+              this
+            } else {
+              if (!maxCompressionsExceeded) {
+                this.decompressionState = (this.decompressionState + 1).toByte
+              }
+              perfStats.incCompressedReplaceSkipped()
+              copy(compressed, isCompressed = true, changeOwnerToStorage = false)
             }
-            this.columnBuffer = newBuffer
-            this.decompressionState = 0
-            if (isDirect) {
-              UnsafeHolder.releaseDirectBuffer(buffer)
+          } finally {
+            // release the memory acquired for compression
+            // (any on-the-fly returned buffer will be part of runtime overhead)
+            if (!isManagedDirect) {
+              StoreCallbacksImpl.releaseStorageMemory(CompressionUtils.COMPRESSION_OWNER,
+                compressed.capacity(), offHeap = false)
             }
-            // release storage memory
-            if (updateStats && !isDirect) {
-              StoreCallbacksImpl.releaseStorageMemory(context.getFullPath,
-                buffer.capacity() - newBuffer.capacity(), offHeap = false)
-            }
-            this
-          } else {
-            if (!maxCompressionsExceeded) {
-              this.decompressionState = (this.decompressionState + 1).toByte
-            }
-            perfStats.incCompressedReplaceSkipped()
-            copy(compressed, isCompressed = true, changeOwnerToStorage = false)
           }
         } else {
           // update skipped compression stats
@@ -579,19 +602,14 @@ class ColumnFormatValue extends SerializedDiskBuffer
 
   override final def setDiskLocation(id: DiskId,
       context: RegionEntryContext): Unit = synchronized {
-    if (id ne null) {
-      this.diskId = id
-      // set/update diskRegion only if incoming value has been provided
-      if (context ne null) {
-        this.regionContext = context
-        val codec = context.getColumnCompressionCodec
-        if (codec ne null) {
-          this.compressionCodecId = CompressionCodecId.fromName(codec).id.toByte
-        }
+    this.diskId = id
+    // set/update diskRegion only if incoming value has been provided
+    if (context ne null) {
+      this.regionContext = context
+      val codec = context.getColumnCompressionCodec
+      if (codec ne null) {
+        this.compressionCodecId = CompressionCodecId.fromName(codec).id.toByte
       }
-    } else {
-      this.diskId = null
-      this.regionContext = null
     }
   }
 
