@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeRefer
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
@@ -35,23 +36,7 @@ import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSes
   */
 object ColumnTableBulkOps {
 
-  val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
-  def validateOp(originalPlan: PutIntoTable) {
-    originalPlan match {
-      case PutIntoTable(LogicalRelation(t: BulkPutRelation, _, _), query) =>
-        val srcRelations = query.collect {
-          case LogicalRelation(src: BaseRelation, _, _) => src
-        }
-        if (srcRelations.contains(t)) {
-          throw Utils.analysisException(
-            "Cannot put into table that is also being read from.")
-        } else {
-          // OK
-        }
-      case _ => // OK
-    }
-  }
 
   def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
@@ -69,40 +54,57 @@ object ColumnTableBulkOps {
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
 
         val keyColumns = getKeyColumns(table)
-        val updateSubQuery = Join(table, subQuery, Inner, condition)
+        var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
+        val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
 
-        val cacheSize = Property.PutIntoInnerJoinCacheSize
-            .getOption(sparkSession.sparkContext.conf) match {
-          case Some(size) => size.toInt
-          case None => Property.PutIntoInnerJoinCacheSize.defaultValue.get
-        }
+        val cacheSize = ExternalStoreUtils.sizeAsBytes(
+          Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
+          Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
 
-        val doInsertJoin = if (updateSubQuery.statistics.sizeInBytes <= cacheSize) {
+        val updatePlan = Update(table, updateSubQuery, Seq.empty,
+          updateColumns, updateExpressions)
+        val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
+        val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+        updateSubQuery = analyzedUpdate.child
+
+        val doInsertJoin = if (subQuery.statistics.sizeInBytes <= cacheSize) {
           val joinDS = new Dataset(sparkSession,
             updateSubQuery, RowEncoder(updateSubQuery.schema))
-          joinDS.cache()
+
           sparkSession.asInstanceOf[SnappySession].
-              addContextObject(CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
+              addContextObject(SnappySession.CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
+          joinDS.cache()
           joinDS.count() > 0
         } else true
 
         val insertChild = if (doInsertJoin) {
           Join(subQuery, updateSubQuery, LeftAnti, condition)
         } else subQuery
-
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
           OverwriteOptions(enabled = false), ifNotExists = false)
 
-        val updateExpressions = insertChild.output.filterNot(a => keyColumns.contains(a.name))
-        val updatePlan = Update(table, updateSubQuery, Nil,
-          updateColumns, updateExpressions)
-
-        transFormedPlan = PutIntoColumnTable(table, insertPlan, updatePlan)
+        transFormedPlan = PutIntoColumnTable(table, insertPlan, analyzedUpdate)
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan
+  }
+
+  def validateOp(originalPlan: PutIntoTable) {
+    originalPlan match {
+      case PutIntoTable(LogicalRelation(t: BulkPutRelation, _, _), query) =>
+        val srcRelations = query.collect {
+          case LogicalRelation(src: BaseRelation, _, _) => src
+        }
+        if (srcRelations.contains(t)) {
+          throw Utils.analysisException(
+            "Cannot put into table that is also being read from.")
+        } else {
+          // OK
+        }
+      case _ => // OK
+    }
   }
 
   private def prepareCondition(sparkSession: SparkSession,

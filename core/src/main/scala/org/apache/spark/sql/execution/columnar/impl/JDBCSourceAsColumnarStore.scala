@@ -828,8 +828,7 @@ final class SmartConnectorColumnRDD(
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    split.asInstanceOf[SmartExecutorBucketPartition]
-        .hostList.map(_._1.asInstanceOf[String])
+    split.asInstanceOf[SmartExecutorBucketPartition].hostList.map(_._1)
   }
 
   def getPartitionEvaluator: () => Array[Partition] = () => partitionPruner match {
@@ -839,7 +838,11 @@ final class SmartConnectorColumnRDD(
       Array(new SmartExecutorBucketPartition(0, bucketId, part.hostList))
   }
 
-  override def getPartitions: Array[Partition] = getPartitionEvaluator()
+  override def getPartitions: Array[Partition] = {
+    val parts = getPartitionEvaluator()
+    logDebug(s"$toString.getPartitions: $tableName partitions ${parts.mkString("; ")}")
+    parts
+  }
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
@@ -986,11 +989,14 @@ class SmartConnectorRowRDD(_session: SnappySession,
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    split.asInstanceOf[SmartExecutorBucketPartition]
-        .hostList.map(_._1.asInstanceOf[String])
+    split.asInstanceOf[SmartExecutorBucketPartition].hostList.map(_._1)
   }
 
-  override def getPartitions: Array[Partition] = partitionEvaluator()
+  override def getPartitions: Array[Partition] = {
+    val parts = partitionEvaluator()
+    logDebug(s"$toString.getPartitions: $tableName partitions ${parts.mkString("; ")}")
+    parts
+  }
 
   def getSQLStatement(resolvedTableName: String,
       requiredColumns: Array[String], partitionId: Int): String = {

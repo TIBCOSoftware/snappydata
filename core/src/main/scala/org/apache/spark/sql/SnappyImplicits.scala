@@ -190,18 +190,10 @@ object snappy extends Serializable {
         Project(inputDataCols ++ inputPartCols, df.logicalPlan)
       }.getOrElse(df.logicalPlan)
 
-      try {
-        df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-          session.sessionState.catalog.newQualifiedTableName(tableName)), input))
-            .executedPlan.executeCollect()
-      } finally {
-        df.sparkSession.asInstanceOf[SnappySession].
-            getContextObject[LogicalPlan](ColumnTableBulkOps.CACHED_PUTINTO_UPDATE_PLAN).
-            map { cachedPlan =>
-              df.sparkSession.
-                  sharedState.cacheManager.uncacheQuery(df.sparkSession, cachedPlan, true)
-            }
-      }
+      df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
+        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+          .executedPlan.executeCollect()
+
     }
 
     def deleteFrom(tableName: String): Unit = {
