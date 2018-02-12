@@ -19,12 +19,14 @@ package org.apache.spark.memory
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.SystemFailure
+import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, FreeMemory, UnsafeHolder}
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import org.slf4j.LoggerFactory
 
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.Utils
@@ -190,6 +192,9 @@ object MemoryManagerCallback extends Logging {
             new ExecutionFreeMemory(consumer, address)
         }).order(ByteOrder.LITTLE_ENDIAN)
       }
+    } else if (!StoreCallbacksImpl.acquireStorageMemory(owner, size, buffer = null,
+      offHeap = false, shouldEvict = true)) {
+      throw LocalRegion.lowMemoryException(null, size)
     }
     allocator.allocate(size, owner).order(ByteOrder.LITTLE_ENDIAN)
   }
