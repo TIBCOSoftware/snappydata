@@ -27,14 +27,14 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 **Example: SBT dependency**
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
 
 ```
 **Create SnappySession**: To start SnappyData store you need to create a SnappySession in your program
@@ -52,7 +52,7 @@ libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0"
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
 If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 ```bash
-./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.0-s_2.11"
+./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
 ```
 
 

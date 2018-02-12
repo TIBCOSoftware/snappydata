@@ -160,7 +160,7 @@ abstract class BaseColumnFormatRelation(
     }
 
     // note: filters is expected to be already split by CNF.
-    // see PhysicalOperation#unapply
+    // see PhysicalScan#unapply
     super.scanTable(externalColumnTableName, requiredColumns, filters, prunePartitions)
   }
 
