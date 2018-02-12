@@ -145,8 +145,7 @@ class RowFormatRelation(
           useResultSet = false,
           connProperties,
           handledFilters,
-          commitTx = true
-        )
+          commitTx = true, delayRollover = false)
 
       case _ =>
         new SmartConnectorRowRDD(
@@ -158,8 +157,7 @@ class RowFormatRelation(
           handledFilters,
           _partEval = () => relInfo.partitions,
           relInfo.embdClusterRelDestroyVersion,
-          _commitTx = true
-        )
+          _commitTx = true, _delayRollover = false)
     }
     (rdd, Nil)
   }
@@ -184,7 +182,7 @@ class RowFormatRelation(
               .asInstanceOf[GfxdPartitionByExpressionResolver]
           val parColumn = resolver.getColumnNames
           (pr.getTotalNumberOfBuckets, true, parColumn.toSeq)
-        case _ => (1, false, Seq.empty[String])
+        case _ => (1, false, Nil)
       }
     }
   }

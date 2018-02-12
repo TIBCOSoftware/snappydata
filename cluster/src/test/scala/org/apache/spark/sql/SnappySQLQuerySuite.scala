@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,10 +14,31 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+/*
+ * Test for SPARK-10316 taken from Spark's DataFrameSuite having license as below.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.spark.sql
 
 import io.snappydata.SnappyFunSuite
+import org.scalatest.Matchers._
 
+import org.apache.spark.sql.functions.rand
 import org.apache.spark.sql.test.SQLTestData.TestData2
 
 class SnappySQLQuerySuite extends SnappyFunSuite {
@@ -161,6 +182,19 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
 
     session.dropTable("l", ifExists = true)
     session.dropTable("r", ifExists = true)
+  }
+
+  // taken from same test in Spark's DataFrameSuite
+  test("SPARK-10316: allow non-deterministic expressions to project in PhysicalScan") {
+    session.sql("create table rowTable (id long) using row")
+    session.range(1, 11).write.insertInto("rowTable")
+    val input = session.table("rowTable")
+
+    val df = input.select($"id", rand(0).as('r))
+    val result = df.as("a").join(df.filter($"r" < 0.5).as("b"), $"a.id" === $"b.id").collect()
+    result.foreach { row =>
+      assert(row.getDouble(1) - row.getDouble(3) === 0.0 +- 0.001)
+    }
   }
 }
 

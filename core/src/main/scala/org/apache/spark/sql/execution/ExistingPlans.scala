@@ -106,7 +106,8 @@ private[sql] abstract class PartitionedPhysicalScan(
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         callbacks.getOrderlessHashPartitioning(partitionColumns,
           partitionColumnAliases, numPartitions,
-          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets, numBuckets)
+          if (session.hasLinkPartitionsToBuckets || session.preferPrimaries) 0 else numBuckets,
+          numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
@@ -150,7 +151,7 @@ private[sql] object PartitionedPhysicalScan {
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
         val rowBufferScan = RowTableScan(output, StructType.fromAttributes(
-          output), baseTableRDD, numBuckets, Seq.empty, Seq.empty, table, caseSensitive)
+          output), baseTableRDD, numBuckets, Nil, Nil, table, caseSensitive)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
             throw new AnalysisException(s"RowBuffer output column $a not found in " +

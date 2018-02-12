@@ -80,11 +80,11 @@ final class ColumnBatchCreator(
         // code does not (which is passed in the references separately)
         val gen = CodeGeneration.compileCode("COLUMN_TABLE.BATCH", schema.fields, () => {
           val tableScan = RowTableScan(schema.toAttributes, schema,
-            dataRDD = null, numBuckets = -1, partitionColumns = Seq.empty,
-            partitionColumnAliases = Seq.empty, baseRelation = null, caseSensitive = true)
+            dataRDD = null, numBuckets = -1, partitionColumns = Nil,
+            partitionColumnAliases = Nil, baseRelation = null, caseSensitive = true)
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
-          val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
+          val insertPlan = ColumnInsertExec(tableScan, Nil, Nil,
             numBuckets = -1, isPartitioned = false, None,
             (-bufferRegion.getColumnBatchSize, -1, compressionCodec), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)
@@ -136,7 +136,7 @@ final class ColumnBatchCreator(
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held
       // together and thus failures in ClosedFormAccuracySuite etc
-      val insertPlan = ColumnInsertExec(bufferPlan, Seq.empty, Seq.empty,
+      val insertPlan = ColumnInsertExec(bufferPlan, Nil, Nil,
         numBuckets = -1, isPartitioned = false, None, (columnBatchSize, -1, compressionCodec),
         tableName, onExecutor = true, schema, externalStore,
         useMemberVariables = true)

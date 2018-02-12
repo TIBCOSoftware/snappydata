@@ -953,14 +953,17 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-final class SmartExecutorBucketPartition(private var _index: Int,
+final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
     var hostList: mutable.ArrayBuffer[(String, String)])
     extends Partition with KryoSerializable {
 
   override def index: Int = _index
 
+  def bucketId: Int = _bucketId
+
   override def write(kryo: Kryo, output: Output): Unit = {
     output.writeVarInt(_index, true)
+    output.writeVarInt(_bucketId, true)
     val numHosts = hostList.length
     output.writeVarInt(numHosts, true)
     for ((host, url) <- hostList) {
@@ -971,6 +974,7 @@ final class SmartExecutorBucketPartition(private var _index: Int,
 
   override def read(kryo: Kryo, input: Input): Unit = {
     _index = input.readVarInt(true)
+    _bucketId = input.readVarInt(true)
     val numHosts = input.readVarInt(true)
     hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
     for (_ <- 0 until numHosts) {
@@ -981,7 +985,7 @@ final class SmartExecutorBucketPartition(private var _index: Int,
   }
 
   override def toString: String =
-    s"SmartExecutorBucketPartition($index, $hostList)"
+    s"SmartExecutorBucketPartition($index, $bucketId, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {
@@ -994,7 +998,7 @@ object ToolsCallbackInit extends Logging {
       tc
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("toolsCallback couldn't be INITIALIZED." +
+        logWarning("ToolsCallback couldn't be INITIALIZED. " +
             "DriverURL won't get published to others.")
         null
     }

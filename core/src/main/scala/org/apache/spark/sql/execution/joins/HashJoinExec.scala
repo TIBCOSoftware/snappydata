@@ -562,17 +562,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
    */
   private def getJoinCondition(ctx: CodegenContext,
       input: Seq[ExprCode],
-      buildVars: Seq[ExprCode]): (Option[ExprCode], String) = condition match {
+      buildVars: Seq[ExprCode]): (Option[ExprCode], String, Option[Expression]) = condition match {
     case Some(expr) =>
-      // evaluate the variables from build side that used by condition
+      // evaluate the variables from build side used by condition
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
         expr.references)
       // filter the output via condition
       ctx.currentVars = input.map(_.copy(code = "")) ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      (Some(ev), eval)
-    case None => (None, "")
+      (Some(ev), eval, condition)
+    case None => (None, "", None)
   }
 }
 
