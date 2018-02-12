@@ -143,7 +143,6 @@ pages:
 - 'Evaluating Statistics for the System and Applications':
     - 'Collecting System Statistics': 'vsd/collecting_system_stats.md'
     - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
-    - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
     - 'Using VSD to Analyze Statistics':
         - 'Installing and Running VSD': 'vsd/running_vsd.md'
         - 'Transaction Performance': 'vsd/vsd_transactions.md'
@@ -195,9 +194,10 @@ pages:
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
-#        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
-        - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'    
-        - 'SYSTABLES': 'reference/system_tables/systables.md'    
+#        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'
+        - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'
+        - 'SYSDISKSTOREIDS': 'reference/system_tables/sysdiskstoreids.md'
+        - 'SYSTABLES': 'reference/system_tables/systables.md'
     - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
     - 'Command Line Utilities':
         - 'backup and restore': 'reference/command_line_utilities/store-backup.md'
