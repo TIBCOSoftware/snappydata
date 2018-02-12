@@ -34,7 +34,6 @@ import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliase
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -206,7 +205,7 @@ class SnappySessionState(snappySession: SnappySession)
         case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges
           snappySession.linkPartitionsToBuckets(flag = true)
-        case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
+        case LogicalRelation(_: IndexColumnFormatRelation, _, _) =>
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }

@@ -129,12 +129,12 @@ The status of this job can be queried in the same manner as shown above. The res
 
 ### Jar Dependencies for Jobs
 
-For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.0](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
+For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.1](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.1)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
 
 For example, gradle can be configured as:
 
 ```
-compile('io.snappydata:snappydata-cluster_2.11:1.0.0') {
+compile('io.snappydata:snappydata-cluster_2.11:1.0.1') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')

@@ -43,6 +43,8 @@ object CompressionUtils {
       Snappy.rawCompress(input, inputLen)
   }
 
+  private[sql] val COMPRESSION_OWNER = "COMPRESSOR"
+  private[sql] val DECOMPRESSION_OWNER = "DECOMPRESSOR"
   private[this] val COMPRESSION_HEADER_SIZE = 8
   private[this] val MIN_COMPRESSION_RATIO = 0.75
   /** minimum size of buffer that will be considered for compression */
@@ -69,12 +71,12 @@ object CompressionUtils {
         val compressor = LZ4Factory.fastestInstance().fastCompressor()
         val maxLength = compressor.maxCompressedLength(len)
         val maxTotal = maxLength + COMPRESSION_HEADER_SIZE
-        result = allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator)
+        result = allocateExecutionMemory(maxTotal, COMPRESSION_OWNER, allocator)
         compressor.compress(input, input.position(), len,
           result, COMPRESSION_HEADER_SIZE, maxLength)
       case CompressionCodecId.SNAPPY_ID =>
         val maxTotal = Snappy.maxCompressedLength(len) + COMPRESSION_HEADER_SIZE
-        result = allocateExecutionMemory(maxTotal, "COMPRESSOR", allocator)
+        result = allocateExecutionMemory(maxTotal, COMPRESSION_OWNER, allocator)
         if (input.isDirect) {
           result.position(COMPRESSION_HEADER_SIZE)
           Snappy.compress(input, result)
@@ -128,11 +130,11 @@ object CompressionUtils {
     var result: ByteBuffer = null
     codecId match {
       case CompressionCodecId.LZ4_ID =>
-        result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
+        result = allocateExecutionMemory(outputLen, DECOMPRESSION_OWNER, allocator)
         LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
           position + 8, result, 0, outputLen)
       case CompressionCodecId.SNAPPY_ID =>
-        result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
+        result = allocateExecutionMemory(outputLen, DECOMPRESSION_OWNER, allocator)
         input.position(position + 8)
         if (input.isDirect) {
           Snappy.uncompress(input, result)
