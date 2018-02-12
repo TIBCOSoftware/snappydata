@@ -368,7 +368,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
 /**
  * Taken from Spark's PhysicalOperation with the difference that non-deterministic
- * fields don't cause all columns of underlying table being projected.
+ * fields don't cause all columns of underlying table to be projected.
  */
 /**
  * A pattern that matches any number of project or filter operations on top of another relational
@@ -399,8 +399,8 @@ object PhysicalScan extends PredicateHelper {
    *   SELECT key AS c2 FROM t1 WHERE key > 10
    * }}}
    */
-  private def collectProjectsAndFilters(plan: LogicalPlan):
-  (Option[Seq[NamedExpression]], Seq[Expression], LogicalPlan, Map[Attribute, Expression]) =
+  private def collectProjectsAndFilters(plan: LogicalPlan): (Option[Seq[NamedExpression]],
+      Seq[Expression], LogicalPlan, Map[Attribute, Expression]) =
     plan match {
       case Project(fields, child) =>
         val (_, filters, other, aliases) = collectProjectsAndFilters(child)
