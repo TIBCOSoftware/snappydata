@@ -25,7 +25,7 @@ import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
-import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
+import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
@@ -34,7 +34,7 @@ import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, PhysicalScan}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
@@ -180,7 +180,7 @@ private[sql] trait SnappyStrategies {
 
       def getCompatiblePartitioning(plan: LogicalPlan,
           joinKeys: Seq[Expression]): (Seq[NamedExpression], Seq[Int], Int) = plan match {
-        case PhysicalOperation(_, _, child) => child match {
+        case PhysicalScan(_, _, child) => child match {
           case r@LogicalRelation(scan: PartitionedDataSourceScan, _, _) =>
             // send back numPartitions=1 for replicated table since collocated
             if (!scan.isPartitioned) return (Nil, Nil, 1)
@@ -316,7 +316,7 @@ private[sql] object JoinStrategy {
 
   def canLocalJoin(plan: LogicalPlan): Boolean = {
     plan match {
-      case PhysicalOperation(_, _, child) => child match {
+      case PhysicalScan(_, _, child) => child match {
         case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
         case Join(left, right, _, _) =>
           // If join is a result of join of replicated tables, this
