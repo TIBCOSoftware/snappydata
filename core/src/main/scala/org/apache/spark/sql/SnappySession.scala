@@ -231,6 +231,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] var wholeStageEnabled: Boolean = sessionState.conf.wholeStageEnabled
 
+
   /**
    * Get a previously registered context object using [[addContextObject]].
    */
@@ -373,7 +374,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     if (key != null && key.valid) {
       allLiterals = CachedPlanHelperExec.allLiterals(
         getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
-          SnappyParserConsts.REFERENCES_KEY).getOrElse(Seq.empty)
+          SnappyParserConsts.REFERENCES_KEY).getOrElse(Nil)
       ).filter(!_.collectedForPlanCaching)
 
       allLiterals.foreach(_.collectedForPlanCaching = true)
@@ -384,6 +385,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] def clearContext(): Unit = synchronized {
     // println(s"clearing context")
     // new Throwable().printStackTrace()
+    getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
+        map { cachedPlan =>
+          sharedState.cacheManager.uncacheQuery(this, cachedPlan, true)
+        }
     contextObjects.clear()
   }
 
@@ -1845,6 +1850,7 @@ object SnappySession extends Logging {
   private[spark] val INVALID_ID = -1
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
+  private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
   private[sql] var tokenize: Boolean = _
 
@@ -2273,7 +2279,8 @@ object SnappySession extends Logging {
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
     val sc = SnappyContext.globalSparkContext
-    if (!SnappyTableStatsProviderService.suspendCacheInvalidation && (sc ne null)) {
+    if (!SnappyTableStatsProviderService.suspendCacheInvalidation &&
+        (sc ne null) && !sc.isStopped) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
         CodeGeneration.clearAllCache()

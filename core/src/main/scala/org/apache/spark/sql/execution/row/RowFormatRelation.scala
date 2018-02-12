@@ -182,7 +182,7 @@ class RowFormatRelation(
               .asInstanceOf[GfxdPartitionByExpressionResolver]
           val parColumn = resolver.getColumnNames
           (pr.getTotalNumberOfBuckets, true, parColumn.toSeq)
-        case _ => (1, false, Seq.empty[String])
+        case _ => (1, false, Nil)
       }
     }
   }

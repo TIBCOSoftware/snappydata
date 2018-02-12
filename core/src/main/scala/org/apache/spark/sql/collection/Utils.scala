@@ -998,7 +998,7 @@ object ToolsCallbackInit extends Logging {
       tc
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("toolsCallback couldn't be INITIALIZED." +
+        logWarning("ToolsCallback couldn't be INITIALIZED. " +
             "DriverURL won't get published to others.")
         null
     }

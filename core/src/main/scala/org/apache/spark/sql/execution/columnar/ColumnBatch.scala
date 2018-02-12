@@ -346,7 +346,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 
   private def decompress(buffer: ByteBuffer): ByteBuffer = {
     val allocator = ColumnEncoding.getAllocator(buffer)
-    val result = CompressionUtils.codecDecompress(buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
+    val result = CompressionUtils.codecDecompressIfRequired(
+      buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
     if (result ne buffer) {
       UnsafeHolder.releaseIfDirectBuffer(buffer)
     }
@@ -444,7 +445,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     // create a new map instead of clearing old one to help young gen GC
     colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
     val statsBlob = rs.getBlob(4)
-    val statsBuffer = statsBlob match {
+    val statsBuffer = decompress(statsBlob match {
       case blob: BufferedBlob =>
         // the chunk can never be a ByteBufferReference in this case and
         // the internal buffer will now be owned by ColumnFormatValue
@@ -453,10 +454,10 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         chunk.chunk
       case blob => ByteBuffer.wrap(blob.getBytes(
         1, blob.length().asInstanceOf[Int]))
-    }
+    })
     statsBlob.free()
     // put the stats buffer to free on next() or close()
-    colBuffers.justPut(ColumnFormatEntry.DELTA_STATROW_COL_INDEX, decompress(statsBuffer))
+    colBuffers.justPut(ColumnFormatEntry.STATROW_COL_INDEX, statsBuffer)
     statsBuffer
   }
 

@@ -42,7 +42,7 @@ class ReusableRow(val values: Array[MutableValue])
         case _ => new MutableAny
       }.toArray)
 
-  def this() = this(Seq.empty)
+  def this() = this(Nil)
 
   override final def length: Int = values.length
 

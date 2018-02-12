@@ -133,7 +133,7 @@ object StoreUtils {
       val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).canonicalString()
       SnappyContext.getBlockId(primary) match {
         case Some(b) => Seq(Utils.getHostExecutorId(b.blockId))
-        case None => Seq.empty
+        case None => Nil
       }
     } else {
       var prependPrimary = preferPrimaries
@@ -496,7 +496,7 @@ object StoreUtils {
       parameters: mutable.Map[String, String]): Seq[String] = {
     parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)
-    }).getOrElse(Seq.empty[String])
+    }).getOrElse(Nil)
   }
 
   def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {
