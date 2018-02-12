@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, Snapp
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.util.Utils
 
 private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
@@ -304,6 +305,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("totalOffHeapUsage" -> totalOffHeapUsage)
     clusterStatsMap += ("jvmHeapUsage" -> jvmHeapUsage)
     clusterStatsMap += ("totalJvmHeapUsage" -> totalJvmHeapUsage)
+    clusterStatsMap += ("totalExecutorCoresCount" -> SnappyContext.totalCoreCount.get())
 
   }
 
@@ -389,6 +391,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       "/static/snappydata/warning-status-icon-70x68.png"
     }
 
+    val totalCores = clusterDetails.getOrElse("totalExecutorCoresCount", 0).asInstanceOf[Int];
     val cpuUsage = clusterDetails.getOrElse("cpuUsage", 0.0).asInstanceOf[Double];
     val memoryUsage = clusterDetails.getOrElse("memoryUsage", 0.0).asInstanceOf[Double];
     // val heapUsage = clusterDetails.getOrElse("heapUsage", 0.0).asInstanceOf[Double];
@@ -405,6 +408,16 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           <img style="padding-top: 15px;" src={statusImgUri} />
         </div>
         <div class="keyStatesText">{SnappyDashboardPage.clusterStats("status")}</div>
+      </div>
+      <div class="keyStates">
+        <div class="keyStatsValue" id="totalCores" data-value={totalCores.toString}
+             data-toggle="tooltip" title=""
+             data-original-title={
+               SnappyDashboardPage.clusterStats("totalCoresTooltip").toString
+             }>
+          <svg id="totalCoresGauge" width="100%" height="100%" ></svg>
+        </div>
+        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("totalCores")}</div>
       </div>
       <div class="keyStates">
         <div class="keyStatsValue" id="cpuUsage" data-value={cpuUsage.toString}
@@ -1121,6 +1134,8 @@ object SnappyDashboardPage{
   clusterStats += ("locators" -> "Locators")
   clusterStats += ("clients" -> "Connections")
   clusterStats += ("tables" -> "Tables")
+  clusterStats += ("totalCores" -> "Total Cores")
+  clusterStats += ("totalCoresTooltip" -> "Total number of cores configured")
   clusterStats += ("cpuUsage" -> "CPU Usage")
   clusterStats += ("cpuUsageTooltip" -> "Clusters CPU Usage")
   clusterStats += ("memoryUsage" -> "Memory Usage")
