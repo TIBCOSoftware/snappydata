@@ -248,12 +248,12 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
         val allNetUrls = SparkConnectorRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
         val partitions = SparkConnectorRDDHelper.getPartitions(allNetUrls)
-        (t, RelationInfo(1, isPartitioned = false, Seq.empty[String], indexCols, pkCols,
+        (t, RelationInfo(1, isPartitioned = false, Nil, indexCols, pkCols,
           partitions, embdClusterRelDestroyVersion))
       }
     } else {
       // external tables (with source as csv, parquet etc.)
-      (t, RelationInfo(1, isPartitioned = false, Seq.empty[String], Array.empty[String],
+      (t, RelationInfo(1, isPartitioned = false, Nil, Array.empty[String],
         Array.empty[String], Array.empty[Partition], embdClusterRelDestroyVersion))
     }
   }

@@ -223,14 +223,6 @@ function execute() {
         2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
     fi
-    if [ -z "$RUN_IN_BACKGROUND" ]; then
-      wait $LAST_PID
-    else
-      sleep 1
-      if [ -e "/proc/$LAST_PID/status" ]; then
-        sleep 1
-      fi
-    fi
   else
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
@@ -239,7 +231,16 @@ function execute() {
       fi
     fi
     launchcommand="${@// /\\ } ${args} < /dev/null 2>&1"
-    eval $launchcommand
+    eval $launchcommand &
+    LAST_PID="$!"
+  fi
+  if [ -z "$RUN_IN_BACKGROUND" ]; then
+    wait $LAST_PID
+  else
+    sleep 1
+    if [ -e "/proc/$LAST_PID/status" ]; then
+      sleep 1
+    fi
   fi
 
   df=${dirfolder}

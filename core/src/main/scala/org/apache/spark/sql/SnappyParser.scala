@@ -691,8 +691,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         commaSep)).? ~ ((ORDER | SORT) ~ BY ~ ordering).? ~ windowFrame.? ~ ')' ~
         ws ~> ((p: Any, o: Any, w: Any) =>
       WindowSpecDefinition(
-        p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty),
-        o.asInstanceOf[Option[Seq[SortOrder]]].getOrElse(Seq.empty),
+        p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Nil),
+        o.asInstanceOf[Option[Seq[SortOrder]]].getOrElse(Nil),
         w.asInstanceOf[Option[SpecifiedWindowFrame]]
           .getOrElse(UnspecifiedFrame))) |
     identifier ~> WindowSpecReference
@@ -723,7 +723,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     '(' ~ ws ~ (expression + commaSep).? ~ ')' ~>
       ((e: Any) => e.asInstanceOf[Option[Vector[Expression]]] match {
         case Some(ve) => ve
-        case _ => Seq.empty
+        case _ => Nil
       })
   }
 
@@ -975,7 +975,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
           val expressions = e.asInstanceOf[Seq[Expression]]
           val columnNames = cols.asInstanceOf[Option[Seq[String]]] match {
             case Some(s) => s.map(UnresolvedAttribute.apply)
-            case None => Seq.empty
+            case None => Nil
           }
           Generate(UnresolvedGenerator(functionName, expressions), join = true,
             outer = o.asInstanceOf[Option[Boolean]].isDefined, Some(tableName),
@@ -1011,7 +1011,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
             case _ => base
           }
           val (updateColumns, updateExpressions) = updateExprs.unzip
-          Update(table, withFilter, Seq.empty, updateColumns, updateExpressions)
+          Update(table, withFilter, Nil, updateColumns, updateExpressions)
         })
   }
 
@@ -1024,7 +1024,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
             case None => base
             case Some(w) => Filter(w.asInstanceOf[Expression], base)
           }
-          Delete(base, child, Seq.empty)
+          Delete(base, child, Nil)
         })
   }
 

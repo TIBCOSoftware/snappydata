@@ -265,7 +265,7 @@ trait TableStatsProviderService extends Logging {
           .getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString())
     } catch {
       case tnfe: org.apache.spark.sql.TableNotFoundException =>
-        Seq.empty[String]
+        Nil
     }
   }
   */

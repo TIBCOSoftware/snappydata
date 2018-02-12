@@ -36,6 +36,7 @@ import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEn
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 
 final class SparkConnectorRDDHelper {
@@ -74,23 +75,22 @@ final class SparkConnectorRDDHelper {
         s"${ColumnFormatEntry.STATROW_COL_INDEX}", fetchColString)
   }
 
-  def executeQuery(conn: Connection, tableName: String,
-      split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
-    val partition = split.asInstanceOf[SmartExecutorBucketPartition]
+  def executeQuery(conn: Connection, tableName: String, partition: SmartExecutorBucketPartition,
+      query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
     val statement = conn.createStatement()
     val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get() match {
-      case "null" => null
+      case "" => null
       case id => id
     }
     statement match {
       case clientStmt: ClientStatement =>
-        val bucketSet = Collections.singleton(Int.box(partition.index))
+        val bucketSet = Collections.singleton(Int.box(partition.bucketId))
         clientStmt.setLocalExecutionBucketIds(bucketSet, tableName, true)
         clientStmt.setMetadataVersion(relDestroyVersion)
         clientStmt.setSnapshotTransactionId(txId)
       case _ =>
         statement.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +
-            s"'$tableName', '${partition.index}', $relDestroyVersion)")
+            s"'$tableName', '${partition.bucketId}', $relDestroyVersion)")
         if (txId ne null) {
           statement.execute(s"call sys.USE_SNAPSHOT_TXID('$txId')")
         }
@@ -101,9 +101,8 @@ final class SparkConnectorRDDHelper {
   }
 
   def getConnection(connectionProperties: ConnectionProperties,
-      split: Partition): Connection = {
-    val urlsOfNetServerHost = split.asInstanceOf[
-        SmartExecutorBucketPartition].hostList
+      part: SmartExecutorBucketPartition): Connection = {
+    val urlsOfNetServerHost = part.hostList
     useLocatorURL = SparkConnectorRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
@@ -153,7 +152,12 @@ object SparkConnectorRDDHelper {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
-      partitions(p) = new SmartExecutorBucketPartition(p, bucketToServerList(p))
+      if (StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT) {
+        partitions(p) = new SmartExecutorBucketPartition(p, p,
+          bucketToServerList(scala.util.Random.nextInt(numPartitions)))
+      } else {
+        partitions(p) = new SmartExecutorBucketPartition(p, p, bucketToServerList(p))
+      }
     }
     partitions
   }

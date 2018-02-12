@@ -81,6 +81,7 @@ class LeadImpl extends ServerImpl with Lead
 
     isTestSetup = bootProperties.getProperty("isTest", "false").toBoolean
     bootProperties.remove("isTest")
+    val authSpecified = Misc.checkAuthProvider(bootProperties)
 
     // prefix all store properties with "snappydata.store" for SparkConf
 
@@ -162,7 +163,7 @@ class LeadImpl extends ServerImpl with Lead
 
       val zeppelinEnabled = bootProperties.getProperty(
         Constant.ENABLE_ZEPPELIN_INTERPRETER, "false").equalsIgnoreCase("true")
-      if (zeppelinEnabled) {
+      if (zeppelinEnabled && !authSpecified) {
         try {
 
           val zeppelinIntpUtilClass = Utils.classForName(
@@ -190,7 +191,7 @@ class LeadImpl extends ServerImpl with Lead
 
       // The auth service is not yet initialized at this point.
       // So simply check the auth-provider property value.
-      if (Misc.checkAuthProvider(bootProperties)) {
+      if (authSpecified) {
         logInfo("Enabling user authentication for SnappyData Pulse")
         SparkCallbacks.setAuthenticatorForJettyServer()
       }
@@ -234,7 +235,7 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       // wait for a while until servers get registered
-      val endWait = System.currentTimeMillis() + 10000
+      val endWait = System.currentTimeMillis() + 120000
       while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
         Thread.sleep(100)
       }
@@ -258,8 +259,10 @@ class LeadImpl extends ServerImpl with Lead
       // start other add-on services (job server)
       startAddOnServices(conf, confFile, jobServerConfig)
 
-      // finally start embedded zeppelin interpreter if configured
-      checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
+      // finally start embedded zeppelin interpreter if configured and security is not enabled.
+      if (!authSpecified) {
+        checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
+      }
 
       if (jobServerWait) {
         // mark RUNNING after job server and zeppelin initialization if so configured
@@ -620,13 +623,13 @@ class LeadImpl extends ServerImpl with Lead
 
   /**
    * This method is used to start the zeppelin interpreter thread.
-   * As discussed by default zeppelin interpreter will be enabled.User can disable it by
-   * setting "zeppelin.interpreter.enable" to false in leads conf file.User can also specify
-   * the port on which intrepreter should listen using  property zeppelin.interpreter.port
+   * By default, zeppelin interpreter will be disabled. User can enable it by
+   * setting "zeppelin.interpreter.enable" to true in leads conf file. User can also specify
+   * the port on which interpreter should listen using  property "zeppelin.interpreter.port"
    */
   private def checkAndStartZeppelinInterpreter(enabled: Boolean,
       bootProperties: Properties): Unit = {
-    // As discussed ZeppelinRemoteInterpreter Server will be enabled by default.
+    // As discussed ZeppelinRemoteInterpreter Server will be disabled by default.
     // [sumedh] Our startup times are already very high and we are looking to
     // cut that down and not increase further with these external utilities.
     if (enabled) {
@@ -653,6 +656,10 @@ class LeadImpl extends ServerImpl with Lead
       //   addResourceListener(InternalResourceManager.ResourceType.ALL, listener)
 
     }
+  }
+
+  def getInterpreterServerClass(): Class[_] = {
+    remoteInterpreterServerClass
   }
 }
 

@@ -75,6 +75,8 @@ abstract case class JDBCAppendableRelation(
 
   val resolvedName: String = table
 
+  protected var delayRollover = false
+
   def numBuckets: Int = -1
 
   def isPartitioned: Boolean = true
@@ -133,13 +135,13 @@ abstract case class JDBCAppendableRelation(
     readLock {
       externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
         requestedColumns, projection, (filters eq null) || filters.length == 0,
-        prunePartitions, sqlContext.sparkSession, schema)
+        prunePartitions, sqlContext.sparkSession, schema, delayRollover)
     }
   }
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    new ColumnInsertExec(child, Seq.empty, Seq.empty, this, table)
+    new ColumnInsertExec(child, Nil, Nil, this, table)
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {

@@ -18,8 +18,8 @@
 package org.apache.spark.sql.internal
 
 import java.util.Properties
+import java.util.concurrent.ConcurrentHashMap
 
-import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
@@ -34,7 +34,6 @@ import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliase
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -206,7 +205,7 @@ class SnappySessionState(snappySession: SnappySession)
         case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges
           snappySession.linkPartitionsToBuckets(flag = true)
-        case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
+        case LogicalRelation(_: IndexColumnFormatRelation, _, _) =>
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }
@@ -220,8 +219,8 @@ class SnappySessionState(snappySession: SnappySession)
    * The partition mapping selected for the lead partitioned region in
    * a collocated chain for current execution
    */
-  private[spark] val leaderPartitions = new TrieMap[PartitionedRegion,
-      Array[Partition]]()
+  private[spark] val leaderPartitions = new ConcurrentHashMap[PartitionedRegion,
+      Array[Partition]](16, 0.7f, 1)
 
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
@@ -259,7 +258,7 @@ class SnappySessionState(snappySession: SnappySession)
             // if this is a row table, then fallback to direct execution
             mutable match {
               case _: UpdatableRelation if currentKey ne null =>
-                return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
+                return (Nil, DMLExternalTable(catalog.newQualifiedTableName(
                   mutable.table), lr, currentKey.sqlText), lr)
               case _ =>
                 throw new AnalysisException(
@@ -436,17 +435,21 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
     val leaderRegion = ColocationHelper.getLeaderRegion(region)
-    leaderPartitions.getOrElseUpdate(leaderRegion, {
-      val linkPartitionsToBuckets = snappySession.hasLinkPartitionsToBuckets
-      if (linkPartitionsToBuckets) {
-        // also set the default shuffle partitions for this execution
-        // to minimize exchange
-        snappySession.sessionState.conf.setExecutionShufflePartitions(
-          region.getTotalNumberOfBuckets)
-      }
-      StoreUtils.getPartitionsPartitionedTable(snappySession, leaderRegion,
-        linkPartitionsToBuckets)
-    })
+    leaderPartitions.computeIfAbsent(leaderRegion,
+      new java.util.function.Function[PartitionedRegion, Array[Partition]] {
+        override def apply(pr: PartitionedRegion): Array[Partition] = {
+          val linkPartitionsToBuckets = snappySession.hasLinkPartitionsToBuckets
+          val preferPrimaries = snappySession.preferPrimaries
+          if (linkPartitionsToBuckets || preferPrimaries) {
+            // also set the default shuffle partitions for this execution
+            // to minimize exchange
+            snappySession.sessionState.conf.setExecutionShufflePartitions(
+              region.getTotalNumberOfBuckets)
+          }
+          StoreUtils.getPartitionsPartitionedTable(snappySession, pr,
+            linkPartitionsToBuckets, preferPrimaries)
+        }
+      })
   }
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =

@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -230,6 +231,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] var wholeStageEnabled: Boolean = sessionState.conf.wholeStageEnabled
 
+
   /**
    * Get a previously registered context object using [[addContextObject]].
    */
@@ -284,6 +286,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     getContextObject[Boolean](StoreUtils.PROPERTY_PARTITION_BUCKET_LINKED)
         .getOrElse(false)
   }
+
+  private[sql] def preferPrimaries: Boolean =
+    Property.PreferPrimariesInQuery.get(sessionState.conf)
 
   private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
     val depth = getContextObject[Int](ctx, "D", "depth").getOrElse(0) + 1
@@ -369,7 +374,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     if (key != null && key.valid) {
       allLiterals = CachedPlanHelperExec.allLiterals(
         getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
-          SnappyParserConsts.REFERENCES_KEY).getOrElse(Seq.empty)
+          SnappyParserConsts.REFERENCES_KEY).getOrElse(Nil)
       ).filter(!_.collectedForPlanCaching)
 
       allLiterals.foreach(_.collectedForPlanCaching = true)
@@ -380,6 +385,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] def clearContext(): Unit = synchronized {
     // println(s"clearing context")
     // new Throwable().printStackTrace()
+    getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
+        map { cachedPlan =>
+          sharedState.cacheManager.uncacheQuery(this, cachedPlan, true)
+        }
     contextObjects.clear()
   }
 
@@ -1841,6 +1850,7 @@ object SnappySession extends Logging {
   private[spark] val INVALID_ID = -1
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
+  private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
   private[sql] var tokenize: Boolean = _
 
@@ -2007,8 +2017,12 @@ object SnappySession extends Logging {
             // add profile listener for all regions that are using cached
             // partitions of their "leader" region
             if (rdd.getNumPartitions > 0) {
-              session.sessionState.leaderPartitions.keysIterator.foreach(
-                addBucketProfileListener)
+              session.sessionState.leaderPartitions.keySet().forEach(
+                new Consumer[PartitionedRegion] {
+                  override def accept(pr: PartitionedRegion): Unit = {
+                    addBucketProfileListener(pr)
+                  }
+                })
             }
         }
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false,
@@ -2265,14 +2279,15 @@ object SnappySession extends Logging {
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
     val sc = SnappyContext.globalSparkContext
-    if (!SnappyTableStatsProviderService.suspendCacheInvalidation && (sc ne null)) {
+    if (!SnappyTableStatsProviderService.suspendCacheInvalidation &&
+        (sc ne null) && !sc.isStopped) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
         CodeGeneration.clearAllCache()
         Utils.mapExecutors(sc, (_, _) => {
           CodeGeneration.clearAllCache()
           Iterator.empty
-        })
+        }).count()
       }
     }
   }
