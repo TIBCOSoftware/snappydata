@@ -56,7 +56,6 @@ object ColumnTableBulkOps {
 
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
-        val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
         val updateColumns = if (!ColumnTableScan.isCaseOfSortedInsertValue) {
           table.output.filterNot(a => keyColumns.contains(a.name))
         } else table.output
