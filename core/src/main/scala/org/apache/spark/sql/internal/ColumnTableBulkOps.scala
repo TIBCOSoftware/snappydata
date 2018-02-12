@@ -60,9 +60,7 @@ object ColumnTableBulkOps {
           table.output.filterNot(a => keyColumns.contains(a.name))
         } else table.output
         val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
-        // val updateExpressions = if (!ColumnTableScan.isCaseOfSortedInsertValue) {
-        //  notExists.output.filterNot(a => keyColumns.contains(a.name))
-        // } else notExists.output
+
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
