@@ -61,9 +61,9 @@ class SortedColumnTests extends ColumnTablesTestBase {
   object SortedColumnTests extends Logging {
 
     def testBasicInsert(session: SnappySession): Unit = {
-      session.conf.set(Property.ColumnMaxDeltaRows.name, "7") // TODO VB: 100
+      session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
 
-      val numElements = 11 // TODO VB: 551
+      val numElements = 551
 
       session.sql("drop table if exists colDeltaTable")
 
@@ -113,12 +113,15 @@ class SortedColumnTests extends ColumnTablesTestBase {
       }
 
       try {
-        val num2ndPhase = 4 // TODO VB: 220
+        val num2ndPhase = 220
         verifyTotalRows(numElements - num2ndPhase, 1)
         try {
           ColumnTableScan.isCaseOfSortedInsertValue = true
           snc.sql("put into table colDeltaTable select * from row_table")
-//        snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 6")
+          // VB TODO: Need to remove these
+          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 547")
+          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 548")
+          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 549")
         } finally {
           ColumnTableScan.isCaseOfSortedInsertValue = false
         }
