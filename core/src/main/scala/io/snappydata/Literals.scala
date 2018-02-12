@@ -102,6 +102,9 @@ object Constant {
   // should be started
   val ZEPPELIN_INTERPRETER_PORT = "zeppelin.interpreter.port"
 
+  // System property for minimum size of buffer to consider for compression.
+  val COMPRESSION_MIN_SIZE: String = PROPERTY_PREFIX + "compression.minSize"
+
   val CHAR_TYPE_BASE_PROP = "base"
 
   val CHAR_TYPE_SIZE_PROP = "size"
@@ -355,11 +358,10 @@ object Property extends Enumeration {
       s". Default is true.", Some(true), null, false)
 
   val PutIntoInnerJoinCacheSize =
-    SQLVal[Long](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
-    "The putInto inner join would be cached if the table is of size less " +
-        "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
-
-
+    SQLVal[String](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
+      "The putInto inner join would be cached if the result of " +
+          "join with incoming Dataset is of size less " +
+          "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
 }
 
 // extractors for properties

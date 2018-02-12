@@ -259,7 +259,7 @@ class SnappySessionState(snappySession: SnappySession)
             // if this is a row table, then fallback to direct execution
             mutable match {
               case _: UpdatableRelation if currentKey ne null =>
-                return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
+                return (Nil, DMLExternalTable(catalog.newQualifiedTableName(
                   mutable.table), lr, currentKey.sqlText), lr)
               case _ =>
                 throw new AnalysisException(

@@ -19,14 +19,18 @@ package org.apache.spark.sql.execution.columnar
 import java.nio.ByteBuffer
 import java.sql.Connection
 
+import scala.util.control.NonFatal
+
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 
+import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
 
-trait ExternalStore extends Serializable {
+trait ExternalStore extends Serializable with Logging {
 
   final val columnPrefix = "COL_"
 
@@ -64,11 +68,22 @@ trait ExternalStore extends Serializable {
       if (closeOnSuccessOrFailure && !conn.isInstanceOf[EmbedConnection] && !conn.isClosed) {
         try {
           if (success) conn.commit()
-          else conn.rollback()
+          else handleRollback(conn.rollback)
         } finally {
           conn.close()
         }
       }
+    }
+  }
+
+  def handleRollback(rollback: () => Unit, finallyCode: () => Unit = null): Unit = {
+    try {
+      rollback()
+    } catch {
+      case NonFatal(e) =>
+        if (GemFireXDUtils.retryToBeDone(e)) logInfo(e.toString) else logWarning(e.toString, e)
+    } finally {
+      if (finallyCode ne null) finallyCode()
     }
   }
 }

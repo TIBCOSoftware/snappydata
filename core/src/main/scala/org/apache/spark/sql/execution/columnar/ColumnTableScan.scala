@@ -253,9 +253,7 @@ private[sql] final case class ColumnTableScan(
           // If the filter can't be resolved then we are missing required statistics.
           boundFilter.filter(_.resolved)
         }
-      } else {
-        Seq.empty[Expression]
-      }
+      } else Nil
     }
 
     val predicate = ExpressionCanonicalizer.execute(

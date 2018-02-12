@@ -19,9 +19,10 @@ package org.apache.spark.sql.store
 
 import java.nio.{ByteBuffer, ByteOrder}
 
-import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
 import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
+import io.snappydata.Constant
 import net.jpountz.lz4.LZ4Factory
 import org.xerial.snappy.Snappy
 
@@ -45,7 +46,8 @@ object CompressionUtils {
   private[this] val COMPRESSION_HEADER_SIZE = 8
   private[this] val MIN_COMPRESSION_RATIO = 0.75
   /** minimum size of buffer that will be considered for compression */
-  private[sql] val MIN_COMPRESSION_SIZE = 2048
+  private[sql] val MIN_COMPRESSION_SIZE =
+    SystemProperties.getServerInstance.getInteger(Constant.COMPRESSION_MIN_SIZE, 2048)
 
   private def writeCompressionHeader(codecId: Int,
       uncompressedLen: Int, buffer: ByteBuffer): Unit = {
@@ -110,23 +112,27 @@ object CompressionUtils {
       output
   }
 
-  def codecDecompress(input: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
+  /** decompress the given buffer if compressed else return the original */
+  def codecDecompressIfRequired(input: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
     assert(input.order() eq ByteOrder.LITTLE_ENDIAN)
     val position = input.position()
-    val codecId = -input.getInt(position)
-    if (codecId > 0) codecDecompress(input, allocator, position, codecId)
-    else input
+    val codec = -input.getInt(position)
+    if (CompressionCodecId.isCompressed(codec)) {
+      codecDecompress(input, allocator, position, codec)
+    } else input
   }
 
   private[sql] def codecDecompress(input: ByteBuffer,
       allocator: BufferAllocator, position: Int, codecId: Int): ByteBuffer = {
     val outputLen = input.getInt(position + 4)
-    val result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
+    var result: ByteBuffer = null
     codecId match {
       case CompressionCodecId.LZ4_ID =>
+        result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
         LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
           position + 8, result, 0, outputLen)
       case CompressionCodecId.SNAPPY_ID =>
+        result = allocateExecutionMemory(outputLen, "DECOMPRESSOR", allocator)
         input.position(position + 8)
         if (input.isDirect) {
           Snappy.uncompress(input, result)

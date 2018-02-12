@@ -36,6 +36,7 @@ import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEn
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 
 final class SparkConnectorRDDHelper {
@@ -151,7 +152,12 @@ object SparkConnectorRDDHelper {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
-      partitions(p) = new SmartExecutorBucketPartition(p, p, bucketToServerList(p))
+      if (StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT) {
+        partitions(p) = new SmartExecutorBucketPartition(p, p,
+          bucketToServerList(scala.util.Random.nextInt(numPartitions)))
+      } else {
+        partitions(p) = new SmartExecutorBucketPartition(p, p, bucketToServerList(p))
+      }
     }
     partitions
   }
