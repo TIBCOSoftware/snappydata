@@ -78,7 +78,10 @@ class StringBenchmark extends SnappyFunSuite {
     val data = sdata.map(UTF8String.fromString)
     val udata = sdata.map(toDirectUTF8String)
 
-    if (preSorted) java.util.Arrays.sort(data, null)
+    if (preSorted) {
+      java.util.Arrays.sort(data, null)
+      java.util.Arrays.sort(udata, null)
+    }
     var cdata: Array[UTF8String] = null
     var cdata2: Array[UTF8String] = null
     var cdata3: Array[UTF8String] = null
