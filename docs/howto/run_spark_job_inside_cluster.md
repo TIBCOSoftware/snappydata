@@ -29,7 +29,7 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -38,7 +38,7 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-core_2.11</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -46,12 +46,12 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 
 ```scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.0"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
 ```
 
 ```scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.0"
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.1"
 ```
 
 **Running the Job**: 
