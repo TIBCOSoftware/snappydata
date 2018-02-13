@@ -4,10 +4,10 @@ Contains information about all disk stores IDs created in the SnappyData distrib
 
 | Column Name          | Type    | Length | Nullable | Contents|
 |----------------------|---------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------|
-|MEMBERID | | | |The ID of the cluster member.|
-|NAME| | | |The diskstore name. Two inbuilt diskstores one for DataDictionary is named `GFXD-DD-DISKSTORE` while the default data diskstore is named `GFXD-DEFAULT-DISKSTORE`.|
-|ID| | | |The unique diskstore ID. This is what appears in log files or output of `snappy-status-all.sh` script if a member is waiting for another node to start to sync its data (if it determines the other node may have more recent data). |
-|DIRS| | | |Comma-separated list of directories used for the diskstore. These are the ones provided in [CREATE DISKSTORE](../sql_reference/create-diskstore.md) or else if no explicit directory was provided, then the working directory of the node. |
+|MEMBERID | VARCHAR|128 |false |The ID of the cluster member.|
+|NAME| VARCHAR|128| false|The diskstore name. Two inbuilt diskstores one for DataDictionary is named `GFXD-DD-DISKSTORE` while the default data diskstore is named `GFXD-DEFAULT-DISKSTORE`.|
+|ID|CHAR|36| false|The unique diskstore ID. This is what appears in log files or output of `snappy-status-all.sh` script if a member is waiting for another node to start to sync its data (if it determines the other node may have more recent data). |
+|DIRS| VARCHAR|32672 |false |Comma-separated list of directories used for the diskstore. These are the ones provided in [CREATE DISKSTORE](../sql_reference/create-diskstore.md) or else if no explicit directory was provided, then the working directory of the node. |
 
 For example:
 
