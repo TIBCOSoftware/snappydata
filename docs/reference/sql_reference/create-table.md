@@ -224,6 +224,17 @@ Note that only the column names and datatypes from the queried table are used wh
 
 For information on using the Apache Spark API, refer to [Using the Spark DataFrame API](../../sde/running_queries.md#using-the-spark-dataframe-api).
 
+### Example: Create Column Table with PUT INTO
+
+```
+snappy>CREATE TABLE COL_TABLE (
+	PRSN_EVNT_ID bigint NOT NULL,
+    VER bigint NOT NULL,
+    CLIENT_ID bigint NOT NULL,
+    SRC_TYP_ID bigint NOT NULL) USING column OPTIONS(partition_by 'PRSN_EVNT_ID,CLIENT_ID', buckets '64', 	
+    key_columns 'PRSN_EVNT_ID,CLIENT_ID' );
+```
+
 ### Example: Create Table with Eviction Settings
 
 Use eviction settings to keep your table within a specified limit, either by removing evicted data completely or by creating an overflow table that persists the evicted data to a disk store.
