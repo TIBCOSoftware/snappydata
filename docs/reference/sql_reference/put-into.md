@@ -1,20 +1,20 @@
 # PUT INTO
 
-!!!Note:
-	* PUT INTO is not supported for column tables
-		
-	* SnappyData does not support PUT INTO with a subselect query, if, the subselect query requires aggregation
+<note>
+	SnappyData does not support PUT INTO with a subselect query, if, the subselect query requires aggregation.
 
 ``` bash
-PUT INTO table-name
-     VALUES ( column-value [ , column-value ]* ) 
+    PUT INTO table-name
+         VALUES ( column-value [ , column-value ]* ) 
 ```
 
 ``` bash
-PUT INTO table-name
-    ( simple-column-name [ , simple-column-name ]* )
-   Query
+    PUT INTO table-name
+        ( simple-column-name [ , simple-column-name ]* )
+       Query
 ```
+</note>
+
 ## Description
 
 PUT INTO operates like standard [INSERT](insert.md) statement.
@@ -53,7 +53,7 @@ These columns are used to identify a row uniquely. PUT INTO is available by SQL 
 
 **For SQL**
 
-```
+``` bash
 put into table col_table select * from row_table
 ```
 
@@ -61,7 +61,7 @@ put into table col_table select * from row_table
 
 API is available from the DataFrameWriter extension.
 
-```
+``` bash
 import org.apache.spark.sql.snappy._
 dataFrame.write.putInto("col_table")
 ```
