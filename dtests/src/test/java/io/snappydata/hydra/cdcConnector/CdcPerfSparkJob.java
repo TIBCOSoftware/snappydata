@@ -47,20 +47,10 @@ public class CdcPerfSparkJob {
 
       //conn = TomcatConnectionPoolForSparkApp.getConnection();
       conn = DriverManager.getConnection(url);
-     // String query = "SELECT *  FROM POSTAL_ADDRESS WHERE PSTL_ADDR_ID = ? AND CNTC_ID = ?";
-     String query = "SELECT * FROM POSTAL_ADDRESS WHERE CNTC_ID = ? AND CLIENT_ID = ?";
-      // String query = "SELECT * FROM POSTAL_ADDRESS WHERE CTY = ? AND ST = ?";
-   //  String query = "SELECT * FROM CLAIM_STATUS WHERE PRSN_ID = ? AND CLM_ID = ?";
-   //   System.out.println("The query string is " + query + " with CNTC_ID : " + CNTC_ID + " and CLIENT_ID: " + CLIENT_ID);
+      String query = "SELECT * FROM POSTAL_ADDRESS WHERE CNTC_ID = ? AND CLIENT_ID = ?";
       PreparedStatement ps = conn.prepareStatement(query);
-      int CLIENT_ID = rnd.nextInt(10000);
-      int CNTC_ID = rnd.nextInt(10000);
-      ps.setInt(1, CNTC_ID);
-      ps.setInt(2, CLIENT_ID);
-     /* ps.setInt(1, CNTC_ID);
-      ps.setInt(2, CLIENT_ID);*/
 
-      // warm up loop
+       // warm up loop
       for (int i = 0; i < 100; i++) {
         ps.executeQuery();
       }
@@ -68,10 +58,10 @@ public class CdcPerfSparkJob {
       // actuall query execution task
       startTime = System.currentTimeMillis();
       for(int i = 0 ; i < numItr ; i++) {
-       /* int CLIENT_ID = rnd.nextInt(10000);
+       int CLIENT_ID = rnd.nextInt(10000);
         int CNTC_ID = rnd.nextInt(10000);
         ps.setInt(1, CNTC_ID);
-        ps.setInt(2, CLIENT_ID);*/
+        ps.setInt(2, CLIENT_ID);
         ResultSet rs = ps.executeQuery();
         while (rs.next()) {
           String CITY = rs.getString("CTY");
@@ -100,8 +90,6 @@ public class CdcPerfSparkJob {
     queryList = new ArrayList<String>();
     THREAD_COUNT = Integer.parseInt(args[0]);
     final List<Long> timeList = new CopyOnWriteArrayList<>();
-    long startTime;
-    long endTime;
     final CountDownLatch startBarierr = new CountDownLatch(THREAD_COUNT + 1);
     final CountDownLatch finishBarierr = new CountDownLatch(THREAD_COUNT);
     for (int i = 0; i < THREAD_COUNT; i++) {
@@ -126,9 +114,7 @@ public class CdcPerfSparkJob {
     }
     startBarierr.countDown();
     startBarierr.await(); //await start for all thread
-   // startTime = System.currentTimeMillis(); //and note time
     finishBarierr.await(); //wait each thread
-  //  endTime = System.currentTimeMillis();   //note finish time*/
 
     //finally when all the threads have finished query execution,add all the query execution time from the list.
     for (int i = 0; i < timeList.size(); i++) {
@@ -139,14 +125,5 @@ public class CdcPerfSparkJob {
 
 
   }
-/*  public static void draw(int[] count) {
-    double[] x = CData.GetRange(0.0D, 1.0D, 50.0D);
-    double[] y = new double[x.length];
-    for(int i =0; i<y.length;++i) {
-      y[i] = x[i]*x[i];
-    }
-    Panel panel = new Panel();
-
-  } */
 }
 
