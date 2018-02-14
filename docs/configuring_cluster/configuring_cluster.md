@@ -5,6 +5,10 @@ Configuration files for locator, lead, and server should be created in the **con
 To do so, you can copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
+!!! Tip:
+	For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
+
+
 <a id="locator"></a>
 ## Configuring Locators
 
@@ -20,7 +24,7 @@ In this file, you can specify:
 
 * SnappyData specific properties that can be passed.
 
-You can refer to the **conf/locators.template** file for some examples. 
+You can refer to the **conf/locators.template** file for some examples.
 
 ### List of Locator Properties 
 
