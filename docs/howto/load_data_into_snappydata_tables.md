@@ -25,7 +25,6 @@ CREATE EXTERNAL TABLE STAGING_CUSTOMER USING parquet OPTIONS(path 'quickstart/sr
 
 CREATE TABLE CUSTOMER USING column OPTIONS(buckets '8') AS ( SELECT * FROM STAGING_CUSTOMER)
 ```
->>>>>>> origin/master
 
 **Example - Load from CSV**
 
@@ -33,7 +32,7 @@ You can either explicitly define the schema or infer the schema and the column d
 
 ```scala
     // Get a SnappySession in a local cluster
-    val spark: SparkSession = SparkSessio
+    val spark: SparkSession = SparkSession
         .builder
         .appName("CreateColumnTable")
         .master("local[*]")
@@ -101,10 +100,11 @@ In the code snippet below a schema is inferred from a CSV file. Column names are
 
 The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). 
 
-** Example - reading JSON documents**
+**Example - reading JSON documents**
 As mentioned before when dealing with JSON you have two challenges - (1) the data can be highly nested (2) the structure of the documents can keep changing. 
 
 Here is a simple example that loads multiple JSON records that show dealing with schema changes across documents -   [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
 
 !!! Note
+
 	When loading data from sources like CSV or Parquet the files would need to be accessible from all the cluster members in SnappyData. Make sure it is NFS mounted or made accessible through the Cloud solution (shared storage like S3). 

@@ -18,6 +18,7 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE 'time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
+	KEY_COLUMNS 'comma-separated-column-names' ); //Only for column table.
     COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer. Only for column table.
 	)
 	[AS select_statement];
