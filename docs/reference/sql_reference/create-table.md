@@ -18,7 +18,7 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE 'time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
-	KEY_COLUMNS 'comma-separated-column-names' ); //Only for column table.
+	KEY_COLUMNS 'comma-separated-column-names'; //Only for column table.
     COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer. Only for column table.
 	)
 	[AS select_statement];
@@ -54,28 +54,28 @@ Refer to the [constraint](#constraint) section for more information on table-con
 `column-data-type`
 ```
 column-data-type: 
-	BIGINT | 
-	BINARY | 
-	BLOB | 
-	BOOLEAN | 
-	BYTE | 
-	CLOB | 
-	DATE | 
-	DECIMAL | 
-	DOUBLE |  
-	FLOAT | 
-	INT | 
-	INTEGER | 
-	LONG |  
-	NUMERIC | 
-	REAL | 
-	SHORT | 
-	SMALLINT | 
-	STRING | 
-	TIMESTAMP | 
-	TINYINT | 
-	VARBINARY | 
-	VARCHAR | 
+	BIGINT |
+	BINARY |
+	BLOB |
+	BOOLEAN |
+	BYTE |
+	CLOB |
+	DATE |
+	DECIMAL |
+	DOUBLE |
+	FLOAT |
+	INT |
+	INTEGER |
+	LONG |
+	NUMERIC |
+	REAL |
+	SHORT |
+	SMALLINT |
+	STRING |
+	TIMESTAMP |
+	TINYINT |
+	VARBINARY |
+	VARCHAR |
 ```
 Column tables can also use ARRAY, MAP and STRUCT types.</br>
 Decimal and numeric has default precision of 38 and scale of 18.</br>
@@ -162,7 +162,7 @@ snappy>CREATE TABLE CUSTOMER (
     C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
     C_MKTSEGMENT  VARCHAR(10) NOT NULL,
     C_COMMENT     VARCHAR(117) NOT NULL))
-    USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
+    USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY');
 ```
 
 ### Example: Column Table Partitioned with 10 Buckets and Persistence Enabled
@@ -189,7 +189,7 @@ snappy>CREATE TABLE SUPPLIER (
       S_PHONE STRING NOT NULL, 
       S_ACCTBAL DECIMAL(15, 2) NOT NULL,
       S_COMMENT STRING NOT NULL)
-      USING ROW OPTIONS (PERSISTENCE 'ASYNCHRONOUS');
+      USING ROW OPTIONS (BUCKETS '10', PERSISTENCE 'ASYNCHRONOUS');
 ```
 
 ### Example: Row Table Partitioned with 10 Buckets and Overflow Enabled
@@ -229,11 +229,11 @@ For information on using the Apache Spark API, refer to [Using the Spark DataFra
 
 ```
 snappy>CREATE TABLE COL_TABLE (
-	PRSN_EVNT_ID bigint NOT NULL,
+	PRSN_EVNT_ID BIGINT NOT NULL,
     VER bigint NOT NULL,
-    CLIENT_ID bigint NOT NULL,
-    SRC_TYP_ID bigint NOT NULL) USING column OPTIONS(partition_by 'PRSN_EVNT_ID,CLIENT_ID', buckets '64', 	
-    key_columns 'PRSN_EVNT_ID,CLIENT_ID' );
+    CLIENT_ID BIGINT NOT NULL,
+    SRC_TYP_ID BIGINT NOT NULL) USING COLUMN OPTIONS(PARTITION_BY 'PRSN_EVNT_ID,CLIENT_ID', BUCKETS '64',
+    KEY_COLUMNS 'PRSN_EVNT_ID,CLIENT_ID');
 ```
 
 ### Example: Create Table with Eviction Settings
