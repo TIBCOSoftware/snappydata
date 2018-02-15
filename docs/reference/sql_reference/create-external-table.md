@@ -2,19 +2,12 @@
 
 ```
 CREATE EXTERNAL TABLE [IF NOT EXISTS] [schema_name.]table_name
+    [( column-definition	[ , column-definition  ] * )]
     USING datasource
-    [OPTIONS (path 'data_file_path')]
-```
-<!--
-```
-CREATE EXTERNAL TABLE [IF NOT EXISTS] [schema_name.]table_name
-    ( column-definition	[ , column-definition  ] * )
-    USING datasource
-    [OPTIONS (path 'data_file_path')]
+     [OPTIONS (key1 val1, key2 val2, ...)]
 ```
 
 For more information on column-definition, refer to [Column Definition For Column Table](create-table.md#column-definition).
--->
 
 Refer to these sections for more information on [Creating Table](create-table.md), [Creating Sample Table](create-sample-table.md), [Creating Temporary Table](create-temporary-table.md) and [Creating Stream Table](create-stream-table.md).
 
