@@ -640,4 +640,40 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
       df2.write.deleteFrom("col_table")
     }
   }
+  
+  // This test should be moved to a query suite.
+  test("Double exists") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row ")
+    snc.sql("create table r2(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row")
+
+    snc.sql("create table r3(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row")
+
+    snc.insert("r1", Row(1, "1", "1", 100))
+    snc.insert("r1", Row(2, "2", "2", 2))
+    snc.insert("r1", Row(4, "4", "4", 4))
+    snc.insert("r1", Row(7, "7", "7", 4))
+
+    snc.insert("r2", Row(1, "1", "1", 1))
+    snc.insert("r2", Row(2, "2", "2", 2))
+    snc.insert("r2", Row(3, "3", "3", 3))
+
+    snc.insert("r3", Row(1, "1", "1", 1))
+    snc.insert("r3", Row(2, "2", "2", 2))
+    snc.insert("r3", Row(4, "4", "4", 4))
+
+    val df = snc.sql("select * from r1 where " +
+        "(exists (select col1 from r2 where r2.col1=r1.col1) " +
+        "or exists(select col1 from r3 where r3.col1=r1.col1))")
+
+    df.show
+    val result = df.collect()
+    assert(result.contains(Row(1, "1", "1", 100)))
+    assert(result.contains(Row(2, "2", "2", 2)))
+    assert(result.contains(Row(4, "4", "4", 4)))
+    assert(!result.contains(Row(7, "7", "7", 7)))
+  }
 }

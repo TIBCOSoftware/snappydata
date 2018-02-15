@@ -1228,7 +1228,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
     case None =>
       // only one match needed, so no value iteration
-      s"""final boolean $existsVar = ($entryVar == null);
+      s"""final boolean $existsVar = ($entryVar != null);
         $consumeResult"""
 
     case Some(ev) =>
