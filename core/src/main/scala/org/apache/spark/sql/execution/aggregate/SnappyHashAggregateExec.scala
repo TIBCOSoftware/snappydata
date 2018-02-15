@@ -610,15 +610,29 @@ case class SnappyHashAggregateExec(
       keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = true)
     val bufferEval = evaluateVariables(bufferVars)
 
+    // if aggregate expressions uses some of the key variables then signal those
+    // to be materialized explicitly for the dictionary optimization case (AQP-292)
+    val updateAttrs = AttributeSet(updateExpr)
+    val evalKeys = if (DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(groupingExpressions)) {
+      var hasEvalKeys = false
+      val keys = groupingAttributes.map { a =>
+        if (updateAttrs.contains(a)) {
+          hasEvalKeys = true
+          true
+        } else false
+      }
+      if (hasEvalKeys) keys else Nil
+    } else Nil
+
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
     val mapCode = keyBufferAccessor.generateMapGetOrInsert(keyBufferTerm,
-      initVars, initCode, input, dictionaryArrayTerm, dictionaryArrayInit)
+      initVars, initCode, input, evalKeys, dictionaryArrayTerm, dictionaryArrayInit)
 
     ctx.currentVars = bufferVars ++ input
     // pre-evaluate input variables used by child expressions and updateExpr
     val inputCodes = evaluateRequiredVariables(child.output,
       ctx.currentVars.takeRight(child.output.length),
-      child.references ++ AttributeSet(updateExpr))
+      child.references ++ updateAttrs)
     val boundUpdateExpr = updateExpr.map(BindReferences.bindReference(_,
       inputAttr))
     val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(
