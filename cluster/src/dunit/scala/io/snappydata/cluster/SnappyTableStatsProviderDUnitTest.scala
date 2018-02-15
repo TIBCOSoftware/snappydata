@@ -270,7 +270,7 @@ object SnappyTableStatsProviderDUnitTest {
   }
 
   def convertToSerializableForm(stat: SnappyRegionStats): RegionStat = {
-    RegionStat(stat.getRegionName, stat.getTotalSize, stat.getSizeInMemory,
+    RegionStat(stat.getTableName, stat.getTotalSize, stat.getSizeInMemory,
       stat.getRowCount, stat.isColumnTable, stat.isReplicatedTable)
   }
 
@@ -290,7 +290,7 @@ object SnappyTableStatsProviderDUnitTest {
     def actual = SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1(table)
 
-    assert(actual.getRegionName == expected.getRegionName)
+    assert(actual.getTableName == expected.getTableName)
     assert(actual.isColumnTable == expected.isColumnTable)
 
     ClusterManagerTestBase.waitForCriterion(actual.getSizeInMemory == expected.getSizeInMemory
