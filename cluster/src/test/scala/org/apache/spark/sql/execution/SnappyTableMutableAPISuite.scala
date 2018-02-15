@@ -640,7 +640,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
       df2.write.deleteFrom("col_table")
     }
   }
-  
+
   // This test should be moved to a query suite.
   test("Double exists") {
     val snc = new SnappySession(sc)
@@ -669,11 +669,9 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
         "(exists (select col1 from r2 where r2.col1=r1.col1) " +
         "or exists(select col1 from r3 where r3.col1=r1.col1))")
 
-    df.show
     val result = df.collect()
-    assert(result.contains(Row(1, "1", "1", 100)))
-    assert(result.contains(Row(2, "2", "2", 2)))
-    assert(result.contains(Row(4, "4", "4", 4)))
+    checkAnswer(df, Seq(Row(1, "1", "1", 100),
+      Row(2, "2", "2", 2), Row(4, "4", "4", 4) ))
     assert(!result.contains(Row(7, "7", "7", 7)))
   }
 }
