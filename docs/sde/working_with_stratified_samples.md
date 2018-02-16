@@ -31,7 +31,7 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
 ```
 When creating a base table, if you have applied the **partition by** clause, the clause is also applied to the sample table. The sample table also inherits the **number of buckets**, **redundancy** and **persistence** properties from the base table.
 
-For sample tables, the **overflow** property is set to **False** by default. (For column tables the default value is  **True**). 
+For sample tables, the **overflow** property is set to **False** by default. (For row and column tables the default value is  **True**). 
 
 For example:
 
