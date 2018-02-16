@@ -8,4 +8,6 @@ The following system tables are available:
 
 * [SYSDISKSTORES](sysdiskstores.md)
 
+* [SYSDISKSTOREIDS](sysdiskstoreids.md)
+
 * [SYSTABLES](systables.md)

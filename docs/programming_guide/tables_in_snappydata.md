@@ -92,7 +92,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 	!!! Note:
  		For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables, no such defaults are set. Row tables allow all the eviction settings.
 
-   * <b>OVERFLOW:</b>  If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
+   * <b>OVERFLOW:</b>  By default it is set to **true** which means table data overflows to a local SnappyStore disk store. Setting it to **false** is not allowed except when EVICTION_BY is not set. In such case, the eviction itself is disabled.
 	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
 
    * <b>PERSISTENCE:</b>  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
