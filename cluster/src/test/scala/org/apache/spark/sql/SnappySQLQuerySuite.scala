@@ -35,9 +35,11 @@
 
 package org.apache.spark.sql
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.Matchers._
 
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.execution.aggregate.{HashAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.functions.rand
 import org.apache.spark.sql.test.SQLTestData.TestData2
 
@@ -194,6 +196,31 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     val result = df.as("a").join(df.filter($"r" < 0.5).as("b"), $"a.id" === $"b.id").collect()
     result.foreach { row =>
       assert(row.getDouble(1) - row.getDouble(3) === 0.0 +- 0.001)
+    }
+  }
+
+  test("AQP-292 snappy plan generation failure for aggregation on group by column") {
+    session.sql("create table testTable (id long, tag string) using column options (buckets '2')")
+    session.range(100000).selectExpr(
+      "id", "concat('tag', cast ((id >> 6) as string)) as tag").write.insertInto("testTable")
+    val query = "select tag, count(tag) c from testTable group by tag order by c desc"
+    val rs = session.sql(query)
+    // snappy aggregation should have been used for this query
+    val plan = rs.queryExecution.executedPlan
+    assert(plan.find(_.isInstanceOf[SnappyHashAggregateExec]).isDefined)
+    assert(plan.find(_.isInstanceOf[HashAggregateExec]).isEmpty)
+    // collect the result to force default hashAggregateSize property take effect
+    implicit val encoder = RowEncoder(rs.schema)
+    val result = session.createDataset(rs.collect().toSeq)
+    session.sql(s"set ${Property.HashAggregateSize} = -1")
+    try {
+      val ds = session.sql(query)
+      val plan = ds.queryExecution.executedPlan
+      assert(plan.find(_.isInstanceOf[SnappyHashAggregateExec]).isEmpty)
+      assert(plan.find(_.isInstanceOf[HashAggregateExec]).isDefined)
+      checkAnswer(result, ds.collect())
+    } finally {
+      session.sql(s"set ${Property.HashAggregateSize} = 0")
     }
   }
 }
