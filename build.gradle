@@ -494,8 +494,6 @@ subprojects {
 
         environment 'SNAPPY_HOME': snappyProductDir,
           'APACHE_SPARK_HOME': sparkProductDir,
-          'SMOKE_PERF' : rootProject.hasProperty("smokePerf"),
-          'TPCDS_SUITE' : rootProject.hasProperty("tpcds"),
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)

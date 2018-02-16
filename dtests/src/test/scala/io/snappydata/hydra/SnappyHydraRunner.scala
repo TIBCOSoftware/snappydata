@@ -67,7 +67,9 @@ class SnappyHydraRunner extends SnappyHydraTestRunner {
 
   test("smokePerfBT") {
     val smokePerf = System.getenv("SMOKE_PERF")
-    if (smokePerf.equalsIgnoreCase("true")) {
+    if (smokePerf == null) {
+      println("SMOKE_PERF should be set as an environment variable in order to run smokePerf bt")
+    } else if (smokePerf.equalsIgnoreCase("true")) {
       val perfLogDir = new File(s"$snappyHome/../tests/snappy/scalatest/smokePerfBT")
       if (perfLogDir.exists) {
         FileUtils.deleteDirectory(perfLogDir)

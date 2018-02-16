@@ -57,6 +57,9 @@ class TPCDSSuite extends SnappyFunSuite
       "q81", "q82", "q83", "q84", "q85", "q86", "q87", "q88", "q89", "q90",
       "q91", "q92", "q93", "q94", "q95", "q96", "q97", "q98", "q99")
     val runTPCDSSuite = System.getenv("TPCDS_SUITE")
+    if (runTPCDSSuite == null) {
+      println("TPCDS_SUITE should be set as an environment variable in order to run TPCDSSuite")
+    }
   }
 
   // Disabling the test run from precheckin as it takes around an hour.
