@@ -138,11 +138,13 @@ class SplitClusterDUnitSecurityTest(s: String)
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val confDir = s"$snappyProductDir/conf"
     val compressionArg = this.compressionArg
+    val waitForInit = "-jobserver.waitForInitialization=true"
     val ldapConf = getLdapConf
     writeToFile(
       s"localhost  -peer-discovery-port=$port -client-port=$netPort $compressionArg $ldapConf",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] $ldapConf", s"$confDir/leads")
+    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf",
+      s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg $ldapConf
           |localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
@@ -669,7 +671,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       logInfo(consoleLog)
       val jobId = getJobId(consoleLog)
       assert(consoleLog.contains("STARTED"), "Job not started")
-      DistributedTestBase.waitForCriterion(getWaitCriterion(jobId), 30000, 500, true)
+      DistributedTestBase.waitForCriterion(getWaitCriterion(jobId), 60000, 500, true)
     }
 
     user2Conn = getConn(jdbcUser2, setSNC = true)
