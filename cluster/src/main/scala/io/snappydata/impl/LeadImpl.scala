@@ -251,7 +251,7 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       // start the service to gather table statistics
-      SnappyTableStatsProviderService.start(sc)
+      SnappyTableStatsProviderService.start(sc, url = null)
 
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)

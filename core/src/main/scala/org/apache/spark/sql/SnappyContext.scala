@@ -1076,7 +1076,8 @@ object SnappyContext extends Logging {
           ThinClientConnectorMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
-        else ExternalClusterMode(sc, sc.master)
+        else throw new SparkException(
+          s"${Property.SnappyConnection.name} should be specified for smart connector")
       }
     }
     logInfo(s"Initializing SnappyData in cluster mode: $mode")
@@ -1133,7 +1134,7 @@ object SnappyContext extends Logging {
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-        SnappyTableStatsProviderService.start(sc)
+        SnappyTableStatsProviderService.start(sc, url)
         if (ToolsCallbackInit.toolsCallback != null) {
           ToolsCallbackInit.toolsCallback.updateUI(sc)
         }
@@ -1178,10 +1179,7 @@ object SnappyContext extends Logging {
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
     SparkSession.sqlListener.set(null)
-    _clusterMode match {
-      case _: ExternalClusterMode =>
-      case _ => ServiceUtils.clearStaticArtifacts()
-    }
+    ServiceUtils.clearStaticArtifacts()
   }
 
   /**
@@ -1318,14 +1316,6 @@ case class ThinClientConnectorMode(override val sc: SparkContext,
 case class LocalMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode {
   override val description: String = "Local mode"
-}
-
-/**
- * A regular Spark/Yarn/Mesos or any other non-snappy cluster.
- */
-case class ExternalClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode {
-  override val description: String = "External cluster mode"
 }
 
 class TableNotFoundException(message: String, cause: Option[Throwable] = None)

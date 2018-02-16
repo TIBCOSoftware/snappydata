@@ -715,7 +715,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
    * Generate code to lookup the map or insert a new key, value if not found.
    */
   def generateMapGetOrInsert(objVar: String, valueInitVars: Seq[ExprCode],
-      valueInitCode: String, input: Seq[ExprCode],
+      valueInitCode: String, input: Seq[ExprCode], evalKeys: Seq[Boolean],
       dictArrayVar: String, dictArrayInitVar: String): String = {
     val hashVar = Array(ctx.freshName("hash"))
     val valueInit = valueInitCode + '\n' + generateUpdate(objVar, Nil,
@@ -728,14 +728,21 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     dictionaryKey match {
       case Some(dictKey) =>
         val keyVars = getExpressionVars(keyExpressions, input)
+        // materialize the key code explicitly if required by update expressions later (AQP-292:
+        //   it can no longer access the code since keyVars has emptied the key codes in input)
+        val evalKeyCode = if (evalKeys.isEmpty) ""
+        else evaluateVariables(keyVars.indices.collect {
+          case i if evalKeys(i) => keyVars(i)
+        })
         val keyVar = keyVars.head
         s"""
+          $evalKeyCode
           $className $objVar;
           ${DictionaryOptimizedMapAccessor.dictionaryArrayGetOrInsert(ctx,
             keyExpressions, keyVar, dictKey, dictArrayVar, objVar, valueInit,
             continueOnNull = false, this)} else {
             // evaluate the key expressions
-            ${if (keyVar.code.isEmpty) "" else keyVar.code.trim}
+            ${evaluateVariables(keyVars)}
             // evaluate hash code of the lookup key
             ${generateHashCode(hashVar, keyVars, keyExpressions, register = false)}
             ${mapLookupCode(keyVars)}
@@ -1221,7 +1228,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
     case None =>
       // only one match needed, so no value iteration
-      s"""final boolean $existsVar = ($entryVar == null);
+      s"""final boolean $existsVar = ($entryVar != null);
         $consumeResult"""
 
     case Some(ev) =>
