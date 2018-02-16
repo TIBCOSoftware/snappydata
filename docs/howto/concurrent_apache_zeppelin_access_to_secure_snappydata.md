@@ -4,12 +4,13 @@
 Multiple users can concurrently access a secure SnappyData cluster by configuring the JDBC interpreter setting in Apache Zeppelin. The JDBC interpreter allows you to create a JDBC connection to a SnappyData cluster.
 
 !!! Note:
-	* Currently, only `%jdbc` interpreter is supported with a secure SnappyData cluster.
 
-	* Each user accessing the secure SnappyData cluster should configure the `%jdbc` interpreter in Apache Zeppelin as descibed in this section.
+	* Currently, only the `%jdbc` interpreter is supported with a secure SnappyData cluster.
+
+	* Each user accessing the secure SnappyData cluster should configure the `%jdbc` interpreter in Apache Zeppelin as described in this section.
 
 ## Step 1: Download, Install and Configure SnappyData
-1. [Download and install SnappyData Enterprise Edition (with security enabled)](../install.md) </br>
+1. [Download and install SnappyData Enterprise Edition](../install.md) </br>
 
 2. [Configure the SnappyData cluster with security enabled](../security/security.md).
 
@@ -50,9 +51,15 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
 	|default.url|jdbc:snappydata://localhost:1527/|Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527`|
     |default.driver|io.snappydata.jdbc.ClientDriver|Specify the JDBC driver for SnappyData|
     |default.password|user123|The JDBC user password|
-    |default.user|user1|The JDBC user name|
+    |default.user|user1|The JDBC username|
 
 3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for	 SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-client-1.6.1.jar) is available on [the release page](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.1). </br>
 	The SnappyData Client (JDBC) JAR file can also be placed under <ZEPPELIN_HOME>/interpreter/jdbc before starting Zeppelin instead of providing it in the dependency setting.
 
-4. If required, edit other properties, and then click **Save **to apply your changes. </br>For more information on using Zeppelin, see [Using Apache Zeppelin](../isight/quick_start_steps.md#using-apache-zeppelin).
+4. If required, edit other properties, and then click **Save**to apply your changes. </br>For more information on using Zeppelin, see [Using Apache Zeppelin](../isight/quick_start_steps.md#using-apache-zeppelin).
+
+**Additional Information**
+
+*  [Using Apache Zeppelin](../isight/quick_start_steps.md#using-apache-zeppelin)
+
+*  [How to Use Apache Zeppelin with SnappyData](use_apache_zeppelin_with_snappydata.md)
