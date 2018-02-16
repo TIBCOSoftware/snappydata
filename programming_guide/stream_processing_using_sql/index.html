@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -907,13 +914,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1195,6 +1195,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1276,6 +1283,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1327,6 +1341,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1700,6 +1721,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1861,7 +1889,7 @@ Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streami
 <p><img alt="Spark Streaming architecture" src="http://spark.apache.org/docs/latest/img/streaming-arch.png" /></p>
 <p>Internally, it works as follows. Spark Streaming receives live input data streams and divides the data into batches, which are then processed by the Spark engine to generate the final stream of results in batches.</p>
 <p><img alt="Spark Streaming data flow" src="http://spark.apache.org/docs/latest/img/streaming-flow.png" /></p>
-<p>Spark Streaming provides a high-level abstraction called <em>discretized stream</em> or <em>DStream</em>, which represents a continuous stream of data. DStreams can be created either from input data streams from sources such as Kafka, Flume, and Kinesis, or by applying high-level operations on other DStreams. Internally, a DStream is represented as a sequence of <a href="https://spark.apache.org/docs/1.6.0/api/java/org/apache/spark/rdd/RDD.html">RDDs</a>. </p>
+<p>Spark Streaming provides a high-level abstraction called <em>discretized stream</em> or <em>DStream</em>, which represents a continuous stream of data. DStreams can be created either from input data streams from sources such as Kafka, Flume, and Kinesis, or by applying high-level operations on other DStreams. Internally, a DStream is represented as a sequence of <a href="https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/rdd/RDD.html">RDDs</a>. </p>
 <p>Additional details on the Spark Streaming concepts and programming is covered <a href="http://spark.apache.org/docs/latest/streaming-programming-guide.html">here</a>.</p>
 <h2 id="snappydata-streaming-extensions-over-spark">SnappyData Streaming Extensions over Spark</h2>
 <p>The following enhancements over Spark Streaming are provided: </p>

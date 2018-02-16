@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -893,13 +900,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1181,6 +1181,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1262,6 +1269,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1313,6 +1327,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1686,6 +1707,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1882,7 +1910,7 @@ You can either start SnappyData members using the <code>snappy_start_all</code> 
 <p><strong>Step 2: Launch the Apache Spark program</strong></p>
 <p><strong><em><em>In the Local mode</em></em></strong></p>
 <pre><code class="bash">
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-s_2.11&quot;
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.1-s_2.11&quot;
 </code></pre>
 
 <div class="admonition note">
@@ -1904,11 +1932,11 @@ $scala &gt; val snSession = new SnappySession(spark.sparkContext)
 <p>The code example for writing a Smart Connector application program is located in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample</a></p>
 <p><strong><em><em>Using External Cluster Manager</em></em></strong></p>
 <p><strong>Cluster mode</strong></p>
-<pre><code class="bash">./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-s_2.11&quot;
+<pre><code class="bash">./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.1-s_2.11&quot;
 </code></pre>
 
 <p><strong>Client mode</strong></p>
-<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.0-s_2.11&quot;
+<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.0.1-s_2.11&quot;
 </code></pre>
 
 <p><strong><em><em>Using YARN as a Cluster Manager</em></em></strong></p>

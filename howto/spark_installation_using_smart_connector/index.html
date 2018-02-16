@@ -354,6 +354,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -899,13 +906,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1187,6 +1187,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1268,6 +1275,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1319,6 +1333,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1692,6 +1713,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1887,7 +1915,7 @@ dataFrame.write.insertInto(&quot;TestColumnTable&quot;)
 $ &lt;SnappyData_home&gt;/sbin/snappy-start-all.sh
 
 $ &lt;SnappyData_home&gt;/bin/snappy
-SnappyData version 1.0.0
+SnappyData version 1.0.1
 snappy&gt;  connect client 'localhost:1527';
 Using CONNECTION0
 snappy&gt; CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
@@ -1899,7 +1927,7 @@ snappy&gt; insert into SNAPPY_COL_TABLE VALUES(2,2);
 
 <p>The Smart Connector Application can now connect to this SnappyData cluster. </br></p>
 <p>The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside the SnappyData cluster. </br>SnappyData package has to be specified along with the application jar to run the Smart Connector application.</p>
-<pre><code class="bash">$ &lt;Spark_Product_Home&gt;/bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.0-s_2.11       &lt;SnappyData_Product_Home&gt;/examples/jars/quickstart.jar
+<pre><code class="bash">$ &lt;Spark_Product_Home&gt;/bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.1-s_2.11       &lt;SnappyData_Product_Home&gt;/examples/jars/quickstart.jar
 </code></pre>
 
 <h2 id="execute-a-smart-connector-application">Execute a Smart Connector Application</h2>
@@ -1908,7 +1936,7 @@ snappy&gt; insert into SNAPPY_COL_TABLE VALUES(2,2);
 $ &lt;SnappyData_Product_Home&gt;/sbin/snappy-start-all.sh
 
 $ &lt;SnappyData_Product_Home&gt;/bin/snappy
-SnappyData version 1.0.0
+SnappyData version 1.0.1
 snappy&gt;  connect client 'localhost:1527';
 Using CONNECTION0
 snappy&gt; CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
@@ -1920,7 +1948,7 @@ snappy&gt; insert into SNAPPY_COL_TABLE VALUES(2,2);
 </code></pre>
 
 <p>A Smart Connector Application can now connect to this SnappyData cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside SnappyData cluster. SnappyData package has to be specified along with the application jar to run the Smart Connector application. </p>
-<pre><code class="bash">$ &lt;Spark_Product_Home&gt;/bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages SnappyDataInc:snappydata:1.0.0-s_2.11 &lt;SnappyData_Product_Home&gt;/examples/jars/quickstart.jar
+<pre><code class="bash">$ &lt;Spark_Product_Home&gt;/bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages SnappyDataInc:snappydata:1.0.1-s_2.11 &lt;SnappyData_Product_Home&gt;/examples/jars/quickstart.jar
 
 </code></pre>
               

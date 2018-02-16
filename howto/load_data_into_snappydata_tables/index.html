@@ -348,6 +348,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -893,13 +900,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1181,6 +1181,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1262,6 +1269,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1313,6 +1327,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1686,6 +1707,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1856,25 +1884,10 @@ For instance, you can first <a href="../../reference/sql_reference/create-extern
 CREATE TABLE CUSTOMER USING column OPTIONS(buckets '8') AS ( SELECT * FROM STAGING_CUSTOMER)
 </code></pre>
 
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>origin/master</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
 <p><strong>Example - Load from CSV</strong></p>
 <p>You can either explicitly define the schema or infer the schema and the column data types. To infer the column names, we need the CSV header to specify the names. In this example we don't have the names, so we explicitly define the schema. </p>
 <pre><code class="scala">    // Get a SnappySession in a local cluster
-    val spark: SparkSession = SparkSessio
+    val spark: SparkSession = SparkSession
         .builder
         .appName(&quot;CreateColumnTable&quot;)
         .master(&quot;local[*]&quot;)
@@ -1929,7 +1942,7 @@ customerDF.write.insertInto(&quot;CUSTOMER&quot;)
 </code></pre>
 
 <p>The source code to load the data from a CSV/Parquet files is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala">CreateColumnTable.scala</a>. </p>
-<p><strong> Example - reading JSON documents</strong>
+<p><strong>Example - reading JSON documents</strong>
 As mentioned before when dealing with JSON you have two challenges - (1) the data can be highly nested (2) the structure of the documents can keep changing. </p>
 <p>Here is a simple example that loads multiple JSON records that show dealing with schema changes across documents -   <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala">WorkingWithJson.scala</a></p>
 <div class="admonition note">

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SmartExecutorBucketPartition - snappydata_2.11 1.0.0 API - org.apache.spark.sql.collection.SmartExecutorBucketPartition</title>
-          <meta name="description" content="SmartExecutorBucketPartition - snappydata 2.11 1.0.0 API - org.apache.spark.sql.collection.SmartExecutorBucketPartition" />
-          <meta name="keywords" content="SmartExecutorBucketPartition snappydata 2.11 1.0.0 API org.apache.spark.sql.collection.SmartExecutorBucketPartition" />
+          <title>SmartExecutorBucketPartition - snappydata_2.11 1.0.2-SNAPSHOT API - org.apache.spark.sql.collection.SmartExecutorBucketPartition</title>
+          <meta name="description" content="SmartExecutorBucketPartition - snappydata 2.11 1.0.2 - SNAPSHOT API - org.apache.spark.sql.collection.SmartExecutorBucketPartition" />
+          <meta name="keywords" content="SmartExecutorBucketPartition snappydata 2.11 1.0.2 SNAPSHOT API org.apache.spark.sql.collection.SmartExecutorBucketPartition" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.collection.SmartExecutorBucketPartition#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(_index:Int,hostList:scala.collection.mutable.ArrayBuffer[(String,String)]):org.apache.spark.sql.collection.SmartExecutorBucketPartition"></a>
+      <a id="&lt;init&gt;(_index:Int,_bucketId:Int,hostList:scala.collection.mutable.ArrayBuffer[(String,String)]):org.apache.spark.sql.collection.SmartExecutorBucketPartition"></a>
       <a id="&lt;init&gt;:SmartExecutorBucketPartition"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SmartExecutorBucketPartition</span><span class="params">(<span name="_index">_index: <span class="extype" name="scala.Int">Int</span></span>, <span name="hostList">hostList: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>)</span>
+        <span class="name">SmartExecutorBucketPartition</span><span class="params">(<span name="_index">_index: <span class="extype" name="scala.Int">Int</span></span>, <span name="_bucketId">_bucketId: <span class="extype" name="scala.Int">Int</span></span>, <span name="hostList">hostList: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.SmartExecutorBucketPartition@&lt;init&gt;(_index:Int,hostList:scala.collection.mutable.ArrayBuffer[(String,String)]):org.apache.spark.sql.collection.SmartExecutorBucketPartition" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.SmartExecutorBucketPartition@&lt;init&gt;(_index:Int,_bucketId:Int,hostList:scala.collection.mutable.ArrayBuffer[(String,String)]):org.apache.spark.sql.collection.SmartExecutorBucketPartition" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -182,6 +182,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.collection.SmartExecutorBucketPartition#bucketId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bucketId:Int"></a>
+      <a id="bucketId:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bucketId</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.SmartExecutorBucketPartition@bucketId:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>

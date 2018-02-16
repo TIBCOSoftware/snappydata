@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -897,13 +904,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1185,6 +1185,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1266,6 +1273,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1317,6 +1331,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1690,6 +1711,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -2007,6 +2035,10 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <tr>
 <td>-snappydata.sql.hashAggregateSize</td>
 <td>Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return large number of rows in aggregation results. The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.</td>
+</tr>
+<tr>
+<td>-snappydata.sql.planCacheSize</td>
+<td>Number of query plans that will be cached.</td>
 </tr>
 <tr>
 <td>-spark.sql.autoBroadcastJoinThreshold</td>

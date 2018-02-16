@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -903,13 +910,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1191,6 +1191,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1272,6 +1279,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1323,6 +1337,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1696,6 +1717,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1891,6 +1919,9 @@
 <li>
 <p><a href="#table">Table Statistics</a></p>
 </li>
+<li>
+<p><a href="#external-table">External Table Statistics</a></p>
+</li>
 </ul>
 <p><a id="cluster"></a></p>
 <h3 id="cluster-statistics">Cluster Statistics</h3>
@@ -2021,6 +2052,27 @@
 <li>
 <p><strong>Total Size</strong></br>
    Displays the collective physical memory and disk overflow space used by the data table to store its data/records.</p>
+</li>
+</ul>
+<p><img alt="Dashboard" src="../../Images/monitoring_external_table.png" />
+<a id="external-table"></a></p>
+<h3 id="external-table-statistics">External Table Statistics</h3>
+<ul>
+<li>
+<p><strong>Tables Count</strong></br>
+    Displays the total number of external tables present in the cluster. The tooltip displays the total number of external tables.</p>
+</li>
+<li>
+<p><strong>Name</strong></br>
+    Displays the name of the external table.</p>
+</li>
+<li>
+<p><strong>Provider</strong></br>
+    Displays the file format used for the external table. The supported file formats are  Parquet, CSV and JDBC.</p>
+</li>
+<li>
+<p><strong>Source</strong></br>
+    For Parquet and CSV file format, the path of the data file used to create the external table is displayed. For JDBC, the name of the Driver Class is displayed.</p>
 </li>
 </ul>
 <p><a id="member-details"></a></p>

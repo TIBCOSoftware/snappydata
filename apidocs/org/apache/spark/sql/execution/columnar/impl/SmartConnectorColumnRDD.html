@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SmartConnectorColumnRDD - snappydata_2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD</title>
-          <meta name="description" content="SmartConnectorColumnRDD - snappydata 2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" />
-          <meta name="keywords" content="SmartConnectorColumnRDD snappydata 2.11 1.0.0 API org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" />
+          <title>SmartConnectorColumnRDD - snappydata_2.11 1.0.2-SNAPSHOT API - org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD</title>
+          <meta name="description" content="SmartConnectorColumnRDD - snappydata 2.11 1.0.2 - SNAPSHOT API - org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" />
+          <meta name="keywords" content="SmartConnectorColumnRDD snappydata 2.11 1.0.2 SNAPSHOT API org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,requiredColumns:Array[String],connProperties:org.apache.spark.sql.sources.ConnectionProperties,schema:org.apache.spark.sql.types.StructType,store:org.apache.spark.sql.execution.columnar.ExternalStore,parts:Array[org.apache.spark.Partition],relDestroyVersion:Int):org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,requiredColumns:Array[String],connProperties:org.apache.spark.sql.sources.ConnectionProperties,schema:org.apache.spark.sql.types.StructType,store:org.apache.spark.sql.execution.columnar.ExternalStore,allParts:Array[org.apache.spark.Partition],partitionPruner:=&gt;Int,relDestroyVersion:Int,delayRollover:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD"></a>
       <a id="&lt;init&gt;:SmartConnectorColumnRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SmartConnectorColumnRDD</span><span class="params">(<span name="session">session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="connProperties">connProperties: <a href="../../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="store">store: <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="parts">parts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="relDestroyVersion">relDestroyVersion: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span>
+        <span class="name">SmartConnectorColumnRDD</span><span class="params">(<span name="session">session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="connProperties">connProperties: <a href="../../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="store">store: <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="allParts">allParts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="partitionPruner">partitionPruner: ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="relDestroyVersion">relDestroyVersion: <span class="extype" name="scala.Int">Int</span></span>, <span name="delayRollover">delayRollover: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,requiredColumns:Array[String],connProperties:org.apache.spark.sql.sources.ConnectionProperties,schema:org.apache.spark.sql.types.StructType,store:org.apache.spark.sql.execution.columnar.ExternalStore,parts:Array[org.apache.spark.Partition],relDestroyVersion:Int):org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,requiredColumns:Array[String],connProperties:org.apache.spark.sql.sources.ConnectionProperties,schema:org.apache.spark.sql.types.StructType,store:org.apache.spark.sql.execution.columnar.ExternalStore,allParts:Array[org.apache.spark.Partition],partitionPruner:=&gt;Int,relDestroyVersion:Int,delayRollover:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -911,6 +911,23 @@ be called once, so it is safe to implement a time-consuming computation in it.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD#getPartitionEvaluator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getPartitionEvaluator:()=&gt;Array[org.apache.spark.Partition]"></a>
+      <a id="getPartitionEvaluator:()⇒Array[Partition]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPartitionEvaluator</span><span class="result">: () ⇒ <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@getPartitionEvaluator:()=&gt;Array[org.apache.spark.Partition]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD#getPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getPartitions:Array[org.apache.spark.Partition]"></a>
       <a id="getPartitions:Array[Partition]"></a>

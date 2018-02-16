@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -886,13 +893,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1174,6 +1174,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1255,6 +1262,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1329,6 +1343,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1702,6 +1723,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1900,7 +1928,10 @@
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The &lt;<em>target directory</em>&gt; must be provided immediately after <code>- snappy backup [-baseline]</code> followed by the other arguments. <code>-baseline</code> is optional.</p>
+<ul>
+<li>The &lt;<em>target directory</em>&gt; must be provided immediately after <code>- snappy backup [-baseline]</code> followed by the other arguments. <code>-baseline</code> is optional.</li>
+<li>-J is a generic prefix for all JVM properties.</li>
+</ul>
 </div>
 <p>The table describes options for <code>snappy backup</code>:</p>
 <table>
@@ -1929,11 +1960,15 @@
 </tr>
 <tr>
 <td>prop-name</td>
-<td>Any other SnappyData distributed system property.</td>
+<td>Any other SnappyData distributed system property. </br>For example, <code>-locators=localhost:10334</code></td>
 </tr>
 <tr>
-<td>J-D<vmprop>=<prop-value></td>
-<td>Sets Java system property to the specified value.</td>
+<td>-J-D<name>=<value></td>
+<td>Sets Java system property. For example: <code>-J-Dgemfire.ack-wait-threshold=20</code></td>
+</tr>
+<tr>
+<td>-J</td>
+<td>Prefix for any JVM property. For example <code>-J-Xmx4g</code></td>
 </tr>
 </tbody>
 </table>

@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -879,13 +886,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="./">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <li class="toctree-l1 current">
         <a class="current" href="./">Using VSD to Analyze Statistics</a>
         
@@ -1181,6 +1181,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1262,6 +1269,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1313,6 +1327,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1686,6 +1707,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1841,6 +1869,20 @@
                 <h1 id="using-vsd-to-analyze-statistics">Using VSD to Analyze Statistics</h1>
 <p>The Visual Statistics Display (VSD) reads the sampled statistics from one or more archives and produces graphical displays for analysis. VSD is installed with SnappyData in the <span class="ph filepath">tools</span> subdirectory.</p>
 <p>VSD’s extensive online help offers complete reference information about the tool. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ensure the following for running VSD:</p>
+<ul>
+<li>
+<p>Install 32-bit libraries on 64-bit Linux:</br>
+    "yum install glibc.i686 libX11.i686" on RHEL/CentOS</br>
+    "apt-get install libc6:i386 libx11-6:i386" on Ubuntu/Debian like systems</br></p>
+</li>
+<li>
+<p>Locally running X server. For example, an X server implementation like, XQuartz for Mac OS, Xming for Windows OS, and Xorg which is installed by default for Linux systems.</p>
+</li>
+</ul>
+</div>
 <p><strong>More information</strong></p>
 <ul>
 <li>
@@ -1875,7 +1917,7 @@
         <a href="../running_vsd/" class="btn btn-neutral float-right" title="Installing and Running VSD">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="./" class="btn btn-neutral" title="Using VSD to Analyze Statistics"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../collecting_system_stats/" class="btn btn-neutral" title="Collecting System Statistics"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1907,7 +1949,7 @@
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="./" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../collecting_system_stats/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../running_vsd/" style="color: #fcfcfc">Next &raquo;</a></span>

@@ -151,6 +151,8 @@
                 
                     <li><a class="toctree-l4" href="#host-machine-requirements">Host Machine Requirements</a></li>
                 
+                    <li><a class="toctree-l4" href="#vsd-requirements">VSD Requirements</a></li>
+                
                     <li><a class="toctree-l4" href="#filesystem-type-for-linux-platforms">Filesystem Type for Linux Platforms</a></li>
                 
             
@@ -352,6 +354,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/use_apache_zeppelin_with_snappydata/">How to Use Apache Zeppelin with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
         
     </li>
 
@@ -901,13 +910,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1189,6 +1191,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1270,6 +1279,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1321,6 +1337,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1694,6 +1717,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1884,6 +1914,9 @@
 <p>A supported <a href="http://www.oracle.com/technetwork/java/javase/downloads">Oracle Java SE 8</a> installation. We recommend minimum version: 1.8.0_144 (see <a href="https://jira.snappydata.io/browse/SNAP-2017">SNAP-2017</a>, <a href="https://jira.snappydata.io/browse/SNAP-1999">SNAP-1999</a>, <a href="https://jira.snappydata.io/browse/SNAP-1911">SNAP-1911</a>, <a href="https://jira.snappydata.io/browse/SNAP-1375">SNAP-1375</a> for crashes reported with earlier versions).</p>
 </li>
 <li>
+<p>The latest version of Bash shell.</p>
+</li>
+<li>
 <p>A file system that supports long file names.</p>
 </li>
 <li>
@@ -1913,6 +1946,17 @@
 </li>
 </ul>
 </div>
+<h2 id="vsd-requirements">VSD Requirements</h2>
+<ul>
+<li>
+<p>Install 32-bit libraries on 64-bit Linux:</br>
+    "yum install glibc.i686 libX11.i686" on RHEL/CentOS</br>
+    "apt-get install libc6:i386 libx11-6:i386" on Ubuntu/Debian like systems</br></p>
+</li>
+<li>
+<p>Locally running X server. For example, an X server implementation like, XQuartz for Mac OS, Xming for Windows OS, and Xorg which is installed by default for Linux systems.</p>
+</li>
+</ul>
 <h2 id="filesystem-type-for-linux-platforms">Filesystem Type for Linux Platforms</h2>
 <p>For optimum disk-store performance, we recommend the use of local filesystem for disk data storage and not over NFS.</p>
               

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SmartConnectorRowRDD - snappydata_2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD</title>
-          <meta name="description" content="SmartConnectorRowRDD - snappydata 2.11 1.0.0 API - org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD" />
-          <meta name="keywords" content="SmartConnectorRowRDD snappydata 2.11 1.0.0 API org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD" />
+          <title>SmartConnectorRowRDD - snappydata_2.11 1.0.2-SNAPSHOT API - org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD</title>
+          <meta name="description" content="SmartConnectorRowRDD - snappydata 2.11 1.0.2 - SNAPSHOT API - org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD" />
+          <meta name="keywords" content="SmartConnectorRowRDD snappydata 2.11 1.0.2 SNAPSHOT API org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(_session:org.apache.spark.sql.SnappySession,_tableName:String,_isPartitioned:Boolean,_columns:Array[String],_connProperties:org.apache.spark.sql.sources.ConnectionProperties,_filters:Array[org.apache.spark.sql.sources.Filter],_partEval:()=&gt;Array[org.apache.spark.Partition],_relDestroyVersion:Int,_commitTx:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD"></a>
+      <a id="&lt;init&gt;(_session:org.apache.spark.sql.SnappySession,_tableName:String,_isPartitioned:Boolean,_columns:Array[String],_connProperties:org.apache.spark.sql.sources.ConnectionProperties,_filters:Array[org.apache.spark.sql.sources.Filter],_partEval:()=&gt;Array[org.apache.spark.Partition],_relDestroyVersion:Int,_commitTx:Boolean,_delayRollover:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD"></a>
       <a id="&lt;init&gt;:SmartConnectorRowRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SmartConnectorRowRDD</span><span class="params">(<span name="_session">_session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="_tableName">_tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="_isPartitioned">_isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="_columns">_columns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="_connProperties">_connProperties: <a href="../../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="_filters">_filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>] = <span class="symbol"><span class="name"><a href="../../../../../../../scala/package.html">Array.empty[Filter]</a></span></span></span>, <span name="_partEval">_partEval: () ⇒ <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../../../scala/package.html">() =&gt; Array.empty[Partition]</a></span></span></span>, <span name="_relDestroyVersion">_relDestroyVersion: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>, <span name="_commitTx">_commitTx: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+        <span class="name">SmartConnectorRowRDD</span><span class="params">(<span name="_session">_session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="_tableName">_tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="_isPartitioned">_isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="_columns">_columns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="_connProperties">_connProperties: <a href="../../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="_filters">_filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>, <span name="_partEval">_partEval: () ⇒ <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="_relDestroyVersion">_relDestroyVersion: <span class="extype" name="scala.Int">Int</span></span>, <span name="_commitTx">_commitTx: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="_delayRollover">_delayRollover: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD@&lt;init&gt;(_session:org.apache.spark.sql.SnappySession,_tableName:String,_isPartitioned:Boolean,_columns:Array[String],_connProperties:org.apache.spark.sql.sources.ConnectionProperties,_filters:Array[org.apache.spark.sql.sources.Filter],_partEval:()=&gt;Array[org.apache.spark.Partition],_relDestroyVersion:Int,_commitTx:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD@&lt;init&gt;(_session:org.apache.spark.sql.SnappySession,_tableName:String,_isPartitioned:Boolean,_columns:Array[String],_connProperties:org.apache.spark.sql.sources.ConnectionProperties,_filters:Array[org.apache.spark.sql.sources.Filter],_partEval:()=&gt;Array[org.apache.spark.Partition],_relDestroyVersion:Int,_commitTx:Boolean,_delayRollover:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -435,7 +435,7 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </span>
       <p class="shortcomment cmt"><code>columns</code>, but as a String suitable for injection into a SQL query.</p><div class="fullcomment"><div class="comment cmt"><p><code>columns</code>, but as a String suitable for injection into a SQL query.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#commitTx" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#commitTx" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="commitTx:Boolean"></a>
       <a id="commitTx:Boolean"></a>
       <h4 class="signature">
@@ -451,7 +451,7 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD#commitTxBeforeTaskCompletion" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="commitTxBeforeTaskCompletion(conn:Option[java.sql.Connection],context:org.apache.spark.TaskContext):Unit"></a>
       <a id="commitTxBeforeTaskCompletion(Option[Connection],TaskContext):Unit"></a>
@@ -663,6 +663,23 @@ To handle very large results, consider using</p><pre>rdd.map(x <span class="kw">
     </span>
       <p class="shortcomment cmt">Approximate version of countByValue().</p><div class="fullcomment"><div class="comment cmt"><p>Approximate version of countByValue().
 </p></div><dl class="paramcmts block"><dt class="param">timeout</dt><dd class="cmt"><p>maximum time to wait for the job, in milliseconds</p></dd><dt class="param">confidence</dt><dd class="cmt"><p>the desired statistical confidence in the result</p></dd><dt>returns</dt><dd class="cmt"><p>a potentially incomplete result, with error bounds</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#delayRollover" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="delayRollover:Boolean"></a>
+      <a id="delayRollover:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">delayRollover</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD@delayRollover:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#dependencies" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dependencies:Seq[org.apache.spark.Dependency[_]]"></a>
       <a id="dependencies:Seq[Dependency[_]]"></a>
@@ -2638,7 +2655,7 @@ times (use <code>.distinct()</code> to eliminate them).
     </span>
       <p class="shortcomment cmt">Mark the RDD as non-persistent, and remove all blocks for it from memory and disk.</p><div class="fullcomment"><div class="comment cmt"><p>Mark the RDD as non-persistent, and remove all blocks for it from memory and disk.
 </p></div><dl class="paramcmts block"><dt class="param">blocking</dt><dd class="cmt"><p>Whether to block until all blocks are deleted.</p></dd><dt>returns</dt><dd class="cmt"><p>This RDD.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#useResultSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#useResultSet" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="useResultSet:Boolean"></a>
       <a id="useResultSet:Boolean"></a>
       <h4 class="signature">
@@ -2654,7 +2671,7 @@ times (use <code>.distinct()</code> to eliminate them).
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

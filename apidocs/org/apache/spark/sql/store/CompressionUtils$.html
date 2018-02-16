@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>CompressionUtils - snappydata_2.11 1.0.0 API - org.apache.spark.sql.store.CompressionUtils</title>
-          <meta name="description" content="CompressionUtils - snappydata 2.11 1.0.0 API - org.apache.spark.sql.store.CompressionUtils" />
-          <meta name="keywords" content="CompressionUtils snappydata 2.11 1.0.0 API org.apache.spark.sql.store.CompressionUtils" />
+          <title>CompressionUtils - snappydata_2.11 1.0.2-SNAPSHOT API - org.apache.spark.sql.store.CompressionUtils</title>
+          <meta name="description" content="CompressionUtils - snappydata 2.11 1.0.2 - SNAPSHOT API - org.apache.spark.sql.store.CompressionUtils" />
+          <meta name="keywords" content="CompressionUtils snappydata 2.11 1.0.2 SNAPSHOT API org.apache.spark.sql.store.CompressionUtils" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -221,23 +221,6 @@
     </span>
       
     </li><li name="org.apache.spark.sql.store.CompressionUtils#codecDecompress" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="codecDecompress(input:java.nio.ByteBuffer,allocator:com.gemstone.gemfire.internal.shared.BufferAllocator):java.nio.ByteBuffer"></a>
-      <a id="codecDecompress(ByteBuffer,BufferAllocator):ByteBuffer"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">codecDecompress</span><span class="params">(<span name="input">input: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="allocator">allocator: <span class="extype" name="com.gemstone.gemfire.internal.shared.BufferAllocator">BufferAllocator</span></span>)</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.CompressionUtils$@codecDecompress(input:java.nio.ByteBuffer,allocator:com.gemstone.gemfire.internal.shared.BufferAllocator):java.nio.ByteBuffer" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.store.CompressionUtils#codecDecompress" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="codecDecompress(codec:org.apache.spark.io.CompressionCodec,input:Array[Byte],inputOffset:Int,inputLen:Int,outputLen:Int):Array[Byte]"></a>
       <a id="codecDecompress(CompressionCodec,Array[Byte],Int,Int,Int):Array[Byte]"></a>
       <h4 class="signature">
@@ -254,6 +237,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.store.CompressionUtils#codecDecompressIfRequired" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="codecDecompressIfRequired(input:java.nio.ByteBuffer,allocator:com.gemstone.gemfire.internal.shared.BufferAllocator):java.nio.ByteBuffer"></a>
+      <a id="codecDecompressIfRequired(ByteBuffer,BufferAllocator):ByteBuffer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">codecDecompressIfRequired</span><span class="params">(<span name="input">input: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="allocator">allocator: <span class="extype" name="com.gemstone.gemfire.internal.shared.BufferAllocator">BufferAllocator</span></span>)</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CompressionUtils$@codecDecompressIfRequired(input:java.nio.ByteBuffer,allocator:com.gemstone.gemfire.internal.shared.BufferAllocator):java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">decompress the given buffer if compressed else return the original</p>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

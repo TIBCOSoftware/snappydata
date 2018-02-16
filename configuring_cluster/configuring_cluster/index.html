@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -905,13 +912,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1193,6 +1193,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1274,6 +1281,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1325,6 +1339,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1698,6 +1719,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1854,6 +1882,10 @@
 <p>Configuration files for locator, lead, and server should be created in the <strong>conf</strong> folder located in the SnappyData home directory with names <strong>locators</strong>, <strong>leads</strong>, and <strong>servers</strong>.</p>
 <p>To do so, you can copy the existing template files <strong>servers.template</strong>, <strong>locators.template</strong>, <strong>leads.template</strong>, and rename them to <strong>servers</strong>, <strong>locators</strong>, <strong>leads</strong>.
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the <code>-J</code> prefix.</p>
+</div>
 <p><a id="locator"></a></p>
 <h2 id="configuring-locators">Configuring Locators</h2>
 <p>Locators provide discovery service for the cluster. Clients (e.g. JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the <a href="../../architecture/">Architecture</a> section for more information on the core components.</p>
@@ -1870,7 +1902,7 @@ These files should contain the hostnames of the nodes (one per line) where you i
 <p>SnappyData specific properties that can be passed.</p>
 </li>
 </ul>
-<p>You can refer to the <strong>conf/locators.template</strong> file for some examples. </p>
+<p>You can refer to the <strong>conf/locators.template</strong> file for some examples.</p>
 <h3 id="list-of-locator-properties">List of Locator Properties</h3>
 <p>Refer to the <a href="../property_description/">SnappyData properties</a> for the complete list of SnappyData properties.</p>
 <table>
@@ -2147,7 +2179,7 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
 <p><strong>Example</strong>:</p>
 <pre><code class="bash">$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
     --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-    --packages &quot;SnappyDataInc:snappydata:1.0.0-s_2.11&quot; 
+    --packages &quot;SnappyDataInc:snappydata:1.0.1-s_2.11&quot; 
 </code></pre>
 
 <p><a id="environment"></a></p>

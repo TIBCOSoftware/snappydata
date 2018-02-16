@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -886,13 +893,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1183,6 +1183,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1264,6 +1271,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1315,6 +1329,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1688,6 +1709,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1846,17 +1874,17 @@
               
                 <h1 id="create-external-table">CREATE EXTERNAL TABLE</h1>
 <pre><code>CREATE EXTERNAL TABLE [IF NOT EXISTS] [schema_name.]table_name
-    ( column-definition [ , column-definition  ] * )
+    [( column-definition    [ , column-definition  ] * )]
     USING datasource
-    [OPTIONS (key1=val1, key2=val2, ...)]
+     [OPTIONS (key1 val1, key2 val2, ...)]
 </code></pre>
 
 <p>For more information on column-definition, refer to <a href="../create-table/#column-definition">Column Definition For Column Table</a>.</p>
 <p>Refer to these sections for more information on <a href="../create-table/">Creating Table</a>, <a href="../create-sample-table/">Creating Sample Table</a>, <a href="../create-temporary-table/">Creating Temporary Table</a> and <a href="../create-stream-table/">Creating Stream Table</a>.</p>
-<p><strong>EXTERNAL</strong>
-External tables point to external data sources. SnappyData supports all the data sources supported by Spark. You should use external tables to load data in parallel from any of the external sources. The table definition is persisted in the catalog and visible across all sessions. </p>
-<p><strong>USING <data source></strong>
-Specify the file format to use for this table. The data source may be one of TEXT, CSV, JSON, JDBC, PARQUET, ORC, and LIBSVM, or a fully qualified class name of a custom implementation of org.apache.spark.sql.sources.DataSourceRegister. Note that most of the prominent datastores provide an implementation of 'DataSource' and accessible as a table. For instance, you can use the Cassandra spark package to create external tables pointing to Cassandra tables and directly run queries on them. You can mix any external table and SnappyData managed tables in your queries. </p>
+<p><strong>EXTERNAL</strong></p>
+<p>External tables point to external data sources. SnappyData supports all the data sources supported by Spark. You should use external tables to load data in parallel from any of the external sources. The table definition is persisted in the catalog and visible across all sessions. </p>
+<p><strong>USING &lt;<em>data source</em>&gt;</strong></p>
+<p>Specify the file format to use for this table. The data source may be one of TEXT, CSV, JSON, JDBC, PARQUET, ORC, and LIBSVM, or a fully qualified class name of a custom implementation of org.apache.spark.sql.sources.DataSourceRegister. </br>Note that most of the prominent datastores provide an implementation of 'DataSource' and accessible as a table. For instance, you can use the Cassandra spark package to create external tables pointing to Cassandra tables and directly run queries on them. You can mix any external table and SnappyData managed tables in your queries. </p>
 <h2 id="example">Example</h2>
 <p>Create an external table using PARQUET data source</p>
 <pre><code>snappy&gt; CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData');

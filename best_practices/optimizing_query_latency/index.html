@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -905,13 +912,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1193,6 +1193,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1274,6 +1281,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1325,6 +1339,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1698,6 +1719,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1920,13 +1948,12 @@ If only a single partition is active and is used largely by queries (especially 
 <p>For an example on the REDUNDANCY clause refer to <a href="../../programming_guide/tables_in_snappydata/">Tables in SnappyData</a>.</p>
 <p><a id="overflow"></a></p>
 <h2 id="overflow-configuration">Overflow Configuration</h2>
-<p>In SnappyData, column tables by default overflow to disk. For row tables, use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria.  </p>
-<p>For example, using <code>LRUHEAPPERCENT</code> criteria allows table data to be either evicted or destroyed based on the current memory consumption of the server. Use the <code>OVERFLOW</code> clause to specify the action to be taken upon the eviction event.</p>
-<p>For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.</p>
+<p>In SnappyData, row and column tables by default overflow to disk (which is equivalent to setting OVERFLOW to 'true'), based on EVICTION_BY criteria. Users cannot set OVERFLOW to 'false', except when EVICTION_BY is not set, in which case it disables the eviction.</p>
+<p>For example, setting EVICTION_BY to <code>LRUHEAPPERCENT</code> allows table data to be evicted to disk based on the current memory consumption of the server.</p>
 <p>Refer to <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> link to understand how to configure <a href="../../reference/sql_reference/create-table/#overflow">OVERFLOW</a> and <a href="../../reference/sql_reference/create-table/#eviction-by">EVICTION_BY</a> clauses.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>By default eviction is set to <code>Overflow</code>.</p>
+<p>By default eviction is set to <code>overflow-to-disk</code>.</p>
 </div>
 <h2 id="known-limitation">Known Limitation</h2>
 <h3 id="change-not-in-queries-to-use-not-exists-if-possible">Change NOT IN queries to use NOT EXISTS if possible</h3>

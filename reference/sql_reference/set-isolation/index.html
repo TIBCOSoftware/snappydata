@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -886,13 +893,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1187,6 +1187,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1268,6 +1275,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1319,6 +1333,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1692,6 +1713,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1862,7 +1890,8 @@ RESET
 <p><a id="set-isolation-description"></a></p>
 <h2 id="description">Description</h2>
 <p>The supported isolation levels in SnappyData are NONE, READ COMMITTED and REPEATABLE READ.</p>
-<p>Isolation level NONE indicates no transactional behavior. The RESET clause corresponds to the NONE isolation level.</p>
+<p>Isolation level NONE indicates no transactional behavior. This is a special constant that indicates that transactions are not supported. </br>
+The RESET clause corresponds to the NONE isolation level. For more information, see <a href="../../../consistency/using_transactions_row/">Overview of SnappyData Distributed Transactions</a>.</p>
 <p>This statement behaves identically to the JDBC <em>java.sql.Connection.setTransactionIsolation</em> method and commits the current transaction if isolation level has changed.</p>
 <h2 id="example">Example</h2>
 <pre><code class="pre">snappy(PEERCLIENT)&gt; set ISOLATION READ COMMITTED;

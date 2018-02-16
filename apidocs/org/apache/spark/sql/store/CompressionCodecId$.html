@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>CompressionCodecId - snappydata_2.11 1.0.0 API - org.apache.spark.sql.store.CompressionCodecId</title>
-          <meta name="description" content="CompressionCodecId - snappydata 2.11 1.0.0 API - org.apache.spark.sql.store.CompressionCodecId" />
-          <meta name="keywords" content="CompressionCodecId snappydata 2.11 1.0.0 API org.apache.spark.sql.store.CompressionCodecId" />
+          <title>CompressionCodecId - snappydata_2.11 1.0.2-SNAPSHOT API - org.apache.spark.sql.store.CompressionCodecId</title>
+          <meta name="description" content="CompressionCodecId - snappydata 2.11 1.0.2 - SNAPSHOT API - org.apache.spark.sql.store.CompressionCodecId" />
+          <meta name="keywords" content="CompressionCodecId snappydata 2.11 1.0.2 SNAPSHOT API org.apache.spark.sql.store.CompressionCodecId" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -253,6 +253,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.store.CompressionCodecId$@LZ4_ID:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.store.CompressionCodecId#MAX_ID" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MAX_ID:Int"></a>
+      <a id="MAX_ID:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MAX_ID</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CompressionCodecId$@MAX_ID:Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -558,6 +575,31 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.store.CompressionCodecId#isCompressed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isCompressed(codec:Int):Boolean"></a>
+      <a id="isCompressed(Int):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isCompressed</span><span class="params">(<span name="codec">codec: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CompressionCodecId$@isCompressed(codec:Int):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The case of codec &gt; MAX_ID should ideally be error but due to backward compatibility
+the stats row does not have any header to determine compression or not so can fail
+in rare cases if first integer is a negative value.</p><div class="fullcomment"><div class="comment cmt"><p>The case of codec &gt; MAX_ID should ideally be error but due to backward compatibility
+the stats row does not have any header to determine compression or not so can fail
+in rare cases if first integer is a negative value. However it should never be match
+with the IDs here because negative of codecId which is written are -1, -2, -3 resolve
+to 0xfffffff... which should never happen since nullCount fields are non-nullable
+in the UnsafeRow created, so bitset cannot have 'ff' kind of patterns.
+</p></div></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>

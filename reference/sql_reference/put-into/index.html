@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -886,13 +893,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1135,8 +1135,6 @@
                 
                     <li><a class="toctree-l4" href="#description">Description</a></li>
                 
-                    <li><a class="toctree-l4" href="#example">Example</a></li>
-                
             
             </ul>
         
@@ -1181,6 +1179,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../update/">UPDATE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1266,6 +1271,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1317,6 +1329,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1690,6 +1709,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1847,32 +1873,24 @@
             <div class="section">
               
                 <h1 id="put-into">PUT INTO</h1>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul>
-<li>
-<p>PUT INTO is not supported for column tables</p>
-</li>
-<li>
-<p>SnappyData does not support PUT INTO with a subselect query, if, the subselect query requires aggregation</p>
-</li>
-</ul>
-</div>
-<pre><code class="bash">PUT INTO table-name
-     VALUES ( column-value [ , column-value ]* ) 
+<p><note>
+    SnappyData does not support PUT INTO with a subselect query, if, the subselect query requires aggregation.</p>
+<pre><code class="bash">    PUT INTO table-name
+         VALUES ( column-value [ , column-value ]* ) 
 </code></pre>
 
-<pre><code class="bash">PUT INTO table-name
-    ( simple-column-name [ , simple-column-name ]* )
-   Query
+<pre><code class="bash">    PUT INTO table-name
+        ( simple-column-name [ , simple-column-name ]* )
+       Query
 </code></pre>
 
+<p></note></p>
 <h2 id="description">Description</h2>
 <p>PUT INTO operates like standard <a href="../insert/">INSERT</a> statement.</p>
 <h3 id="for-row-tables">For Row Tables</h3>
 <p>PUT INTO uses a syntax similar to the INSERT statement, but SnappyData does not check existing primary key values before executing the PUT INTO command. If a row with the same primary key exists in the table, PUT INTO simply overwrites the older row value. If no rows with the same primary key exist, PUT INTO operates like a standard INSERT. This behavior ensures that only the last primary key value inserted or updated remains in the system, which preserves the primary key constraint. Removing the primary key check speeds execution when importing bulk data.</p>
 <p>The PUT INTO statement is similar to the "UPSERT" command or capability provided by other RDBMS to relax primary key checks. By default, the PUT INTO statement ignores only primary key constraints. <!--All other column constraints (unique, check, and foreign key) are honored unless you explicitly set the <a href="../../reference/configuration_parameters/skip-constraint-checks.md">skip-constraint-checks</a> connection property.--></p>
-<h2 id="example">Example</h2>
+<h4 id="example">Example</h4>
 <pre><code class="pre">PUT INTO TRADE.CUSTOMERS
       VALUES (1, 'User 1', '07-06-2002', 'SnappyData', 1);
 </code></pre>
@@ -1881,6 +1899,22 @@
 <pre><code class="pre">PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID)
  VALUES (1, 'User 1' , 'SnappyData', 1),
  (2, 'User 2' , 'SnappyData', 1);
+</code></pre>
+
+<h3 id="for-column-tables">For Column Tables</h3>
+<p>If you need the <code>putInto()</code> functionality for column tables, you must specify key_columns while defining the column table.
+PUT INTO updates the row if present, else, it inserts the row. </br>
+As column tables do not have primary key functionality you must specify key_columns when creating the table.</br>
+These columns are used to identify a row uniquely. PUT INTO is available by SQL as well APIs.</p>
+<h4 id="example_1">Example</h4>
+<p><strong>For SQL</strong></p>
+<pre><code class="bash">put into table col_table select * from row_table
+</code></pre>
+
+<p><strong>For API</strong></p>
+<p>API is available from the DataFrameWriter extension.</p>
+<pre><code class="bash">import org.apache.spark.sql.snappy._
+dataFrame.write.putInto(&quot;col_table&quot;)
 </code></pre>
               
             </div>

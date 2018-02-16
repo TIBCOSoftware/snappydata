@@ -341,6 +341,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -886,13 +893,6 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
     <ul class="subnav">
     <li><span>Using VSD to Analyze Statistics</span></li>
 
@@ -1185,6 +1185,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../lateral-view/">LATERAL VIEW</a>
+        
+    </li>
+
+        
     </ul>
 
         
@@ -1266,6 +1273,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/sysdiskstoreids/">SYSDISKSTOREIDS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../system_tables/systables/">SYSTABLES</a>
         
     </li>
@@ -1317,6 +1331,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
         
     </li>
 
@@ -1690,6 +1711,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -1850,32 +1878,19 @@
 <pre><code class="pre">CREATE SCHEMA schema-name;
 </code></pre>
 
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Schema names with trailing underscores are not supported.</p>
+</div>
 <h2 id="description">Description</h2>
-<p>This creates a schema with the given name which provides a mechanism to logically group objects by providing a namespace for objects. This can then be used by other CREATE statements as the namespace prefix. </p>
-<p>For example, CREATE TABLE SCHEMA1.TABLE1 ( ... ) creates a table TABLE1 in the schema SCHEMA1. </p>
-<!--
-
-The DEFAULT SERVER GROUPS for a schema specifies the server groups used by the CREATE TABLE statement by default when no explicit server groups have been mentioned. 
-
-SECURITY RELATED INFO (WHEN IMPLEMENTED)
-
-The CREATE SCHEMA statement is subject to access control when the [snappydata.sql-authorization](../../reference/configuration_parameters/snappydata.sql-authorization.md) property is set to true for the system. Only the system user can create a schema with a name different from the current user name, and only the system user can specify `AUTHORIZATION user-name` with a *user-name* other than the current user name.
-
-There is no single owner of the entire distributed system. Instead, ownership is defined by the distributed member joining the system. The distributed member process must boot up using theuser attribute in the properties to indicate owner of that process. A member that boots in this way can create a schema or grant access to a schema across the distributed system.
-
--->
-
+<p>This creates a schema which provides a mechanism to logically group objects by providing a namespace for objects. This can then be used by other CREATE statements as the namespace prefix.</p>
 <h2 id="example">Example</h2>
 <pre><code class="pre">CREATE SCHEMA myschema;
 </code></pre>
 
-<!-- SECURITY RELATED INFO (WHEN IMPLEMENTED)
-–- create schema that uses the authorization id 'shared' as schema-name
-CREATE SCHEMA AUTHORIZATION shared;
-
--- create schema flights and authorize anita to all the objects that use the schema.
-CREATE SCHEMA flights AUTHORIZATION anita;
--->
+<p>To create a table TABLE1 in the schema SCHEMA1:</p>
+<pre><code>CREATE TABLE SCHEMA1.TABLE1 ( ... )
+</code></pre>
               
             </div>
           </div>
