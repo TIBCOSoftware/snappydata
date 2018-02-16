@@ -24,7 +24,7 @@ import org.apache.commons.io.FileUtils
 import scala.sys.process._
 
 /**
-  * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt
+  * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt and smokePerf.bt
   */
 class SnappyHydraRunner extends SnappyHydraTestRunner {
 
@@ -62,6 +62,21 @@ class SnappyHydraRunner extends SnappyHydraTestRunner {
           throw r
         }
       case i: Throwable => throw i
+    }
+  }
+
+  test("smokePerfBT") {
+    val smokePerf = System.getenv("SMOKE_PERF")
+    if (smokePerf.equalsIgnoreCase("true")) {
+      val perfLogDir = new File(s"$snappyHome/../tests/snappy/scalatest/smokePerfBT")
+      if (perfLogDir.exists) {
+        FileUtils.deleteDirectory(perfLogDir)
+      }
+      val command: String = s"$SNAPPYDATA_SOURCE_DIR/dtests/src/test/java/io/snappydata/hydra" +
+          s"/smokePerf.sh $SNAPPYDATA_SOURCE_DIR $perfLogDir"
+      val (out, err) = executeProcess("smokePerfBT", command)
+
+      searchExceptions(perfLogDir)
     }
   }
 }
