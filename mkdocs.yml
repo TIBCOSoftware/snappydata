@@ -61,6 +61,7 @@ pages:
     - 'How to Import Data from Hive Table into SnappyData Table': 'howto/import_from_hive_table.md'    
     - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'    
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
+    - 'How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
 - 'Architecture': 'architecture.md'
 - 'Architecture': 
     - 'Core Components': 'architecture/core_components.md'
@@ -143,7 +144,6 @@ pages:
 - 'Evaluating Statistics for the System and Applications':
     - 'Collecting System Statistics': 'vsd/collecting_system_stats.md'
     - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
-    - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
     - 'Using VSD to Analyze Statistics':
         - 'Installing and Running VSD': 'vsd/running_vsd.md'
         - 'Transaction Performance': 'vsd/vsd_transactions.md'
@@ -184,6 +184,7 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
+        - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
@@ -195,9 +196,10 @@ pages:
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
-#        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
-        - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'    
-        - 'SYSTABLES': 'reference/system_tables/systables.md'    
+#        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'
+        - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'
+        - 'SYSDISKSTOREIDS': 'reference/system_tables/sysdiskstoreids.md'
+        - 'SYSTABLES': 'reference/system_tables/systables.md'
     - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
     - 'Command Line Utilities':
         - 'backup and restore': 'reference/command_line_utilities/store-backup.md'
@@ -205,6 +207,7 @@ pages:
         - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
         - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md'
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
+        - 'unblock-missing-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
@@ -276,7 +279,8 @@ pages:
     - 'API Documentation': 'apidocsintro.md'
 #    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
-    - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
+    - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md'
+    - 'Setting Up SnappyData JDBC Driver and QlikView': 'setting_up_jdbc_driver_qlikview.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
     - 'Member startup problems': 'troubleshooting/member_startup_problems.md'
