@@ -393,7 +393,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         // check that the provider is a stream relation
         val clazz = DataSource(session, provider).providingClass
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
-          throw new ParseException(s"CREATE STREAM provider $pname" +
+          throw Utils.analysisException(s"CREATE STREAM provider $pname" +
               " does not implement StreamPlanProvider")
         }
         // provider has already been resolved, so isBuiltIn==false allows
@@ -410,14 +410,14 @@ abstract class SnappyDDLParser(session: SparkSession)
         case "jar" =>
           FunctionResource(FunctionResourceType.fromString(resourceType), path)
         case _ =>
-          throw new ParseException(s"CREATE FUNCTION with resource type '$resourceType'")
+          throw Utils.analysisException(s"CREATE FUNCTION with resource type '$resourceType'")
       }
     }
   }
 
   def checkExists(resource: FunctionResource): Unit = {
     if (!new File(resource.uri).exists()) {
-      throw new ParseException(s"No file named ${resource.uri} exists")
+      throw Utils.analysisException(s"No file named ${resource.uri} exists")
     }
   }
 
