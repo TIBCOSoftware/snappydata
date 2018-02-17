@@ -365,6 +365,10 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 }
 
 /**
+ * Taken from Spark's PhysicalOperation with the difference that non-deterministic
+ * fields don't cause all columns of underlying table to be projected.
+ */
+/**
  * A pattern that matches any number of project or filter operations on top of another relational
  * operator.  All filter operators are collected and their conditions are broken up and returned
  * together with the top project operator.
