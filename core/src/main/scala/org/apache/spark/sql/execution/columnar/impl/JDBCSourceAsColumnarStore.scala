@@ -373,8 +373,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     else ColumnFormatEntry.STATROW_COL_INDEX
     var index = 1
     try {
-      // add key-values pairs for each column
-      val keyValues = new java.util.HashMap[ColumnFormatKey, ColumnFormatValue](
+      // add key-values pairs for each column (linked map to ensure stats row is last)
+      val keyValues = new java.util.LinkedHashMap[ColumnFormatKey, ColumnFormatValue](
         batch.buffers.length + 1)
       batch.buffers.foreach { buffer =>
         val columnIndex = if (deltaUpdate) batch.deltaIndexes(index - 1) else index
