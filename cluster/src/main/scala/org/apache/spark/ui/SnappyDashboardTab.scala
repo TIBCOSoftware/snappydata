@@ -49,7 +49,7 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
   newTabsList += tabsList.last
   // Add remaining tabs in tabs list
   tabsList.foreach(tab => {
-    if(!tab.prefix.equalsIgnoreCase("dashboard")){
+    if (!tab.prefix.equalsIgnoreCase("dashboard")) {
       newTabsList += tab
     }
   })
@@ -62,7 +62,8 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
 
   updateRedirectionHandler
 
-  // Replace default spark jobs page redirection handler by Snappy Dashboard page redirection handler
+  // Replace default spark jobs page redirection handler by Snappy Dashboard page
+  // redirection handler
   def updateRedirectionHandler: Unit = {
     val handlers = parent.getHandlers
     breakable {
