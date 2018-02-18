@@ -169,7 +169,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                       sparkConnectorsStatsDetails ++ tablesStatsDetails ++
                       extTablesStatsDetails ++ indexStatsDetails
 
-    UIUtils.simpleSparkPageWithTabs(pageHeaderText, pageContent, parent, Some(500))
+    UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
+      useDataTables = true, isSnappyPage = true)
 
   }
 
