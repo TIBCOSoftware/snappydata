@@ -335,11 +335,15 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   final def parsedDataType: Rule1[DataType] = rule {
-    ws ~ dataType
+    ws ~ dataType ~ EOI
   }
 
   final def parsedExpression: Rule1[Expression] = rule {
-    ws ~ namedExpression
+    ws ~ namedExpression ~ EOI
+  }
+
+  final def parsedTableIdentifier: Rule1[TableIdentifier] = rule {
+    ws ~ tableIdentifier ~ EOI
   }
 
   protected final def expression: Rule1[Expression] = rule {
