@@ -18,11 +18,13 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
-import com.gemstone.gemfire.distributed.internal.DistributionConfig
-import com.gemstone.gemfire.internal.snappy.StoreCallbacks
+import com.gemstone.gemfire.internal.shared.SystemProperties
+import io.snappydata.collection.ObjectObjectHashMap
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
+import org.apache.spark.sql.store.CompressionCodecId
 
 /**
  * Constant names suggested per naming convention
@@ -46,7 +48,7 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = DistributionConfig.SNAPPY_PREFIX
+  val STORE_PROPERTY_PREFIX = SystemProperties.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 
@@ -78,16 +80,17 @@ object Constant {
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 20000
 
   // Internal Column table store schema
-  final val SHADOW_SCHEMA_NAME = StoreCallbacks.SHADOW_SCHEMA_NAME
+  final val SHADOW_SCHEMA_NAME = SystemProperties.SHADOW_SCHEMA_NAME
 
   // Internal Column table store suffix
-  final val SHADOW_TABLE_SUFFIX = StoreCallbacks.SHADOW_TABLE_SUFFIX
+  final val SHADOW_TABLE_SUFFIX = SystemProperties.SHADOW_TABLE_SUFFIX
 
-  final val SHADOW_SCHEMA_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_SEPARATOR
+  final val SHADOW_SCHEMA_SEPARATOR = SystemProperties.SHADOW_SCHEMA_SEPARATOR
 
   final val SHADOW_SCHEMA_NAME_WITH_PREFIX: String = "." + SHADOW_SCHEMA_NAME
 
-  final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_NAME_WITH_SEPARATOR
+  final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR =
+    SystemProperties.SHADOW_SCHEMA_NAME_WITH_SEPARATOR
 
   final val COLUMN_TABLE_INDEX_PREFIX = "SNAPPYSYS_INDEX____"
 
@@ -98,6 +101,9 @@ object Constant {
   // Property to specify the port on which zeppelin interpreter
   // should be started
   val ZEPPELIN_INTERPRETER_PORT = "zeppelin.interpreter.port"
+
+  // System property for minimum size of buffer to consider for compression.
+  val COMPRESSION_MIN_SIZE: String = PROPERTY_PREFIX + "compression.minSize"
 
   val CHAR_TYPE_BASE_PROP = "base"
 
@@ -118,7 +124,11 @@ object Constant {
   // LZ4 JNI version is the fastest one but LZF gives best balance between
   // speed and compression ratio having higher compression ration than LZ4.
   // But the JNI version means no warmup time which helps for short jobs.
-  val DEFAULT_CODEC = "lz4"
+  // Also LZF has no direct ByteBuffer API so is quite a bit slower for off-heap.
+  val DEFAULT_CODEC = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
+
+  /** the [[CompressionCodecId]] of default compression scheme ([[DEFAULT_CODEC]]) */
+  val DEFAULT_CODECID: CompressionCodecId.Type = CompressionCodecId.fromName(DEFAULT_CODEC)
 
   // System property to tell the system whether the String type columns
   // should be considered as clob or not
@@ -133,8 +143,8 @@ object Constant {
   // @TODO check whether function like named_struct, ntile etc. can ever
   // come in the where clause of a query. Right now Tokenization is done
   // for constants in where clause only.
-  val FOLDABLE_FUNCTIONS: Map[String, Seq[Int]] = Map("ROUND" -> Seq(1),
-    "BROUND" -> Seq(1), "PERCENTILE" -> Seq(1), "STACK" -> Seq(0),
+  val FOLDABLE_FUNCTIONS: ObjectObjectHashMap[String, Seq[Int]] = Utils.toOpenHashMap(Map(
+    "ROUND" -> Seq(1), "BROUND" -> Seq(1), "PERCENTILE" -> Seq(1), "STACK" -> Seq(0),
     "NTILE" -> Seq(0), "STR_TO_MAP" -> Seq(1, 2), "NAMED_STRUCT" -> Seq(-1),
     "REFLECT" -> Seq(0, 1), "JAVA_METHOD" -> Seq(0, 1), "XPATH" -> Seq(1),
     "XPATH_BOOLEAN" -> Seq(1), "XPATH_DOUBLE" -> Seq(1),
@@ -146,7 +156,7 @@ object Constant {
     "TO_UNIX_TIMESTAMP" -> Seq(1), "FROM_UNIX_TIMESTAMP" -> Seq(1),
     "TO_UTC_TIMESTAMP" -> Seq(1), "FROM_UTC_TIMESTAMP" -> Seq(1),
     "TRUNC" -> Seq(1), "NEXT_DAY" -> Seq(1),
-    "LIKE" -> Seq(1), "RLIKE" -> Seq(1))
+    "LIKE" -> Seq(1), "RLIKE" -> Seq(1)))
 }
 
 /**
@@ -211,25 +221,25 @@ object Property extends Enumeration {
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
+  val JobServerWaitForInit = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}waitForInitialization",
+    "If true then cluster startup will wait for Spark jobserver to be fully initialized " +
+        "before marking lead as 'RUNNING'. Default is false.", Some(false), prefix = null)
+
   val SnappyConnection = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
      "JDBC driver. This will be used to form a JDBC URL of the form " +
-     "\"jdbc:snappydata://host:clientPort/\". It is recommended that hostname " +
-     "and client port of the locator be specified for this.",
-     None, Constant.SPARK_PREFIX)
+     "\"jdbc:snappydata://host:clientPort/\" (or use the form \"host[clientPort]\"). " +
+     "It is recommended that hostname and client port of the locator " +
+     "be specified for this.", None, Constant.SPARK_PREFIX)
 
-  val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
-    "Enabled in SnappyData embedded cluster and disabled for other " +
-        "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
-
-  val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
+  val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
     s"Number of query plans that will be cached.", Some(3000))
 
   val ColumnBatchSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is the unit " +
-        "(in bytes or k/m/g suffixes for units) that will be used to split the data " +
+        "(in bytes or k/m/g suffixes for unit) that will be used to split the data " +
         "into chunks for efficient storage and retrieval. It can also be set for each " +
         s"table using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
         "create table DDL. Maximum allowed size is 2GB.", Some("24m"))
@@ -243,23 +253,18 @@ object Property extends Enumeration {
         s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
         s"create table DDL else this setting is used for the create table.", Some(10000))
 
-  val CompressionCodec = SQLVal[String](s"${Constant.PROPERTY_PREFIX}compression.codec",
-    "The compression codec to use when creating column batches for binary and " +
-        "complex type columns. Possible values: none, snappy, gzip, lzo. It can " +
-        s"also be set as ${ExternalStoreUtils.COMPRESSION_CODEC} option in " +
-        s"create table DDL. Default is no compression.", Some("none"))
-
-  val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
+  val HashJoinSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}sql.hashJoinSize",
     "The join would be converted into a hash join if the table is of size less " +
-        "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
+        "than hashJoinSize. The limit specifies an estimate on the input data size " +
+        "(in bytes or k/m/g/t suffixes for unit). Default value is 100MB.", Some("100m"))
 
-  val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}hashAggregateSize",
+  val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}sql.hashAggregateSize",
     "Aggregation will use optimized hash aggregation plan but one that does not " +
         "overflow to disk and can cause OOME if the result of aggregation is large. " +
-        "The limit specifies the input data size (with b/k/m/g/t/p suffixes for units) " +
+        "The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) " +
         "and not the output size. Set this only if there are known to be queries " +
         "that can return very large number of rows in aggregation results. " +
-        "Default value is 0b meaning no limit on the size so the optimized " +
+        "Default value is 0 meaning no limit on the size so the optimized " +
         "hash aggregation is always used.", Some("0"))
 
   val ForceLinkPartitionsToBuckets: SQLValue[Boolean] = SQLVal[Boolean](
@@ -274,6 +279,26 @@ object Property extends Enumeration {
     "Property to prefer using primary buckets in queries. This reduces " +
         "scalability of queries in the interest of reduced memory usage for " +
         "secondary buckets. Default is false.", Some(false), Constant.SPARK_PREFIX)
+
+  val PartitionPruning: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.partitionPruning",
+    "Property to set/unset partition pruning of queries", Some(true))
+
+  val PlanCaching: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.planCaching",
+    "Property to set/unset plan caching", Some(true))
+
+  val PlanCachingAll: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.planCachingAll",
+    "Property to set/unset plan caching on all sessions", Some(true))
+
+  val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.tokenize",
+    "Property to enable/disable tokenization", Some(true))
+
+  val ParserTraceError: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.parser.traceError",
+    "Property to enable detailed rule tracing for parse errors", Some(false))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
@@ -332,7 +357,11 @@ object Property extends Enumeration {
     s"Boolean if false tells engine to use bootstrap analysis for error calculation for all cases" +
       s". Default is true.", Some(true), null, false)
 
-
+  val PutIntoInnerJoinCacheSize =
+    SQLVal[String](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
+      "The putInto inner join would be cached if the result of " +
+          "join with incoming Dataset is of size less " +
+          "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
 }
 
 // extractors for properties
@@ -374,13 +403,13 @@ object QueryHint extends Enumeration {
 
   /**
    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-   * as CLOBs in JSON format for routed JDBC/ODBC queries rather
-   * than as serialized blobs to display better in external tools.
+   * as CLOBs in JSON format for routed JDBC/ODBC queries (default) to display better
+   * in external tools else if set to false/0 then display as serialized blobs.
    *
-   * Possible values are 'true/1' or 'false/0'
+   * Possible values are 'false/0' or 'true/1' (default is true)
    *
    * Example:<br>
-   * SELECT * FROM t1 --+ complexTypeAsJson(1)
+   * SELECT * FROM t1 --+ complexTypeAsJson(0)
    */
   val ComplexTypeAsJson = Value("complexTypeAsJson")
 

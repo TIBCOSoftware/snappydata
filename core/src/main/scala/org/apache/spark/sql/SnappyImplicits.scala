@@ -22,6 +22,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
+import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
 import org.apache.spark.{Partition, TaskContext}
 
@@ -192,6 +193,7 @@ object snappy extends Serializable {
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
         session.sessionState.catalog.newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
+
     }
 
     def deleteFrom(tableName: String): Unit = {

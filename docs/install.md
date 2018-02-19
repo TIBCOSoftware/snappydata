@@ -9,11 +9,11 @@ For more information on the capabilities of the Community and Enterprise edition
 
 <heading2> Download SnappyData Community Edition</heading2>
 
-[Download the SnappyData 1.0 Community edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
+[Download the SnappyData 1.0.1 Community edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
-* [**SnappyData 1.0.0 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-bin.tar.gz)
+* [**SnappyData 1.0.1 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.1/snappydata-1.0.1-bin.tar.gz)
 
-* [**SnappyData 1.0.0 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.0/snappydata-1.0.0-without-hadoop-bin.tar.gz) 
+* [**SnappyData 1.0.1 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.1/snappydata-1.0.1-without-hadoop-bin.tar.gz) 
 
 <heading2> Download SnappyData Enterprise Edition</heading2>
 
@@ -23,7 +23,7 @@ For more information on the capabilities of the Community and Enterprise edition
 
 3. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
 
-4. Click **Download** to download the installer (**snappydata-1.0.0-bin.tar.gz**).
+4. Click **Download** to download the installer (**snappydata-1.0.1-bin.tar.gz**).
 
 5. You can also download the following additional files by clicking on the links:
 
@@ -35,18 +35,19 @@ For more information on the capabilities of the Community and Enterprise edition
 
 	* ODBC INSTALLERS
 
-<heading2> Installation Options</heading2>
+<heading2>Installation Options</heading2>
 
-<heading3> Prerequisites </heading3>
+<heading3>Prerequisites</heading3>
+
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
 The following installation options are available:
 
-* [Install On-Premise](install/install_on_premise.md)
+* [Install On-Premise](install/install_on_premise.md) <a id="install-on-premise"></a>
 
-* [Setting up Cluster on Amazon Web Services (AWS)](install/setting_up_cluster_on_amazon_web_services.md)
+* [Setting up Cluster on Amazon Web Services (AWS)](install/setting_up_cluster_on_amazon_web_services.md) <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 
-* [Building from Source](install/building_from_source.md)
+* [Building from Source](install/building_from_source.md)<a id="building-from-source"></a>
 
 !!! Note:  
 	**Configuring the limit for open files and threads/processes** </br> 

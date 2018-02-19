@@ -18,11 +18,11 @@ package org.apache.spark.scheduler.cluster
 
 import io.snappydata.impl.LeadImpl
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property}
+import io.snappydata.{Constant, Property, ServiceManager}
 import org.slf4j.LoggerFactory
 
-import org.apache.spark.SparkContext
 import org.apache.spark.scheduler._
+import org.apache.spark.{SparkContext, SparkException}
 
 /**
  * Snappy's cluster manager that is responsible for creating
@@ -30,11 +30,11 @@ import org.apache.spark.scheduler._
  */
 class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
-  val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   SnappyClusterManager.init(this)
 
-  var schedulerBackend: SnappyCoarseGrainedSchedulerBackend = _
+  @volatile var schedulerBackend: SnappyCoarseGrainedSchedulerBackend = _
 
   override def createTaskScheduler(sc: SparkContext, masterURL: String): TaskScheduler = {
     // If there is an application that is trying to join snappy
@@ -50,7 +50,6 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
           (split(0).trim, split(1).trim)
         }
         else if (locator.isEmpty ||
-            locator == "" ||
             locator == "null" ||
             !ServiceUtils.LOCATOR_URL_PATTERN.matcher(locator).matches()
         ) {
@@ -61,7 +60,6 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
       logger.info(s"setting from url $prop with $value")
       sc.conf.set(prop, value)
-      sc.conf.set(Property.Embedded.name, "true")
     }
     new SnappyTaskSchedulerImpl(sc)
   }
@@ -85,7 +83,17 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
     schedulerImpl.initialize(backend)
 
-    LeadImpl.invokeLeadStart(schedulerImpl.sc)
+    // fail if not invoked by launcher
+    ServiceManager.currentFabricServiceInstance match {
+      case _: LeadImpl => // ok
+      case null => throw new SparkException(
+        "Lead creation only supported from ServiceManager API")
+      case service => throw new SparkException(
+        s"Trying to start lead on node already booted as $service")
+    }
+
+    // wait for store to initialize (acquire lead lock or go to standby)
+    LeadImpl.invokeLeadStart(schedulerImpl.sc.conf)
   }
 
   def stopLead(): Unit = {

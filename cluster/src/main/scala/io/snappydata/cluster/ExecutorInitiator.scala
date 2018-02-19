@@ -33,7 +33,7 @@ import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
-import org.apache.spark.memory.{SnappyUnifiedMemoryManager, StoreUnifiedManager}
+import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
@@ -47,17 +47,19 @@ object ExecutorInitiator extends Logging {
 
   val SNAPPY_MEMORY_MANAGER: String = classOf[SnappyUnifiedMemoryManager].getName
 
-  var executorRunnable: ExecutorRunnable = new ExecutorRunnable
+  private var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
   var executorThread: Thread = new Thread(executorRunnable)
 
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
     private var driverDM: InternalDistributedMember = _
-    @volatile var stopTask = false
-    private var retryTask: Boolean = false
-    private val lock = new Object()
-    private val testLock = new Object()
+    @volatile private[cluster] var stopTask = false
+    @volatile private[cluster] var stopped = true
+    private[cluster] var retryTask: Boolean = false
+    private[cluster] val lock = new Object()
+    private[cluster] val testLock = new Object()
+    @volatile private[cluster] var testStartDone = false
 
     val membershipListener = new MembershipListener {
       override def quorumLost(failures: util.Set[InternalDistributedMember],
@@ -81,12 +83,7 @@ object ExecutorInitiator extends Logging {
 
     def setRetryFlag(retry: Boolean = true): Unit = lock.synchronized {
       retryTask = retry
-      lock.notify()
-    }
-
-    // Test hook. Not to be used in other situations
-    def waitForExecutor(retry: Boolean = true): Unit = testLock.synchronized {
-      testLock.wait(30000)
+      lock.notifyAll()
     }
 
     def getRetryFlag: Boolean = lock.synchronized {
@@ -102,10 +99,11 @@ object ExecutorInitiator extends Logging {
       driverURL = url
       driverDM = dm
       SnappyContext.clearStaticArtifacts()
-      lock.notify()
+      lock.notifyAll()
     }
 
     override def run(): Unit = {
+      stopped = false
       var prevDriverURL = ""
       var env: SparkEnv = null
       var numTries = 0
@@ -118,8 +116,8 @@ object ExecutorInitiator extends Logging {
             Misc.checkIfCacheClosing(null)
             if (prevDriverURL == getDriverURLString && !getRetryFlag) {
               lock.synchronized {
-                while (prevDriverURL == getDriverURLString && !getRetryFlag) {
-                  lock.wait(5000)
+                while (!stopTask && prevDriverURL == getDriverURLString && !getRetryFlag) {
+                  lock.wait(1000)
                 }
               }
             } else {
@@ -148,7 +146,7 @@ object ExecutorInitiator extends Logging {
                    */
                   val myId = GemFireCacheImpl.getExisting.getMyId
                   val executorHost = myId.getHost
-                  val memberId = myId.toString
+                  val memberId = myId.canonicalString()
                   SparkHadoopUtil.get.runAsSparkUser { () =>
 
                     // Fetch the driver's Spark properties.
@@ -196,7 +194,8 @@ object ExecutorInitiator extends Logging {
                     rpcenv.setupEndpoint("Executor", executor)
                   }
                   prevDriverURL = url
-                  testLock.synchronized(testLock.notify())
+                  testStartDone = true
+                  testLock.synchronized(testLock.notifyAll())
                 case None =>
                   // If driver url is none, already running executor is stopped.
                   prevDriverURL = ""
@@ -218,8 +217,13 @@ object ExecutorInitiator extends Logging {
         case e: Throwable =>
           logWarning("ExecutorInitiator failing with exception: ", e)
       } finally {
+        testStartDone = false
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
+        lock.synchronized {
+          stopped = true
+          lock.notifyAll()
+        }
         try {
           Misc.checkIfCacheClosing(null)
           GemFireXDUtils.getGfxdAdvisor.getDistributionManager
@@ -242,19 +246,39 @@ object ExecutorInitiator extends Logging {
    * with None.
    */
   def stop(): Unit = {
-    if (executorThread.getState != Thread.State.NEW) {
-      executorRunnable.stopTask = true
-    }
+    executorRunnable.stopTask = true
     executorRunnable.setDriverDetails(None, null)
     Utils.clearDefaultSerializerAndCodec()
+    val lock = executorRunnable.lock
+    lock.synchronized {
+      lock.notifyAll()
+      var maxTries = 50
+      while (maxTries > 0 && !executorRunnable.stopped) {
+        maxTries -= 1
+        lock.wait(1000)
+      }
+    }
   }
 
   def restartExecutor(): Unit = {
     executorRunnable.setRetryFlag()
   }
 
-  def waitForExecutor(): Unit = {
-    executorRunnable.waitForExecutor()
+  // Test hook. Not to be used in other situations
+  def testWaitForExecutor(): Unit = {
+    var maxTries = 100
+    while (maxTries > 0) {
+      val runnable = executorRunnable
+      if (!runnable.testStartDone) {
+        maxTries -= 1
+        runnable.testLock.synchronized {
+          runnable.wait(500)
+        }
+      } else {
+        // break the loop
+        maxTries = 0
+      }
+    }
   }
 
   /**

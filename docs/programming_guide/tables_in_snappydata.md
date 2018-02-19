@@ -45,7 +45,7 @@ col1 INT ,
 col2 Array<Decimal>, 
 col3 Map<Timestamp, Struct<x: Int, y: String, z: Decimal(10,5)>>, 
 col6 Struct<a: Int, b: String, c: Decimal(10,5)>
-) USING column options(BUCKETS '5')" )
+) USING column options(BUCKETS '8')" )
 ```
 
 To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
@@ -92,15 +92,16 @@ The below mentioned DDL extensions are required to configure a table based on us
 	!!! Note:
  		For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables, no such defaults are set. Row tables allow all the eviction settings.
 
-   * <b>OVERFLOW:</b>  If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
+   * <b>OVERFLOW:</b>  By default it is set to **true** which means table data overflows to a local SnappyStore disk store. Setting it to **false** is not allowed except when EVICTION_BY is not set. In such case, the eviction itself is disabled.
 	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
 
    * <b>PERSISTENCE:</b>  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
    	
-!!! Note:
-   	* By default, both row and column tables are persistent.
+	!!! Note:
 
-   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9 <!--DO NOT CHANGE RELEASE NO. -->. Although it does work, it is recommended to use `PERSISTENCE` instead.
+ 		- By default, both row and column tables are persistent.
+
+ 		- The option `PERSISTENT` has been deprecated as of SnappyData 0.9. <!--DO NOT CHANGE RELEASE NO. -->. Although it does work, it is recommended to use `PERSISTENCE` instead.
 
    * <b>DISKSTORE:</b>  The disk directory where you want to persist the table data. For more information, [refer to this document](../reference/sql_reference/create-diskstore.md).
 
@@ -177,13 +178,14 @@ val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
 data.map { r =>
   snappy.put(tableName, Row.fromSeq(r))
 }
-```scala
+```
 
 Usage SnappySession.update(): Update all rows in table that match passed filter expression
 
 ```scala
 snappy.update(tableName, "ITEMREF = 3" , Row(99) , "ITEMREF" )
 ```
+
 
 **Usage SnappySession.delete()**: Delete all rows in table that match passed filter expression
 
@@ -218,14 +220,11 @@ CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
     // create the table
     snappy.createTable(tableName, "row", schema, Map.empty[String, String])
 ```
-
-
 !!! Note: 
 	STRING columns are handled differently when queried over a JDBC connection.
 
 To ensure optimal performance for SELECT queries executed over JDBC connection (more specifically, those that get routed to lead node), the data of STRING columns is returned in VARCHAR format, by default. This also helps the data visualization tools to render the data effectively.
 <br/>However, if the STRING column size is larger than VARCHAR limit (32768), you can enforce the returned data format to be in CLOB in following ways:
-
 
 Using the system property `spark-string-as-clob` when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
 

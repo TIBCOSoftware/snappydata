@@ -106,7 +106,8 @@ private[sql] abstract class PartitionedPhysicalScan(
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         callbacks.getOrderlessHashPartitioning(partitionColumns,
           partitionColumnAliases, numPartitions,
-          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets, numBuckets)
+          if (session.hasLinkPartitionsToBuckets || session.preferPrimaries) 0 else numBuckets,
+          numBuckets)
       } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
@@ -150,7 +151,7 @@ private[sql] object PartitionedPhysicalScan {
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
         val rowBufferScan = RowTableScan(output, StructType.fromAttributes(
-          output), baseTableRDD, numBuckets, Seq.empty, Seq.empty, table, caseSensitive)
+          output), baseTableRDD, numBuckets, Nil, Nil, table, caseSensitive)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
             throw new AnalysisException(s"RowBuffer output column $a not found in " +
@@ -222,8 +223,14 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
           CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key)))
     }
-    CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
-      queryString, child.treeString(verbose = true), planInfo) {
+    val sc = session.sparkContext
+    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+    if (oldExecutionId eq null) {
+      CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+        queryString, child.treeString(verbose = true), planInfo) {
+        child.executeCollect()
+      }
+    } else {
       child.executeCollect()
     }
   }

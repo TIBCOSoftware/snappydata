@@ -74,6 +74,10 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     ColumnUpdateDeleteTests.testConcurrentOps(this.snc.snappySession)
   }
 
+  test("SNAP-2124 update missed") {
+    ColumnUpdateDeleteTests.testSNAP2124(this.snc.snappySession, checkPruning = true)
+  }
+
   ignore("test update for all types") {
     val session = this.snc.snappySession
     // reduced size to ensure both column table and row buffer have data

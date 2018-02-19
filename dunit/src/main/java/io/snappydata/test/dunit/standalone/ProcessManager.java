@@ -186,10 +186,10 @@ public class ProcessManager {
       "-DsecurityLogLevel=" + DUnitLauncher.SECURITY_LOG_LEVEL,
       "-Dgemfire.security-log-level=" + DUnitLauncher.SECURITY_LOG_LEVEL,
       "-Djava.library.path=" + System.getProperty("java.library.path"),
-      "-Xrunjdwp:transport=dt_socket,server=y,suspend=n",
+      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n",
       "-XX:+HeapDumpOnOutOfMemoryError",
-      "-Xmx1536m",
-      "-Xms1536m",
+      "-Xmx1g",
+      "-Xms1g",
       "-XX:+UseParNewGC",
       "-XX:+UseConcMarkSweepGC",
       "-XX:CMSInitiatingOccupancyFraction=50",
@@ -202,7 +202,7 @@ public class ProcessManager {
       "-Dsun.rmi.transport.tcp.handshakeTimeout=3600000",
       "-ea",
       agent,
-      "io.snappydata.test.dunit.standalone.ChildVM"
+      ChildVM.class.getName()
     };
   }
 

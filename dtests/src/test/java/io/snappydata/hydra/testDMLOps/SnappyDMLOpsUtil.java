@@ -19,19 +19,18 @@
 package io.snappydata.hydra.testDMLOps;
 
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import com.gemstone.gemfire.cache.query.Struct;
@@ -43,7 +42,6 @@ import hydra.Prms;
 import hydra.TestConfig;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
-import io.snappydata.hydra.snapshotIsolation.SnapshotIsolationDMLOpsBB;
 import org.apache.commons.lang.ArrayUtils;
 import sql.SQLHelper;
 import sql.sqlutil.GFXDStructImpl;
@@ -53,9 +51,12 @@ import util.TestHelper;
 
 public class SnappyDMLOpsUtil extends SnappyTest {
 
-  public static boolean hasDerbyServer = false;
-  public static boolean testUniqueKeys = false;
-  public static boolean isHATest = false;
+  public static boolean hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
+  public static boolean testUniqueKeys = TestConfig.tab().booleanAt(SnappySchemaPrms.testUniqueKeys, true);
+  public static boolean isHATest = TestConfig.tab().booleanAt(SnappySchemaPrms.isHATest,false);
+  public static boolean largeDataSet = TestConfig.tab().booleanAt(SnappySchemaPrms
+      .largeDataSet, false);
+
   protected static hydra.blackboard.SharedLock dmlLock;
 
   protected static SnappyDMLOpsUtil testInstance;
@@ -64,16 +65,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static void HydraTask_initialize() {
     if (testInstance == null)
       testInstance = new SnappyDMLOpsUtil();
-    hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
-    testUniqueKeys = TestConfig.tab().booleanAt(SnappySchemaPrms.testUniqueKeys, true);
-    isHATest = TestConfig.tab().booleanAt(SnappySchemaPrms.isHATest,false);
     int dmlTableLength = SnappySchemaPrms.getDMLTables().length;
     ArrayList<Integer> insertCounters = new ArrayList<>();
     for (int i = 0; i < dmlTableLength; i++) {
       insertCounters.add(1);
     }
-    if (!SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("insertCounters"))
-      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("insertCounters", insertCounters);
+    if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("insertCounters"))
+      SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", insertCounters);
     derbyTestUtils = new DerbyTestUtils();
   }
 
@@ -151,13 +149,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static void HydraTask_initializeDMLThreads() {
     testInstance.getDmlLock();
     ArrayList<Integer> dmlthreads;
-    if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
-      dmlthreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
+    if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
+      dmlthreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
     else
       dmlthreads = new ArrayList<>();
     if (!dmlthreads.contains(testInstance.getMyTid())) {
       dmlthreads.add(testInstance.getMyTid());
-      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("dmlThreads", dmlthreads);
+      SnappyDMLOpsBB.getBB().getSharedMap().put("dmlThreads", dmlthreads);
     }
     testInstance.releaseDmlLock();
   }
@@ -165,19 +163,19 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static void HydraTask_initializeSelectThreads() {
     testInstance.getDmlLock();
     ArrayList<Integer> selectThreads;
-    if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
-      selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap()
+    if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
+      selectThreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap()
           .get("selectThreads");
     else
       selectThreads = new ArrayList<>();
     if (!selectThreads.contains(testInstance.getMyTid())) {
       selectThreads.add(testInstance.getMyTid());
-      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("selectThreads", selectThreads);
+      SnappyDMLOpsBB.getBB().getSharedMap().put("selectThreads", selectThreads);
     }
     testInstance.releaseDmlLock();
   }
 
-  public static void HydraTask_initializeTablesMetaData() {
+  public static void HydraTask_saveTableMetaDataToBB() {
     testInstance.saveTableMetaDataToBB();
   }
 
@@ -199,7 +197,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           fieldNames[i] = rsmd.getColumnName(i + 1);
         }
         StructTypeImpl sType = new StructTypeImpl(fieldNames, oTypes);
-        SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("tableMetaData_" + table, sType);
+        SnappyDMLOpsBB.getBB().getSharedMap().put("tableMetaData_" + table.toUpperCase(), sType);
       }
     } catch (SQLException se) {
       throw new TestException("Got exception while saving table metadata to BB. Exception is : ",
@@ -221,7 +219,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Log.getLogWriter().info("done creating schemas in snappy.");
       closeConnection(conn);
     } catch (SQLException se) {
-      throw new TestException("Got exception while executing select query.", se);
+      throw new TestException("Got exception while creating schemas.", se);
     }
   }
 
@@ -294,51 +292,254 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     Log.getLogWriter().info(aStr.toString());
   }
 
-  public static synchronized void HydraTask_populateTables() {
+  public String addTIDtoCsv() {
+    String[] tableNames = SnappySchemaPrms.getTableNames();
+    String[] csvFileNames = SnappySchemaPrms.getCSVFileNames();
+    String dataLocation = SnappySchemaPrms.getDataLocations();
+    int tid = getMyTid();
+    ArrayList<Integer> dmlthreads = null;
+    if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
+      dmlthreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
+    StringBuilder sb = new StringBuilder();
+
+    String destFile = "", currDir,destLoc;
+    File destLocDir;
+    PrintWriter pw = null;
+    try {
+      currDir = new java.io.File(".").getCanonicalPath();
+      destLoc = currDir + File.separator + ".." + File.separator + "csvFiles";
+      destLocDir = new File(destLoc);
+      if (!destLocDir.exists()) {
+        destLocDir.mkdirs();
+      }
+    } catch (IOException ie) {
+      throw new TestException("Got exception while creating new csv file.");
+    }
+
+    for (int i = 0; i < tableNames.length; i++) {
+      String tableName = tableNames[i].toUpperCase();
+      String csvFilePath = dataLocation + File.separator + csvFileNames[i];
+      Log.getLogWriter().info("Adding tid data into " + tableName + " using CSV : " +
+          csvFilePath);
+      try {
+        destFile = destLoc + File.separator + csvFileNames[i];
+        File file = new File(destFile);
+        if (!file.exists()) {
+          pw = new PrintWriter(new FileOutputStream(destFile));
+          FileInputStream fs = new FileInputStream(csvFilePath);
+          BufferedReader br = new BufferedReader(new InputStreamReader(fs));
+          String row = "";
+          try {
+            boolean headerRow = true;
+            while ((row = br.readLine()) != null) {
+              if (headerRow) {
+                row = br.readLine();
+                headerRow = false;
+              }
+
+              if (dmlthreads != null)
+                tid = dmlthreads.get(new Random().nextInt(dmlthreads.size()));
+              row = row + "," + tid;
+              sb.append(row);
+              int len = sb.length();
+              //if (len > 0) sb.setLength(len - 1);
+              sb.append('\n');
+              if (sb.length() >= 1048576) {
+                pw.append(sb);
+                pw.flush();
+                sb = new StringBuilder();
+              }
+            }
+            if (sb.length() > 0) {
+              pw.append(sb);
+              pw.flush();
+              sb = new StringBuilder();
+            }
+          } catch (IOException ie) {
+            throw new TestException("Got exception while creating new csv file.");
+          }
+        }
+      } catch (FileNotFoundException fe) {
+        throw new TestException("Got exception while creating new csv file.");
+      }
+    }
+    return destLoc;
+  }
+
+  public static void HydraTask_populateTablesUsingSysProc(){
+    testInstance.populateTablesUsingSysProc();
+  }
+
+  protected void populateTablesUsingSysProc() {
+    String dataLocation = SnappySchemaPrms.getDataLocations();
+    if(testUniqueKeys) {
+      dataLocation = addTIDtoCsv();
+    }
+    Log.getLogWriter().info("Loading data in snappy...");
+    loadTablesInSnappy(dataLocation);
+    Log.getLogWriter().info("Loaded data in snappy.");
+    Log.getLogWriter().info("Loading data in derby...");
+    loadTablesInDerby(dataLocation);
+    Log.getLogWriter().info("Loaded data in derby.");
+  }
+
+  public void loadTablesInSnappy(String dataLocation){
+    int tid = getMyTid();
+    dynamicAppProps.put(tid,"dataFilesLocation="+dataLocation);
+    String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
+    executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
+        jarPath, SnappyPrms.getUserAppName());
+  }
+
+  public void loadTablesInDerby(String dataLocation) {
+    String[] tableNames = SnappySchemaPrms.getTableNames();
+    String[] csvFileNames = SnappySchemaPrms.getCSVFileNames();
+    Connection dConn = derbyTestUtils.getDerbyConnection();
+    for (int i = 0; i < tableNames.length; i++) {
+      String tableName = tableNames[i].toUpperCase();
+      String csvFilePath = dataLocation + File.separator + csvFileNames[i];
+      Log.getLogWriter().info("Loading data into " + tableName + " using csv " + csvFilePath);
+
+      String[] table = tableName.split("\\.");
+      try {
+        PreparedStatement ps = dConn.prepareStatement(
+            "CALL SYSCS_UTIL.SYSCS_IMPORT_TABLE(?,?,?,null,null,null,0)");
+        ps.setString(1, table[0]);
+        ps.setString(2, table[1]);
+        ps.setString(3, csvFilePath);
+        //ps.setString(4, ",");
+        ps.execute();
+        Log.getLogWriter().info("Loaded data into " + tableName);
+      } catch (SQLException se) {
+        throw new TestException("Exception while loading data to derby table. Exception is " + se
+          .getSQLState() + " : " + se.getMessage());
+      }
+    }
+    derbyTestUtils.closeDiscConnection(dConn, true);
+  }
+
+  public static void HydraTask_populateTables() {
     testInstance.populateTables();
   }
 
   protected void populateTables() {
+    String[] tableNames = SnappySchemaPrms.getTableNames();
+    String[] csvFileNames = SnappySchemaPrms.getCSVFileNames();
+    String dataLocation = SnappySchemaPrms.getDataLocations();
+    ArrayList<String> insertList = SnappySchemaPrms.getInsertStmtsForNonDMLTables();
+    insertList.addAll(SnappySchemaPrms.getInsertStmts());
+    int numDivs = 1;
+    boolean loadDataInParts = SnappySchemaPrms.getLoadDataInParts();
+    if(loadDataInParts)
+      numDivs = SnappySchemaPrms.getNumPartsForDataFiles();
+    ExecutorService pool = Executors.newFixedThreadPool((tableNames.length)*numDivs);
+    int tid = getMyTid();
+    for (int i = 0; i < tableNames.length; i++) {
+      String csvFilePath = null;
+      String tableName = tableNames[i].toUpperCase();
+      String insertStmt = insertList.get(i);
+      if (loadDataInParts) {
+        for (int j = 1; j <= numDivs; j++) {
+          csvFilePath = dataLocation + File.separator + csvFileNames[i] + "_" + j + ".csv";
+          pool.execute(new PopulateTableThread(tableName, csvFilePath, insertStmt, tid));
+        }
+      }
+      else{
+        csvFilePath = dataLocation + File.separator + csvFileNames[i];
+        pool.execute(new PopulateTableThread(tableName, csvFilePath, insertStmt, tid));
+      }
+    }
+    pool.shutdown();
     try {
-      Connection conn = getLocatorConnection();
-      Connection dConn = null;
-      if (hasDerbyServer)
-        dConn = derbyTestUtils.getDerbyConnection();
-      String[] tableNames = SnappySchemaPrms.getTableNames();
-      String[] csvFileNames = SnappySchemaPrms.getCSVFileNames();
-      String dataLocation = SnappySchemaPrms.getDataLocations();
-      for (int i = 0; i < tableNames.length; i++) {
-        String tableName = tableNames[i].toUpperCase();
-        Log.getLogWriter().info("Loading data into " + tableName);
-        String csvFilePath = dataLocation + File.separator + csvFileNames[i];
-        Log.getLogWriter().info("CSV location is : " + csvFilePath);
+      pool.awaitTermination(2400, TimeUnit.SECONDS);
+    }
+    catch(InterruptedException ie){
+      Log.getLogWriter().info("Got Exception while waiting for all threads to complete populate" +
+          " tasks");
+    }
+  }
+
+  class PopulateTableThread implements Runnable {
+    String tableName = "";
+    String csvFilePath = "";
+    String insertStmt = "";
+    int tid;
+
+    public PopulateTableThread(String tableName, String csvFilePath, String insertStmt, int tid){
+      this.tableName = tableName;
+      this.csvFilePath = csvFilePath;
+      this.insertStmt = insertStmt;
+      this.tid = tid;
+    }
+    // Keep each entry alive for atleast 5 mins.
+    public void run() {
+      try {
+        Log.getLogWriter().info("Loading data into " + tableName + " using CSV : " +
+            csvFilePath);
+        Connection conn = getLocatorConnection(),dConn = null;
+        if (hasDerbyServer)
+          dConn = derbyTestUtils.getDerbyConnection();
+        PreparedStatement snappyPS = null, derbyPS = null;
+        int batchSize = 65000;
         FileInputStream fs = new FileInputStream(csvFilePath);
         BufferedReader br = new BufferedReader(new InputStreamReader(fs));
-        String insertStmt = "insert into " + tableName + " values (";
-        String row = null;
-
+        String row = "";
+        int rowCnt = 0;
         ArrayList<Integer> dmlthreads = null;
-        int tid;
-        if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
-          dmlthreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
+        boolean headerRow = true;
+        if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
+          dmlthreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
         while ((row = br.readLine()) != null) {
-          if (dmlthreads == null)
-            tid = getMyTid();
-          else
+          if (headerRow) {
+            row = br.readLine();
+            headerRow = false;
+          }
+          if (dmlthreads != null)
             tid = dmlthreads.get(new Random().nextInt(dmlthreads.size()));
-          String rowStmt = insertStmt + row + "," + tid + ")";
-          //Log.getLogWriter().info("Row is : " +  rowStmt);
-          conn.createStatement().execute(rowStmt);
-          dConn.createStatement().execute(rowStmt);
+          row = row + "," + tid;
+          //Log.getLogWriter().info("Row is : " +  row);
+          snappyPS = getPreparedStatement(conn, snappyPS, tableName, insertStmt, row);
+          if(hasDerbyServer)
+            derbyPS =  getPreparedStatement(dConn, derbyPS, tableName, insertStmt, row);
+          if (rowCnt < batchSize) {
+            snappyPS.addBatch();
+            if(hasDerbyServer)
+              derbyPS.addBatch();
+            rowCnt++;
+          } else { //reached the batch size,so execute the batch
+            snappyPS.addBatch();
+            snappyPS.executeBatch();
+            snappyPS = null;
+            rowCnt = 0;
+            if(hasDerbyServer) {
+              derbyPS.addBatch();
+              derbyPS.executeBatch();
+              derbyPS = null;
+            }
+
+          }
         }
-        Log.getLogWriter().info("Done loading data into table " + tableName);
+        if (snappyPS != null)
+          snappyPS.executeBatch();
+        snappyPS.close();
+        conn.close();
+        if(hasDerbyServer){
+          if(derbyPS!=null)
+            derbyPS.executeBatch();
+          derbyPS.close();
+          derbyTestUtils.closeDiscConnection(dConn, true);
+        }
+        Log.getLogWriter().info("Done loading data into table " + tableName + " from " + csvFilePath);
+      } catch (IOException ie) {
+        Log.getLogWriter().info(TestHelper.getStackTrace(ie));
+        throw new TestException("Got exception while populating table.", ie);
+      } catch (SQLException se) {
+        Log.getLogWriter().info(TestHelper.getStackTrace(se));
+        throw new TestException("Got exception while populating table.", se);
+      } catch (Exception e) {
+        Log.getLogWriter().info(TestHelper.getStackTrace(e));
+        throw new TestException("Got exception",e);
       }
-      conn.close();
-      derbyTestUtils.closeDiscConnection(dConn, true);
-    } catch (IOException ie) {
-      throw new TestException("Got exception while populating table.", ie);
-    } catch (SQLException se) {
-      throw new TestException("Got exception while populating table.", se);
     }
   }
 
@@ -402,14 +603,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Connection dConn = null;
       String[] dmlTable = SnappySchemaPrms.getDMLTables();
       int rand = new Random().nextInt(dmlTable.length);
-      String tableName = dmlTable[rand];
+      String tableName = dmlTable[rand].toUpperCase();
       String row = getRowFromCSV(tableName, rand);
       if (testUniqueKeys)
         row = row + "," + getMyTid();
 
       //Log.getLogWriter().info("Selected row is : " + row);
       PreparedStatement snappyPS, derbyPS = null;
-      String insertStmt = SnappySchemaPrms.getInsertStmts()[rand];
+      String insertStmt = (SnappySchemaPrms.getInsertStmts()).get(rand);
       snappyPS = getPreparedStatement(conn, null, tableName, insertStmt, row);
       Log.getLogWriter().info("Inserting in snappy : " + insertStmt + " with " +
           "values(" + row + ")");
@@ -434,6 +635,21 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
   }
 
+  public void getAndExecuteSelect(Connection conn, String stmt,boolean isDerby){
+    String selectString = stmt.toUpperCase().substring(stmt.indexOf("(SELECT") + 1,stmt.indexOf
+        (") AND"));
+    try {
+      Log.getLogWriter().info("Executing " + selectString + " on snappy.");
+      ResultSet rs = conn.createStatement().executeQuery(selectString);
+      StructTypeImpl rsSti = ResultSetHelper.getStructType(rs);
+      List<Struct> rsList = ResultSetHelper.asList(rs, rsSti, isDerby);
+      rs.close();
+      Log.getLogWriter().info("Result from sub-select query is :" + listToString(rsList));
+    } catch(SQLException se) {
+         Log.getLogWriter().info("Statement execution failed"+ se.getStackTrace().toString());
+    }
+  }
+
   public void performUpdate() {
     try {
       Connection conn;
@@ -455,11 +671,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           stmt = stmt + " AND tid=" + tid;
         else stmt = stmt + " WHERE tid=" + tid;
       }
+      if(stmt.toUpperCase().contains("SELECT"))
+        getAndExecuteSelect(conn,stmt,false);
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
       Log.getLogWriter().info("Updated " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
+        if(stmt.toUpperCase().contains("SELECT"))
+          getAndExecuteSelect(conn,stmt,true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
@@ -467,13 +687,19 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           String errMsg = "Update statement failed to update same rows in derby and " +
               "snappy. Derby updated " + derbyRows + " and snappy updated " + numRows + ".";
           Log.getLogWriter().info(errMsg);
-          throw new TestException(errMsg);
+          //throw new TestException(errMsg);
         }
         derbyTestUtils.closeDiscConnection(dConn, true);
         String tableName = SnappySchemaPrms.getUpdateTables()[rand];
-        String message = verifyResultsForTable(tableName,true);
+        String selectQuery = SnappySchemaPrms.getAfterUpdateSelectStmts()[rand];
+        String orderByClause = "";
+        //String[] dmlTables = SnappySchemaPrms.getDMLTables();
+        //orderByClause = (SnappySchemaPrms.getOrderByClause())[Arrays.asList(dmlTables)
+        //    .indexOf(tableName)];
+        String message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
         if(message.length()!=0){
-          throw new TestException("Validation failed after update table.");
+          throw new TestException("Validation failed after update on table " + tableName + "." +
+              message);
         }
       }
       closeConnection(conn);
@@ -503,11 +729,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           stmt = stmt + " AND tid=" + tid;
         else stmt = stmt + " WHERE tid=" + tid;
       }
+      if(stmt.toUpperCase().contains("SELECT"))
+        getAndExecuteSelect(conn,stmt,false);
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
       Log.getLogWriter().info("Deleted " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
+        if(stmt.toUpperCase().contains("SELECT"))
+          getAndExecuteSelect(conn,stmt,true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Deleted " + derbyRows + " rows in derby.");
@@ -515,13 +745,18 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           String errMsg = "Delete statement failed to delete same rows in derby and " +
               "snappy. Derby deleted " + derbyRows + " and snappy deleted " + numRows + ".";
           Log.getLogWriter().info(errMsg);
-          throw new TestException(errMsg);
+          //throw new TestException(errMsg);
         }
         derbyTestUtils.closeDiscConnection(dConn, true);
         String tableName = SnappySchemaPrms.getDeleteTables()[rand];
-        String message = verifyResultsForTable(tableName,true);
+        String selectQuery = SnappySchemaPrms.getAfterDeleteSelectStmts()[rand];
+        String orderByClause = "";
+//        String[] dmlTables = SnappySchemaPrms.getDMLTables();
+//        orderByClause = SnappySchemaPrms.getOrderByClause()[Arrays.asList(dmlTables)
+//            .indexOf(tableName)];
+        String message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
         if(message.length()!=0){
-          throw new TestException("Validation failed after executing delete on table.");
+          throw new TestException("Validation failed after executing delete on table " + tableName + "." + message);
         }
       }
       closeConnection(conn);
@@ -618,7 +853,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       }
     }
     if (unexpected.size() > 0) {
-      aStr.append("the following " + unexpected.size() + " unexpected elements resultSet: " + listToString(unexpected));
+      aStr.append("the following " + unexpected.size() + " unexpected elements in " +
+          second + " resultSet: " + listToString(unexpected));
     }
 
     if (aStr.length() != 0) {
@@ -656,95 +892,290 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     return aStr.toString();
   }
 
-
-  /*
-  Verify results at the end of the test
-  */
-  public static void HydraTask_verifyResults() {
-    testInstance.verifyResults();
+  public static void listToFile(List<Struct> aList, String fileName) {
+    if (aList == null) {
+      throw new TestException("test issue, need to check in the test and not pass in null list here");
+    }
+    File rsFile = new File(fileName);
+    StringBuilder sb = new StringBuilder();
+    PrintWriter pw = null;
+    try {
+      pw = new PrintWriter(new FileOutputStream(rsFile));
+    } catch (IOException ie){
+      throw new TestException("Got exception while saving resultset to file",ie);
+    }
+    for (int i = 0; i < aList.size(); i++) {
+      Object aStruct = aList.get(i);
+      if (aStruct instanceof com.gemstone.gemfire.cache.query.Struct) {
+        GFXDStructImpl si = (GFXDStructImpl)(aStruct);
+        sb.append(si.toString());
+      }
+      sb.append("\n");
+      if (sb.length() >= 1048576) {
+        pw.append(sb);
+        pw.flush();
+        sb = new StringBuilder();
+      }
+    }
+    if (sb.length() > 0) {
+      pw.append(sb);
+      pw.flush();
+      sb = new StringBuilder();
+    }
   }
 
-  public void verifyResults() {
+  /*
+ *   Verify results in the begining of the test
+ */
+  public static void HydraTask_verifyResultsInitTask() {
+    String selectQuery = "select CAST(count(*) as integer) as numRows from  ";
+    testInstance.verifyResults(selectQuery);
+  }
+
+/*
+ *   Verify results at the end of the test
+ */
+  public static void HydraTask_verifyResults() {
+    String selectQuery = "select * from ";
+    testInstance.verifyResults(selectQuery);
+  }
+
+  public void verifyResults(String query) {
     String[] tables = SnappySchemaPrms.getTableNames();
     StringBuffer mismatchString = new StringBuffer();
       for (String table : tables) {
-        mismatchString.append(verifyResultsForTable(table,false));
+        mismatchString.append(verifyResultsForTable(query + table, table,"", false));
       }
       if (mismatchString.length() > 0)
       throw new TestException(mismatchString.toString());
   }
 
-  public String verifyResultsForTable(String table, boolean useTid) {
+  public String verifyResultsForTable(String selectStmt, String table, String orderByClause,
+      boolean useTid) {
     StringBuffer mismatchString = new StringBuffer();
-    Connection conn,dConn;
+    Connection conn, dConn;
     try {
       conn = getLocatorConnection();
       dConn = derbyTestUtils.getDerbyConnection();
-      String selectStmt = "select * from " + table;
-      if(useTid)
-        selectStmt = selectStmt + " where tid = " + getMyTid();
+      if (useTid) {
+        if (selectStmt.toUpperCase().contains("WHERE"))
+          selectStmt = selectStmt + " AND tid=" + getMyTid();
+        else selectStmt = selectStmt + " WHERE tid=" + getMyTid();
+      }
+      if(orderByClause.length()>0)
+        selectStmt = selectStmt + " " + orderByClause;
       Log.getLogWriter().info("Verifying results for " + table + " using " + selectStmt);
       ResultSet snappyRS = conn.createStatement().executeQuery(selectStmt);
       StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS);
       List<Struct> snappyList = ResultSetHelper.asList(snappyRS, snappySti, false);
+      snappyRS.close();
+
       ResultSet derbyRS = dConn.createStatement().executeQuery(selectStmt);
       StructTypeImpl derbySti = ResultSetHelper.getStructType(derbyRS);
       List<Struct> derbyList = ResultSetHelper.asList(derbyRS, derbySti, true);
-      try {
-        compareResultSets(derbyList, snappyList);
-      } catch (TestException te) {
-        mismatchString = mismatchString.append("Result mismatch in " + table + " :\n");
-        mismatchString = mismatchString.append(te.getMessage()).append("\n");
+      derbyRS.close();
+
+      closeConnection(conn);
+      derbyTestUtils.closeDiscConnection(dConn, true);
+
+      if (!largeDataSet) {
+        try {
+          compareResultSets(derbyList, snappyList);
+        } catch (TestException te) {
+          mismatchString = mismatchString.append("Result mismatch in " + table + " :\n");
+          mismatchString = mismatchString.append(te.getMessage()).append("\n");
+        }
+      } else {
+        Log.getLogWriter().info("size of resultSet from snappy is " + snappyList.size());
+        Log.getLogWriter().info("size of resultSet from derby is " + derbyList.size());
+
+        if (snappyList.size() != derbyList.size())
+          mismatchString.append(" Result mismatch observed for table " + table + ". Number of " +
+              "rows in snappy is " + snappyList.size() + " and derby is " + derbyList.size() + ".");
+
+        String queryResultDirPath = "";
+
+        try {
+          queryResultDirPath = new File(".").getCanonicalPath() + File.separator + "queryResults";
+        } catch (IOException ie) {
+          throw new TestException("Got Exception while creating directory for queryResults", ie);
+        }
+        String snappyRSFileName = queryResultDirPath + File.separator + "snappyRS_" + getMyTid()
+            + ".out";
+        String derbyRSFileName = queryResultDirPath + File.separator + "derbyRS_" + getMyTid() +
+            ".out";
+        File queryResultDir = new File(queryResultDirPath);
+        if (!queryResultDir.exists())
+          queryResultDir.mkdirs();
+        listToFile(snappyList, snappyRSFileName);
+        listToFile(derbyList, derbyRSFileName);
+        snappyList.clear();
+        derbyList.clear();
+        mismatchString.append(compareFiles(queryResultDirPath, snappyRSFileName, derbyRSFileName));
+        if(mismatchString.length()>0)
+          Log.getLogWriter().info("Got resultset mismtach. For query results please check : \n "
+              + snappyRSFileName + " and \n " + derbyRSFileName);
+          Log.getLogWriter().info(mismatchString.toString());
       }
     } catch (SQLException se) {
-      throw new TestException("Got Exception while verifying the table data.", se);
+      throw new TestException("Got SQLException while verifying the table data.", se);
     }
-    closeConnection(conn);
-    derbyTestUtils.closeDiscConnection(dConn, true);
     return mismatchString.toString();
+  }
+
+  public String compareFiles(String dir, String snappyFileName, String derbyFileName){
+    StringBuilder aStr = new StringBuilder();
+    ProcessBuilder pb = null;
+    int tid = getMyTid();
+    String command;
+    String missingFileName = dir + File.separator + "missing_" + tid + ".txt";
+    String upexpectedFileName = dir + File.separator + "unexpected_" + tid + ".txt";
+    try{
+      PrintWriter writer = new PrintWriter(missingFileName);
+      writer.print("");
+      writer.close();
+      writer = new PrintWriter(upexpectedFileName);
+      writer.print("");
+      writer.close();
+    } catch (FileNotFoundException fe) {
+      throw new TestException("Log exception while overwirting the result mismatch files", fe);
+    }
+    File unexpectedResultsFile = new File(upexpectedFileName);
+    File missingResultsFile = new File(missingFileName);
+    
+    command = "grep -v -F -x -f " + derbyFileName + " " + snappyFileName;
+    pb = new ProcessBuilder("/bin/bash", "-c", command);
+    Log.getLogWriter().info("Executing command : " + command);
+    //get the unexpected rows in snappy
+    testInstance.executeProcess(pb,unexpectedResultsFile);
+
+    command = "grep -v -F -x -f " + snappyFileName + " " + derbyFileName;
+    pb = new ProcessBuilder("/bin/bash", "-c", command);
+    Log.getLogWriter().info("Executing command : " + command);
+    //get the missing rows in snappy
+    testInstance.executeProcess(pb,missingResultsFile);
+
+    BufferedReader unexpectedRsReader, missingRsReader;
+    try {
+      unexpectedRsReader = new BufferedReader(new FileReader(unexpectedResultsFile));
+      missingRsReader = new BufferedReader(new FileReader(missingResultsFile));
+    } catch(FileNotFoundException fe) {
+      throw new TestException("Could not find file to compare results.",fe);
+    }
+    String line;
+    List<String> unexpected = new ArrayList<>(), missing = new ArrayList<>();
+    try {
+      while ((line = unexpectedRsReader.readLine()) != null)
+        unexpected.add("\n  " + line);
+      while ((line = missingRsReader.readLine()) != null)
+        missing.add("\n  " + line);
+      unexpectedRsReader.close();
+      missingRsReader.close();
+    } catch(IOException ie){
+      throw new TestException("Got exception while reading resultset files", ie);
+    }
+    if(missing.size()>0) {
+      aStr.append("\nThe following rows are missing in snappy, but exists in derby resultset:");
+      aStr.append(missing.toString());
+      aStr.append("\n");
+    }
+    if(unexpected.size()>0) {
+      aStr.append("\nThe following rows are unexpected in snappy, but missing in derby resultset:");
+      aStr.append(unexpected.toString());
+      aStr.append("\n");
+    }
+    return aStr.toString();
   }
 
   public PreparedStatement getPreparedStatement(Connection conn,PreparedStatement ps, String
       tableName, String stmt, String row) {
-    String[] columnValues = row.split(",");
+    String columnString= stmt.substring(stmt.indexOf("(") + 1,stmt.indexOf(")"));
+    ArrayList<String> columnList = new ArrayList<String>
+        (Arrays.asList( columnString.split(",")));
+    //Log.getLogWriter().info("columnList from insert is" + columnList.toString());
+    ArrayList<String> columnValues = new ArrayList<>();
+    if(row.contains("\"")){
+      String str3 = row;
+      while(str3.contains("\"")) {
+        int beginIndex = row.indexOf("\"") + 1;
+        int endIndex = row.indexOf("\"", beginIndex);
+        String str1 = row.substring(0, beginIndex - 2);
+        String str2 = row.substring(beginIndex, endIndex);
+        if(endIndex < str3.length())
+          str3 = row.substring(endIndex + 2, str3.length());
+        else str3 = "";
+        columnValues.addAll(new ArrayList<>(Arrays.asList( str1.split(","))));
+        columnValues.add(str2);
+      }
+      if(str3.length() > 0){
+        columnValues.addAll(new ArrayList<>(Arrays.asList( str3.split(","))));
+      }
+    }
+    else{
+      columnValues = new ArrayList<>(Arrays.asList( row.split(",")));
+    }
     try {
-      if(ps==null)
+      if(ps == null)
         ps = conn.prepareStatement(stmt);
-      StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+      StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
           ("tableMetaData_" + tableName);
       ObjectType[] oTypes = sType.getFieldTypes();
       String[] fieldNames = sType.getFieldNames();
+      int replaceQuestion = 1;
       for (int i = 0; i < oTypes.length; i++) {
         String clazz = oTypes[i].getSimpleClassName();
-        String columnValue = columnValues[i];
-        switch (clazz) {
-          case "String":
-            if (columnValue.equalsIgnoreCase("NULL"))
-              ps.setNull(i + 1, Types.VARCHAR);
-            else
-              ps.setString(i + 1, columnValue);
-            break;
-          case "Timestamp":
-            if (columnValue.equalsIgnoreCase("NULL"))
-              ps.setNull(i + 1, Types.TIMESTAMP);
-            else {
-              Timestamp ts = Timestamp.valueOf(columnValue);
-              ps.setTimestamp(i + 1, ts);
-            }
-            break;
-          case "Integer":
-            if (columnValue.equalsIgnoreCase("NULL"))
-              ps.setNull(i + 1, Types.INTEGER);
-            else
-              ps.setInt(i + 1, Integer.parseInt(columnValue));
-            break;
-          case "Double":
-            if (columnValue.equalsIgnoreCase("NULL"))
-              ps.setNull(i + 1, Types.DOUBLE);
-            else
-              ps.setDouble(i + 1, Double.parseDouble(columnValue));
-            break;
-
+        String columnValue = columnValues.get(i);
+//      Log.getLogWriter().info
+//          ("Column : " + fieldNames[i] + " with value : " + columnValue + " and " +
+//              "clazz :" + clazz + ";column from insert stmt is : " + columnList.get(i));
+        if(!columnList.get(i).equalsIgnoreCase(fieldNames[i])) {
+          Log.getLogWriter().info("Inside if column name mismatch.");
+          columnList.add(i,fieldNames[i]);
+        }else {
+          switch (clazz) {
+            case "Date" :
+            case "String":
+              if (columnValue.equalsIgnoreCase("NULL"))
+                ps.setNull(replaceQuestion, Types.VARCHAR);
+              else
+                ps.setString(replaceQuestion, columnValue);
+              break;
+            case "Timestamp":
+              if (columnValue.equalsIgnoreCase("NULL"))
+                ps.setNull(replaceQuestion, Types.TIMESTAMP);
+              else {
+                Timestamp ts = Timestamp.valueOf(columnValue);
+                ps.setTimestamp(replaceQuestion, ts);
+              }
+              break;
+            case "Integer":
+              if (columnValue.equalsIgnoreCase("NULL"))
+                ps.setNull(replaceQuestion, Types.INTEGER);
+              else
+                ps.setInt(replaceQuestion, Integer.parseInt(columnValue));
+              break;
+            case "Double":
+              if (columnValue.equalsIgnoreCase("NULL"))
+                ps.setNull(replaceQuestion, Types.DOUBLE);
+              else
+                ps.setDouble(replaceQuestion, Double.parseDouble(columnValue));
+              break;
+            case "Long":
+              if (columnValue.equalsIgnoreCase("NULL"))
+                ps.setNull(replaceQuestion, Types.BIGINT);
+              else
+                ps.setLong(replaceQuestion, Long.parseLong(columnValue));
+              break;
+            case "BigDecimal":
+              if (columnValue.equalsIgnoreCase("NULL"))
+                ps.setNull(replaceQuestion, Types.NUMERIC);
+              else
+                ps.setBigDecimal(replaceQuestion, BigDecimal.valueOf(Double.parseDouble(columnValue)));
+              break;
+            default : Log.getLogWriter().info("Object class type not found.");
+              throw new TestException("Object class type not found.");
+          }
+          replaceQuestion += 1;
         }
       }
     } catch (SQLException se) {
@@ -759,11 +1190,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     String csvFilePath = SnappySchemaPrms.getCsvLocationforLargeData();
     String csvFileName = SnappySchemaPrms.getInsertCsvFileNames()[randTable];
     getDmlLock();
-    List<Integer> counters = (List<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+    List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("insertCounters");
     insertCounter = counters.get(randTable);
     counters.set(randTable, insertCounter + 1);
-    SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
+    SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
     releaseDmlLock();
     //Log.getLogWriter().info("insert Counter is :" + insertCounter + " for csv " + csvFilePath +
     //    File.separator + csvFileName);
@@ -778,7 +1209,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   protected void getDmlLock() {
     if (dmlLock == null)
-      dmlLock = SnapshotIsolationDMLOpsBB.getBB().getSharedLock();
+      dmlLock = SnappyDMLOpsBB.getBB().getSharedLock();
     dmlLock.lock();
   }
 
@@ -789,7 +1220,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public String getStmt(String stmt, String row, String tableName) {
     String[] columnValues = row.split(",");
     String replaceString = stmt;
-    StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     ObjectType[] oTypes = sType.getFieldTypes();
     for (int i = 0; i < oTypes.length; i++) {
@@ -856,7 +1287,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       }
       else{ // thin client smart connector mode
         dynamicAppProps.put(tid,"\"" + stmt + "\""  + " " + tid);
-        String logFile = "snappyAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
+        String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
       }
       if (hasDerbyServer) {
@@ -865,9 +1296,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
         derbyTestUtils.closeDiscConnection(dConn, true);
-        String message = verifyResultsForTable(tableName, true);
+        String selectQuery = SnappySchemaPrms.getAfterUpdateSelectStmts()[rand];
+        String orderByClause = "";
+//        String[] dmlTables = SnappySchemaPrms.getDMLTables();
+//        orderByClause = SnappySchemaPrms.getOrderByClause()[Arrays.asList(dmlTables)
+//            .indexOf(tableName)];
+        String message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
         if (message.length() != 0) {
-          throw new TestException("Validation failed after update table.");
+          throw new TestException("Validation failed after update table " + tableName + "." + message);
         }
       }
     } catch (SQLException se) {
@@ -899,7 +1335,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
             jarPath, SnappyPrms.getUserAppName());
       } else { // thin client smart connector mode
         dynamicAppProps.put(tid, "\"" + stmt + "\"" + " " + tid);
-        String logFile = "snappyAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
+        String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
       }
       if (hasDerbyServer) {
@@ -908,9 +1344,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Deleted " + derbyRows + " rows in derby.");
         derbyTestUtils.closeDiscConnection(dConn, true);
-        String message = verifyResultsForTable(tableName,true);
+        String selectQuery = SnappySchemaPrms.getAfterDeleteSelectStmts()[rand];
+        String orderByClause = "" ;
+//        String[] dmlTables = SnappySchemaPrms.getDMLTables();
+//        orderByClause = SnappySchemaPrms.getOrderByClause()[Arrays.asList(dmlTables)
+//            .indexOf(tableName)];
+        String message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
         if(message.length()!=0){
-          throw new TestException("Validation failed after executing delete on table.");
+          throw new TestException("Validation failed after executing delete on table " + tableName + "." + message);
         }
       }
     } catch (SQLException se) {
@@ -927,7 +1368,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       String row = getRowFromCSV(tableName, rand);
       if (testUniqueKeys)
         row = row + "," + getMyTid();
-      String stmt = SnappySchemaPrms.getInsertStmts()[rand];
+      String stmt = (SnappySchemaPrms.getInsertStmts()).get(rand);
       String insertStmt = getStmt(stmt, row, tableName);
       int tid = getMyTid();
 
@@ -939,7 +1380,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
             jarPath, SnappyPrms.getUserAppName());
       } else { // thin client smart connector mode
         dynamicAppProps.put(tid,"\"" + insertStmt + "\""  + " " + tid);
-        String logFile = "snappyAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
+        String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
       }
       if (hasDerbyServer) {
@@ -948,9 +1389,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         int derbyRowCount = dConn.createStatement().executeUpdate(insertStmt);
         Log.getLogWriter().info("Inserted " + derbyRowCount + " row in derby.");
         derbyTestUtils.closeDiscConnection(dConn, true);
-        String message = verifyResultsForTable(tableName, true);
+        String message = verifyResultsForTable("select * from ", tableName, "", true);
         if (message.length() != 0) {
-          throw new TestException("Validation failed after insert in table " + tableName +".");
+          throw new TestException("Validation failed after insert in table " + tableName + "." + message);
         }
       }
     } catch (SQLException se) {
@@ -964,7 +1405,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     updateStmt = updateStmt.replace("$tableName", tableName);
     String whereClause = "";
     int tid = getMyTid();
-    StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     String[] columnNames = sType.getFieldNames();
     ObjectType[] oTypes = sType.getFieldTypes();
@@ -996,7 +1437,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     deleteStmt = deleteStmt.replace("$tableName", tableName);
     String whereClause = "";
     int tid = getMyTid();
-    StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     String[] columnNames = sType.getFieldNames();
     ObjectType[] oTypes = sType.getFieldTypes();

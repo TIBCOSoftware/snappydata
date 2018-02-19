@@ -17,7 +17,7 @@
 
 package org.apache.spark
 
-import org.apache.log4j.{Level, LogManager, PropertyConfigurator}
+import org.apache.log4j.{LogManager, PropertyConfigurator}
 import org.slf4j.impl.StaticLoggerBinder
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -37,7 +37,7 @@ trait Logging {
   @transient private[this] var levelFlags: Int = _
 
   // Method to get the logger name for this object
-  protected def logName = {
+  protected def logName: String = {
     // Ignore trailing $'s in the class names for Scala objects
     this.getClass.getName.stripSuffix("$")
   }
@@ -45,7 +45,7 @@ trait Logging {
   // Method to get or create the logger for this object
   protected def log: Logger = {
     if (log_ == null) {
-      initializeLogIfNecessary(false)
+      initializeLogIfNecessary()
       log_ = LoggerFactory.getLogger(logName)
     }
     log_
@@ -130,17 +130,23 @@ trait Logging {
     if (log.isErrorEnabled) log.error(msg, throwable)
   }
 
-  protected def initializeLogIfNecessary(isInterpreter: Boolean): Unit = {
+  protected def resetLogger(): Unit = {
+    Logging.initLock.synchronized {
+      log_ = null
+    }
+  }
+
+  protected def initializeLogIfNecessary(): Unit = {
     if (!Logging.initialized) {
       Logging.initLock.synchronized {
         if (!Logging.initialized) {
-          initializeLogging(isInterpreter)
+          initializeLogging()
         }
       }
     }
   }
 
-  private def initializeLogging(isInterpreter: Boolean): Unit = {
+  private def initializeLogging(): Unit = {
     // Don't use a logger in here, as this is itself occurring during initialization of a logger
     // If Log4j 1.2 is being used, but is not initialized, load a default properties file
     val binderClass = StaticLoggerBinder.getSingleton.getLoggerFactoryClassStr
@@ -161,20 +167,6 @@ trait Logging {
             System.err.println(s"Spark was unable to load $defaultLogProps")
         }
       }
-
-      if (isInterpreter) {
-        // Use the repl's main class to define the default log level when running the shell,
-        // overriding the root logger's config if they're different.
-        val rootLogger = LogManager.getRootLogger
-        val replLogger = LogManager.getLogger(logName)
-        val replLevel = Option(replLogger.getLevel).getOrElse(Level.WARN)
-        if (replLevel != rootLogger.getEffectiveLevel) {
-          System.err.printf("Setting default log level to \"%s\".\n", replLevel)
-          System.err.println("To adjust logging level use sc.setLogLevel(newLevel).")
-          rootLogger.setLevel(replLevel)
-        }
-      }
-      // scalastyle:on println
     }
     Logging.initialized = true
 
@@ -205,6 +197,6 @@ private object Logging {
       bridgeClass.getMethod("install").invoke(null)
     }
   } catch {
-    case e: ClassNotFoundException => // can't log anything yet so just fail silently
+    case _: ClassNotFoundException => // can't log anything yet so just fail silently
   }
 }

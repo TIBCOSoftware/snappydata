@@ -31,11 +31,8 @@ import org.apache.spark.sql.types._
  * a nullable or non-nullable version as appropriate.
  */
 final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
-    delta1Position: Int, delta1: ColumnDeltaDecoder,
-    delta2Position: Int, delta2: ColumnDeltaDecoder,
-    delta3Position: Int, delta3: ColumnDeltaDecoder)
-    extends UpdatedColumnDecoderBase(decoder, field, delta1Position, delta1,
-      delta2Position, delta2, delta3Position, delta3) {
+    delta1: ColumnDeltaDecoder, delta2: ColumnDeltaDecoder)
+    extends UpdatedColumnDecoderBase(decoder, field, delta1, delta2) {
 
   protected def nullable: Boolean = false
 
@@ -46,11 +43,8 @@ final class UpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
  * Nullable version of [[UpdatedColumnDecoder]].
  */
 final class UpdatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructField,
-    delta1Position: Int, delta1: ColumnDeltaDecoder,
-    delta2Position: Int, delta2: ColumnDeltaDecoder,
-    delta3Position: Int, delta3: ColumnDeltaDecoder)
-    extends UpdatedColumnDecoderBase(decoder, field, delta1Position, delta1,
-      delta2Position, delta2, delta3Position, delta3) {
+    delta1: ColumnDeltaDecoder, delta2: ColumnDeltaDecoder)
+    extends UpdatedColumnDecoderBase(decoder, field, delta1, delta2) {
 
   protected def nullable: Boolean = true
 
@@ -59,136 +53,77 @@ final class UpdatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructFi
 
 object UpdatedColumnDecoder {
   def apply(decoder: ColumnDecoder, field: StructField,
-      delta1Buffer: ByteBuffer, delta2Buffer: ByteBuffer,
-      delta3Buffer: ByteBuffer): UpdatedColumnDecoderBase = {
+      delta1Buffer: ByteBuffer, delta2Buffer: ByteBuffer): UpdatedColumnDecoderBase = {
 
-    // positions are initialized at max so that they always are greater
-    // than a valid index
-
-    var delta1Position = Int.MaxValue
-    val delta1 = if (delta1Buffer ne null) {
-      val d = new ColumnDeltaDecoder(delta1Buffer, field)
-      delta1Position = d.moveToNextPosition()
-      d
-    } else null
-
-    var delta2Position = Int.MaxValue
-    val delta2 = if (delta2Buffer ne null) {
-      val d = new ColumnDeltaDecoder(delta2Buffer, field)
-      delta2Position = d.moveToNextPosition()
-      d
-    } else null
-
-    var delta3Position = Int.MaxValue
-    val delta3 = if (delta3Buffer ne null) {
-      val d = new ColumnDeltaDecoder(delta3Buffer, field)
-      delta3Position = d.moveToNextPosition()
-      d
-    } else null
-
-    // check if any of the deltas or full value have nulls
-    if (field.nullable && (decoder.hasNulls || ((delta1 ne null) && delta1.hasNulls) ||
-        ((delta2 ne null) && delta2.hasNulls) || ((delta3 ne null) && delta3.hasNulls))) {
-      new UpdatedColumnDecoderNullable(decoder, field, delta1Position, delta1,
-        delta2Position, delta2, delta3Position, delta3)
+    val delta1 = if (delta1Buffer ne null) new ColumnDeltaDecoder(delta1Buffer, field) else null
+    val delta2 = if (delta2Buffer ne null) new ColumnDeltaDecoder(delta2Buffer, field) else null
+    // check for nullable column (don't use actual number of nulls to avoid changing
+    //   type of decoder that can cause trouble with JVM inlining)
+    if (field.nullable) {
+      new UpdatedColumnDecoderNullable(decoder, field, delta1, delta2)
     } else {
-      new UpdatedColumnDecoder(decoder, field, delta1Position, delta1,
-        delta2Position, delta2, delta3Position, delta3)
+      new UpdatedColumnDecoder(decoder, field, delta1, delta2)
     }
   }
 }
 
 abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructField,
-    private final var delta1Position: Int, delta1: ColumnDeltaDecoder,
-    private final var delta2Position: Int, delta2: ColumnDeltaDecoder,
-    private final var delta3Position: Int, delta3: ColumnDeltaDecoder) {
+    delta1: ColumnDeltaDecoder, delta2: ColumnDeltaDecoder) {
 
   protected def nullable: Boolean
 
-  protected final var nextDeltaBuffer: ColumnDeltaDecoder = _
+  private final var delta1UpdatedPosition: Int =
+    if (delta1 ne null) delta1.readUpdatedPosition() else Int.MaxValue
+  private final var delta2UpdatedPosition: Int =
+    if (delta2 ne null) delta2.readUpdatedPosition() else Int.MaxValue
+
   protected final var currentDeltaBuffer: ColumnDeltaDecoder = _
-  protected final var nextUpdatedPosition: Int = moveToNextUpdatedPosition(-1)
+  protected final var nextUpdatedPosition: Int = moveToNextUpdatedPosition()
 
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
-  @inline protected final def skipUpdatedPosition(delta: ColumnDeltaDecoder): Unit = {
-    if (!nullable || delta.readNotNull) delta.nextNonNullOrdinal()
-  }
-
-  protected final def moveToNextUpdatedPosition(ordinal: Int): Int = {
+  protected final def moveToNextUpdatedPosition(): Int = {
     var next = Int.MaxValue
-    var movedIndex = -1
-
+    var firstDelta = false
     // first delta is the lowest in hierarchy and overrides others
-    if (delta1Position < next) {
-      next = delta1Position
-      movedIndex = 0
+    if (delta1UpdatedPosition != Int.MaxValue) {
+      next = delta1UpdatedPosition
+      firstDelta = true
     }
-    // next delta in hierarchy
-    if (delta2Position < next) {
-      // skip on equality (result should be returned by one of the previous calls)
-      if (delta2Position <= ordinal) {
-        skipUpdatedPosition(delta2)
-        delta2Position = delta2.moveToNextPosition()
-        if (delta2Position < next) {
-          next = delta2Position
-          movedIndex = 1
+    // check next delta in hierarchy
+    if (delta2 ne null) {
+      if (delta2UpdatedPosition <= next) {
+        if (delta2UpdatedPosition < next) {
+          next = delta2UpdatedPosition
+          currentDeltaBuffer = delta2
+          firstDelta = false
         }
-      } else {
-        next = delta2Position
-        movedIndex = 1
+        // skip on equality in any case (result should be returned by delta1)
+        delta2.moveUpdatePositionCursor()
+        delta2UpdatedPosition = delta2.readUpdatedPosition()
       }
     }
-    // last delta in hierarchy
-    if (delta3Position < next) {
-      // skip on equality (result should be returned by one of the previous calls)
-      if (delta3Position <= ordinal) {
-        skipUpdatedPosition(delta3)
-        delta3Position = delta3.moveToNextPosition()
-        if (delta3Position < next) {
-          next = delta3Position
-          movedIndex = 2
-        }
-      } else {
-        next = delta3Position
-        movedIndex = 2
-      }
-    }
-    movedIndex match {
-      case 0 =>
-        delta1Position = delta1.moveToNextPosition()
-        nextDeltaBuffer = delta1
-      case 1 =>
-        delta2Position = delta2.moveToNextPosition()
-        nextDeltaBuffer = delta2
-      case 2 =>
-        delta3Position = delta3.moveToNextPosition()
-        nextDeltaBuffer = delta3
-      case _ =>
+    if (firstDelta) {
+      currentDeltaBuffer = delta1
+      delta1.moveUpdatePositionCursor()
+      delta1UpdatedPosition = delta1.readUpdatedPosition()
     }
     next
   }
 
   private def skipUntil(ordinal: Int): Boolean = {
-    var nextUpdated = nextUpdatedPosition
-    // check if ordinal has moved ahead of updated cursor
-    if (nextUpdated < ordinal) {
-      do {
-        // skip the position in current delta
-        skipUpdatedPosition(nextDeltaBuffer)
-        // update the cursor and keep on till ordinal is not reached
-        nextUpdated = moveToNextUpdatedPosition(nextUpdated)
-      } while (nextUpdated < ordinal)
-      nextUpdatedPosition = nextUpdated
-      if (nextUpdated > ordinal) return true
+    while (true) {
+      // update the cursor and keep on till ordinal is not reached
+      nextUpdatedPosition = moveToNextUpdatedPosition()
+      if (nextUpdatedPosition > ordinal) return true
+      if (nextUpdatedPosition == ordinal) return false
     }
-    currentDeltaBuffer = nextDeltaBuffer
-    nextUpdatedPosition = moveToNextUpdatedPosition(ordinal)
-    false
+    false // never reached
   }
 
   final def unchanged(ordinal: Int): Boolean = {
     if (nextUpdatedPosition > ordinal) true
+    else if (nextUpdatedPosition == ordinal) false
     else skipUntil(ordinal)
   }
 

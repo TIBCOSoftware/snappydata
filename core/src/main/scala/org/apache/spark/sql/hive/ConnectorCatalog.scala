@@ -18,22 +18,26 @@ package org.apache.spark.sql.hive
 
 import java.util.concurrent.ExecutionException
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
+
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import org.apache.hadoop.hive.metastore.api.{FieldSchema, Table}
+import org.apache.hadoop.hive.metastore.api.FieldSchema
+import org.apache.hadoop.hive.ql.metadata.Table
+
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.catalyst.parser.ParseException
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.{MetadataBuilder, StructField, StructType}
 import org.apache.spark.sql.{AnalysisException, SaveMode, SmartConnectorHelper}
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
 
 trait ConnectorCatalog extends SnappyStoreHiveCatalog {
 
@@ -66,7 +70,9 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
     val cacheLoader = new CacheLoader[QualifiedTableName,
         (LogicalRelation, CatalogTable, RelationInfo)]() {
       override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
-        logDebug(s"Creating new cached data source for $in")
+        // table names are always case-insensitive in hive
+        val qualifiedName = Utils.toUpperCase(in.toString)
+        logDebug(s"Creating new cached data source for $qualifiedName")
 
         // val (hiveTable: Table, relationInfo: RelationInfo) =
         //   SmartConnectorHelper.getHiveTableAndMetadata(in)
@@ -74,14 +80,18 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
           connectorHelper.getHiveTableAndMetadata(in)
 
         //        val table: CatalogTable = in.getTable(client)
-        val table: CatalogTable = getCatalogTable(
-          new org.apache.hadoop.hive.ql.metadata.Table(hiveTable)).get
+        val table: CatalogTable = getCatalogTable(hiveTable).get
 
         val userSpecifiedSchema = ExternalStoreUtils.getTableSchema(
           table.properties)
         val partitionColumns = table.partitionSchema.map(_.name)
         val provider = table.properties(SnappyStoreHiveCatalog.HIVE_PROVIDER)
-        val options = table.storage.properties
+        var options: Map[String, String] = new CaseInsensitiveMap(table.storage.properties)
+        // add dbtable property if not present
+        val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+        if (!options.contains(dbtableProp)) {
+          options += dbtableProp -> qualifiedName
+        }
         val relation = JdbcExtendedUtils.readSplitProperty(
           JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
@@ -103,7 +113,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
             }
 
             dependentRelations.foreach(rel => {
-              DependencyCatalog.addDependent(in.toString, rel)
+              DependencyCatalog.addDependent(qualifiedName, rel)
             })
           case _ => // Do nothing
         }
@@ -206,7 +216,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
       partitionColumns: Array[String],
       provider: String,
       options: Map[String, String],
-      relation: BaseRelation): Unit = {
+      relation: Option[BaseRelation]): Unit = {
     // no op
   }
 
@@ -221,7 +231,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
 
 case class RelationInfo(numBuckets: Int = 1,
     isPartitioned: Boolean = false,
-    partitioningCols: Seq[String] = Seq.empty,
+    partitioningCols: Seq[String] = Nil,
     indexCols: Array[String] = Array.empty,
     pkCols: Array[String] = Array.empty,
     partitions: Array[org.apache.spark.Partition] = Array.empty,

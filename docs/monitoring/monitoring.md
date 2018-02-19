@@ -9,6 +9,9 @@ To access the SnappyData Pulse, start your cluster and open http:`<leadhost>`:50
 
 The top-right side of the page displays the date and time when the Dashboard was last updated. Click on the product version number to view details like the build number, source revision, underlying spark version, etc.
 
+!!! Note:
+	- When using Smart Connector with upstream Spark, the **Dashboard** and **Member Details** sections are not displayed. Only the **SQL**, **Jobs** and **Stages** related information is displayed.
+
 The following topics are covered in this section:
 
 * [Dashboard](#dashboard)
@@ -31,6 +34,8 @@ The Dashboard offers the following capabilities and benefits:
 * [Member Statistics](#member)
 
 * [Table Statistics](#table)
+
+* [External Table Statistics](#external-table)
 
 <a id="cluster"></a>
 ### Cluster Statistics
@@ -116,6 +121,22 @@ The Dashboard offers the following capabilities and benefits:
 * **Total Size**</br>
    Displays the collective physical memory and disk overflow space used by the data table to store its data/records.
 
+![Dashboard](../Images/monitoring_external_table.png)
+<a id="external-table"></a>
+### External Table Statistics
+
+* **Tables Count**</br>
+	Displays the total number of external tables present in the cluster. The tooltip displays the total number of external tables.
+
+* **Name**</br>
+	Displays the name of the external table.
+
+* **Provider**</br>
+	Displays the file format used for the external table. The supported file formats are  Parquet, CSV and JDBC.
+
+* **Source**</br>
+	For Parquet and CSV file format, the path of the data file used to create the external table is displayed. For JDBC, the name of the Driver Class is displayed.
+
 <a id="member-details"></a>
 ## Member Details View
 
@@ -193,7 +214,10 @@ The top-right side of the page displays the last updated date and time for the m
 
 * **Status**: Displays the status of the job. 
 
-* **Stages**: Click on the Stage to view its details. The table displays the time taken for completion of each stage. 
+* **Stages**: Click on the stage to view its details. The table displays the time taken for completion of each stage. 
+
+!!! Tip:
+	You can cancel a long running job, using the **Kill** option. </br>![kill](../Images/kill_job.png)
 
 <a id="stages"></a>
 ## Stages Page

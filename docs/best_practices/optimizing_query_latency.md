@@ -60,7 +60,10 @@ For examples refer to, [How to colocate tables for doing a colocated join](../ho
 <a id="buckets"></a>
 ### Buckets
 A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. For more information on BUCKETS, refer to [BUCKETS](important_settings.md#buckets).</br>
-By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
+
+The default number of buckets in SnappyData cluster mode is 128. In the local mode it is cores*2, subject to maximum of 64 buckets and minumum of 8 buckets.
+
+The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
 
 When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
 
@@ -84,13 +87,14 @@ For an example on the REDUNDANCY clause refer to [Tables in SnappyData](../progr
 <a id="overflow"></a>
 ## Overflow Configuration
 
-In SnappyData, column tables by default overflow to disk. For row tables, use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria.  
+In SnappyData, row and column tables by default overflow to disk (which is equivalent to setting OVERFLOW to 'true'), based on EVICTION_BY criteria. Users cannot set OVERFLOW to 'false', except when EVICTION_BY is not set, in which case it disables the eviction.
 
-For example, using `LRUHEAPPERCENT` criteria allows table data to be either evicted or destroyed based on the current memory consumption of the server. Use the `OVERFLOW` clause to specify the action to be taken upon the eviction event.
-
-For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.
+For example, setting EVICTION_BY to `LRUHEAPPERCENT` allows table data to be evicted to disk based on the current memory consumption of the server.
 
 Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) link to understand how to configure [OVERFLOW](../reference/sql_reference/create-table.md#overflow) and [EVICTION_BY](../reference/sql_reference/create-table.md#eviction-by) clauses.
+
+!!! Tip:
+	By default eviction is set to `overflow-to-disk`.
 
 ## Known Limitation
 

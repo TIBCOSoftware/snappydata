@@ -16,11 +16,8 @@
  */
 package io.snappydata.benchmark.kuduimpala
 
-import java.io.{File, FileOutputStream, PrintStream}
-import java.sql.{DriverManager, ResultSet}
+import java.sql.DriverManager
 
-import io.snappydata.benchmark.memsql.TPCH_Memsql
-import io.snappydata.benchmark.snappy.TPCH_Snappy
 
 object TPCH_Impala_Query {
 

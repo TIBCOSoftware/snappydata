@@ -46,7 +46,7 @@ componentType=$1
 shift
 
 # Whether to apply the operation in background
-RUN_IN_BACKGROUND=0
+RUN_IN_BACKGROUND=
 if [ "$1" = "-bg" -o "$1" = "--background" ]; then
   RUN_IN_BACKGROUND=1
   shift
@@ -74,12 +74,14 @@ fi
 . "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
 
+FIRST_LOCATOR=
 case $componentType in
 
   (locator)
     if [ -f "${SPARK_CONF_DIR}/locators" ]; then
       HOSTLIST="${SPARK_CONF_DIR}/locators"
     fi
+    FIRST_LOCATOR=1
     ;;
 
   (server)
@@ -97,6 +99,8 @@ case $componentType in
       exit 1
       ;;
 esac
+export FIRST_LOCATOR
+
 # By default disable strict host key checking
 if [ "$SPARK_SSH_OPTS" = "" ]; then
   SPARK_SSH_OPTS="-o StrictHostKeyChecking=no"
@@ -107,7 +111,7 @@ default_loc_port=10334
 function readalllocators { 
   retVal=
   while read loc || [[ -n "${loc}" ]]; do
-    [[ -z "$(echo $loc | grep ^[^#] | grep -v ^$ )"  ]] && continue
+    [[ -z "$(echo $loc | grep ^[^#] | grep -v ^$ )" ]] && continue
     if [ -n "$(echo $loc | grep peer-discovery-port)" ]; then
       retVal="$retVal,$(echo $loc | sed "s#\([^ ]*\).*peer-discovery-port\s*=\s*\([^ ]*\).*#\1:\2#g")"
     else
@@ -117,16 +121,21 @@ function readalllocators {
   echo ${retVal#","}
 }
 
+LOCATOR_IS_LOCAL=
 if [ -f "${SPARK_CONF_DIR}/locators" ]; then
-  LOCATOR_ARGS="-locators="$(readalllocators)
+  allLocators="$(readalllocators)"
+  LOCATOR_ARGS="-locators=$allLocators"
+  if echo $allLocators | egrep -wq '(localhost|127\.0\.0\.1|::1)'; then
+    LOCATOR_IS_LOCAL=1
+  fi
 else
   LOCATOR_ARGS="-locators=localhost[$default_loc_port]"
+  LOCATOR_IS_LOCAL=1
 fi
 
 MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
 
-FIRST_NODE=1
-export FIRST_NODE
+
 function execute() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
 
@@ -140,29 +149,53 @@ function execute() {
   # For stop and status mode, don't pass any parameters other than directory
   if echo $"${@// /\\ }" | grep -wq "start"; then
     # Set a default locator if not already set.
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep '[-]locators=')" ]; then
+    if ! echo $args $"${@// /\\ }" | egrep -q '[-](locators=|peer-discovery-address=)'; then
       args="${args} $LOCATOR_ARGS"
       # inject start-locators argument if not present
-      if [[ "${componentType}" == "locator" && -z "$(echo  $args $"${@// /\\ }" | grep 'start-locator=')" ]]; then
+      if [ "${componentType}" = "locator" -a -z "$(echo  $args $"${@// /\\ }" | grep 'start-locator=')" ]; then
         port=$(echo $args | grep -wo "peer-discovery-port=[^ ]*" | sed 's#peer-discovery-port=##g')
         if [ -z "$port" ]; then
           port=$default_loc_port
         fi
         args="${args} -start-locator=$host:$port"
       fi
-      # Set low discovery and join timeouts for quick startup when locator is local.
-      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.discoveryTimeout=')" ]; then
+    fi
+    # Reduce discovery and join timeouts, retries for first locator to reduce self-wait
+    if [ -n "$FIRST_LOCATOR" ]; then
+      FIRST_LOCATOR=
+      if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.discoveryTimeout='; then
         args="${args} -J-Dp2p.discoveryTimeout=1000"
       fi
-      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.joinTimeout=')" ]; then
+      if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.joinTimeout='; then
         args="${args} -J-Dp2p.joinTimeout=2000"
       fi
+      if ! echo $args $"${@// /\\ }" | grep -q 'Dp2p.minJoinTries='; then
+        args="${args} -J-Dp2p.minJoinTries=1"
+      fi
     fi
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'client-bind-address=')" -a "${componentType}" != "lead"  ]; then
+    # set the default bind-address and SPARK_LOCAL_IP
+    if ! echo $args $"${@// /\\ }" | grep -q '[-]bind-address='; then
+      args="${args} -bind-address=$host"
+    fi
+    if [ -z "$SPARK_LOCAL_IP" ]; then
+      export SPARK_LOCAL_IP=$host
+      preCommand="export SPARK_LOCAL_IP=$SPARK_LOCAL_IP; "
+    fi
+    # set the default client-bind-address and locator's peer-discovery-address
+    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'client-bind-address=')" -a "${componentType}" != "lead" ]; then
       args="${args} -client-bind-address=${host}"
     fi
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" == "locator"  ]; then
+    if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
       args="${args} -peer-discovery-address=${host}"
+    fi
+    # set the public hostname for Spark Web UI
+    if [ -z "$SPARK_PUBLIC_DNS" -a "${componentType}" = "lead" ]; then
+      export SPARK_PUBLIC_DNS=$host
+      preCommand="${preCommand}export SPARK_PUBLIC_DNS=$SPARK_PUBLIC_DNS; "
+    fi
+    # Set hostname-for-clients on AWS as per SPARK_PUBLIC_DNS
+    if [ -n "${SPARK_IS_AWS_INSTANCE}" -a -n "${SPARK_PUBLIC_DNS}" -a "${componentType}" != "lead" -a "${host}" != 'localhost' -a "${host}" != "127.0.0.1" -a "${host}" != "::1" ] && ! echo $args $"${@// /\\ }" | grep -q 'hostname-for-clients='; then
+      args="${args} -hostname-for-clients=${SPARK_PUBLIC_DNS}"
     fi
   else
     args="${dirparam}"
@@ -181,21 +214,14 @@ function execute() {
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
       (ssh $SPARK_SSH_OPTS "$host" \
-        "{ if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi; } && " $"${@// /\\ } ${args};" < /dev/null \
-        2>&1 | sed "s/^/$host: /") &
+        "{ if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi; } && " $"${preCommand}${@// /\\ } ${args};" \
+        < /dev/null 2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
     else
       # ssh reads from standard input and eats all the remaining lines.Connect its standard input to nowhere:
-      (ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" < /dev/null \
+      (ssh $SPARK_SSH_OPTS "$host" $"${preCommand}${@// /\\ } ${args}" < /dev/null \
         2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
-    fi
-    if [ "${RUN_IN_BACKGROUND}" = "0" -o "${FIRST_NODE}" = "1" ]; then
-      if wait $LAST_PID; then
-        FIRST_NODE=0
-      fi
-    else
-      sleep 3
     fi
   else
     if [ "$dirfolder" != "" ]; then
@@ -205,7 +231,16 @@ function execute() {
       fi
     fi
     launchcommand="${@// /\\ } ${args} < /dev/null 2>&1"
-    eval $launchcommand
+    eval $launchcommand &
+    LAST_PID="$!"
+  fi
+  if [ -z "$RUN_IN_BACKGROUND" ]; then
+    wait $LAST_PID
+  else
+    sleep 1
+    if [ -e "/proc/$LAST_PID/status" ]; then
+      sleep 1
+    fi
   fi
 
   df=${dirfolder}

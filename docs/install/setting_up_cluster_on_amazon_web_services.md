@@ -53,10 +53,13 @@ Refer to the following documentation, for more information on [accessing an EC2 
 	
 		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
 
-		* The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. 
+		* The SnappyData product distribution is already downloaded and extracted in the **/opt/snappydata** directory and Java 8 is installed. 
 
-13. Follow the [steps described here](install_on_premise.md) to continue. </br>
+13. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
 
+```bash
+./sbin/snappy-start-all.sh
+```
 
 <a id="EC2"></a>
 ## Using SnappyData EC2 scripts
@@ -80,9 +83,11 @@ The scripts are available on GitHub in the [snappy-cloud-tools repository](https
 * Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find this information in the AWS IAM console page.<br/>
 If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
 
-	For example:
-```export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112```
-```export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10```
+For example:
+```bash
+export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
+export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
+```
 
 * Ensure Python v 2.7 or later is installed on your local computer.
 
@@ -112,7 +117,7 @@ The  names and details of the members are automatically derived from the provide
 **Example**
 
 ```
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch my-cluster
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch my-cluster
 ```
 
 In the above example, you are launching a SnappyData cluster named **my-cluster** with 2 stores (or servers). The locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
@@ -122,8 +127,6 @@ The example assumes that you have the key file (my-ec2-key.pem) in your home dir
 
 !!! Note:
 	By default, the cluster is launched in the US East (N. Virginia) region on AWS. To launch the cluster in a specific region ensure that you set the region property `--region=`.
-
-To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`.
 
 #### Specifying properties
 
@@ -197,10 +200,10 @@ This retains the security groups created for this cluster. To delete this, use i
 
 #### Starting cluster with Apache Zeppelin
 
-Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. You can start it either on a lead node's instance (`--with-zeppelin=embedded`) or on a separate instance (`--with-zeppelin=non-embedded`).
+Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. The Zeppelin server is launched on the same EC2 instance where the lead node is running.
 
 ````
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin=embedded launch cluster-name
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin launch cluster-name
 ````
 
 ### More options
@@ -246,10 +249,10 @@ Options:
   -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
                         Version of SnappyData to use: 'X.Y.Z' (default:
                         LATEST)
-  --with-zeppelin=WITH_ZEPPELIN
-                        Launch Apache Zeppelin server with the cluster. Use
-                        'embedded' to launch it on lead node and 'non-
-                        embedded' to launch it on a separate instance.
+  --with-zeppelin
+                        Launch Apache Zeppelin server with the cluster. It'll
+                        be launched on the same instance where lead node will
+                        be running.
   --deploy-root-dir=DEPLOY_ROOT_DIR
                         A directory to copy into/on the first master. Must
                         be absolute. Note that a trailing slash is handled as

@@ -89,7 +89,7 @@ object DependencyCatalog {
     val sync = lock.readLock()
     sync.lock()
     try {
-      parentToDependentsMap.get(tableName).map(_.toSeq).getOrElse(Seq.empty)
+      parentToDependentsMap.get(tableName).map(_.toSeq).getOrElse(Nil)
     } finally {
       sync.unlock()
     }

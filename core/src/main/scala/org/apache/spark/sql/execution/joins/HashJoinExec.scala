@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -43,8 +43,8 @@ import scala.reflect.ClassTag
 
 /**
  * :: DeveloperApi ::
- * Performs an local hash join of two child relations. If a relation
- * (out of a datasource) is already replicated accross all nodes then rather
+ * Performs a local hash join of two child relations. If a relation
+ * (out of a datasource) is already replicated across all nodes then rather
  * than doing a Broadcast join which can be expensive, this join just
  * scans through the single partition of the replicated relation while
  * streaming through the other relation.
@@ -211,7 +211,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         streamRDD.preferredLocations(streamRDD.partitions(i))
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
+        // add the build-side shuffle dependencies to first stream-side RDD
         new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
           preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
@@ -220,8 +220,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         streamRDDs
       }
       (streamPlanRDDs, buildRDDs)
-    }
-    else {
+    } else {
       // wrap in DelegateRDD for shuffle dependencies and preferred locations
 
       // Get the build side shuffle dependencies.
@@ -245,7 +244,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         } else prefLocations.flatten.distinct
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
+        // add the build-side shuffle dependencies to first stream-side RDD
         val rdd = streamRDDs.head
         new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
           preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
@@ -273,7 +272,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         streamRDD.preferredLocations(streamRDD.partitions(i))
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
+        // add the build-side shuffle dependencies to first stream-side RDD
         new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
           preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
@@ -307,7 +306,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         } else prefLocations.flatten.distinct
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
+        // add the build-side shuffle dependencies to first stream-side RDD
         val rdd = streamRDDs.head
         new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
           preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
@@ -424,6 +423,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       $buildProduce"""
 
     if (replicatedTableJoin) {
+      var cacheClass = HashedObjectCache.getClass.getName
+      cacheClass = cacheClass.substring(0, cacheClass.length - 1)
       ctx.addNewFunction(getOrCreateMap,
         s"""
         public final void $createMap() throws java.io.IOException {
@@ -431,9 +432,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         }
 
         public final void $getOrCreateMap() throws java.io.IOException {
-          $hashMapTerm = org.apache.spark.sql.execution.joins.HashedObjectCache
-            .get($cacheKeyTerm, new $createMapClass(), $contextName, 1,
-             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+          $hashMapTerm = $cacheClass.get($cacheKeyTerm, new $createMapClass(),
+             $contextName, 1, scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
         }
 
         public final class $createMapClass implements java.util.concurrent.Callable {
@@ -562,17 +562,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
    */
   private def getJoinCondition(ctx: CodegenContext,
       input: Seq[ExprCode],
-      buildVars: Seq[ExprCode]): (Option[ExprCode], String) = condition match {
+      buildVars: Seq[ExprCode]): (Option[ExprCode], String, Option[Expression]) = condition match {
     case Some(expr) =>
-      // evaluate the variables from build side that used by condition
+      // evaluate the variables from build side used by condition
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
         expr.references)
       // filter the output via condition
       ctx.currentVars = input.map(_.copy(code = "")) ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      (Some(ev), eval)
-    case None => (None, "")
+      (Some(ev), eval, condition)
+    case None => (None, "", None)
   }
 }
 

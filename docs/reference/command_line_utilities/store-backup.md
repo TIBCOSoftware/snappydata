@@ -4,8 +4,7 @@ Creates a backup of operational disk stores for all members running in the distr
 !!!Note:
 	SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed.</br> 
        If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
-    
-    </p>
+
 -   [Syntax](store-backup.md#syntax)
 
 -   [Description](store-backup.md#description)
@@ -24,7 +23,7 @@ Creates a backup of operational disk stores for all members running in the distr
 
 <a id="syntax"></a>
 
-# Syntax
+## Syntax
 
 Use the `-locator` option, on the command line to connect to the SnappyData cluster.
 
@@ -34,7 +33,9 @@ snappy backup [-baseline=<baseline directory>] <target directory> [-J-D<vmprop>=
 ```
 
 !!! Note
-	The <_target directory_> must be provided immediately after `- snappy backup [-baseline]` followed by the other arguments. `-baseline` is optional.
+	
+	* The <_target directory_> must be provided immediately after `- snappy backup [-baseline]` followed by the other arguments. `-baseline` is optional.
+	* -J is a generic prefix for all JVM properties.
 
 The table describes options for `snappy backup`:
 
@@ -44,12 +45,13 @@ The table describes options for `snappy backup`:
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#backup_directory).|
 |locators| List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
 |bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
-|prop-name|Any other SnappyData distributed system property.|
-|J-D<vmprop>=<prop-value>|Sets Java system property to the specified value.|
+|prop-name|Any other SnappyData distributed system property. </br>For example, `-locators=localhost:10334`|
+|-J-D<name>=<value>|Sets Java system property. For example: `-J-Dgemfire.ack-wait-threshold=20`|
+|-J|Prefix for any JVM property. For example `-J-Xmx4g`|
 
 <a id="description"></a>
 
-# Description
+## Description
 
 An online backup saves the following:
 
@@ -61,7 +63,7 @@ An online backup saves the following:
 
 <a id="prereq"></a>
 
-# Prerequisites and Best Practices
+## Prerequisites and Best Practices
 
 -   Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.
 
@@ -75,7 +77,7 @@ An online backup saves the following:
 
 <a id="backup_directory"></a>
 
-# Specifying the Backup Directory
+## Specifying the Backup Directory
 
 The directory you specify for backup can be used multiple times. Each backup first creates a top level directory for the backup, under the directory you specify, identified to the minute. You can use one of two formats:
 
@@ -85,7 +87,7 @@ The directory you specify for backup can be used multiple times. Each backup fir
 
 <a id="example"></a>
 
-# Example
+## Example
 
 Using a backup directory that is local to all host machines in the system:
 
@@ -108,7 +110,7 @@ snappy backup -baseline=./snappyStoreBackupLocation/2012-10-01-12-30 ./snappySto
 
 <a id="output_messages"></a>
 
-# Output Messages from snappy backup
+## Output Messages from snappy backup
 
 When you run `snappy backup`, it reports on the outcome of the operation.
 
@@ -148,7 +150,7 @@ A member that fails to complete its backup is noted in this ending status messag
 
 <a id="directory_structure"></a>
 
-# Backup Directory Structure and Its Contents
+## Backup Directory Structure and Its Contents
 
 Below is the structure of files and directories backed up in a distributed system:
 
@@ -171,7 +173,7 @@ BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
 
 <a id="restore_online_backup"></a>
 
-# Restoring Files
+## Restoring Files
 
 The restore script (restore.sh restore.bat) copies files back to their original locations. You can do this manually if you wish:
 

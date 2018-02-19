@@ -23,14 +23,14 @@ log4j.appender.file.append=true
 log4j.appender.file.file=snappydata.log
 log4j.appender.file.MaxFileSize=1GB
 log4j.appender.file.MaxBackupIndex=10000
-log4j.appender.file.layout=org.apache.log4j.PatternLayout
-log4j.appender.file.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t<tid=0x%X{tid}> %p %c{1}: %m%n
+log4j.appender.file.layout=io.snappydata.log4j.PatternLayout
+log4j.appender.file.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t %p %c{1}: %m%n
 
 # Console appender
 log4j.appender.console=org.apache.log4j.ConsoleAppender
 log4j.appender.console.target=System.out
-log4j.appender.console.layout=org.apache.log4j.PatternLayout
-log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t<tid=0x%X{tid}> %p %c{1}: %m%n
+log4j.appender.console.layout=io.snappydata.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t %p %c{1}: %m%n
 
 # Ignore messages below warning level from Jetty, because it's a bit verbose
 log4j.logger.org.spark-project.jetty=WARN
@@ -75,6 +75,7 @@ log4j.logger.org.apache.spark.scheduler.FairSchedulableBuilder=WARN
 log4j.logger.org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend$DriverEndpoint=WARN
 log4j.logger.org.apache.spark.storage.BlockManagerInfo=WARN
 log4j.logger.org.apache.hadoop.hive=WARN
+# for all Spark generated code (including ad-hoc UnsafeProjection calls etc)
 log4j.logger.org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator=WARN
 log4j.logger.org.apache.spark.sql.execution.datasources=WARN
 log4j.logger.org.apache.spark.scheduler.SnappyTaskSchedulerImpl=WARN
@@ -89,10 +90,17 @@ log4j.logger.spark.jobserver.LocalContextSupervisorActor=WARN
 log4j.logger.spark.jobserver.JarManager=WARN
 log4j.logger.org.apache.spark.sql.hive.HiveClientUtil=WARN
 log4j.logger.org.datanucleus=ERROR
+# Task logger created in SparkEnv
+log4j.logger.org.apache.spark.Task=WARN
+log4j.logger.org.apache.spark.sql.catalyst.parser.CatalystSqlParser=WARN
+
+# Keep log-level of some classes as INFO even if root level is higher
+log4j.logger.io.snappydata.impl.LeadImpl=INFO
+log4j.logger.io.snappydata.impl.ServerImpl=INFO
+log4j.logger.io.snappydata.impl.LocatorImpl=INFO
+log4j.logger.spray.can.server.HttpListener=INFO
 
 # for generated code of plans
 # log4j.logger.org.apache.spark.sql.execution.WholeStageCodegenExec=DEBUG
 # for SnappyData generated code used on store (ComplexTypeSerializer, JDBC inserts ...)
 # log4j.logger.org.apache.spark.sql.store.CodeGeneration=DEBUG
-# for all Spark generated code (including ad-hoc UnsafeProjection calls etc)
-# log4j.logger.org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator=DEBUG

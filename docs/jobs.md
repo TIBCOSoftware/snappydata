@@ -6,7 +6,7 @@ In Spark SQL, all tables are temporary and cannot be shared across different app
 
 
 ### SnappyContext
-A [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) - integrates the SQLContext functionality with the Snappy store.
+A [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) - integrates the SQLContext functionality with the Snappy store.
 
 
 #### Using SnappyContext to create table and query data 
@@ -45,7 +45,7 @@ Create columnar tables using API. Other than `create` and `drop` table, rest are
 
 ##### Scala
 ```scala
-  val props1 = Map("BUCKETS" -> "2")  // Number of partitions to use in the SnappyStore
+  val props1 = Map("BUCKETS" -> "8")  // Number of partitions to use in the SnappyStore
   case class Data(COL1: Int, COL2: Int, COL3: Int)
   val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
   val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
@@ -72,7 +72,7 @@ Create columnar tables using API. Other than `create` and `drop` table, rest are
 ```java
 
     Map<String, String> props1 = new HashMap<>();
-    props1.put("buckets", "11");
+    props1.put("buckets", "16");
 
     JavaRDD<Row> jrdd = jsc.parallelize(Arrays.asList(
         RowFactory.create(1,2,3),
@@ -123,7 +123,7 @@ dataDF = snc.createDataFrame(rdd, schema)
 snc.dropTable("COLUMN_TABLE", True)
 #"column" is the table format (that is row or column)
 #dataDF.schema provides the schema for table
-snc.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="11")
+snc.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="16")
 
 #append dataDF into the table
 dataDF.write.insertInto("COLUMN_TABLE")

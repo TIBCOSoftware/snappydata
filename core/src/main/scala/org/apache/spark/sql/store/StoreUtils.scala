@@ -24,7 +24,7 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.Property
 
 import org.apache.spark.Partition
@@ -54,6 +54,7 @@ object StoreUtils {
   val SERVER_GROUPS = "SERVER_GROUPS"
   val EXPIRE = "EXPIRE"
   val OVERFLOW = "OVERFLOW"
+  val COMPRESSION_CODEC_DEPRECATED = "COMPRESSION_CODEC"
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
@@ -67,7 +68,7 @@ object StoreUtils {
   val GEM_PERSISTENT = "PERSISTENT"
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_EXPIRE = "EXPIRE"
-  val GEM_OVERFLOW = "EVICTACTION OVERFLOW"
+  val GEM_OVERFLOW = "EVICTACTION OVERFLOW "
   val GEM_HEAPPERCENT = "EVICTION BY LRUHEAPPERCENT "
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
@@ -93,7 +94,7 @@ object StoreUtils {
 
   val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, PARTITIONER,
     COLOCATE_WITH, REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW,
+    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW, COMPRESSION_CODEC_DEPRECATED,
     GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
@@ -107,6 +108,10 @@ object StoreUtils {
 
   val PRIMARY_KEY_PATTERN: Pattern = Pattern.compile("\\WPRIMARY\\s+KEY\\W",
     Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
+
+  /** for testing only (a long convoluted name chosen deliberately) */
+  var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = java.lang.Boolean.getBoolean(
+    "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT")
 
   // private property to indicate One-to-one mapping of partitions to buckets
   // which is enabled per-query using `LinkPartitionsToBuckets` rule
@@ -125,20 +130,22 @@ object StoreUtils {
       bucketId: Int, forWrite: Boolean,
       preferPrimaries: Boolean = false): Seq[String] = {
     if (forWrite) {
-      val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).toString
+      val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).canonicalString()
       SnappyContext.getBlockId(primary) match {
         case Some(b) => Seq(Utils.getHostExecutorId(b.blockId))
-        case None => Seq.empty
+        case None => Nil
       }
     } else {
-      val distMembers = getBucketOwnersForRead(bucketId, region)
-      val members = new mutable.ArrayBuffer[String](2)
       var prependPrimary = preferPrimaries
       val primary = if (preferPrimaries) {
         region.getOrCreateNodeForBucketWrite(bucketId, null)
       } else null
-      distMembers.foreach { m =>
-        SnappyContext.getBlockId(m.toString) match {
+      val members = new mutable.ArrayBuffer[String](2)
+      val targetBucketId = if (TEST_RANDOM_BUCKETID_ASSIGNMENT) {
+        scala.util.Random.nextInt(region.getTotalNumberOfBuckets)
+      } else bucketId
+      getBucketOwnersForRead(targetBucketId, region).foreach { m =>
+        SnappyContext.getBlockId(m.canonicalString()) match {
           case Some(b) =>
             if (prependPrimary && m.equals(primary)) {
               // add primary for "preferPrimaries" at the start
@@ -172,12 +179,10 @@ object StoreUtils {
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
-      region: PartitionedRegion,
-      linkBucketsToPartitions: Boolean): Array[Partition] = {
+      region: PartitionedRegion, linkBucketsToPartitions: Boolean,
+      preferPrimaries: Boolean): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    val preferPrimaries = Property.PreferPrimariesInQuery.get(
-      session.sessionState.conf)
     if (!linkBucketsToPartitions && callbacks != null) {
       allocateBucketsToPartitions(session, region, preferPrimaries)
     } else {
@@ -204,10 +209,11 @@ object StoreUtils {
     } else {
       region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
     }
-    val prefNodes = regionMembers.collect {
-      case m if SnappyContext.containsBlockId(m.toString) =>
-        Utils.getHostExecutorId(SnappyContext.getBlockId(m.toString).get.blockId)
-    }.toSeq
+    val prefNodes = new mutable.ArrayBuffer[String](8)
+    regionMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
+      case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+      case _ =>
+    })
     partitions(0) = new MultiBucketExecutorPartition(0, null, 0, prefNodes)
     partitions
   }
@@ -226,12 +232,20 @@ object StoreUtils {
         prefNode = region.getOrCreateNodeForInitializedBucketRead(p, true)
       }
       // prefer another copy if this one does not have an executor
-      val prefBlockId = SnappyContext.getBlockId(prefNode.toString) match {
+      val prefBlockId = SnappyContext.getBlockId(prefNode.canonicalString()) match {
         case b@Some(_) => b
         case None =>
-          prefNode = adviser.getBucketOwners(p).asScala.find(m =>
-            SnappyContext.containsBlockId(m.toString)).getOrElse(prefNode)
-          SnappyContext.getBlockId(prefNode.toString)
+          adviser.getBucketOwners(p).asScala.collectFirst(
+            new PartialFunction[InternalDistributedMember, BlockAndExecutorId] {
+              private var b: Option[BlockAndExecutorId] = None
+              override def isDefinedAt(m: InternalDistributedMember): Boolean = {
+                b = SnappyContext.getBlockId(m.canonicalString())
+                b.isDefined
+              }
+              override def apply(m: InternalDistributedMember): BlockAndExecutorId = {
+                prefNode = m; b.get
+              }
+            })
       }
       val buckets = serverToBuckets.get(prefNode) match {
         case Some(b) => b._2
@@ -281,7 +295,7 @@ object StoreUtils {
         }
         partitionStart = partitionEnd
         val preferredLocations = (blockId :: alternates.map(mbr =>
-          SnappyContext.getBlockId(mbr.toString)).toList).collect {
+          SnappyContext.getBlockId(mbr.canonicalString())).toList).collect {
           case Some(b) => Utils.getHostExecutorId(b.blockId)
         }
         partitionIndex += 1
@@ -405,47 +419,22 @@ object StoreUtils {
     parameters.remove(PARTITIONER).foreach(v =>
       sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
 
-    // if OVERFLOW has been provided, then use HEAPPERCENT as the default
-    // eviction policy (unless overridden explicitly)
-    val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
-        .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
-    val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
-    var overflowAdded = false
-    if (!isShadowTable) {
-      sb.append(parameters.remove(EVICTION_BY).map(v =>
-        if (v == NONE) {
-          EMPTY_STRING
-        } else {
-          if (hasOverflow) {
-            overflowAdded = true
-            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
-          } else {
-            s"$GEM_EVICTION_BY $v "
-          }
-        })
-        .getOrElse(defaultEviction))
-    } else {
-      sb.append(parameters.remove(EVICTION_BY).map(v => {
-        if (v.contains(LRUCOUNT)) {
-          throw Utils.analysisException(
-            "Column table cannot take LRUCOUNT as eviction policy")
-        } else if (v == NONE) {
-          EMPTY_STRING
-        } else {
-          if (hasOverflow) {
-            overflowAdded = true
-            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
-          } else {
-            s"$GEM_EVICTION_BY $v "
-          }
+    val overflow = parameters.get(OVERFLOW).map((_.toBoolean)).getOrElse(true)
+    val defaultEviction = if (overflow) s"$GEM_HEAPPERCENT $GEM_OVERFLOW" else EMPTY_STRING
+    sb.append(parameters.remove(EVICTION_BY).map(v => {
+      if (v.contains(LRUCOUNT) && isShadowTable) {
+        throw Utils.analysisException(
+          "Column table cannot take LRUCOUNT as eviction policy.")
+      } else if (v.equalsIgnoreCase("NONE")) {
+        EMPTY_STRING
+      } else {
+        if (!overflow) {
+          throw Utils.analysisException("overflow 'FALSE' is not supported when eviction is " +
+              "configured.")
         }
-      }).getOrElse(defaultEviction))
-    }
-
-    if (hasOverflow && !overflowAdded) {
-      parameters.remove(OVERFLOW)
-      sb.append(s"$GEM_OVERFLOW ")
-    }
+        s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+      }
+    }).getOrElse(defaultEviction))
 
     // default is sync persistence for all snappydata tables
     var isPersistent = true
@@ -465,10 +454,27 @@ object StoreUtils {
       }
     }.getOrElse(sb.append(s"$GEM_PERSISTENT SYNCHRONOUS "))
 
-    parameters.remove(DISKSTORE).foreach { v =>
-      if (isPersistent) sb.append(s"'$v' ")
-      else throw Utils.analysisException(
-        s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+    // delta buffer regions will use delta store
+    if (!isRowTable && !isShadowTable) {
+      parameters.remove(DISKSTORE) match {
+        case Some(v) =>
+          if (!isPersistent) {
+            throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+          }
+          if (v == GfxdConstants.GFXD_DEFAULT_DISKSTORE_NAME) {
+            sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
+          } else {
+            sb.append(s"'$v${GfxdConstants.SNAPPY_DELTA_DISKSTORE_SUFFIX}' ")
+          }
+        case None =>
+          if (isPersistent) sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
+      }
+    } else {
+      parameters.remove(DISKSTORE).foreach { v =>
+        if (isPersistent) sb.append(s"'$v' ")
+        else throw Utils.analysisException(
+          s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+      }
     }
     sb.append(parameters.remove(SERVER_GROUPS)
         .map(v => s"$GEM_SERVER_GROUPS ($v) ")
@@ -490,7 +496,7 @@ object StoreUtils {
       parameters: mutable.Map[String, String]): Seq[String] = {
     parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)
-    }).getOrElse(Seq.empty[String])
+    }).getOrElse(Nil)
   }
 
   def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {

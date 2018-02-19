@@ -29,12 +29,13 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 import org.scalatest.Assertions
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.{Row, SnappySession}
 
 /**
  * Common tests for updates/deletes on column table.
  */
-object ColumnUpdateDeleteTests extends Assertions {
+object ColumnUpdateDeleteTests extends Assertions with Logging {
 
   def testBasicUpdate(session: SnappySession): Unit = {
     session.conf.set(Property.ColumnBatchSize.name, "10k")
@@ -48,11 +49,11 @@ object ColumnUpdateDeleteTests extends Assertions {
     session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '5')")
+        "using column options(buckets '4')")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '5')")
+        "using column options(buckets '4')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
         "using column options(buckets '1')")
 
@@ -207,13 +208,13 @@ object ColumnUpdateDeleteTests extends Assertions {
     session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '5', partition_by 'addr')")
+        "using column options(buckets '4', partition_by 'addr')")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '7')")
+        "using column options(buckets '8')")
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
 
     for (_ <- 1 to 3) {
       testBasicDeleteIter(session)
@@ -481,11 +482,12 @@ object ColumnUpdateDeleteTests extends Assertions {
         assert(res.map(_.getLong(0)).sum > 0)
       } catch {
         case t: Throwable =>
+          logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
           throw t
       }
     }(executionContext))
-    tasks.foreach(Await.ready(_, Duration.Inf))
+    tasks.foreach(Await.ready(_, Duration(300, "s")))
 
     assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
 
@@ -508,16 +510,49 @@ object ColumnUpdateDeleteTests extends Assertions {
         assert(res.map(_.getLong(0)).sum > 0)
       } catch {
         case t: Throwable =>
+          logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
           throw t
       }
     }(executionContext))
-    tasks.foreach(Await.ready(_, Duration.Inf))
+    tasks.foreach(Await.ready(_, Duration(300, "s")))
 
     assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
 
     res = session.sql(
       "select * from updateTable EXCEPT select * from checkTable2").collect()
     assert(res.length === 0)
+  }
+
+  def testSNAP2124(session: SnappySession, checkPruning: Boolean): Unit = {
+    val filePath = getClass.getResource("/sample_records.json").getPath
+    session.sql("CREATE TABLE domaindata (cntno_l string,cntno_m string," +
+        "day1 string,day2 string,day3 string,day4 string,day5 string," +
+        "day6 string,day7 string,dr string,ds string,email string," +
+        "id BIGINT NOT NULL,idinfo_1 string,idinfo_2 string,idinfo_3 string," +
+        "idinfo_4 string,lang_1 string,lang_2 string,lang_3 string,name string) " +
+        "USING COLUMN OPTIONS (PARTITION_BY 'id',BUCKETS '40', COLUMN_BATCH_SIZE '10')")
+    session.read.json(filePath).write.insertInto("domaindata")
+
+    var ds = session.sql("select ds, dr from domaindata where id = 40L")
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcinewsemail.com']", "[]")))
+
+    ds = session.sql("UPDATE domaindata SET ds = '[''cbcin.com'']', dr = '[]' WHERE id = 40")
+    if (checkPruning) {
+      // below checks both the result and partition pruning (only one row)
+      SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
+    } else {
+      // check the result but expect no pruning (missing in smart connector)
+      SnappyFunSuite.checkAnswer(ds, Row(1) :: (1 until 40).map(_ => Row(0)).toList)
+    }
+
+    ds = session.sql("select ds, dr from domaindata where id = 40")
+    // change when pruning is available in all modes (SNAP-2195)
+    if (checkPruning) {
+      assert(ds.rdd.getNumPartitions === 1)
+    } else {
+      assert(ds.rdd.getNumPartitions === 40)
+    }
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcin.com']", "[]")))
   }
 }

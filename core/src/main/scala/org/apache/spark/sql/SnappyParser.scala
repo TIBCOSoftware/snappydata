@@ -16,24 +16,24 @@
  */
 package org.apache.spark.sql
 
+import java.util.function.BiConsumer
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
-import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
-import io.snappydata.{Constant, QueryHint}
+import io.snappydata.{Constant, Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
+import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.CachedPlanHelperExec
 import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
@@ -41,20 +41,30 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
-class SnappyParser(session: SnappySession)
-    extends SnappyDDLParser(session) {
+class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   private[this] final var _input: ParserInput = _
 
+  protected var _questionMarkCounter: Int = _
+  protected var _paramCounter: Int = _
+  protected var _isPreparePhase: Boolean = _
+  protected var _parameterValueSet: Option[_] = None
+
   override final def input: ParserInput = _input
 
-  private var paramcounter = 0
+  final def questionMarkCounter: Int = _questionMarkCounter
+
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
-    paramcounter = 0
-    session.sessionState.questionMarkCounter = 0
+    _paramCounter = 0
+    _questionMarkCounter = 0
     tokenize = false
+  }
+
+  private[sql] def setPreparedQuery(preparePhase: Boolean, paramSet: Option[_]): Unit = {
+    _isPreparePhase = preparePhase
+    _parameterValueSet = paramSet
   }
 
   protected final type WhenElseType = (Seq[(Expression, Expression)],
@@ -62,23 +72,28 @@ class SnappyParser(session: SnappySession)
   protected final type JoinRuleType = (Option[JoinType], LogicalPlan,
       Option[Expression])
 
-  private def toDecimalOrDoubleLiteral(s: String,
-      scientific: Boolean): Literal = {
-    // follow the behavior in MS SQL Server
-    // https://msdn.microsoft.com/en-us/library/ms179899.aspx
-    if (scientific) {
-      Literal(s.toDouble, DoubleType)
-    } else {
-      val decimal = new java.math.BigDecimal(s, BigDecimal.defaultMathContext)
-      // try to use SYSTEM_DEFAULT instead of creating new DecimalType which
-      // is expensive (due to typeTag etc resolved by reflection in AtomicType)
-      val sysDefaultType = DecimalType.SYSTEM_DEFAULT
-      if (decimal.precision <= sysDefaultType.precision &&
-          decimal.scale <= sysDefaultType.scale) {
-        Literal(Decimal(decimal), sysDefaultType)
-      } else {
-        Literal(decimal)
+  private def toDecimalLiteral(s: String, checkExactNumeric: Boolean): Literal = {
+    val decimal = BigDecimal(s)
+    if (checkExactNumeric) {
+      try {
+        return Literal(decimal.toIntExact, IntegerType)
+      } catch {
+        case _: ArithmeticException =>
+          try {
+            return Literal(decimal.toLongExact, LongType)
+          } catch {
+            case _: ArithmeticException =>
+          }
       }
+    }
+    val precision = decimal.precision
+    val scale = decimal.scale
+    val sysDefaultType = DecimalType.SYSTEM_DEFAULT
+    if (precision == sysDefaultType.precision &&
+        scale == sysDefaultType.scale) {
+      Literal(Decimal(decimal), sysDefaultType)
+    } else {
+      Literal(Decimal(decimal), DecimalType(Math.max(precision, scale), scale))
     }
   }
 
@@ -87,21 +102,24 @@ class SnappyParser(session: SnappySession)
     var noDecimalPoint = true
     var index = 0
     val len = s.length
-    val lastChar = s.charAt(len - 1)
-    // use double if ending with 'D'
-    if (lastChar == 'D') {
-      return Literal(java.lang.Double.parseDouble(s.substring(0, len - 1)),
-        DoubleType)
-    } else if (lastChar == 'L') {
-      return Literal(java.lang.Long.parseLong(s.substring(0, len - 1)),
-        LongType)
+    // use double if ending with D/d, float for F/f and long for L/l
+    s.charAt(len - 1) match {
+      case 'D' | 'd' =>
+        return Literal(java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
+      case 'F' | 'f' =>
+        return Literal(java.lang.Float.parseFloat(s.substring(0, len - 1)), FloatType)
+      case 'L' | 'l' =>
+        return Literal(java.lang.Long.parseLong(s.substring(0, len - 1)), LongType)
+      case _ =>
     }
     while (index < len) {
       val c = s.charAt(index)
       if (noDecimalPoint && c == '.') {
         noDecimalPoint = false
       } else if (c == 'e' || c == 'E') {
-        return toDecimalOrDoubleLiteral(s, scientific = true)
+        // follow the behavior in MS SQL Server
+        // https://msdn.microsoft.com/en-us/library/ms179899.aspx
+        return Literal(java.lang.Double.parseDouble(s), DoubleType)
       }
       index += 1
     }
@@ -117,45 +135,35 @@ class SnappyParser(session: SnappySession)
         }
       } catch {
         case _: NumberFormatException =>
-          val decimal = BigDecimal(s)
-          if (decimal.isValidInt) {
-            Literal(decimal.toIntExact)
-          } else if (decimal.isValidLong) {
-            Literal(decimal.toLongExact, LongType)
-          } else {
-            val sysDefaultType = DecimalType.SYSTEM_DEFAULT
-            if (decimal.precision <= sysDefaultType.precision &&
-              decimal.scale <= sysDefaultType.scale) {
-              Literal(decimal, sysDefaultType)
-            } else Literal(decimal)
-          }
+          toDecimalLiteral(s, checkExactNumeric = true)
       }
     } else {
-      toDecimalOrDoubleLiteral(s, scientific = false)
+      toDecimalLiteral(s, checkExactNumeric = false)
     }
   }
 
   private final def updatePerTableQueryHint(tableIdent: TableIdentifier,
       optAlias: Option[String]) = {
     val indexHint = queryHints.remove(QueryHint.Index.toString)
-    if (indexHint.nonEmpty) {
+    if (indexHint ne null) {
       val table = optAlias match {
         case Some(alias) => alias
         case _ => tableIdent.unquotedString
       }
-
-      queryHints.put(QueryHint.Index.toString + table, indexHint.get)
+      queryHints.put(QueryHint.Index.toString + table, indexHint)
     }
   }
 
-  private final def assertNoQueryHint(hint: QueryHint.Value, msg: String) = {
-    if (queryHints.exists({
-      case (key, _) => key.startsWith(hint.toString)
-    })) {
-      throw Utils.analysisException(msg)
+  private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String) = {
+    if (!queryHints.isEmpty) {
+      val hintStr = hint.toString
+      queryHints.forEach(new BiConsumer[String, String] {
+        override def accept(key: String, value: String): Unit = {
+          if (key.startsWith(hintStr)) throw Utils.analysisException(msg)
+        }
+      })
     }
   }
-
 
   protected final def booleanLiteral: Rule1[Literal] = rule {
     TRUE ~> (() => Literal.create(true, BooleanType)) |
@@ -172,41 +180,22 @@ class SnappyParser(session: SnappySession)
     stringLiteral ~> ((s: String) => Literal.create(s, StringType)) |
     numericLiteral |
     booleanLiteral |
-    NULL ~> (() => Literal.create(null, NullType)) |
-    intervalLiteral
+    NULL ~> (() => Literal.create(null, NullType))
   }
 
   protected final def paramLiteralQuestionMark: Rule1[ParamLiteral] = rule {
     questionMark ~> (() => {
-      session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
-      if (session.sessionState.isPreparePhase) {
-        ParamLiteral(Row(session.sessionState.questionMarkCounter), NullType, 0)
+      _questionMarkCounter += 1
+      if (_isPreparePhase) {
+        ParamLiteral(Row(_questionMarkCounter), NullType, 0)
       } else {
-        assert(session.sessionState.pvs.isDefined,
+        assert(_parameterValueSet.isDefined,
           "For Prepared Statement, Parameter constants are not provided")
-        if (session.sessionState.questionMarkCounter >
-            session.sessionState.pvs.get.getParameterCount) {
-          assert(assertion = false, s"For Prepared Statement, Got more number of" +
-              s" placeholders = ${session.sessionState.questionMarkCounter}" +
-              s" than given number of parameter" +
-              s" constants = ${session.sessionState.pvs.get.getParameterCount}")
-        }
-        val dvd =
-          session.sessionState.pvs.get.getParameter(session.sessionState.questionMarkCounter - 1)
-        val scalaTypeVal = CachedPlanHelperExec.getValue(dvd)
+        val (scalaTypeVal, dataType) = session.getParameterValue(
+          _questionMarkCounter, _parameterValueSet.get)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
-        val storeType = dvd.getTypeFormatId
-        val storePrecision = dvd match {
-          case d: SQLDecimal => d.getDecimalValuePrecision
-          case _ => -1
-        }
-        val storeScale = dvd match {
-          case d: SQLDecimal => d.getDecimalValueScale
-          case _ => -1
-        }
-        val dataType = SnappySession.getDataType(storeType, storePrecision, storeScale)
-        paramcounter = paramcounter + 1
-        val p = ParamLiteral(catalystTypeVal, dataType, paramcounter)
+        _paramCounter += 1
+        val p = ParamLiteral(catalystTypeVal, dataType, _paramCounter)
         addParamLiteralToContext(p)
         p
       }
@@ -215,26 +204,32 @@ class SnappyParser(session: SnappySession)
 
   def addParamLiteralToContext(p: ParamLiteral): Unit =
     session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
-      CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+      Consts.WRAPPED_CONSTANTS_KEY) match {
       case Some(list) => list += p
-      case None => session.addContextObject(CachedPlanHelperExec.WRAPPED_CONSTANTS,
+      case None => session.addContextObject(Consts.WRAPPED_CONSTANTS_KEY,
         mutable.ArrayBuffer(p))
     }
 
   def removeParamLiteralFromContext(p: ParamLiteral): Unit =
     session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
-      CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+      Consts.WRAPPED_CONSTANTS_KEY) match {
       case Some(list) => list -= p
       case None =>
     }
 
-  protected final def paramLiteral: Rule1[ParamLiteral] = rule {
-    literal ~> ((l: Literal) => {
-      paramcounter = paramcounter + 1
-      val p = ParamLiteral(l.value, l.dataType, paramcounter)
-      addParamLiteralToContext(p)
-      p
-    })
+  private def handleParamLiteral(l: Literal): ParamLiteral = {
+    _paramCounter += 1
+    val p = ParamLiteral(l.value, l.dataType, _paramCounter)
+    addParamLiteralToContext(p)
+    p
+  }
+
+  protected final def paramOrLiteral: Rule1[Literal] = rule {
+    literal ~> ((l: Literal) => if (tokenize) handleParamLiteral(l) else l)
+  }
+
+  protected final def paramIntervalLiteral: Rule1[Literal] = rule {
+    intervalLiteral ~> ((l: Literal) => if (tokenize) handleParamLiteral(l) else l)
   }
 
   protected final def month: Rule1[Int] = rule {
@@ -334,7 +329,7 @@ class SnappyParser(session: SnappySession)
 
   final def namedExpression: Rule1[Expression] = rule {
     expression ~ (
-        AS.? ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
+        AS ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         strictIdentifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
@@ -359,7 +354,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def notExpression: Rule1[Expression] = rule {
-    (NOT ~> falseFn).? ~ comparisonExpression ~> ((not: Any, e: Expression) =>
+    (NOT ~ push(true)).? ~ comparisonExpression ~> ((not: Any, e: Expression) =>
       if (not.asInstanceOf[Option[Boolean]].isEmpty) e else Not(e))
   }
 
@@ -387,7 +382,7 @@ class SnappyParser(session: SnappySession)
         '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
         invertibleExpression |
-        IS ~ (NOT ~> trueFn).? ~ NULL ~>
+        IS ~ (NOT ~ push(true)).? ~ NULL ~>
             ((e: Expression, not: Any) =>
               if (not.asInstanceOf[Option[Boolean]].isEmpty) IsNull(e)
               else IsNotNull(e)) |
@@ -436,18 +431,20 @@ class SnappyParser(session: SnappySession)
     */
   protected final def invertibleExpression: Rule[Expression :: HNil,
       Expression :: HNil] = rule {
-    IN ~ '(' ~ ws ~ (termExpression * commaSep) ~ ')' ~ ws ~>
-        ((e: Expression, es: Any) => In(e, es.asInstanceOf[Seq[Expression]])) |
     LIKE ~ termExpression ~>
         ((e1: Expression, e2: Expression) => e2 match {
           case pl: ParamLiteral if !pl.value.isInstanceOf[Row] => likeExpression(e1, pl)
           case _ => Like(e1, e2)
         }) |
+    IN ~ '(' ~ ws ~ (
+        (termExpression * commaSep) ~ ')' ~ ws ~> ((e: Expression, es: Any) =>
+          In(e, es.asInstanceOf[Seq[Expression]])) |
+        query ~ ')' ~ ws ~> ((e1: Expression, plan: LogicalPlan) =>
+          In(e1, Seq(ListQuery(plan))))
+        ) |
     BETWEEN ~ termExpression ~ AND ~ termExpression ~>
         ((e: Expression, el: Expression, eu: Expression) =>
           And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))) |
-    IN ~ '(' ~ ws ~ query ~ ')' ~ ws ~> ((e1: Expression
-        , plan: LogicalPlan) => In(e1, Seq(ListQuery(plan)))) |
     (RLIKE | REGEXP) ~ termExpression ~>
         ((e1: Expression, e2: Expression) => e2 match {
           case pl: ParamLiteral if !pl.value.isInstanceOf[Row] =>
@@ -625,7 +622,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
-    ((expression ~ sortDirection.? ~ (NULLS ~ (FIRST ~> trueFn | LAST ~> falseFn)).? ~>
+    ((expression ~ sortDirection.? ~ (NULLS ~ (FIRST ~ push(true) | LAST ~ push(false))).? ~>
         ((e: Expression, d: Any, n: Any) => (e, d, n))) + commaSep) ~> ((exps: Any) =>
       exps.asInstanceOf[Seq[(Expression, Option[SortDirection], Option[Boolean])]].map {
         case (child, d, n) =>
@@ -655,7 +652,8 @@ class SnappyParser(session: SnappySession)
         RepartitionByExpression(e, l)))).? ~
     (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
         ((id: String, w: WindowSpec) => id -> w)) + commaSep)).? ~
-    (LIMIT ~ TOKENIZE_END ~ expression).? ~> { (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
+    ((LIMIT ~ TOKENIZE_END ~ expression) | fetchExpression).? ~> {
+      (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
       val withOrder = o.asInstanceOf[Option[LogicalPlan => LogicalPlan]]
           .map(_ (l)).getOrElse(l)
       val window = w.asInstanceOf[Option[Seq[(String, WindowSpec)]]].map { ws =>
@@ -679,6 +677,10 @@ class SnappyParser(session: SnappySession)
     }
   }
 
+  protected final def fetchExpression: Rule1[Expression] = rule {
+    FETCH ~ FIRST ~ TOKENIZE_END ~ expression ~ ((ROW|ROWS) ~ ONLY) ~> ((f: Expression) => f)
+  }
+
   protected final def distributeBy: Rule1[LogicalPlan => LogicalPlan] = rule {
     DISTRIBUTE ~ BY ~ (expression + commaSep) ~> ((e: Seq[Expression]) =>
       (l: LogicalPlan) => RepartitionByExpression(e, l))
@@ -689,8 +691,8 @@ class SnappyParser(session: SnappySession)
         commaSep)).? ~ ((ORDER | SORT) ~ BY ~ ordering).? ~ windowFrame.? ~ ')' ~
         ws ~> ((p: Any, o: Any, w: Any) =>
       WindowSpecDefinition(
-        p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Seq.empty),
-        o.asInstanceOf[Option[Seq[SortOrder]]].getOrElse(Seq.empty),
+        p.asInstanceOf[Option[Seq[Expression]]].getOrElse(Nil),
+        o.asInstanceOf[Option[Seq[SortOrder]]].getOrElse(Nil),
         w.asInstanceOf[Option[SpecifiedWindowFrame]]
           .getOrElse(UnspecifiedFrame))) |
     identifier ~> WindowSpecReference
@@ -721,7 +723,7 @@ class SnappyParser(session: SnappySession)
     '(' ~ ws ~ (expression + commaSep).? ~ ')' ~>
       ((e: Any) => e.asInstanceOf[Option[Vector[Expression]]] match {
         case Some(ve) => ve
-        case _ => Seq.empty
+        case _ => Nil
       })
   }
 
@@ -750,11 +752,15 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relations: Rule1[LogicalPlan] = rule {
-    (relation + commaSep) ~> ((joins: Seq[LogicalPlan]) =>
-      if (joins.size == 1) joins.head
+    (relation + commaSep) ~ lateralView.* ~> ((joins: Seq[LogicalPlan], views: Any) => {
+      val from = if (joins.size == 1) joins.head
       else joins.tail.foldLeft(joins.head) {
         case (lhs, rel) => Join(lhs, rel, Inner, None)
-      })
+      }
+      views.asInstanceOf[Seq[LogicalPlan => LogicalPlan]].foldLeft(from) {
+        case (child, view) => view(child)
+      }
+    })
   }
 
   protected final def keyWhenThenElse: Rule1[WhenElseType] = rule {
@@ -773,9 +779,10 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
-      n1: String): Seq[Expression] = if (!session.sessionState.isPreparePhase) {
+      n1: String): Seq[Expression] = if (!_isPreparePhase) {
     Constant.FOLDABLE_FUNCTIONS.get(n1) match {
-      case Some(args) =>
+      case null => exprs
+      case args =>
         exprs.zipWithIndex.collect {
           case (pl: ParamLiteral, index) if args.contains(index) ||
               // all args          // all odd args
@@ -786,12 +793,11 @@ class SnappyParser(session: SnappySession)
             Literal.create(pl.value, pl.dataType)
           case (ex: Expression, _) => ex
         }
-      case None => exprs
     }
   } else exprs
 
   protected final def primary: Rule1[Expression] = rule {
-    ( ( test(tokenize) ~ paramLiteral ) | literal | paramLiteralQuestionMark) |
+    paramIntervalLiteral |
     identifier ~ (
       ('.' ~ identifier).? ~ '(' ~ ws ~ (
         '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
@@ -802,7 +808,7 @@ class SnappyParser(session: SnappySession)
             val n2str = if (n2.isEmpty) "" else s".${n2.get}"
             throw Utils.analysisException(s"invalid expression $n1$n2str(*)")
           }) |
-          (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
+          (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
             val f2 = n2.asInstanceOf[Option[String]]
             val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
@@ -832,6 +838,7 @@ class SnappyParser(session: SnappySession)
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
+    paramOrLiteral | paramLiteralQuestionMark |
     '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
       (fn: FunctionIdentifier, e: Any) =>
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
@@ -874,8 +881,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def select: Rule1[LogicalPlan] = rule {
-    SELECT ~ (DISTINCT ~> trueFn).? ~
-    (namedExpression + commaSep) ~
+    SELECT ~ (DISTINCT ~ push(true)).? ~
+    TOKENIZE_BEGIN ~ (namedExpression + commaSep) ~ TOKENIZE_END ~
     (FROM ~ relations).? ~
     (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     groupBy.? ~
@@ -960,8 +967,24 @@ class SnappyParser(session: SnappySession)
       ).*
   }
 
+  protected final def lateralView: Rule1[LogicalPlan => LogicalPlan] = rule {
+    LATERAL ~ VIEW ~ (OUTER ~ push(true)).? ~ functionIdentifier ~ '(' ~ ws ~
+        (expression * commaSep) ~ ')' ~ ws ~ identifier ~ (AS.? ~ (identifier + commaSep)).? ~>
+        ((o: Any, functionName: FunctionIdentifier, e: Any, tableName: String,
+            cols: Any) => (child: LogicalPlan) => {
+          val expressions = e.asInstanceOf[Seq[Expression]]
+          val columnNames = cols.asInstanceOf[Option[Seq[String]]] match {
+            case Some(s) => s.map(UnresolvedAttribute.apply)
+            case None => Nil
+          }
+          Generate(UnresolvedGenerator(functionName, expressions), join = true,
+            outer = o.asInstanceOf[Option[Boolean]].isDefined, Some(tableName),
+            columnNames, child)
+        })
+  }
+
   protected final def insert: Rule1[LogicalPlan] = rule {
-    INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
+    INSERT ~ ((OVERWRITE ~ push(true)) | (INTO ~ push(false))) ~
     TABLE.? ~ relationFactor ~ subSelectQuery ~> ((o: Boolean, r: LogicalPlan,
         s: LogicalPlan) => new Insert(r, Map.empty[String,
         Option[String]], s, OverwriteOptions(o), ifNotExists = false))
@@ -972,32 +995,36 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
-    UPDATE ~ tableIdentifier ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
+    UPDATE ~ relationFactor ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
         '=' ~ ws ~ expression ~> ((cols: Seq[String], e: Expression) =>
-      UnresolvedAttribute(cols) -> e)) + commaSep) ~
-        (WHERE ~ expression).? ~ TOKENIZE_END ~>
-        ((tableName: TableIdentifier, updateExprs: Seq[(UnresolvedAttribute,
-            Expression)], whereExpr: Any) => {
-          val base = UnresolvedRelation(tableName)
+      UnresolvedAttribute(cols) -> e)) + commaSep) ~ TOKENIZE_END ~
+        (FROM ~ relations).? ~ (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
+        ((t: Any, updateExprs: Seq[(UnresolvedAttribute,
+            Expression)], relations : Any, whereExpr: Any) => {
+          val table = t.asInstanceOf[LogicalPlan]
+          val base = relations match {
+            case Some(plan) => plan.asInstanceOf[LogicalPlan]
+            case _ => table
+          }
           val withFilter = whereExpr match {
-            case None => base
-            case Some(w) => Filter(w.asInstanceOf[Expression], base)
+            case Some(expr) => Filter(expr.asInstanceOf[Expression], base)
+            case _ => base
           }
           val (updateColumns, updateExpressions) = updateExprs.unzip
-          Update(base, withFilter, Seq.empty, updateColumns, updateExpressions)
+          Update(table, withFilter, Nil, updateColumns, updateExpressions)
         })
   }
 
   protected final def delete: Rule1[LogicalPlan] = rule {
-    DELETE ~ FROM ~ tableIdentifier ~
+    DELETE ~ FROM ~ relationFactor ~
         (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
-        ((tableName: TableIdentifier, whereExpr: Any) => {
-          val base = UnresolvedRelation(tableName)
+        ((t: Any, whereExpr: Any) => {
+          val base = t.asInstanceOf[LogicalPlan]
           val child = whereExpr match {
             case None => base
             case Some(w) => Filter(w.asInstanceOf[Expression], base)
           }
-          Delete(base, child, Seq.empty)
+          Delete(base, child, Nil)
         })
   }
 
@@ -1014,33 +1041,29 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
-  // Only when wholeStageEnabled try for tokenization. It should be true
-  private val tokenizationDisabled = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
+  private var tokenize = false
 
-  private var tokenize = !tokenizationDisabled && session.sessionState.conf.wholeStageEnabled
-
-  private var isSelect = false
+  private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() =>
-      tokenize = !tokenizationDisabled && isSelect && session.sessionState.conf.wholeStageEnabled)
+    MATCH ~> (() => tokenize = SnappySession.tokenize && canTokenize && session.wholeStageEnabled)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
     MATCH ~> {() => tokenize = false}
   }
 
-  protected final def SET_SELECT: Rule0 = rule {
-    MATCH ~> (() => isSelect = true)
+  protected final def ENABLE_TOKENIZE: Rule0 = rule {
+    MATCH ~> (() => canTokenize = true)
   }
 
-  protected final def SET_NOSELECT: Rule0 = rule {
-    MATCH ~> (() => isSelect = false)
+  protected final def DISABLE_TOKENIZE: Rule0 = rule {
+    MATCH ~> (() => canTokenize = false)
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (SET_SELECT ~ (query.named("select") | insert | put | update | delete)) |
-        (SET_NOSELECT ~ (dmlOperation | ctes | ddl | set | cache | uncache | desc))
+    (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete)) |
+        (DISABLE_TOKENIZE ~ (dmlOperation | ctes | ddl | set | cache | uncache | desc))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
@@ -1055,12 +1078,13 @@ class SnappyParser(session: SnappySession)
     val plan = parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>
-        throw Utils.analysisException(formatError(e))
+        throw Utils.analysisException(formatError(e, new ErrorFormatter(
+          showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
       case Failure(e) =>
         throw Utils.analysisException(e.toString, Some(e))
     }
-    if (queryHints.nonEmpty) {
-      session.queryHints ++= queryHints
+    if (!queryHints.isEmpty) {
+      session.queryHints.putAll(queryHints)
     }
     plan
   }

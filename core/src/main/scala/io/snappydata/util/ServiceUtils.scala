@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 
 import _root_.com.gemstone.gemfire.distributed.DistributedMember
 import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig
+import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig.ENABLE_NETWORK_PARTITION_DETECTION_NAME
 import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -39,7 +40,7 @@ object ServiceUtils {
   val LOCATOR_URL_PATTERN: Pattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
   private[snappydata] def getStoreProperties(
-      confProps: Array[(String, String)]): Properties = {
+      confProps: Seq[(String, String)]): Properties = {
     val storeProps = new Properties()
     confProps.foreach {
       case (Property.Locators(), v) =>
@@ -55,22 +56,36 @@ object ServiceUtils {
         storeProps.setProperty(k.trim.replaceFirst(
           Constant.SPARK_STORE_PREFIX, ""), v)
       case (k, v) if k.startsWith(Constant.SPARK_PREFIX) ||
-          k.startsWith(Constant.PROPERTY_PREFIX) => storeProps.setProperty(k, v)
+          k.startsWith(Constant.PROPERTY_PREFIX) ||
+          k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
-    setCommonBootDefaults(storeProps)
+    setCommonBootDefaults(storeProps, forLocator = false)
   }
 
-  private[snappydata] def setCommonBootDefaults(props: Properties): Properties = {
+  private[snappydata] def setCommonBootDefaults(props: Properties,
+      forLocator: Boolean): Properties = {
     val storeProps = if (props ne null) props else new Properties()
-    val storePropNames = storeProps.stringPropertyNames()
-    // set default recovery delay to 2 minutes (SNAP-1541)
-    if (!storePropNames.contains(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP)) {
-      storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+    if (!forLocator) {
+      // set default recovery delay to 2 minutes (SNAP-1541)
+      if (storeProps.getProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP) == null) {
+        storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+      }
+      // try hard to maintain executor and node locality
+      if (storeProps.getProperty("spark.locality.wait.process") == null) {
+        storeProps.setProperty("spark.locality.wait.process", "20s")
+      }
+      if (storeProps.getProperty("spark.locality.wait") == null) {
+        storeProps.setProperty("spark.locality.wait", "10s")
+      }
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
-    if (!storePropNames.contains(DistributionConfig.MEMBER_TIMEOUT_NAME)) {
+    if (storeProps.getProperty(DistributionConfig.MEMBER_TIMEOUT_NAME) == null) {
       storeProps.setProperty(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
+    }
+    // set network partition detection by default
+    if (storeProps.getProperty(ENABLE_NETWORK_PARTITION_DETECTION_NAME) == null) {
+      storeProps.setProperty(ENABLE_NETWORK_PARTITION_DETECTION_NAME, "true")
     }
     storeProps
   }

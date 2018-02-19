@@ -17,6 +17,7 @@
 
 package org.apache.spark.sql.sources
 
+import scala.collection.JavaConverters._
 import io.snappydata.QueryHint._
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, PredicateHelper}
@@ -38,9 +39,10 @@ import scala.collection.mutable.ArrayBuffer
  * Replace table with index hint
  */
 case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan] {
-  lazy val catalog = snappySession.sessionState.catalog
 
-  lazy val analyzer = snappySession.sessionState.analyzer
+  private def catalog = snappySession.sessionState.catalog
+
+  private def analyzer = snappySession.sessionState.analyzer
 
   override def apply(plan: LogicalPlan): LogicalPlan = {
 
@@ -69,9 +71,11 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
 
   }
 
-  private def getIndexHints = {
+  private def getIndexHints: mutable.Map[String, Option[LogicalPlan]] = {
     val indexHint = Index
-    snappySession.queryHints.collect {
+    val hints = snappySession.queryHints
+    if (hints.isEmpty) mutable.Map.empty
+    else hints.asScala.collect {
       case (hint, value) if hint.startsWith(indexHint) =>
         val tableOrAlias = hint.substring(indexHint.length)
         val key = catalog.lookupRelationOption(
@@ -183,7 +187,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
         .getOrElse(Replacement(r, r)))
 
     val replicatesWithColocated = ReplacementSet(replicates.map(r => Replacement(r, r, false)) ++
-        (if (colocationGroups.nonEmpty) colocationGroups.head.chain else Seq.empty), conditions)
+        (if (colocationGroups.nonEmpty) colocationGroups.head.chain else Nil), conditions)
 
     val replicatesWithNonColocatedHavingFilters = nonColocatedWithFilters.map(nc =>
       ReplacementSet(replicates.map(r => Replacement(r, r)) ++ Some(nc), conditions)).sorted
@@ -198,7 +202,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
       r.mappedConditions(conditions)
     }
 
-    var curPlan = CompletePlan(null, Seq.empty)
+    var curPlan = CompletePlan(null, Nil)
 
     // there are no Non-Colocated tables of lesser cost than colocation chain in consideration.
     if (smallerNC == -1) {
@@ -344,7 +348,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
         val joinKeys = joinConditions.flatMap {
           case (leftA: AttributeReference, rightA: AttributeReference) =>
             Seq((leftA.name, rightA.name))
-          case _ => Seq.empty[(String, String)]
+          case _ => Nil
         }
 
         val hasJoinKeys = Function.tupled[INDEX_RELATION, INDEX_RELATION, Boolean] {
@@ -473,7 +477,8 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     if (!enabled) {
       return plan
     }
-    if (snappySession.queryHints.exists {
+    val hints = snappySession.queryHints
+    if (!hints.isEmpty && hints.asScala.exists {
       case (hint, _) => hint.startsWith(Index) &&
           !joinOrderHints.contains(ContinueOptimizations)
     } || Entity.hasUnresolvedReferences(plan)) {

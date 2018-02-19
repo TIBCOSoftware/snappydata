@@ -20,14 +20,17 @@ import java.io.File
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.gemstone.gemfire.internal.shared.NativeCalls
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
 import io.snappydata.util.TestUtils
+import org.scalatest.Assertions
 
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, PredicateSubquery, ScalarSubquery}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, OneRowRelation, Sample}
-import org.apache.spark.sql.catalyst.util.sideBySide
+import org.apache.spark.sql.catalyst.util.{sideBySide, stackTraceToString}
+import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row}
 // scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome, Retries}
 // scalastyle:on
@@ -45,6 +48,11 @@ abstract class SnappyFunSuite
         with Logging with Retries {
 
   InitializeRun.setUp()
+
+  private val nativeCalls = NativeCalls.getInstance()
+  nativeCalls.setEnvironment("gemfire.bind-address", "localhost")
+  nativeCalls.setEnvironment("SPARK_LOCAL_IP", "localhost")
+  nativeCalls.setEnvironment("SPARK_PUBLIC_DNS", "localhost")
 
   protected var testName: String = _
   protected val dirList: ArrayBuffer[String] = ArrayBuffer[String]()
@@ -188,6 +196,47 @@ abstract class SnappyFunSuite
     // scalastyle:off
     println(msg)
     // scalastyle:on
+  }
+
+  def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit =
+    SnappyFunSuite.checkAnswer(df, expectedAnswer)
+}
+
+object SnappyFunSuite extends Assertions {
+  def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit = {
+    val analyzedDF = try df catch {
+      case ae: AnalysisException =>
+        if (ae.plan.isDefined) {
+          fail(
+            s"""
+               |Failed to analyze query: $ae
+               |${ae.plan.get}
+               |
+               |${stackTraceToString(ae)}
+               |""".stripMargin)
+        } else {
+          throw ae
+        }
+    }
+
+    assertEmptyMissingInput(analyzedDF)
+
+    QueryTest.checkAnswer(analyzedDF, expectedAnswer) match {
+      case Some(errorMessage) => fail(errorMessage)
+      case None =>
+    }
+  }
+
+  /**
+   * Asserts that a given [[Dataset]] does not have missing inputs in all the analyzed plans.
+   */
+  def assertEmptyMissingInput(query: Dataset[_]): Unit = {
+    assert(query.queryExecution.analyzed.missingInput.isEmpty,
+      s"The analyzed logical plan has missing inputs:\n${query.queryExecution.analyzed}")
+    assert(query.queryExecution.optimizedPlan.missingInput.isEmpty,
+      s"The optimized logical plan has missing inputs:\n${query.queryExecution.optimizedPlan}")
+    assert(query.queryExecution.executedPlan.missingInput.isEmpty,
+      s"The physical plan has missing inputs:\n${query.queryExecution.executedPlan}")
   }
 }
 

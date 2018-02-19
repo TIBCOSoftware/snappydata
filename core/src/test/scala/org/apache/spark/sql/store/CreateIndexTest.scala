@@ -16,19 +16,21 @@
  */
 package org.apache.spark.sql.store
 
+import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.mutable.ListBuffer
 
 import io.snappydata.app.{Data1, Data2, Data3}
-import io.snappydata.{Property, QueryHint, SnappyFunSuite}
+import io.snappydata.{QueryHint, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
+import org.apache.spark.sql.execution.joins.HashJoinExec
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SnappyContext}
@@ -202,6 +204,73 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     // drop non-existent indexes with if exist clause
     snContext.dropIndex("test1", true)
     snContext.sql("drop index if exists test1")
+  }
+
+  test("Test case-sensitivity of index column names (GITHUB-900)") {
+    val tableName = "SCHEMA_MIGRATIONS_2"
+    val indexName = "SCHEMA_MIGRATIONS_VERSION_IDX"
+    val snContext = context.get
+    val data = Seq(Row(111L, "aaa"), Row(222L, "bbb"), Row(333L, "aaa"),
+      Row(444L, "bbb"), Row(555L, "ccc"), Row(666L, "ccc"))
+
+    import snContext.implicits._
+
+    // test using SQL first
+    snContext.sql("drop table if exists " + tableName)
+    snContext.sql(
+      s"""create table $tableName("version" BIGINT NOT NULL,
+        "value" VARCHAR(20), PRIMARY KEY ("version"))""")
+    // fail index creation with incorrect case
+    try {
+      snContext.sql(s"CREATE UNIQUE INDEX $indexName ON $tableName (version)")
+      fail("expected exception with unquoted identifier")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "42X14" => // expected
+    }
+    snContext.sql(s"""CREATE UNIQUE INDEX $indexName ON $tableName ("version")""")
+    val schema = snContext.table(tableName).schema
+
+    implicit val encoder = RowEncoder(schema)
+    val ds = snContext.createDataset(data)
+    ds.write.insertInto(tableName)
+
+    checkAnswer(snContext.sql(s"select * from $tableName"), data)
+    checkAnswer(snContext.sql(
+      s"""select "value" from $tableName where `version`=111"""), Seq(Row("aaa")))
+    checkAnswer(snContext.sql(s"""select * from $tableName where "version" >= 555"""),
+      Seq(Row(555, "ccc"), Row(666, "ccc")))
+
+    snContext.sql("drop table " + tableName)
+
+    // test using API
+    snContext.setConf(SQLConf.CASE_SENSITIVE, true)
+    snContext.createTable(tableName, "row",
+      """("version" BIGINT NOT NULL,
+        "value" VARCHAR(20), PRIMARY KEY ("version"))""",
+      Map.empty[String, String], allowExisting = false)
+    // fail index creation with incorrect case
+    try {
+      snContext.createIndex(indexName, tableName, Map("Version" -> None),
+        Map("INDEX_TYPE" -> "UNIQUE"))
+      fail("expected exception with incorrect case")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "42X14" => // expected
+    }
+    snContext.createIndex(indexName, tableName, Map("version" -> None),
+      Map("INDEX_TYPE" -> "UNIQUE"))
+
+    ds.write.insertInto(tableName)
+
+    checkAnswer(snContext.table(tableName), data)
+    checkAnswer(snContext.table(tableName).filter($"version" === 111)
+        .select($"value"), Seq(Row("aaa")))
+    checkAnswer(snContext.table(tableName).filter($"version" >= 555),
+      Seq(Row(555, "ccc"), Row(666, "ccc")))
+
+    snContext.setConf(SQLConf.CASE_SENSITIVE, false)
+
+    snContext.dropIndex(indexName, ifExists = false)
+    snContext.dropTable(tableName)
   }
 
   private def createBase3Tables(snContext: SnappyContext,

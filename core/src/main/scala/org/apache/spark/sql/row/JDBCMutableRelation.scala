@@ -90,9 +90,9 @@ case class JDBCMutableRelation(
   final lazy val schemaFields: Map[String, StructField] =
     Utils.schemaFields(schema)
 
-  def partitionColumns: Seq[String] = Seq.empty
+  def partitionColumns: Seq[String] = Nil
 
-  def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Seq.empty
+  def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Nil
 
   def numBuckets: Int = -1
 
@@ -471,4 +471,7 @@ case class JDBCMutableRelation(
   }
 }
 
-final class DefaultSource extends MutableRelationProvider
+final class DefaultSource extends MutableRelationProvider with DataSourceRegister {
+
+  override def shortName(): String = "jdbc_mutable"
+}

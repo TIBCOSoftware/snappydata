@@ -96,7 +96,7 @@ object RuleUtils extends PredicateHelper {
       var currentReachablePaths = replicatedReachablePaths
       val newChains = source.flatMap { rep1 =>
         val (otherSide, remainingPaths) = currentReachablePaths.foldLeft(
-          (Seq.empty[LogicalPlan], currentReachablePaths)) {
+          (Nil.asInstanceOf[Seq[LogicalPlan]], currentReachablePaths)) {
           case ((otherKey, current), plan) =>
             plan match {
               case l :: r :: o if o.isEmpty & (l == rep1) =>
@@ -214,7 +214,7 @@ object RuleUtils extends PredicateHelper {
               predicates
             case SubqueryAlias(alias, _, _) if alias.equals(t) =>
               predicates
-            case _ => Seq.empty
+            case _ => Nil
           }
       } if filterCols.nonEmpty
 
@@ -363,7 +363,7 @@ object HasColocatedEntities {
             Replacement(subquery, SubqueryAlias(alias, rightPlan, None))
         }
         ((leftRelation.get, rightRelation.get),
-            ReplacementSet(ArrayBuffer(leftReplacement, rightReplacement), Seq.empty))
+            ReplacementSet(ArrayBuffer(leftReplacement, rightReplacement), Nil))
       }
     }
 
@@ -457,7 +457,7 @@ case class ReplacementSet(chain: ArrayBuffer[Replacement],
         flatMap(_.permutations).filter(hasJoinConditions)).filter(_.nonEmpty)
 
     if(feasibleJoinPlan.isEmpty) {
-      Seq.empty
+      Nil
     } else {
       val all = feasibleJoinPlan.sortBy { jo =>
         estimateSize(jo)

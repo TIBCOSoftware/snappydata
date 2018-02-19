@@ -286,7 +286,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   override protected def doExecute(): RDD[InternalRow] =
     throw new UnsupportedOperationException("unexpected invocation")
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = Seq.empty
+  override def inputRDDs(): Seq[RDD[InternalRow]] = Nil
 
   override protected def doProduce(ctx: CodegenContext): String =
     throw new UnsupportedOperationException("unexpected invocation")
@@ -700,7 +700,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
              |public $className[] $dictionaryArrayInit() {
              |  ${d.evaluateDictionaryCode()}
              |  if (${dictionary.value} != null) {
-             |    return new $className[${dictionary.value}.size()];
+             |    return new $className[${dictionary.value}.size() + 1];
              |  } else {
              |    return null;
              |  }
@@ -715,7 +715,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
    * Generate code to lookup the map or insert a new key, value if not found.
    */
   def generateMapGetOrInsert(objVar: String, valueInitVars: Seq[ExprCode],
-      valueInitCode: String, input: Seq[ExprCode],
+      valueInitCode: String, input: Seq[ExprCode], evalKeys: Seq[Boolean],
       dictArrayVar: String, dictArrayInitVar: String): String = {
     val hashVar = Array(ctx.freshName("hash"))
     val valueInit = valueInitCode + '\n' + generateUpdate(objVar, Nil,
@@ -728,14 +728,21 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     dictionaryKey match {
       case Some(dictKey) =>
         val keyVars = getExpressionVars(keyExpressions, input)
+        // materialize the key code explicitly if required by update expressions later (AQP-292:
+        //   it can no longer access the code since keyVars has emptied the key codes in input)
+        val evalKeyCode = if (evalKeys.isEmpty) ""
+        else evaluateVariables(keyVars.indices.collect {
+          case i if evalKeys(i) => keyVars(i)
+        })
         val keyVar = keyVars.head
         s"""
+          $evalKeyCode
           $className $objVar;
           ${DictionaryOptimizedMapAccessor.dictionaryArrayGetOrInsert(ctx,
             keyExpressions, keyVar, dictKey, dictArrayVar, objVar, valueInit,
             continueOnNull = false, this)} else {
             // evaluate the key expressions
-            ${if (keyVar.code.isEmpty) "" else keyVar.code.trim}
+            ${evaluateVariables(keyVars)}
             // evaluate hash code of the lookup key
             ${generateHashCode(hashVar, keyVars, keyExpressions, register = false)}
             ${mapLookupCode(keyVars)}
@@ -763,7 +770,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   // scalastyle:off
   def generateMapLookup(entryVar: String, localValueVar: String,
       keyIsUnique: String, numRows: String, nullMaskVars: Array[String],
-      initCode: String, checkCond: (Option[ExprCode], String),
+      initCode: String, checkCond: (Option[ExprCode], String, Option[Expression]),
       streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
       streamOutput: Seq[Attribute], buildKeyVars: Seq[ExprCode],
       buildVars: Seq[ExprCode], input: Seq[ExprCode],
@@ -918,17 +925,17 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     //    is always evaluated) -- see the evaluateRequiredVariables call in
     // base CodegenSupport.consume
     val checkCondition = checkCond._1
-    val inputCodes = if (checkCondition.isDefined) {
-      // evaluate all of input
-      evaluateVariables(input) + '\n' + checkCond._2
-    } else buildSide match {
+    val (checkCode, usedInputs) = if (checkCondition.isDefined) {
+      // add any additional inputs used by check condition
+      (checkCond._2, cParent.usedInputs ++ checkCond._3.get.references)
+    } else ("", cParent.usedInputs)
+    val inputCodes = buildSide match {
       case BuildRight =>
         // input streamed plan is on left
-        evaluateRequiredVariables(consumer.output, input, cParent.usedInputs)
+        evaluateRequiredVariables(consumer.output, input, usedInputs)
       case BuildLeft =>
         // input streamed plan is on right
-        evaluateRequiredVariables(consumer.output.takeRight(input.size),
-          input, cParent.usedInputs)
+        evaluateRequiredVariables(consumer.output.takeRight(input.size), input, usedInputs)
     }
 
     // Code fragments for different join types.
@@ -938,29 +945,29 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // will be the common parent's consume call.
     val entryConsume = joinType match {
       case Inner => genInnerJoinCodes(entryVar, mapKeyCodes, checkCondition,
-        numRows, getConsumeResultCode(numRows, resultVars),
+        checkCode, numRows, getConsumeResultCode(numRows, resultVars),
         keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
 
       case LeftOuter | RightOuter =>
         // instantiate code for buildVars before calling getConsumeResultCode
         val buildInitCode = evaluateVariables(buildVars)
         genOuterJoinCodes(entryVar, buildVars, buildInitCode, mapKeyCodes,
-          checkCondition, numRows, getConsumeResultCode(numRows, resultVars),
+          checkCondition, checkCode, numRows, getConsumeResultCode(numRows, resultVars),
           keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
 
       case LeftSemi => genSemiJoinCodes(entryVar, mapKeyCodes, checkCondition,
-        numRows, getConsumeResultCode(numRows, input),
+        checkCode, numRows, getConsumeResultCode(numRows, input),
         keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
 
       case LeftAnti => genAntiJoinCodes(entryVar, mapKeyCodes, checkCondition,
-        numRows, getConsumeResultCode(numRows, input),
+        checkCode, numRows, getConsumeResultCode(numRows, input),
         keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
 
       case _: ExistenceJoin =>
         // declare and add the exists variable to resultVars
         val existsVar = ctx.freshName("exists")
         genExistenceJoinCodes(entryVar, existsVar, mapKeyCodes,
-          checkCondition, numRows, getConsumeResultCode(numRows,
+          checkCondition, checkCode, numRows, getConsumeResultCode(numRows,
             input :+ ExprCode("", "false", existsVar)), keyIsUnique,
           declareLocalVars, moveNextValue, inputCodes)
 
@@ -1045,7 +1052,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   }
 
   private def genInnerJoinCodes(entryVar: String, mapKeyCodes: String,
-      checkCondition: Option[ExprCode], numRows: String,
+      checkCondition: Option[ExprCode], checkCode: String, numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
       moveNextValue: String, inputCodes: String): String = {
 
@@ -1065,6 +1072,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       $mapKeyCodes
       $inputCodes
       while (true) {
+        $checkCode
         do { // single iteration loop meant for breaking out with "continue"
           $consumeCode
         } while (false);
@@ -1080,7 +1088,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   // scalastyle:off
   private def genOuterJoinCodes(entryVar: String, buildVars: Seq[ExprCode],
       buildInitCode: String, mapKeyCodes: String,
-      checkCondition: Option[ExprCode], numRows: String,
+      checkCondition: Option[ExprCode], checkCode: String, numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
       moveNextValue: String, inputCodes: String): String = {
   // scalastyle:on
@@ -1115,6 +1123,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       $mapKeyCodes
       $inputCodes
       while (true) {
+        $checkCode
         do { // single iteration loop meant for breaking out with "continue"
           $consumeCode
         } while (false);
@@ -1128,7 +1137,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   }
 
   private def genSemiJoinCodes(entryVar: String, mapKeyCodes: String,
-      checkCondition: Option[ExprCode], numRows: String,
+      checkCondition: Option[ExprCode], checkCode: String, numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
       moveNextValue: String, inputCodes: String): String = checkCondition match {
 
@@ -1145,9 +1154,10 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         $declareLocalVars
 
         $mapKeyCodes
+        $inputCodes
         $breakLoop: while (true) {
+          $checkCode
           do { // single iteration loop meant for breaking out with "continue"
-            $inputCodes
             ${ev.code}
             // consume only one result
             if (!${ev.isNull} && ${ev.value}) {
@@ -1165,7 +1175,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   }
 
   private def genAntiJoinCodes(entryVar: String, mapKeyCodes: String,
-      checkCondition: Option[ExprCode], numRows: String,
+      checkCondition: Option[ExprCode], checkCode: String, numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
       moveNextValue: String, inputCodes: String): String = checkCondition match {
 
@@ -1186,6 +1196,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         boolean $matched = false;
         if ($entryVar != null) {
           $breakLoop: while (true) {
+            $checkCode
             do { // single iteration loop meant for breaking out with "continue"
               // fail if condition matches for any row
               ${ev.code}
@@ -1208,14 +1219,16 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         $consumeResult"""
   }
 
+  // scalastyle:off
   private def genExistenceJoinCodes(entryVar: String, existsVar: String,
-      mapKeyCodes: String, checkCondition: Option[ExprCode], numRows: String,
-      consumeResult: String, keyIsUnique: String, declareLocalVars: String,
+      mapKeyCodes: String, checkCondition: Option[ExprCode], checkCode: String,
+      numRows: String, consumeResult: String, keyIsUnique: String, declareLocalVars: String,
       moveNextValue: String, inputCodes: String): String = checkCondition match {
+    // scalastyle:on
 
     case None =>
       // only one match needed, so no value iteration
-      s"""final boolean $existsVar = ($entryVar == null);
+      s"""final boolean $existsVar = ($entryVar != null);
         $consumeResult"""
 
     case Some(ev) =>
@@ -1228,6 +1241,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         boolean $existsVar = false;
         if ($entryVar != null) {
           $breakLoop: while (true) {
+            $checkCode
             do { // single iteration loop meant for breaking out with "continue"
               ${ev.code}
               if (!${ev.isNull} && ${ev.value}) {
@@ -1347,19 +1361,10 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   private def hashSingleLong(colVar: String, nullVar: String,
       hashVar: String): String = {
-    val longVar = ctx.freshName("longVar")
     if (nullVar.isEmpty || nullVar == "false") {
-      s"""
-        final long $longVar = $colVar;
-        $hashVar = $hashingClass.fastHashInt(
-          (int)($longVar ^ ($longVar >>> 32)));
-      """
+      s"$hashVar = $hashingClass.fastHashLong($colVar);\n"
     } else {
-      s"""
-        final long $longVar;
-        $hashVar = ($nullVar) ? -1 : $hashingClass.fastHashInt(
-          (int)(($longVar = ($colVar)) ^ ($longVar >>> 32)));
-      """
+      s"$hashVar = ($nullVar) ? -1 : $hashingClass.fastHashLong($colVar);\n"
     }
   }
 

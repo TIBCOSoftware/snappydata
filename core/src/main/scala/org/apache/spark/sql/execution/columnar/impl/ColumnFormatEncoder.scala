@@ -17,10 +17,10 @@
 
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.Blob
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, RegionEntry}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.store.RowEncoder.PreProcessRow
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
@@ -30,15 +30,15 @@ import io.snappydata.thrift.common.BufferedBlob
 import io.snappydata.thrift.internal.ClientBlob
 
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
+import org.apache.spark.sql.store.CompressionCodecId
 
 /**
  * A [[RowEncoder]] implementation for [[ColumnFormatValue]] and child classes.
  */
 final class ColumnFormatEncoder extends RowEncoder {
 
-  override def toRow(entry: RegionEntry, value: AnyRef,
-      container: GemFireContainer): ExecRow = {
-    val batchKey = entry.getRawKey.asInstanceOf[ColumnFormatKey]
+  override def toRow(rawKey: Object, value: AnyRef, container: GemFireContainer): ExecRow = {
+    val batchKey = rawKey.asInstanceOf[ColumnFormatKey]
     val batchValue = value.asInstanceOf[ColumnFormatValue]
     // layout the same way as declared in ColumnFormatRelation
     val row = new ValueRow(5)
@@ -52,7 +52,9 @@ final class ColumnFormatEncoder extends RowEncoder {
 
   private def getUUID(row: Array[DataValueDescriptor]): Long = {
     val uuid = row(0).getLong
-    assert(BucketRegion.isValidUUID(uuid), s"Invalid batch UUID in ${row.mkString(" ; ")}")
+    if (!BucketRegion.isValidUUID(uuid)) {
+      throw new IllegalStateException(s"Invalid batch UUID in ${row.mkString(" ; ")}")
+    }
     uuid
   }
 
@@ -61,17 +63,28 @@ final class ColumnFormatEncoder extends RowEncoder {
     val batchKey = new ColumnFormatKey(uuid = getUUID(row),
       partitionId = row(1).getInt, columnIndex = row(2).getInt)
     // transfer buffer from BufferedBlob as is, or copy for others
-    val columnBuffer = row(3).getObject match {
-      case blob: BufferedBlob => blob.getAsLastChunk.chunk
+    var columnBuffer = row(3).getObject match {
+      case blob: BufferedBlob =>
+        // the chunk can never be a ByteBufferReference in this case and
+        // the internal buffer will now be owned by ColumnFormatValue
+        val chunk = blob.getAsLastChunk
+        assert(!chunk.isSetChunkReference)
+        chunk.chunk
       case blob: Blob => ByteBuffer.wrap(blob.getBytes(1, blob.length().toInt))
     }
     columnBuffer.rewind()
+    columnBuffer = columnBuffer.order(ByteOrder.LITTLE_ENDIAN)
+    val codec = -columnBuffer.getInt(0)
+    val isCompressed = CompressionCodecId.isCompressed(codec)
+    val codecId = if (isCompressed) codec
+    else CompressionCodecId.fromName(container.getRegion.getColumnCompressionCodec).id
     // set the buffer into ColumnFormatValue, ColumnDelta or ColumnDeleteDelta
     val batchValue = batchKey.columnIndex match {
       case index if index >= ColumnFormatEntry.STATROW_COL_INDEX =>
-        new ColumnFormatValue(columnBuffer)
-      case ColumnFormatEntry.DELETE_MASK_COL_INDEX => new ColumnDeleteDelta(columnBuffer)
-      case _ => new ColumnDelta(columnBuffer)
+        new ColumnFormatValue(columnBuffer, codecId, isCompressed)
+      case ColumnFormatEntry.DELETE_MASK_COL_INDEX =>
+        new ColumnDeleteDelta(columnBuffer, codecId, isCompressed)
+      case _ => new ColumnDelta(columnBuffer, codecId, isCompressed)
     }
     new java.util.AbstractMap.SimpleEntry[RegionKey, AnyRef](batchKey, batchValue)
   }
@@ -107,11 +120,12 @@ final class ColumnFormatEncoder extends RowEncoder {
       case deleteKey: ColumnFormatKey
         if deleteKey.columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX =>
 
-        val deleteDelta = event.getNewValue.asInstanceOf[ColumnFormatValue]
+        var deleteDelta = event.getNewValue.asInstanceOf[ColumnFormatValue]
         if (deleteDelta eq null) return
 
+        deleteDelta = deleteDelta.getValueRetain(decompress = true, compress = false)
         val region = bucket.getPartitionedRegion
-        val deleteBuffer = deleteDelta.getBufferRetain
+        val deleteBuffer = deleteDelta.getBuffer
         val deleteBatch = try {
           if (!deleteBuffer.hasRemaining) return
           ColumnDelta.checkBatchDeleted(deleteBuffer)

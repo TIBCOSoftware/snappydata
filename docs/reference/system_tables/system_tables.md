@@ -6,8 +6,8 @@ The following system tables are available:
 
 * [MEMBERS](members.md)
 
-* [MEMORYANALYTICS](memoryanalytics.md)
-
 * [SYSDISKSTORES](sysdiskstores.md)
+
+* [SYSDISKSTOREIDS](sysdiskstoreids.md)
 
 * [SYSTABLES](systables.md)

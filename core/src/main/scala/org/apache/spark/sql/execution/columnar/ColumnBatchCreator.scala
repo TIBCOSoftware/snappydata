@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRe
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
-import io.snappydata.Property
+import io.snappydata.collection.OpenHashSet
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -44,7 +44,7 @@ final class ColumnBatchCreator(
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
       batchID: Long, bucketID: Int,
-      dependents: Seq[ExternalTableMetaData]): java.util.HashSet[AnyRef] = {
+      dependents: Seq[ExternalTableMetaData]): OpenHashSet[AnyRef] = {
     var connectedExternalStore: ConnectedExternalStore = null
     var success: Boolean = false
     try {
@@ -59,7 +59,7 @@ final class ColumnBatchCreator(
       }
       val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
       memHeapScanController.setAddRegionAndKey()
-      val keySet = new java.util.HashSet[AnyRef]
+      val keySet = new OpenHashSet[AnyRef]
       val execRows = new AbstractIterator[AbstractCompactExecRow] {
 
         var hasNext: Boolean = memHeapScanController.next()
@@ -80,13 +80,13 @@ final class ColumnBatchCreator(
         // code does not (which is passed in the references separately)
         val gen = CodeGeneration.compileCode("COLUMN_TABLE.BATCH", schema.fields, () => {
           val tableScan = RowTableScan(schema.toAttributes, schema,
-            dataRDD = null, numBuckets = -1, partitionColumns = Seq.empty,
-            partitionColumnAliases = Seq.empty, baseRelation = null, caseSensitive = true)
+            dataRDD = null, numBuckets = -1, partitionColumns = Nil,
+            partitionColumnAliases = Nil, baseRelation = null, caseSensitive = true)
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
-          val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
-            numBuckets = -1, isPartitioned = false, None, (-bufferRegion.getColumnBatchSize, -1,
-                Property.CompressionCodec.defaultValue.get), tableName,
+          val insertPlan = ColumnInsertExec(tableScan, Nil, Nil,
+            numBuckets = -1, isPartitioned = false, None,
+            (-bufferRegion.getColumnBatchSize, -1, compressionCodec), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD semantics
@@ -130,13 +130,13 @@ final class ColumnBatchCreator(
    * insertion of rows as they appear. Currently used by sampler that
    * does not have any indexes so there is no dependents handling here.
    */
-  def createColumnBatchBuffer(columnBatchSize: Int, columnMaxDeltaRows: Int,
-      compressionCodec: String): ColumnBatchRowsBuffer = {
+  def createColumnBatchBuffer(columnBatchSize: Int,
+      columnMaxDeltaRows: Int): ColumnBatchRowsBuffer = {
     val gen = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held
       // together and thus failures in ClosedFormAccuracySuite etc
-      val insertPlan = ColumnInsertExec(bufferPlan, Seq.empty, Seq.empty,
+      val insertPlan = ColumnInsertExec(bufferPlan, Nil, Nil,
         numBuckets = -1, isPartitioned = false, None, (columnBatchSize, -1, compressionCodec),
         tableName, onExecutor = true, schema, externalStore,
         useMemberVariables = true)

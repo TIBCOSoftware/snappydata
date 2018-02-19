@@ -16,26 +16,28 @@
  */
 package org.apache.spark.sql
 
-import scala.collection.mutable
+import java.util.concurrent.ConcurrentHashMap
 
+import com.gemstone.gemfire.internal.shared.SystemProperties
 import io.snappydata.Constant
+import io.snappydata.collection.OpenHashSet
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
  */
-abstract class SnappyBaseParser(session: SnappySession) extends Parser {
+abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   protected var caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
 
-  private[sql] final val queryHints = new mutable.HashMap[String, String]
+  private[sql] final val queryHints: ConcurrentHashMap[String, String] =
+    new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
   protected def reset(): Unit = queryHints.clear()
 
@@ -47,7 +49,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     '+' ~ (Consts.whitespace.* ~ capture(CharPredicate.Alpha ~
         Consts.identifier.*) ~ Consts.whitespace.* ~
         '(' ~ capture(noneOf(Consts.hintValueEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)). + ~
+        ((k: String, v: String) => queryHints.put(k, v.trim): Unit)). + ~
         commentBody |
     commentBody
   }
@@ -56,7 +58,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     '+' ~ (Consts.space.* ~ capture(CharPredicate.Alpha ~
         Consts.identifier.*) ~ Consts.space.* ~
         '(' ~ capture(noneOf(Consts.lineHintEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)). + ~
+        ((k: String, v: String) => queryHints.put(k, v.trim): Unit)). + ~
         noneOf(Consts.lineCommentEnd).* |
     noneOf(Consts.lineCommentEnd).*
   }
@@ -72,7 +74,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   /** All recognized delimiters including whitespace. */
   final def delimiter: Rule0 = rule {
-    quiet(&(Consts.delimiters)) ~ ws | EOI
+    quiet((Consts.whitespace ~ ws) | &(Consts.delimiters)) | EOI
   }
 
   protected final def commaSep: Rule0 = rule {
@@ -119,9 +121,12 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   protected def start: Rule1[LogicalPlan]
 
+  protected final def unquotedIdentifier: Rule1[String] = rule {
+    atomic(capture(Consts.alphaUnderscore ~ Consts.identifier.*)) ~ delimiter
+  }
+
   protected final def identifier: Rule1[String] = rule {
-    atomic(capture( Consts.alphaUnderscore ~ Consts.identifier.*)) ~
-        delimiter ~> { (s: String) =>
+    unquotedIdentifier ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.reservedKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
@@ -144,8 +149,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
    * interpreted as a strictIdentifier.
    */
   protected final def strictIdentifier: Rule1[String] = rule {
-    atomic(capture(CharPredicate.Alpha ~ Consts.identifier.*)) ~
-        delimiter ~> { (s: String) =>
+    unquotedIdentifier ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.allKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
@@ -278,7 +282,7 @@ object SnappyParserConsts {
   final val space: CharPredicate = CharPredicate(' ', '\t')
   final val whitespace: CharPredicate = CharPredicate(
     ' ', '\t', '\n', '\r', '\f')
-  final val delimiters: CharPredicate = whitespace ++ CharPredicate('@', '*',
+  final val delimiters: CharPredicate = CharPredicate('@', '*',
     '+', '-', '<', '=', '!', '>', '/', '(', ')', ',', ';', '%', '{', '}', ':',
     '[', ']', '.', '&', '|', '^', '~', '#')
   final val lineCommentEnd: String = "\n\r\f" + EOI
@@ -292,16 +296,12 @@ object SnappyParserConsts {
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
       CharPredicate('.')
-  final val numericSuffix: CharPredicate = CharPredicate('D', 'L')
+  final val numericSuffix: CharPredicate = CharPredicate('D', 'd', 'F', 'f', 'L', 'l')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
-  final val trueFn: () => Boolean = () => true
+  final val reservedKeywords: OpenHashSet[String] = new OpenHashSet[String]
 
-  final val falseFn: () => Boolean = () => false
-
-  final val reservedKeywords: mutable.Set[String] = mutable.Set[String]()
-
-  final val allKeywords: mutable.Set[String] = mutable.Set[String]()
+  final val allKeywords: OpenHashSet[String] = new OpenHashSet[String]
 
   final val optimizableLikePattern: java.util.regex.Pattern =
     java.util.regex.Pattern.compile("%?[^_%]*[^_%\\\\]%?")
@@ -315,8 +315,8 @@ object SnappyParserConsts {
    */
   private[sql] def reservedKeyword(s: String): Keyword = {
     val k = new Keyword(s)
-    reservedKeywords += k.upper
-    allKeywords += k.upper
+    reservedKeywords.add(k.upper)
+    allKeywords.add(k.upper)
     k
   }
 
@@ -331,9 +331,17 @@ object SnappyParserConsts {
    */
   private[sql] def nonReservedKeyword(s: String): Keyword = {
     val k = new Keyword(s)
-    allKeywords += k.upper
+    allKeywords.add(k.upper)
     k
   }
+
+  final val REFERENCES_KEY = "TokenizationReferences"
+  final val WRAPPED_CONSTANTS_KEY = "TokenizedConstants"
+  final val NOCACHING_KEY = "TokenizationNoCaching"
+
+  final val COLUMN_SOURCE = "column"
+  final val ROW_SOURCE = "row"
+  final val DEFAULT_SOURCE = ROW_SOURCE
 
   // reserved keywords
   final val ALL: Keyword = reservedKeyword("all")
@@ -392,8 +400,7 @@ object SnappyParserConsts {
   final val FUNCTION: Keyword = reservedKeyword("function")
 
   // marked as internal keywords to prevent use in SQL
-  final val HIVE_METASTORE: Keyword = reservedKeyword(
-    SnappyStoreHiveCatalog.HIVE_METASTORE)
+  final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
 
   final val SAMPLER_WEIGHTAGE: Keyword = nonReservedKeyword(
     Utils.WEIGHTAGE_COLUMN_NAME)
@@ -412,10 +419,12 @@ object SnappyParserConsts {
   final val END: Keyword = nonReservedKeyword("end")
   final val EXTENDED: Keyword = nonReservedKeyword("extended")
   final val EXTERNAL: Keyword = nonReservedKeyword("external")
+  final val FETCH: Keyword = nonReservedKeyword("fetch")
   final val FIRST: Keyword = nonReservedKeyword("first")
   final val FN: Keyword = nonReservedKeyword("fn")
   final val FULL: Keyword = nonReservedKeyword("full")
   final val GLOBAL: Keyword = nonReservedKeyword("global")
+  final val GRANT: Keyword = nonReservedKeyword("grant")
   final val HASH: Keyword = nonReservedKeyword("hash")
   final val IF: Keyword = nonReservedKeyword("if")
   final val INDEX: Keyword = nonReservedKeyword("index")
@@ -426,13 +435,15 @@ object SnappyParserConsts {
   final val LIMIT: Keyword = nonReservedKeyword("limit")
   final val NATURAL: Keyword = nonReservedKeyword("natural")
   final val NULLS: Keyword = nonReservedKeyword("nulls")
+  final val ONLY: Keyword = nonReservedKeyword("only")
   final val OPTIONS: Keyword = nonReservedKeyword("options")
   final val OVERWRITE: Keyword = nonReservedKeyword("overwrite")
   final val PARTITION: Keyword = nonReservedKeyword("partition")
   final val PUT: Keyword = nonReservedKeyword("put")
   final val REFRESH: Keyword = nonReservedKeyword("refresh")
   final val REGEXP: Keyword = nonReservedKeyword("regexp")
-  final val RETURNS: Keyword = nonReservedKeyword("returns")
+  final val REPLACE: Keyword = nonReservedKeyword("replace")
+  final val REVOKE: Keyword = nonReservedKeyword("revoke")
   final val RLIKE: Keyword = nonReservedKeyword("rlike")
   final val SEMI: Keyword = nonReservedKeyword("semi")
   final val SHOW: Keyword = nonReservedKeyword("show")
@@ -447,6 +458,7 @@ object SnappyParserConsts {
   final val UNCACHE: Keyword = nonReservedKeyword("uncache")
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")
+  final val VIEW: Keyword = nonReservedKeyword("view")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")
@@ -471,11 +483,12 @@ object SnappyParserConsts {
   final val WEEK: Keyword = nonReservedKeyword("week")
   final val YEAR: Keyword = nonReservedKeyword("year")
 
-  // cube, rollup, grouping sets are not reserved
+  // cube, rollup, grouping sets etc are not reserved
   final val CUBE: Keyword = nonReservedKeyword("cube")
   final val ROLLUP: Keyword = nonReservedKeyword("rollup")
   final val GROUPING: Keyword = nonReservedKeyword("grouping")
   final val SETS: Keyword = nonReservedKeyword("sets")
+  final val LATERAL: Keyword = nonReservedKeyword("lateral")
 
   // datatypes are not reserved
   final val ARRAY: Keyword = nonReservedKeyword("array")
@@ -512,4 +525,8 @@ object SnappyParserConsts {
   final val BEHAVIOR: Keyword = nonReservedKeyword("behavior")
   final val SAMPLE: Keyword = nonReservedKeyword("sample")
   final val TOPK: Keyword = nonReservedKeyword("topk")
+
+  // keywords that are neither reserved nor non-reserved and can be freely
+  // used as named strictIdentifier
+  final val RETURNS: Keyword = new Keyword("returns")
 }

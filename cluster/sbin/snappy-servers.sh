@@ -32,9 +32,12 @@ sbin="$(dirname "$(absPath "$0")")"
 
 
 # Check for background specification
-BACKGROUND=
+BACKGROUND=-bg
 if [ "$1" = "-bg" -o "$1" = "--background" ]; then
-  BACKGROUND="$1"
+  BACKGROUND=-bg
+  shift
+elif [ "$1" = "-fg" -o "$1" = "--foreground" ]; then
+  BACKGROUND=""
   shift
 fi
 

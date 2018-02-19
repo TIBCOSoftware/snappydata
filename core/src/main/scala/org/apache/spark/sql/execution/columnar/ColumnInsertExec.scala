@@ -28,6 +28,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
+import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
 import org.apache.spark.util.TaskCompletionListener
 
@@ -80,6 +81,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   def columnBatchSize: Int = batchParams._1
 
   def columnMaxDeltaRows: Int = batchParams._2
+
+  val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(batchParams._3)
 
   override protected def opType: String = "Inserted"
 
@@ -651,7 +654,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm, $conn);
+         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
+         |      ${compressionCodec.id}, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -659,14 +663,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(beginSnapshotTx,
       s"""
          |private final Object[] $beginSnapshotTx() {
-         |  return $externalStoreTerm.beginTx();
+         |  return $externalStoreTerm.beginTx(false);
          |}
       """.stripMargin)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
          |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.commitTx($txId, $conn);
+         |  $externalStoreTerm.commitTx($txId, false, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
@@ -799,7 +803,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm, $conn);
+         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
+         |      ${compressionCodec.id}, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -807,14 +812,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(beginSnapshotTx,
       s"""
          |private final Object[] $beginSnapshotTx() {
-         |  return $externalStoreTerm.beginTx();
+         |  return $externalStoreTerm.beginTx(false);
          |}
       """.stripMargin)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
          |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.commitTx($txId, $conn);
+         |  $externalStoreTerm.commitTx($txId, false, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
@@ -859,7 +864,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   private def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
       nullable: Boolean, encoder: String, cursorTerm: String,
       ev: ExprCode): String = {
-    ColumnWriter.genCodeColumnWrite(ctx, dataType, nullable, encoder,
+    ColumnWriter.genCodeColumnWrite(ctx, dataType, nullable, encoder, encoder,
       cursorTerm, ev, batchSizeTerm)
   }
 
@@ -932,14 +937,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   override def simpleString: String = s"ColumnInsert($columnTable) partitionColumns=" +
       s"${partitionColumns.mkString("[", ",", "]")} numBuckets = $numBuckets " +
-      s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows"
+      s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows compression=$compressionCodec"
 }
 
 object ColumnWriter {
 
   def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
-      nullable: Boolean, encoder: String, cursorTerm: String, ev: ExprCode,
-      batchSizeTerm: String, offsetTerm: String = null,
+      nullable: Boolean, encoder: String, nullEncoder: String, cursorTerm: String,
+      ev: ExprCode, batchSizeTerm: String, offsetTerm: String = null,
       baseOffsetTerm: String = null): String = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
@@ -1018,7 +1023,7 @@ object ColumnWriter {
     if (nullable) {
       s"""
          |if ($isNull) {
-         |  $encoder.writeIsNull($batchSizeTerm);
+         |  $nullEncoder.writeIsNull($batchSizeTerm);
          |} else {
          |  $writeValue
          |}""".stripMargin
@@ -1179,7 +1184,7 @@ object ColumnWriter {
     val serializeValue =
       s"""
          |final long $fieldOffset = $baseDataOffset + ($index << 3);
-         |${genCodeColumnWrite(ctx, dt, nullable = false, encoder,
+         |${genCodeColumnWrite(ctx, dt, nullable = false, encoder, encoder,
             cursorTerm, ExprCode("", "false", value), batchSizeTerm,
             fieldOffset, baseOffset)}
       """.stripMargin

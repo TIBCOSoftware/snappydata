@@ -12,8 +12,6 @@ This section provides guidelines for configuring the following important setting
 
 * [Operating System Settings](#os_setting)
 
-* [Table Memory Requirements](#table-memory)
-
 * [SnappyData Smart Connector mode and Local mode Settings](#smartconnector-local-settings)
 
 <a id="buckets"></a>
@@ -21,7 +19,9 @@ This section provides guidelines for configuring the following important setting
 
 A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
 
-By default, there are 113 buckets for a table. The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
+The default number of buckets in the SnappyData cluster mode is 128. In the local mode it is cores*2, subject to a maximum of 64 buckets and a minumum of 8 buckets.
+
+The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
 
 If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently. Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.
 
@@ -89,7 +89,7 @@ sudo swapon /var/swapfile.1
 ```
 
 <a id="smartconnector-local-settings"></a>
-## SnappyData Smart Connector mode and Local mode Settings
+## SnappyData Smart Connector mode and Local mode settings
 
 ### Managing Executor Memory
 For efficient loading of data from a Smart Connector application or a Local Mode application, all the partitions of the input data are processed in parallel by making use of all the available cores. Further, to have better ingestion speed, small internal columnar storage structures are created in the Spark application's cluster itself, which is then directly inserted into the required buckets of the column table in the SnappyData cluster.
@@ -98,9 +98,25 @@ For example, if there are 32 cores for the Smart Connector application and the n
 
 You can modify this setting in the `spark.executor.memory` property. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/configuration.html#available-properties).
 
-### JVM settings for optimal performance:
-The following JVM setting is recommended for optimal performance:
+### JVM settings for optimal performance
+The following JVM settings are set by default and is recommended only for local mode.
 
-```-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k```
+*  -XX:+UseParNewGC
+*  -XX:+UseConcMarkSweepGC
+*  -XX:CMSInitiatingOccupancyFraction=50
+*  -XX:+CMSClassUnloadingEnabled
+*  -XX:-DontCompileHugeMethods
+*   -XX:CompileThreshold=2000
+*   -XX:+UnlockDiagnosticVMOptions
+*   -XX:ParGCCardsPerStrideChunk=4k
+*   -Djdk.nio.maxCachedBufferSize=131072
 
-Set in the conf/locators, leads, servers
+**Example**:
+
+```
+-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k
+```
+CMS collector with ParNew is used by default as above and recommended. GC settings set above have been seen to work best in representative workloads and can be tuned further as per application. For enterprise users `off-heap` is recommended for best performance.
+
+
+Set in the **conf/locators**, **conf/leads**, and **conf/servers** file.

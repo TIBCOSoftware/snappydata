@@ -7,6 +7,24 @@ You can connect to and execute queries against SnappyData cluster using JDBC dri
 
 Where the `<locatorHostName>` is the hostname of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
 
+**Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData.
+
+**Example: Maven dependency:**
+```
+<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client -->
+<dependency>
+    <groupId>io.snappydata</groupId>
+    <artifactId>snappydata-store-client</artifactId>
+    <version>1.6.1</version>
+</dependency>
+```
+
+**Example: SBT dependency:**
+```
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
+libraryDependencies += "io.snappydata" % "snappydata-store-client" % "1.6.1"
+```
+
 **Code Example:**
 
 **Connect to a SnappyData cluster using JDBC on default client port**

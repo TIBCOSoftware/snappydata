@@ -19,7 +19,6 @@ package io.snappydata
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.sql.QueryTest.checkAnswer
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession, SparkSession}
@@ -79,11 +78,11 @@ class QueryTest extends SnappyFunSuite {
 
     // SNAP-1482: check for engineering format numeric values
     var r = session.sql("select 2.1e-2").collect()
-    assert (r(0).getDouble(0) == 0.021)
+    assert(r(0).getDouble(0) == 0.021)
     r = session.sql("select 2.1e+2").collect()
-    assert (r(0).getDouble(0) == 210)
+    assert(r(0).getDouble(0) == 210)
     r = session.sql("select 2.1e2").collect()
-    assert (r(0).getDouble(0) == 210)
+    assert(r(0).getDouble(0) == 210)
 
     SparkSession.clearActiveSession()
     val spark = SparkSession.builder().getOrCreate()
@@ -239,5 +238,72 @@ class QueryTest extends SnappyFunSuite {
           |    )
           |) = 2""".stripMargin),
       Row(1) :: Row(1) :: Row(null) :: Row(null) :: Nil)
+  }
+
+  test("SNAP-2088 check for null handling with dictionary optimized joins and filters") {
+    val snc = this.snc
+    val t1 = "snap2088"
+    val t2 = "snap2088_2"
+
+    snc.sql(s"create table $t1 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '50')")
+    snc.sql(s"create table $t2 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '5000')")
+
+    val data = snc.range(10000).selectExpr("cast ((rand() * 100000) as int) as airport_id",
+      "concat('name_', cast((id % 20) as string)) as name",
+      "(case when id%2=0 then null else concat('city_', cast((id%10) as string)) end) as city",
+      "concat('country_', cast((id % 3) as string)) as country")
+    data.cache()
+    data.count()
+    data.createOrReplaceTempView("data")
+    data.write.insertInto(t1)
+    data.write.insertInto(t2)
+
+    // Some queries that either throw exception or give incorrect results as noted in SNAP-2088.
+    val queries = Array(
+      "select distinct city from $t",
+      "select distinct city from $t order by city",
+      "select distinct city from $t where country like 'country_1%'",
+      "select * from $t where city is null",
+      "select * from $t where city is null and country like 'country_1%'",
+      "select count(*), city from $t group by city",
+      "select count(*), city from $t where country like 'country_1%' group by city",
+      "select count(*), city, collect_list(airport_id), collect_list(name), " +
+          "collect_list(country) from (select * from $t order by airport_id, name, country) " +
+          "as t group by city order by city",
+      "select count(*), city, collect_list(airport_id), collect_list(name), " +
+          "collect_list(country) from (select * from $t where country like 'country_1%' " +
+          "  order by airport_id, name, country) as t group by city order by city"
+    )
+
+    // To validate the results against queries directly on data disabling snappy aggregation.
+    snc.sql("set snappydata.sql.hashAggregateSize=-1")
+    val expectedResults = queries.map(q => snc.sql(q.replace("$t", "data")).collect())
+
+    snc.sql("set snappydata.sql.hashAggregateSize=0")
+    var results = queries.map { q =>
+      snc.sql(q.replace("$t", t1)) -> snc.sql(q.replace("$t", t2))
+    }
+
+    for (((r1, r2), e) <- results.zip(expectedResults)) {
+      checkAnswer(r1, e)
+      checkAnswer(r2, e)
+    }
+
+    // fire updates and check again
+    snc.sql(s"update $t1 set airport_id = airport_id, name = name, city = city, " +
+        s"country = country where (airport_id % 3) = 0")
+    snc.sql(s"update $t2 set airport_id = airport_id, name = name, city = city, " +
+        s"country = country where (airport_id % 2) = 0")
+
+    results = queries.map { q =>
+      snc.sql(q.replace("$t", t1)) -> snc.sql(q.replace("$t", t2))
+    }
+
+    for (((r1, r2), e) <- results.zip(expectedResults)) {
+      checkAnswer(r1, e)
+      checkAnswer(r2, e)
+    }
   }
 }

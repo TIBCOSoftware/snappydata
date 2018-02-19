@@ -1,14 +1,14 @@
-# Quick Start Steps
+# Setting Up SnappyData Cloud Cluster
 
-To understand the product follow these easy steps that can get you started quickly:
+To set up the SnappyData Cloud Cluster follow these easy steps that can get you started quickly:
 
-1. [Setting up SnappyData Cloud Cluster](#SettingUp)
+* **Deploying SnappyData Cloud Cluster**
 
-	* [Deploying SnappyData Cloud Cluster with <!--iSight Cloud-->SnappyData CloudBuilder](#DeployingClusterCloudFormation)
+	* [Deploying SnappyData Cloud Cluster using SnappyData CloudBuilder](#DeployingClusterCloudFormation)
 
-	* [Deploying SnappyData Cloud Cluster on AWS using Scripts](#DeployingClusterScript)
+	* [Deploying SnappyData Cloud Cluster on AWS using scripts](#DeployingClusterScript)
 
-2. [Using Apache Zeppelin](#LoggingZeppelin)	
+* [Using Apache Zeppelin](#LoggingZeppelin)	
 
 	* [Using Predefined Notebook](#predefinednotebook)
 
@@ -18,17 +18,9 @@ To understand the product follow these easy steps that can get you started quick
 
 4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
 
-<a id="SettingUp"></a>
-## Setting Up SnappyData Cloud Cluster
-This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the <!--iSight Cloud-->SnappyData CloudBuilder and using a script.
+This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the SnappyData CloudBuilder and using a script.
 
-<a id="DeployingClusterCloudFormation"></a>
-## Deploying SnappyData Cloud Cluster with <!--iSight Cloud-->SnappyData CloudBuilder
-Watch the following  video to learn how easy it is to use <!--iSight Cloud-->SnappyData CloudBuilder, which generates a SnappyData Cloud Cluster.
-
-[![Cloudbuilder](../Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
-
-### Prerequisites
+## Prerequisites
 Before you begin:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources with CloudFormation
@@ -37,76 +29,113 @@ Before you begin:
 
 * Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 
-
+<a id="DeployingClusterCloudFormation"></a>
+## Deploying SnappyData Cloud Cluster with SnappyData CloudBuilder
 SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.
 
 It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running four processes (locator, lead, a data server and an Apache Zeppelin server) on it.
 
 This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started! 
 
-### Configuring and Launching the SnappyData Cloud Cluster
+### Step 1: Launch [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder)
 
-Launch the <!--iSight Cloud-->SnappyData CloudBuilder from [http://www.snappydata.io/cloudbuilder](http://www.snappydata.io/cloudbuilder). 
+### Step 2: Define your Cluster
+#### Community Edition users
 
-1. Enter the name for your cluster. Each cluster is identified by its unique name. 
-The names and details of the members are automatically derived from the provided cluster name. <br>
-![STEP](../Images/AWS_clustername.png)
+1. **Pick your version**</br> Select the **Community** option. </br>
+	![STEP](../Images/cloudbuilder_community_version.png)
 
-2. Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster.
-Refer to the Amazon documentation for more information on  [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br>
-![STEP](../Images/aws_ec2keypair.png)
+2. **Pick your Instance**</br>Select an instance based on the capacity that you require.</br>
+	![STEP](../Images/cloudbuilder_community_instance.png)
 
-3. Select an instance based on the capacity that you require. </br>
-![STEP](../Images/aws_instancetype.png)
+3. **Enter your email**: Provide your email address. </br>
+	![STEP](../Images/cloudbuilder_community_email.png)
+
+4. Click **Generate**. 
+
+5. The next page is displayed where you can [Select the Region and Launch your Cluster](#region).
+
+#### Enterprise Edition users
+1. **Pick your version**</br> Select the **Enterprise** option.
+
+	![STEP](../Images/cloudbuilder_enterprise_version.png)
+
+2. **Make Locators & Leads Highly Available?**</br>
+
+	* **Select HA/Non-HA for the [Locators](../best_practices/ha_considerations.md)** 
+
+	* **Select HA/Non-HA for the [Leads](../best_practices/ha_considerations.md)** </br> Currently, Amazon Elastic Block Storage (EBS) is provided.
+
+	![STEP](../Images/cloudbuilder_enterprise_locator_lead_ha.png)
+
+3. [Pick total Memory & Disk](../best_practices/memory_management.md) (GB): </br>
  
-4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.</br>
-![STEP](../Images/aws_ebsvolumesize.png)
+	* **Memory**: Click and drag the bar to select the required memory.
 
-	!!! Note
-    	Currently only Amazon Elastic Block Storage (EBS) is supported.
+	* **Disk (3x Memory Recommended)**: Click and drag the bar to select the required disk size.
 
-5. Enter your email address.  <br>
-![STEP](../Images/aws_email.png)
+	![STEP](../Images/cloudbuilder_enterprise_memory.png)
 
-6. Click **Generate**.
+4. **Recommended Cluster**: Select an instance based on the required capacity.
 
-7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
+	* **Add servers to support high availability?**: Select this option to add servers to support high availability.
+
+	* **Do your workloads have high query volumes?**: Select this option if your workloads have high query volumes.
+
+	Click the **Edit Nodes** option to modify the number of nodes.
+
+	![STEP](../Images/cloudbuilder_enterprise_cluster.png)
+
+5. Enter your email address and select the **Agree to terms of service** check-box. </br>
+
+	![STEP](../Images/cloudbuilder_enterprise_email.png)
+
+6. Click **Generate**. 
+
+7. The next page is displayed where you can [Select the Region and Launch your Cluster](#region).
+
+<a id="region"></a>
+### Step 3: Select the Region and Launch your Cluster
+1. On this page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
 
     !!! Note
 
 		* The region you select must match the EC2 Key Pair you created.
 
 		* If you are not already logged into AWS, you are redirected to the AWS sign-in page. 	
-![STEP](../Images/aws_selectedregion.png)
+	
+    ![STEP](../Images/cloudbuilder_selectedregion.png)
 
-8. On the **Select Template** page, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
-![STEP](../Images/aws_selecttemplate.png)
+2. On the **Select Template** page, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
 
-9. On the **Specify Details** page:
+	![STEP](../Images/aws_selecttemplate.png)
+
+3. On the **Specify Details** page:
 
 	* **Stack name**: You can change the stack name.</br>
 
 	!!! Note 
     	The stack name must contain only letters, numbers, dashes and should start with an alpha character.
     
-    * **VPCID**: From the drop-down list, select the Virtual Private Cloud (VPC) ID that is set as default. Your instances will be launched within this VPC.
+    * **KeyPairName**: Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. Refer to the Amazon documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 
-    Click **Next** to continue.
+    * **VPCID**: From the drop-down list, select *default* Virtual Private Cloud (VPC) ID of your selected region. Your instances are launched within this VPC.</br> Click **Next** to continue.
     
-    ![STEP](../Images/aws_vpcid.png)
+    ![STEP](../Images/cloudbuilder_create_stack.png)
 
-10. Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click **Next**.
+4. Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click **Next**.
 
-11. On the **Review** page, verify the details and click **Create** to create a stack.
+5. On the **Review** page, verify the details and click **Create** to create a stack.
 
 	!!! Note: 
     	This operation may take a few minutes to complete.
 
-12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation.
+6. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation.
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
 ![Refresh](../Images/aws_refreshstack.png)
 <a id="Stack"></a>
-13. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
+
+7. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
 	![Public IP](../Images/aws_links.png)
 
 	!!! Note: 
@@ -114,13 +143,12 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 
 		* **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
 
-		* **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the <!--iSight Cloud-->SnappyData CloudBuilder creation steps.
+		* **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the SnappyData CloudBuilder creation steps.
 
 		* **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*
 
-!!! Note: 
+!!! Warning: 
 	To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
-
 
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
@@ -151,7 +179,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 
 * Ensure Python v 2.7 or later is installed on your local computer.
 
-### Launching SnappyData Cluster
+### Launching the SnappyData Cluster
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where the **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
@@ -176,10 +204,8 @@ For example, using the following command, you can start a SnappyData cluster nam
 The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
 ```
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster 
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch snappydata-cluster
 ```
-To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`. 
-
 For a comprehensive list of command options, simply run `./snappy-ec2` in the command prompt.
 
 <a id="dataAWSS3"></a>
@@ -188,6 +214,7 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 
 
 !!! Note
+
     * 	The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.
 
 	* 	You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.
@@ -290,9 +317,11 @@ SnappyContext is injected in this interpreter and can be accessed using variable
 <a id="predefinednotebook"></a>
 
 ## Using Predefined Notebooks
-SnappyData provides you predefined notebooks **NYCTAXI Analytics** and **Airline Data Analytics** which contains definitions that are stored in a single file. 
 
-When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result. 
+SnappyData provides predefined notebooks which contains definitions that are stored in a single file. </br>
+The overview notebook provides a brief introduction to the SnappyData product features. It also provides  additional predefined notebooks, Quickstart, Performance, NYC TAXI Analytics and Airline Data Analytics.
+
+When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result.
 
 <a id="Creatingnotebook"></a>
 
@@ -300,9 +329,9 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 
 1. Log on to Apache Zeppelin, create a notebook and insert a new paragraph.
 
-2. Use `%snappydata.spark` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
+2. [Bind the interpreter by setting the default interpreter](../howto/use_apache_zeppelin_with_snappydata.md#additional-settings). Use `%snappydata.spark` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
 
-3. Download a dataset you want to use and create tables as mentioned below
+3. Download a data set you want to use and create tables as mentioned below
 
 ### Examples of Queries and Results
 This section provides you with examples you can use in a paragraph.
@@ -328,19 +357,16 @@ In this example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
 
 <a id="Monitoring"></a>
 ## Monitoring the SnappyData Cloud Cluster
- You can monitor the SnappyData cluster using the Apache Spark Console. This enables you to observe and record the performance and the activities on the SnappyData cluster.
 
-<!--The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members, and tables. 
-It provides information on the health, operational and configuration data, system alerts, CPU, disk and memory usage, throughput performance and statistics for system members like locators, leads, stores/servers, connected clients etc.  
-It also displays data information for various tables created in the cluster on different nodes/members along with their statistics.
--->
-The Apache Spark Console displays useful information about SnappyData. This includes a list of scheduler stages and tasks, summary of tables and memory usage.
+You can monitor the SnappyData cluster using SnappyData Pulse, which enables you to observe and record the performance and the activities on the SnappyData cluster. 
 
-## Accessing the Console
-To access the Apache Spark console from the Apache Zeppelin notebook: 
+It also displays useful information about SnappyData that includes a list of scheduler stages and tasks, summary of tables and memory usage etc. For more information, see [SnappyData Pulse](../monitoring/monitoring.md).
 
-1. Click on the **Spark UI** <!--or **Pulse** -->link provided in the paragraph.
+### Accessing the Console
+To access the SnappyData Pulse UI from the Apache Zeppelin notebook: 
+
+1. Click on the **SnappyData Pulse UI** link provided in the paragraph.
 	![Launch Spark](../Images/aws_pulsespark.png)
-<!--2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the username and password.-->
-3. Once you have logged in, you can start monitoring the SnappyData cluster. 
+
+2. Once you have logged in, you can start monitoring the SnappyData cluster.
 

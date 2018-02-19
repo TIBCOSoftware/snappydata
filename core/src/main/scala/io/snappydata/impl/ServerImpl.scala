@@ -40,7 +40,8 @@ class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
   @throws[SQLException]
   override def start(bootProps: Properties, ignoreIfStarted: Boolean): Unit = {
-    super.start(ServiceUtils.setCommonBootDefaults(bootProps), ignoreIfStarted)
+    super.start(ServiceUtils.setCommonBootDefaults(bootProps, forLocator = false),
+      ignoreIfStarted)
   }
 
   override def isServer: Boolean = true

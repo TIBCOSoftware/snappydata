@@ -17,16 +17,15 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.physical._
-import org.apache.spark.sql.collection.{ExecutorMultiBucketLocalShellPartition, Utils}
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.hive.ConnectorCatalog
-import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
@@ -137,22 +136,18 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       val locations = new Array[Seq[String]](numBuckets)
       var i = 0
       relInfo.partitions.foreach(x => {
-          locations(i) = x.asInstanceOf[ExecutorMultiBucketLocalShellPartition].
+          locations(i) = x.asInstanceOf[SmartExecutorBucketPartition].
           hostList.map(_._1.asInstanceOf[String])
           i = i + 1
       })
       locations
     }
-    relation.get match {
-      case m: JDBCMutableRelation =>
-        inputRDDs.map { rdd =>
-          new DelegateRDD(sparkContext, rdd, preferredLocations(m.table))
-        }
-      case JDBCAppendableRelation(table, _, _, _, _, _, _) =>
-        inputRDDs.map { rdd =>
-          new DelegateRDD(sparkContext, rdd, preferredLocations(table))
-        }
-      case _ => inputRDDs
+    inputRDDs.map { rdd =>
+      // if the two are different then its partition pruning case
+      if (numBuckets == rdd.getNumPartitions) {
+        val table = relation.get.asInstanceOf[PartitionedDataSourceScan].table
+        new DelegateRDD(sparkContext, rdd, preferredLocations(table))
+      } else rdd
     }
   }
 

@@ -18,23 +18,22 @@
 package io.snappydata
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
-import org.apache.spark.sql.catalyst.expressions.codegen.{ExprCode, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{LeafExpression, ExpressionDescription}
-import org.apache.spark.sql.types.{StringType, DataType}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, LeafExpression}
+import org.apache.spark.sql.types.{DataType, StringType}
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
  * This will contain all the functions specific to snappydata
  */
-object functions {
+object SnappyDataFunctions {
 
   def registerSnappyFunctions(functionRegistry: FunctionRegistry): Unit = {
-    functionRegistry.registerFunction("DSID", e => DSID())
-
+    functionRegistry.registerFunction("DSID", _ => DSID())
   }
-
 }
 
 /**
@@ -55,9 +54,10 @@ case class DSID() extends LeafExpression {
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    val idTerm = ctx.freshName("dsid")
-    ctx.addMutableState("UTF8String", idTerm, s"${idTerm}=UTF8String" +
-      s".fromString(com.pivotal.gemfirexd.internal.engine.Misc.getMyId().getId());")
-    ev.copy(code = s"final ${ctx.javaType(dataType)} ${ev.value} = $idTerm;", isNull = "false")
+    ctx.addMutableState("UTF8String", ev.value, s"${ev.value} = UTF8String" +
+        ".fromString(com.pivotal.gemfirexd.internal.engine.Misc.getMyId().getId());")
+    ev.code = ""
+    ev.isNull = "false"
+    ev
   }
 }

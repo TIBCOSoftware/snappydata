@@ -26,14 +26,15 @@ import scala.util.Random
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.{ColumnUpdateDeleteTests, Constant}
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
+import io.snappydata.{ColumnUpdateDeleteTests, Constant}
 import org.junit.Assert
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 import org.apache.spark.util.collection.OpenHashSet
@@ -54,6 +55,11 @@ trait SplitClusterDUnitTestBase extends Logging {
   def vm3: VM
 
   protected def startArgs: Array[AnyRef]
+
+  // reduce minimum compression size so that it happens for all the values for testing
+  protected def compressionMinSize = "128"
+
+  protected def compressionArg: String = s"-D${Constant.COMPRESSION_MIN_SIZE}=$compressionMinSize"
 
   protected def testObject: SplitClusterDUnitTestObject
 
@@ -104,7 +110,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   def doTestComplexTypesForColumnTables_SNAP643(): Unit = {
     // Embedded Cluster Operations
-    val props = Map("buckets" -> "7")
+    val props = Map("buckets" -> "8")
     testObject.createComplexTablesAndInsertData(props)
 
     // StandAlone Spark Cluster Operations
@@ -168,11 +174,18 @@ trait SplitClusterDUnitTestBase extends Logging {
       override def run(): Unit = {
         val snc = testObject.getSnappyContextForConnector(netPort)
         val session = snc.snappySession
-        ColumnUpdateDeleteTests.testBasicUpdate(session)
-        ColumnUpdateDeleteTests.testBasicDelete(session)
-        ColumnUpdateDeleteTests.testSNAP1925(session)
-        ColumnUpdateDeleteTests.testSNAP1926(session)
-        ColumnUpdateDeleteTests.testConcurrentOps(session)
+        // using random bucket assignment for cases like SNAP-2175
+        StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = true
+        try {
+          ColumnUpdateDeleteTests.testBasicUpdate(session)
+          ColumnUpdateDeleteTests.testBasicDelete(session)
+          ColumnUpdateDeleteTests.testSNAP1925(session)
+          ColumnUpdateDeleteTests.testSNAP1926(session)
+          ColumnUpdateDeleteTests.testConcurrentOps(session)
+          ColumnUpdateDeleteTests.testSNAP2124(session, checkPruning = false)
+        } finally {
+          StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
+        }
       }
     })
   }

@@ -1,8 +1,8 @@
 # How to use Transactions Isolation Levels
 
-SnappyData supports transaction isolation levels when using JDBC or ODBC connections. The default transaction level in SnappyData is set to NONE, which ensures that other transactions are prevented from modifying rows when the current transaction is running an operation on the same rows.
+SnappyData supports transaction isolation levels when using JDBC or ODBC connections. The default transaction level in SnappyData is set to NONE. This corresponds to the JDBC TRANSACTION_NONE isolation level. At this level writes performed by a single thread are seen by all other threads in the order in which they were issued, but writes from different threads may be seen in a different order by other threads.
 
-SnappyData also supports `READ_COMMITTED` and `REPEATABLE_READ` transaction isolation levels. A detailed description of the transaction's semantics in SnappyData can be found in the [Using Transactions](../programming_guide/using_transactions.md) section.
+SnappyData also supports `READ_COMMITTED` and `REPEATABLE_READ` transaction isolation levels. A detailed description of the transaction's semantics in SnappyData can be found in the [Overview of SnappyData Distributed Transactions](../consistency/transactions_about.md) section.
 
 !!! Note:
 	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to **off** (**false**). </br>Queries on column tables are supported when isolation level is set to `READ_COMMITTED` or `REPEATABLE_READ` and autocommit is set to **true**.
@@ -111,3 +111,9 @@ stmt2.execute("SELECT * FROM APP.CUSTOMER")
 // the above statement throws an error as given below
 EXCEPTION: java.sql.SQLException: (SQLState=XJ218 Severity=20000) (Server=localhost/127.0.0.1[25299] Thread=pool-14-thread-3) Operations on column tables are not supported when query routing is disabled or autocommit is false
 ```
+
+**More information**
+
+- [Overview of SnappyData Distributed Transactions](../consistency/transactions_about.md)
+
+- [Best Practices for SnappyData Distributed Transactions](../best_practices/transactions_best_practices.md)

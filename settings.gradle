@@ -20,12 +20,14 @@ rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-cluster_' + scalaBinaryVersion
+include ':snappy-launcher'
 include ':snappy-examples_' + scalaBinaryVersion
 include 'dunit'
 include ':snappy-dtests_' + scalaBinaryVersion
 
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
+project(':snappy-launcher').projectDir = "$rootDir/launcher" as File
 project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/examples" as File
 project(':snappy-dtests_' + scalaBinaryVersion).projectDir = "$rootDir/dtests" as File
 
@@ -114,13 +116,13 @@ if (new File(rootDir, 'store/build.gradle').exists()) {
   // sub-projects of snappy-store
   include ':snappy-store:gemfire-jgroups'
   include ':snappy-store:gemfire-trove'
-  include ':snappy-store:gemfire-joptsimple'
-  include ':snappy-store:gemfire-json'
+  include ':snappy-store:gemfire-util'
   include ':snappy-store:gemfire-junit'
   include ':snappy-store:gemfire-shared'
   include ':snappy-store:gemfire-core'
-  include ':snappy-store:gemfire-web'
+  // include ':snappy-store:gemfire-web'
   include ':snappy-store:gemfire-examples'
+  include ':snappy-store:snappydata-util'
   include ':snappy-store:snappydata-store-shared'
   include ':snappy-store:snappydata-store-prebuild'
   include ':snappy-store:snappydata-store-core'
@@ -134,13 +136,13 @@ if (new File(rootDir, 'store/build.gradle').exists()) {
   project(':snappy-store').projectDir = "$rootDir/store" as File
   project(':snappy-store:gemfire-jgroups').projectDir = "$rootDir/store/lgpl/gemfire-jgroups" as File
   project(':snappy-store:gemfire-trove').projectDir = "$rootDir/store/lgpl/gemfire-trove" as File
-  project(':snappy-store:gemfire-joptsimple').projectDir = "$rootDir/store/gemfire-joptsimple" as File
-  project(':snappy-store:gemfire-json').projectDir = "$rootDir/store/gemfire-json" as File
+  project(':snappy-store:gemfire-util').projectDir = "$rootDir/store/gemfire-util" as File
   project(':snappy-store:gemfire-junit').projectDir = "$rootDir/store/gemfire-junit" as File
   project(':snappy-store:gemfire-shared').projectDir = "$rootDir/store/gemfire-shared" as File
   project(':snappy-store:gemfire-core').projectDir = "$rootDir/store/gemfire-core" as File
-  project(':snappy-store:gemfire-web').projectDir = "$rootDir/store/gemfire-web" as File
+  // project(':snappy-store:gemfire-web').projectDir = "$rootDir/store/gemfire-web" as File
   project(':snappy-store:gemfire-examples').projectDir = "$rootDir/store/gemfire-examples" as File
+  project(':snappy-store:snappydata-util').projectDir = "$rootDir/store/snappy-util" as File
   project(':snappy-store:snappydata-store-shared').projectDir = "$rootDir/store/gemfirexd/shared" as File
   project(':snappy-store:snappydata-store-prebuild').projectDir = "$rootDir/store/gemfirexd/prebuild" as File
   project(':snappy-store:snappydata-store-core').projectDir = "$rootDir/store/gemfirexd/core" as File

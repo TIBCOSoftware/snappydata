@@ -29,6 +29,7 @@ import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
@@ -53,11 +54,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var isPartitioned: Boolean,
     @transient private val columns: Array[String],
     var pushProjections: Boolean,
-    var useResultSet: Boolean,
+    protected var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-      Array.empty[Partition], var commitTx: Boolean)
+      Array.empty[Partition],
+    protected var commitTx: Boolean, protected var delayRollover: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -226,14 +228,25 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     embedConn.getTR.setupContextStack()
     rs.pushStatementContext(lcc, true)
     */
+    // set the delayRollover flag on current transaction
+    if (delayRollover) {
+      val tx = TXManagerImpl.getCurrentTXState
+      if (tx ne null) {
+        tx.getProxy.setColumnRolloverDisabled(true)
+      }
+    }
     (conn, stmt, rs)
   }
 
 
   def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext): Unit = {
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      val tx = TXManagerImpl.snapshotTxState.get()
+      val tx = TXManagerImpl.getCurrentSnapshotTXState
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+        // if rollover was marked as delayed, then do the rollover before commit
+        if (delayRollover) {
+          GfxdSystemProcedures.flushLocalBuckets(tableName, false)
+        }
         val txMgr = tx.getTxMgr
         txMgr.masqueradeAs(tx)
         txMgr.commit()
@@ -322,11 +335,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
-    output.writeBoolean(commitTx)
     output.writeString(tableName)
     output.writeBoolean(isPartitioned)
     output.writeBoolean(pushProjections)
     output.writeBoolean(useResultSet)
+    output.writeBoolean(commitTx)
+    output.writeBoolean(delayRollover)
 
     output.writeString(columnList)
     val filterArgs = filterWhereArgs
@@ -350,11 +364,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
-    commitTx = input.readBoolean()
     tableName = input.readString()
     isPartitioned = input.readBoolean()
     pushProjections = input.readBoolean()
     useResultSet = input.readBoolean()
+    commitTx = input.readBoolean()
+    delayRollover = input.readBoolean()
 
     columnList = input.readString()
     val numFilters = input.readVarInt(true)
@@ -405,18 +420,23 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 abstract class PRValuesIterator[T](container: GemFireContainer,
     region: LocalRegion, bucketIds: java.util.Set[Integer]) extends Iterator[T] {
 
+  protected type PRIterator = PartitionedRegion#PRLocalScanIterator
+
   protected final var hasNextValue = true
   protected final var doMove = true
   // transaction started by row buffer scan should be used here
-  private val tx = TXManagerImpl.snapshotTxState.get()
-  private[execution] final val itr = if (container ne null) {
+  private val tx = TXManagerImpl.getCurrentSnapshotTXState
+  private[execution] final val itr = createIterator(container, region, tx)
+
+  protected def createIterator(container: GemFireContainer, region: LocalRegion,
+      tx: TXStateInterface): PRIterator = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
-      false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+      false, true).asInstanceOf[PRIterator]
   } else if (region ne null) {
     region.getDataView(tx).getLocalEntriesIterator(
       bucketIds.asInstanceOf[java.util.Set[Integer]], false, false, true,
-      region, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+      region, true).asInstanceOf[PRIterator]
   } else null
 
   protected def currentVal: T

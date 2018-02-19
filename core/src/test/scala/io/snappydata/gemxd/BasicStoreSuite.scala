@@ -16,19 +16,20 @@
  */
 package io.snappydata.gemxd
 
-import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 import java.util.Properties
 
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.TestUtil
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.LocalSparkConf
 
-import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
+import org.apache.spark.sql.{Row, SaveMode}
 
 class BasicStoreSuite(s: String) extends TestUtil(s) {
 
   override protected def tearDown(): Unit = {
+    if (Misc.getMemStoreBootingNoThrow == null) return
     val conn = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     try {
       conn.createStatement().execute("drop table if exists t1")

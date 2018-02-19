@@ -20,9 +20,10 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
-import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
+import org.apache.spark.sql.internal.PutIntoColumnTable
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
 
 /**
@@ -42,28 +43,55 @@ object StoreStrategy extends Strategy {
       val optionsWithPath: Map[String, String] = if (tableDesc.storage.locationUri.isDefined) {
         options + ("path" -> tableDesc.storage.locationUri.get)
       } else options
+      val (provider, isBuiltIn) = SnappyContext.getBuiltInProvider(tableDesc.provider.get)
       val cmd =
         CreateMetastoreTableUsing(tableDesc.identifier, None, userSpecifiedSchema,
-          None, SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
-          mode != SaveMode.ErrorIfExists, optionsWithPath, isBuiltIn = false)
+          None, provider, mode != SaveMode.ErrorIfExists, optionsWithPath, isBuiltIn)
       ExecutedCommandExec(cmd) :: Nil
 
     case CreateTable(tableDesc, mode, Some(query)) =>
       val userSpecifiedSchema = SparkSession.getActiveSession.get
         .asInstanceOf[SnappySession].normalizeSchema(query.schema)
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
-      val cmd =
-        CreateMetastoreTableUsingSelect(tableDesc.identifier, None, Some(userSpecifiedSchema), None,
-          SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
-          temporary = false, tableDesc.partitionColumnNames.toArray, mode,
-          options, query, isBuiltIn = false)
+      val (provider, isBuiltIn) = SnappyContext.getBuiltInProvider(tableDesc.provider.get)
+      val cmd = CreateMetastoreTableUsingSelect(tableDesc.identifier, None,
+        Some(userSpecifiedSchema), None, provider, tableDesc.partitionColumnNames.toArray,
+        mode, options, query, isBuiltIn)
       ExecutedCommandExec(cmd) :: Nil
-    case create: CreateMetastoreTableUsing =>
-      ExecutedCommandExec(create) :: Nil
-    case createSelect: CreateMetastoreTableUsingSelect =>
-      ExecutedCommandExec(createSelect) :: Nil
-    case drop: DropTable =>
-      ExecutedCommandExec(drop) :: Nil
+
+    case CreateTableUsing(tableIdent, baseTable, userSpecifiedSchema, schemaDDL,
+    provider, allowExisting, options, isBuiltIn) =>
+      ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent, baseTable,
+        userSpecifiedSchema, schemaDDL, provider, allowExisting, options, isBuiltIn)) :: Nil
+
+    case CreateTableUsingSelect(tableIdent, baseTable, userSpecifiedSchema, schemaDDL,
+    provider, partitionColumns, mode, options, query, isBuiltIn) =>
+      ExecutedCommandExec(CreateMetastoreTableUsingSelect(tableIdent, baseTable,
+        userSpecifiedSchema, schemaDDL, provider, partitionColumns, mode,
+        options, query, isBuiltIn)) :: Nil
+
+    case DropTableOrView(isView: Boolean, ifExists, tableIdent) =>
+      ExecutedCommandExec(DropTableOrViewCommand(isView, ifExists, tableIdent)) :: Nil
+
+    case TruncateManagedTable(ifExists, tableIdent) =>
+      ExecutedCommandExec(TruncateManagedTableCommand(ifExists, tableIdent)) :: Nil
+
+    case AlterTableAddColumn(tableIdent, addColumn) =>
+      ExecutedCommandExec(AlterTableAddColumnCommand(tableIdent, addColumn)) :: Nil
+
+    case AlterTableDropColumn(tableIdent, column) =>
+      ExecutedCommandExec(AlterTableDropColumnCommand(tableIdent, column)) :: Nil
+
+    case CreateIndex(indexName, baseTable, indexColumns, options) =>
+      ExecutedCommandExec(CreateIndexCommand(indexName, baseTable, indexColumns, options)) :: Nil
+
+    case DropIndex(ifExists, indexName) =>
+      ExecutedCommandExec(DropIndexCommand(indexName, ifExists)) :: Nil
+
+    case SetSchema(schemaName) => ExecutedCommandExec(SetSchemaCommand(schemaName)) :: Nil
+
+    case SnappyStreamingActions(action, batchInterval) =>
+      ExecutedCommandExec(SnappyStreamingActionsCommand(action, batchInterval)) :: Nil
 
     case p: EncoderPlan[_] =>
       val plan = p.asInstanceOf[EncoderPlan[Any]]
@@ -80,6 +108,9 @@ object StoreStrategy extends Strategy {
 
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
+
+    case PutIntoColumnTable(l@LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
+      ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
 
     case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
     keyColumns, updateColumns, updateExpressions) =>
@@ -192,7 +223,7 @@ private[sql] case class DeleteFromTable(
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
 
-  override def output: Seq[Attribute] = Seq.empty
+  override def output: Seq[Attribute] = Nil
 
   override lazy val resolved: Boolean = childrenResolved &&
       child.output.zip(table.output).forall {

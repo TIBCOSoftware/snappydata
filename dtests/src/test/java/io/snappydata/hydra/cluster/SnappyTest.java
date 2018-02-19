@@ -19,6 +19,9 @@ package io.snappydata.hydra.cluster;
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 import hydra.*;
+import io.snappydata.hydra.connectionPool.HikariConnectionPool;
+import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
+import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -123,6 +126,8 @@ public class SnappyTest implements Serializable {
   protected static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
 
   private Connection connection = null;
+  public static String connPool = TestConfig.tab().stringAt(SnappyConnectionPoolPrms.useConnPool, "");
+  public static int connPoolType = SnappyConnectionPoolPrms.getConnPoolType(connPool);
   private static HydraThreadLocal localconnection = new HydraThreadLocal();
 
   /**
@@ -360,7 +365,7 @@ public class SnappyTest implements Serializable {
             " -J-Dgemfirexd.table-default-partitioned=" +
             SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
             SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() +
-            SnappyPrms.getEvictionHeapPercentage() +
+            SnappyPrms.getEvictionHeapPercentage() + SnappyPrms.getPersistIndexes() +
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
             " -J-XX:+DisableExplicitGC" +
@@ -383,6 +388,7 @@ public class SnappyTest implements Serializable {
             SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
             " -spark.local.dir=" + snappyTest.getTempDir("temp") +
             " -dir=" + dirPath + clientPort + port +
+            " -jobserver.waitForInitialization=true " +
             SnappyPrms.getLeadMemory() + SnappyPrms.getSparkSqlBroadcastJoinThreshold()
             + " -spark.jobserver.port=" + leadPort + SnappyPrms.getSparkSchedulerMode()
             + /*" -spark.sql.inMemoryColumnarStorage.compressed="
@@ -1141,7 +1147,7 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
-  protected static List<String> validateLocatorEndpointData() {
+  public static List<String> validateLocatorEndpointData() {
     List<String> endpoints = getNetworkLocatorEndpoints();
     if (endpoints.size() == 0) {
       if (isLongRunningTest) {
@@ -1169,21 +1175,59 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
+  public static synchronized void setConnPoolType(){
+    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+      SnappyBB.getBB().getSharedMap().put("connPoolType", SnappyConnectionPoolPrms
+          .getConnPoolType(connPool));
+    connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
+  }
+
   /**
    * Gets Client connection.
    */
   public static Connection getLocatorConnection() throws SQLException {
-    List<String> endpoints = validateLocatorEndpointData();
     Connection conn = null;
-    if (!runGemXDQuery) {
-      String url = "jdbc:snappydata://" + endpoints.get(0);
-      Log.getLogWriter().info("url is " + url);
-      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
-    } else {
-      String url = "jdbc:gemfirexd://" + endpoints.get(0);
-      Log.getLogWriter().info("url is " + url);
-      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+
+    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+      setConnPoolType();
+    else 
+      connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
+    
+    if(connPoolType == 0){
+      conn = HikariConnectionPool.getConnection();
+    } else if (connPoolType == 1){
+      conn = TomcatConnectionPool.getConnection();
     }
+    else {
+      List<String> endpoints = validateLocatorEndpointData();
+
+      if (!runGemXDQuery) {
+        String url = "jdbc:snappydata://" + endpoints.get(0);
+        Log.getLogWriter().info("url is " + url);
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+      } else {
+        String url = "jdbc:gemfirexd://" + endpoints.get(0);
+        Log.getLogWriter().info("url is " + url);
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+      }
+    }
+    return conn;
+  }
+
+  public static Connection getLocatorConnectionUsingProps() throws
+      SQLException {
+    List<String> endpoints = validateLocatorEndpointData();
+    Properties props = new Properties();
+    Vector connPropsList = SnappyPrms.getConnPropsList();
+    for (int i = 0; i < connPropsList.size(); i++) {
+      String conProp = (String) connPropsList.elementAt(i);
+      String conPropKey = conProp.substring(0, conProp.indexOf("="));
+      String conPropValue = conProp.substring(conProp.indexOf("=") + 1);
+      props.setProperty(conPropKey, conPropValue);
+    }
+    Connection conn = null;
+    String url = "jdbc:snappydata://" + endpoints.get(0) + "/";
+    conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
     return conn;
   }
 
@@ -1233,6 +1277,16 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info("Creating connection using " + driver + " with " + protocol);
     loadDriver(driver);
     Connection conn = DriverManager.getConnection(protocol);
+    return conn;
+  }
+
+  private static Connection getConnection(String protocol, String driver, Properties props)
+      throws
+      SQLException {
+    Log.getLogWriter().info("Creating connection using " + driver + " with " + protocol +
+        " and user specified properties list: = " + props.toString());
+    loadDriver(driver);
+    Connection conn = DriverManager.getConnection(protocol, props);
     return conn;
   }
 
@@ -1668,7 +1722,7 @@ public class SnappyTest implements Serializable {
         assert p.getInputStream().read() == -1;
       }
       int rc = p.waitFor();
-      if (rc == 0) {
+      if ((rc == 0) || (pb.command().contains("grep") && rc == 1)) {
         Log.getLogWriter().info("Executed successfully");
       } else {
         Log.getLogWriter().info("Failed with exit code: " + rc);
@@ -2041,9 +2095,9 @@ public class SnappyTest implements Serializable {
         String command = null;
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
-        String userAppJars = SnappyPrms.getUserAppArgs();
+        String userAppArgs = SnappyPrms.getUserAppArgs();
         if (SnappyPrms.hasDynamicAppProps()) {
-          userAppJars = userAppJars + " " + dynamicAppProps.get(getMyTid());
+          userAppArgs = userAppArgs + " " + dynamicAppProps.get(getMyTid());
         }
         command = snappyJobScript + " --class " + userJob +
             " --master spark://" + masterHost + ":" + masterPort + " " +
@@ -2052,7 +2106,7 @@ public class SnappyTest implements Serializable {
             " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
             " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-            userAppJars + " " + primaryLocatorHost + ":" + primaryLocatorPort;
+            userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         Log.getLogWriter().info("spark-submit command is : " + command);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -2389,14 +2443,6 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_startSnappyCluster() {
     if (forceStart) {
       startSnappyCluster();
-      try {
-        //2 mins sleep is added to avoid the stopSnappy cluster call immediately after restart and
-        // verify the recovery in UI.
-        Thread.sleep(120000);
-      } catch (InterruptedException e) {
-        String s = "Exception occurred while waiting for snappy-start-all script execution..";
-        throw new TestException(s, e);
-      }
     } else {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
       if (num == 1) {

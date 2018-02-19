@@ -9,7 +9,7 @@
 
 ## Step 1: Install the SnappyData ODBC Driver
 
-1. [Download the SnappyData 1.0 Enterprise Edition](install.md#download-snappydata).
+1. [Download the SnappyData 1.0.1 Enterprise Edition](install.md#download-snappydata).
 
 2. Click **ODBC INSTALLERS** to download the **snappydata-odbc-1.0.0.zip** file.
 
@@ -80,6 +80,6 @@ To connect the Tableau Desktop to the SnappyData Server:
 
 7. In the **Worksheets** tab, click **sheet** to start the analysis.</br> 
 
-8. On this screen, you can click and drag a field from the **Dimensions** area to** Rows** or **Columns**.</br> Refer to the Tableau documentation for more information on data visualization.
+8. On this screen, you can click and drag a field from the **Dimensions** area to **Rows** or **Columns**.</br> Refer to the Tableau documentation for more information on data visualization.
 
 

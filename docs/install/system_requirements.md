@@ -18,15 +18,18 @@ SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memor
 
 | Operating System| Version |
 |--------|--------|
-|Red Hat Enterprise Linux|RHEL 6.0 and 7.0|
-|Ubuntu|Ubuntu Server 14.04 and later|
-|CentOS|CentOS 6, 7|
+|Red Hat Enterprise Linux|- RHEL 6.0 </p> - RHEL 7.0 (Mininum recommended kernel version: 3.10.0-693.2.2.el7.x86_64)|
+|Ubuntu|Ubuntu Server 14.04 and later||
+|CentOS|CentOS 6, 7 (Minimum recommended kernel version: 3.10.0-693.2.2.el7.x86_64)|
+
 
 
 ## Host Machine Requirements
 Requirements for each host:
 
-* A supported [Java SE installation](http://www.oracle.com/technetwork/java/javase/downloads). SnappyData does not support Java SE 9.
+* A supported [Oracle Java SE 8](http://www.oracle.com/technetwork/java/javase/downloads) installation. We recommend minimum version: 1.8.0_144 (see [SNAP-2017](https://jira.snappydata.io/browse/SNAP-2017), [SNAP-1999](https://jira.snappydata.io/browse/SNAP-1999), [SNAP-1911](https://jira.snappydata.io/browse/SNAP-1911), [SNAP-1375](https://jira.snappydata.io/browse/SNAP-1375) for crashes reported with earlier versions).
+
+* The latest version of Bash shell.
 
 * A file system that supports long file names.
 
@@ -44,6 +47,14 @@ Requirements for each host:
 	* For troubleshooting, you must run a time synchronization service on all hosts. Synchronized time stamps allow you to merge log messages from different hosts, for an accurate chronological history of a distributed run.
 
 	* If you deploy SnappyData on a virtualized host, consult the documentation provided with the platform, for system requirements and recommended best practices, for running Java and latency-sensitive workloads.
+
+## VSD Requirements
+- Install 32-bit libraries on 64-bit Linux:</br>
+	"yum install glibc.i686 libX11.i686" on RHEL/CentOS</br>
+	"apt-get install libc6:i386 libx11-6:i386" on Ubuntu/Debian like systems</br>
+
+- Locally running X server. For example, an X server implementation like, XQuartz for Mac OS, Xming for Windows OS, and Xorg which is installed by default for Linux systems.
+
 
 ## Filesystem Type for Linux Platforms
 

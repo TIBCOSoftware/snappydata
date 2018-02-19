@@ -22,7 +22,6 @@ import java.sql.PreparedStatement
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 import io.snappydata.SnappyTableStatsProviderService
-import io.snappydata.benchmark.snappy.TPCH_Snappy
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
 import io.snappydata.cluster.ClusterManagerTestBase
@@ -236,7 +235,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     val snc = SnappyContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
     val conn = getANetConnection(locatorNetPort)
-    val prepStatement = conn.prepareStatement(TPCH_Snappy.getQuery10)
+    val prepStatement = conn.prepareStatement(TPCH_Queries.getQuery10_ForPrepareStatement)
     verifyResultSnap1296_1297(prepStatement)
     prepStatement.close()
 
@@ -384,7 +383,7 @@ object TPCHUtils extends Logging {
             for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
               if (!expectedLine.equals(actualLine)) {
                 resultOutputStream.println(s"For $query result mismatched observed")
-                resultOutputStream.println(s"Excpected : $expectedLine")
+                resultOutputStream.println(s"Expected  : $expectedLine")
                 resultOutputStream.println(s"Found     : $actualLine")
                 resultOutputStream.println(s"-------------------------------------")
               }
@@ -425,7 +424,7 @@ object TPCHUtils extends Logging {
         s"Query result match Observed. Look at Result_Snappy_Tokenization.out for detailed failure")
       if (resultOutputFile.count() != 0) {
         logWarning(
-          s"QUERY RESYLT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
+          s"QUERY RESULT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
               s" failure")
       }
     }
@@ -439,6 +438,8 @@ object TPCHUtils extends Logging {
 //    queries.foreach(query => TPCH_Snappy.execute(query, snc,
 //      isResultCollection, isSnappy, warmup = warmup,
 //      runsForAverage = runsForAverage, avgPrintStream = System.out))
-    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection, isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage, avgPrintStream = System.out))
+    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection,
+      isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage,
+      avgPrintStream = System.out))
   }
 }

@@ -18,18 +18,19 @@ package io.snappydata.tools
 
 import java.util.Properties
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.cache.Cache
-import com.gemstone.gemfire.internal.cache.CacheServerLauncher
-import com.pivotal.gemfirexd.{FabricServer, FabricService}
+import com.gemstone.gemfire.internal.cache.Status
+import com.pivotal.gemfirexd.FabricService
 import com.pivotal.gemfirexd.FabricService.State
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
 import io.snappydata.impl.LeadImpl
-import io.snappydata.{Lead, LocalizedMessages, ServiceManager}
+import io.snappydata.{LocalizedMessages, ServiceManager}
 import org.slf4j.LoggerFactory
-
-import scala.collection.mutable.ArrayBuffer
 
 /**
   * Extending server launcher to init Jobserver as part of lead
@@ -37,7 +38,7 @@ import scala.collection.mutable.ArrayBuffer
   */
 class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
-  val genericLogger = LoggerFactory.getLogger(getClass)
+  private val genericLogger = LoggerFactory.getLogger(getClass)
 
   @throws[Exception]
   override protected def getFabricServiceInstance: FabricService = ServiceManager.getLeadInstance
@@ -84,10 +85,8 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   }
 
   override protected def run(args: Array[String]): Unit = {
-    super.run(initStartupArgs(ArrayBuffer(args: _*)))
+    super.run(args)
   }
-
-  override protected def setDefaultHeapSize(): Boolean = false
 
   @throws[Exception]
   override protected def startServerVM(props: Properties) : Unit = {
@@ -107,36 +106,28 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   }
 
-  override protected def checkStatusForWait(status: CacheServerLauncher.Status): Boolean = {
-    (status.state == CacheServerLauncher.STARTING ||
-        status.state == CacheServerLauncher.WAITING)
+  override protected def checkStatusForWait(status: Status): Boolean = {
+    status.state == Status.STARTING || status.state == Status.WAITING
   }
 
   def writeStatusOnChange(newState: State): Unit = {
 
     newState match {
       case State.STANDBY =>
-        status = CacheServerLauncher.createStatus(this.baseName,
-          CacheServerLauncher.STANDBY, getProcessId)
+        setStatusField(createStatus(Status.STANDBY, getProcessId))
         writeStatus(status)
         genericLogger.info("lead node standby status written.")
 
       case State.STARTING =>
-        status = CacheServerLauncher.createStatus(this.baseName,
-              CacheServerLauncher.STARTING, getProcessId)
+        setStatusField(createStatus(Status.STARTING, getProcessId))
         writeStatus(status)
         genericLogger.info("Lead Node starting status written.")
 
       case State.RUNNING =>
-        status = CacheServerLauncher.createStatus(this.baseName,
-              CacheServerLauncher.RUNNING, getProcessId)
-        writeStatus(status)
+        running(Misc.getDistributedSystem, Status.RUNNING)
         genericLogger.info("Lead Node running status written.")
       case _ =>
-        return
-
     }
-
   }
 
   override protected def getBaseName(name: String) = "snappyleader"
@@ -149,5 +140,4 @@ object LeaderLauncher {
     val launcher = new LeaderLauncher("SnappyData Leader")
     launcher.run(args)
   }
-
 }

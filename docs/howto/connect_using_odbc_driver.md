@@ -19,7 +19,7 @@ To download and install the Visual C++ Redistributable for Visual Studio 2013:
 
 To download and install the ODBC driver:
 
-1. [Download the SnappyData 1.0 Enterprise Version](http://www.snappydata.io/download) by registering on the SnappyData website. The downloaded file contains the SnappyData ODBC driver installers.
+1. [Download the SnappyData 1.0.1 Enterprise Version](http://www.snappydata.io/download) by registering on the SnappyData website. The downloaded file contains the SnappyData ODBC driver installers.
 
 2. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the SnappyData ODBC Driver.
 

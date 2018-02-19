@@ -7,6 +7,168 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+Release 1.0.1
+
+- New Features/Fixed Issues
+
+  [SNAP-2214][SNAP-2036] Fixed OOME after restart with heap, projection pushdown. (#960)
+
+  Fixed putInto inner join cache perf and related issues. (#958)
+
+  [SNAP-2212] Fixed failure in TPCH Q21, by re-evaluating check condition for all joins. (#959)
+    
+  [SNAP-2205] Fixed scala.MatchError in SnappyEmbeddedTableStatsProviderService on cluster restart.
+
+  [SNAP-2175] Handle no GemFireCache in smart connector mode. (#956)
+
+  Explicit Action for put innerjoin cache. Materialized cache for intermediate inner join in a put
+  operation. (#955)
+
+  [SNAP-2204] Search through aliases (e.g. for VIEWs) for colocated join keys. (#954)
+
+  [SNAP-2200] Fixed ClassCastException when reading from overflowed update deltas.
+
+  [SNAP-2178] Increase the time to wait for servers to join.
+
+  [SNAP-2191] Disable zeppelin interpreter from within lead process when security is enabled. (#946)
+
+  [SNAP-2194] Add partition pruning for column tables to smart connector. (#952)
+
+  [SNAP-2180] Fixed snappy pulse UI showing zero memory usage on data server, on active lead node
+  restart by explicitly initializing memoryMap on UMM start. (#951)
+
+  [SNAP-2192] Delay rollover in column updates to pre-commit. (#950)
+
+  [SNAP-2124] Fixed rows missing in update due to incorrect stats row read. (#945)
+
+  [SNAP-1283] LATERAL VIEW support in SnappyParser. (#944)
+
+  [SNAP-1840] Fixed TPCH Q22 in Smart Connector mode due to NPE in CollectAggregateExec.
+
+  (5955ce7) Fixed some snappy-spark failures and miscellaneous changes.
+
+  [SNAP-2042] Added GRANT/REVOKE support from SnappySession.
+
+  (41ed1ca) Use power of 2 for number of buckets in tests/docs.
+
+  [SNAP-2178] Wait for servers to join in LeadImpl start and start stats service only after some
+  servers have joined. Likewise for creating the global SnappyContext.
+
+  [SNAP-2170] Reduced the scope of global lock in SnappyContext.stopSnappyContext to fix deadlock
+  in lead shutdown.
+
+  [SNAP-2088] Fixes for queries with filters on columns with null values. (#937)
+
+  Parser performance improvements to recover the regression over 0.9 release. Also, optimized and
+  enhanced numeric/decimal literal handling. (#936)
+
+  [SNAP-2086] Snappy Pulse displays list of external tables.
+
+  (1d5cfd4) Some enhancements towards snappydata security. (#930)
+
+  [SNAP-2102] Added memory+disk optimized column batch iterators. (#933)
+
+  [SNAP-2118] Allow reading previous variable length value again. (#929)
+
+  [SNAP-1501] Set overflow-to-disk as the only evict-action for tables. (#924)
+  By default, column and row tables will have heap-based eviction enabled with overflow-to-disk as
+  evict action. Allow OVERFLOW=false to disable eviction if EVICTION_BY is absent in DDL.
+
+  [SNAP-2114] Plan caching is now attempted only for snappy tables. (#922)
+
+  [SNAP-2125] Added setter commands to disable plan cachin on current session and on all sessions.
+
+  [SNAP-2093] Support ColumnTable PutInto & DeleteFrom API. (#906)
+
+  [SNAP-2141] Fix updates on complex types. (#925)
+
+  [SNAP-2146] Avoid prefixing zeppelin properties with "snappydata.store".
+
+  (b139935) Refactored ByteBufferHashMap into a generic base class.
+
+  (1c9e661) Instead of an explicit property to acquire read or write locks (which is supposed to be
+  set by scripts), if some other server has already initialized the hive metastore, then
+  automatically drop to read-lock to avoid servers unnecessarily blocking each other.
+
+  [SNAP-338] Improvements in cluster startup time.
+  * Rreduce discovery/join timeouts for first locator.
+  * A faster launcher that avoids loading any other classes (other than gemfire-shared and JNA)
+  * Jobserver startup (and thus the global SnappySession initialization) in background
+  * Initialize the hive catalog in background. (#911)
+  * Updated SnappyData type registration. (#910)
+
+  (fd33f31) Avoid infinite retries in Utils.mapExecutors. In case an executor goes away then
+  retries in Utils.mapExecutors can get stuck in infinite retry loop so break it after a few
+  attempts. Changed PooledKryoSerializer to use direct buffers for Output.
+
+  (0b34233) Fixing a couple of issues seen in ODBC testing.
+
+  [SNAP-2127] Use separate delta disk-stores for row buffer regions. (#918)
+
+  [SNAP-2084] Handled dropStorageMemoryForObject in DefaultMemoryManager. (#892)
+
+  [SNAP-2121] Mark delta regions to use the delta diskstore. (#916)
+
+  [SNAP-2122] Use a canonical representation of DistributedMembers in query routing comparisons.
+
+  [SNAP-2120] Use "spark.sql.codegen.cacheSize" for Snappy caches. (#915)
+
+  [SNAP-338] Changes related to locator startup time improvements. (#909)
+
+  [SNAP-1743] Compress column batches when storing to disk or sending over network. (#905)
+  Changes to ColumnFormatValue serialization/deserialization to deal with compression transparently
+  when storing to disk or sending over network.
+
+  [SNAP-2063] Thrift servers were getting started in rowstore mode instead of DRDA server. (#907)
+
+  [SNAP-2116] Auto-configuration for AWS and local clusters. (#908)
+
+  [GITHUB-900] Fix case-sensitivity of columns in CREATE INDEX. (#904)
+
+  Fix the case of remote pull from smart connector. (#896)
+
+  [SNAP-2101] Smart connector performance fixes and related issues. (#895)
+  With above changes (+ the store ones), the performance for smart connector mode in
+  ColumnCacheBenchmark has improved by more than 2X and now within expected range: from 12-13ns per
+  row to 5-6ns per row. It is now 3-4X faster than Spark caching and 2-3X faster than direct Parquet
+  scan having compression=none and entirely in OS buffers.
+
+  (0b09eea) Fixing failure in QueryRoutingDUnitSecurityTest; dropTable should always throw back
+  SQLExceptions and not proceed with unresolved relation.
+
+  [SNAP-2072][SNAP-2073] Fix external connectors and support VIEWs. (#887)
+  This commit fixes primarily two issues:
+    1. External connectors not working in smart connector mode since the required libraries may not
+    be available in the embedded cluster. This happens because the BaseRelation is attempted to be
+    resolved in both "CREATE EXTERNAL TABLE" and "DROP TABLE". Now resolve all required information
+    (schema, inbuilt or not) at the driver connector JVM and send that in the procedure calls for
+    external providers.
+    2. Support for VIEW, VIEW...USING (temporary, global and persistent) in the parser.
+
+  (916cea3) Fix UDT reads/writes for row buffer. Use the "inner" sqlType for UDTs in schema mapping.
+  Same in the CodeGeneration row buffer/table fragments for PreparedStatement set or read.
+  Read underlying data as byte array directly if incoming type is SerializedRow/Map/Array.
+  Added efficient serialization for SerializedMap (like already done so for SerializedRow/Array).
+
+  [SNAP-2077] Modified the parser to understand FETCH FIRST syntax also. FETCH NEXT will be taken
+  with OFFSET support if required. (#876)
+
+  (d1987c7) Removed unused ExternalEmbeddedMode and "snappydata.embedded" property.
+
+  [SNAP-2044] Integrate Snappy python tests with precheckin (#879)
+
+  [SNAP-1986] Use a global lock throughout hive client initialization which ensures no two hive
+  client initializations end up trying to create the hive directory. (#878)
+
+  [SNAP-2068] Added ThreadFactory to SnappyExecutor to cleanup thread artifacts on close with
+  ConnectionTable.releaseThreadsSockets() as done by other pool threads. (#872)
+
+  [SNAP-1960] Fix the RUNNING status being set prematurely by removing the override of running in
+  LeadImpl which is no longer required. (#871)
+
+  [SNAP-2056] Use Spark JacksonGenerator with separate JSON generators per column to convert type
+  to JSON format. (#866)
+
 Release 1.0.0
 
 - New Features/Fixed Issues

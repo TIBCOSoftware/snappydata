@@ -5,12 +5,13 @@ To create a job that can be submitted through the job server, the job must imple
 **Scala**
 
 ```scala
-class SnappySampleJob implements SnappySQLJob {
+object SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
-  def runSnappyJob(snappy: SnappySession, jobConfig: Config): Any
+  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
 
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
-  def isValidJob(snappy: SnappySession, config: Config): SnappyJobValidation
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
+
 }
 ```
 
@@ -28,12 +29,12 @@ class SnappySampleJob extends SnappySQLJob {
 
 **Scala**
 ```scala
-class SnappyStreamingSampleJob implements SnappyStreamingJob {
+object SnappyStreamingSampleJob extends SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
-  def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any
+  override def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any = {
 
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
-  def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation
+  override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }
 ```
 
@@ -128,12 +129,12 @@ The status of this job can be queried in the same manner as shown above. The res
 
 ### Jar Dependencies for Jobs
 
-For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.0](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.0)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
+For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.1](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.1)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
 
 For example, gradle can be configured as:
 
 ```
-compile('io.snappydata:snappydata-cluster_2.11:1.0.0') {
+compile('io.snappydata:snappydata-cluster_2.11:1.0.1') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
@@ -181,6 +182,7 @@ $ bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
+    --conf streaming.batch_interval=5000 \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
     --stream
 

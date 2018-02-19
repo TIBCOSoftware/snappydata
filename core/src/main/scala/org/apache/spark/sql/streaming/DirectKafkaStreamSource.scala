@@ -24,13 +24,15 @@ import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.{BaseRelation, DataSourceRegister}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.util.Utils
 
-class DirectKafkaStreamSource extends StreamPlanProvider {
+class DirectKafkaStreamSource extends StreamPlanProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyContext.DIRECT_KAFKA_STREAM_SOURCE
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
@@ -41,9 +43,9 @@ class DirectKafkaStreamSource extends StreamPlanProvider {
 
 final class DirectKafkaStreamRelation(
     @transient override val sqlContext: SQLContext,
-    options: Map[String, String],
+    opts: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options)
+    extends StreamBaseRelation(opts)
     with Logging with Serializable {
 
   val topicsSet = options("topics").split(",").toSet

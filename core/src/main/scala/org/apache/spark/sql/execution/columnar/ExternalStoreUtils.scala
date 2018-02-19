@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
@@ -28,15 +28,18 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
-import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
+import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
+import org.apache.hadoop.hive.metastore.api.FieldSchema
+import org.apache.hadoop.hive.ql.metadata.Table
 
-import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
+import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -47,24 +50,34 @@ import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{StructType, _}
 import org.apache.spark.util.{Utils => SparkUtils}
+import org.apache.spark.{SparkContext, SparkException}
 
 /**
  * Utility methods used by external storage layers.
  */
 object ExternalStoreUtils {
 
-  private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) =
-    Option(SnappyContext.globalSparkContext).map(_.schedulerBackend) match {
+  private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) = {
+    val sc = Option(SnappyContext.globalSparkContext)
+    sc.map(_.schedulerBackend) match {
       case Some(local: LocalSchedulerBackend) =>
-        // apply a max limit of 64 in local mode since there is not much
-        // scaling to be had beyond that on most processors
-        val result = math.min(64, math.max(local.totalCores << 1, 8)).toString
+        // apply a max limit of 32 in local mode since there is not much
+        // scaling to be had beyond that on most machines
+        val result = math.min(32, math.max(local.totalCores << 1, 8)).toString
         // use same number of partitions for sample table in local mode
         (result, result)
-      case _ => ("128", "64")
+      case _ => sc.flatMap(s => Property.Locators.getOption(s.conf).map(Utils.toLowerCase)) match {
+        // reduce defaults for localhost-only cluster too
+        case Some(s) if s.startsWith("localhost:") || s.startsWith("localhost[") ||
+            s.startsWith("127.0.0.1") || s.startsWith("::1[") =>
+          val result = math.min(32, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
+          (result, result)
+        case _ => ("128", "64")
+      }
     }
+  }
 
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
@@ -73,14 +86,22 @@ object ExternalStoreUtils {
   final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
-  final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
+  final val COMPRESSION_CODEC = "COMPRESSION"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
+  final val KEY_COLUMNS = "KEY_COLUMNS"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
-    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
+    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE, KEY_COLUMNS)
+
+  registerBuiltinDrivers()
+
+  def registerBuiltinDrivers(): Unit = {
+    DriverRegistry.register(Constant.JDBC_EMBEDDED_DRIVER)
+    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
+  }
 
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
@@ -88,10 +109,9 @@ object ExternalStoreUtils {
     } else tableName
   }
 
-  private def addProperty(props: Map[String, String], key: String,
-      default: String): Map[String, String] = {
-    if (props.contains(key)) props
-    else props + (key -> default)
+  private def addProperty(props: mutable.Map[String, String], key: String,
+      default: String): Unit = {
+    if (!props.contains(key)) props.put(key, default)
   }
 
   private def defaultMaxExternalPoolSize: String =
@@ -104,30 +124,35 @@ object ExternalStoreUtils {
       poolProps: Map[String, String], hikariCP: Boolean,
       isEmbedded: Boolean): Map[String, String] = {
     // setup default pool properties
-    var props = poolProps
+    val props = new mutable.HashMap[String, String]()
+    if (poolProps.nonEmpty) props ++= poolProps
     if (driver != null && !driver.isEmpty) {
-      props = addProperty(props, "driverClassName", driver)
+      addProperty(props, "driverClassName", driver)
     }
     val defaultMaxPoolSize = if (isEmbedded) defaultMaxEmbeddedPoolSize
     else defaultMaxExternalPoolSize
     if (hikariCP) {
-      props = props + ("jdbcUrl" -> url)
-      props = addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
-      props = addProperty(props, "minimumIdle", "10")
-      props = addProperty(props, "idleTimeout", "120000")
+      props.put("jdbcUrl", url)
+      addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
+      addProperty(props, "minimumIdle", "10")
+      addProperty(props, "idleTimeout", "120000")
     } else {
-      props = props + ("url" -> url)
-      props = addProperty(props, "maxActive", defaultMaxPoolSize)
-      props = addProperty(props, "maxIdle", defaultMaxPoolSize)
-      props = addProperty(props, "initialSize", "4")
+      props.put("url", url)
+      addProperty(props, "maxActive", defaultMaxPoolSize)
+      addProperty(props, "maxIdle", defaultMaxPoolSize)
+      addProperty(props, "initialSize", "4")
+      addProperty(props, "testOnBorrow", "true")
+      // embedded validation check is cheap
+      if (isEmbedded) addProperty(props, "validationInterval", "0")
+      else addProperty(props, "validationInterval", "10000")
     }
-    props
+    props.toMap
   }
 
   def getDriver(url: String, dialect: JdbcDialect): String = {
     dialect match {
-      case GemFireXDDialect => "io.snappydata.jdbc.EmbeddedDriver"
-      case GemFireXDClientDialect => "io.snappydata.jdbc.ClientDriver"
+      case GemFireXDDialect => Constant.JDBC_EMBEDDED_DRIVER
+      case GemFireXDClientDialect => Constant.JDBC_CLIENT_DRIVER
       case _ => Utils.getDriverClassName(url)
     }
   }
@@ -180,7 +205,7 @@ object ExternalStoreUtils {
         case None => // Do nothing
       }
     })
-    optMap.toMap
+    new CaseInsensitiveMap(optMap.toMap)
   }
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
@@ -196,13 +221,8 @@ object ExternalStoreUtils {
                 ";host-data=false;mcast-port=0;internal-connection=true"
           case ThinClientConnectorMode(_, url) =>
             url + ";route-query=false;internal-connection=true"
-          case ExternalEmbeddedMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
           case LocalMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";" + url + ";internal-connection=true"
-          case ExternalClusterMode(_, url) =>
-            throw new AnalysisException("Option 'url' not specified for cluster " +
-                url)
         }
     }
   }
@@ -222,9 +242,10 @@ object ExternalStoreUtils {
       session.map(_.sparkContext)))
 
     val dialect = JdbcDialects.get(url)
-    val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
-
-    DriverRegistry.register(driver)
+    val driver = parameters.remove("driver") match {
+      case Some(d) => DriverRegistry.register(d); d
+      case None => getDriver(url, dialect)
+    }
 
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
@@ -276,12 +297,12 @@ object ExternalStoreUtils {
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
         val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
-          case Some(s) => Integer.parseInt(s)
+          case Some(s) => sizeAsBytes(s, COLUMN_BATCH_SIZE)
           case None => session.map(defaultColumnBatchSize).getOrElse(
             sizeAsBytes(Property.ColumnBatchSize.defaultValue.get, Property.ColumnBatchSize.name))
         }
-        val columnBatchSize = math.max((batchSize << 2) / 3,
-          snappydataConstants.DEFAULT_LOB_CHUNKSIZE)
+        val columnBatchSize = math.min(Int.MaxValue, math.max((batchSize << 2) / 3,
+          snappydataConstants.DEFAULT_LOB_CHUNKSIZE))
         executorConnProps.setProperty(ClientAttribute.THRIFT_LOB_CHUNK_SIZE,
           Integer.toString(columnBatchSize))
         false
@@ -344,7 +365,10 @@ object ExternalStoreUtils {
 
   def getConnection(id: String, connProperties: ConnectionProperties,
       forExecutor: Boolean): Connection = {
-    Utils.registerDriver(connProperties.driver)
+    connProperties.driver match {
+      case Constant.JDBC_EMBEDDED_DRIVER | Constant.JDBC_CLIENT_DRIVER => // ignore
+      case driver => Utils.registerDriver(driver)
+    }
     val connProps = if (forExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
@@ -362,20 +386,20 @@ object ExternalStoreUtils {
   def getJDBCType(dialect: JdbcDialect, dataType: DataType): Int = {
     dialect.getJDBCType(dataType).map(_.jdbcNullType).getOrElse(
       dataType match {
-        case IntegerType => java.sql.Types.INTEGER
-        case LongType => java.sql.Types.BIGINT
-        case DoubleType => java.sql.Types.DOUBLE
-        case FloatType => java.sql.Types.REAL
-        case ShortType => java.sql.Types.INTEGER
-        case ByteType => java.sql.Types.INTEGER
+        case IntegerType => Types.INTEGER
+        case LongType => Types.BIGINT
+        case DoubleType => Types.DOUBLE
+        case FloatType => Types.REAL
+        case ShortType => Types.INTEGER
+        case ByteType => Types.INTEGER
         // need to keep below mapping to BIT instead of BOOLEAN for MySQL
-        case BooleanType => java.sql.Types.BIT
-        case StringType => java.sql.Types.CLOB
-        case BinaryType => java.sql.Types.BLOB
-        case TimestampType => java.sql.Types.TIMESTAMP
-        case DateType => java.sql.Types.DATE
-        case _: DecimalType => java.sql.Types.DECIMAL
-        case NullType => java.sql.Types.NULL
+        case BooleanType => Types.BIT
+        case StringType => Types.CLOB
+        case BinaryType => Types.BLOB
+        case TimestampType => Types.TIMESTAMP
+        case DateType => Types.DATE
+        case _: DecimalType => Types.DECIMAL
+        case NullType => Types.NULL
         case _ => throw new IllegalArgumentException(
           s"Can't translate to JDBC value for type $dataType")
       })
@@ -391,46 +415,58 @@ object ExternalStoreUtils {
     case _ => true
   }
 
-  val SOME_TRUE = Some(true)
-  val SOME_FALSE = Some(false)
-
   private def checkIndexedColumn(col: String,
-      indexedCols: scala.collection.Set[String]): Option[Boolean] =
-    if (indexedCols.contains(col)) SOME_TRUE else None
+      indexedCols: scala.collection.Set[String]): Option[String] = {
+    // quote identifiers when they could be case-sensitive
+    if (indexedCols.contains(col)) Some("\"" + col + '"')
+    else {
+      // case-insensitive check
+      val ucol = Utils.toUpperCase(col)
+      if ((col ne ucol) && indexedCols.contains(ucol)) Some(col)
+      else None
+    }
+  }
 
   // below should exactly match RowFormatScanRDD.compileFilter
   def handledFilter(f: Filter,
-      indexedCols: scala.collection.Set[String]): Option[Boolean] = f match {
+      indexedCols: scala.collection.Set[String]): Option[Filter] = f match {
     // only pushdown filters if there is an index on the column;
     // keeping a bit conservative and not pushing other filters because
     // Spark execution engine is much faster at filter apply (though
     //   its possible that not all indexed columns will be used for
     //   index lookup still push down all to keep things simple)
-    case EqualTo(col, _) => checkIndexedColumn(col, indexedCols)
-    case LessThan(col, _) => checkIndexedColumn(col, indexedCols)
-    case GreaterThan(col, _) => checkIndexedColumn(col, indexedCols)
-    case LessThanOrEqual(col, _) => checkIndexedColumn(col, indexedCols)
-    case GreaterThanOrEqual(col, _) => checkIndexedColumn(col, indexedCols)
-    case StringStartsWith(col, _) => checkIndexedColumn(col, indexedCols)
-    case In(col, _) => checkIndexedColumn(col, indexedCols)
+    case EqualTo(col, v) => checkIndexedColumn(col, indexedCols).map(EqualTo(_, v))
+    case LessThan(col, v) => checkIndexedColumn(col, indexedCols).map(LessThan(_, v))
+    case GreaterThan(col, v) => checkIndexedColumn(col, indexedCols).map(GreaterThan(_, v))
+    case LessThanOrEqual(col, v) => checkIndexedColumn(col, indexedCols).map(LessThanOrEqual(_, v))
+    case GreaterThanOrEqual(col, v) =>
+      checkIndexedColumn(col, indexedCols).map(GreaterThanOrEqual(_, v))
+    case StringStartsWith(col, v) =>
+      checkIndexedColumn(col, indexedCols).map(StringStartsWith(_, v))
+    case In(col, v) => checkIndexedColumn(col, indexedCols).map(In(_, v))
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
-    case And(left, right) =>
-      val v = handledFilter(left, indexedCols)
-      if (v ne None) v
-      else handledFilter(right, indexedCols)
+    case And(left, right) => handledFilter(left, indexedCols) match {
+      case None => handledFilter(right, indexedCols)
+      case lf@Some(l) => handledFilter(right, indexedCols) match {
+        case None => lf
+        case Some(r) => Some(And(l, r))
+      }
+    }
     // ORList optimization requires all columns to have indexes
     // which is ensured by the condition below
-    case Or(left, right) => if ((handledFilter(left, indexedCols) eq
-        SOME_TRUE) && (handledFilter(right, indexedCols) eq SOME_TRUE)) {
-      SOME_TRUE
-    } else SOME_FALSE
-    case _ => SOME_FALSE
+    case Or(left, right) => handledFilter(left, indexedCols) match {
+      case None => None
+      case Some(l) => handledFilter(right, indexedCols) match {
+        case None => None
+        case Some(r) => Some(Or(l, r))
+      }
+    }
+    case _ => None
   }
 
-  def unhandledFilter(f: Filter,
-      indexedCols: scala.collection.Set[String]): Boolean =
-    handledFilter(f, indexedCols) ne SOME_TRUE
+  def unhandledFilter(f: Filter, indexedCols: scala.collection.Set[String]): Boolean =
+    handledFilter(f, indexedCols) eq None
 
   /**
    * Prune all but the specified columns from the specified Catalyst schema.
@@ -474,7 +510,7 @@ object ExternalStoreUtils {
           case _ => stmt.setObject(col, colVal)
         }
       } else {
-        stmt.setNull(col, java.sql.Types.NULL)
+        stmt.setNull(col, Types.NULL)
       }
       col += 1
     }
@@ -483,13 +519,6 @@ object ExternalStoreUtils {
   final val PARTITION_BY = "PARTITION_BY"
   final val REPLICATE = "REPLICATE"
   final val BUCKETS = "BUCKETS"
-
-  def getAndSetTotalPartitions(parameters: java.util.Map[String, String],
-      forManagedTable: Boolean): Int = {
-    // noinspection RedundantDefaultArgument
-    getAndSetTotalPartitions(None, parameters.asScala,
-      forManagedTable, forColumnTable = true, forSampleTable = false)
-  }
 
   def getAndSetTotalPartitions(sparkContext: Option[SparkContext],
       parameters: mutable.Map[String, String],
@@ -589,57 +618,84 @@ object ExternalStoreUtils {
     new JDBCSourceAsColumnarStore(connProperties, partitions, tableName, schema)
   }
 
-  def getTableSchema(
-      tableProps: java.util.Map[String, String]): Option[StructType] =
-    getTableSchema(tableProps.asScala)
+  // taken from HiveClientImpl.fromHiveColumn
+  def fromHiveColumn(hc: FieldSchema): StructField = {
+    val columnType = try {
+      CatalystSqlParser.parseDataType(hc.getType)
+    } catch {
+      case e: ParseException =>
+        throw new SparkException("Cannot recognize hive type string: " + hc.getType, e)
+    }
+
+    val metadata = new MetadataBuilder().putString(HIVE_TYPE_STRING, hc.getType).build()
+    val field = StructField(
+      name = hc.getName,
+      dataType = columnType,
+      nullable = true,
+      metadata = metadata)
+    Option(hc.getComment).map(field.withComment).getOrElse(field)
+  }
+
+  def getTableSchema(table: Table): StructType = {
+    getTableSchema(table.getParameters.asScala).getOrElse {
+      // Try to get from hive schema that separates partition columns from schema.
+      val partCols = table.getPartCols.asScala.map(fromHiveColumn)
+      StructType(table.getCols.asScala.map(fromHiveColumn) ++ partCols)
+    }
+  }
 
   def getTableSchema(
       tableProps: scala.collection.Map[String, String]): Option[StructType] =
     JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
       tableProps).map(StructType.fromString)
 
-  def getColumnMetadata(
-      schema: Option[StructType]): java.util.List[ExternalTableMetaData.Column] = {
-    schema.toList.flatMap(_.map { f =>
-      val (dataType, typeName) = f.dataType match {
-        case u: UserDefinedType[_] =>
-          (Utils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
-        case t => (t, None)
-      }
-      val (prec, scale) = dataType match {
-        case d: DecimalType => (d.precision, d.scale)
-        case StringType => if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
-          val p = math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP),
-            Int.MaxValue).toInt
-          (p, -1)
-        } else (Limits.DB2_VARCHAR_MAXWIDTH, -1)
-        case _: NumericType => (-1, 0)
-        case _ => (-1, -1)
-      }
-      val jdbcTypeOpt = if (dataType eq StringType) {
-        Some(org.apache.spark.sql.jdbc.JdbcType("VARCHAR", java.sql.Types.VARCHAR))
-      } else { GemFireXDDialect.getJDBCType(dataType).orElse(
-        JdbcUtils.getCommonJDBCType(dataType))
-      }
-      jdbcTypeOpt match {
-        case Some(jdbcType) =>
-          val (precision, width) = if (prec == -1) {
-            val dtd = DataTypeDescriptor.getBuiltInDataTypeDescriptor(
-              jdbcType.jdbcNullType, f.nullable)
-            if (dtd ne null) {
-              (dtd.getPrecision, dtd.getMaximumWidth)
-            } else (dataType.defaultSize, dataType.defaultSize)
-          } else (prec, prec)
-          new ExternalTableMetaData.Column(f.name, jdbcType.jdbcNullType,
-            typeName.getOrElse(jdbcType.databaseTypeDefinition),
-            precision, scale, width, f.nullable)
-        case None =>
-          val precision = if (prec == -1) dataType.defaultSize else prec
-          new ExternalTableMetaData.Column(f.name, java.sql.Types.OTHER,
-            typeName.getOrElse(dataType.simpleString),
-            precision, scale, precision, f.nullable)
-      }
-    }).asJava
+  private def getColumnMetadata(f: StructField, dt: DataType): (DataType, String, Int, Int, Int) = {
+    val (dataType, typeName) = dt match {
+      case u: UserDefinedType[_] =>
+        (Utils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
+      case t => (t, None)
+    }
+    dataType match {
+      case StringType =>
+        val name = typeName.getOrElse("VARCHAR")
+        val prec = if ((f ne null) && f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
+          math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP), Int.MaxValue).toInt
+        } else Limits.DB2_VARCHAR_MAXWIDTH
+        (dataType, name, Types.VARCHAR, prec, -1)
+      case d: DecimalType =>
+        (dataType, s"DECIMAL(${d.precision},${d.scale})", Types.DECIMAL, d.precision, d.scale)
+      case a: ArrayType =>
+        (a, s"ARRAY<${getColumnMetadata(null, a.elementType)._2}>", Types.ARRAY, -1, -1)
+      case m: MapType =>
+        val keyTypeName = getColumnMetadata(null, m.keyType)._2
+        val valueTypeName = getColumnMetadata(null, m.valueType)._2
+        (m, s"MAP<$keyTypeName, $valueTypeName>", JDBC40Translation.MAP, -1, -1)
+      case s: StructType =>
+        (s, s"STRUCT<${s.map(f => getColumnMetadata(f, f.dataType)._2).mkString(",")}>",
+            Types.STRUCT, -1, -1)
+      case d =>
+        val scale = if (d.isInstanceOf[NumericType]) 0 else -1
+        GemFireXDDialect.getJDBCType(d).orElse(JdbcUtils.getCommonJDBCType(d)) match {
+          case Some(t) =>
+            (d, typeName.getOrElse(t.databaseTypeDefinition), t.jdbcNullType, -1, scale)
+          case None =>
+            (d, typeName.getOrElse(d.simpleString), Types.OTHER, -1, scale)
+        }
+    }
+  }
+
+  def getColumnMetadata(schema: StructType): java.util.List[ExternalTableMetaData.Column] = {
+    schema.toList.map { f =>
+      val (dataType, typeName, jdbcType, prec, scale) = getColumnMetadata(f, f.dataType)
+      val (precision, width) = if (prec == -1) {
+        val dtd = DataTypeDescriptor.getBuiltInDataTypeDescriptor(jdbcType, f.nullable)
+        if (dtd ne null) {
+          (dtd.getPrecision, dtd.getMaximumWidth)
+        } else (dataType.defaultSize, dataType.defaultSize)
+      } else (prec, prec)
+      new ExternalTableMetaData.Column(f.name, jdbcType, typeName,
+        precision, scale, width, f.nullable)
+    }.asJava
   }
 
   def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {
@@ -647,16 +703,27 @@ object ExternalStoreUtils {
     region.getUserAttribute.asInstanceOf[GemFireContainer] match {
       case null =>
         throw new IllegalStateException(s"Table $schema.$table not found in containers")
-      case c => c.fetchHiveMetaData(false)
+      case c => c.fetchHiveMetaData(false) match {
+        case null =>
+          throw new IllegalStateException(s"Table $schema.$table not found in hive metadata")
+        case m => m
+      }
     }
   }
 
-  def sizeAsBytes(str: String, propertyName: String): Int = {
-    val size = SparkUtils.byteStringAsBytes(str)
-    if (size > 0 && size <= Int.MaxValue) size.toInt
+  def sizeAsBytes(str: String, propertyName: String): Int =
+    sizeAsBytes(str, propertyName, 1, Int.MaxValue).toInt
+
+  def sizeAsBytes(str: String, propertyName: String, minSize: Long, maxSize: Long): Long = {
+    val s = str.trim
+    // if last character is a digit then it does not have a unit suffix
+    val size =
+      if (Character.isDigit(s.charAt(s.length - 1))) java.lang.Long.parseLong(s)
+      else SparkUtils.byteStringAsBytes(s)
+    if (size >= minSize && size <= maxSize) size
     else {
       throw new IllegalArgumentException(
-        s"$propertyName should be > 0 and < 2GB (provided = $str)")
+        s"$propertyName should be >= $minSize and <= $maxSize (provided = $str)")
     }
   }
 
@@ -665,12 +732,17 @@ object ExternalStoreUtils {
       Property.ColumnBatchSize.name)
   }
 
-  def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
-    Property.ColumnMaxDeltaRows.get(session.sessionState.conf)
+  def checkPositiveNum(n: Int, propertyName: String): Int = {
+    if (n > 0 && n < Int.MaxValue) n
+    else {
+      throw new IllegalArgumentException(
+        s"$propertyName should be > 0 and < 2GB (provided = $n)")
+    }
   }
 
-  def defaultCompressionCodec(session: SparkSession): String = {
-    Property.CompressionCodec.get(session.sessionState.conf)
+  def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
+    checkPositiveNum(Property.ColumnMaxDeltaRows.get(session.sessionState.conf),
+      Property.ColumnMaxDeltaRows.name)
   }
 
   def getSQLListener: AtomicReference[SQLListener] = {

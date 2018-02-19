@@ -5,26 +5,26 @@ Apache Spark is a general purpose parallel computational engine for analytics at
 For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Spark to do the aggregation. Caching within Spark is immutable and results in stale insight.
 
 ### The SnappyData Approach
-At SnappyData, we take a very different approach. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark (Tungsten). All query engine operators are significantly more optimized through better vectorization and code generation. 
+At SnappyData, we take a very different approach. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark (Tungsten). All query engine operators are significantly more optimized through better vectorization and code generation. </br>
 The net effect is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.
 
 Essentially, we turn Spark into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries. Or, it is an in-memory scale out Hybrid Database that can execute Spark code, SQL or even Objects.
 
 
-If you are already using Spark, experience 20x speed up for your query performance. Try out this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala)
+If you are already using Spark, experience 20x speed up for your query performance. Try out this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala).
 
 ##### Snappy Architecture
 ![SnappyData Architecture](docs/Images/SnappyArchitecture.png)
 
 ## Getting Started
-We provide multiple options to get going with SnappyData. The easiest option is, if you are already using Spark 2.0+. 
+We provide multiple options to get going with SnappyData. The easiest option is, if you are already using Spark 2.1.1.
 You can simply get started by adding SnappyData as a package dependency. You can find more information on options for running SnappyData [here](docs/quickstart.md).
 
 ## Downloading and Installing SnappyData
-You can download and install the latest version of SnappyData from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases/). 
-Refer to the [documentation](http://snappydatainc.github.io/snappydata/install/#install-on-premise) for installation steps.
+You can download and install the latest version of SnappyData from the [SnappyData Download Page](https://www.snappydata.io/download). 
+Refer to the [documentation](http://snappydatainc.github.io/snappydata/) for installation steps.
 
-If you would like to build SnappyData from source, refer to the [documentation on building from source](http://snappydatainc.github.io/snappydata/install/#building-from-source).
+If you would like to build SnappyData from source, refer to the [documentation on building from source](docs/install/building_from_source.md).
 
 ## SnappyData in 5 Minutes!
 Refer to the [5 minutes guide](docs/quickstart.md) which is intended for both first time and experienced SnappyData users. It provides you with references and common examples to help you get started quickly!
@@ -45,20 +45,20 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappydata-core_2.11
-version: 0.9
+version: 1.0.1
 
 groupId: io.snappydata
 artifactId: snappydata-cluster_2.11
-version: 0.9
+version: 1.0.1
 ```
 **Using sbt**
 If you are using sbt, add this line to your **build.sbt** for core SnappyData artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "0.9"`
+`libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.1"`
 
 For additions related to SnappyData cluster, use:
 
-`libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.9"`
+`libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"`
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)
 

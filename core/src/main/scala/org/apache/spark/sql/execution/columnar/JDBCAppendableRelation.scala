@@ -22,13 +22,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.Attribute
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.collection.ObjectLongHashMap
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -72,6 +74,8 @@ abstract case class JDBCAppendableRelation(
         table, connProperties.connProps.asScala.toMap))
 
   val resolvedName: String = table
+
+  protected var delayRollover = false
 
   def numBuckets: Int = -1
 
@@ -120,17 +124,24 @@ abstract case class JDBCAppendableRelation(
       requiredColumns
     }
 
+    val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
+    (0 until schema.length).foreach(i =>
+      fieldNames.put(Utils.toLowerCase(schema(i).name), i + 1))
+    val projection = requiredColumns.map { c =>
+      val index = fieldNames.getLong(Utils.toLowerCase(c))
+      if (index == 0) Utils.analysisException(s"Column $c does not exist in $tableName")
+      index.toInt
+    }
     readLock {
       externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
-        requestedColumns.map(column => externalStore.columnPrefix + column),
-        prunePartitions,
-        sqlContext.sparkSession, schema)
+        requestedColumns, projection, (filters eq null) || filters.length == 0,
+        prunePartitions, sqlContext.sparkSession, schema, delayRollover)
     }
   }
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    new ColumnInsertExec(child, Seq.empty, Seq.empty, this, table)
+    new ColumnInsertExec(child, Nil, Nil, this, table)
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
@@ -150,21 +161,24 @@ abstract case class JDBCAppendableRelation(
     val columnBatchSize = origOptions.get(
       ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
       case Some(cb) if !origOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE_TRANSIENT) =>
-        Integer.parseInt(cb)
+        ExternalStoreUtils.sizeAsBytes(cb, ExternalStoreUtils.COLUMN_BATCH_SIZE)
       case _ => ExternalStoreUtils.defaultColumnBatchSize(session)
     }
     val columnMaxDeltaRows = origOptions.get(
       ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
       case Some(cd) if !origOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS_TRANSIENT) =>
-        Integer.parseInt(cd)
+        ExternalStoreUtils.checkPositiveNum(Integer.parseInt(cd),
+          ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)
       case _ => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
     }
-    val compressionCodec = origOptions.get(
-      ExternalStoreUtils.COMPRESSION_CODEC) match {
+    (columnBatchSize, columnMaxDeltaRows, getCompressionCodec)
+  }
+
+  def getCompressionCodec: String = {
+    origOptions.get(ExternalStoreUtils.COMPRESSION_CODEC) match {
       case Some(codec) => codec
-      case None => ExternalStoreUtils.defaultCompressionCodec(session)
+      case None => Constant.DEFAULT_CODEC
     }
-    (columnBatchSize, columnMaxDeltaRows, compressionCodec)
   }
 
   // truncate both actual and shadow table

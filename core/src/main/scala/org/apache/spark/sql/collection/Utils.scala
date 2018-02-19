@@ -31,14 +31,13 @@ import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, ToolsCallback}
-import net.jpountz.lz4.LZ4Factory
 import org.apache.commons.math3.distribution.NormalDistribution
-import org.xerial.snappy.Snappy
 
-import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
+import org.apache.spark._
+import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
@@ -61,7 +60,6 @@ import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.{Logging, Partition, Partitioner, SparkConf, SparkContext, SparkEnv, TaskContext}
 
 object Utils {
 
@@ -360,18 +358,6 @@ object Utils {
   final def isLoner(sc: SparkContext): Boolean =
     (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
-  def toLowerCase(k: String): String = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isUpperCase(k.charAt(index))) {
-        return k.toLowerCase(java.util.Locale.ENGLISH)
-      }
-      index += 1
-    }
-    k
-  }
-
   def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
@@ -392,17 +378,9 @@ object Utils {
     false
   }
 
-  def toUpperCase(k: String): String = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isLowerCase(k.charAt(index))) {
-        return k.toUpperCase(java.util.Locale.ENGLISH)
-      }
-      index += 1
-    }
-    k
-  }
+  def toLowerCase(k: String): String = k.toLowerCase(java.util.Locale.ENGLISH)
+
+  def toUpperCase(k: String): String = k.toUpperCase(java.util.Locale.ENGLISH)
 
   /**
    * Utility function to return a metadata for a StructField of StringType, to ensure that the
@@ -636,6 +614,12 @@ object Utils {
     override def get(key: A): Option[B] = map.get(key)
   }
 
+  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): ObjectObjectHashMap[K, V] = {
+    val m = ObjectObjectHashMap.withExpectedSize[K, V](map.size)
+    map.foreach(p => m.put(p._1, p._2))
+    m
+  }
+
   def createScalaConverter(dataType: DataType): Any => Any =
     CatalystTypeConverters.createToScalaConverter(dataType)
 
@@ -654,31 +638,6 @@ object Utils {
 
   def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
     new ChunkedByteBuffer(chunks)
-
-  def codecCompress(codec: CompressionCodec, input: Array[Byte],
-      inputLen: Int): Array[Byte] = codec match {
-    case _: LZFCompressionCodec => LZFEncoder.encode(input, 0, inputLen)
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastCompressor().compress(input, 0, inputLen)
-    case _: SnappyCompressionCodec =>
-      Snappy.rawCompress(input, inputLen)
-  }
-
-  def codecDecompress(codec: CompressionCodec, input: Array[Byte],
-      inputOffset: Int, inputLen: Int,
-      outputLen: Int): Array[Byte] = codec match {
-    case _: LZFCompressionCodec =>
-      val output = new Array[Byte](outputLen)
-      LZFDecoder.decode(input, inputOffset, inputLen, output)
-      output
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
-        inputOffset, outputLen)
-    case _: SnappyCompressionCodec =>
-      val output = new Array[Byte](outputLen)
-      Snappy.uncompress(input, inputOffset, inputLen, output, 0)
-      output
-  }
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
@@ -815,8 +774,15 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     if (part.blockId.host != thisBlockId.host ||
         part.blockId.executorId != thisBlockId.executorId) {
-      throw new IllegalStateException(
-        s"Unexpected execution of $part on $thisBlockId")
+      // kill the task and force a retry
+      val msg = s"Unexpected execution of $part on $thisBlockId"
+      logWarning(msg)
+      if (context.attemptNumber() < 10) {
+        throw new TaskKilledException
+      } else {
+        // fail after many retries (other executor is likely gone)
+        throw new IllegalStateException(msg)
+      }
     }
 
     f(context, part)
@@ -987,11 +953,39 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-class ExecutorMultiBucketLocalShellPartition(override val index: Int,
-    val buckets: mutable.HashSet[Int],
-    val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
+final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
+    var hostList: mutable.ArrayBuffer[(String, String)])
+    extends Partition with KryoSerializable {
+
+  override def index: Int = _index
+
+  def bucketId: Int = _bucketId
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    output.writeVarInt(_index, true)
+    output.writeVarInt(_bucketId, true)
+    val numHosts = hostList.length
+    output.writeVarInt(numHosts, true)
+    for ((host, url) <- hostList) {
+      output.writeString(host)
+      output.writeString(url)
+    }
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    _index = input.readVarInt(true)
+    _bucketId = input.readVarInt(true)
+    val numHosts = input.readVarInt(true)
+    hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
+    for (_ <- 0 until numHosts) {
+      val host = input.readString()
+      val url = input.readString()
+      hostList += host -> url
+    }
+  }
+
   override def toString: String =
-    s"ExecutorMultiBucketLocalShellPartition($index, $buckets, $hostList"
+    s"SmartExecutorBucketPartition($index, $bucketId, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {
@@ -1004,7 +998,7 @@ object ToolsCallbackInit extends Logging {
       tc
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("toolsCallback couldn't be INITIALIZED." +
+        logWarning("ToolsCallback couldn't be INITIALIZED. " +
             "DriverURL won't get published to others.")
         null
     }

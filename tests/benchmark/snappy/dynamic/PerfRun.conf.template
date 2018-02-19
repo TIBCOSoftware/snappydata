@@ -54,6 +54,7 @@ leads=localhost
 servers=(localhost localhost)
 #servers=(localhost)
 
+#Port required while doing exeution through JDBC
 port=1527
 
 #Log Directories
@@ -65,8 +66,11 @@ serverDir=/home/kishor/SNAPPY/OUTPUT/TPCH/server
 locatorProperties="-conserve-sockets=false -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
 
 #Server properties
-serverMemory="-heap-size=1g -memory-size=2g  -conserve-sockets=false-J-XX:NewRatio=9 -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
+#serverMemory="-heap-size=1g -memory-size=2g  -conserve-sockets=false-J-XX:NewRatio=9 -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
+serverMemory="-heap-size=1g -memory-size=2g"
 
+### While collecting results for result validation, always keep isDynamic=false and resultCollection=false. In this case WarmupRuns and AverageRuns will not be considered
+### In case of Performance run, isDynamic is true, resultCollection is fasle and set the required number of warmupRuns and AverageRuns
 #represent whether query should use dynamic paramters or static
 IsDynamic=false
 
@@ -79,7 +83,7 @@ WarmupRuns=2
 AverageRuns=3
 
 # location of jar which has TPCH related class files
-TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.8-tests.jar
+TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar
 
 #Size of the TPCH data. Do not chage format
 #dataSize=1GB_Stages

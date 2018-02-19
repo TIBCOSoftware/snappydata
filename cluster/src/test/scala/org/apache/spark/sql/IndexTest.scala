@@ -16,34 +16,27 @@
  */
 package org.apache.spark.sql
 
-import java.sql.{Connection, DriverManager}
-import java.util.{Properties, TimeZone}
+import java.util.TimeZone
 
-import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
-import io.snappydata.benchmark.snappy.{SnappyAdapter, SnappyTPCH, TPCH, TPCH_Snappy}
-import io.snappydata.{PlanTest, SnappyFunSuite}
+import io.snappydata.benchmark.TPCH_Queries
+import io.snappydata.benchmark.snappy.tpch.QueryExecutor
+import io.snappydata.benchmark.snappy.{SnappyAdapter, TPCH}
+import io.snappydata.{PlanTest, Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Sort}
-import org.apache.spark.sql.execution.streaming.{Offset, Sink, Source}
-import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider, StreamSourceProvider}
-import org.apache.spark.sql.streaming.OutputMode
-import org.apache.spark.sql.types.{BooleanType, IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.util.Benchmark
 
 class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
-  var existingSkipSPSCompile = false
 
   override def beforeAll(): Unit = {
     // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
-    existingSkipSPSCompile = FabricDatabase.SKIP_SPS_PRECOMPILE
-    FabricDatabase.SKIP_SPS_PRECOMPILE = true
     super.beforeAll()
   }
 
@@ -51,8 +44,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
-    System.clearProperty("DISABLE_PARTITION_PRUNING")
-    FabricDatabase.SKIP_SPS_PRECOMPILE = existingSkipSPSCompile
+    Property.PartitionPruning.set(snc.conf, true)
     super.afterAll()
   }
 
@@ -145,7 +137,8 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
       val (expectedAnswer, _) = qryProvider.execute(qNum, str => {
         snc.sql(str)
       })
-      val (newAnswer, df) = TPCH_Snappy.queryExecution(q, snc, false, false)
+      var queryToBeExecuted = TPCH_Queries.getQuery(q, false, true)
+      val (newAnswer, df) = QueryExecutor.queryExecution(q, queryToBeExecuted, snc, false)
       val isSorted = df.logicalPlan.collect { case s: Sort => s }.nonEmpty
       QueryTest.sameRows(expectedAnswer, newAnswer, isSorted).map { results =>
         s"""
@@ -205,8 +198,8 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     }
   }
 
-  private def togglePruning(onOff: Boolean) =
-    System.setProperty("DISABLE_PARTITION_PRUNING", onOff.toString)
+  private def togglePruning(onOff: Boolean, snc: SnappyContext) =
+    Property.PartitionPruning.set(snc.conf, onOff)
 
   def runBenchmark(queryString: String, tableSizes: Map[String, Long], numSecs: Int = 0): Unit = {
 
@@ -238,9 +231,9 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     val b = new Benchmark(s"JoinOrder optimization", size,
       warmupTime = numSecs.seconds)
     b.addCase("WithOut Partition Pruning",
-      prepare = () => togglePruning(true))(_ => snc.sql(queryString).collect().foreach(_ => ()))
+      prepare = () => togglePruning(onOff = false, snc))(_ => snc.sql(queryString).collect())
     b.addCase("With Partition Pruning",
-      prepare = () => togglePruning(false))(_ => snc.sql(queryString).collect().foreach(_ => ()))
+      prepare = () => togglePruning(onOff = true, snc))(_ => snc.sql(queryString).collect())
     b.run()
   }
 
@@ -266,18 +259,21 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
         "true")
     }
 
-    def evalSnappyMods(genPlan: Boolean) = TPCH_Snappy.queryExecution(qNum, snc, useIndex = false,
-      genPlan = genPlan)._1.foreach(_ => ())
+//    def evalSnappyMods(genPlan: Boolean) = TPCH_Snappy.queryExecution(qNum, snc, useIndex = false,
+//      genPlan = genPlan)._1.foreach(_ => ())
+
+    var queryToBeExecuted = TPCH_Queries.getQuery(qNum, false, true)
+    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(
+      qNum, queryToBeExecuted, snc, false)._1.foreach(_ => ())
 
     def evalBaseTPCH = qryProvider.execute(query, executor)._1.foreach(_ => ())
-
 
     //    b.addCase(s"$qNum baseTPCH index = F", prepare = case1)(i => evalBaseTPCH)
     //    b.addCase(s"$qNum baseTPCH joinOrder = T", prepare = case2)(i => evalBaseTPCH)
     b.addCase(s"$qNum without PartitionPruning",
-      prepare = () => togglePruning(true))(_ => evalSnappyMods(false))
+      prepare = () => togglePruning(onOff = false, snc))(_ => evalSnappyMods(false))
     b.addCase(s"$qNum with PartitionPruning",
-      prepare = () => togglePruning(false))(_ => evalSnappyMods(false))
+      prepare = () => togglePruning(onOff = true, snc))(_ => evalSnappyMods(false))
     /*
         b.addCase(s"$qNum snappyMods joinOrder = T", prepare = case2)(i => evalSnappyMods(false))
         b.addCase(s"$qNum baseTPCH index = T", prepare = case3)(i => evalBaseTPCH)

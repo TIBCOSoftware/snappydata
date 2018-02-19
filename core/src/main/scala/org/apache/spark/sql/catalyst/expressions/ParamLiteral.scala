@@ -19,15 +19,17 @@ package org.apache.spark.sql.catalyst.expressions
 
 import java.util.Objects
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, SubExprEliminationState}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -44,18 +46,20 @@ trait DynamicReplacableConstant {
 // whereever ParamLiteral case matching is required, it must match
 // for DynamicReplacableConstant and use .eval(..) for code generation.
 // see SNAP-1597 for more details.
-class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
-    extends Literal(_value, _dataType) with DynamicReplacableConstant {
+final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: Int)
+    extends Literal(null, _dataType) with DynamicReplacableConstant {
 
   // override def toString: String = s"ParamLiteral ${super.toString}"
 
   private[this] var _foldable = false
 
   private[this] var literalValueRef: String = _
-
   private[this] val literalValue: LiteralValue = LiteralValue(value, dataType, pos)()
 
-  private[this] def lv(ctx: CodegenContext) = if (ctx.references.exists(_ equals literalValue)) {
+  private[this] var isNull: String = _
+  private[this] var valueTerm: String = _
+
+  private[this] def lv(ctx: CodegenContext) = if (ctx.references.contains(literalValue)) {
     assert(literalValueRef != null)
     literalValueRef
   } else {
@@ -75,14 +79,15 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
 
 //  override def toString: String = s"pl[${super.toString}]"
 
-  override def hashCode(): Int = {
-    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
-  }
+  override def hashCode(): Int = ClientResolverUtils.fastHashLong(
+    Objects.hashCode(dataType).toLong << 32L | (pos & 0xffffffffL))
+
+  // Literal cannot equal ParamLiteral since runtime value can be different
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[ParamLiteral]
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
-    case pl: ParamLiteral =>
-      pl.dataType == dataType && pl.pos == pos
+    case pl: ParamLiteral => pl.pos == pos && pl.dataType == dataType
     case _ => false
   }
 
@@ -91,9 +96,8 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     if (n < parentFields) {
       super.productElement(n)
     } else {
-      n match {
-        case v if v == parentFields => pos
-      }
+      assert (n == parentFields, s"unexpected n = $n but expected $parentFields")
+      pos
     }
   }
 
@@ -102,13 +106,25 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     // change the isNull and primitive to consts, to inline them
     val value = this.value
-    val isNull = ctx.freshName("isNull")
-    val valueTerm = ctx.freshName("value")
-    val isNullLocal = s"${isNull}Local"
-    val valueLocal = s"${valueTerm}Local"
-    val valueRef = lv(ctx)
+    val addMutableState = (isNull eq null) || !ctx.mutableStates.exists(_._2 == isNull)
+    if (addMutableState) {
+      isNull = ctx.freshName("isNullTerm")
+      valueTerm = ctx.freshName("valueTerm")
+    }
+    val isNullLocal = ev.isNull
+    val valueLocal = ev.value
     val dataType = Utils.getSQLDataType(this.dataType)
     val javaType = ctx.javaType(dataType)
+    val initCode =
+      s"""
+         |final boolean $isNullLocal = $isNull;
+         |final $javaType $valueLocal = $valueTerm;
+      """.stripMargin
+    if (!addMutableState) {
+      // use the already added fields
+      return ev.copy(initCode, isNullLocal, valueLocal)
+    }
+    val valueRef = lv(ctx)
     val box = ctx.boxedType(javaType)
 
     val unbox = dataType match {
@@ -148,7 +164,7 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
              |  $valueTerm = ${ctx.defaultValue(dataType)};
              |} else {
              |  $valueTerm = ($box)$valueRef.value();
-             |  if (${classOf[GemFireCacheImpl].getName}.hasNewOffHeap() &&
+             |  if (com.gemstone.gemfire.internal.cache.GemFireCacheImpl.hasNewOffHeap() &&
              |      $getContext() != null) {
              |    // convert to off-heap value if possible
              |    $memoryManagerClass mm = $getContext().taskMemoryManager();
@@ -171,11 +187,7 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
            |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
         """.stripMargin)
     }
-    ev.copy(
-      s"""
-         |final boolean $isNullLocal = $isNull;
-         |final $javaType $valueLocal = $valueTerm;
-      """.stripMargin, isNullLocal, valueLocal)
+    ev.copy(initCode, isNullLocal, valueLocal)
   }
 }
 
@@ -244,7 +256,7 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
  *
  * Expressions like <code> select c from tab where
  *  case col2 when 1 then col3 else 'y' end = 22 </code>
- * like queries doesn't converts literal evaluation into init method.
+ * like queries don't convert literal evaluation into init method.
  *
  * @param expr minimal expression tree that can be evaluated only once and turn into a constant.
  */
@@ -257,7 +269,19 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
   def convertedLiteral: Any = createToScalaConverter(dataType)(eval(null))
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    // subexpression elimination can lead to local variables but this expression
+    // needs in mutable state, so disable it (extra evaluations only once in init in any case)
+    val numSubExprs = ctx.subExprEliminationExprs.size
+    val oldSubExprs = if (numSubExprs != 0) {
+      val exprs = new ArrayBuffer[(Expression, SubExprEliminationState)](numSubExprs)
+      exprs ++= ctx.subExprEliminationExprs
+      ctx.subExprEliminationExprs.clear()
+      exprs
+    } else null
     val eval = expr.genCode(ctx)
+    if (oldSubExprs ne null) {
+      ctx.subExprEliminationExprs ++= oldSubExprs
+    }
     val newVar = ctx.freshName("paramLiteralExpr")
     val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
     val comment = ctx.registerComment(expr.toString)
@@ -268,17 +292,14 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
       s"$comment\n${eval.code}\n$newVar = ${eval.value};\n" +
         s"$newVarIsNull = ${eval.isNull};")
     ctx.addMutableState("boolean", newVarIsNull, "")
+    // allow sub-expression elimination of this expression itself
+    ctx.subExprEliminationExprs += this -> SubExprEliminationState(newVarIsNull, newVar)
     ev.copy(code = "", value = newVar, isNull = newVarIsNull)
   }
 
   override def dataType: DataType = expr.dataType
 
   override def children: Seq[Expression] = Seq(expr)
-
-  override def canEqual(that: Any): Boolean = that match {
-    case thatExpr: DynamicFoldableExpression => expr.canEqual(thatExpr.expr)
-    case other => expr.canEqual(other)
-  }
 
   override def nodeName: String = "DynamicExpression"
 

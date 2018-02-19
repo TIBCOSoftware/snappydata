@@ -54,6 +54,10 @@ class TokenizationTest
     super.afterAll()
   }
 
+  before {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+  }
+
   after {
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
     SnappySession.clearAllCache()
@@ -138,7 +142,6 @@ class TokenizationTest
   }
 
   test("like queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 100
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -150,11 +153,9 @@ class TokenizationTest
       var result2 = snc.sql(q2).collect()
       assert(!(result.sameElements(result2)) && result.length > 0)
     }
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   test("same session from different thread") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 2
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -184,7 +185,6 @@ class TokenizationTest
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
     }
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   def getAllValidKeys(): Int = {
@@ -207,7 +207,6 @@ class TokenizationTest
   }
 
   test("Test some more foldable expressions and limit in where clause") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
     val cacheMap = SnappySession.getPlanCache.asMap()
@@ -258,11 +257,115 @@ class TokenizationTest
     snc.sql("SELECT json_tuple('{\"f1\": \"value11\", \"f2\": \"value22\"}','f1')"
     ).collect().foreach(println)
 
-    assert( cacheMap.size() == 2)
+    assert(cacheMap.size() == 0) // no caching since JsonTuple is not code-generated
+  }
+
+  test("Test external tables no plan caching") {
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    val airline = snc.read.parquet(hfile)
+    snc.sql(s"CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet options(path '$hfile')")
+    snc.sql(s"select count(*) from STAGING_AIRLINE").collect()
+    assert( cacheMap.size() == 0)
+    snc.sql(s"select * from STAGING_AIRLINE where MonthI = 2").collect()
+    assert( cacheMap.size() == 0)
+    snc.sql(s"drop table STAGING_AIRLINE")
+  }
+
+  test("Test plan caching and tokenization disabled in session") {
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    try {
+      val q = (0 until numRows) map { x =>
+        s"select * from $table where a = $x"
+      }
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = snc.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      val newSession = new SnappySession(snc.sparkSession.sparkContext)
+
+      val cacheMap = SnappySession.getPlanCache.asMap()
+      assert(cacheMap.size() == 1)
+
+      newSession.sql(s"set snappydata.sql.planCaching=false").collect()
+      assert(cacheMap.size() == 1)
+
+      var query = s"select * from $table where a = 0"
+      newSession.sql(query).collect()
+      assert(cacheMap.size() == 1)
+
+      query = s"select * from $table where a = 1"
+      newSession.sql(query).collect()
+      assert(cacheMap.size() == 1)
+
+      query = s"select * from $table where b = 1"
+      var res2 = newSession.sql(query).collect()
+      assert(cacheMap.size() == 1)
+
+      newSession.sql(s"set snappydata.sql.planCachingAll=false").collect()
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+      assert(cacheMap.size() == 0)
+
+      cacheMap.clear()
+
+      val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
+      newSession2.sql(s"set snappydata.sql.planCachingAll=true").collect()
+
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession2.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      assert(cacheMap.size() == 1)
+      newSession.clear()
+      newSession2.clear()
+      cacheMap.clear()
+
+      val newSession3 = new SnappySession(snc.sparkSession.sparkContext)
+      newSession3.sql(s"set snappydata.sql.tokenize=false").collect()
+
+      assert(cacheMap.size() == 0)
+
+      q.zipWithIndex.foreach { case (x, i) =>
+        var result = newSession3.sql(x).collect()
+        assert(result.length === 1)
+        result.foreach(r => {
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
+        })
+      }
+
+      assert(cacheMap.size() == 10)
+
+      newSession3.clear()
+      cacheMap.clear()
+
+    } finally {
+      snc.sql("set spark.sql.caseSensitive = false")
+      snc.sql("set schema = APP")
+      snc.sql(s"set snappydata.sql.tokenize=true").collect()
+    }
   }
 
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -305,6 +408,19 @@ class TokenizationTest
       var res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 4)
 
+      // test fetch first syntax also
+      // Cache map size doesn't change because fetch first converts into limit
+      // itself and the exact same thing is fired above
+      query = s"select * from $table where a = 0 fetch first 1 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 4)
+
+      // Cache map size doesn't change because fetch first converts into limit
+      // itself and the exact same thing is fired above
+      query = s"select * from $table where a = 0 fetch first 10 rows only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 4)
+
       // test constants in projection
       query = s"select a, 'x' from $table where a = 0"
       res1 = snc.sql(query).collect()
@@ -312,19 +428,39 @@ class TokenizationTest
 
       query = s"select a, 'y' from $table where a = 0"
       res2 = snc.sql(query).collect()
-      assert( cacheMap.size() == 6)
+      assert( cacheMap.size() == 5)
 
       // check in based queries
       query = s"select * from $table where a in (0, 1)"
       res1 = snc.sql(query).collect()
-      assert( cacheMap.size() == 7)
+      assert( cacheMap.size() == 6)
 
-      assert( getAllValidKeys() == 7)
+      assert( getAllValidKeys() == 6)
       // new plan should not be generated so size should be same
       query = s"select * from $table where a in (5, 7)"
       res2 = snc.sql(query).collect()
-      assert( cacheMap.size() == 7)
+      assert( cacheMap.size() == 6)
       assert(!(res1.sameElements(res2)))
+
+      // test fetch first syntax also
+      // Cache map size changes because limit '3' is different
+      query = s"select * from $table where a = 0 fetch first 3 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 7)
+
+      // Cache map size changes because limit '4' is different
+      query = s"select * from $table where a = 0 fetch first 4 rows only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 8)
+
+      // fetch first with actual result validation
+      query = s"select a from $table order by a desc fetch first 1 row only"
+      res1 = snc.sql(query).collect()
+      assert( cacheMap.size() == 9)
+      assert (res1.size == 1)
+      res1 foreach { r =>
+        assert (r.get(0) == 10)
+      }
 
       // let us clear the plan cache
       snc.clear()
@@ -379,7 +515,6 @@ class TokenizationTest
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
     logInfo("Successful")
   }
@@ -389,7 +524,6 @@ class TokenizationTest
     createAllTypeTableAndPoupulateData(numRows, s"$all_typetable")
 
     try {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = true
       val q = (0 until numRows).zipWithIndex.map { case (_, i) =>
         s"select * from $all_typetable where s = 'abc$i'"
       }
@@ -414,14 +548,12 @@ class TokenizationTest
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
 
     logInfo("Successful")
   }
 
   test("Test tokenize for sub-queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     snc.sql(s"set spark.sql.crossJoin.enabled=true")
     val numRows = 10
@@ -460,11 +592,9 @@ class TokenizationTest
     assert( cacheMap.size() == 1)
 
     logInfo("Successful")
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   test("Test tokenize for joins and sub-queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
@@ -485,7 +615,6 @@ class TokenizationTest
       println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
     })
     assert( cacheMap.size() == 1)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
     assert(!result1.sameElements(result2))
     assert(result1.length > 0)
     assert(result2.length > 0)
@@ -527,14 +656,6 @@ class TokenizationTest
       " from r, l where l.a = r.c").collect.foreach(r => assert(r.get(0) == 6))
     assert(snc.sql("select l.a from l where (select case when count(*) = 1" +
       " then null else count(*) end as cnt from r where l.a = r.c) = 0").count == 4)
-  }
-
-  test("Test tokenize for nulls") {
-    logInfo("Successful")
-  }
-
-  test("Test tokenize for cast queries") {
-    logInfo("Successful")
   }
 
   private def createSimpleTableWithAStringColumnAndPoupulateData(numRows: Int, name: String,
@@ -606,7 +727,6 @@ class TokenizationTest
   val colTableName = "airlineColTable"
 
   test("Test broadcast hash joins and scalar sub-queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     try {
       val ddlStr = "(YearI INT," + // NOT NULL
           "MonthI INT," + // NOT NULL
@@ -684,81 +804,8 @@ class TokenizationTest
       val rows11 = rs11.collect()
       assert(!rows11.sameElements(rows1))
       assert(cacheMap.size() == 1)
-    }
-    finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
-    }
-  }
 
-  test("Test BUG SNAP-1642") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
-    val maxquery = s"select * from $table where a = (select max(a) from $table)"
-    val numRows = 10
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
-
-    val rs1 = snc.sql(maxquery)
-    val rows1 = rs1.collect()
-
-    val data = ((11 to 12), (11 to 12), (11 to 12)).zipped.toArray
-    val rdd = sc.parallelize(data, data.length)
-        .map(s => Data(s._1, s._2, s._3))
-    val dataDF = snc.createDataFrame(rdd)
-    dataDF.write.mode(SaveMode.Append).saveAsTable(table)
-
-    val rs2 = snc.sql(maxquery)
-    val rows2 = rs2.collect()
-
-    var uncachedResult = snc.sqlUncached(maxquery).collect()
-    assert(rows2.sameElements(uncachedResult))
-  }
-
-  test("Test broadcast hash joins and scalar sub-queries - 2") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
-    // val th = 10L * 1024 * 1024 * 1024
-    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=-1")
-    val ddlStr = "(YearI INT," + // NOT NULL
-        "MonthI INT," + // NOT NULL
-        "DayOfMonth INT," + // NOT NULL
-        "DayOfWeek INT," + // NOT NULL
-        "DepTime INT," +
-        "CRSDepTime INT," +
-        "ArrTime INT," +
-        "CRSArrTime INT," +
-        "UniqueCarrier VARCHAR(20)," + // NOT NULL
-        "FlightNum INT," +
-        "TailNum VARCHAR(20)," +
-        "ActualElapsedTime INT," +
-        "CRSElapsedTime INT," +
-        "AirTime INT," +
-        "ArrDelay INT," +
-        "DepDelay INT," +
-        "Origin VARCHAR(20)," +
-        "Dest VARCHAR(20)," +
-        "Distance INT," +
-        "TaxiIn INT," +
-        "TaxiOut INT," +
-        "Cancelled INT," +
-        "CancellationCode VARCHAR(20)," +
-        "Diverted INT," +
-        "CarrierDelay INT," +
-        "WeatherDelay INT," +
-        "NASDelay INT," +
-        "SecurityDelay INT," +
-        "LateAircraftDelay INT," +
-        "ArrDelaySlot INT)"
-
-    val hfile: String = getClass.getResource("/2015.parquet").getPath
-    val snContext = snc
-    snContext.sql("set spark.sql.shuffle.partitions=6")
-
-    val airlineDF = snContext.read.load(hfile)
-    val airlineparquetTable = "airlineparquetTable"
-    airlineDF.registerTempTable(airlineparquetTable)
-
-    snc.sql(s"CREATE TABLE $colTableName $ddlStr" +
-        "USING column options()")
-
-    airlineDF.write.insertInto(colTableName)
+    // Test broadcast hash joins and scalar sub-queries - 2
 
     var df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
         s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
@@ -839,7 +886,30 @@ class TokenizationTest
 
     snc.dropTable(colTableName)
 
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+    finally {
+    }
+  }
+
+  test("Test BUG SNAP-1642") {
+    val maxquery = s"select * from $table where a = (select max(a) from $table)"
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    val rs1 = snc.sql(maxquery)
+    val rows1 = rs1.collect()
+
+    val data = ((11 to 12), (11 to 12), (11 to 12)).zipped.toArray
+    val rdd = sc.parallelize(data, data.length)
+        .map(s => Data(s._1, s._2, s._3))
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.mode(SaveMode.Append).saveAsTable(table)
+
+    val rs2 = snc.sql(maxquery)
+    val rows2 = rs2.collect()
+
+    var uncachedResult = snc.sqlUncached(maxquery).collect()
+    assert(rows2.sameElements(uncachedResult))
   }
 
   test("Test CachedDataFrame.head ") {

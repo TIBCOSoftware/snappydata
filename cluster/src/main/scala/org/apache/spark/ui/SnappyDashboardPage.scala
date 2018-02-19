@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletRequest
 import scala.collection.mutable
 import scala.xml.Node
 
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
@@ -37,7 +37,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   override def render(request: HttpServletRequest): Seq[Node] = {
 
-    val pageHeaderText : String  = SnappyDashboardPage.pageHeaderText
+    val pageHeaderText: String = SnappyDashboardPage.pageHeaderText
 
     var clusterStatsMap = scala.collection.mutable.HashMap.empty[String, Any]
     clusterStatsMap += ("status" -> SnappyDashboardPage.Status.normal)
@@ -62,17 +62,19 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           && !m._2("lead").toString.toBoolean
           && !m._2("locator").toString.toBoolean) {
 
-        if (!m._2("status").toString.equalsIgnoreCase("stopped"))
+        if (!m._2("status").toString.equalsIgnoreCase("stopped")) {
           sparkConnectors += m
+        }
 
       } else {
         clusterMembers += m
       }
     })
 
-    val (tableBuff, indexBuff) = SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
+    val (tableBuff, indexBuff, externalTableBuff) =
+      SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
 
-    updateClusterStats(clusterStatsMap, clusterMembers, tableBuff)
+    updateClusterStats(clusterStatsMap, clusterMembers, tableBuff, externalTableBuff)
 
     // Generate Pages HTML
     val pageTitleNode = createPageTitleNode(pageHeaderText)
@@ -85,16 +87,16 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val keyStatsSection = clustersStatsTitle ++ clusterDetails
 
     val membersStatsDetails = {
-      val countsList:Array[mutable.Map[String, Any]] = new Array(3)
+      val countsList: Array[mutable.Map[String, Any]] = new Array(3)
       countsList(0) = mutable.Map(
-                           "value" -> clusterStatsMap.getOrElse("numLocators",0).toString.toInt,
-                           "displayText" -> "Locators")
+                         "value" -> clusterStatsMap.getOrElse("numLocators", 0).toString.toInt,
+                         "displayText" -> "Locators")
       countsList(1) = mutable.Map(
-                           "value" -> clusterStatsMap.getOrElse("numLeads",0).toString.toInt,
-                           "displayText" -> "Leads")
+                         "value" -> clusterStatsMap.getOrElse("numLeads", 0).toString.toInt,
+                         "displayText" -> "Leads")
       countsList(2) = mutable.Map(
-                           "value" -> clusterStatsMap.getOrElse("numDataServers",0).toString.toInt,
-                           "displayText" -> "Data Servers")
+                         "value" -> clusterStatsMap.getOrElse("numDataServers", 0).toString.toInt,
+                         "displayText" -> "Data Servers")
 
       val membersStatsTitle = createTitleNode(SnappyDashboardPage.membersStatsTitle,
                                 SnappyDashboardPage.membersStatsTitleTooltip,
@@ -110,20 +112,22 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                                 sparkConnectors.size)
       val sparkConnectorsStatsTable = connectorStats(sparkConnectors)
 
-      if(sparkConnectors.size > 0)
+      if(sparkConnectors.size > 0) {
         sparkConnectorsStatsTitle ++ sparkConnectorsStatsTable
-      else
+      }
+      else {
         mutable.Seq.empty[Node]
+      }
     }
 
     val tablesStatsDetails = {
-      val countsList:Array[mutable.Map[String, Any]] = new Array(2)
+      val countsList: Array[mutable.Map[String, Any]] = new Array(2)
       countsList(0) = mutable.Map(
-                           "value" -> clusterStatsMap.getOrElse("numColumnTables",0).toString.toInt,
-                           "displayText" -> "Column Tables")
+                         "value" -> clusterStatsMap.getOrElse("numColumnTables", 0).toString.toInt,
+                         "displayText" -> "Column Tables")
       countsList(1) = mutable.Map(
-                           "value" -> clusterStatsMap.getOrElse("numRowTables",0).toString.toInt,
-                           "displayText" -> "Row Tables")
+                         "value" -> clusterStatsMap.getOrElse("numRowTables", 0).toString.toInt,
+                         "displayText" -> "Row Tables")
 
       val tablesStatsTitle = createTitleNode(SnappyDashboardPage.tablesStatsTitle,
                                 SnappyDashboardPage.tablesStatsTitleTooltip,
@@ -133,20 +137,37 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       tablesStatsTitle ++ tablesStatsTable
     }
 
+    val extTablesStatsDetails = {
+       val countsList: Array[mutable.Map[String, Any]] = new Array(1)
+      countsList(0) = mutable.Map(
+        "value" -> clusterStatsMap.getOrElse("numExtTables", 0).toString.toInt,
+        "displayText" -> "External Tables")
+
+      val extTablesStatsTitle = createTitleNode(SnappyDashboardPage.extTablesStatsTitle,
+        SnappyDashboardPage.extTablesStatsTitleTooltip,
+        countsList)
+      val extTablesStatsTable = extTableStats(externalTableBuff)
+
+      extTablesStatsTitle ++ extTablesStatsTable
+    }
+
     val indexStatsDetails = {
       val indexStatsTitle = createTitleNode(SnappyDashboardPage.indexStatsTitle,
                                SnappyDashboardPage.indexStatsTitleTooltip,
                                indexBuff.size)
       val indexStatsTable = indexStats(indexBuff)
 
-      if(indexBuff.size > 0)
+      if(indexBuff.size > 0) {
         indexStatsTitle ++ indexStatsTable
-      else
+      }
+      else {
         mutable.Seq.empty[Node]
+      }
     }
 
     val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++
-                      sparkConnectorsStatsDetails ++ tablesStatsDetails ++ indexStatsDetails
+                      sparkConnectorsStatsDetails ++ tablesStatsDetails ++
+                      extTablesStatsDetails ++ indexStatsDetails
 
     UIUtils.simpleSparkPageWithTabs(pageHeaderText, pageContent, parent, Some(500))
 
@@ -155,7 +176,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def updateClusterStats(
       clusterStatsMap: mutable.HashMap[String, Any],
       membersBuf: mutable.Map[String, mutable.Map[String, Any]],
-      tablesBuf: Map[String, SnappyRegionStats] ) : Unit = {
+      tablesBuf: Map[String, SnappyRegionStats],
+      extTablesBuf: Map[String, SnappyExternalTableStats]): Unit = {
 
     val numMembers = membersBuf.size
     var isClusterStateNormal = true
@@ -167,24 +189,24 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     var numClientsToDataServers = 0
     var numColumnTables = 0
     var numRowTables = 0
-    var cpuUsage:Double = 0
-    var memoryUsage:Double = 0;
-    var heapUsage:Double = 0;
-    var offHeapUsage:Double = 0;
-    var jvmHeapUsage:Double = 0;
+    var cpuUsage: Double = 0
+    var memoryUsage: Double = 0;
+    var heapUsage: Double = 0;
+    var offHeapUsage: Double = 0;
+    var jvmHeapUsage: Double = 0;
 
-    var totalCPUSize:Int = 0;
-    var totalCPUUsage:Int = 0;
-    var totalMemorySize:Long = 0;
-    var totalMemoryUsage:Long = 0;
-    var totalHeapSize:Long = 0;
-    var totalHeapUsage:Long = 0;
-    var totalOffHeapSize:Long = 0;
-    var totalOffHeapUsage:Long = 0;
-    var totalJvmHeapSize:Long = 0;
-    var totalJvmHeapUsage:Long = 0;
+    var totalCPUSize: Int = 0;
+    var totalCPUUsage: Int = 0;
+    var totalMemorySize: Long = 0;
+    var totalMemoryUsage: Long = 0;
+    var totalHeapSize: Long = 0;
+    var totalHeapUsage: Long = 0;
+    var totalOffHeapSize: Long = 0;
+    var totalOffHeapUsage: Long = 0;
+    var totalJvmHeapSize: Long = 0;
+    var totalJvmHeapUsage: Long = 0;
 
-    val hostsList:mutable.Set[String] = mutable.Set.empty[String]
+    val hostsList: mutable.Set[String] = mutable.Set.empty[String]
 
     membersBuf.foreach(mb => {
       val m = mb._2
@@ -232,14 +254,18 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       totalMemorySize = totalHeapSize + totalOffHeapSize
       totalMemoryUsage = totalHeapUsage + totalOffHeapUsage
 
-      if(totalMemorySize > 0)
+      if(totalMemorySize > 0) {
         memoryUsage = totalMemoryUsage * 100 / totalMemorySize
-      if(totalHeapSize > 0)
+      }
+      if(totalHeapSize > 0) {
         heapUsage = totalHeapUsage * 100 / totalHeapSize
-      if(totalOffHeapSize > 0)
+      }
+      if(totalOffHeapSize > 0) {
         offHeapUsage = totalOffHeapUsage * 100 / totalOffHeapSize
-      if(totalJvmHeapSize > 0)
+      }
+      if(totalJvmHeapSize > 0) {
         jvmHeapUsage = totalJvmHeapUsage * 100 / totalJvmHeapSize
+      }
 
       cpuUsage = totalCPUUsage / totalCPUSize
     }
@@ -249,13 +275,15 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     tablesBuf.foreach(tb => {
       val tbl = tb._2
 
-      if(tbl.isColumnTable)
+      if(tbl.isColumnTable) {
         numColumnTables += 1
-      else
+      }
+      else {
         numRowTables += 1
+      }
     })
 
-    clusterStatsMap += ("status" -> {if(isClusterStateNormal) "Normal" else "Warning"})
+    clusterStatsMap += ("status" -> { if (isClusterStateNormal) { "Normal" } else { "Warning" }})
     clusterStatsMap += ("numMembers" -> numMembers)
     clusterStatsMap += ("numTables" -> tablesBuf.size)
     clusterStatsMap += ("numLeads" -> numLead)
@@ -266,6 +294,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numClientsToDataServers" -> numClientsToDataServers)
     clusterStatsMap += ("numColumnTables" -> numColumnTables)
     clusterStatsMap += ("numRowTables" -> numRowTables)
+    clusterStatsMap += ("numExtTables" -> extTablesBuf.size)
     clusterStatsMap += ("cpuUsage" -> cpuUsage)
     clusterStatsMap += ("memoryUsage" -> memoryUsage)
     clusterStatsMap += ("totalMemoryUsage" -> totalMemoryUsage)
@@ -307,8 +336,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def createTitleNode(title:String, tooltip:String,
-      count:Integer): Seq[Node] = {
+  private def createTitleNode(title: String, tooltip: String,
+      count: Integer): Seq[Node] = {
     <div class="row-fluid">
       <div class="span12">
         <h4 style="vertical-align: bottom; display: inline-block;"
@@ -320,19 +349,21 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def createTitleNode(title:String, tooltip:String,
-      countList:Array[mutable.Map[String, Any]]): Seq[Node] = {
+  private def createTitleNode(title: String, tooltip: String,
+      countList: Array[mutable.Map[String, Any]]): Seq[Node] = {
     var total = 0;
     var tooltipDetails = "";
-    for(i <- 0 until countList.length){
+    for (i <- 0 until countList.length) {
       val ele = countList(i)
       total = total + ele.getOrElse("value", 0).toString.toInt
-      if(tooltipDetails.isEmpty)
+      if (tooltipDetails.isEmpty) {
         tooltipDetails += ele.getOrElse("displayText", 0).toString + ": " +
             ele.getOrElse("value", 0).toString.toInt
-      else
+      }
+      else {
         tooltipDetails += " | " + ele.getOrElse("displayText", 0).toString + ": " +
             ele.getOrElse("value", 0).toString.toInt
+      }
     }
 
     <div class="row-fluid">
@@ -352,7 +383,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val status = clusterDetails.getOrElse("status", "")
 
-    val statusImgUri = if(status.toString.equalsIgnoreCase("normal")) {
+    val statusImgUri = if (status.toString.equalsIgnoreCase("normal")) {
       "/static/snappydata/running-status-icon-70x68.png"
     } else {
       "/static/snappydata/warning-status-icon-70x68.png"
@@ -579,7 +610,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.tableStatsColumn("nameTooltip")
+                    SnappyDashboardPage.tableStatsColumn("nameTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("name")}
@@ -588,7 +619,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.tableStatsColumn("storageModelTooltip")
+                    SnappyDashboardPage.tableStatsColumn("storageModelTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("storageModel")}
@@ -597,7 +628,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")
+                    SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
@@ -606,7 +637,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.tableStatsColumn("rowCountTooltip")
+                    SnappyDashboardPage.tableStatsColumn("rowCountTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
@@ -615,7 +646,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")
+                    SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
@@ -624,7 +655,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
+                    SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
@@ -634,6 +665,48 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </thead>
         <tbody>
           {tablesBuf.map(t => tableRow(t._2)).toArray}
+        </tbody>
+      </table>
+    </div>
+  }
+
+  private def extTableStats(tablesBuf: Map[String, SnappyExternalTableStats]): Seq[Node] = {
+
+    <div>
+      <table class="table table-bordered table-condensed table-striped">
+        <thead>
+          <tr>
+            <th style="text-align:center; vertical-align: middle; width:300px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                      SnappyDashboardPage.extTableStatsColumn("nameTooltip")
+                    }
+                    style="font-size: 17px;">
+                {SnappyDashboardPage.extTableStatsColumn("name")}
+              </span>
+            </th>
+            <th style="text-align:center; vertical-align: middle; width:300px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                      SnappyDashboardPage.extTableStatsColumn("providerTooltip")
+                    }
+                    style="font-size: 17px;">
+                {SnappyDashboardPage.extTableStatsColumn("provider")}
+              </span>
+            </th>
+            <th style="text-align:center; vertical-align: middle;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                      SnappyDashboardPage.extTableStatsColumn("externalSourceTooltip")
+                    }
+                    style="font-size: 17px;">
+                {SnappyDashboardPage.extTableStatsColumn("externalSource")}
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {tablesBuf.map(t => extTableRow(t._2)).toArray}
         </tbody>
       </table>
     </div>
@@ -677,19 +750,19 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def memberRow(memberDetails: mutable.Map[String, Any]): Seq[Node] = {
 
-    val status = memberDetails.getOrElse("status","")
-    val statusImgUri = if(status.toString.toLowerCase.equals("running")) {
+    val status = memberDetails.getOrElse("status", "")
+    val statusImgUri = if (status.toString.toLowerCase.equals("running")) {
       "/static/snappydata/running-status-icon-20x19.png"
     } else {
       "/static/snappydata/stopped-status-icon-20x19.png"
     }
 
     val nameOrId = {
-      if(memberDetails.getOrElse("name","NA").equals("NA")
-          || memberDetails.getOrElse("name","NA").equals("")){
-        memberDetails.getOrElse("id","NA")
-      }else{
-        memberDetails.getOrElse("name","NA")
+      if (memberDetails.getOrElse("name", "NA").equals("NA")
+          || memberDetails.getOrElse("name", "NA").equals("")) {
+        memberDetails.getOrElse("id", "NA")
+      } else {
+        memberDetails.getOrElse("name", "NA")
       }
     }
 
@@ -697,7 +770,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val fullDirName = memberDetails.getOrElse("userDir", "").toString
     val shortDirName = fullDirName.substring(
                          fullDirName.lastIndexOf(System.getProperty("file.separator")) + 1)
-    val processId = memberDetails.getOrElse("processId","").toString
+    val processId = memberDetails.getOrElse("processId", "").toString
 
     val memberDescription = {
       host +
@@ -715,38 +788,48 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val memberDescDetailsHandler = "toggleCellDetails('" + shortDirName + "');";
 
     val memberType = {
-      if(memberDetails.getOrElse("lead", false).toString.toBoolean){
-        if(memberDetails.getOrElse("activeLead", false).toString.toBoolean)
-           <strong data-toggle="tooltip" title="" data-original-title="Active Lead">LEAD</strong>
-        else
+      if (memberDetails.getOrElse("lead", false).toString.toBoolean) {
+        if (memberDetails.getOrElse("activeLead", false).toString.toBoolean) {
+          <strong data-toggle="tooltip" title="" data-original-title="Active Lead">LEAD</strong>
+        }
+        else {
           "LEAD"
-      } else if(memberDetails.getOrElse("locator",false).toString.toBoolean){
+        }
+      } else if (memberDetails.getOrElse("locator", false).toString.toBoolean) {
         "LOCATOR"
-      } else if(memberDetails.getOrElse("dataServer",false).toString.toBoolean){
+      } else if (memberDetails.getOrElse("dataServer", false).toString.toBoolean) {
         "DATA SERVER"
       } else {
         "CONNECTOR"
       }
     }
 
-    val heapStoragePoolUsed = memberDetails.getOrElse("heapStoragePoolUsed", 0).asInstanceOf[Long]
-    val heapStoragePoolSize = memberDetails.getOrElse("heapStoragePoolSize", 0).asInstanceOf[Long]
-    val heapExecutionPoolUsed = memberDetails.getOrElse("heapExecutionPoolUsed", 0).asInstanceOf[Long]
-    val heapExecutionPoolSize = memberDetails.getOrElse("heapExecutionPoolSize", 0).asInstanceOf[Long]
+    val heapStoragePoolUsed =
+      memberDetails.getOrElse("heapStoragePoolUsed", 0).asInstanceOf[Long]
+    val heapStoragePoolSize =
+      memberDetails.getOrElse("heapStoragePoolSize", 0).asInstanceOf[Long]
+    val heapExecutionPoolUsed =
+      memberDetails.getOrElse("heapExecutionPoolUsed", 0).asInstanceOf[Long]
+    val heapExecutionPoolSize =
+      memberDetails.getOrElse("heapExecutionPoolSize", 0).asInstanceOf[Long]
 
-    val offHeapStoragePoolUsed = memberDetails.getOrElse("offHeapStoragePoolUsed", 0).asInstanceOf[Long]
-    val offHeapStoragePoolSize = memberDetails.getOrElse("offHeapStoragePoolSize", 0).asInstanceOf[Long]
-    val offHeapExecutionPoolUsed = memberDetails.getOrElse("offHeapExecutionPoolUsed", 0).asInstanceOf[Long]
-    val offHeapExecutionPoolSize = memberDetails.getOrElse("offHeapExecutionPoolSize", 0).asInstanceOf[Long]
+    val offHeapStoragePoolUsed =
+      memberDetails.getOrElse("offHeapStoragePoolUsed", 0).asInstanceOf[Long]
+    val offHeapStoragePoolSize =
+      memberDetails.getOrElse("offHeapStoragePoolSize", 0).asInstanceOf[Long]
+    val offHeapExecutionPoolUsed =
+      memberDetails.getOrElse("offHeapExecutionPoolUsed", 0).asInstanceOf[Long]
+    val offHeapExecutionPoolSize =
+      memberDetails.getOrElse("offHeapExecutionPoolSize", 0).asInstanceOf[Long]
 
     val heapMemorySize = memberDetails.getOrElse("heapMemorySize", 0).asInstanceOf[Long]
     val heapMemoryUsed = memberDetails.getOrElse("heapMemoryUsed", 0).asInstanceOf[Long]
     val offHeapMemorySize = memberDetails.getOrElse("offHeapMemorySize", 0).asInstanceOf[Long]
     val offHeapMemoryUsed = memberDetails.getOrElse("offHeapMemoryUsed", 0).asInstanceOf[Long]
     val jvmHeapSize = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
-    val jvmHeapUsed = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
+    val jvmHeapUsed = memberDetails.getOrElse("usedMemory", 0).asInstanceOf[Long]
 
-    var memoryUsage:Long = 0
+    var memoryUsage: Long = 0
     if((heapMemorySize + offHeapMemorySize) > 0) {
       memoryUsage = (heapMemoryUsed + offHeapMemoryUsed) * 100 /
           (heapMemorySize + offHeapMemorySize)
@@ -756,7 +839,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val heapDetailsBtn = heapDetailsId + "-btn"
     val heapDetailsHandler = "toggleCellDetails('" + heapDetailsId + "');";
     val heapUsageDetails = {
-      if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+      if (memberType.toString.equalsIgnoreCase("LOCATOR")) {
         <span><strong>JVM Heap:</strong>
           <br/> { Utils.bytesToString(jvmHeapUsed).toString + " / " +
             Utils.bytesToString(jvmHeapSize).toString }
@@ -783,7 +866,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val offHeapDetailsBtn = offHeapDetailsId + "-btn"
     val offHeapDetailsHandler = "toggleCellDetails('" + offHeapDetailsId + "');";
     val offHeapUsageDetails = {
-      if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+      if (memberType.toString.equalsIgnoreCase("LOCATOR")) {
         <span><strong>Storage Memory:</strong>
           <br/> { SnappyDashboardPage.ValueNotApplicable }
           <br/><strong>Execution Memory:</strong>
@@ -813,7 +896,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
              parent.appUIBaseAddress +
                  "/" + parent.prefix +
                  "/memberDetails/?memId=" +
-                 memberDetails.getOrElse("id","NA")
+                 memberDetails.getOrElse("id", "NA")
              }>{memberDescription}</a>
         </div>
         <div style="width: 10px; float: right; padding-right: 10px; cursor: pointer;"
@@ -828,14 +911,14 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <div style="text-align:center;">{memberType}</div>
       </td>
       <td>
-        {makeProgressBar(memberDetails.getOrElse("cpuActive",0).asInstanceOf[Integer].toDouble)}
+        {makeProgressBar(memberDetails.getOrElse("cpuActive", 0).asInstanceOf[Integer].toDouble)}
       </td>
       <td>
         {makeProgressBar(memoryUsage)}
       </td>
       <td>
         <div style="width: 80%; float: left; padding-right:10px; text-align:right;">{
-            if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+            if (memberType.toString.equalsIgnoreCase("LOCATOR")) {
               SnappyDashboardPage.ValueNotApplicable
             } else {
               Utils.bytesToString(heapMemoryUsed).toString + " / " +
@@ -853,7 +936,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         <div style="width: 80%; float: left; padding-right:10px; text-align:right;">{
-            if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+            if (memberType.toString.equalsIgnoreCase("LOCATOR")) {
               SnappyDashboardPage.ValueNotApplicable
             } else {
               Utils.bytesToString(offHeapMemoryUsed).toString + " / " +
@@ -875,16 +958,16 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def connectorRow(memberDetails: mutable.Map[String, Any]): Seq[Node] = {
 
     val nameOrId = {
-      if(memberDetails.getOrElse("name","NA").equals("NA")
-          || memberDetails.getOrElse("name","NA").equals("")){
-        memberDetails.getOrElse("id","NA")
-      }else{
-        memberDetails.getOrElse("name","NA")
+      if (memberDetails.getOrElse("name", "NA").equals("NA")
+          || memberDetails.getOrElse("name", "NA").equals("")){
+        memberDetails.getOrElse("id", "NA")
+      } else {
+        memberDetails.getOrElse("name", "NA")
       }
     }
 
     val totalMemory = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
-    val usedMemory = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
+    val usedMemory = memberDetails.getOrElse("usedMemory", 0).asInstanceOf[Long]
     val memoryUsage: Double = (usedMemory * 100) / totalMemory
 
     <tr>
@@ -892,7 +975,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <div style="width:100%; padding-left:10px;">{nameOrId}</div>
       </td>
       <td>
-        {makeProgressBar(memberDetails.getOrElse("cpuActive",0).asInstanceOf[Integer].toDouble)}
+        {makeProgressBar(memberDetails.getOrElse("cpuActive", 0).asInstanceOf[Integer].toDouble)}
       </td>
       <td>
         {makeProgressBar(memoryUsage)}
@@ -919,7 +1002,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     <tr>
       <td>
         <div style="width:100%; padding-left:10px;">
-          {tableDetails.getRegionName}
+          {tableDetails.getTableName}
         </div>
       </td>
       <td>
@@ -945,6 +1028,34 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         <div style="padding-right:10px; text-align:right;">
           {Utils.bytesToString(tableDetails.getTotalSize)}
+        </div>
+      </td>
+    </tr>
+
+  }
+
+  private def extTableRow(tableDetails: SnappyExternalTableStats): Seq[Node] = {
+
+    <tr>
+      <td>
+        <div style="width:100%; padding-left:10px;">
+          {tableDetails.getTableName}
+        </div>
+      </td>
+      <td>
+        <div style="width:100%; text-align:center;">
+          {tableDetails.getProvider}
+        </div>
+      </td>
+      <td>
+        <div style="padding-right:10px; text-align:left;">
+          {
+            if (tableDetails.getProvider.toLowerCase().equalsIgnoreCase("jdbc")) {
+              tableDetails.getDriverClass
+            } else {
+              tableDetails.getDataSourcePath
+            }
+          }
         </div>
       </td>
     </tr>
@@ -1099,13 +1210,29 @@ object SnappyDashboardPage{
   tableStatsColumn += ("storageModel" -> "Storage Model")
   tableStatsColumn += ("storageModelTooltip" -> "Storage Model is either COLUMN or ROW ")
   tableStatsColumn += ("distributionType" -> "Distribution Type")
-  tableStatsColumn += ("distributionTypeTooltip" -> "Distribution Type is either PARTITIONED or REPLICATED table ")
+  tableStatsColumn += ("distributionTypeTooltip" ->
+      "Distribution Type is either PARTITIONED or REPLICATED table ")
   tableStatsColumn += ("rowCount" -> "Row Count")
   tableStatsColumn += ("rowCountTooltip" -> "Total Rows in Table")
   tableStatsColumn += ("sizeInMemory" -> "Memory Size")
   tableStatsColumn += ("sizeInMemoryTooltip" -> "Tables Size in Memory")
   tableStatsColumn += ("totalSize" -> "Total Size")
-  tableStatsColumn += ("totalSizeTooltip" -> "Tables Total Size (In Memory size + Disk Overflow Size)")
+  tableStatsColumn += ("totalSizeTooltip" ->
+      "Tables Total Size (In Memory size + Disk Overflow Size)")
+
+  val extTablesStatsTitle = "External Tables"
+  val extTablesStatsTitleTooltip = "SnappyData ExternalTables Summary"
+  val extTableStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
+  extTableStatsColumn += ("id" -> "Id")
+  extTableStatsColumn += ("idTooltip" -> "External Tables unique Identifier")
+  extTableStatsColumn += ("name" -> "Name")
+  extTableStatsColumn += ("nameTooltip" -> "External Tables Name")
+  extTableStatsColumn += ("type" -> "Type")
+  extTableStatsColumn += ("typeTooltip" -> "External Tables Type")
+  extTableStatsColumn += ("provider" -> "Provider")
+  extTableStatsColumn += ("providerTooltip" -> "External Tables Provider")
+  extTableStatsColumn += ("externalSource" -> "Source")
+  extTableStatsColumn += ("externalSourceTooltip" -> "External Source of Tables ")
 
   val indexStatsTitle = "Indexes"
   val indexStatsTitleTooltip = "SnappyData Index Summary"

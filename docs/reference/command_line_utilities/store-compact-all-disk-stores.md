@@ -27,5 +27,5 @@ Offline compaction runs essentially in the same way, but without the incoming CR
 
 ## Online Compaction
 
-To run manual online compaction, ALLOWFORCECOMPACTION should be set to true while [creating a diskstore](/reference/sql_reference/create-diskstore.md)
+To run manual online compaction, ALLOWFORCECOMPACTION should be set to true while [creating a diskstore](../sql_reference/create-diskstore.md)
 You can run manual online compaction at any time while the system is running. Oplogs eligible for compaction based on the COMPACTIONTHRESHOLD are compacted into the current oplog.

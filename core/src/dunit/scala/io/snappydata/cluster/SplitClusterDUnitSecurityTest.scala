@@ -21,21 +21,23 @@ import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
 
+import scala.language.{implicitConversions, postfixOps}
+import scala.sys.process._
+
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.security.LdapTestServer
-import com.pivotal.gemfirexd.security.SecurityTestUtils
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
+import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
+import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
+
 import org.apache.spark.TestPackageUtils
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{Row, SnappyContext, TableNotFoundException}
-
-import scala.language.{implicitConversions, postfixOps}
-import scala.sys.process.{Process, _}
+import org.apache.spark.sql.{Row, SnappyContext, SnappySession, TableNotFoundException}
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -55,6 +57,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   bootProps.setProperty("log-level", "config")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
+  System.setProperty(Constant.COMPRESSION_MIN_SIZE, compressionMinSize)
 
   var adminConn = null: Connection
   var user1Conn = null: Connection
@@ -96,7 +99,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   def setSecurityProps(): Unit = {
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
     ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
       adminUser1, getClass.getResource("/auth.ldif").getPath)
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
@@ -125,6 +128,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     super.beforeClass()
 
     setSecurityProps()
+    SplitClusterDUnitSecurityTest.bootExistingAuthModule(ldapProperties)
 
     logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
@@ -133,20 +137,24 @@ class SplitClusterDUnitSecurityTest(s: String)
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val confDir = s"$snappyProductDir/conf"
-    val ldapConf = getLdapConf()
-    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort $ldapConf",
-      s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] $ldapConf", s"$confDir/leads")
+    val compressionArg = this.compressionArg
+    val waitForInit = "-jobserver.waitForInitialization=true"
+    val ldapConf = getLdapConf
     writeToFile(
-      s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $ldapConf
-          |localhost  -locators=localhost[$port] -client-port=$netPort2 $ldapConf
+      s"localhost  -peer-discovery-port=$port -client-port=$netPort $compressionArg $ldapConf",
+      s"$confDir/locators")
+    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf",
+      s"$confDir/leads")
+    writeToFile(
+      s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg $ldapConf
+          |localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
           |""".stripMargin, s"$confDir/servers")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
     SplitClusterDUnitSecurityTest.startSparkCluster(productDir)
   }
 
-  def getLdapConf(): String = {
+  def getLdapConf: String = {
     var conf = ""
     for (k <- List(Attribute.AUTH_PROVIDER, Attribute.USERNAME_ATTR, Attribute.PASSWORD_ATTR)) {
       conf += s"-$k=${ldapProperties.getProperty(k)} "
@@ -154,7 +162,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     for (k <- List(AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       conf += s"-J-D$k=${ldapProperties.getProperty(k)} "
     }
-    conf
+    conf // + "-J-DDistributionManager.VERBOSE=true "
   }
 
   override def afterClass(): Unit = {
@@ -377,8 +385,22 @@ class SplitClusterDUnitSecurityTest(s: String)
     SplitClusterDUnitTest.getConnection(locatorClientPort, props)
   }
 
-  def permit(stmt: Statement, permit: String, op: String, t1: String, t2: String, user: String):
-  Unit = {
+  def permit(session: SnappySession, permit: String, op: String, t1: String, t2: String,
+      user: String): Unit = {
+    val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
+    Seq(t1, t2).foreach(t => session.sql(s"$permit $op on table $t $toFrom $user"))
+    if (op.equalsIgnoreCase("insert") || op.equalsIgnoreCase("update")
+        || op.equalsIgnoreCase("delete")) {
+      // We need select permission for insert, update and delete operation
+      Seq(t1, t2).foreach(t => session.sql(s"$permit select on table $t $toFrom $user"))
+      if (op.equalsIgnoreCase("update")) {
+        Seq(t1, t2).foreach(t => session.sql(s"$permit insert on table $t $toFrom $user"))
+      }
+    }
+  }
+
+  def permitConn(stmt: Statement, permit: String, op: String, t1: String, t2: String,
+      user: String): Unit = {
     val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
     Seq(t1, t2).foreach(t => stmt.execute(s"$permit $op on table $t $toFrom $user"))
     if (op.equalsIgnoreCase("insert") || op.equalsIgnoreCase("update")
@@ -402,7 +424,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     val user1Stmt = user1Conn.createStatement()
     val value = "brought up to zero"
 
-    user2Conn = getConn(jdbcUser2, true)
+    user2Conn = getConn(jdbcUser2, setSNC = true)
     var user2Stmt = user2Conn.createStatement()
 
     adminConn = getConn(adminUser1)
@@ -460,12 +482,12 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
       // grant
-      permit(user1Stmt, "grant", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
+      permitConn(user1Stmt, "grant", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
       sqls.foreach(s => executeSQL(user2Stmt, s))
       sqls.foreach(s => snc.sql(s).collect())
 
       // revoke
-      permit(user1Stmt, "revoke", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
+      permitConn(user1Stmt, "revoke", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
       sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
       sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
       sqls.foreach(s => executeSQL(adminStmt, s))
@@ -649,10 +671,10 @@ class SplitClusterDUnitSecurityTest(s: String)
       logInfo(consoleLog)
       val jobId = getJobId(consoleLog)
       assert(consoleLog.contains("STARTED"), "Job not started")
-      DistributedTestBase.waitForCriterion(getWaitCriterion(jobId), 15000, 1000, true)
+      DistributedTestBase.waitForCriterion(getWaitCriterion(jobId), 60000, 500, true)
     }
 
-    user2Conn = getConn(jdbcUser2)
+    user2Conn = getConn(jdbcUser2, setSNC = true)
     val stmt = user2Conn.createStatement()
     SplitClusterDUnitTest.createTableUsingJDBC(colTab, "column", user2Conn, stmt,
       Map("COLUMN_BATCH_SIZE" -> "50"))
@@ -661,9 +683,15 @@ class SplitClusterDUnitSecurityTest(s: String)
     submitJob("nogrant") // tells job to verify DMLs without any explicit grant
 
     Seq("select", "insert", "update", "delete").foreach(dml => {
-      permit(stmt, "grant", dml, colTab, rowTab, jdbcUser1)
+      permitConn(stmt, "grant", dml, colTab, rowTab, jdbcUser1)
       submitJob(dml) // tells job to verify respective dml
-      permit(stmt, "revoke", dml, colTab, rowTab, jdbcUser1)
+      permitConn(stmt, "revoke", dml, colTab, rowTab, jdbcUser1)
+    })
+
+    Seq("select", "insert", "update", "delete").foreach(dml => {
+      permit(snc.snappySession, "grant", dml, colTab, rowTab, jdbcUser1)
+      submitJob(dml) // tells job to verify respective dml
+      permit(snc.snappySession, "revoke", dml, colTab, rowTab, jdbcUser1)
     })
 
     // Submit the same job with invalid credentials
@@ -755,6 +783,27 @@ object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {
     logInfo(s"Stopping spark cluster in $productDir/work")
     if (sparkContext != null) sparkContext.stop()
     logInfo((productDir + "/sbin/stop-all.sh") !!)
+  }
+
+  def bootExistingAuthModule(props: Properties): Unit = {
+    val bootAuth = new SerializableRunnable() {
+      override def run(): Unit = {
+        val store = Misc.getMemStoreBootingNoThrow
+        if (store ne null) {
+          val authModule = FabricDatabase.getAuthenticationServiceBase
+          if (authModule ne null) {
+            val propNamesIter = props.stringPropertyNames().iterator()
+            while (propNamesIter.hasNext) {
+              val propName = propNamesIter.next()
+              store.setBootProperty(propName, props.getProperty(propName))
+            }
+            authModule.boot(false, props)
+          }
+        }
+      }
+    }
+    DistributedTestBase.invokeInEveryVM(bootAuth)
+    bootAuth.run()
   }
 
   override def createTablesAndInsertData(tableType: String): Unit = {}

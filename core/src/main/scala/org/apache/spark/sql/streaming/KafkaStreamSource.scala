@@ -23,13 +23,15 @@ import kafka.serializer.Decoder
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.{BaseRelation, DataSourceRegister}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.util.Utils
 
-class KafkaStreamSource extends StreamPlanProvider {
+class KafkaStreamSource extends StreamPlanProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyContext.KAFKA_STREAM_SOURCE
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
@@ -40,9 +42,9 @@ class KafkaStreamSource extends StreamPlanProvider {
 
 final class KafkaStreamRelation(
     @transient override val sqlContext: SQLContext,
-    options: Map[String, String],
+    opts: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options) {
+    extends StreamBaseRelation(opts) {
 
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
     t.split(";").map { s =>

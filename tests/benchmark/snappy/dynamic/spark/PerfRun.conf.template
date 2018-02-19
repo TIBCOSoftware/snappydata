@@ -17,8 +17,8 @@ sparkProperties="--driver-memory 2g --conf spark.executor.memory=3g"
 sparkSqlProperties="\"\""
 
 #location of checkout
-#SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
-SnappyData=/home/kishor/SNAPPY/CHECKOUT/spark-2.1.1-bin-hadoop2.7
+SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
+#SnappyData=/home/kishor/SNAPPY/CHECKOUT/spark-2.1.1-bin-hadoop2.7
 #SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata-0.7-bin
 
 #Whether to repartition dataframe
@@ -44,9 +44,9 @@ Parquet=false
 NumberOfLoadStages=10
 
 #Machine Setup
-master=pnq-kbachhav
-slaves=(pnq-kbachhav)
-client=pnq-kbachhav
+master=localhost
+slaves=(localhost)
+client=localhost
 
 #represent whether query should use dynamic paramters or static
 IsDynamic=true
@@ -60,11 +60,11 @@ WarmupRuns=2
 AverageRuns=3
 
 # location of jar which has TPCH related class files
-TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.9-tests.jar
+TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar
 
 #Size of the TPCH data. Do not chage format
-dataSize=1GB_Stages
-#dataSize=1GB
+#dataSize=1GB_Stages
+dataSize=1GB
 
 #Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
 dataDir=/home/kishor/SNAPPY/DATA/TPCH/$dataSize

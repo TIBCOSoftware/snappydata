@@ -204,7 +204,7 @@ public class DUnitLauncher {
     }
     
     //populate the Host class with our stubs. The tests use this host class
-    DUnitHost host = new DUnitHost(InetAddress.getLocalHost().getCanonicalHostName(), processManager);
+    DUnitHost host = new DUnitHost("localhost", processManager);
     host.init(registry, NUM_VMS);
 
     init(master);

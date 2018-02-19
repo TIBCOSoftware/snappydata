@@ -17,20 +17,24 @@
 package org.apache.spark.memory
 
 import java.util.Properties
+import java.util.function.ObjLongConsumer
 
 import io.snappydata.cluster.{ClusterManagerTestBase, ExecutorInitiator}
-import io.snappydata.test.dunit.SerializableRunnable
+import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 
 
 class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
+  self =>
+
   import MemoryManagerRestartDUnitTest._
 
   def testExecutorRestart(): Unit = {
-    vm1.invoke(getClass, "waitForExecutorInit")
+    vm1.invoke(getClass, "waitForExecutor")
 
     val oldID = vm1.invoke(getClass, "getMemoryManagerIdentity").asInstanceOf[Int]
 
@@ -39,24 +43,34 @@ class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
     val t1 = new Thread(new Runnable {
       override def run() = try {
-        failTheExecutors
+        failTheExecutors()
       } catch {
         case _: Throwable =>
       }
     })
     t1.start()
-    vm1.invoke(getClass, "waitForExecutor")
     t1.join()
 
-    val newID = vm1.invoke(getClass, "getMemoryManagerIdentity").asInstanceOf[Int]
-    assert(newID != oldID, "The MemoryManager instance has not changed as expected")
+    DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+      override def done(): Boolean = {
+        vm1.invoke(self.getClass, "waitForExecutor")
+        try {
+          vm1.invoke(self.getClass, "getMemoryManagerIdentity").asInstanceOf[Int] != oldID
+        } catch {
+          case _: AssertionError => false // ignore and retry till timeout
+        }
+      }
+
+      override def description(): String =
+        "waiting for executor to restart with changed memory manager"
+    }, 30000, 500, true)
 
     val value1 = vm1.invoke(getClass, "getMemoryForTable", "testExecutorRestart").asInstanceOf[Long]
     assert(value1 == 1000L, s"The storage for object should be 1000 rather than $value1")
   }
 
   def testCacheCloseRestart(): Unit = {
-    vm1.invoke(getClass, "waitForExecutorInit")
+    vm1.invoke(getClass, "waitForExecutor")
 
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
@@ -88,7 +102,7 @@ class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s)
   }
 
   def testCacheClose(): Unit = {
-    vm1.invoke(getClass, "waitForExecutorInit")
+    vm1.invoke(getClass, "waitForExecutor")
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
 
@@ -111,7 +125,7 @@ class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s)
     var stopped = false
     var oldID = -1
     try {
-      vm1.invoke(getClass, "waitForExecutorInit")
+      vm1.invoke(getClass, "waitForExecutor")
       oldID = vm1.invoke(getClass, "getMemoryManagerIdentity").asInstanceOf[Int]
       assert(vm1.invoke(getClass, "allocateStorage",
         Array("testDriverRestart", false, 1000L).asInstanceOf[Array[Object]]).asInstanceOf[Boolean])
@@ -138,28 +152,25 @@ class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
 object MemoryManagerRestartDUnitTest {
 
-  def waitForExecutor(): Unit = {
-    ExecutorInitiator.waitForExecutor()
-  }
-
   def getBootMemoryManagerSize(): Long = {
     MemoryManagerCallback.bootMemoryManager.
         asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject.size()
   }
 
-  def waitForExecutorInit(): Unit = {
+  def waitForExecutor(): Unit = {
     var l = 0L
     while (SparkEnv.get eq null) {
       if (l > 30000) throw new Exception(s"Executors did not start in 30 seconds")
       Thread.sleep(500)
       l += 500
     }
+    ExecutorInitiator.testWaitForExecutor()
   }
 
-  def failTheExecutors: Unit = {
-    sc.parallelize(1 until 100, 5).map { i =>
+  def failTheExecutors(): Unit = {
+    Utils.mapExecutors(sc, (_, _) => {
       throw new OutOfMemoryError("Some Random message") // See SystemFailure.isJVMFailureError
-    }.collect()
+    }).collect()
   }
 
   private def sc = SnappyContext.globalSparkContext
@@ -177,14 +188,14 @@ object MemoryManagerRestartDUnitTest {
     val memoryManager = SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager]
     val mMap = memoryManager.memoryForObject
     memoryManager.logStats()
-    val keys = mMap.keySet().iterator()
     var sum = 0L
-    while (keys.hasNext) {
-      val key = keys.next()
-      if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
-        sum = sum + mMap.getLong(key)
+    mMap.forEach(new ObjLongConsumer[(String, MemoryMode)] {
+      override def accept(key: (String, MemoryMode), value: Long): Unit = {
+        if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
+          sum += value
+        }
       }
-    }
+    })
     sum
   }
 

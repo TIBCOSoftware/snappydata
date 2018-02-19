@@ -15,10 +15,8 @@ pages:
 - 'Getting Started in 5 minutes or Less': 
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'Getting Started by Installing SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
-    - 'Getting Started with Amazon Web Services': 'quickstart/getting_started_on_aws.md'
+#    - 'Getting Started with Amazon Web Services': 'quickstart/getting_started_on_aws.md'
     - 'Getting Started with Docker Image': 'quickstart/getting_started_with_docker_image.md'
-#    - 'Getting Started with Snappy JDBC Streaming Connector': 'quickstart/getting_started_jdbc_streaming_connector.md'
-    - 'Getting Started with SnappyData GemFire Connector': 'quickstart/getting_started_gemfire_connector.md'    
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'SnappyData Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
@@ -35,10 +33,13 @@ pages:
 #    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 #    - 'Migrating from Version 0.9 to Version 1.0.0-RC1 Release': 'migration/migration-0.9-01_rc.md'
 #---
+# 1.0 - 'Concepts': 'concepts.md'
+# 1.0 - 'Concepts': 
+# 1.0    - 'Detecting and Handling Network Segmentation ("Split Brain")': 'concepts/network_partition.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
-    - 'How to check the Status of a SnappyData Cluster': 'howto/check_status_cluster.md'
+    - 'How to Check the Status of a SnappyData Cluster': 'howto/check_status_cluster.md'
     - 'How to Stop a SnappyData Cluster': 'howto/stop_snappy_cluster.md'
     - 'How to Run Spark Job inside the Cluster': 'howto/run_spark_job_inside_cluster.md'
     - 'How to Access SnappyData Store from existing Spark Installation using Smart Connector': 'howto/spark_installation_using_smart_connector.md'
@@ -60,6 +61,7 @@ pages:
     - 'How to Import Data from Hive Table into SnappyData Table': 'howto/import_from_hive_table.md'    
     - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'    
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
+    - 'How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
 - 'Architecture': 'architecture.md'
 - 'Architecture': 
     - 'Core Components': 'architecture/core_components.md'
@@ -71,6 +73,7 @@ pages:
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
+    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
     - 'SparkSession, SnappySession and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
@@ -79,13 +82,16 @@ pages:
     - 'Using SnappyData Shell': 'programming_guide/using_snappydata_shell.md'
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
-    - 'Using Transactions': 'programming_guide/using_transactions.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
     - 'Multiple Language Binding using Thrift Protocol': 'programming_guide/multiple_language_binding_using_thrift_protocol.md'
     - 'Building SnappyData Applications using Spark API': 'programming_guide/building_snappydata_applications_using_spark_api.md'
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
     - 'Stream Processing using SQL': 'programming_guide/stream_processing_using_sql.md'
     - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md' 
+- 'Distributed Transactions': 'consistency/transactions_about.md'
+- 'Distributed Transactions':
+    - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
+    - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
 - 'Affinity Modes': 'deployment.md'
 - 'Affinity Modes': 
     - 'Local Mode': 'affinity_modes/local_mode.md'
@@ -96,11 +102,12 @@ pages:
     - 'Tuning for Concurrency and Computation': 'best_practices/setup_cluster.md'
     - 'Designing your Database and Schema': 'best_practices/design_schema.md'  
     - 'Designing your Database and Schema':
-        - 'Design Principles of Scalable, Partition-Aware Databases': 'best_practices/design_principles.md'  
+        - 'Design Principles of Scalable, Partition-Aware Databases': 'best_practices/design_principles.md'
         - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
     - 'Memory Management': 'best_practices/memory_management.md'      
     - 'HA Considerations': 'best_practices/ha_considerations.md'    
     - 'Important Settings': 'best_practices/important_settings.md'
+    - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'    
 - 'Synopsis Data Engine (SDE)': 'aqp.md'
 - 'Synopsis Data Engine (SDE)': 
     - 'Key Concepts': 'sde/key_concepts.md'
@@ -110,6 +117,10 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
+#- 'Using Connectors': 'connectors/connectors.md'
+#- 'Using Connectors': 
+    #    - How to Use the Snappy JDBC Streaming Connector': 'connectors/jdbc_streaming_connector.md'
+    #    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'   
 - 'Using SnappyData CloudBuilder': 'aqp_aws.md'
 - 'Using SnappyData CloudBuilder': 
     - 'Key Components': 'isight/key_components.md'
@@ -120,6 +131,7 @@ pages:
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
+#    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
 # -- Topic - Reference Guide
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 
@@ -128,6 +140,18 @@ pages:
     - 'Authorization': 'security/authorization.md'
     - 'Configuring Network Encryption and Authentication using SSL': 'security/configuring_network_encryption_and_authentication_using_ssl.md'
     - 'User Names for Authentication, Authorization, and Membership': 'security/user_names_for_authentication_authorization_and_membership.md'
+- 'Evaluating Statistics for the System and Applications': 'vsd/system_performance.md'
+- 'Evaluating Statistics for the System and Applications':
+    - 'Collecting System Statistics': 'vsd/collecting_system_stats.md'
+    - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
+    - 'Using VSD to Analyze Statistics':
+        - 'Installing and Running VSD': 'vsd/running_vsd.md'
+        - 'Transaction Performance': 'vsd/vsd_transactions.md'
+        - 'Table Performance': 'vsd/vsd_tables.md'
+        - 'SQL Statement Performance': 'vsd/vsd_statements.md'
+        - 'Memory Usage': 'vsd/vsd_memory.md'
+        - 'Client Connections': 'vsd/vsd-connection-stats.md'
+        - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
     - 'SQL Reference Guide': 'sql_reference.md'
@@ -160,6 +184,7 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
+        - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
@@ -171,9 +196,10 @@ pages:
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
-        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
-        - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'    
-        - 'SYSTABLES': 'reference/system_tables/systables.md'    
+#        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'
+        - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'
+        - 'SYSDISKSTOREIDS': 'reference/system_tables/sysdiskstoreids.md'
+        - 'SYSTABLES': 'reference/system_tables/systables.md'
     - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
     - 'Command Line Utilities':
         - 'backup and restore': 'reference/command_line_utilities/store-backup.md'
@@ -181,6 +207,7 @@ pages:
         - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
         - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md'
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
+        - 'unblock-missing-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
@@ -208,22 +235,25 @@ pages:
         - 'enable-network-partition-detection': 'reference/configuration_parameters/enable-network-partition-detection.md'
         - 'enable-stats': 'reference/configuration_parameters/enable-stats.md'
         - 'enable-time-statistics': 'reference/configuration_parameters/enable-time-statistics.md'
+        - 'enable-timestats': 'reference/configuration_parameters/enable-timestats.md'
         - 'enforce-unique-host': 'reference/configuration_parameters/enforce-unique-host.md'
         - 'init-scripts': 'reference/configuration_parameters/init-scripts.md'
+        - 'load-balance': 'reference/configuration_parameters/load-balance.md'
         - 'locators': 'reference/configuration_parameters/locators.md'
 #        - 'log-disk-space-limit': 'reference/configuration_parameters/log-disk-space-limit.md'
         - 'log-file': 'reference/configuration_parameters/log-file.md'
 #        - 'log-file-size-limit': 'reference/configuration_parameters/log-file-size-limit.md'
         - 'log-level': 'reference/configuration_parameters/log-level.md'
         - 'member-timeout': 'reference/configuration_parameters/member-timeout.md'
-#        - 'membership-port-range': 'reference/configuration_parameters/membership-port-range.md'
+        - 'membership-port-range': 'reference/configuration_parameters/membership-port-range.md'
+        - 'password': 'reference/configuration_parameters/password.md'
 #        - 'persist-dd': 'reference/configuration_parameters/persist-dd.md'
 #        - 'prefer-netserver-ipaddress': 'reference/configuration_parameters/prefer-netserver-ipaddress.md'
-#        - 'read-timeout': 'reference/configuration_parameters/read-timeout.md'
+        - 'read-timeout': 'reference/configuration_parameters/read-timeout.md'
         - 'redundancy-zone': 'reference/configuration_parameters/redundancy-zone.md'
-#        - 'secondary-locators': 'reference/configuration_parameters/secondary-locators.md'
+        - 'secondary-locators': 'reference/configuration_parameters/secondary-locators.md'
 #        - 'shutdown': 'reference/configuration_parameters/shutdown.md'
-#        - 'skip-constraint-checks': 'reference/configuration_parameters/skip-constraint-checks.md'
+        - 'skip-constraint-checks': 'reference/configuration_parameters/skip-constraint-checks.md'
 #        - 'skip-listeners': 'reference/configuration_parameters/skip-listeners.md'
 #        - 'skip-locks': 'reference/configuration_parameters/skip-locks.md'
 #        - 'socket-buffer-size': 'reference/configuration_parameters/socket-buffer-size.md'
@@ -237,32 +267,36 @@ pages:
 #        - 'snappydata.query-timeout': 'reference/configuration_parameters/snappydata.query-timeout.md'
 #        - 'snappydata.storage.tempDirectory': 'reference/configuration_parameters/snappydata.storage.tempDirectory.md'
 #        - 'snappydata.system.home': 'reference/configuration_parameters/snappydata.system.home.md'
+        - 'ssl': 'reference/configuration_parameters/ssl.md'
         - 'start-locator': 'reference/configuration_parameters/start-locator.md'
         - 'statistic-archive-file': 'reference/configuration_parameters/statistic-archive-file.md'
         - 'statistic-sample-rate': 'reference/configuration_parameters/statistic-sample-rate.md'
         - 'statistic-sampling-enabled': 'reference/configuration_parameters/statistic-sampling-enabled.md'
+        - 'sync-commits': 'reference/configuration_parameters/sync-commits.md'
         - 'sys-disk-dir': 'reference/configuration_parameters/sys-disk-dir.md'
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Documentation': 'apidocsintro.md'
 #    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
-    - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
+    - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md'
+    - 'Setting Up SnappyData JDBC Driver and QlikView': 'setting_up_jdbc_driver_qlikview.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
-    - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
+    - 'Member startup problems': 'troubleshooting/member_startup_problems.md'
     - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
-    - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
-    - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
-    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
-- Additional Information: additional_files/additional_docs.md
+    - 'Preventing disk full errors': 'troubleshooting/preventing_disk_full_errors.md'
+    - 'Recovering from disk full errors': 'troubleshooting/recovering_from_disk_full_errors.md'
+    - 'Collecting logs, stats and dumps using the collect-debug-artifacts script': 'troubleshooting/collect_debug_artifacts.md'
+    - 'Troubleshooting error messages': 'troubleshooting/troubleshooting_error_messages.md'  
+#- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
 - Community Edition/ Enterprise Edition Features: additional_files/open_source_components.md
 - 'License Model': 'additional_files/license_model.md'
-#- 'Release Notes': 'release_notes/release_notes_1.0.md'
-#- 'Release Notes': 
-#    - 'Known Issues': 'release_notes/known_issues.md'
+- 'Release Notes': 'release_notes/release_notes.md'
+- 'Release Notes': 
+    - 'Known Issues': 'release_notes/known_issues.md'
 - Contact and Support: techsupport.md
 - License: LICENSE.md
 
@@ -280,7 +314,6 @@ extra_css:
     - 'extra.css'
     
 markdown_extensions:
-    - admonition:
-   
+    - markdown.extensions.admonition 
     
-copyright: Copyright &copy; 2017 SnappyData Inc.
+copyright: Copyright &copy; 2018 SnappyData Inc.
