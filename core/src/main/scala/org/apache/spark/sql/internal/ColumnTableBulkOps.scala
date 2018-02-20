@@ -52,7 +52,8 @@ object ColumnTableBulkOps {
           throw new AnalysisException(
             s"PutInto in a column table requires key column(s) but got empty string")
         }
-        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
+        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get,
+          tryGreaterThanEqual = true)
 
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
@@ -82,6 +83,7 @@ object ColumnTableBulkOps {
         } else true
 
         val insertChild = if (doInsertJoin) {
+          val condition = prepareCondition(sparkSession, subQuery, updateSubQuery, putKeys.get)
           Join(subQuery, updateSubQuery, LeftAnti, condition)
         } else subQuery
         val insertPlan = new Insert(table, Map.empty[String,
@@ -113,7 +115,8 @@ object ColumnTableBulkOps {
   private def prepareCondition(sparkSession: SparkSession,
       table: LogicalPlan,
       child: LogicalPlan,
-      columnNames: Seq[String]): Option[Expression] = {
+      columnNames: Seq[String],
+      tryGreaterThanEqual: Boolean = false): Option[Expression] = {
     val analyzer = sparkSession.sessionState.analyzer
     val leftKeys = columnNames.map { keyName =>
       table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
@@ -134,7 +137,7 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = if (!ColumnTableScan.isCaseOfSortedInsertValue) {
+    val newCondition = if (!tryGreaterThanEqual || !ColumnTableScan.isCaseOfSortedInsertValue) {
       joinPairs.map(EqualTo.tupled).reduceOption(And)
     } else joinPairs.
         map(org.apache.spark.sql.catalyst.expressions.GreaterThanOrEqual.tupled).reduceOption(And)
