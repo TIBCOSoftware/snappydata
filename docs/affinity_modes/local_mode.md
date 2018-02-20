@@ -23,18 +23,45 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 
 **Example: Maven dependency**
 ```
-<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
+
+```
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11 
+<dependency>
+    <groupId>io.snappydata</groupId>
+    <artifactId>snappydata-core_2.11</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+
 **Example: SBT dependency**
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
+```
+
+```
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.1"
+```
+
+This is specific to 1.0.1. If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>A workaround to that is adding the below code to your **build.sbt**:
+
+```
+val workaround = {
+  sys.props += "packaging.type" -> "jar"
+  ()
+}
+```
+
+For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
 ```
 **Create SnappySession**: To start SnappyData store you need to create a SnappySession in your program

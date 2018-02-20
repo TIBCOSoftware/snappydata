@@ -10,20 +10,45 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 **Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData.
 
 **Example: Maven dependency:**
+
 ```
-<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client -->
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 <dependency>
     <groupId>io.snappydata</groupId>
-    <artifactId>snappydata-store-client</artifactId>
-    <version>1.6.1</version>
+    <artifactId>snappydata-cluster_2.11</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+```
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
+<dependency>
+    <groupId>io.snappydata</groupId>
+    <artifactId>snappydata-core_2.11</artifactId>
+    <version>1.0.1</version>
 </dependency>
 ```
 
 **Example: SBT dependency:**
 ```
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += "io.snappydata" % "snappydata-store-client" % "1.6.1"
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
 ```
+```
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.1"
+```
+
+This is specific to 1.0.1. If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>A workaround to that is adding the below code to your **build.sbt**:
+
+```
+val workaround = {
+  sys.props += "packaging.type" -> "jar"
+  ()
+}
+```
+
+For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
+
 
 **Code Example:**
 
