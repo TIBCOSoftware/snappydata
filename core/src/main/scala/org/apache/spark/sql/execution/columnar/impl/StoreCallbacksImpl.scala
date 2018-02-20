@@ -178,7 +178,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   def getSnappyTableStats: AnyRef = {
     val c = SnappyTableStatsProviderService.getService
-        .getTableSizeStats.values.asJavaCollection
+        .refreshAndGetTableSizeStats.values.asJavaCollection
     val list: java.util.List[SnappyRegionStats] = new java.util.ArrayList(c.size())
     list.addAll(c)
     list

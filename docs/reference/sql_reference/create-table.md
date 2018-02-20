@@ -15,9 +15,10 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
-    OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
+    OVERFLOW 'true | false', // specifies the action to be executed upon eviction event, 'false' allowed only when EVCITON_BY is not set.
     EXPIRE 'time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
+	KEY_COLUMNS  'column_name,..', // Only for column table if putInto support is required
     COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer. Only for column table.
 	)
 	[AS select_statement];
@@ -53,28 +54,28 @@ Refer to the [constraint](#constraint) section for more information on table-con
 `column-data-type`
 ```
 column-data-type: 
-	BIGINT | 
-	BINARY | 
-	BLOB | 
-	BOOLEAN | 
-	BYTE | 
-	CLOB | 
-	DATE | 
-	DECIMAL | 
-	DOUBLE |  
-	FLOAT | 
-	INT | 
-	INTEGER | 
-	LONG |  
-	NUMERIC | 
-	REAL | 
-	SHORT | 
-	SMALLINT | 
-	STRING | 
-	TIMESTAMP | 
-	TINYINT | 
-	VARBINARY | 
-	VARCHAR | 
+	BIGINT |
+	BINARY |
+	BLOB |
+	BOOLEAN |
+	BYTE |
+	CLOB |
+	DATE |
+	DECIMAL |
+	DOUBLE |
+	FLOAT |
+	INT |
+	INTEGER |
+	LONG |
+	NUMERIC |
+	REAL |
+	SHORT |
+	SMALLINT |
+	STRING |
+	TIMESTAMP |
+	TINYINT |
+	VARBINARY |
+	VARCHAR |
 ```
 Column tables can also use ARRAY, MAP and STRUCT types.</br>
 Decimal and numeric has default precision of 38 and scale of 18.</br>
@@ -100,7 +101,7 @@ Use the REDUNDANCY clause to specify the number of redundant copies that should 
 
 <a id="eviction-by"></a>
 `EVICTION_BY`</br>
-Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. See [best practices](../../best_practices/optimizing_query_latency.md#overflow) for more information. The value for this parameter is set in MB.
+Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all tables (expected to host larger data sets) overflow to disk, by default. See [best practices](../../best_practices/optimizing_query_latency.md#overflow) for more information. The value for this parameter is set in MB.
 
 !!!Note:
 	EVICTION_BY is not supported for replicated tables.
@@ -122,7 +123,7 @@ The disk directories where you want to persist the table data. By default, Snapp
 
 <a id="overflow"></a>
 `OVERFLOW`</br> 
-Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' overflows the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' causes the evicted rows to be destroyed in case of eviction event.
+Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' overflows the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' is not allowed except when EVICTION_BY is set. In such case, the eviction itself is disabled.
 !!! Note: 
 	The tables are evicted to disk by default.
 
@@ -161,7 +162,7 @@ snappy>CREATE TABLE CUSTOMER (
     C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
     C_MKTSEGMENT  VARCHAR(10) NOT NULL,
     C_COMMENT     VARCHAR(117) NOT NULL))
-    USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
+    USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY');
 ```
 
 ### Example: Column Table Partitioned with 10 Buckets and Persistence Enabled
@@ -188,7 +189,7 @@ snappy>CREATE TABLE SUPPLIER (
       S_PHONE STRING NOT NULL, 
       S_ACCTBAL DECIMAL(15, 2) NOT NULL,
       S_COMMENT STRING NOT NULL)
-      USING ROW OPTIONS (PERSISTENCE 'ASYNCHRONOUS');
+      USING ROW OPTIONS (BUCKETS '10', PERSISTENCE 'ASYNCHRONOUS');
 ```
 
 ### Example: Row Table Partitioned with 10 Buckets and Overflow Enabled
@@ -223,6 +224,17 @@ Note that only the column names and datatypes from the queried table are used wh
 ### Example: Create Table using Spark DataFrame API
 
 For information on using the Apache Spark API, refer to [Using the Spark DataFrame API](../../sde/running_queries.md#using-the-spark-dataframe-api).
+
+### Example: Create Column Table with PUT INTO
+
+```
+snappy>CREATE TABLE COL_TABLE (
+	PRSN_EVNT_ID BIGINT NOT NULL,
+    VER bigint NOT NULL,
+    CLIENT_ID BIGINT NOT NULL,
+    SRC_TYP_ID BIGINT NOT NULL) USING COLUMN OPTIONS(PARTITION_BY 'PRSN_EVNT_ID,CLIENT_ID', BUCKETS '64',
+    KEY_COLUMNS 'PRSN_EVNT_ID,CLIENT_ID');
+```
 
 ### Example: Create Table with Eviction Settings
 

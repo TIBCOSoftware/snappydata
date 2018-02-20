@@ -35,6 +35,8 @@ The Dashboard offers the following capabilities and benefits:
 
 * [Table Statistics](#table)
 
+* [External Table Statistics](#external-table)
+
 <a id="cluster"></a>
 ### Cluster Statistics
 
@@ -118,6 +120,22 @@ The Dashboard offers the following capabilities and benefits:
 
 * **Total Size**</br>
    Displays the collective physical memory and disk overflow space used by the data table to store its data/records.
+
+![Dashboard](../Images/monitoring_external_table.png)
+<a id="external-table"></a>
+### External Table Statistics
+
+* **Tables Count**</br>
+	Displays the total number of external tables present in the cluster. The tooltip displays the total number of external tables.
+
+* **Name**</br>
+	Displays the name of the external table.
+
+* **Provider**</br>
+	Displays the file format used for the external table. The supported file formats are  Parquet, CSV and JDBC.
+
+* **Source**</br>
+	For Parquet and CSV file format, the path of the data file used to create the external table is displayed. For JDBC, the name of the Driver Class is displayed.
 
 <a id="member-details"></a>
 ## Member Details View

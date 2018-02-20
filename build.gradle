@@ -72,7 +72,7 @@ allprojects {
   apply plugin: 'nebula.ospackage-base'
 
   group = 'io.snappydata'
-  version = '1.0.1'
+  version = '1.0.2-SNAPSHOT'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -122,7 +122,7 @@ allprojects {
     janinoVersion = '3.0.8'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.1'
+    snappyStoreVersion = '1.6.2-SNAPSHOT'
     snappydataVersion = version
     pulseVersion = '1.5.1'
     buildFlags = ''
