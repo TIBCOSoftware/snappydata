@@ -22,6 +22,7 @@ import hydra.*;
 import io.snappydata.hydra.connectionPool.HikariConnectionPool;
 import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
 import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
+import io.snappydata.hydra.testDMLOps.SnappyDMLOpsBB;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -86,6 +87,7 @@ public class SnappyTest implements Serializable {
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
   public static boolean autoCommit = TestConfig.tab().booleanAt(SnappyPrms.setAutoCommit, false);
   public static int txIsolationLevel = SnappyPrms.getTxIsolationLevel();
+  public static boolean setTx = SnappyPrms.setTx();
   /*public static boolean useThinClientSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);*/  //default to false
   public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
   public static boolean forceStart = TestConfig.tab().booleanAt(SnappyPrms.forceStart,
@@ -1175,11 +1177,11 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
-  public static synchronized void setConnPoolType(){
-    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+  public static synchronized void setConnPoolType() {
+    if (!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
       SnappyBB.getBB().getSharedMap().put("connPoolType", SnappyConnectionPoolPrms
           .getConnPoolType(connPool));
-    connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
+    connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
   }
 
   /**
@@ -1188,17 +1190,16 @@ public class SnappyTest implements Serializable {
   public static Connection getLocatorConnection() throws SQLException {
     Connection conn = null;
 
-    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+    if (!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
       setConnPoolType();
-    else 
-      connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
-    
-    if(connPoolType == 0){
+    else
+      connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
+
+    if (connPoolType == 0) {
       conn = HikariConnectionPool.getConnection();
-    } else if (connPoolType == 1){
+    } else if (connPoolType == 1) {
       conn = TomcatConnectionPool.getConnection();
-    }
-    else {
+    } else {
       List<String> endpoints = validateLocatorEndpointData();
 
       if (!runGemXDQuery) {
@@ -1243,6 +1244,10 @@ public class SnappyTest implements Serializable {
       Log.getLogWriter().info("url is " + url);
       conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
       if (SnappyPrms.setTx() && !tableCreation) {
+        int txIsolationLevel = (int) SnappyDMLOpsBB.getBB().getSharedMap().get
+            ("txIsolationLevel");
+        boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+            ("autoCommit");
         conn.setTransactionIsolation(txIsolationLevel);
         conn.setAutoCommit(autoCommit);
         Log.getLogWriter().info("SS - Transaction Isolation level is set to " + conn
