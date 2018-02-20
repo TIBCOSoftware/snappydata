@@ -1,20 +1,20 @@
 # PUT INTO
 
-!!!Note:
-	* PUT INTO is not supported for column tables
-		
-	* SnappyData does not support PUT INTO with a subselect query, if, the subselect query requires aggregation
+<note>
+	SnappyData does not support PUT INTO with a subselect query, if, the subselect query requires aggregation.
 
 ``` bash
-PUT INTO table-name
-     VALUES ( column-value [ , column-value ]* ) 
+    PUT INTO table-name
+         VALUES ( column-value [ , column-value ]* ) 
 ```
 
 ``` bash
-PUT INTO table-name
-    ( simple-column-name [ , simple-column-name ]* )
-   Query
+    PUT INTO table-name
+        ( simple-column-name [ , simple-column-name ]* )
+       Query
 ```
+</note>
+
 ## Description
 
 PUT INTO operates like standard [INSERT](insert.md) statement.
@@ -25,7 +25,7 @@ PUT INTO uses a syntax similar to the INSERT statement, but SnappyData does not 
 
 The PUT INTO statement is similar to the "UPSERT" command or capability provided by other RDBMS to relax primary key checks. By default, the PUT INTO statement ignores only primary key constraints. <!--All other column constraints (unique, check, and foreign key) are honored unless you explicitly set the [skip-constraint-checks](../../reference/configuration_parameters/skip-constraint-checks.md) connection property.-->
 
-## Example
+#### Example
 
 ```pre
 PUT INTO TRADE.CUSTOMERS
@@ -38,4 +38,30 @@ When specifying columns with table, columns should not have any [CONSTRAINT](cre
 PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID)
  VALUES (1, 'User 1' , 'SnappyData', 1),
  (2, 'User 2' , 'SnappyData', 1);
+```
+
+
+###	For Column Tables
+
+If you need the `putInto()` functionality for column tables, you must specify key_columns while defining the column table.
+PUT INTO updates the row if present, else, it inserts the row. </br>
+As column tables do not have primary key functionality you must specify key_columns when creating the table.</br>
+These columns are used to identify a row uniquely. PUT INTO is available by SQL as well APIs.
+
+
+#### Example
+
+**For SQL**
+
+``` bash
+put into table col_table select * from row_table
+```
+
+**For API**
+
+API is available from the DataFrameWriter extension.
+
+``` bash
+import org.apache.spark.sql.snappy._
+dataFrame.write.putInto("col_table")
 ```

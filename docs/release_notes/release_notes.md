@@ -1,57 +1,171 @@
 # Release Notes 
+The SnappyData team is pleased to announce the availability of version 1.0.1 of the platform.
+[**Download the Enterprise Edition here**](https://www.snappydata.io/download).
 
-The SnappyData team is pleased to announce the availability of SnappyData Release 1.0.0 (GA) of the platform.
+## New Features
 
-<heading2> New Features/Fixed Issues</heading2>
+- putInto and deleteFrom bulk operations support for column tables (SNAP-2092, SNAP-2093, SNAP-2094):
 
-- Fully compatible with Apache Spark 2.1.1
+  - Ability to specify "key columns" in the table DDL to use for putInto and deleteFrom APIs
 
-- Mutability support for column store (SNAP-1389):
+  - "PUT INTO" SQL or putInto API extension to overwrite existing rows and insert non-existing ones
 
-  - UPDATE and DELETE operations are now supported on column tables.
+  - "DELETE FROM" SQL or deleteFrom API extension to delete a set of matching rows
 
-- ALTER TABLE support for row table (SNAP-1326).
+  - UPDATE SQL now supports using expressions with column references of another table in RHS of SET
 
-- Security Support (available in the [Enterprise Edition](http://www.snappydata.io/download)):  This release introduces cluster security with authentication and authorisation based on LDAP mechanism. It will be extended to other mechanisms in future releases. (SNAP-1656, SNAP-1813).
+- Improvements in cluster restart with off-line, failed nodes or with corrupt meta-data (SNAP-2096)
 
-- DEB and RPM installers (distProduct target in source build).
+  - New admin command "unblock" to allow the initialization of a table even if it is waiting for offline members
 
-- Support for setting scheduler pools using the set command.
+  - No discard of data (unlike revoke) with the new approach and initialize with the latest online working copy
+    (SNAP-2143)
 
-- Multi-node cluster now boots up quickly as background start of server processes is enabled by default.
+  - Parallel recovery of data regions to break any cyclic dependencies between the nodes, and allow reporting
+    on all off-line nodes that may have more recent copy of data
 
-- Pulse Console:  SnappyData Pulse has been enhanced to be more useful to both developers and operations personnel (SNAP-1890, SNAP-1792). Improvements include
+  - Many bug-fixes related to startup issues due to meta-data inconsistencies:
 
-  - Ability to sort members list based on members type.
+    - Incorrect ConflictingPersistentDataExeption at restart due to disk-store meta-data corruption
+      (SNAP-2097, SNAP-2098)
 
-  - Added new UI view named SnappyData Member Details Page which includes, among other things, latest logs.
+    - Metadata corruption issues causing GII to fail (SNAP-2140)
 
-  - Added members Heap and Off-Heap memory usage details along with their storage and execution splits.
+- Compression of column batches in disk storage and over the network (SNAP-1743)
 
-- Users can specify streaming batch interval when submitting a stream job via conf/snappy-job.sh (SNAP-1948).
+  - Support for LZ4 and SNAPPY compression codecs in persistent storage and transport for column table data
 
-- Row tables now support LONG, SHORT, TINYINT and BYTE datatypes (SNAP-1722).
+  - Smart connector uses compression when pulling from remote hosts while using uncompressed
+    for same host for best performance
 
-- The history file for snappy shell has been renamed from .gfxd.history to .snappy.history. You may copy your existing ~/.gfxd.history to ~/.snappy.history to be able to access your historical snappy shell commands.
+  - New SOURCEPATH and COMPRESSION columns in SYS.HIVETABLES virtual table
+- Support for temporary, global temporary and persistent VIEWs (SNAP-2072):
 
-<heading2> Performance Enhancements</heading2>
+  - CREATE VIEW, CREATE TEMPORARY VIEW and CREATE GLOBAL TEMPORARY VIEW DDLs
 
-- Performance enhancements with dictionary decoder when dictionary is large. (SNAP-1877)
-  - Using a consistent sort for pushed down predicates so that different sessions do not end up creating different generated code.
-  - Reduced the size of generated code.
-- Indexed cursors in decoders to improve heavily filtered queries (SNAP-1936)
-- Performance improvements in Smart Connector mode, specially with queries on tables with wide schema (SNAP-1363, SNAP-1699)
-- Several other performance improvements.
+  - SQL from JDBC/ODBC for VIEWs routed to Spark execution engine
 
-<heading2> Select bug fixes and performance related fixes</heading2>
+- External connectors (like cassandra) used from smart connector no longer require any jars in the
+  snappydata cluster (SNAP-2072)
 
-There have been numerous bug fixes done as part of this release. Some of these are included below. For a more comprehensive list, see [ReleaseNotes](https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt).
+- External tables display in dashboard and snappy command-line (SNAP-2086)
 
-| Issue | Description |
-|------|--------|
-|SNAP-1756|Fixed data inconsistency issues when a new node is joining the cluster and at the same time write operations are going on.|
-|SNAP -1377</br>SNAP -902|The product internally does retries on redundant copy of partitions on the event of a node failure|
-|SNAP -1893|Fixed the wrong status of locators on restarts. After cluster restart, snappy-status-all.sh used to show locators in waiting state even when the actual status changed to running|
-|SNAP -1426|Fixed the SnappyData Pulse freezing when loading data sets|
-|SNAP -1688</br>SNAP-1798|More accurate accounting of execution and storage memory|
-|SNAP&nbsp;-1714|Corrected case-sensitivity handling for query API calls|
+- Auto-configuration of SPARK_PUBLIC_DNS, hostname-for-clients etc in AWS environment (SNAP-2116)
+
+- Out-of-the-box support for AWS URLs/APIs in the product
+
+- GRANT/REVOKE SQL support in SnappySession.sql() earlier only allowed from JDBC/ODBC (SNAP-2042)
+
+- LATERAL VIEW support in SnappySession.sql() (SNAP-1283)
+
+- FETCH FIRST syntax as an alternative to LIMIT to support some SQL tools that use former
+
+- Addition of IndexStats in for local row table index lookup and range scans
+
+- SYS.DISKSTOREIDS virtual table to disk-store IDs being used in the cluster by all members (SNAP-2113)
+
+- Show ARRAY/MAP/STRUCT complex types in JDBC/ODBC metadata as part of SNAP-2141
+
+## Performance Enhancements
+
+- Major performance improvements in smart connector mode (SNAP-2101, SNAP-2084)
+
+  - Minimized buffer copying especially when connector executors are colocated with store data nodes
+
+  - Intelligent connector query handling to use key lookups into column table rather than full scan
+    for cases of heavily filtered scan queries
+
+  - Reduced round-trips for operations (transactions, bucket pruning)
+
+  - Allow using SnappyUnifiedMemoryManager with smart connector (SNAP-2084)
+
+- New memory and disk iterator to minimize faultins and do serial disk reads across concurrent
+  iterators (SNAP-2102):
+
+  - New iterator to substantially reduce faultins in case all data is not in memory
+
+  - Cross-iterator serial disk reads per diskstore to minimize random reads from disk
+
+  - New remote iterator that substantially reduces the memory overhead and caches only current batch
+
+- Startup performance improvements to cut down on locator/server/lead start and restart times (SNAP-338)
+
+- Improve performance of reads of variable length data for some queries (SNAP-2118)
+
+- Use colocated joins with VIEWs when possible (SNAP-2204)
+
+- Separate disk store for delta buffer regions  to substantially improve column table compaction (SNAP-2121)
+
+- Projection push-down to scan layer for non-deterministic expressions like spark_partition_id() (SNAP-2036)
+
+- Parser performance improvements (by ~50%)
+
+- code-generation cache is larger by default and configurable (SNAP-2120)
+
+## Select bug fixes and performance related fixes
+
+A sample of bug fixes done as part of this release are noted below. For a more comprehensive list, see [ReleaseNotes.txt](https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt).
+
+- Now only overflow-to-disk is allowed as eviction action for tables (SNAP-1501):
+
+  - Only overflow-to-disk is allowed as a valid eviction action and cannot be explicitly specified
+    (LOCAL_DESTROY removed due to possible data inconsistencies)
+
+  - OVERFLOW=false property can be used to disable eviction which is true by default
+
+- Memory accounting fixes:
+
+  - Incorrect initial memory accounting causing insert failure even with memory available (SNAP-2084)
+
+  - Zero usage shown in UI on restart (SNAP-2180)
+
+- Disable embedded Zeppelin interpreter in a secure cluster which can bypass security (SNAP-2191)
+
+- JSON conversion for complex types ARRAY/STRUCT/MAP (SNAP-2056)
+
+- Fix import of JSON data (SNAP-2087)
+
+- CREATE TABLE ... AS SELECT * fails without explicit schema (SNAP-2047)
+
+- Selects missing results or failing during node failures (SNAP-889, SNAP-1547)
+
+- Incorrect results with joins/anti-joins for some cases having more than one match for a key (SNAP-2212)
+
+- Fixes and improvements to server and lead status in both the launcher status and SYS.MEMBERS table
+  (SNAP-1960, SNAP-2060, SNAP-1645)
+
+- Fix global temporary tables/views with SnappySession (SNAP-2072)
+
+- Fix updates on complex types (SNAP-2141)
+
+- Column table scan fixes related to null value reads (SNAP-2088)
+
+- Incorrect reads of column table statistics rows in some cases (SNAP-2124)
+
+- Disable tokenization for external tables and session flag to disable it and plan caching
+  (SNAP-2114, SNAP-2124)
+
+- Table meta-data issues with squirrel client and otherwise (SNAP-2083)
+
+- Case-sensitive column names now work correctly with all operations (GITHUB-900 and other related fixes)
+
+- Allow for hyphens in schema names
+
+- Deadlock in transactional operations with GII (SNAP-1950)
+
+- Couple of fixes in UPDATE SQL:
+
+  - Failure due to rollover during update operation (SNAP-2192)
+
+  - Subquery updates shown as ResultSet rather than update count (SNAP-2156)
+
+- Correct mismatch between executor and DistributedMember names in some configurations that caused
+  Remote routing of partitions (SNAP-2122)
+
+- Fixes ported from Apache Geode (GEODE-2109, GEODE-2240)
+
+- Fixes to all failures in snappy-spark test suite which includes both product and test changes
+
+- Fixes related to ODBC driver calls to thrift server
+
+- More comprehensive python API testing (SNAP-2044)
