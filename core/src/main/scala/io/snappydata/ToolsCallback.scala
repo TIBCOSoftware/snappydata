@@ -58,4 +58,10 @@ trait ToolsCallback {
       appName : String,
       classLoader: ClassLoader): Unit = {
   }
+
+  // TODO VB: Temporary, remove this
+  def setCaseOfSortedInsertValue(v: Boolean): Unit
+  def getCaseOfSortedInsertValue: Boolean
+  def setDebugMode(v: Boolean): Unit
+  def getDebugMode: Boolean
 }

@@ -53,11 +53,11 @@ object ColumnTableBulkOps {
             s"PutInto in a column table requires key column(s) but got empty string")
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get,
-          tryGreaterThanEqual = true)
+          if (ColumnTableScan.getCaseOfSortedInsertValue) 1 else 0)
 
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
-        val updateColumns = if (!ColumnTableScan.isCaseOfSortedInsertValue) {
+        val updateColumns = if (!ColumnTableScan.getCaseOfSortedInsertValue) {
           table.output.filterNot(a => keyColumns.contains(a.name))
         } else table.output
         val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
@@ -83,7 +83,8 @@ object ColumnTableBulkOps {
         } else true
 
         val insertChild = if (doInsertJoin) {
-          val condition = prepareCondition(sparkSession, subQuery, updateSubQuery, putKeys.get)
+          val condition = prepareCondition(sparkSession, subQuery, updateSubQuery, putKeys.get,
+            if (ColumnTableScan.getCaseOfSortedInsertValue) -1 else 0)
           Join(subQuery, updateSubQuery, LeftAnti, condition)
         } else subQuery
         val insertPlan = new Insert(table, Map.empty[String,
@@ -116,7 +117,7 @@ object ColumnTableBulkOps {
       table: LogicalPlan,
       child: LogicalPlan,
       columnNames: Seq[String],
-      tryGreaterThanEqual: Boolean = false): Option[Expression] = {
+      tryGreaterThanOrLessThan: Byte = 0): Option[Expression] = {
     val analyzer = sparkSession.sessionState.analyzer
     val leftKeys = columnNames.map { keyName =>
       table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
@@ -137,10 +138,13 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = if (!tryGreaterThanEqual || !ColumnTableScan.isCaseOfSortedInsertValue) {
-      joinPairs.map(EqualTo.tupled).reduceOption(And)
-    } else joinPairs.
-        map(org.apache.spark.sql.catalyst.expressions.GreaterThanOrEqual.tupled).reduceOption(And)
+    val newCondition = if (tryGreaterThanOrLessThan > 0) {
+      joinPairs.
+          map(org.apache.spark.sql.catalyst.expressions.GreaterThanOrEqual.tupled).reduceOption(And)
+    } else if (tryGreaterThanOrLessThan < 0) {
+      joinPairs.
+          map(org.apache.spark.sql.catalyst.expressions.LessThanOrEqual.tupled).reduceOption(And)
+    } else joinPairs.map(EqualTo.tupled).reduceOption(And)
     newCondition
   }
 
