@@ -21,6 +21,8 @@ Create a backup of the locator, lead, and server configuration files that exist 
 
 7. To ensure that the restore script (restore.sh restore.bat) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of SnappyData.
 
+8. [Restart the SnappyData cluster](../howto/start_snappy_cluster.md).
+
 
 ## Additional Steps
 
@@ -31,11 +33,12 @@ For best performance, it is recommended that you re-create any large column tabl
 * Separate disk-store for column delta store. This improves the compactor performance significantly for cases of frequent JDBC/ODBC inserts or small inserts where the delta store gets used frequently.
 
 !!! Note:
+
 	- Ensure that no operations are currently running on the system.
 
-	- Use a path for parquet that has enough space to hold the table data, which needs to be deleted explicitly once re-import is successfully done.
+	- Use a path for the Parquet file that has enough space to hold the table data. Once the re-import is successful, make sure that the Parquet is deleted explicitly .
 
-The following example demonstrates how you can store/load from parquet:
+The following example demonstrates how you can store/load from Parquet:
 
 ```
 snappy> create external table table1Parquet using parquet options (path '...') as select * from table1;
