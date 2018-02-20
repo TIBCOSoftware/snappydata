@@ -75,7 +75,7 @@ class SnappyHydraTestRunner extends SnappyTestRunner {
       case r: java.lang.RuntimeException =>
         if (r.getMessage().contains("Nonzero exit value: 1")) {
           // scalastyle:off println
-          System.out.println("No unexpected Exceptions observed during smoke bt run.")
+          println("No unexpected Exceptions observed during smoke bt run.")
         }
         else {
           throw r

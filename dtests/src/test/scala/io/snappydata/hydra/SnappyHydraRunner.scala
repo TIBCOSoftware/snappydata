@@ -56,7 +56,7 @@ class SnappyHydraRunner extends SnappyHydraTestRunner {
     catch {
       case r: java.lang.RuntimeException =>
         if (r.getMessage().contains("Nonzero exit value: 1")) {
-          System.out.println("smoke bt run is successful.")
+          println("smoke bt run is successful.")
         }
         else {
           throw r
