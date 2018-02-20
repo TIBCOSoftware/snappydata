@@ -62,6 +62,8 @@ class SortedColumnTests extends ColumnTablesTestBase {
 
     def testBasicInsert(session: SnappySession): Unit = {
       session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+      session.conf.set(Property.HashJoinSize.name, "-1")
+      session.conf.set("spark.sql.autoBroadcastJoinThreshold", (-1).toString)
 
       val numElements = 551
 
