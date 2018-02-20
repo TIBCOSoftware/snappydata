@@ -70,7 +70,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
       session.sql("drop table if exists colDeltaTable")
 
       session.sql("create table colDeltaTable (id int, addr string, status boolean) " +
-          "using column options(buckets '1', partition_by 'id', key_columns 'id')") // TODO VB: 2
+          "using column options(buckets '2', partition_by 'id', key_columns 'id')")
 
       snc.sql("create table row_table(id int, addr string, status boolean)")
 
@@ -118,14 +118,12 @@ class SortedColumnTests extends ColumnTablesTestBase {
         val num2ndPhase = 220
         verifyTotalRows(numElements - num2ndPhase, 1)
         try {
-          ColumnTableScan.isCaseOfSortedInsertValue = true
+          ColumnTableScan.setCaseOfSortedInsertValue(true)
+          ColumnTableScan.setDebugMode(true)
           snc.sql("put into table colDeltaTable select * from row_table")
-          // VB TODO: Need to remove these
-          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 547")
-          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 548")
-          snc.sql("put into table colDeltaTable select * from row_table where row_table.id = 549")
         } finally {
-          ColumnTableScan.isCaseOfSortedInsertValue = false
+          ColumnTableScan.setCaseOfSortedInsertValue(false)
+          ColumnTableScan.setDebugMode(false)
         }
         verifyTotalRows(numElements, 2)
       } catch {

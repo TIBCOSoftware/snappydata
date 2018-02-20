@@ -46,7 +46,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
@@ -780,7 +780,7 @@ private[sql] final case class ColumnTableScan(
        |    $deletedDeclaration
        |    final int $numRows = $numBatchRows$deletedCountCheck + $numBatchUpdatedRows;
        |    $isCaseOfSortedInsert = ${ordinalIdTerm ne null} &&
-       |      ${ColumnTableScan.isCaseOfSortedInsertValue};
+       |      ${ColumnTableScan.getCaseOfSortedInsertValue};
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      boolean $thisRowFromDeltaIsInsert = false;
@@ -920,17 +920,19 @@ private[sql] final case class ColumnTableScan(
            |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
            |    $colAssign
            |    // TODO VB: Remove this
-           |    System.out.println("VB: Scan [inserted] " + $col +
-           |    " ,batchOrdinal=" + $batchOrdinal +
-           |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
-           |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
-           |    " ,batchDeltaIndex=" + $batchDeltaIndex +
-           |    " ,numBatchUpdatedRows=" + $numBatchUpdatedRows +
-           |    " ,numRows=" + $numRows +
-           |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
-           |    " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
-           |    " ,thisRowFromDeltaIsUpdate=false" +
-           |    "");
+           |    if (${ColumnTableScan.getDebugMode}) {
+           |      System.out.println("VB: Scan [inserted] " + $col +
+           |      " ,batchOrdinal=" + $batchOrdinal +
+           |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
+           |      " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
+           |      " ,batchDeltaIndex=" + $batchDeltaIndex +
+           |      " ,numBatchUpdatedRows=" + $numBatchUpdatedRows +
+           |      " ,numRows=" + $numRows +
+           |      " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
+           |      " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
+           |      " ,thisRowFromDeltaIsUpdate=false" +
+           |      "");
+           |    }
            |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
@@ -942,8 +944,9 @@ private[sql] final case class ColumnTableScan(
            |  boolean thisRowFromDeltaIsUpdate = $unchanged == ${ColumnTableScan.UPDATE_IN_DELTA};
            |  $updatedAssign
            |  // TODO VB: Remove this
-           |  System.out.println("VB: Scan [updated] " + $col +
-           |    " ,batchOrdinal=" + $batchOrdinal +
+           |  if (${ColumnTableScan.getDebugMode}) {
+           |    System.out.println("VB: Scan [updated] " + $col +
+           |     " ,batchOrdinal=" + $batchOrdinal +
            |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,batchDeltaIndex=" + $batchDeltaIndex +
@@ -953,6 +956,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
            |    " ,thisRowFromDeltaIsUpdate=" + thisRowFromDeltaIsUpdate +
            |    "");
+           |    }
            |  $isNullVar = false;
            |} else {
            |  $col = $defaultValue;
@@ -1002,7 +1006,12 @@ private[sql] final case class ColumnTableScan(
 
 object ColumnTableScan {
   // TODO VB: Temporary, remove this
-  var isCaseOfSortedInsertValue: Boolean = true
+  def setCaseOfSortedInsertValue(v: Boolean): Unit =
+    ToolsCallbackInit.toolsCallback.setCaseOfSortedInsertValue(v)
+  def getCaseOfSortedInsertValue: Boolean =
+    ToolsCallbackInit.toolsCallback.getCaseOfSortedInsertValue
+  def setDebugMode(v: Boolean): Unit = ToolsCallbackInit.toolsCallback.setDebugMode(v)
+  def getDebugMode: Boolean = ToolsCallbackInit.toolsCallback.getDebugMode
 
   // Handle inverted bytes that denote incremental insert
   def getPositive(p: Int): Int = if (p < 0) ~p else p

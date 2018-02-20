@@ -34,7 +34,14 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
   override protected def doExecute(): RDD[InternalRow] = {
     // First update the rows which are present in the table
     updatePlan.execute()
+    if (ColumnTableScan.getDebugMode) {
+      println("Vivek PutInto. Done with Update.")
+    }
     // Then insert the rows which are not there in the table
-    insertPlan.execute()
+    val i = insertPlan.execute()
+    if (ColumnTableScan.getDebugMode) {
+      println("Vivek PutInto. Done with Insert.")
+    }
+    i
   }
 }

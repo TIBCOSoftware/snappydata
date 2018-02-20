@@ -222,12 +222,14 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |    updatedOrdinalIdVar = $ordinalIdVar;
            |  }
            |  // VB TODO: Remove this
-           |  System.out.println("vivek ordinal=" + $ordinal +
+           |  if (${ColumnTableScan.getDebugMode}) {
+           |    System.out.println("vivek ordinal=" + $ordinal +
            |     " ,ordinal-id=" + $ordinalIdVar +
            |     " ,ordinal-id=" + ~$ordinalIdVar +
            |     " ,updated-ordinal-id=" + updatedOrdinalIdVar +
            |     " ,updated-ordinal-id=" + ~updatedOrdinalIdVar +
            |     " ,field=" + $field);
+           |  }
            |  $encoderTerm.setUpdatePosition(updatedOrdinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
                 encoderTerm, cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
