@@ -113,7 +113,7 @@ class QueryRoutingDUnitTest(val s: String)
       s.execute("select ** from sometable")
     } catch {
       case sqe: SQLException =>
-        if ("42X01" != sqe.getSQLState && "38000" != sqe.getSQLState) {
+        if ("42X01" != sqe.getSQLState && "42000" != sqe.getSQLState) {
           throw sqe
         }
     }
