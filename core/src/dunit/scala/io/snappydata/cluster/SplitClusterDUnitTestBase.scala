@@ -16,6 +16,7 @@
  */
 package io.snappydata.cluster
 
+import java.io.PrintWriter
 import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Properties
@@ -23,6 +24,7 @@ import java.util.Properties
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 import scala.util.Random
+import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -70,6 +72,32 @@ trait SplitClusterDUnitTestBase extends Logging {
   protected def locatorClientPort: Int
 
   protected def startNetworkServers(): Unit
+
+  protected def writeToFile(str: String, fileName: String): Unit = {
+    val pw = new PrintWriter(fileName)
+    try {
+      pw.write(str)
+      pw.flush()
+    } finally {
+      pw.close()
+    }
+    // wait until file becomes available (e.g. running on NFS)
+    var matched = false
+    while (!matched) {
+      Thread.sleep(100)
+      try {
+        val source = scala.io.Source.fromFile(fileName)
+        val lines = try {
+          source.mkString
+        } finally {
+          source.close()
+        }
+        matched = lines == str
+      } catch {
+        case NonFatal(_) =>
+      }
+    }
+  }
 
   def doTestColumnTableCreation(): Unit = {
     // Embedded Cluster Operations

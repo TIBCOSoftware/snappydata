@@ -33,7 +33,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.execution.datasources
+package org.apache.spark.sql.execution.sources
 
 import scala.collection.mutable
 
@@ -43,10 +43,11 @@ import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeRef
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.types.StringType
-import org.apache.spark.sql.{AnalysisException, Strategy, execution, sources}
+import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
@@ -65,7 +66,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           filters,
           t.numBuckets,
           t.partitionColumns,
-          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
+          (a, _, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
       case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
         pruneFilterProject(
           l,
@@ -73,7 +74,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           filters,
           0,
           Nil,
-          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
+          (a, _, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
       case _ => Nil
     }
     case _ => Nil
@@ -85,30 +86,27 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       filterPredicates: Seq[Expression],
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Array[Filter]) =>
-          (RDD[Any], Seq[RDD[InternalRow]])) = {
-    pruneFilterProjectRaw(
-      relation,
-      projects,
-      filterPredicates,
-      numBuckets,
-      partitionColumns,
-      (requestedColumns, _, pushedFilters) => {
-        scanBuilder(requestedColumns, pushedFilters.toArray)
-      })
-  }
-
-  private def pruneFilterProjectRaw(
-      relation: LogicalRelation,
-      projects: Seq[NamedExpression],
-      filterPredicates: Seq[Expression],
-      numBuckets: Int,
-      partitionColumns: Seq[String],
       scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) =>
           (RDD[Any], Seq[RDD[InternalRow]])) = {
 
-    val projectSet = AttributeSet(projects.flatMap(_.references))
-    val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
+    var allDeterministic = true
+    val projectSet = AttributeSet(projects.flatMap { p =>
+      if (allDeterministic && !p.deterministic) allDeterministic = false
+      p.references
+    })
+    val filterSet = AttributeSet(filterPredicates.flatMap { f =>
+      if (allDeterministic && !f.deterministic) allDeterministic = false
+      f.references
+    })
+
+    if (!allDeterministic) {
+      // keep one-to-one mapping between partitions and buckets for non-deterministic
+      // expressions like spark_partition_id()
+      SparkSession.getActiveSession match {
+        case Some(session: SnappySession) => session.linkPartitionsToBuckets(flag = true)
+        case _ =>
+      }
+    }
 
     val candidatePredicates = filterPredicates.map {
       _ transform {

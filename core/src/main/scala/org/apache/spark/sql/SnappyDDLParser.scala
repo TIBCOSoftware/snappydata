@@ -226,7 +226,7 @@ abstract class SnappyDDLParser(session: SparkSession)
           classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
         } catch {
           case ce: ClassNotFoundException =>
-            throw Utils.analysisException(ce.toString)
+            throw Utils.analysisException(ce.toString, Some(ce))
           case t: Throwable => throw t
         }
       }
@@ -417,7 +417,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   def checkExists(resource: FunctionResource): Unit = {
     if (!new File(resource.uri).exists()) {
-      throw new AnalysisException(s"No file named ${resource.uri} exists")
+      throw Utils.analysisException(s"No file named ${resource.uri} exists")
     }
   }
 
@@ -559,7 +559,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         case Some("system") => (false, true)
         case Some("user") => (true, false)
         case Some(x) =>
-          throw Utils.analysisException(s"SHOW $x FUNCTIONS not supported")
+          throw new ParseException(s"SHOW $x FUNCTIONS not supported")
       }
       nameOrPat match {
         case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
@@ -567,7 +567,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         case Some(pat: String) => ShowFunctionsCommand(
           None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
         case None => ShowFunctionsCommand(None, None, user, system)
-        case _ => throw Utils.analysisException(
+        case _ => throw new ParseException(
           s"SHOW FUNCTIONS $nameOrPat unexpected")
       }
     }
