@@ -512,7 +512,7 @@ object StoreUtils {
       if (!u.startsWith(JdbcExtendedUtils.SCHEMADDL_PROPERTY) &&
           !ddlOptions.contains(u)) {
         throw new AnalysisException(
-          s"Unknown options $v specified while creating table ")
+          s"Unknown option '$v' specified while creating table")
       }
       true
     })
