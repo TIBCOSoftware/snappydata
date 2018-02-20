@@ -1,4 +1,4 @@
-<a id="howto-jdbc"></a>
+	<a id="howto-jdbc"></a>
 # How to Connect using JDBC Driver
 
 You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.
@@ -11,34 +11,25 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 
 **Example: Maven dependency:**
 
-```
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+```scala
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
 <dependency>
     <groupId>io.snappydata</groupId>
-    <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>1.0.1</version>
-</dependency>
-```
-```
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
-<dependency>
-    <groupId>io.snappydata</groupId>
-    <artifactId>snappydata-core_2.11</artifactId>
-    <version>1.0.1</version>
+    <artifactId>snappydata-store-client</artifactId>
+    <version>1.6.1</version>
 </dependency>
 ```
 
 **Example: SBT dependency:**
-```
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
-```
-```
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.1"
+
+```scala
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
+libraryDependencies += "io.snappydata" % "snappydata-store-client" % "1.6.1"
 ```
 
-This is specific to 1.0.1. If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>A workaround to that is adding the below code to your **build.sbt**:
+!!!Note:
+
+	If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
 
 ```
 val workaround = {

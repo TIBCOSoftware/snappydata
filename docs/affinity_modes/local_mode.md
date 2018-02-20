@@ -22,7 +22,8 @@ In this mode, you can execute all the components (client application, executors,
 You can use an IDE of your choice, and provide the below dependency to get SnappyData binaries:
 
 **Example: Maven dependency**
-```
+
+```scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 
 <dependency>
     <groupId>io.snappydata</groupId>
@@ -31,28 +32,16 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 </dependency>
 ```
 
-```
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11 
-<dependency>
-    <groupId>io.snappydata</groupId>
-    <artifactId>snappydata-core_2.11</artifactId>
-    <version>1.0.1</version>
-</dependency>
-```
-
 **Example: SBT dependency**
 
-```
+```scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
 ```
 
-```
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.1"
-```
+!!! Note
 
-This is specific to 1.0.1. If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>A workaround to that is adding the below code to your **build.sbt**:
+	If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
 
 ```
 val workaround = {
@@ -63,8 +52,10 @@ val workaround = {
 
 For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
-```
-**Create SnappySession**: To start SnappyData store you need to create a SnappySession in your program
+**Create SnappySession**:
+
+To start SnappyData store you need to create a SnappySession in your program:
+
 ```scala
  val spark: SparkSession = SparkSession
          .builder
@@ -77,7 +68,9 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
   
   
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
+
 If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
+
 ```bash
 ./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
 ```

@@ -36,9 +36,9 @@ For best performance, it is recommended that you re-create any large column tabl
 
 	- Ensure that no operations are currently running on the system.
 
-	- Use a path for the Parquet file that has enough space to hold the table data. Once the re-import is successful, make sure that the Parquet is deleted explicitly .
+	- Use a path for the Parquet file that has enough space to hold the table data. Once the re-import has completed successfully, make sure that the Parquet files are deleted explicitly.
 
-The following example demonstrates how you can store/load from Parquet:
+The following example demonstrates how you can re-create your column tables using a Parquet-based external table:
 
 ```
 snappy> create external table table1Parquet using parquet options (path '...') as select * from table1;
