@@ -64,7 +64,12 @@ object SortedColumnTests extends Logging {
 
   def testBasicInsert(session: SnappySession): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+
+    // To force SMJ
     session.conf.set(Property.HashJoinSize.name, "-1")
+    session.conf.set(Property.PutIntoInnerJoinCacheSize.name, "-1")
+
+    // Only use while debugging
     session.conf.set("spark.sql.autoBroadcastJoinThreshold", (-1).toString)
 
     val numElements = 551
