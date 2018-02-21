@@ -39,8 +39,9 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
+import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
@@ -202,10 +203,9 @@ class SnappySessionState(snappySession: SnappySession)
         case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
-        case _: InsertIntoTable | _: TableMutationPlan =>
-          // disable for inserts/puts to avoid exchanges
-          snappySession.linkPartitionsToBuckets(flag = true)
-        case LogicalRelation(_: IndexColumnFormatRelation, _, _) =>
+        case _: InsertIntoTable | _: TableMutationPlan |
+             LogicalRelation(_: IndexColumnFormatRelation, _, _) =>
+          // disable for inserts/puts to avoid exchanges and indexes to work correctly
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }

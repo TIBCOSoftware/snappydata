@@ -634,7 +634,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
+            <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                     SnappyDashboardPage.tableStatsColumn("rowCountTooltip")
@@ -643,7 +643,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
+            <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                     SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")
@@ -652,13 +652,22 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
+            <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                     SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 200px; vertical-align: middle;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.tableStatsColumn("bucketCountTooltip")
+                    }
+                    style="font-size: 17px;">
+                {SnappyDashboardPage.tableStatsColumn("bucketCount")}
               </span>
             </th>
           </tr>
@@ -1030,6 +1039,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           {Utils.bytesToString(tableDetails.getTotalSize)}
         </div>
       </td>
+      <td>
+        <div style="padding-right:10px; text-align:right;">
+          {numFormatter.format(tableDetails.getBucketCount)}
+        </div>
+      </td>
     </tr>
 
   }
@@ -1219,6 +1233,8 @@ object SnappyDashboardPage{
   tableStatsColumn += ("totalSize" -> "Total Size")
   tableStatsColumn += ("totalSizeTooltip" ->
       "Tables Total Size (In Memory size + Disk Overflow Size)")
+  tableStatsColumn += ("bucketCount" -> "Buckets")
+  tableStatsColumn += ("bucketCountTooltip" -> "Number of Buckets in Table")
 
   val extTablesStatsTitle = "External Tables"
   val extTablesStatsTitleTooltip = "SnappyData ExternalTables Summary"
