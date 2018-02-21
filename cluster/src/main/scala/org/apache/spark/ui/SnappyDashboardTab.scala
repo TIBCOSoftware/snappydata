@@ -27,6 +27,7 @@ import io.snappydata.gemxd.SnappyDataVersion
 import scala.util.control.Breaks._
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.status.api.v1.SnappyApiRootResource
 import org.apache.spark.ui.JettyUtils._
 
 class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboard") with Logging {
@@ -78,6 +79,7 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
       })
     }
 
+    parent.attachHandler(SnappyApiRootResource.getServletHandler(parent))
     // create and add member logs request handler
     parent.attachHandler(createServletHandler("/dashboard/memberDetails/log",
       (request: HttpServletRequest) => snappyMemberDetailsPage.renderLog(request),

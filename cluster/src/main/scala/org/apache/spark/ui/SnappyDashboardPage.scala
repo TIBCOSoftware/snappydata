@@ -105,6 +105,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
       membersStatsTitle ++ membersStatsTable
     }
+/*
 
     val sparkConnectorsStatsDetails = {
       val sparkConnectorsStatsTitle = createTitleNode(SnappyDashboardPage.sparkConnectorsStatsTitle,
@@ -119,6 +120,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         mutable.Seq.empty[Node]
       }
     }
+*/
 
     val tablesStatsDetails = {
       val countsList: Array[mutable.Map[String, Any]] = new Array(2)
@@ -150,6 +152,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
       extTablesStatsTitle ++ extTablesStatsTable
     }
+/*
 
     val indexStatsDetails = {
       val indexStatsTitle = createTitleNode(SnappyDashboardPage.indexStatsTitle,
@@ -164,10 +167,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         mutable.Seq.empty[Node]
       }
     }
+*/
 
     val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++
-                      sparkConnectorsStatsDetails ++ tablesStatsDetails ++
-                      extTablesStatsDetails ++ indexStatsDetails
+                      tablesStatsDetails ++ extTablesStatsDetails
 
     UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
       useDataTables = true, isSnappyPage = true)
@@ -464,8 +467,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     })
 
-    <div>
-      <table class="table table-bordered table-condensed table-striped">
+    <div class="container-fluid">
+      <table id="memberStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
             <th style="text-align:center; width: 60px; vertical-align: middle;">
@@ -533,11 +536,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             </th>
           </tr>
         </thead>
-        <tbody>
+        <!-- <tbody>
           {dataServers.map(mb => memberRow(mb._2))}
           {leads.map(mb => memberRow(mb._2))}
           {locators.map(mb => memberRow(mb._2))}
-        </tbody>
+        </tbody> -->
       </table>
     </div>
   }
