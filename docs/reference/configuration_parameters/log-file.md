@@ -10,10 +10,8 @@ Each member type has its own default output:
 -   locator: `snappylocator.log`
 -   server: `snappyserver.log`
 
-Use the snappydata. prefix for SnappyData members, or use the snappydata.client prefix for client-side logging.
-
 ## Usage
-localhost -log-file=/home/supriya/snappy/server/snappy-server.log
+localhost -log-file=/home/user1/snappy/server/snappy-server.log
 
 ## Default Value
 
@@ -24,5 +22,5 @@ not set
 connection
 
 ## Prefix
+n/a
 
-snappydata. or snappydata.client.

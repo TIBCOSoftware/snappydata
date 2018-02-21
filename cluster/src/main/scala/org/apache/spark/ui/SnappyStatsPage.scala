@@ -55,8 +55,8 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
   private def rowTable(stats: SnappyRegionStats) = {
     val columnTable = if (stats.isColumnTable) " COLUMN " else " ROW "
     <tr>
-      <td sorttable_customkey={stats.getRegionName}>
-        {stats.getRegionName}
+      <td sorttable_customkey={stats.getTableName}>
+        {stats.getTableName}
       </td>
       <td sorttable_customkey={columnTable}>
         {columnTable}

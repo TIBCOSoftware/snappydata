@@ -290,8 +290,6 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
             Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, url) =>
         (url + ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
-      case ExternalClusterMode(_, _) =>
-        (null, null)
     }
   }
 }
