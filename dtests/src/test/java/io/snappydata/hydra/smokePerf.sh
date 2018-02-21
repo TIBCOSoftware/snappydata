@@ -20,10 +20,10 @@
 #set -vx
 
 usage(){
-  echo "Usage: smoke.sh <snappydata-base-directory-path>  <result-directory-path>" 1>&2
+  echo "Usage: smokePerf.sh <snappydata-base-directory-path>  <result-directory-path>" 1>&2
   echo " result-directory-path         Location to put the test results " 1>&2
   echo " snappydata-base-directory-path    checkout path of snappy-data " 1>&2
-  echo " (e.g. sh smoke.sh /home/swati/snappy-commons /home/swati/snappyHydraLogs)" 1>&2
+  echo " (e.g. sh smokePerf.sh /home/swati/snappy-commons /home/swati/snappyHydraLogs)" 1>&2
   exit 1
 }
 
@@ -37,10 +37,7 @@ resultDir=$1
 mkdir -p $resultDir
 shift
 
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/cluster/startDualModeCluster_smoke.bt
+$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/smokePerf.bt
 sleep 30;
 
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/smoke.bt
-sleep 30;
-
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/cluster/stopDualModeCluster.bt
+java -ea -cp $SNAPPYDATA_SOURCE_DIR/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar io.snappydata.benchmark.snappy.TPCHPerfComparer $resultDir
