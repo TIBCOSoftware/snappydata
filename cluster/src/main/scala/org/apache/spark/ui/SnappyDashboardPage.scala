@@ -1002,7 +1002,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     <tr>
       <td>
         <div style="width:100%; padding-left:10px;">
-          {tableDetails.getRegionName}
+          {tableDetails.getTableName}
         </div>
       </td>
       <td>

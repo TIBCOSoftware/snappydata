@@ -685,15 +685,14 @@ class RowTableTest
   test("Test Long Datatype for Row table - SNAP-1722") {
     // Also test long varchar to see if its not breaking the previous implementation
     snc.sql("create table table1 (col1  long, col2 Long,col3 short,col4  TINYINT, col5 " +
-      "BYTE, col6 SMALLINT)" +
+      "BYTE, col6 SMALLINT, primary key (col1, col2))" +
       " using row options( partition_by 'col1,col2', buckets '8')")
-    for(i <- 1 to 1000){
-      snc.sql(s"insert into table1 values($i,${i+1},1,1,1,1)")
+    for (i <- 1 to 100) {
+      snc.sql(s"insert into table1 values($i,${i + 1},1,1,1,1)")
     }
     val cnt = snc.sql("select * from table1").count
     snc.sql("drop table table1")
-    assert(cnt == 1000,s"Expceted count is 1000 but actual count is $cnt")
-
+    assert(cnt == 100, s"Expected count is 100 but actual count is $cnt")
   }
 
   test("create table without explicit schema (SNAP-2047)") {
@@ -702,8 +701,8 @@ class RowTableTest
 
     session.createExternalTable("staging_airline", "parquet", Map("path" -> hfile))
     session.sql("create table airline using row options(partition_by 'FlightNum') " +
-        "AS (SELECT * FROM staging_airline limit 100000)")
-    assert(session.table("airline").count() === 100000)
+        "AS (SELECT * FROM staging_airline limit 20000)")
+    assert(session.table("airline").count() === 20000)
 
     session.sql("drop table airline")
   }

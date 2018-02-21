@@ -85,17 +85,17 @@ class SplitClusterDUnitTest(s: String)
     // create locators, leads and servers files
     val port = SplitClusterDUnitTest.locatorPort
     val netPort = SplitClusterDUnitTest.locatorNetPort
-    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
 
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
 
     val compressionArg = this.compressionArg
+    val waitForInit = "-jobserver.waitForInitialization=true"
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg",
+    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg",
       s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg
