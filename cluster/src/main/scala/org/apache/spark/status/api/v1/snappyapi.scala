@@ -53,4 +53,23 @@ class MemberSummary private[spark](
     val offHeapExecutionPoolUsed: Long,
     val offHeapExecutionPoolSize: Long,
     val offHeapMemorySize: Long,
-    val offHeapMemoryUsed: Long)
+    val offHeapMemoryUsed: Long
+)
+
+class TableSummary private[spark](
+    val tableName: String,
+    val storageModel: String,
+    val distributionType: String,
+    val isColumnTable: Boolean,
+    val isReplicatedTable: Boolean,
+    val rowCount: Long,
+    val sizeInMemory: Long,
+    val totalSize: Long,
+    val bucketCount: Int
+)
+
+class ExternalTableSummary private[spark](
+    val tableName: String,
+    val provider: String,
+    val source: String
+)

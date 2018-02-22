@@ -79,97 +79,39 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     // Generate Pages HTML
     val pageTitleNode = createPageTitleNode(pageHeaderText)
 
-    val clustersStatsTitle = createTitleNode(SnappyDashboardPage.clusterStatsTitle,
-                                SnappyDashboardPage.clusterStatsTitleTooltip)
+    val clusterStatsDetails = {
+      val clustersStatsTitle = createTitleNode(SnappyDashboardPage.clusterStatsTitle,
+                                 SnappyDashboardPage.clusterStatsTitleTooltip)
+      val clusterDetails = clusterStats(clusterStatsMap)
 
-    val clusterDetails = clusterStats(clusterStatsMap)
-
-    val keyStatsSection = clustersStatsTitle ++ clusterDetails
+      clustersStatsTitle ++ clusterDetails
+    }
 
     val membersStatsDetails = {
-      val countsList: Array[mutable.Map[String, Any]] = new Array(3)
-      countsList(0) = mutable.Map(
-                         "value" -> clusterStatsMap.getOrElse("numLocators", 0).toString.toInt,
-                         "displayText" -> "Locators")
-      countsList(1) = mutable.Map(
-                         "value" -> clusterStatsMap.getOrElse("numLeads", 0).toString.toInt,
-                         "displayText" -> "Leads")
-      countsList(2) = mutable.Map(
-                         "value" -> clusterStatsMap.getOrElse("numDataServers", 0).toString.toInt,
-                         "displayText" -> "Data Servers")
-
       val membersStatsTitle = createTitleNode(SnappyDashboardPage.membersStatsTitle,
-                                SnappyDashboardPage.membersStatsTitleTooltip,
-                                countsList)
-      val membersStatsTable = memberStats(clusterMembers)
+                                SnappyDashboardPage.membersStatsTitleTooltip)
+      val membersStatsTable = memberStats
 
       membersStatsTitle ++ membersStatsTable
     }
-/*
-
-    val sparkConnectorsStatsDetails = {
-      val sparkConnectorsStatsTitle = createTitleNode(SnappyDashboardPage.sparkConnectorsStatsTitle,
-                                SnappyDashboardPage.sparkConnectorsStatsTitleTooltip,
-                                sparkConnectors.size)
-      val sparkConnectorsStatsTable = connectorStats(sparkConnectors)
-
-      if(sparkConnectors.size > 0) {
-        sparkConnectorsStatsTitle ++ sparkConnectorsStatsTable
-      }
-      else {
-        mutable.Seq.empty[Node]
-      }
-    }
-*/
 
     val tablesStatsDetails = {
-      val countsList: Array[mutable.Map[String, Any]] = new Array(2)
-      countsList(0) = mutable.Map(
-                         "value" -> clusterStatsMap.getOrElse("numColumnTables", 0).toString.toInt,
-                         "displayText" -> "Column Tables")
-      countsList(1) = mutable.Map(
-                         "value" -> clusterStatsMap.getOrElse("numRowTables", 0).toString.toInt,
-                         "displayText" -> "Row Tables")
-
       val tablesStatsTitle = createTitleNode(SnappyDashboardPage.tablesStatsTitle,
-                                SnappyDashboardPage.tablesStatsTitleTooltip,
-                                countsList)
-      val tablesStatsTable = tableStats(tableBuff)
+                                SnappyDashboardPage.tablesStatsTitleTooltip)
+      val tablesStatsTable = tableStats
 
       tablesStatsTitle ++ tablesStatsTable
     }
 
     val extTablesStatsDetails = {
-       val countsList: Array[mutable.Map[String, Any]] = new Array(1)
-      countsList(0) = mutable.Map(
-        "value" -> clusterStatsMap.getOrElse("numExtTables", 0).toString.toInt,
-        "displayText" -> "External Tables")
-
       val extTablesStatsTitle = createTitleNode(SnappyDashboardPage.extTablesStatsTitle,
-        SnappyDashboardPage.extTablesStatsTitleTooltip,
-        countsList)
-      val extTablesStatsTable = extTableStats(externalTableBuff)
+        SnappyDashboardPage.extTablesStatsTitleTooltip)
+      val extTablesStatsTable = extTableStats
 
       extTablesStatsTitle ++ extTablesStatsTable
     }
-/*
 
-    val indexStatsDetails = {
-      val indexStatsTitle = createTitleNode(SnappyDashboardPage.indexStatsTitle,
-                               SnappyDashboardPage.indexStatsTitleTooltip,
-                               indexBuff.size)
-      val indexStatsTable = indexStats(indexBuff)
-
-      if(indexBuff.size > 0) {
-        indexStatsTitle ++ indexStatsTable
-      }
-      else {
-        mutable.Seq.empty[Node]
-      }
-    }
-*/
-
-    val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++
+    val pageContent = pageTitleNode ++ clusterStatsDetails ++ membersStatsDetails ++
                       tablesStatsDetails ++ extTablesStatsDetails
 
     UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
@@ -339,7 +281,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </div>
     </div>
   }
-
+/*
   private def createTitleNode(title: String, tooltip: String,
       count: Integer): Seq[Node] = {
     <div class="row-fluid">
@@ -382,6 +324,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </div>
     </div>
   }
+*/
 
   private def clusterStats(clusterDetails: mutable.Map[String, Any]): Seq[Node] = {
 
@@ -443,30 +386,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def memberStats(membersBuf: mutable.Map[String, mutable.Map[String, Any]]): Seq[Node] = {
-
-    val locators = mutable.Map.empty[String, mutable.Map[String, Any]]
-    val leads = mutable.Map.empty[String, mutable.Map[String, Any]]
-    val dataServers = mutable.Map.empty[String, mutable.Map[String, Any]]
-
-    membersBuf.foreach(mb => {
-      val m = mb._2
-
-      if(m("lead").toString.toBoolean || m("activeLead").toString.toBoolean){
-        leads.put(mb._1, mb._2)
-      }
-      if(m("locator").toString.toBoolean){
-        locators.put(mb._1, mb._2)
-      }
-      if(m("dataServer").toString.toBoolean
-          && !m("activeLead").toString.toBoolean
-          && !m("lead").toString.toBoolean
-          && !m("locator").toString.toBoolean){
-        dataServers.put(mb._1, mb._2)
-      }
-
-    })
-
+  private def memberStats(): Seq[Node] = {
     <div class="container-fluid">
       <table id="memberStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
@@ -536,15 +456,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             </th>
           </tr>
         </thead>
-        <!-- <tbody>
-          {dataServers.map(mb => memberRow(mb._2))}
-          {leads.map(mb => memberRow(mb._2))}
-          {locators.map(mb => memberRow(mb._2))}
-        </tbody> -->
       </table>
     </div>
   }
-
+/*
   private def connectorStats(sparkConnectors: mutable.Map[String,
       mutable.Map[String, Any]]): Seq[Node] = {
     <div>
@@ -604,17 +519,17 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </table>
     </div>
   }
+*/
 
-  private def tableStats(tablesBuf: Map[String, SnappyRegionStats]): Seq[Node] = {
-
+  private def tableStats(): Seq[Node] = {
     <div>
-      <table class="table table-bordered table-condensed table-striped">
+      <table id="tableStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
             <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                    SnappyDashboardPage.tableStatsColumn("nameTooltip")
+                      SnappyDashboardPage.tableStatsColumn("nameTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("name")}
@@ -623,7 +538,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                    SnappyDashboardPage.tableStatsColumn("storageModelTooltip")
+                      SnappyDashboardPage.tableStatsColumn("storageModelTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("storageModel")}
@@ -632,7 +547,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                    SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")
+                      SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
@@ -641,7 +556,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                    SnappyDashboardPage.tableStatsColumn("rowCountTooltip")
+                      SnappyDashboardPage.tableStatsColumn("rowCountTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
@@ -650,7 +565,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                    SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")
+                      SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
@@ -659,7 +574,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                    SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
+                      SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
@@ -668,7 +583,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                    SnappyDashboardPage.tableStatsColumn("bucketCountTooltip")
+                      SnappyDashboardPage.tableStatsColumn("bucketCountTooltip")
                     }
                     style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("bucketCount")}
@@ -676,17 +591,14 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             </th>
           </tr>
         </thead>
-        <tbody>
-          {tablesBuf.map(t => tableRow(t._2)).toArray}
-        </tbody>
       </table>
     </div>
   }
 
-  private def extTableStats(tablesBuf: Map[String, SnappyExternalTableStats]): Seq[Node] = {
+  private def extTableStats(): Seq[Node] = {
 
     <div>
-      <table class="table table-bordered table-condensed table-striped">
+      <table id="extTableStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
             <th style="text-align:center; vertical-align: middle; width:300px;">
@@ -718,13 +630,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             </th>
           </tr>
         </thead>
-        <tbody>
-          {tablesBuf.map(t => extTableRow(t._2)).toArray}
-        </tbody>
       </table>
     </div>
   }
-
+/*
   private def indexStats(indexBuf: Map[String, SnappyIndexStats]): Seq[Node] = {
     <div>
       <table class="table table-bordered table-condensed table-striped">
@@ -1115,9 +1024,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <div class="progressValue">{completed}%</div>
     </div>
   }
+*/
 }
 
-object SnappyDashboardPage{
+object SnappyDashboardPage {
   val pageHeaderText = "SnappyData Dashboard"
 
   object Status {
@@ -1198,6 +1108,7 @@ object SnappyDashboardPage{
   memberStatsColumn += ("jvmHeapMemory" -> "JVM Heap (Used / Total)")
   memberStatsColumn += ("jvmHeapMemoryTooltip" -> "Members used and total JVM Heap")
 
+/*
   val sparkConnectorsStatsTitle = "Spark Connectors"
   val sparkConnectorsStatsTitleTooltip = "Spark Connectors Summary"
   val sparkConnectorsStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
@@ -1217,6 +1128,7 @@ object SnappyDashboardPage{
   sparkConnectorsStatsColumn += ("usedMemoryTooltip" -> "Used Memory")
   sparkConnectorsStatsColumn += ("totalMemory" -> "Total Memory")
   sparkConnectorsStatsColumn += ("totalMemoryTooltip" -> "Total Memory")
+*/
 
   val tablesStatsTitle = "Tables"
   val tablesStatsTitleTooltip = "SnappyData Tables Summary"
@@ -1254,6 +1166,7 @@ object SnappyDashboardPage{
   extTableStatsColumn += ("externalSource" -> "Source")
   extTableStatsColumn += ("externalSourceTooltip" -> "External Source of Tables ")
 
+/*
   val indexStatsTitle = "Indexes"
   val indexStatsTitleTooltip = "SnappyData Index Summary"
   val indexStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
@@ -1265,5 +1178,6 @@ object SnappyDashboardPage{
   indexStatsColumn += ("rowCountTooltip" -> "Total Rows in Index")
   indexStatsColumn += ("totalSize" -> "Total Size")
   indexStatsColumn += ("totalSizeTooltip" -> "Total Size of Index")
+*/
 
 }
