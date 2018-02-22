@@ -25,6 +25,7 @@ import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.internal.SQLConf
 
 /**
  * Tests for column table having sorted columns.
@@ -70,7 +71,8 @@ object SortedColumnTests extends Logging {
     session.conf.set(Property.PutIntoInnerJoinCacheSize.name, "-1")
 
     // Only use while debugging
-    session.conf.set("spark.sql.autoBroadcastJoinThreshold", (-1).toString)
+    session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
     val numElements = 551
 

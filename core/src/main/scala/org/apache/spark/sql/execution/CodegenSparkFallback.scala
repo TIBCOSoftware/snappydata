@@ -76,7 +76,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         // is still usable:
         SystemFailure.checkFailure()
 
-        if (true || !useFallback) throw t
+        if (!useFallback) throw t
 
         // fallback to Spark plan
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
