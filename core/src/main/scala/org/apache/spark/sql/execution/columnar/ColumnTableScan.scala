@@ -838,7 +838,7 @@ private[sql] final case class ColumnTableScan(
     // scalastyle:on
     val nonNullPosition = if (attr.nullable) {
       s"$batchOrdinal - $numNullsVar - $batchDeltaIndex"
-    } else s"batchOrdinal - $batchDeltaIndex"
+    } else s"$batchOrdinal - $batchDeltaIndex"
     val col = ctx.freshName("col")
     val unchanged = ctx.freshName("unchanged")
     val sqlType = Utils.getSQLDataType(attr.dataType)
