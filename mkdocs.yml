@@ -118,10 +118,10 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-#- 'Using Connectors': 'connectors/connectors.md'
-#- 'Using Connectors': 
-    #    - How to Use the Snappy JDBC Streaming Connector': 'connectors/jdbc_streaming_connector.md'
-    #    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'   
+- 'Using Connectors': 'connectors/connector.md'
+- 'Using Connectors':
+#    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
+    - 'Getting Started with SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Using SnappyData CloudBuilder': 'aqp_aws.md'
 - 'Using SnappyData CloudBuilder': 
     - 'Key Components': 'isight/key_components.md'

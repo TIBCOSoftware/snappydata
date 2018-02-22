@@ -1,4 +1,4 @@
-<a id="setting-up-cluster-on-amazon-web-services-aws"></a>
+F<a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 # Setting up Cluster on Amazon Web Services (AWS)
 
 ## Using AWS management console
@@ -211,12 +211,12 @@ Optionally, you can start an instance of Apache Zeppelin server with the cluster
 For a complete list of options provided by the script run `./snappy-ec2`. </br>The options are also provided below for quick reference.
 
 ```pre
-Usage: `snappy-ec2 [options] <action> <cluster_name>`
+Usage: snappy-ec2 [options] <action> <cluster_name>
 
 <action> can be: launch, destroy, login, stop, start, get-locator, get-lead, reboot-cluster
 
 Options:
-  --version             show programs version number and exit
+  --version             show program's version number and exit
   -h, --help            show this help message and exit
   -s STORES, --stores=STORES
                         Number of stores to launch (default: 1)
@@ -225,7 +225,7 @@ Options:
   -w WAIT, --wait=WAIT  DEPRECATED (no longer necessary) - Seconds to wait for
                         nodes to start
   -k KEY_PAIR, --key-pair=KEY_PAIR
-                        Key pair to use on instances
+                        Name of the key pair to use on instances
   -i IDENTITY_FILE, --identity-file=IDENTITY_FILE
                         SSH private key file to use for logging into instances
   -p PROFILE, --profile=PROFILE
@@ -233,28 +233,26 @@ Options:
                         you can configure additional, named profiles by using
                         this option (default: none)
   -t INSTANCE_TYPE, --instance-type=INSTANCE_TYPE
-                        Type of instance to launch (default: m3.large).
+                        Type of instance to launch (default: m4.large).
                         WARNING: must be 64-bit; small instances won't work
   --locator-instance-type=LOCATOR_INSTANCE_TYPE
-                        Locator instance type (leave empty for same as
-                        instance-type)
+                        Locator instance type (default: t2.medium)
   -r REGION, --region=REGION
-                        EC2 region used to launch instances in or to find
+                        EC2 region used to launch instances in, or to find
                         them in (default: us-east-1)
   -z ZONE, --zone=ZONE  Availability zone to launch instances in, or 'all' to
                         spread stores across multiple (an additional $0.01/Gb
                         for bandwidthbetween zones applies) (default: a single
                         zone chosen at random)
   -a AMI, --ami=AMI     Amazon Machine Image ID to use
-  -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
-                        Version of SnappyData to use: 'X.Y.Z' (default:
-                        LATEST)
-  --with-zeppelin
-                        Launch Apache Zeppelin server with the cluster. It'll
+  --enterprise          Use SnappyData Enterprise edition AMI from AWS
+                        Marketplace to launch the cluster. Overrides --ami
+                        option. Extra charges apply. (default: False)
+  --with-zeppelin       Launch Apache Zeppelin server with the cluster. It'll
                         be launched on the same instance where lead node will
                         be running.
   --deploy-root-dir=DEPLOY_ROOT_DIR
-                        A directory to copy into/on the first master. Must
+                        A directory to copy into / on the first locator. Must
                         be absolute. Note that a trailing slash is handled as
                         per rsync: If you omit it, the last directory of the
                         --deploy-root-dir path will be created in / before
@@ -278,7 +276,7 @@ Options:
                         Which placement group to try and launch instances
                         into. Assumes placement group is already created.
   --spot-price=PRICE    If specified, launch stores as spot instances with the
-                        given a maximum price (in dollars)
+                        given maximum price (in dollars)
   -u USER, --user=USER  The SSH user you want to connect as (default:
                         ec2-user)
   --delete-groups       When destroying a cluster, delete the security groups
@@ -298,6 +296,9 @@ Options:
                         Additional tags to set on the machines; tags are
                         comma-separated, while name and value are colon
                         separated; ex: "Task:MySnappyProject,Env:production"
+  --copy-aws-credentials
+                        Add AWS credentials to hadoop configuration to allow
+                        Snappy to access S3
   --subnet-id=SUBNET_ID
                         VPC subnet to launch instances in
   --vpc-id=VPC_ID       VPC to launch instances in
