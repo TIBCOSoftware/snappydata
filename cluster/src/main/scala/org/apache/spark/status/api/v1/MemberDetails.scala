@@ -79,10 +79,8 @@ object MemberDetails {
         }
       }
 
-      val cpuActive = memberDetails.getOrElse("cpuActive", 0).asInstanceOf[Integer]
-      // val cpuActive = memberDetails("cpuActive").asInstanceOf[Int]
+      val cpuActive = memberDetails.getOrElse("cpuActive", 0).asInstanceOf[Int]
       val clients = memberDetails.getOrElse("clients", 0).asInstanceOf[Long]
-      // val clients = memberDetails("clients").asInstanceOf[Long]
 
       val heapStoragePoolUsed =
         memberDetails.getOrElse("heapStoragePoolUsed", 0).asInstanceOf[Long]
