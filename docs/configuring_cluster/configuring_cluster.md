@@ -59,6 +59,9 @@ Lead Nodes primarily runs the SnappyData managed Spark driver. There is one prim
 
 Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>/conf** directory.
 
+!!!Note:
+	In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.
+
 ### List of Lead Properties
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
 
