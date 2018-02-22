@@ -190,6 +190,7 @@ scalaTest {
   doFirst {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)
+    environment 'TPCDS_SUITE': rootProject.hasProperty("tpcds")
   }
   doLast {
     // cleanup files since scalatest plugin does not honour workingDir yet

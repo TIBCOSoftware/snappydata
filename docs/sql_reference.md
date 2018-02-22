@@ -15,7 +15,6 @@ The following topics are covered in this section:
  - **[CREATE TEMPORARY TABLE](reference/sql_reference/create-temporary-table.md)**</br>
  - **[CREATE SAMPLE TABLE](reference/sql_reference/create-sample-table.md)**</br>
  - **[CREATE STREAM TABLE](reference/sql_reference/create-stream-table.md)** 
-
 -----
 
 **DROP STATEMENTS**</br>
@@ -34,3 +33,4 @@ The following topics are covered in this section:
 * **[SET SCHEMA](reference/sql_reference/set-schema.md)**</br>
 * **[TRUNCATE TABLE](reference/sql_reference/truncate-table.md)**</br>
 * **[UPDATE](reference/sql_reference/update.md)**</br>
+* **[LATERAL VIEW](reference/sql_reference/lateral-view.md)**</br>

@@ -33,7 +33,6 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
@@ -159,7 +158,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       val hintStr = hint.toString
       queryHints.forEach(new BiConsumer[String, String] {
         override def accept(key: String, value: String): Unit = {
-          if (key.startsWith(hintStr)) throw Utils.analysisException(msg)
+          if (key.startsWith(hintStr)) throw new ParseException(msg)
         }
       })
     }
@@ -302,7 +301,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
           val micros = m4.asInstanceOf[Option[Long]]
           if (!Seq(year, month, week, day, hour, minute, second, millis,
             micros).exists(_.isDefined)) {
-            throw Utils.analysisException(
+            throw new ParseException(
               "at least one time unit should be given for interval literal")
           }
           val months = year.map(_ * 12).getOrElse(0) + month.getOrElse(0)
@@ -336,11 +335,15 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   final def parsedDataType: Rule1[DataType] = rule {
-    ws ~ dataType
+    ws ~ dataType ~ EOI
   }
 
   final def parsedExpression: Rule1[Expression] = rule {
-    ws ~ namedExpression
+    ws ~ namedExpression ~ EOI
+  }
+
+  final def parsedTableIdentifier: Rule1[TableIdentifier] = rule {
+    ws ~ tableIdentifier ~ EOI
   }
 
   protected final def expression: Rule1[Expression] = rule {
@@ -662,9 +665,9 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
           case WindowSpecReference(name) =>
             baseWindowMap.get(name) match {
               case Some(spec: WindowSpecDefinition) => spec
-              case Some(_) => throw Utils.analysisException(
+              case Some(_) => throw new ParseException(
                 s"Window reference '$name' is not a window specification")
-              case None => throw Utils.analysisException(
+              case None => throw new ParseException(
                 s"Cannot resolve window reference '$name'")
             }
           case spec: WindowSpecDefinition => spec
@@ -806,7 +809,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
               mode = Complete, isDistinct = false)
           } else {
             val n2str = if (n2.isEmpty) "" else s".${n2.get}"
-            throw Utils.analysisException(s"invalid expression $n1$n2str(*)")
+            throw new ParseException(s"invalid expression $n1$n2str(*)")
           }) |
           (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
@@ -1078,10 +1081,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     val plan = parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>
-        throw Utils.analysisException(formatError(e, new ErrorFormatter(
+        throw new ParseException(formatError(e, new ErrorFormatter(
           showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
       case Failure(e) =>
-        throw Utils.analysisException(e.toString, Some(e))
+        throw new ParseException(e.toString, Some(e))
     }
     if (!queryHints.isEmpty) {
       session.queryHints.putAll(queryHints)

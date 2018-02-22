@@ -207,6 +207,7 @@ object SnappyTableStatsProviderDUnitTest {
           (msize + br.getSizeInMemory + overhead, tsize + br.getTotalBytes + overhead)
         }
     stats.setReplicatedTable(false)
+    stats.setBucketCount(region.getTotalNumberOfBuckets)
     val size = if (isColumnBatchTable) regionBean.getRowsInColumnBatches
     else regionBean.getEntryCount
     stats.setRowCount(stats.getRowCount + size)
@@ -239,6 +240,7 @@ object SnappyTableStatsProviderDUnitTest {
     val regionBean = managementService.getLocalRegionMBean(region.getFullPath)
     result.setReplicatedTable(true)
     result.setColumnTable(false)
+    result.setBucketCount(1)
     result.setRowCount(regionBean.getEntryCount)
     val overhead = region.getBestLocalIterator(true).next() match {
       case de: DiskEntry => sizer.sizeof(de) + sizer.sizeof(de.getDiskId)
@@ -271,12 +273,12 @@ object SnappyTableStatsProviderDUnitTest {
 
   def convertToSerializableForm(stat: SnappyRegionStats): RegionStat = {
     RegionStat(stat.getTableName, stat.getTotalSize, stat.getSizeInMemory,
-      stat.getRowCount, stat.isColumnTable, stat.isReplicatedTable)
+      stat.getRowCount, stat.isColumnTable, stat.isReplicatedTable, stat.getBucketCount)
   }
 
   def getRegionStat(stat: RegionStat): SnappyRegionStats = {
-    new SnappyRegionStats(stat.regionName, stat.totalSize,
-      stat.memSize, stat.rowCount, stat.isColumnType, stat.isReplicated)
+    new SnappyRegionStats(stat.tableName, stat.totalSize,
+      stat.memSize, stat.rowCount, stat.isColumnType, stat.isReplicated, stat.bucketCount)
   }
 
 
@@ -303,5 +305,6 @@ object SnappyTableStatsProviderDUnitTest {
   }
 }
 
-case class RegionStat(regionName: String, totalSize: Long,
-      memSize: Long, rowCount: Long, isColumnType: Boolean, isReplicated: Boolean)
+case class RegionStat(tableName: String, totalSize: Long,
+    memSize: Long, rowCount: Long, isColumnType: Boolean,
+    isReplicated: Boolean, bucketCount: Int)
