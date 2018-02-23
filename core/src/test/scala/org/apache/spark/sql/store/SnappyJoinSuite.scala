@@ -26,6 +26,8 @@ import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.{PartitionedPhysicalScan, QueryExecution, RowDataSourceScanExec}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
+case class TestDatak(key1: Int, value: String, ref: Int)
+
 class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
@@ -341,22 +343,6 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     assert(excatJoinKeys.count() === 500)
   }
 
-  test("SnappyAggregation partitioning") {
-
-    val dimension1 = sc.parallelize(
-      (1 to 1000).map(i => TestData2(i % 10, i.toString, i % 10)))
-    val refDf = snc.createDataFrame(dimension1)
-    snc.sql("DROP TABLE IF EXISTS PR_TABLE20")
-
-    snc.sql("CREATE TABLE PR_TABLE20(OrderId INT, description String, " +
-        "OrderRef INT) USING column options (" +
-        "PARTITION_BY 'OrderId,OrderRef')")
-    refDf.write.insertInto("PR_TABLE20")
-    val groupBy = snc.sql(s"select  OrderRef, orderId from pr_table20 group by OrderRef, orderId")
-    println(groupBy.queryExecution.executedPlan)
-    groupBy.show
-  }
-
   test("Column PR table join with Non user mentioned PR Table") {
 
     val dimension1 = sc.parallelize(
@@ -515,13 +501,40 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     assert(excatJoinKeys.count() === 500)
   }
 
+  test("SnappyAggregation partitioning") {
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestDatak(i % 10, i.toString, i % 10)))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE20")
+
+    snc.sql("CREATE TABLE PR_TABLE20(OrderId INT, description String, " +
+        "OrderRef INT) USING column options (" +
+        "PARTITION_BY 'OrderId,OrderRef')")
+    refDf.write.insertInto("PR_TABLE20")
+    val groupBy1 = snc.sql(s"select  OrderRef, orderId from pr_table20 group by OrderRef, orderId")
+    checkForShuffle(groupBy1.logicalPlan, snc, shuffleExpected = false)
+    val groupBy2 = snc.sql(s"select  orderId, sum(orderRef) from pr_table20 group by orderId")
+    checkForShuffle(groupBy2.logicalPlan, snc, shuffleExpected = true)
+  }
+
   def partitionToPartitionJoinAssertions(snc: SnappyContext,
       t1: String, t2: String): Unit = {
 
-    val withOtherCondition = snc.sql(s"select P.OrderRef, P.description from " +
+    val nullableEquality = snc.sql(s"select P.OrderRef, P.description from " +
         s"$t1 P JOIN $t2 R ON P.OrderId = R.OrderId" +
-        s" AND P.OrderRef <=> R.OrderRef AND P.description = '5'")
-    checkForShuffle(withOtherCondition.logicalPlan, snc, shuffleExpected = true)
+        s" AND P.OrderRef <=> R.OrderRef")
+    // TODO Why an exchange is needed for coalesce.
+    checkForShuffle(nullableEquality.logicalPlan, snc, shuffleExpected = true)
+    assert(nullableEquality.count() === 500)
+
+    val withCoalesce = snc.sql(s"select P.OrderRef, P.description from " +
+        s"$t1 P JOIN $t2 R ON P.OrderId = R.OrderId" +
+        s" AND coalesce(P.OrderRef,0) = coalesce(R.OrderRef,0)")
+    // TODO Why an exchange is needed for coalesce.
+    println(withCoalesce.queryExecution.executedPlan)
+    checkForShuffle(withCoalesce.logicalPlan, snc, shuffleExpected = true)
+    assert(withCoalesce.count() === 500)
 
     val excatJoinKeys = snc.sql(s"select P.OrderRef, P.description from " +
         s"$t1 P JOIN $t2 R ON P.OrderId = R.OrderId AND P.OrderRef = R.OrderRef")
@@ -558,7 +571,6 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
           "P.OrderRef = R.OrderRef AND P.description = R.description"
     }
     val moreJoinKeys = snc.sql(moreJoinSQL)
-    println(moreJoinKeys.queryExecution.executedPlan)
     checkForShuffle(moreJoinKeys.logicalPlan, snc,
       shuffleExpected = !isDifferentJoinOrderSupported)
 

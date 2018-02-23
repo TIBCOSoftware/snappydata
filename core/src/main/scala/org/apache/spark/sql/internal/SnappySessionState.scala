@@ -324,11 +324,7 @@ class SnappySessionState(snappySession: SnappySession)
       val rightOrderedKeys = orderJoinKeys(right, rightKeys)
       val joinPairs = leftOrderedKeys.zip(rightOrderedKeys)
       val newJoin = joinPairs.map(EqualTo.tupled).reduceOption(And)
-      println("otherCondition " + otherCondition)
-      // val allConditions = (newJoin ++ otherCondition).reduceOption(And)
-      // TODO understand when otherCondition will be used
-      val allConditions = (newJoin).reduceOption(And)
-      println(allConditions)
+      val allConditions = (newJoin ++ otherCondition).reduceOption(And)
       Join(left, right, joinType, allConditions)
     }
   }

@@ -30,7 +30,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAns
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -671,14 +671,12 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
         groupingAttributes.combinations(numColumns).find(p =>
           partitioning.satisfies(ClusteredDistribution(p)))
       } else None
-      println("satisfied " + satisfied)
       satisfied match {
         case distributionKeys: Some[_] =>
           val completeAggregateExpressions = finalAggregateExpressions
               .map(_.copy(mode = Complete))
           val completeAggregateAttributes = completeAggregateExpressions
               .map(_.resultAttribute)
-          println("distributionKeys " + distributionKeys)
           // apply EnsureRequirements just to be doubly sure since this rule is
           // applied after EnsureRequirements when outputPartitioning is final
           EnsureRequirements(session.sessionState.conf)(SnappyHashAggregateExec(
@@ -696,10 +694,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
     case t: TableExec =>
       val addShuffle = if (t.partitioned) {
         // force shuffle when inserting into a table with different partitions
-        t.child.outputPartitioning match {
-          case OrderlessHashPartitioningExtract(_, _, _, _, buckets) => buckets != t.numBuckets
-          case p => p.numPartitions != t.numBuckets
-        }
+        t.child.outputPartitioning.numPartitions != t.numBuckets
       } else false
       if (addShuffle) {
         t.withNewChildren(Seq(ShuffleExchange(HashPartitioning(
