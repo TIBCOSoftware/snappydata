@@ -19,26 +19,10 @@ package io.snappydata
 import java.io.File
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
 import org.apache.spark.ui.SnappyDashboardTab
 import org.apache.spark.util.SnappyUtils
 
 object ToolsCallbackImpl extends ToolsCallback {
-
-  def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
-      partitionColumnAliases: Seq[Seq[Attribute]],
-      numPartitions: Int, numBuckets: Int, tableBuckets: Int): Partitioning = {
-    OrderlessHashPartitioning(partitionColumns, partitionColumnAliases,
-      numPartitions, numBuckets, tableBuckets)
-  }
-
-  override def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
-      (Seq[Expression], Seq[Seq[Attribute]], Int, Int, Int)] = partitioning match {
-    case p: OrderlessHashPartitioning => Some(p.expressions, p.aliases,
-      p.numPartitions, p.numBuckets, p.tableBuckets)
-    case _ => None
-  }
 
   override def updateUI(sc: SparkContext): Unit = {
     SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
