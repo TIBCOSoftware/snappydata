@@ -66,7 +66,7 @@ For additions related to SnappyData cluster, use:
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)
 
-**Note:** If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br> As a workaround you can add the below code to your **build.sbt**:
+**Note:** If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br> As a workaround, you can add the below code to your **build.sbt**:
 
 ```
 val workaround = {
