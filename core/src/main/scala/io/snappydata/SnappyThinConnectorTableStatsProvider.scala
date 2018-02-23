@@ -122,8 +122,9 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         val rowCount = resultSet.getLong(4)
         val sizeInMemory = resultSet.getLong(5)
         val totalSize = resultSet.getLong(6)
+        val bucketCount = resultSet.getInt(7)
         regionStats += new SnappyRegionStats(tableName, totalSize, sizeInMemory, rowCount,
-          isColumnTable, isReplicatedTable)
+          isColumnTable, isReplicatedTable, bucketCount)
       }
       (regionStats, Nil, Nil)
     } catch {

@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.io.{File, FileFilter, PrintWriter}
+import java.io.{File, FileFilter}
 import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
@@ -186,15 +186,6 @@ class SplitClusterDUnitSecurityTest(s: String)
     val ldapServer = LdapTestServer.getInstance()
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()
-    }
-  }
-
-  private def writeToFile(str: String, fileName: String): Unit = {
-    val pw = new PrintWriter(fileName)
-    try {
-      pw.write(str)
-    } finally {
-      pw.close()
     }
   }
 
@@ -724,7 +715,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     val job = s"$jobBaseStr $jobCmdAffix"
     logInfo(s"Submitting job $job")
-    var consoleLog = job.!!
+    val consoleLog = job.!!
     logInfo(consoleLog)
     val jobId = getJobId(consoleLog)
     assert(consoleLog.contains("STARTED"), "Job not started")
