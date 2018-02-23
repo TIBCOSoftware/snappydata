@@ -671,12 +671,14 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
         groupingAttributes.combinations(numColumns).find(p =>
           partitioning.satisfies(ClusteredDistribution(p)))
       } else None
+      println("satisfied " + satisfied)
       satisfied match {
         case distributionKeys: Some[_] =>
           val completeAggregateExpressions = finalAggregateExpressions
               .map(_.copy(mode = Complete))
           val completeAggregateAttributes = completeAggregateExpressions
               .map(_.resultAttribute)
+          println("distributionKeys " + distributionKeys)
           // apply EnsureRequirements just to be doubly sure since this rule is
           // applied after EnsureRequirements when outputPartitioning is final
           EnsureRequirements(session.sessionState.conf)(SnappyHashAggregateExec(

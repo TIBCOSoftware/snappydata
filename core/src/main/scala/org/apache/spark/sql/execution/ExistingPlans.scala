@@ -99,18 +99,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     if (numPartitions == 1 && numBuckets == 1) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      if (callbacks != null) {
-        // when buckets are linked to partitions then numBuckets have
-        // to be sent as zero to skip considering buckets in partitioning
-        val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-        callbacks.getOrderlessHashPartitioning(partitionColumns,
-          partitionColumnAliases, numPartitions,
-          if (session.hasLinkPartitionsToBuckets || session.preferPrimaries) 0 else numBuckets,
-          numBuckets)
-      } else {
-        HashPartitioning(partitionColumns, numPartitions)
-      }
+      HashPartitioning(partitionColumns, numPartitions)
     } else super.outputPartitioning
   }
 

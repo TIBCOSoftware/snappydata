@@ -125,22 +125,7 @@ case class SnappyHashAggregateExec(
   }
 
   override def outputPartitioning: Partitioning = {
-    val partitioning = child.outputPartitioning
-    val callbacks = ToolsCallbackInit.toolsCallback
-    // check for aliases in result expressions
-    if (callbacks ne null) {
-      partitioning match {
-        case OrderlessHashPartitioningExtract(expressions, aliases,
-        nPartitions, nBuckets, tBuckets) => callbacks.getOrderlessHashPartitioning(
-          expressions, getAliases(expressions, aliases), nPartitions, nBuckets, tBuckets)
-
-        case HashPartitioning(expressions, nPartitions) =>
-          callbacks.getOrderlessHashPartitioning(expressions,
-            getAliases(expressions, Nil), nPartitions, 0, 0)
-
-        case _ => partitioning
-      }
-    } else partitioning
+    child.outputPartitioning
   }
 
   override def requiredChildDistribution: List[Distribution] = {

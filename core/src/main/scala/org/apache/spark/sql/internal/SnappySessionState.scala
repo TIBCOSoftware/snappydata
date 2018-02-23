@@ -20,6 +20,7 @@ package org.apache.spark.sql.internal
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
@@ -32,14 +33,16 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{EqualTo, _}
+import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
+import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
+import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
@@ -102,6 +105,7 @@ class SnappySessionState(snappySession: SnappySession)
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
+
   def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
     Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
   }
@@ -135,7 +139,8 @@ class SnappySessionState(snappySession: SnappySession)
           Batch("Like escape simplification", Once, LikeEscapeSimplification) :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
           Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets(conf)) :+
-          Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
+          Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding) :+
+          Batch("Order join conditions ", Once, OrderJoinConditions)
     }
   }
 
@@ -240,6 +245,91 @@ class SnappySessionState(snappySession: SnappySession)
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
+    }
+  }
+
+  /**
+    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
+    */
+  object OrderJoinConditions extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, otherCondition, left, right) =>
+        prepareOrderedCondition(joinType, left, right, leftKeys, rightKeys, otherCondition)
+    }
+
+    @tailrec def unAlias(e: Expression): Expression = e match {
+      case a: Alias => unAlias(a.child)
+      case _ => e
+    }
+
+    def getKeyOrder(plan: LogicalPlan, joinKeys: Seq[Expression],
+        partitioning: Seq[NamedExpression]): Seq[Int] = {
+      val part = partitioning.map(unAlias)
+      lazy val planExpressions = plan.expressions
+      val keyOrder = joinKeys.map { k =>
+        val key = unAlias(k)
+        val i = part.indexWhere(_.semanticEquals(key))
+        if (i < 0) {
+          // search for any view aliases (SNAP-2204)
+          key match {
+            case ke: NamedExpression =>
+              planExpressions.collectFirst {
+                case a: Alias if ke.exprId == a.exprId => unAlias(a.child)
+                case e: NamedExpression if (ke ne e) && ke.exprId == e.exprId => e
+              } match {
+                case Some(e) => part.indexWhere(_.semanticEquals(e))
+                case None => Int.MaxValue
+              }
+            case _ => Int.MaxValue
+          }
+        } else i
+      }
+      keyOrder
+    }
+
+    def getPartCols(plan: LogicalPlan): Seq[NamedExpression] = {
+      plan match {
+        case PhysicalScan(_, _, child) => child match {
+          case r@LogicalRelation(scan: PartitionedDataSourceScan, _, _) =>
+            // send back numPartitions=1 for replicated table since collocated
+            if (!scan.isPartitioned) return Nil
+            val partCols = scan.partitionColumns.map(colName =>
+              r.resolveQuoted(colName, analysis.caseInsensitiveResolution)
+                  .getOrElse(throw new AnalysisException(
+                    s"""Cannot resolve column "$colName" among (${r.output})""")))
+            partCols
+          case _ => Nil
+        }
+        case _ => Nil
+      }
+    }
+
+    private def orderJoinKeys(plan: LogicalPlan, joinKeys: Seq[Expression]): Seq[Expression] = {
+      val partCols = getPartCols(plan)
+      if (partCols ne Nil) {
+        val keyOrder = getKeyOrder(plan, joinKeys, partCols)
+         keyOrder.zip(joinKeys).sortBy(x => x._1).unzip._2
+      } else {
+        joinKeys
+      }
+    }
+
+    private def prepareOrderedCondition(joinType: JoinType,
+        left: LogicalPlan,
+        right: LogicalPlan,
+        leftKeys: Seq[Expression],
+        rightKeys: Seq[Expression],
+        otherCondition: Option[Expression]): LogicalPlan = {
+      val leftOrderedKeys = orderJoinKeys(left, leftKeys)
+      val rightOrderedKeys = orderJoinKeys(right, rightKeys)
+      val joinPairs = leftOrderedKeys.zip(rightOrderedKeys)
+      val newJoin = joinPairs.map(EqualTo.tupled).reduceOption(And)
+      println("otherCondition " + otherCondition)
+      // val allConditions = (newJoin ++ otherCondition).reduceOption(And)
+      // TODO understand when otherCondition will be used
+      val allConditions = (newJoin).reduceOption(And)
+      println(allConditions)
+      Join(left, right, joinType, allConditions)
     }
   }
 
