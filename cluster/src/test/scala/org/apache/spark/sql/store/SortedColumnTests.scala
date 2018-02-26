@@ -172,8 +172,12 @@ object SortedColumnTests extends Logging {
     try {
       verifyTotalRows(numFirstInserts(numElements), 1)
       try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
+        ColumnTableScan.setDebugMode(doDebug)
         updateDF.write.putInto(colTableName)
       } finally {
+        ColumnTableScan.setDebugMode(false)
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
       verifyTotalRows(numElements, 2)
     } catch {
