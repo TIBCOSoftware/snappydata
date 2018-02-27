@@ -69,7 +69,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
   test("insert performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
-    val numElements = 9999551
+    val numElements = 99999551
     val numBuckets = SortedColumnTests.cores
 
     SortedColumnTests.verfiyInsertDataExists(numElements, snc)
