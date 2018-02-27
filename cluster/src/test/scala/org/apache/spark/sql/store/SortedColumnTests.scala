@@ -138,19 +138,18 @@ object SortedColumnTests extends Logging {
     session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
     session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
+    createColumnTable(session, colTableName, numBuckets, numElements)
+    val updateDF = session.read.load(filePathUpdate(numElements))
+
     // To force SMJ
     session.conf.set(Property.HashJoinSize.name, "-1")
     session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
     // Only use while debugging
     session.conf.set(Property.PutIntoInnerJoinCacheSize.name, "-1")
-    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
-
-    createColumnTable(session, colTableName, numBuckets, numElements)
-    val updateDF = session.read.load(filePathUpdate(numElements))
 
     try {
-      verifyTotalRows(session: SnappySession, colTableName, numElements, false)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false)
       try {
         ColumnTableScan.setCaseOfSortedInsertValue(true)
         ColumnTableScan.setDebugMode(false)
@@ -159,7 +158,7 @@ object SortedColumnTests extends Logging {
         ColumnTableScan.setDebugMode(false)
         ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
-      verifyTotalRows(session: SnappySession, colTableName, numElements, true)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true)
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)
@@ -174,6 +173,9 @@ object SortedColumnTests extends Logging {
     session.sql(s"drop table $colTableName")
     session.conf.unset(Property.ColumnBatchSize.name)
     session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    session.conf.unset(Property.HashJoinSize.name)
+    session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
+    session.conf.unset(Property.PutIntoInnerJoinCacheSize.name)
   }
 
   def testInsertPerformance(session: SnappySession, colTableName: String, numBuckets: Int,
@@ -182,22 +184,22 @@ object SortedColumnTests extends Logging {
     session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
     session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
+    createColumnTable(session, colTableName, numBuckets, numElements)
+    val updateDF = session.read.load(filePathUpdate(numElements))
+
     // To force SMJ
     session.conf.set(Property.HashJoinSize.name, "-1")
     session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
-    createColumnTable(session, colTableName, numBuckets, numElements)
-    val updateDF = session.read.load(filePathUpdate(numElements))
-
     try {
-      verifyTotalRows(session: SnappySession, colTableName, numElements, false)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false)
       try {
         ColumnTableScan.setCaseOfSortedInsertValue(true)
         updateDF.write.putInto(colTableName)
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
-      verifyTotalRows(session: SnappySession, colTableName, numElements, true)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true)
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)
@@ -207,5 +209,7 @@ object SortedColumnTests extends Logging {
     session.sql(s"drop table $colTableName")
     session.conf.unset(Property.ColumnBatchSize.name)
     session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    session.conf.unset(Property.HashJoinSize.name)
+    session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
   }
 }
