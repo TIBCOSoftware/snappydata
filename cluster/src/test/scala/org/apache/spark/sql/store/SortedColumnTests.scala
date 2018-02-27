@@ -135,6 +135,8 @@ object SortedColumnTests extends Logging {
   def testBasicInsert(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
     // To force SMJ
     session.conf.set(Property.HashJoinSize.name, "-1")
@@ -177,6 +179,8 @@ object SortedColumnTests extends Logging {
   def testInsertPerformance(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
     // To force SMJ
     session.conf.set(Property.HashJoinSize.name, "-1")
