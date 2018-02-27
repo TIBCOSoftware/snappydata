@@ -42,6 +42,7 @@ import org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext}
 
@@ -206,7 +207,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         ps.close()
       }
     }
-    val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
+    val sqlText = s"SELECT $columnList FROM ${quotedName(tableName)}$filterWhereClause"
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {

@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.row
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.types.StructType
 
@@ -37,7 +38,8 @@ case class RowDeleteExec(child: SparkPlan, resolvedName: String,
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
-    sql.append("DELETE FROM ").append(resolvedName).append(" WHERE ")
+    sql.append("DELETE FROM ").append(quotedName(resolvedName, escapeQuotes = true))
+        .append(" WHERE ")
     JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.map(_.name), escapeQuotes = true)
     super.doProduce(ctx, sql.toString())
   }

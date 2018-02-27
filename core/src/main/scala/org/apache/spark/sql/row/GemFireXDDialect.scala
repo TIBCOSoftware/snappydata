@@ -22,10 +22,11 @@ import java.util.Properties
 import io.snappydata.Constant
 
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{SQLContext, SnappySession}
 
 /**
  * Default dialect for GemFireXD >= 1.4.0.
@@ -73,6 +74,12 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     // do nothing; just forces one-time invocation of various registerDialects
     GemFireXDDialect.getClass
     GemFireXDClientDialect.getClass
+  }
+
+  override def tableExists(table: String, conn: Connection,
+      context: SQLContext): Boolean = {
+    val session = context.sparkSession.asInstanceOf[SnappySession]
+    session.sessionCatalog.tableExists(table) || table.equalsIgnoreCase("SYSIBM.SYSDUMMY1")
   }
 
   override def getCatalystType(sqlType: Int, typeName: String,
@@ -138,7 +145,11 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   }
 
   override def getTableExistsQuery(table: String): String = {
-    s"SELECT 1 FROM $table FETCH FIRST ROW ONLY"
+    s"SELECT 1 FROM ${quotedName(table)} FETCH FIRST ROW ONLY"
+  }
+
+  override def getSchemaQuery(table: String): String = {
+    s"SELECT * FROM ${quotedName(table)} FETCH FIRST ROW ONLY"
   }
 
   override def createSchema(schemaName: String, conn: Connection): Unit = {
@@ -148,9 +159,9 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   override def dropTable(tableName: String, conn: Connection,
       context: SQLContext, ifExists: Boolean): Unit = {
     if (ifExists) {
-      JdbcExtendedUtils.executeUpdate(s"DROP TABLE IF EXISTS $tableName", conn)
+      JdbcExtendedUtils.executeUpdate(s"DROP TABLE IF EXISTS ${quotedName(tableName)}", conn)
     } else {
-      JdbcExtendedUtils.executeUpdate(s"DROP TABLE $tableName", conn)
+      JdbcExtendedUtils.executeUpdate(s"DROP TABLE ${quotedName(tableName)}", conn)
     }
   }
 

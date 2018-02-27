@@ -35,7 +35,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
-import io.snappydata.impl.SparkConnectorRDDHelper
+import io.snappydata.impl.SmartConnectorRDDHelper
 import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, ClientStatement}
 
@@ -49,6 +49,7 @@ import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.ConnectorCatalog
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
@@ -126,7 +127,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               Array(conn, null)
             }
           case _ =>
-            val txId = SparkConnectorRDDHelper.snapshotTxIdForWrite.get
+            val txId = SmartConnectorRDDHelper.snapshotTxIdForWrite.get
             if (txId == null) {
               logDebug(s"Going to start the transaction on server on conn $conn ")
               val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID(?,?)")
@@ -135,7 +136,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               startAndGetSnapshotTXId.execute()
               val txid = startAndGetSnapshotTXId.getString(2)
               startAndGetSnapshotTXId.close()
-              SparkConnectorRDDHelper.snapshotTxIdForWrite.set(txid)
+              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(txid)
               logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
               Array(conn, txid)
             } else {
@@ -163,7 +164,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             if (delayRollover) {
               GfxdSystemProcedures.flushLocalBuckets(tableName, false)
             }
-            // if(SparkConnectorRDDHelper.snapshotTxIdForRead.get)
             Misc.getGemFireCache.getCacheTransactionManager.commit()
           case _ =>
             logDebug(s"Going to commit $txId the transaction on server conn is $conn")
@@ -176,7 +176,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             }
             finally {
               ps.close()
-              SparkConnectorRDDHelper.snapshotTxIdForWrite.set(null)
+              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Committed $txId the transaction on server ")
             }
         }
@@ -211,7 +211,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               logDebug(s"The transaction ID being rolled back is $txId")
             }, () => {
               if (ps ne null) ps.close()
-              SparkConnectorRDDHelper.snapshotTxIdForWrite.set(null)
+              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Rolled back $txId the transaction on server ")
             })
         }
@@ -255,7 +255,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
           // check for full batch delete
           if (ColumnDelta.checkBatchDeleted(buffer)) {
-            val deleteStr = s"delete from $columnTableName where " +
+            val deleteStr = s"delete from ${quotedName(columnTableName)} where " +
                 "uuid = ? and partitionId = ? and columnIndex = ?"
             val stmt = connection.prepareStatement(deleteStr)
             try {
@@ -483,8 +483,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   protected def getRowInsertOrPutStr(tableName: String, isPut: Boolean): String = {
-    if (isPut) s"put into $tableName values (?, ?, ?, ?)"
-    else s"insert into $tableName values (?, ?, ?, ?)"
+    if (isPut) s"put into ${quotedName(tableName)} values (?, ?, ?, ?)"
+    else s"insert into ${quotedName(tableName)} values (?, ?, ?, ?)"
   }
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
@@ -789,7 +789,7 @@ final class SmartConnectorColumnRDD(
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[ByteBuffer] = {
-    val helper = new SparkConnectorRDDHelper
+    val helper = new SmartConnectorRDDHelper
     val part = split.asInstanceOf[SmartExecutorBucketPartition]
     val conn: Connection = helper.getConnection(connProperties, part)
 
@@ -813,7 +813,7 @@ final class SmartConnectorColumnRDD(
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
-        SparkConnectorRDDHelper.snapshotTxIdForRead.set(null)
+        SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
         logDebug(s"closed connection for task from listener $partitionId")
         try {
           conn.close()
@@ -878,7 +878,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _connProperties: ConnectionProperties,
     _filters: Array[Filter],
     _partEval: () => Array[Partition],
-    _relDestroyVersion: Int,
+    private var relDestroyVersion: Int,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
@@ -888,7 +888,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
       context: TaskContext): Unit = {
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get
+      val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
       logDebug(s"The txid going to be committed is $txId " + tableName)
       // if ((txId ne null) && !txId.equals("null")) {
         val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
@@ -897,14 +897,14 @@ class SmartConnectorRowRDD(_session: SnappySession,
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
-        SparkConnectorRDDHelper.snapshotTxIdForRead.set(null)
+        SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
       // }
     }))
   }
 
   override def computeResultSet(
       thePart: Partition, context: TaskContext): (Connection, Statement, ResultSet) = {
-    val helper = new SparkConnectorRDDHelper
+    val helper = new SmartConnectorRDDHelper
     val conn: Connection = helper.getConnection(
       connProperties, thePart.asInstanceOf[SmartExecutorBucketPartition])
     if (context ne null) {
@@ -927,21 +927,21 @@ class SmartConnectorRowRDD(_session: SnappySession,
         if (isPartitioned) {
           clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
             new StatementAttrs(), Collections.singleton(Int.box(thePart.index)),
-            tableName, true).setMetadataVersion(_relDestroyVersion))
+            tableName, true).setMetadataVersion(relDestroyVersion))
         }
         clientConn
       case _ => null
     }
     if (isPartitioned && (thriftConn eq null)) {
       val ps = conn.prepareStatement(
-        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ${_relDestroyVersion})")
+        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, $relDestroyVersion)")
       ps.setString(1, tableName)
       val bucketString = thePart.index.toString
       ps.setString(2, bucketString)
       ps.executeUpdate()
       ps.close()
     }
-    val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
+    val sqlText = s"SELECT $columnList FROM ${quotedName(tableName)}$filterWhereClause"
 
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
@@ -957,7 +957,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       stmt.setFetchSize(fetchSize.toInt)
     }
 
-    val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get
+    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
     if (thriftConn ne null) {
       stmt.asInstanceOf[ClientPreparedStatement].setSnapshotTransactionId(txId)
     } else if (txId != null) {
@@ -978,7 +978,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       val txId = rs.getString(1)
       rs.close()
       getSnapshotTXId.close()
-      SparkConnectorRDDHelper.snapshotTxIdForRead.set(txId)
+      SmartConnectorRDDHelper.snapshotTxIdForRead.set(txId)
       logDebug(s"The snapshot tx id is $txId and tablename is $tableName")
     }
     if (thriftConn ne null) {
@@ -1000,9 +1000,18 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
   def getSQLStatement(resolvedTableName: String,
       requiredColumns: Array[String], partitionId: Int): String = {
-    "select " + requiredColumns.mkString(", ") + " from " + resolvedTableName
+    "select " + requiredColumns.mkString(", ") + " from " + quotedName(resolvedTableName)
   }
 
+  override def write(kryo: Kryo, output: Output): Unit = {
+    super.write(kryo, output)
+    output.writeVarInt(relDestroyVersion, false)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    super.read(kryo, input)
+    relDestroyVersion = input.readVarInt(false)
+  }
 }
 
 class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,

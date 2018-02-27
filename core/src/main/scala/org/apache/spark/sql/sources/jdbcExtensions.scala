@@ -30,6 +30,7 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode, SnappySession, SparkSession}
 
@@ -39,9 +40,7 @@ import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode, Snapp
 abstract class JdbcExtendedDialect extends JdbcDialect {
 
   /** Query string to check for existence of a table */
-  def tableExists(tableName: String, conn: Connection,
-      context: SQLContext): Boolean =
-    JdbcExtendedUtils.tableExistsInMetaData(tableName, conn, this)
+  def tableExists(table: String, conn: Connection, context: SQLContext): Boolean
 
   /**
    * Retrieve the jdbc / sql type for a given datatype.
@@ -60,7 +59,7 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
    * Get the DDL to truncate a table, or null/empty
    * if truncate is not supported.
    */
-  def truncateTable(tableName: String): String = s"TRUNCATE TABLE $tableName"
+  def truncateTable(tableName: String): String = s"TRUNCATE TABLE ${quotedName(tableName)}"
 
   def dropTable(tableName: String, conn: Connection, context: SQLContext,
       ifExists: Boolean): Unit
@@ -167,13 +166,14 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
-  def getTableWithSchema(table: String, conn: Connection): (String, String) = {
+  def getTableWithSchema(table: String, conn: Connection,
+      session: Option[() => SnappySession] = None): (String, String) = {
     val dotIndex = table.indexOf('.')
     val schemaName = if (dotIndex > 0) {
       table.substring(0, dotIndex)
     } else {
       // get the current schema
-      conn.getSchema
+      if (session.isDefined) session.get().getCurrentSchema else conn.getSchema
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
     (schemaName, tableName)
@@ -213,10 +213,11 @@ object JdbcExtendedUtils extends Logging {
         } catch {
           case NonFatal(_) =>
             val stmt = conn.createStatement()
+            val quotedTable = quotedName(table)
             // try LIMIT clause, then FETCH FIRST and lastly COUNT
-            val testQueries = Array(s"SELECT 1 FROM $table LIMIT 1",
-              s"SELECT 1 FROM $table FETCH FIRST ROW ONLY",
-              s"SELECT COUNT(1) FROM $table")
+            val testQueries = Array(s"SELECT 1 FROM $quotedTable LIMIT 1",
+              s"SELECT 1 FROM $quotedTable FETCH FIRST ROW ONLY",
+              s"SELECT COUNT(1) FROM $quotedTable")
             for (q <- testQueries) {
               try {
                 val rs = stmt.executeQuery(q)
@@ -242,7 +243,7 @@ object JdbcExtendedUtils extends Logging {
         d.dropTable(tableName, conn, context, ifExists)
       case _ =>
         if (!ifExists || tableExists(tableName, conn, dialect, context)) {
-          JdbcExtendedUtils.executeUpdate(s"DROP TABLE $tableName", conn)
+          JdbcExtendedUtils.executeUpdate(s"DROP TABLE ${quotedName(tableName)}", conn)
         }
     }
   }
@@ -252,8 +253,14 @@ object JdbcExtendedUtils extends Logging {
       case d: JdbcExtendedDialect =>
         JdbcExtendedUtils.executeUpdate(d.truncateTable(tableName), conn)
       case _ =>
-        JdbcExtendedUtils.executeUpdate(s"TRUNCATE TABLE $tableName", conn)
+        JdbcExtendedUtils.executeUpdate(s"TRUNCATE TABLE ${quotedName(tableName)}", conn)
     }
+  }
+
+  /** get the table name in SQL quoted form e.g. "APP"."TABLE1" */
+  def quotedName(table: String, escapeQuotes: Boolean = false): String = {
+    val (schema, tableName) = getTableWithSchema(table, null)
+    if (escapeQuotes) s"""\\"$schema\\".\\"$tableName\\"""" else s""""$schema"."$tableName""""
   }
 
   /**
@@ -290,10 +297,11 @@ object JdbcExtendedUtils extends Logging {
   def getInsertOrPutString(table: String, rddSchema: StructType,
       putInto: Boolean, escapeQuotes: Boolean = false): String = {
     val sql = new StringBuilder()
+    val tableName = quotedName(table, escapeQuotes)
     if (putInto) {
-      sql.append(s"PUT INTO $table (")
+      sql.append("PUT INTO ").append(tableName).append(" (")
     } else {
-      sql.append(s"INSERT INTO $table (")
+      sql.append("INSERT INTO ").append(tableName).append(" (")
     }
     var fieldsLeft = rddSchema.fields.length
     rddSchema.fields.foreach { field =>
