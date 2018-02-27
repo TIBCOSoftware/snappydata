@@ -26,7 +26,13 @@ import org.apache.spark.sql.SnappyContext
 class SortedColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testBasicInsert(): Unit = {
-    val snc = SnappyContext(sc)
-    SortedColumnTests.testBasicInsert(snc.snappySession)
+    val snc = SnappyContext(sc).snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 551
+    val numBuckets = 2
+
+    SortedColumnTests.verfiyInsertDataExists(numElements, snc)
+    SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
+    SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
   }
 }

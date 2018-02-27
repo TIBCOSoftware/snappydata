@@ -26,6 +26,8 @@ import io.snappydata.Property
 import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.snappy._
 
 /**
@@ -73,7 +75,6 @@ class SortedColumnTests extends ColumnTablesTestBase {
     val colTableName = "colDeltaTable"
     val numElements = 1551
     val numBuckets = SortedColumnTests.cores
-    val doDebug = false
 
     SortedColumnTests.verfiyInsertDataExists(numElements, snc)
     SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
@@ -167,6 +168,14 @@ object SortedColumnTests extends Logging {
       numElements: Long): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
 
+    // To force SMJ
+    session.conf.set(Property.HashJoinSize.name, "-1")
+    session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+
+    // Only use while debugging
+    session.conf.set(Property.PutIntoInnerJoinCacheSize.name, "-1")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+
     session.sql(s"drop table if exists $colTableName")
     session.sql(s"create table $colTableName (id int, addr string, status boolean) " +
         s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id')")
@@ -179,7 +188,7 @@ object SortedColumnTests extends Logging {
       verifyTotalRows(session, numFirstInserts(numElements), 1)
       try {
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        ColumnTableScan.setDebugMode(doDebug)
+        ColumnTableScan.setDebugMode(false)
         updateDF.write.putInto(colTableName)
       } finally {
         ColumnTableScan.setDebugMode(false)
@@ -206,6 +215,10 @@ object SortedColumnTests extends Logging {
       numElements: Long): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
 
+    // To force SMJ
+    session.conf.set(Property.HashJoinSize.name, "-1")
+    session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+
     session.sql(s"drop table if exists $colTableName")
     session.sql(s"create table $colTableName (id int, addr string, status boolean) " +
         s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id')")
@@ -217,8 +230,10 @@ object SortedColumnTests extends Logging {
     try {
       verifyTotalRows(session, numFirstInserts(numElements), 1)
       try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
         updateDF.write.putInto(colTableName)
       } finally {
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
       verifyTotalRows(session, numElements, 2)
     } catch {
