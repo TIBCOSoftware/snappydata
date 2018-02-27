@@ -25,7 +25,7 @@ import scala.collection.mutable
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
-import io.snappydata.Property
+import io.snappydata.collection.ObjectObjectHashMap
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, SortOrder}
@@ -167,7 +167,7 @@ object StoreUtils {
 
   private[sql] def getBucketOwnersForRead(bucketId: Int,
       region: PartitionedRegion): mutable.Set[InternalDistributedMember] = {
-    val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+    val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId)
     if (distMembers.isEmpty) {
       var prefNode = region.getRegionAdvisor.getPreferredInitializedNode(bucketId, true)
       if (prefNode == null) {
@@ -175,7 +175,7 @@ object StoreUtils {
       }
       distMembers.add(prefNode)
     }
-    distMembers
+    distMembers.asScala
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
@@ -222,8 +222,8 @@ object StoreUtils {
       region: PartitionedRegion, preferPrimaries: Boolean): Array[Partition] = {
 
     val numTotalBuckets = region.getTotalNumberOfBuckets
-    val serverToBuckets = new mutable.HashMap[InternalDistributedMember,
-        (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])]()
+    val serverToBuckets = ObjectObjectHashMap.withExpectedSize[InternalDistributedMember,
+        (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])](4)
     val adviser = region.getRegionAdvisor
     for (p <- 0 until numTotalBuckets) {
       var prefNode = if (preferPrimaries) region.getOrCreateNodeForBucketWrite(p, null)
@@ -248,11 +248,11 @@ object StoreUtils {
             })
       }
       val buckets = serverToBuckets.get(prefNode) match {
-        case Some(b) => b._2
-        case None =>
+        case null =>
           val buckets = new mutable.ArrayBuffer[Int]()
           serverToBuckets.put(prefNode, prefBlockId -> buckets)
           buckets
+        case b => b._2
       }
       buckets += p
     }
@@ -260,7 +260,7 @@ object StoreUtils {
     val allocatedBuckets = new Array[Boolean](numTotalBuckets)
     // group buckets into as many partitions as available cores on each member
     var partitionIndex = -1
-    val partitions = serverToBuckets.flatMap { case (m, (blockId, buckets)) =>
+    val partitions = serverToBuckets.asScala.flatMap { case (m, (blockId, buckets)) =>
       val numBuckets = buckets.length
       val numPartitions = math.max(1, blockId.map(b => math.min(math.min(
         b.numProcessors, b.executorCores), numBuckets)).getOrElse(numBuckets))
@@ -419,7 +419,7 @@ object StoreUtils {
     parameters.remove(PARTITIONER).foreach(v =>
       sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
 
-    val overflow = parameters.get(OVERFLOW).map((_.toBoolean)).getOrElse(true)
+    val overflow = parameters.get(OVERFLOW).forall(_.toBoolean)
     val defaultEviction = if (overflow) s"$GEM_HEAPPERCENT $GEM_OVERFLOW" else EMPTY_STRING
     sb.append(parameters.remove(EVICTION_BY).map(v => {
       if (v.contains(LRUCOUNT) && isShadowTable) {

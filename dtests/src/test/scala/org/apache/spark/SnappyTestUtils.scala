@@ -31,12 +31,12 @@ object SnappyTestUtils extends Logging {
 
   def verifyClassOnExecutors(snc: SnappyContext, className: String,
                              version: String, count: Int, pw: PrintWriter): Unit = {
-    val countInstances = Utility.mapExecutors(snc,
+    val countInstances = Utility.mapExecutors[Int](snc.sparkContext,
       () => {
         if (SnappyTestUtils.loadClass(className, version)) {
           Seq(1).iterator
         } else Iterator.empty
-      }).count
+      }).length
 
     assert(countInstances == count)
     // scalastyle:off println
@@ -57,9 +57,7 @@ object SnappyTestUtils extends Logging {
     TestUtils.createCompiledClass(className, destDir, sourceFile, classpathUrls)
   }
 
-  def createJarFile(files: Seq[File],
-                    tempDir: String
-                   ) = {
+  def createJarFile(files: Seq[File], tempDir: String): String = {
     val jarFile = new File(tempDir, "testJar-%s.jar".format(System.currentTimeMillis()))
     TestUtils.createJar(files, jarFile)
     jarFile.getName

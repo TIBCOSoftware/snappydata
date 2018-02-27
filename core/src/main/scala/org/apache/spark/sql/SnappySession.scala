@@ -1130,7 +1130,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   /**
-   * Create an external table with given options.
+   * Create an external/builtin table with given options.
    */
   private[sql] def createTableAsSelect(
       tableIdent: QualifiedTableName,
@@ -1378,12 +1378,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def alterTable(tableName: String, isAddColumn: Boolean,
-                 column: StructField): Unit = {
-    alterTable(sessionCatalog.newQualifiedTableName(tableName), isAddColumn, column)
+      column: StructField): Unit = {
+    val qualifiedTable = sessionCatalog.newQualifiedTableName(tableName)
+    if (sessionCatalog.caseSensitiveAnalysis) {
+      alterTable(qualifiedTable, isAddColumn, column)
+    } else {
+      val colName = Utils.fieldName(column)
+      alterTable(qualifiedTable, isAddColumn,
+        if (Utils.hasLowerCase(colName)) sessionCatalog.normalizeField(column, colName) else column)
+    }
   }
 
-  private[sql]  def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
-                              column: StructField): Unit = {
+  private[sql] def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
+      column: StructField): Unit = {
     val plan = try {
       sessionCatalog.lookupRelation(tableIdent)
     } catch {
@@ -1427,6 +1434,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def setSchema(schemaName: String): Unit = {
     sessionCatalog.setSchema(schemaName)
   }
+
+  def getCurrentSchema: String = sessionCatalog.currentSchema
 
   /**
    * Create an index on a table.
@@ -2284,10 +2293,10 @@ object SnappySession extends Logging {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
         CodeGeneration.clearAllCache()
-        Utils.mapExecutors(sc, (_, _) => {
+        Utils.mapExecutors[Unit](sc, () => {
           CodeGeneration.clearAllCache()
           Iterator.empty
-        }).count()
+        })
       }
     }
   }
