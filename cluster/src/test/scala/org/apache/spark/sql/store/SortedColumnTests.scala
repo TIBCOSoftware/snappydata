@@ -24,6 +24,7 @@ import io.snappydata.Property
 import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.snappy._
 
 /**
@@ -133,6 +134,8 @@ object SortedColumnTests extends Logging {
   def testBasicInsert(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
     createColumnTable(session, colTableName, numBuckets, numElements)
     val updateDF = session.read.load(filePathUpdate(numElements))
@@ -163,6 +166,8 @@ object SortedColumnTests extends Logging {
   def testInsertPerformance(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
     createColumnTable(session, colTableName, numBuckets, numElements)
     val updateDF = session.read.load(filePathUpdate(numElements))
