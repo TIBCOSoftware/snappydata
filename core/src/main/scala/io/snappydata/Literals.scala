@@ -225,6 +225,11 @@ object Property extends Enumeration {
     "If true then cluster startup will wait for Spark jobserver to be fully initialized " +
         "before marking lead as 'RUNNING'. Default is false.", Some(false), prefix = null)
 
+  val LimitJobCores = Val(s"${Constant.SPARK_PREFIX}scheduler.limitJobCores",
+    "If true then cores given to a single job will be limited to physical cores on a host." +
+        "This allows executors to be configured with more than physical cores to allow for some " +
+        "concurrency of long jobs with short jobs. Default is true.", Some(true), prefix = null)
+
   val SnappyConnection = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
