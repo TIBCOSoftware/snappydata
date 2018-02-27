@@ -20,7 +20,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
-import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, SparkListenerExecutorAdded, SparkListenerExecutorRemoved, TaskSchedulerImpl}
+import org.apache.spark.scheduler._
 import org.apache.spark.sql.{BlockAndExecutorId, SnappyContext}
 
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
@@ -87,18 +87,22 @@ class BlockManagerIdListener(sc: SparkContext)
   override def onBlockManagerAdded(
       msg: SparkListenerBlockManagerAdded): Unit = synchronized {
     val executorId = msg.blockManagerId.executorId
-    SnappyContext.getBlockIdIfNull(executorId) match {
+    val blockId = SnappyContext.getBlockIdIfNull(executorId) match {
       case None =>
         val numCores = sc.schedulerBackend.defaultParallelism()
-        SnappyContext.addBlockId(executorId, new BlockAndExecutorId(
-          msg.blockManagerId, numCores, numCores))
-      case Some(b) => b._blockId = msg.blockManagerId
+        val bid = new BlockAndExecutorId(msg.blockManagerId, numCores, numCores)
+        SnappyContext.addBlockId(executorId, bid)
+        bid
+      case Some(b) => b._blockId = msg.blockManagerId; b
     }
+    sc.taskScheduler.asInstanceOf[SnappyTaskSchedulerImpl].addBlockId(executorId, blockId)
   }
 
   override def onBlockManagerRemoved(
       msg: SparkListenerBlockManagerRemoved): Unit = {
-    SnappyContext.removeBlockId(msg.blockManagerId.executorId)
+    val executorId = msg.blockManagerId.executorId
+    SnappyContext.removeBlockId(executorId)
+    sc.taskScheduler.asInstanceOf[SnappyTaskSchedulerImpl].removeBlockId(executorId)
   }
 
   override def onExecutorRemoved(msg: SparkListenerExecutorRemoved): Unit =
