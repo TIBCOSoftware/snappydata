@@ -19,8 +19,6 @@ package org.apache.spark.sql.store
 
 import java.io.File
 
-import scala.collection.mutable
-
 import io.snappydata.Property
 
 import org.apache.spark.{Logging, SparkConf}
@@ -71,9 +69,8 @@ class SortedColumnTests extends ColumnTablesTestBase {
   test("insert performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
-    val numElements = 1551
+    val numElements = 9999551
     val numBuckets = SortedColumnTests.cores
-    val doDebug = false
 
     SortedColumnTests.verfiyInsertDataExists(numElements, snc)
     SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
@@ -112,76 +109,41 @@ object SortedColumnTests extends Logging {
     }
   }
 
-  def numFirstInserts(totalNum: Long) : Long = {
-    val a = totalNum/10 * 6
-    val c = (totalNum % 10).toInt
-    val b = (1 to c).count(_ % 10 < 6)
-    a + b
+  def verifyTotalRows(session: SnappySession, columnTable: String, numElements: Long,
+      finalCall: Boolean): Unit = {
+    val colDf = session.sql(s"select * from $columnTable")
+    val insDF = session.read.parquet(filePathInsert(numElements))
+    val verifyDF = if (finalCall) {
+      insDF.union(session.read.parquet(filePathUpdate(numElements)))
+    } else insDF
+    val resCount = colDf.except(verifyDF).count()
+    assert(resCount == 0, resCount)
   }
 
-  def verifyTotalRows(session: SnappySession, assertCount: Long, callCount: Int): Unit = {
-    val rs1 = session.sql("select * from colDeltaTable").collect()
-    // scalastyle:off println
-    println("")
-    println(s"verifyTotalRows $callCount expected=$assertCount actual=${rs1.length} ")
-    // scalastyle:on println
-    var i = 0
-    val allRows = mutable.SortedSet[Long]()
-    if (callCount == 2) {
-      List.range(0, assertCount).foreach(allRows += _)
-    }
-    var lastRow = Int.MaxValue
-    rs1.foreach(r => {
-      val firstRow = r.getInt(0)
-      if (lastRow > firstRow) {
-        if (i > 0) {
-          // scalastyle:off println
-          println(s"verifyTotalRows : " + (i - 1) + " = " + lastRow)
-          // scalastyle:on println
-        }
-        // scalastyle:off println
-        println(s"verifyTotalRows : " + i + " = " + firstRow)
-        // scalastyle:on println
-      } else if (i == assertCount - 1) {
-        // scalastyle:off println
-        println(s"verifyTotalRows : " + i + " = " + firstRow)
-        // scalastyle:on println
-      }
-      lastRow = firstRow
-      i = i + 1
-      if (callCount == 2) {
-        if (allRows.contains(firstRow)) {
-          allRows.remove(firstRow)
-        }
-      }
-    })
-    if (callCount == 2) {
-      // scalastyle:off println
-      println(s"verifyTotalRows Remaining: " + allRows)
-      // scalastyle:on println
-    }
-    assert(rs1.length == assertCount, rs1.length)
-  }
-
-  def testBasicInsert(session: SnappySession, colTableName: String, numBuckets: Int,
+  def createColumnTable(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long): Unit = {
-    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
-
     session.sql(s"drop table if exists $colTableName")
     session.sql(s"create table $colTableName (id int, addr string, status boolean) " +
         s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id')")
 
     val insertDF = session.read.load(filePathInsert(numElements))
     insertDF.write.insertInto(colTableName)
+  }
+
+  def testBasicInsert(session: SnappySession, colTableName: String, numBuckets: Int,
+      numElements: Long): Unit = {
+    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+
+    createColumnTable(session, colTableName, numBuckets, numElements)
     val updateDF = session.read.load(filePathUpdate(numElements))
 
     try {
-      verifyTotalRows(session, numFirstInserts(numElements), 1)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, false)
       try {
         updateDF.write.putInto(colTableName)
       } finally {
       }
-      verifyTotalRows(session, numElements, 2)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, true)
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)
@@ -202,21 +164,16 @@ object SortedColumnTests extends Logging {
       numElements: Long): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
 
-    session.sql(s"drop table if exists $colTableName")
-    session.sql(s"create table $colTableName (id int, addr string, status boolean) " +
-        s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id')")
-
-    val insertDF = session.read.load(filePathInsert(numElements))
-    insertDF.write.insertInto(colTableName)
+    createColumnTable(session, colTableName, numBuckets, numElements)
     val updateDF = session.read.load(filePathUpdate(numElements))
 
     try {
-      verifyTotalRows(session, numFirstInserts(numElements), 1)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, false)
       try {
         updateDF.write.putInto(colTableName)
       } finally {
       }
-      verifyTotalRows(session, numElements, 2)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, true)
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)
