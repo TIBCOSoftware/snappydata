@@ -24,6 +24,13 @@ import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
 trait ToolsCallback {
 
+  def getHashPartitioning(partitionColumns: Seq[Expression],
+      numPartitions: Int, numBuckets: Int): Partitioning
+
+
+  def checkHashPartitioning(partitioning: Partitioning): Option[
+      (Seq[Expression], Int, Int)]
+
   def updateUI(sc: SparkContext): Unit
 
   def removeAddedJar(sc: SparkContext, jarName : String): Unit

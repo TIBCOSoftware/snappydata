@@ -19,26 +19,39 @@ package io.snappydata
 import java.io.File
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
 import org.apache.spark.ui.SnappyDashboardTab
 import org.apache.spark.util.SnappyUtils
 
 object ToolsCallbackImpl extends ToolsCallback {
 
+  def getHashPartitioning(partitionColumns: Seq[Expression],
+      numPartitions: Int, numBuckets: Int): Partitioning = {
+    HashPartitioning(partitionColumns, numPartitions, numBuckets)
+  }
+
+  override def checkHashPartitioning(partitioning: Partitioning): Option[
+      (Seq[Expression], Int, Int)] = partitioning match {
+    case p: HashPartitioning => Some(p.expressions, p.numPartitions, p.numBuckets)
+    case _ => None
+  }
+
   override def updateUI(sc: SparkContext): Unit = {
     SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
   }
 
-  override def removeAddedJar(sc: SparkContext, jarName: String) : Unit =
+  override def removeAddedJar(sc: SparkContext, jarName: String): Unit =
     sc.removeAddedJar(jarName)
 
   /**
-   * Callback to spark Utils to fetch file
-   */
+    * Callback to spark Utils to fetch file
+    */
   override def doFetchFile(
       url: String,
       targetDir: File,
       filename: String): File = {
-     SnappyUtils.doFetchFile(url, targetDir, filename)
+    SnappyUtils.doFetchFile(url, targetDir, filename)
   }
 
   override def setSessionDependencies(sparkContext: SparkContext, appName: String,

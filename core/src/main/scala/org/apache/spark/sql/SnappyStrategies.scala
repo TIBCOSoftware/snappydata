@@ -30,7 +30,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAns
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{HashPartitioningExtract, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -695,7 +695,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
     case t: TableExec =>
       val addShuffle = if (t.partitioned) {
         // force shuffle when inserting into a table with different partitions
-        t.child.outputPartitioning.numPartitions != t.numBuckets
+        t.child.outputPartitioning.numPartitions != t.outputPartitioning.numPartitions
       } else false
       if (addShuffle) {
         t.withNewChildren(Seq(ShuffleExchange(HashPartitioning(
