@@ -532,7 +532,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s"$t1 P JOIN $t2 R ON P.OrderId = R.OrderId" +
         s" AND coalesce(P.OrderRef,0) = coalesce(R.OrderRef,0)")
     // TODO Why an exchange is needed for coalesce.
-    println(withCoalesce.queryExecution.executedPlan)
+
     checkForShuffle(withCoalesce.logicalPlan, snc, shuffleExpected = true)
     assert(withCoalesce.count() === 500)
 

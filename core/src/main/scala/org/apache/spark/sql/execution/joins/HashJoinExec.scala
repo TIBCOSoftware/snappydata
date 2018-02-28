@@ -114,8 +114,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       val rightClustered = ClusteredDistribution(rightKeys)
       val leftPartitioning = left.outputPartitioning
       val rightPartitioning = right.outputPartitioning
-      if (// if either side is broadcast then return defaults
-          leftPartitioning.isInstanceOf[BroadcastDistribution] ||
+      // if either side is broadcast then return defaults
+      if (leftPartitioning.isInstanceOf[BroadcastDistribution] ||
           rightPartitioning.isInstanceOf[BroadcastDistribution] ||
           // if both sides are unknown then return defaults too
           (leftPartitioning.isInstanceOf[UnknownPartitioning] &&
