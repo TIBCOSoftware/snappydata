@@ -67,22 +67,9 @@ class SortedColumnTests extends ColumnTablesTestBase {
     SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
     SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
   }
-
-  test("insert performance") {
-    val snc = this.snc.snappySession
-    val colTableName = "colDeltaTable"
-    val numElements = 99999551
-    val numBuckets = SortedColumnTests.cores
-
-    SortedColumnTests.verfiyInsertDataExists(numElements, snc)
-    SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
-    SortedColumnTests.testInsertPerformance(snc, colTableName, numBuckets, numElements)
-  }
 }
 
 object SortedColumnTests extends Logging {
-
-  private val cores = math.min(8, Runtime.getRuntime.availableProcessors())
   private val baseDataPath = s"/home/vivek/work/testData/local_index"
 
   def filePathInsert(n: Long) : String = s"$baseDataPath/insert$n"
@@ -176,40 +163,5 @@ object SortedColumnTests extends Logging {
     session.conf.unset(Property.HashJoinSize.name)
     session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
     session.conf.unset(Property.PutIntoInnerJoinCacheSize.name)
-  }
-
-  def testInsertPerformance(session: SnappySession, colTableName: String, numBuckets: Int,
-      numElements: Long): Unit = {
-    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
-    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
-
-    createColumnTable(session, colTableName, numBuckets, numElements)
-    val updateDF = session.read.load(filePathUpdate(numElements))
-
-    // To force SMJ
-    session.conf.set(Property.HashJoinSize.name, "-1")
-    session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
-
-    try {
-      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false)
-      try {
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
-        updateDF.write.putInto(colTableName)
-      } finally {
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
-      }
-      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true)
-    } catch {
-      case t: Throwable =>
-        logError(t.getMessage, t)
-        throw t
-    }
-
-    session.sql(s"drop table $colTableName")
-    session.conf.unset(Property.ColumnBatchSize.name)
-    session.conf.unset(Property.ColumnMaxDeltaRows.name)
-    session.conf.unset(Property.HashJoinSize.name)
-    session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
   }
 }

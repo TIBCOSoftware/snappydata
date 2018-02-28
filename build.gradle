@@ -264,7 +264,7 @@ subprojects {
     // spawn separate JVMs
     maxParallelForks = 1
     minHeapSize '4g'
-    maxHeapSize '4g'
+    maxHeapSize '8g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
             '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
     // for benchmarking
