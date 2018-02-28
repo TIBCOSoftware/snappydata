@@ -18,13 +18,12 @@
 package org.apache.spark.sql.catalyst.expressions
 
 import java.util.Objects
+import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
-
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
@@ -188,6 +187,14 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
         """.stripMargin)
     }
     ev.copy(initCode, isNullLocal, valueLocal)
+  }
+
+  var currentValue: Any = value
+
+  override def toString: String = currentValue match {
+    case null => "null"
+    case binary: Array[Byte] => s"0x" + DatatypeConverter.printHexBinary(binary)
+    case other => other.toString
   }
 }
 
