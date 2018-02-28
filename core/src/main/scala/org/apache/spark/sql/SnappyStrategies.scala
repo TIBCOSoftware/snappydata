@@ -34,9 +34,10 @@ import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, PhysicalScan}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
+import org.apache.spark.sql.execution.sources.PhysicalScan
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
 

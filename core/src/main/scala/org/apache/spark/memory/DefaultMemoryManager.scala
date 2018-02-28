@@ -22,14 +22,14 @@ import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import io.snappydata.collection.ObjectLongHashMap
 
-import org.apache.spark.{Logging, SparkEnv}
 import org.apache.spark.storage.BlockId
+import org.apache.spark.{Logging, SparkEnv}
 
 
 class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
-  private val memoryForObject: ObjectLongHashMap[(String, MemoryMode)] =
-    ObjectLongHashMap.withExpectedSize[(String, MemoryMode)](16)
+  private val memoryForObject: ObjectLongHashMap[MemoryOwner] =
+    ObjectLongHashMap.withExpectedSize[MemoryOwner](16)
 
   private val managerId = "DefaultMemoryManager"
 
@@ -44,7 +44,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     if (env ne null) {
       env.memoryManager.synchronized {
         val success = env.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
-        memoryForObject.addTo(objectName -> memoryMode, numBytes)
+        memoryForObject.addValue(new MemoryOwner(objectName, memoryMode), numBytes)
         success
       }
     } else {
@@ -61,7 +61,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     val env = SparkEnv.get
     if (env ne null) {
       env.memoryManager.synchronized {
-        val key = objectName -> memoryMode
+        val key = new MemoryOwner(objectName, memoryMode)
         val bytesToBeFreed = memoryForObject.getLong(key)
         val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
         logDebug(s"Dropping $managerId memory for $objectName =" +
@@ -84,9 +84,9 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     if (env ne null) {
       env.memoryManager.synchronized {
         env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
-        val key = objectName -> memoryMode
+        val key = new MemoryOwner(objectName, memoryMode)
         if (memoryForObject.containsKey(key)) {
-          if (memoryForObject.addTo(key, -numBytes) == numBytes) {
+          if (memoryForObject.addValue(key, -numBytes) <= 0) {
             memoryForObject.removeAsLong(key)
           }
         }
@@ -106,7 +106,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     val env = SparkEnv.get
     if (env ne null) {
       env.memoryManager.synchronized {
-        memoryForObject.getLong(objectName -> MemoryMode.OFF_HEAP)
+        memoryForObject.getLong(MemoryOwner(objectName, offHeap = true))
       }
     }
     0L
@@ -142,4 +142,18 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     * Initializes the memoryManager
     */
   override def init(): Unit = {}
+}
+
+case class MemoryOwner(owner: String, offHeap: Boolean) {
+
+  def this(owner: String, mode: MemoryMode) = {
+    this(owner, mode eq MemoryMode.OFF_HEAP)
+  }
+
+  override def hashCode(): Int = {
+    val h = owner.hashCode
+    if (offHeap) -h else h
+  }
+
+  override def toString: String = owner + (if (offHeap) "(OFFHEAP)" else "(HEAP)")
 }

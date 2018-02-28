@@ -112,9 +112,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
-        columnBatchTableName("COLUMNTABLE7").toUpperCase,
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP.COLUMNTABLE7"), true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2)) // Seq(5, 6))
 
@@ -157,9 +156,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
-        columnBatchTableName("COLUMNTABLE7").toUpperCase,
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP.COLUMNTABLE7"), true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2), Seq(5, 6))
 
@@ -208,9 +206,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
-        columnBatchTableName("COLUMNTABLE7").toUpperCase()
-      , true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP.COLUMNTABLE7"), true).asInstanceOf[PartitionedRegion]
 
     snc.sql("insert into COLUMNTABLE7 VALUES(1,11)")
     snc.sql("insert into COLUMNTABLE7 VALUES(2,11)")

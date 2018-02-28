@@ -51,12 +51,12 @@ class DynamicJarInstallationDUnitTest(val s: String)
 
   def verifyClassOnExecutors(snc: SnappyContext, className: String,
       version: String, count: Int): Unit = {
-    val countInstances = Utility.mapExecutors(snc,
+    val countInstances = Utility.mapExecutors[Int](snc.sparkContext,
       () => {
         if (DynamicJarInstallationDUnitTest.loadClass(className, version)) {
           Seq(1).iterator
         } else Iterator.empty
-      }).count
+      }).length
 
     assert(countInstances == count,
       s"Assertion failed as countInstances=$countInstances and count=$count did not match")

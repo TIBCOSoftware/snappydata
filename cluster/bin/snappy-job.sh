@@ -286,3 +286,5 @@ case $cmd in
     curl -X DELETE ${jobServerURL} $CURL_OPTS  ${securePart}
   ;;
 esac
+
+echo

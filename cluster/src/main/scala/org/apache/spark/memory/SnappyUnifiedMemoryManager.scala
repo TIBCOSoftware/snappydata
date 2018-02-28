@@ -100,15 +100,14 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
-  @volatile private var _memoryForObjectMap:
-    ObjectLongHashMap[(String, MemoryMode)] = _
+  @volatile private var _memoryForObjectMap: ObjectLongHashMap[MemoryOwner] = _
 
-  private[memory] def memoryForObject: ObjectLongHashMap[(String, MemoryMode)] = {
+  private[memory] def memoryForObject: ObjectLongHashMap[MemoryOwner] = {
     val memoryMap = _memoryForObjectMap
     if (memoryMap eq null) synchronized {
       val memoryMap = _memoryForObjectMap
       if (memoryMap eq null) {
-        _memoryForObjectMap = ObjectLongHashMap.withExpectedSize[(String, MemoryMode)](16)
+        _memoryForObjectMap = ObjectLongHashMap.withExpectedSize[MemoryOwner](16)
         // transfer the memory map from tempMemoryManager on first use
         if (!bootManager) {
           logInfo(s"Allocating boot time memory to $managerId ")
@@ -119,11 +118,12 @@ class SnappyUnifiedMemoryManager private[memory](
           if (bootTimeMap ne null) {
             // Not null only for cluster mode. In local mode
             // as Spark is booted first temp memory manager is not used
-            bootTimeMap.forEach(new ObjLongConsumer[(String, MemoryMode)] {
-              override def accept(p: (String, MemoryMode), numBytes: Long): Unit = {
+            bootTimeMap.forEach(new ObjLongConsumer[MemoryOwner] {
+              override def accept(p: MemoryOwner, numBytes: Long): Unit = {
                 if (numBytes > 0) {
-                  acquireStorageMemoryForObject(p._1,
-                    MemoryManagerCallback.storageBlockId, numBytes, p._2, null, shouldEvict = true)
+                  val mode = if (p.offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
+                  acquireStorageMemoryForObject(p.owner,
+                    MemoryManagerCallback.storageBlockId, numBytes, mode, null, shouldEvict = true)
                 }
                 // TODO: SW: if above fails then this should throw exception
                 // and _memoryForObjectMap made null again?
@@ -162,12 +162,12 @@ class SnappyUnifiedMemoryManager private[memory](
 
       val bootManagerMap = bootManager.memoryForObject
       val memoryForObject = self.memoryForObject
-      memoryForObject.forEach(new ObjLongConsumer[(String, MemoryMode)] {
-        override def accept(p: (String, MemoryMode), numBytes: Long): Unit = {
-          val objectName = p._1
+      memoryForObject.forEach(new ObjLongConsumer[MemoryOwner] {
+        override def accept(p: MemoryOwner, numBytes: Long): Unit = {
+          val objectName = p.owner
           if (!objectName.equals(SPARK_CACHE) &&
               !objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
-            bootManagerMap.addTo(p, numBytes)
+            bootManagerMap.addValue(p, numBytes)
           }
         }
       })
@@ -179,7 +179,8 @@ class SnappyUnifiedMemoryManager private[memory](
     * Clears the internal map
     */
   override def clear(): Unit = synchronized {
-    if (_memoryForObjectMap ne null) _memoryForObjectMap.clear()
+    val memoryForObject = _memoryForObjectMap
+    if (memoryForObject ne null) memoryForObject.clear()
   }
 
   private[this] val threadsWaitingForStorage = new AtomicInteger()
@@ -263,7 +264,7 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   override def getOffHeapMemory(objectName: String): Long = synchronized {
-    if (maxOffHeapMemory > 0) memoryForObject.getLong(objectName -> MemoryMode.OFF_HEAP)
+    if (maxOffHeapMemory > 0) memoryForObject.getLong(MemoryOwner(objectName, offHeap = true))
     else 0L
   }
 
@@ -295,8 +296,8 @@ class SnappyUnifiedMemoryManager private[memory](
     val memoryForObject = self.memoryForObject
     if (memoryForObject.size() > 0) {
       memoryLog.append("\n\t").append("Objects:\n")
-      memoryForObject.forEach(new ObjLongConsumer[(String, MemoryMode)] {
-        override def accept(p: (String, MemoryMode), numBytes: Long): Unit = {
+      memoryForObject.forEach(new ObjLongConsumer[MemoryOwner] {
+        override def accept(p: MemoryOwner, numBytes: Long): Unit = {
           memoryLog.append(separator).append(p).append(" = ").append(numBytes)
         }
       })
@@ -313,16 +314,18 @@ class SnappyUnifiedMemoryManager private[memory](
     val changeOwner = new BiConsumer[String, AnyRef] {
       override def accept(fromOwner: String, runnable: AnyRef): Unit = {
         if (fromOwner ne null) {
+          val offHeap = mode eq MemoryMode.OFF_HEAP
           val memoryForObject = self.memoryForObject
           // "from" was changed to "to"
-          val prev = memoryForObject.addTo(fromOwner -> mode, -totalSize)
-          if (prev >= totalSize) {
-            memoryForObject.addTo(toOwner -> mode, totalSize)
+          val from = MemoryOwner(fromOwner, offHeap)
+          val cur = memoryForObject.addValue(from, -totalSize)
+          if (cur >= 0) {
+            memoryForObject.addValue(MemoryOwner(toOwner, offHeap), totalSize)
           } else {
             // something went wrong with size accounting
-            memoryForObject.addTo(fromOwner -> mode, totalSize)
+            memoryForObject.addValue(from, totalSize)
             throw new IllegalStateException(
-              s"Unexpected move of $totalSize bytes from owner $fromOwner size=$prev")
+              s"Unexpected move of $totalSize bytes from owner $fromOwner size=${cur + totalSize}")
           }
         } else if (allowNonAllocator) {
           // add to storage pool
@@ -667,13 +670,13 @@ class SnappyUnifiedMemoryManager private[memory](
           logWarning(s"Could not allocate memory for $blockId of " +
             s"$objectName size=$numBytes. Memory pool size ${storagePool.memoryUsed}")
         } else {
-          memoryForObject.addTo(objectName -> memoryMode, numBytes)
+          memoryForObject.addValue(new MemoryOwner(objectName, memoryMode), numBytes)
           logDebug(s"Allocated memory for $blockId of " +
             s"$objectName size=$numBytes. Memory pool size ${storagePool.memoryUsed}")
         }
         couldEvictSomeData
       } else {
-        memoryForObject.addTo(objectName -> memoryMode, numBytes)
+        memoryForObject.addValue(new MemoryOwner(objectName, memoryMode), numBytes)
         enoughMemory
       }
     }
@@ -710,13 +713,13 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       memoryMode: MemoryMode): Unit = synchronized {
     logDebug(s"releasing $managerId memory for $objectName = $numBytes")
-    val key = objectName -> memoryMode
+    val key = new MemoryOwner(objectName, memoryMode)
     super.releaseStorageMemory(numBytes, memoryMode)
     val offHeap = memoryMode eq MemoryMode.OFF_HEAP
     wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
     val memoryForObject = self.memoryForObject
     if (memoryForObject.containsKey(key)) {
-      if (memoryForObject.addTo(key, -numBytes) == numBytes) {
+      if (memoryForObject.addValue(key, -numBytes) <= 0) {
         memoryForObject.removeAsLong(key)
       }
     }
@@ -729,7 +732,7 @@ class SnappyUnifiedMemoryManager private[memory](
   override def dropStorageMemoryForObject(name: String,
                                           memoryMode: MemoryMode,
                                           ignoreNumBytes: Long): Long = synchronized {
-    val key = name -> memoryMode
+    val key = new MemoryOwner(name, memoryMode)
     val memoryForObject = self.memoryForObject
     val bytesToBeFreed = memoryForObject.getLong(key)
     val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
@@ -746,12 +749,12 @@ class SnappyUnifiedMemoryManager private[memory](
   // Test Hook. Not to be used anywhere else
   private[memory] def dropAllObjects(memoryMode: MemoryMode): Unit = synchronized {
     val memoryForObject = self.memoryForObject
-    val clearList = new mutable.ArrayBuffer[(String, MemoryMode)]
-    memoryForObject.forEach(new ObjLongConsumer[(String, MemoryMode)] {
-      override def accept(p: (String, MemoryMode), numBytes: Long): Unit = {
-        if (p._2 eq memoryMode) {
+    val clearList = new mutable.ArrayBuffer[MemoryOwner]
+    memoryForObject.forEach(new ObjLongConsumer[MemoryOwner] {
+      override def accept(p: MemoryOwner, numBytes: Long): Unit = {
+        val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+        if (p.offHeap == offHeap) {
           SnappyUnifiedMemoryManager.super.releaseStorageMemory(numBytes, memoryMode)
-          val offHeap = memoryMode eq MemoryMode.OFF_HEAP
           wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
           clearList += p
         }
