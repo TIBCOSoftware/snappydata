@@ -66,22 +66,9 @@ class SortedColumnTests extends ColumnTablesTestBase {
     SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
     SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
   }
-
-  test("insert performance") {
-    val snc = this.snc.snappySession
-    val colTableName = "colDeltaTable"
-    val numElements = 99999551
-    val numBuckets = SortedColumnTests.cores
-
-    SortedColumnTests.verfiyInsertDataExists(numElements, snc)
-    SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
-    SortedColumnTests.testInsertPerformance(snc, colTableName, numBuckets, numElements)
-  }
 }
 
 object SortedColumnTests extends Logging {
-
-  private val cores = math.min(8, Runtime.getRuntime.availableProcessors())
   private val baseDataPath = s"/home/vivek/work/testData/local_index"
 
   def filePathInsert(n: Long) : String = s"$baseDataPath/insert$n"
@@ -141,12 +128,12 @@ object SortedColumnTests extends Logging {
     val updateDF = session.read.load(filePathUpdate(numElements))
 
     try {
-      verifyTotalRows(session: SnappySession, colTableName, numElements, false)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false)
       try {
         updateDF.write.putInto(colTableName)
       } finally {
       }
-      verifyTotalRows(session: SnappySession, colTableName, numElements, true)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true)
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)
@@ -157,33 +144,6 @@ object SortedColumnTests extends Logging {
     // def sorted(l: List[Row]) = l.isEmpty ||
     //    l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
     // assert(sorted(rs2.toList))
-
-    session.sql(s"drop table $colTableName")
-    session.conf.unset(Property.ColumnBatchSize.name)
-    session.conf.unset(Property.ColumnMaxDeltaRows.name)
-  }
-
-  def testInsertPerformance(session: SnappySession, colTableName: String, numBuckets: Int,
-      numElements: Long): Unit = {
-    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
-    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
-
-    createColumnTable(session, colTableName, numBuckets, numElements)
-    val updateDF = session.read.load(filePathUpdate(numElements))
-
-    try {
-      verifyTotalRows(session: SnappySession, colTableName, numElements, false)
-      try {
-        updateDF.write.putInto(colTableName)
-      } finally {
-      }
-      verifyTotalRows(session: SnappySession, colTableName, numElements, true)
-    } catch {
-      case t: Throwable =>
-        logError(t.getMessage, t)
-        throw t
-    }
 
     session.sql(s"drop table $colTableName")
     session.conf.unset(Property.ColumnBatchSize.name)
