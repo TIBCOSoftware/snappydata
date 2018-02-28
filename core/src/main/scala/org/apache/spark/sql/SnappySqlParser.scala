@@ -42,7 +42,7 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
   /** Creates TableIdentifier for a given SQL string. */
   override def parseTableIdentifier(sqlText: String): TableIdentifier = {
-    sqlParser.parse(sqlText, sqlParser.tableIdentifier.run())
+    sqlParser.parse(sqlText, sqlParser.parsedTableIdentifier.run())
   }
 
   override def parsePlan(sqlText: String): LogicalPlan = {

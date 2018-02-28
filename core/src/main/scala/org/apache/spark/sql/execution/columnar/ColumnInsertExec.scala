@@ -935,8 +935,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       ExprCode("", "false", nullCount)))
   }
 
-  override def simpleString: String = s"ColumnInsert($columnTable) partitionColumns=" +
-      s"${partitionColumns.mkString("[", ",", "]")} numBuckets = $numBuckets " +
+  override def simpleString: String = s"ColumnInsert(${externalStore.tableName}) " +
+      s"partitionColumns=${partitionColumns.mkString("[", ",", "]")} numBuckets = $numBuckets " +
       s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows compression=$compressionCodec"
 }
 
