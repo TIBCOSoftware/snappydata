@@ -100,6 +100,7 @@ object SortedColumnTests extends Logging {
   def verifyTotalRows(session: SnappySession, columnTable: String, numElements: Long,
       finalCall: Boolean): Unit = {
     val colDf = session.sql(s"select * from $columnTable")
+    val result = colDf.collect()
     val insDF = session.read.parquet(filePathInsert(numElements))
     val verifyDF = if (finalCall) {
       insDF.union(session.read.parquet(filePathUpdate(numElements)))
@@ -113,9 +114,6 @@ object SortedColumnTests extends Logging {
     session.sql(s"drop table if exists $colTableName")
     session.sql(s"create table $colTableName (id int, addr string, status boolean) " +
         s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id')")
-
-    val insertDF = session.read.load(filePathInsert(numElements))
-    insertDF.write.insertInto(colTableName)
   }
 
   def testBasicInsert(session: SnappySession, colTableName: String, numBuckets: Int,
@@ -125,6 +123,8 @@ object SortedColumnTests extends Logging {
     session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
     createColumnTable(session, colTableName, numBuckets, numElements)
+    val insertDF = session.read.load(filePathInsert(numElements))
+    insertDF.write.insertInto(colTableName)
     val updateDF = session.read.load(filePathUpdate(numElements))
 
     try {
