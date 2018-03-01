@@ -174,8 +174,7 @@ case class PutIntoColumnTable(table: LogicalPlan,
     insert: Insert, update: Update) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
-    "insertCount", LongType)() :: AttributeReference(
-    "updateCount", LongType)() :: Nil
+    "count", LongType)() :: Nil
 
   override lazy val resolved: Boolean = childrenResolved &&
       update.output.zip(insert.output).forall {

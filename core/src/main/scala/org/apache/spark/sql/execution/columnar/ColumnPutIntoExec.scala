@@ -27,8 +27,7 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
     updatePlan: SparkPlan) extends BinaryExecNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
-    "insertCount", LongType)() :: AttributeReference(
-    "updateCount", LongType)() :: Nil
+    "count", LongType)() :: Nil
 
   override def left: SparkPlan = insertPlan
 
@@ -44,11 +43,10 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
     val u = updatePlan.executeCollectPublic().map(_.apply(0).asInstanceOf[Long]).toSeq.foldLeft(0L)(_ + _)
     // Then insert the rows which are not there in the table
     val i = insertPlan.executeCollectPublic().map(_.apply(0).asInstanceOf[Long]).toSeq.foldLeft(0L)(_ + _)
-    val resultRow = new UnsafeRow(2)
+    val resultRow = new UnsafeRow(1)
     val data = new Array[Byte](32)
     resultRow.pointTo(data, 32)
-    resultRow.setLong(0, i)
-    resultRow.setLong(1, u)
+    resultRow.setLong(0, i + u)
     Seq(resultRow).toArray
   }
 }
