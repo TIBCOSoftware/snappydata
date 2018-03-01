@@ -272,7 +272,8 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.insert("row_table", Row(2, "2", null, 2))
     snc.insert("row_table", Row(4, "4", "3", 3))
 
-    snc.sql("update row_table set col3 = '5' where col2 in (select col2 from col_table)")
+    val df = snc.sql("update row_table set col3 = '5' where col2 in (select col2 from col_table)")
+    df.show
 
     val resultdf = snc.table("row_table").collect()
     assert(resultdf.length == 4)
@@ -422,6 +423,53 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     // TODO What should be the behaviour ?
     assert(resultdf.filter(r => r.equals(Row(3, null, 3))).size == 2)
   }
+
+  test("PutInto op changed row count validation") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 INT)" +
+        " using column options(BUCKETS '4', PARTITION_BY 'col1', key_columns 'col2') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 INT)")
+
+    snc.insert("row_table", Row(1, "1", 11))
+    snc.insert("row_table", Row(9, "9", 99))
+    snc.insert("row_table", Row(2, "2", 22))
+    snc.insert("row_table", Row(3, "4", 3))
+
+    snc.insert("col_table", Row(1, "1", 1))
+    snc.insert("col_table", Row(9, "9", 9))
+    snc.insert("col_table", Row(2, "2", 2))
+    snc.insert("col_table", Row(3, "5", 3))
+
+    val df = snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    assert(df.collect()(0)(0) == 1)
+    assert(df.collect()(0)(1) == 3)
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 5)
+  }
+
+  test("PutInto with wit only key values") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1', key_columns 'col1') ")
+    snc.sql("create table row_table(col1 INT)")
+
+    snc.insert("row_table", Row(1))
+    snc.insert("row_table", Row(2))
+    snc.insert("row_table", Row(3))
+
+    snc.insert("col_table", Row(1))
+    snc.insert("col_table", Row(2))
+    snc.insert("col_table", Row(3))
+
+    intercept[AnalysisException]{
+      snc.sql("put into table col_table" +
+          "   select * from row_table")
+    }
+
+  }
+
 
   test("PutInto with multiple column key") {
     val snc = new SnappySession(sc)
@@ -639,39 +687,5 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     intercept[AnalysisException]{
       df2.write.deleteFrom("col_table")
     }
-  }
-
-  // This test should be moved to a query suite.
-  test("Double exists") {
-    val snc = new SnappySession(sc)
-    snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row ")
-    snc.sql("create table r2(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row")
-
-    snc.sql("create table r3(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row")
-
-    snc.insert("r1", Row(1, "1", "1", 100))
-    snc.insert("r1", Row(2, "2", "2", 2))
-    snc.insert("r1", Row(4, "4", "4", 4))
-    snc.insert("r1", Row(7, "7", "7", 4))
-
-    snc.insert("r2", Row(1, "1", "1", 1))
-    snc.insert("r2", Row(2, "2", "2", 2))
-    snc.insert("r2", Row(3, "3", "3", 3))
-
-    snc.insert("r3", Row(1, "1", "1", 1))
-    snc.insert("r3", Row(2, "2", "2", 2))
-    snc.insert("r3", Row(4, "4", "4", 4))
-
-    val df = snc.sql("select * from r1 where " +
-        "(exists (select col1 from r2 where r2.col1=r1.col1) " +
-        "or exists(select col1 from r3 where r3.col1=r1.col1))")
-
-    val result = df.collect()
-    checkAnswer(df, Seq(Row(1, "1", "1", 100),
-      Row(2, "2", "2", 2), Row(4, "4", "4", 4) ))
-    assert(!result.contains(Row(7, "7", "7", 7)))
   }
 }

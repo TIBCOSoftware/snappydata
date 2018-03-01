@@ -18,23 +18,37 @@ package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, UnsafeRow}
 import org.apache.spark.sql.execution.{BinaryExecNode, SparkPlan}
+import org.apache.spark.sql.types.LongType
 
 
 case class ColumnPutIntoExec(insertPlan: SparkPlan,
     updatePlan: SparkPlan) extends BinaryExecNode {
 
+  override lazy val output: Seq[Attribute] = AttributeReference(
+    "insertCount", LongType)() :: AttributeReference(
+    "updateCount", LongType)() :: Nil
+
   override def left: SparkPlan = insertPlan
 
   override def right: SparkPlan = updatePlan
 
-  override def output: Seq[Attribute] = insertPlan.output
-
   override protected def doExecute(): RDD[InternalRow] = {
+    val resultRow = executeCollect()
+    sqlContext.sparkContext.parallelize(resultRow, 1)
+  }
+
+  override def executeCollect(): Array[InternalRow] = {
     // First update the rows which are present in the table
-    updatePlan.execute()
+    val u = updatePlan.executeCollectPublic().map(_.apply(0).asInstanceOf[Long]).toSeq.foldLeft(0L)(_ + _)
     // Then insert the rows which are not there in the table
-    insertPlan.execute()
+    val i = insertPlan.executeCollectPublic().map(_.apply(0).asInstanceOf[Long]).toSeq.foldLeft(0L)(_ + _)
+    val resultRow = new UnsafeRow(2)
+    val data = new Array[Byte](32)
+    resultRow.pointTo(data, 32)
+    resultRow.setLong(0, i)
+    resultRow.setLong(1, u)
+    Seq(resultRow).toArray
   }
 }

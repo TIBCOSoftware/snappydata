@@ -57,6 +57,11 @@ object ColumnTableBulkOps {
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
         val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
+        if (updateExpressions.isEmpty) {
+          throw new AnalysisException(
+            s"PutInto is attempted without any column which can be updated." +
+                s" Provide some columns apart from key column(s)")
+        }
 
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
@@ -174,9 +179,9 @@ case class PutIntoColumnTable(table: LogicalPlan,
 
   override lazy val resolved: Boolean = childrenResolved &&
       update.output.zip(insert.output).forall {
-        case (childAttr, tableAttr) =>
-          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
-            tableAttr.dataType)
+        case (updateAttr, insertAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(updateAttr.dataType,
+            insertAttr.dataType)
       }
 
   override def left: LogicalPlan = update
