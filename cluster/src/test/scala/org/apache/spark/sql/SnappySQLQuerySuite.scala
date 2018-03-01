@@ -225,22 +225,6 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     }
   }
 
-  test("SnappyAggregation partitioning") {
-
-    val dimension1 = sc.parallelize(
-      (1 to 1000).map(i => TestDatak(i % 10, i.toString, i % 10)))
-    val refDf = snc.createDataFrame(dimension1)
-    snc.sql("DROP TABLE IF EXISTS PR_TABLE20")
-
-    snc.sql("CREATE TABLE PR_TABLE20(OrderId INT, description String, " +
-        "OrderRef INT) USING column options (" +
-        "PARTITION_BY 'OrderId,OrderRef')")
-    refDf.write.insertInto("PR_TABLE20")
-    val groupBy = snc.sql(s"select  orderId, sum(OrderRef) from pr_table20 group by  orderId")
-    println(groupBy.queryExecution.executedPlan)
-    groupBy.show
-  }
-
   test("Double exists") {
     val snc = new SnappySession(sc)
     snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
@@ -275,5 +259,3 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
 }
 
 case class LowerCaseData(n: Int, l: String)
-
-case class TestDatak(key1: Int, value: String, ref: Int)

@@ -449,7 +449,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.length == 5)
   }
 
-  test("PutInto with wit only key values") {
+  test("PutInto with only key values") {
     val snc = new SnappySession(sc)
     snc.sql("create table col_table(col1 INT)" +
         " using column options(BUCKETS '2', PARTITION_BY 'col1', key_columns 'col1') ")
