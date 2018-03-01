@@ -182,9 +182,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     } else (params2(index2), params1(index1))
     val query = s"select * from $colTableName where id between $low and $high"
     // scalastyle:off
-    println(s"Query = $query")
+    // println(s"Query = $query")
     // scalastyle:on
-    val expectedNumResults = 1
+    val expectedNumResults = high - low + 1
     val result = session.sql(query).collect()
     assert(result.length === expectedNumResults)
   }
