@@ -22,8 +22,9 @@ import io.snappydata.Property
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{Dataset, Row, SnappySession}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.util.Benchmark
 import org.apache.spark.sql.snappy._
 
@@ -100,7 +101,17 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
     def execute(): Unit = {
       insertDF.write.insertInto(colTableName)
-      updateDF.write.putInto(colTableName)
+      try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
+        // To force SMJ
+        session.conf.set(Property.HashJoinSize.name, "-1")
+        session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+        updateDF.write.putInto(colTableName)
+      } finally {
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
+        session.conf.unset(Property.HashJoinSize.name)
+        session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
+      }
     }
 
     def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
@@ -135,9 +146,6 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
       session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
       session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
-      // To force SMJ
-      session.conf.set(Property.HashJoinSize.name, "-1")
-      session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
       // Get numbers
       addBenchmark(s"Benchmark Insert", Map.empty)
@@ -150,8 +158,6 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.sql(s"drop table $colTableName")
       session.conf.unset(Property.ColumnBatchSize.name)
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
-      session.conf.unset(Property.HashJoinSize.name)
-      session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
     }
   }
 
@@ -211,7 +217,17 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         SortedColumnTests.verfiyUpdateDataExists(numElements, session)
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
         insertDF.write.insertInto(colTableName)
-        updateDF.write.putInto(colTableName)
+        try {
+          ColumnTableScan.setCaseOfSortedInsertValue(true)
+          // To force SMJ
+          session.conf.set(Property.HashJoinSize.name, "-1")
+          session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+          updateDF.write.putInto(colTableName)
+        } finally {
+          ColumnTableScan.setCaseOfSortedInsertValue(false)
+          session.conf.unset(Property.HashJoinSize.name)
+          session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
+        }
         SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
         doGC()
       }
@@ -234,9 +250,6 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
       session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
       session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
-      // To force SMJ
-      session.conf.set(Property.HashJoinSize.name, "-1")
-      session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
 
       // Get numbers
       addBenchmark(s"Benchmark Query", Map.empty)
@@ -245,8 +258,6 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.sql(s"drop table $colTableName")
       session.conf.unset(Property.ColumnBatchSize.name)
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
-      session.conf.unset(Property.HashJoinSize.name)
-      session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
     }
   }
 }
