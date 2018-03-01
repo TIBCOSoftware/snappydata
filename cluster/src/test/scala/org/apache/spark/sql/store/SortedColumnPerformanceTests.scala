@@ -33,6 +33,31 @@ import org.apache.spark.sql.snappy._
 class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
   val cores = math.min(16, Runtime.getRuntime.availableProcessors())
+  val params1 = Array(13569076, 17998179, 9419419, 44644913, 1174748, 76505417, 9699570, 96549560,
+    44684874, 67674113, 38839260, 58716946, 33068333, 97110819, 51279965, 46250194, 65832886,
+    98992603, 7126269, 9845093, 2877558, 60244101, 63160992, 82282474, 81673698, 91631052,
+    77717653, 67373948, 37385679, 75961207, 78434315, 98825634, 43882466, 18018786, 7808668,
+    19632801, 30125691, 55476715, 43826489, 41326443, 13466708, 30848640, 47382305, 12067044,
+    81566988, 21935941, 18178122, 42720070, 81200959, 16285044, 84284114, 93065798, 12464370,
+    5222864, 22389603, 97753722, 83899690, 90357881, 22993529, 10708639, 39246871, 55653767,
+    55909650, 94994773, 92211265, 95744008, 70720796, 86107549, 34261186, 72191283, 75277341,
+    64128962, 93371222, 94035378, 96367676, 6787521, 82245290, 75838815, 77014387, 88435719,
+    93890505, 87861082, 90636665, 99129488, 30432779, 29502950, 31753051, 68481084, 19986638,
+    56221463, 21589819, 96818165, 70554438, 65748901, 61371509, 93856783, 24039784, 51810391,
+    55405955, 62556824)
+  val params2 = Array(2822682, 96317373, 23875999, 67328324, 70202326, 14652637, 70699805,
+    33034895, 9104168, 15399707, 26459422, 79150390, 23757838, 67460883, 23426218, 58726742,
+    12520090, 21885426, 9118939, 27821302, 81399634, 96658989, 38587123, 75822699, 55853922,
+    57289458, 28375985, 80840956, 75546714, 49473471, 19073208, 29467000, 34507804, 1748290,
+    61236038, 64227216, 58175833, 96048793, 79804735, 85856134, 13616414, 53002385, 15917176,
+    54710826, 61796296, 99304626, 62877552, 28173172, 63626381, 97972909, 41824553, 48946074,
+    8442458, 50791296, 65872661, 39681364, 20903728, 64098634, 57273553, 19998263, 69477566,
+    64713280, 30414720, 33248367, 4623977, 80330125, 18667890, 85186129, 43397844, 74268955,
+    50410992, 97795647, 87207454, 58249717, 45604904, 89560569, 3713215, 22181406, 33083136,
+    29096063, 23838745, 77591496, 22705892, 37387169, 63285346, 49230400, 51166869, 73514000,
+    31413134, 94888264, 25813680, 24970373, 6287985, 47167479, 82493598, 7588308, 28311104,
+    86403816, 5200693, 71129592)
+
   override def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
     val conf = new SparkConf()
         .setIfMissing("spark.master", s"local[$cores]")
@@ -135,20 +160,36 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val colTableName = "colDeltaTable"
     val numElements = 99999551
     val numBuckets = cores
-    val numIters = 10
+    val numIters = 100
 
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters)(executeQuery_PointQuery)
+    benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters)(executeQuery_RangeQuery)
   }
 
   def executeQuery_PointQuery(session: SnappySession, colTableName: String,
       numIters: Int, iterCount: Int): Unit = {
-    val params = Array(1, 2, 3, 4, 5)
-    val index = if (iterCount < 0) 0 else iterCount % params.length
-    val query = s"select * from $colTableName where id = ${params(index)}"
+    val index = if (iterCount < 0) 0 else iterCount % params1.length
+    val query = s"select * from $colTableName where id = ${params1(index)}"
     // scalastyle:off
     println(s"Query = $query")
     // scalastyle:on
     val expectedNumResults = 1
+    val result = session.sql(query).collect()
+    assert(result.length === expectedNumResults)
+  }
+
+  def executeQuery_RangeQuery(session: SnappySession, colTableName: String,
+      numIters: Int, iterCount: Int): Unit = {
+    val index1 = if (iterCount < 0) 0 else iterCount % params1.length
+    val index2 = if (iterCount < 0) 0 else iterCount % params2.length
+    val (low, high) = if (params1(index1) < params2(index2)) {
+      (params1(index1), params2(index2))
+    } else (params2(index2), params1(index1))
+    val query = s"select * from $colTableName where id between $low and $high"
+    // scalastyle:off
+    // println(s"Query = $query")
+    // scalastyle:on
+    val expectedNumResults = high - low + 1
     val result = session.sql(query).collect()
     assert(result.length === expectedNumResults)
   }
