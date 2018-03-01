@@ -153,15 +153,22 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     }
   }
 
-  test("query performance") {
+  test("PointQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
-    val numElements = 99999551
+    val numElements = 9999551
     val numBuckets = cores
     val numIters = 100
-
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
       "PointQuery")(executeQuery_PointQuery)
+  }
+
+  test("RangeQuery performance") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 9999551
+    val numBuckets = cores
+    val numIters = 100
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
       "RangeQuery")(executeQuery_RangeQuery)
   }
@@ -171,7 +178,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val index = if (iterCount < 0) 0 else iterCount % params1.length
     val query = s"select * from $colTableName where id = ${params1(index)}"
     // scalastyle:off
-    println(s"Query = $query")
+    // println(s"Query = $query")
     // scalastyle:on
     val expectedNumResults = 1
     val result = session.sql(query).collect()
