@@ -57,14 +57,6 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     System.runFinalization()
   }
 
-  private def collect(df: Dataset[Row], expectedNumResults: Int): Unit = {
-    val result = df.collect()
-    assert(result.length === expectedNumResults)
-    // scalastyle:off
-    println(s"Count = ${result.length}")
-    // scalastyle:on
-  }
-
   test("insert performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
@@ -135,6 +127,80 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
       session.conf.unset(Property.HashJoinSize.name)
       session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
+    }
+  }
+
+  test("query performance") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 99999551
+    val numBuckets = cores
+    val numIters = 10
+
+    benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters)(executeQuery_PointQuery)
+  }
+
+  def executeQuery_PointQuery(session: SnappySession, colTableName: String,
+      numIters: Int, iterCount: Int): Unit = {
+    val params = Array(1, 2, 3, 4, 5)
+    val index = if (iterCount < 0) 0 else iterCount % params.length
+    val query = s"select * from $colTableName where id = ${params(index)}"
+    // scalastyle:off
+    println(s"Query = $query")
+    // scalastyle:on
+    val expectedNumResults = 1
+    val result = session.sql(query).collect()
+    assert(result.length === expectedNumResults)
+  }
+
+  def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
+      numElements: Long, numIters: Int)(f : (SnappySession, String, Int, Int) => Unit): Unit = {
+    val benchmark = new Benchmark("Benchmark Query", numElements, outputPerIteration = true)
+    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements))
+    val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements))
+
+    def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
+      val defaults = params.keys.flatMap {
+        k => session.conf.getOption(k).map((k, _))
+      }
+
+      def prepare(): Unit = {
+        params.foreach { case (k, v) => session.conf.set(k, v) }
+        SortedColumnTests.verfiyInsertDataExists(numElements, session)
+        SortedColumnTests.verfiyUpdateDataExists(numElements, session)
+        SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
+        insertDF.write.insertInto(colTableName)
+        updateDF.write.putInto(colTableName)
+        SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+        doGC()
+      }
+
+      def cleanup(): Unit = {
+        SnappySession.clearAllCache()
+        defaults.foreach { case (k, v) => session.conf.set(k, v) }
+        doGC()
+      }
+
+      def testCleanup(): Unit = {
+        doGC()
+      }
+
+      ColumnCacheBenchmark.addCaseWithCleanup(benchmark, name, numIters,
+        prepare, cleanup, testCleanup) { i => f(session, colTableName, numIters, i)}
+    }
+
+    try {
+      session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+      session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+      session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+
+      // Get numbers
+      addBenchmark(s"Benchmark Query", Map.empty)
+      benchmark.run()
+    } finally {
+      session.sql(s"drop table $colTableName")
+      session.conf.unset(Property.ColumnBatchSize.name)
+      session.conf.unset(Property.ColumnMaxDeltaRows.name)
     }
   }
 }
