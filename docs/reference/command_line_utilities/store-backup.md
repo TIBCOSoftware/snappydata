@@ -1,4 +1,5 @@
-# backup and restore
+# Backup and Restore
+
 Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.
 
 An online backup saves the following:
@@ -7,7 +8,7 @@ An online backup saves the following:
 - Configuration files from the member startup.
 - A restore script (restore.sh), written for the member's operating system, that copies the files back to their original locations.
 
-!!!Note:
+!!! Note:
 	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
 	- SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.
 
@@ -51,7 +52,7 @@ An online backup saves the following:
 
 * Make sure the target backup directory exists and has the proper permissions for your members to write to it and create subdirectories.
 
-* You might want to [compact your disk store](../reference/command_line_utilities/store-compact-disk-store.md) before running the backup.
+* You might want to [compact your disk store](store-compact-disk-store.md) before running the backup.
 
 * Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members.)
 
@@ -61,9 +62,9 @@ An online backup saves the following:
 The directory you specify for backup can be used multiple times. Each backup first creates a top-level directory for the backup, under the directory you specify, identified to the minute.</br>
 You can use one of two formats:
 
-* Use a single physical location, such as a network file server. (For example, /export/fileServerDirectory/snappyStoreBackupLocation).
+* Use a single physical location, such as a network file server. (For example, /fileServerDirectory/<SnappyBackupLocation>).
 
-* Use a directory that is local to all host machines in the system. (For example, ./snappyStoreBackupLocation).
+* Use a directory that is local to all host machines in the system. (For example, ./<SnappyBackupLocation>).
 
 <a id="directory-structure"></a>
 ## Backup Directory Structure and Contents
@@ -96,6 +97,8 @@ For each member with persistent data, the backup includes:
 
 * Disk store files for all stores containing persistent tables.
 
+* Backup of all disk stores including the disk stores created for metadata as well as separate disk stores created for row buffer. 
+
 * Configuration files from the member startup (snappydata.properties). These configuration files are not automatically restored, to avoid interfering with any more recent configurations. In particular, if these are extracted from a master jar file, copying the separate files into your working area could override the files in the jar.
 
 * A restore script (restore.sh), written for the member’s operating system, that copies the files back to their original locations.
@@ -111,7 +114,7 @@ To perform a full backup:
 2. Run the backup command, providing your backup directory location.
 
     ```
-    ./bin/snappy backup /<SnappyStoreBackupLocation> -locators=localhost:<peer-discovery-address>
+    ./bin/snappy backup /<SnappyBackupLocation> -locators=localhost:<peer-discovery-address>
     ```
 
 3. Read the message that reports on the success of the operation.
@@ -120,11 +123,11 @@ If the operation is successful, you see a message like this:
 
 ```
 The following disk stores were backed up:
-	1f5dbd41-309b-4997-a50b-95890183f8ce [dev12:/export/dev12a/users/locator1/datadictionary]
-	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [dev12:/export/dev12a/locator1]
-	da31492f-3234-4b7e-820b-30c6b85c19a2 [dev12:/export/dev12a/users/server1/snappy-internal-delta]
-	5a5d7ab2-96cf-4a73-8106-7a816a67f098 [dev12:/export/dev12a/users/server1/datadictionary]
-	42510800-40e3-4abf-bcc4-7b7e8c5af951 [dev12:/export/dev12a/users/server1]
+	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
+	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
+	da31492f-3234-4b7e-820b-30c6b85c19a2 [<hostname>:/<ServerLogDirectory>/snappy-internal-delta]
+	5a5d7ab2-96cf-4a73-8106-7a816a67f098 [<hostname>:/<ServerLogDirectory>/datadictionary]
+	42510800-40e3-4abf-bcc4-7b7e8c5af951 [<hostname>:/<ServerLogDirectory>]
 Backup successful.
 ```
 
@@ -141,17 +144,17 @@ If members are missing from the baseline directory because they were offline or 
 To perform an incremental backup, execute the backup command but specify the baseline directory as well as your incremental backup directory (both can be the same directory). </br>For example:
 
 ```
-./bin/snappy backup -baseline=/<SnappyStoreBackupLocation> /export/<SnappyStoreBackupLocation>/backup -locators=<peer-discovery-address>
+./bin/snappy backup -baseline=<SnappyBackupLocation> <SnappyBackupLocation> -locators=<peer-discovery-address>
 ```
 
 The tool reports on the success of the operation. If the operation is successful, you see a message like this:
 ```
 The following disk stores were backed up:
-	1f5dbd41-309b-4997-a50b-95890183f8ce [dev12:/export/dev12a/userslocator1/datadictionary]
-	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [dev12:/export/dev12a/users/locator1]
-	da31492f-3234-4b7e-820b-30c6b85c19a2 [dev12:/export/dev12a/users/server1/snappy-internal-delta]
-	5a5d7ab2-96cf-4a73-8106-7a816a67f098 [dev12:/export/dev12a/users/server1/datadictionary]
-	42510800-40e3-4abf-bcc4-7b7e8c5af951 [dev12:/export/dev12a/users/server1]
+	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
+	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
+	da31492f-3234-4b7e-820b-30c6b85c19a2 [<hostname>:/<ServerLogDirectory>/snappy-internal-delta]
+	5a5d7ab2-96cf-4a73-8106-7a816a67f098 [<hostname>:/<ServerLogDirectory>/datadictionary]
+	42510800-40e3-4abf-bcc4-7b7e8c5af951 [<hostname>:/<ServerLogDirectory>]
 Backup successful.
 ```
 
@@ -164,7 +167,7 @@ To make additional incremental backups, execute the same backup command describe
 
 | Option | Description |
 |--------|--------|
-|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/SnappyDataBackupLocation/2012-10-01-12-30). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option.|
+|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/<fileServerDirectory>/<SnappyDataBackupLocation>/2018-01-01-12-30). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option.|
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](#backup-directory).|
 |locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the peer-discovery-port used when starting the cluster (default 10334). This is a mandatory field. For example, `-locators=localhost:10334`|
 |bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
@@ -181,7 +184,7 @@ The restore.sh script is generated for each member in the cluster in the timesta
 2. Run each restore script on the host where the backup originated.
 
     ```
-    <SnappyStoreBackupLocation>./<TimestampDirectory>/restore.sh
+    <SnappyBackupLocation>./<TimestampDirectory>/restore.sh
     ```
 
 3. Repeat this procedure as necessary for other members of the distributed system.
@@ -196,7 +199,7 @@ You can also do this manually:
 
 3.  Run the restore scripts. Run each script on the host where the backup originated.
 
-The restore operation copies the files back to their original location.
+The restore operation copies the files back to their original location. All the disk stores including users created one and disk stores for metadata are also restored.
 
 
 <a id="verify"></a>
@@ -206,6 +209,6 @@ To ensure that your backup is successful, you can try the following options:
 
 * Execute the `select count(*) from <table-name>;` query and verify the total number of rows.
 
-* Verify the table details in the [Snappy Pulse UI](../monitoring/monitoring.md#table).
+* Verify the table details in the [Snappy Pulse UI](../../monitoring/monitoring.md#table).
 
 * If you have done updates, you can verify to see if those specific updates are available.
