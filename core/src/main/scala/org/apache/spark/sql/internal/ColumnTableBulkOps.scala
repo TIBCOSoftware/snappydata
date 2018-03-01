@@ -56,7 +56,7 @@ object ColumnTableBulkOps {
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
-        val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
+        val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
         if (updateExpressions.isEmpty) {
           throw new AnalysisException(
             s"PutInto is attempted without any column which can be updated." +
