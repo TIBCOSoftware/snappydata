@@ -23,7 +23,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{Dataset, Row, SnappySession}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.util.Benchmark
 import org.apache.spark.sql.snappy._
 
@@ -89,12 +89,13 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numBuckets = cores
     val numIters = 2
 
-    benchmarkInsert(snc, colTableName, numBuckets, numElements, numIters)
+    benchmarkInsert(snc, colTableName, numBuckets, numElements, numIters, "insert")
   }
 
   def benchmarkInsert(session: SnappySession, colTableName: String, numBuckets: Int,
-      numElements: Long, numIters: Int): Unit = {
-    val benchmark = new Benchmark("Benchmark Insert", numElements, outputPerIteration = true)
+      numElements: Long, numIters: Int, queryMark: String,
+      doVerifyFullSize: Boolean = false): Unit = {
+    val benchmark = new Benchmark(s"Benchmark $queryMark", numElements, outputPerIteration = true)
     val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements))
     val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements))
 
@@ -137,12 +138,14 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
       // Get numbers
-      addBenchmark(s"Benchmark Insert", Map.empty)
+      addBenchmark(s"$queryMark", Map.empty)
       benchmark.run()
 
       // Now verify
-      execute()
-      SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+      if (doVerifyFullSize) {
+        execute()
+        SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+      }
     } finally {
       session.sql(s"drop table $colTableName")
       session.conf.unset(Property.ColumnBatchSize.name)
@@ -157,8 +160,10 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numBuckets = cores
     val numIters = 100
 
-    benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters)(executeQuery_PointQuery)
-    benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters)(executeQuery_RangeQuery)
+    benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
+      "PointQuery")(executeQuery_PointQuery)
+    benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
+      "RangeQuery")(executeQuery_RangeQuery)
   }
 
   def executeQuery_PointQuery(session: SnappySession, colTableName: String,
@@ -190,8 +195,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
   }
 
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
-      numElements: Long, numIters: Int)(f : (SnappySession, String, Int, Int) => Unit): Unit = {
-    val benchmark = new Benchmark("Benchmark Query", numElements, outputPerIteration = true)
+      numElements: Long, numIters: Int, queryMark: String, doVerifyFullSize: Boolean = false)
+      (f : (SnappySession, String, Int, Int) => Unit): Unit = {
+    val benchmark = new Benchmark(s"Benchmark $queryMark", numElements, outputPerIteration = true)
     val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements))
     val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements))
 
@@ -207,7 +213,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
         insertDF.write.insertInto(colTableName)
         updateDF.write.putInto(colTableName)
-        SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+        if (doVerifyFullSize) {
+          SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+        }
         doGC()
       }
 
@@ -231,7 +239,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
       // Get numbers
-      addBenchmark(s"Benchmark Query", Map.empty)
+      addBenchmark(s"$queryMark", Map.empty)
       benchmark.run()
     } finally {
       session.sql(s"drop table $colTableName")
