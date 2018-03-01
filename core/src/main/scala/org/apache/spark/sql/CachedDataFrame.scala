@@ -34,12 +34,13 @@ import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, Unsaf
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import org.apache.spark._
+import _root_.io.snappydata.collection.IntObjectHashMap
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.DefaultMemoryConsumer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
-import org.apache.spark.sql.catalyst.expressions.{Literal, LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
@@ -94,6 +95,10 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     shuffleDependencies.length)
 
   private lazy val rowConverter = UnsafeProjection.create(queryExecution.executedPlan.schema)
+
+  // Map to cache the param literal positions to show correct plan info with
+  // new set of constants
+  private val paramLiterals = IntObjectHashMap.withExpectedSize[ParamLiteral](8)
 
   private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
@@ -223,7 +228,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
         CachedDataFrame.withNewExecutionId(
           sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
           queryExecutionString, CachedDataFrame.queryPlanInfo(
-            queryExecution.executedPlan, allLiterals),
+            queryExecution.executedPlan, allLiterals, paramLiterals),
           currentExecutionId, planProcessingTime)(body)
       } finally {
         currentExecutionId = None
@@ -555,26 +560,25 @@ object CachedDataFrame
     m
   }
 
-  // Some helper fields to show correct plan Info on UI as
-  // per current set of constants even though a cached plan
-  // is executed
-  var pls: Map[Int, ParamLiteral] = null
-  val emptyParameter = ParamLiteral(-1, IntegerType, -1)
 
   private[sql] def queryPlanInfo(plan: SparkPlan,
-      allLiterals: Array[LiteralValue]): SparkPlanInfo = {
-    if (allLiterals.nonEmpty) {
-      if (pls == null) {
-        pls = Map.empty
+      allLiterals: Array[LiteralValue],
+      paramLiterals: IntObjectHashMap[ParamLiteral]): SparkPlanInfo = {
+    if (paramLiterals != null && allLiterals.nonEmpty) {
+      if (paramLiterals.size() == 0) {
+        // paramLiterals = Map.empty
         plan.transformAllExpressions {
           case pl@ParamLiteral(_, _, _p) =>
-            pls = pls + (_p -> pl)
+            paramLiterals.justPut(_p, pl)
             pl
         }
       }
-      if (allLiterals.length == pls.size) {
-        allLiterals.map(x => {
-          val pl = pls.getOrElse(x.position, emptyParameter).currentValue = x.value
+      if (allLiterals.length == paramLiterals.size) {
+        allLiterals.foreach(x => {
+          val pl = paramLiterals.get(x.position)
+          if (pl != null) {
+            pl.currentValue = x.value
+          }
         })
       }
     }

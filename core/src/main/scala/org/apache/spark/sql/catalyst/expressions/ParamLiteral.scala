@@ -189,11 +189,11 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
     ev.copy(initCode, isNullLocal, valueLocal)
   }
 
-  var currentValue: Any = value
+  private[sql] var currentValue: Any = value
 
   override def toString: String = currentValue match {
     case null => "null"
-    case binary: Array[Byte] => s"0x" + DatatypeConverter.printHexBinary(binary)
+    case binary: Array[Byte] => "0x" + DatatypeConverter.printHexBinary(binary)
     case other => other.toString
   }
 }
