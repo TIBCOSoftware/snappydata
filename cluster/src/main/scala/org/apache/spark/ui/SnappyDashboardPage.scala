@@ -346,7 +346,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table id="memberStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center; width: 60px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 60px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("statusTooltip")
@@ -373,7 +373,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("memberType")}
               </span>
             </th>
-            <th style="text-align:center; width: 200px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("cpuUsageTooltip")
@@ -382,7 +382,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("cpuUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 200px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("memoryUsageTooltip")
@@ -391,7 +391,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 200px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("heapMemoryTooltip")
@@ -400,7 +400,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 Heap Memory<br/>(Used / Total)
               </span>
             </th>
-            <th style="text-align:center; width: 200px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("offHeapMemoryTooltip")
@@ -416,7 +416,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   }
 
   private def tableStats(): Seq[Node] = {
-    <div>
+    <div class="container-fluid">
       <table id="tableStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
@@ -447,7 +447,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
               </span>
             </th>
-            <th style="text-align:center; width: 200px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("rowCountTooltip")
@@ -456,7 +456,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
               </span>
             </th>
-            <th style="text-align:center; width: 200px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")
@@ -465,7 +465,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
               </span>
             </th>
-            <th style="text-align:center; width: 200px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
@@ -474,7 +474,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
               </span>
             </th>
-            <th style="text-align:center; width: 200px; vertical-align: middle;">
+            <th style="text-align:center; vertical-align: middle; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("bucketCountTooltip")
@@ -491,7 +491,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def extTableStats(): Seq[Node] = {
 
-    <div>
+    <div class="container-fluid">
       <table id="extTableStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
