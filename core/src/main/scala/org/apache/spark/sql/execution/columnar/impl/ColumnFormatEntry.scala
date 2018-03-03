@@ -485,6 +485,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
           if (isDirect) {
             UnsafeHolder.releaseDirectBuffer(buffer)
           }
+          perfStats.incDecompressedReplaced()
           this
         } else {
           perfStats.incDecompressedReplaceSkipped()

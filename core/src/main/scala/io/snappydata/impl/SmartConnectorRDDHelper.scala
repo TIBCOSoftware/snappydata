@@ -29,7 +29,8 @@ import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.thrift.internal.ClientStatement
 
 import org.apache.spark.Partition
-import org.apache.spark.sql.collection.SmartExecutorBucketPartition
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry}
@@ -166,13 +167,29 @@ object SmartConnectorRDDHelper {
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
     hostList.isEmpty
 
-  def setBucketToServerMappingInfo(
-      bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]] = {
+  private def preferHostName(session: SnappySession): Boolean = {
+    // check if Spark executors are using IP addresses or host names
+    Utils.executorsListener(session.sparkContext) match {
+      case Some(l) =>
+        val preferHost = l.activeStorageStatusList.collectFirst {
+          case status if status.blockManagerId.executorId != "driver" =>
+            val host = status.blockManagerId.host
+            host.indexOf('.') == -1 && host.indexOf("::") == -1
+        }
+        preferHost.isDefined && preferHost.get
+      case _ => false
+    }
+  }
+
+  def setBucketToServerMappingInfo(bucketToServerMappingStr: String,
+      session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
     if (bucketToServerMappingStr != null) {
+      // check if Spark executors are using IP addresses or host names
+      val preferHost = preferHostName(session)
       val arr: Array[String] = bucketToServerMappingStr.split(":")
       var orphanBuckets: ArrayBuffer[Int] = null
       val noOfBuckets = arr(0).toInt
@@ -185,10 +202,11 @@ object SmartConnectorRDDHelper {
         val aBucketInfo: Array[String] = x.split(";")
         val bid: Int = aBucketInfo(0).toInt
         if (!(aBucketInfo(1) == "null")) {
-          // get (addr,host,port)
+          // get (host,addr,port)
           val hostAddressPort = returnHostPortFromServerString(aBucketInfo(1))
-          val host = hostAddressPort._1
-          val netUrl = urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix
+          val hostName = hostAddressPort._1
+          val host = if (preferHost) hostName else hostAddressPort._2
+          val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
           val netUrls = new ArrayBuffer[(String, String)](1)
           netUrls += host -> netUrl
           allNetUrls(bid) = netUrls
@@ -220,8 +238,10 @@ object SmartConnectorRDDHelper {
     Array.empty
   }
 
-  def setReplicasToServerMappingInfo(
-      replicaNodesStr: String): Array[ArrayBuffer[(String, String)]] = {
+  def setReplicasToServerMappingInfo(replicaNodesStr: String,
+      session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
+    // check if Spark executors are using IP addresses or host names
+    val preferHost = preferHostName(session)
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
@@ -230,8 +250,10 @@ object SmartConnectorRDDHelper {
     val netUrls = ArrayBuffer.empty[(String, String)]
     for (host <- hostInfo) {
       val hostAddressPort = returnHostPortFromServerString(host)
-      netUrls += hostAddressPort._1 ->
-          (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+      val hostName = hostAddressPort._1
+      val h = if (preferHost) hostName else hostAddressPort._2
+      netUrls += h ->
+          (urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix)
     }
     Array(netUrls)
   }
@@ -255,10 +277,14 @@ object SmartConnectorRDDHelper {
       (null, null, null)
     } else {
       val host: String = matcher.group(1)
-      // val address: String = matcher.group(2)
+      var address = matcher.group(2)
+      if ((address ne null) && address.length > 0) {
+        address = address.substring(1)
+      } else {
+        address = host
+      }
       val portStr: String = matcher.group(3)
-      // (address, host, portStr)
-      (host, host, portStr)
+      (host, address, portStr)
     }
   }
 }

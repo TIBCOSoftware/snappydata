@@ -34,7 +34,7 @@ import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
-import org.apache.spark.sql.execution.columnar.impl.{ClusteredColumnIterator, ColumnDelta, ColumnFormatEntry, ColumnFormatIterator, ColumnFormatKey, ColumnFormatValue, RemoteEntriesIterator}
+import org.apache.spark.sql.execution.columnar.impl._
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
@@ -335,8 +335,23 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
       buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
     if (result ne buffer) {
       UnsafeHolder.releaseIfDirectBuffer(buffer)
-    }
-    result
+      // set order as LITTLE_ENDIAN to indicate decompressed buffer
+      result.order(ByteOrder.LITTLE_ENDIAN)
+    } else result.order(ByteOrder.BIG_ENDIAN)
+  }
+
+  private def getBufferFromBlob(blob: java.sql.Blob): ByteBuffer = {
+    val buffer = decompress(blob match {
+      case blob: BufferedBlob =>
+        // the chunk can never be a ByteBufferReference in this case and
+        // the internal buffer will now be owned by ColumnFormatValue
+        val chunk = blob.getAsLastChunk
+        assert(!chunk.isSetChunkReference)
+        chunk.chunk
+      case  _ => ByteBuffer.wrap(blob.getBytes(1, blob.length().asInstanceOf[Int]))
+    })
+    blob.free()
+    buffer
   }
 
   private def fillBuffers(): Unit = {
@@ -349,18 +364,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         while (colIter.next()) {
           val colBlob = colIter.getBlob(4)
           val position = colIter.getInt(3)
-          val colBuffer = colBlob match {
-            case blob: BufferedBlob =>
-              // the chunk can never be a ByteBufferReference in this case and
-              // the internal buffer will now be owned by ColumnFormatValue
-              val chunk = blob.getAsLastChunk
-              assert(!chunk.isSetChunkReference)
-              chunk.chunk
-            case blob => ByteBuffer.wrap(blob.getBytes(
-              1, blob.length().asInstanceOf[Int]))
-          }
-          colBlob.free()
-          buffers.justPut(position, decompress(colBuffer))
+          buffers.justPut(position, getBufferFromBlob(colBlob))
           // check if this an update delta
           if (position < ColumnFormatEntry.DELETE_MASK_COL_INDEX && !hasUpdates) {
             hasUpdates = true
@@ -417,7 +421,14 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
       buffers.forEachWhile(new IntObjPredicate[ByteBuffer] {
         override def test(col: Int, buffer: ByteBuffer): Boolean = {
           // release previous set of buffers immediately
-          UnsafeHolder.releaseIfDirectBuffer(buffer)
+          if (buffer ne null) {
+            if (buffer.isDirect) UnsafeHolder.releaseDirectBuffer(buffer)
+            // release from accounting if decompressed buffer
+            else if (buffer.order() eq ByteOrder.LITTLE_ENDIAN) {
+              StoreCallbacksImpl.releaseStorageMemory(CompressionUtils.DECOMPRESSION_OWNER,
+                buffer.capacity(), offHeap = false)
+            }
+          }
           true
         }
       })
@@ -430,17 +441,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     // create a new map instead of clearing old one to help young gen GC
     colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
     val statsBlob = rs.getBlob(4)
-    val statsBuffer = decompress(statsBlob match {
-      case blob: BufferedBlob =>
-        // the chunk can never be a ByteBufferReference in this case and
-        // the internal buffer will now be owned by ColumnFormatValue
-        val chunk = blob.getAsLastChunk
-        assert(!chunk.isSetChunkReference)
-        chunk.chunk
-      case blob => ByteBuffer.wrap(blob.getBytes(
-        1, blob.length().asInstanceOf[Int]))
-    })
-    statsBlob.free()
+    val statsBuffer = getBufferFromBlob(statsBlob)
     // put the stats buffer to free on next() or close()
     colBuffers.justPut(ColumnFormatEntry.STATROW_COL_INDEX, statsBuffer)
     statsBuffer
