@@ -473,13 +473,19 @@ class SnappyConf(@transient val session: SnappySession)
   @volatile private[this] var dynamicShufflePartitions: Int = _
 
   SQLConf.SHUFFLE_PARTITIONS.defaultValue match {
-    case Some(d) if session != null && super.numShufflePartitions == d =>
-      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
-    case None if session != null =>
-      dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+    case Some(d) if (session ne null) && super.numShufflePartitions == d =>
+      dynamicShufflePartitions = coreCountForShuffle
+    case None if session ne null =>
+      dynamicShufflePartitions = coreCountForShuffle
     case _ =>
       executionShufflePartitions = -1
       dynamicShufflePartitions = -1
+  }
+
+  private def coreCountForShuffle: Int = {
+    val count = SnappyContext.totalCoreCount.get()
+    if (count > 0 || (session eq null)) math.min(super.numShufflePartitions, count)
+    else math.min(super.numShufflePartitions, session.sparkContext.defaultParallelism)
   }
 
   private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
@@ -494,13 +500,13 @@ class SnappyConf(@transient val session: SnappySession)
         executionShufflePartitions = -1
         dynamicShufflePartitions = -1
       } else {
-        dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+        dynamicShufflePartitions = coreCountForShuffle
       }
+      session.clearPlanCache()
     case Property.SchedulerPool.name =>
       schedulerPool = value match {
         case None => Property.SchedulerPool.defaultValue.get
-        case Some(pool) if session.sparkContext.getAllPools.exists(_.name == pool) =>
-          pool.toString
+        case Some(pool: String) if session.sparkContext.getPoolForName(pool).isDefined => pool
         case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
 
@@ -508,6 +514,7 @@ class SnappyConf(@transient val session: SnappySession)
       case Some(b) => session.partitionPruning = b.toString.toBoolean
       case None => session.partitionPruning = Property.PartitionPruning.defaultValue.get
     }
+      session.clearPlanCache()
 
     case Property.PlanCaching.name =>
       value match {
@@ -532,11 +539,14 @@ class SnappyConf(@transient val session: SnappySession)
         case Some(boolVal) => SnappySession.tokenize = boolVal.toString.toBoolean
         case None => SnappySession.tokenize = Property.Tokenize.defaultValue.get
       }
+      session.clearPlanCache()
 
     case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => value match {
       case Some(b) => session.wholeStageEnabled = b.toString.toBoolean
       case None => session.wholeStageEnabled = SQLConf.WHOLESTAGE_CODEGEN_ENABLED.defaultValue.get
     }
+      session.clearPlanCache()
+
     case _ => // ignore others
   }
 
@@ -546,7 +556,7 @@ class SnappyConf(@transient val session: SnappySession)
         executionShufflePartitions = 0
       }
       if (dynamicShufflePartitions != -1) {
-        dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+        dynamicShufflePartitions = coreCountForShuffle
       }
     }
   }

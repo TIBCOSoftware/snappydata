@@ -656,7 +656,6 @@ private[sql] final case class ColumnTableScan(
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
         UnsafeRow $unsafeRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colNextBytes, $numColumnsInStatBlob);
-        $deletedCount = $colInput.getDeletedRowCount();
         $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
         $incrementBatchCount
         $buffers = $colNextBytes;
@@ -715,6 +714,7 @@ private[sql] final case class ColumnTableScan(
          |    $incrementNumRowsSnippet
          |  } else {
          |    $batchInit
+         |    $deletedCount = $colInput.getDeletedRowCount();
          |    $incrementBatchOutputRows
          |    // initialize the column buffers and decoders
          |    $columnBufferInit

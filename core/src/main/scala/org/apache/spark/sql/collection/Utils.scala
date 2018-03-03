@@ -56,6 +56,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
+import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
@@ -770,6 +771,11 @@ object Utils {
         """.stripMargin)
     }
     TASKCONTEXT_FUNCTION
+  }
+
+  def executorsListener(sc: SparkContext): Option[ExecutorsListener] = sc.ui match {
+    case Some(ui) => Some(ui.executorsListener)
+    case _ => None
   }
 }
 
