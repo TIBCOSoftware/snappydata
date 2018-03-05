@@ -635,7 +635,16 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       closeConnection(conn);
 
     } catch (SQLException se) {
-      throw new TestException("Got exception while performing insert operation.", se);
+      boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+          ("autoCommit");
+      String tableType = SnappyPrms.getTableType();
+      Log.getLogWriter().info("SS - TableType: " + tableType);
+      Log.getLogWriter().info("SS - autoCommit: " + autoCommit);
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
+        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
+      } else throw new TestException("Got exception while performing insert operation.", se);
     }
   }
 
@@ -712,8 +721,6 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     } catch (SQLException se) {
       boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
           ("autoCommit");
-      tableName = tableName.substring(tableName.indexOf(".") + 1);
-      Log.getLogWriter().info("SS - tableNameWithoutSchema: " + tableName);
       String tableType = SnappyPrms.getTableType();
       Log.getLogWriter().info("SS - TableType: " + tableType);
       Log.getLogWriter().info("SS - autoCommit: " + autoCommit);
@@ -778,7 +785,16 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       }
       closeConnection(conn);
     } catch (SQLException se) {
-      throw new TestException("Got exception while performing delete operation.", se);
+      boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+          ("autoCommit");
+      String tableType = SnappyPrms.getTableType();
+      Log.getLogWriter().info("SS - TableType: " + tableType);
+      Log.getLogWriter().info("SS - autoCommit: " + autoCommit);
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
+        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
+      } else throw new TestException("Got exception while performing delete operation.", se);
     }
   }
 
