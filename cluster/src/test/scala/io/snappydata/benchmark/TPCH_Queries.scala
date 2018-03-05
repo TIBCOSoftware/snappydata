@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,108 +19,90 @@ package io.snappydata.benchmark
 
 import scala.util.Random
 
-/**
-  * Created by kishor on 3/3/17.
-  */
-
 object TPCH_Queries {
 
-  def getQuery(query: String, isDynamic: Boolean, isSnappy:Boolean): String = {
-    query match {
-      case "1" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery1, TPCH_Queries.getQ1Parameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery1_Memsql, TPCH_Queries.getQ1Parameter(isDynamic))
+  def getQuery(query: String, isDynamic: Boolean, isSnappy: Boolean): String = query match {
+    case "1" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery1, TPCH_Queries.getQ1Parameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery1_Memsql, TPCH_Queries.getQ1Parameter(isDynamic))
       }
-      case "2" => {
-        createQuery(TPCH_Queries.getQuery2, TPCH_Queries.getQ2Parameter(isDynamic))
+    case "2" =>
+      createQuery(TPCH_Queries.getQuery2, TPCH_Queries.getQ2Parameter(isDynamic))
+    case "3" =>
+      createQuery(TPCH_Queries.getQuery3, TPCH_Queries.getQ3Parameter(isDynamic))
+    case "4" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery4, TPCH_Queries.getQ4Parameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery4_Memsql, TPCH_Queries.getQ4Parameter(isDynamic))
       }
-      case "3" => {
-        createQuery(TPCH_Queries.getQuery3, TPCH_Queries.getQ3Parameter(isDynamic))
+    case "5" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery5, TPCH_Queries.getQ5Parameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery5_Memsql, TPCH_Queries.getQ5Parameter(isDynamic))
       }
-      case "4" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery4, TPCH_Queries.getQ4Parameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery4_Memsql, TPCH_Queries.getQ4Parameter(isDynamic))
+    case "6" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery6, TPCH_Queries.getQ6Parameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery6_Memsql, TPCH_Queries.getQ6Parameter(isDynamic))
       }
-      case "5" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery5, TPCH_Queries.getQ5Parameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery5_Memsql, TPCH_Queries.getQ5Parameter(isDynamic))
+    case "7" =>
+      createQuery(TPCH_Queries.getQuery7, TPCH_Queries.getQ7Parameter(isDynamic))
+    case "8" =>
+      createQuery(TPCH_Queries.getQuery8, TPCH_Queries.getQ8Parameter(isDynamic))
+    case "9" =>
+      createQuery(TPCH_Queries.getQuery9, TPCH_Queries.getQ9Parameter(isDynamic))
+    case "10" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery10, TPCH_Queries.getQ10Parameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery10_Memsql, TPCH_Queries.getQ10Parameter(isDynamic))
       }
-      case "6" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery6, TPCH_Queries.getQ6Parameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery6_Memsql, TPCH_Queries.getQ6Parameter(isDynamic))
+    case "11" =>
+      createQuery(TPCH_Queries.getQuery11, TPCH_Queries.getQ11Parameter(isDynamic))
+    case "12" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery12, TPCH_Queries.getQ12Parameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery12_Memsql, TPCH_Queries.getQ12Parameter(isDynamic))
       }
-      case "7" => {
-        createQuery(TPCH_Queries.getQuery7, TPCH_Queries.getQ7Parameter(isDynamic))
+    case "13" =>
+      createQuery(TPCH_Queries.getQuery13, TPCH_Queries.getQ13Parameter(isDynamic))
+    case "14" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery14, TPCH_Queries.getQ14Parameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery14_Memsql, TPCH_Queries.getQ14Parameter(isDynamic))
       }
-      case "8" => {
-        createQuery(TPCH_Queries.getQuery8, TPCH_Queries.getQ8Parameter(isDynamic))
+    case "15" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery15_Temp, TPCH_Queries.getQ15TempParameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery15_Temp_Memsql,
+          TPCH_Queries.getQ15TempParameter(isDynamic))
       }
-      case "9" => {
-        createQuery(TPCH_Queries.getQuery9, TPCH_Queries.getQ9Parameter(isDynamic))
+    case "16" =>
+      createQuery(TPCH_Queries.getQuery16, TPCH_Queries.getQ16Parameter(isDynamic))
+    case "17" =>
+      createQuery(TPCH_Queries.getQuery17, TPCH_Queries.getQ17Parameter(isDynamic))
+    case "18" =>
+      createQuery(TPCH_Queries.getQuery18, TPCH_Queries.getQ18Parameter(isDynamic))
+    case "19" =>
+      createQuery(TPCH_Queries.getQuery19, TPCH_Queries.getQ19Parameter(isDynamic))
+    case "20" =>
+      if (isSnappy) {
+        createQuery(TPCH_Queries.getQuery20, TPCH_Queries.getQ20Parameter(isDynamic))
+      } else {
+        createQuery(TPCH_Queries.getQuery20_Memsql, TPCH_Queries.getQ20Parameter(isDynamic))
       }
-      case "10" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery10, TPCH_Queries.getQ10Parameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery10_Memsql, TPCH_Queries.getQ10Parameter(isDynamic))
-      }
-      case "11" => {
-        createQuery(TPCH_Queries.getQuery11, TPCH_Queries.getQ11Parameter(isDynamic))
-      }
-      case "12" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery12, TPCH_Queries.getQ12Parameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery12_Memsql, TPCH_Queries.getQ12Parameter(isDynamic))
-      }
-      case "13" => {
-        createQuery(TPCH_Queries.getQuery13, TPCH_Queries.getQ13Parameter(isDynamic))
-      }
-      case "14" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery14, TPCH_Queries.getQ14Parameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery14_Memsql, TPCH_Queries.getQ14Parameter(isDynamic))
-      }
-      case "15" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery15_Temp, TPCH_Queries.getQ15TempParameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery15_Temp_Memsql(), TPCH_Queries.getQ15TempParameter(isDynamic))
-      }
-      case "16" => {
-        createQuery(TPCH_Queries.getQuery16, TPCH_Queries.getQ16Parameter(isDynamic))
-      }
-      case "17" => {
-        createQuery(TPCH_Queries.getQuery17, TPCH_Queries.getQ17Parameter(isDynamic))
-      }
-      case "18" => {
-        createQuery(TPCH_Queries.getQuery18, TPCH_Queries.getQ18Parameter(isDynamic))
-      }
-      case "19" => {
-        createQuery(TPCH_Queries.getQuery19, TPCH_Queries.getQ19Parameter(isDynamic))
-      }
-      case "20" => {
-        if(isSnappy)
-          createQuery(TPCH_Queries.getQuery20, TPCH_Queries.getQ20Parameter(isDynamic))
-        else
-          createQuery(TPCH_Queries.getQuery20_Memsql, TPCH_Queries.getQ20Parameter(isDynamic))
-      }
-      case "21" => {
-        createQuery(TPCH_Queries.getQuery21, TPCH_Queries.getQ21Parameter(isDynamic))
-      }
-      case "22" => {
-        createQuery(TPCH_Queries.getQuery22, TPCH_Queries.getQ22Parameter(isDynamic))
-      }
-    }
+    case "21" =>
+      createQuery(TPCH_Queries.getQuery21, TPCH_Queries.getQ21Parameter(isDynamic))
+    case "22" =>
+      createQuery(TPCH_Queries.getQuery22, TPCH_Queries.getQ22Parameter(isDynamic))
   }
 
   def createQuery(query: String, paramters: Array[String]): String = {
@@ -131,7 +113,7 @@ object TPCH_Queries {
       generatedQuery = generatedQuery.replaceFirst("\\?", s)
     }
     println(s"KBKBKB : My query : $generatedQuery")
-    return generatedQuery
+    generatedQuery
   }
 
 
@@ -162,7 +144,7 @@ object TPCH_Queries {
   }
 
   def getQuery1_Memsql: String = {
-    //DELTA = 90
+    // DELTA = 90
     " select" +
         "     l_returnflag," +
         "     l_linestatus," +
@@ -258,10 +240,10 @@ object TPCH_Queries {
       val max = 50
       val size = s"${min + Random.nextInt((max - min) + 1)}"
       val syllable3 = Array("TIN", "NICKEL", "BRASS", "STEEL", "COPPER")
-      val syllableIndex = Random.nextInt(syllable3.length);
+      val syllableIndex = Random.nextInt(syllable3.length)
       val syllableType = syllable3(syllableIndex)
       val regions = Array("AFRICA", "AMERICA", "ASIA", "EUROPE", "MIDDLE EAST")
-      val regionIndex = Random.nextInt(regions.length);
+      val regionIndex = Random.nextInt(regions.length)
       val region = regions(regionIndex)
       Array(region, size, syllableType, region)
     }
@@ -270,7 +252,7 @@ object TPCH_Queries {
     }
   }
 
-  def getResultString2(): String = {
+  def getResultString2: String = {
     "S_ACCTBAL|S_NAME|N_NAME|P_PARTKEY|P_MFGR|S_ADDRESS|S_PHONE|S_COMMENT"
   }
 
@@ -304,7 +286,7 @@ object TPCH_Queries {
     // date1  randomly selected day within [1995-03-01 .. 1995-03-31]
     if (isDynamic) {
       val segments = Array("AUTOMOBILE", "BUILDING", "FURNITURE", "MACHINERY", "HOUSEHOLD")
-      val segmentIndex = Random.nextInt(segments.length);
+      val segmentIndex = Random.nextInt(segments.length)
       val segment = segments(segmentIndex)
 
       val fromDate = java.time.LocalDate.of(1995, 3, 1)
@@ -348,8 +330,8 @@ object TPCH_Queries {
         "     o_orderpriority"
   }
 
-  def getQuery4_Memsql(): String = {
-    //1.DATE = 1993-07-01.
+  def getQuery4_Memsql: String = {
+    // 1.DATE = 1993-07-01.
     " select" +
         "     o_orderpriority," +
         "     count(*) as order_count" +
@@ -372,6 +354,7 @@ object TPCH_Queries {
         " order by" +
         "     o_orderpriority"
   }
+
   def getQ4Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* DATE is the first day of a randomly selected month between the first
@@ -428,9 +411,9 @@ object TPCH_Queries {
         "        revenue desc"
   }
 
-  def getQuery5_Memsql(): String = {
-    //1. REGION = ASIA;
-    //2. DATE = 1994-01-01.
+  def getQuery5_Memsql: String = {
+    // 1. REGION = ASIA;
+    // 2. DATE = 1994-01-01.
     " select" +
         "        N_NAME," +
         "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
@@ -464,7 +447,7 @@ object TPCH_Queries {
     2. DATE is the first of January of a randomly selected year within [1993 .. 1997] */
 
       val regions = Array("AFRICA", "AMERICA", "ASIA", "EUROPE", "MIDDLE EAST")
-      val regionIndex = Random.nextInt(regions.length);
+      val regionIndex = Random.nextInt(regions.length)
       val region = regions(regionIndex)
 
       val minYear = 1993
@@ -501,9 +484,9 @@ object TPCH_Queries {
   }
 
   def getQuery6_Memsql: String = {
-    //1. DATE = 1994-01-01;
-    //2. DISCOUNT = 0.06;
-    //3. QUANTITY = 24.
+    // 1. DATE = 1994-01-01;
+    // 2. DISCOUNT = 0.06;
+    // 3. QUANTITY = 24.
     " select" +
         "        sum(l_extendedprice*l_discount) as revenue" +
         " from" +
@@ -519,7 +502,7 @@ object TPCH_Queries {
     if (isDynamic) {
       /* 1. DATE is the first of January of a randomly selected year within [1993 .. 1997];
     2. DISCOUNT is randomly selected within [0.02 .. 0.09];
-    3. QUANTITY is randomly selected within [24 .. 25].*/
+    3. QUANTITY is randomly selected within [24 .. 25]. */
 
       val minYear = 1993
       val maxYear = 1997
@@ -529,7 +512,7 @@ object TPCH_Queries {
       val date = java.time.LocalDate.of(year, 1, 1)
 
       val discounts = Array("0.02", "0.03", "0.04", "0.05", "0.06", "0.07", "0.08", "0.09")
-      val discountIndex = Random.nextInt(discounts.length);
+      val discountIndex = Random.nextInt(discounts.length)
       val discount = discounts(discountIndex)
 
       val minQuantity = 24
@@ -605,8 +588,8 @@ object TPCH_Queries {
       val nation1Index = Random.nextInt(nations.length)
       val nation1 = nations(nation1Index)
 
-      val nation2Index = if (nation1Index > (nations.length / 2)) (nation1Index - 1)
-      else (nation1Index + 1)
+      val nation2Index = if (nation1Index > (nations.length / 2)) nation1Index - 1
+      else nation1Index + 1
       val nation2 = nations(nation2Index)
 
       Array(nation1, nation2, nation2, nation1)
@@ -665,7 +648,8 @@ object TPCH_Queries {
 
   def getQ8Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
-      /* 1. NATION is randomly selected within the list of values defined for N_NAME in Clause 4.2.3;
+      /*
+     1. NATION is randomly selected within the list of values defined for N_NAME in Clause 4.2.3;
      2. REGION is the value defined in Clause 4.2.3 for R_NAME where R_REGIONKEY corresponds to
      N_REGIONKEY for the selected NATION in item 1 above;
      3. TYPE is randomly selected within the list of 3-syllable strings defined for Types in
@@ -682,7 +666,7 @@ object TPCH_Queries {
       val regionIndex = Random.nextInt(regionKeys.length)
       val region = regionKeys(regionIndex)
 
-      val nations: Array[String] = nationsMap.get(region).get
+      val nations: Array[String] = nationsMap(region)
       val nationIndex = Random.nextInt(nations.length)
       val nation = nations(nationIndex)
 
@@ -815,7 +799,7 @@ object TPCH_Queries {
   }
 
   def getQuery10_Memsql: String = {
-    //1.    DATE = 1993-10-01.
+    // 1.DATE = 1993-10-01.
     "select" +
         "         C_CUSTKEY," +
         "         C_NAME," +
@@ -963,7 +947,7 @@ object TPCH_Queries {
     }
   }
 
-  def getResultString11(): String = {
+  def getResultString11: String = {
     "PS_PARTKEY|VALUE"
   }
 
@@ -1053,8 +1037,8 @@ object TPCH_Queries {
       val shipmode1Index = Random.nextInt(shipmodes.length)
       val shipmode1 = shipmodes(shipmode1Index)
 
-      val shipmode2Index = if (shipmode1Index > (shipmodes.length / 2)) (shipmode1Index - 1)
-      else (shipmode1Index + 1)
+      val shipmode2Index = if (shipmode1Index > (shipmodes.length / 2)) shipmode1Index - 1
+      else shipmode1Index + 1
       val shipmode2 = shipmodes(shipmode2Index)
 
       val minYear = 1993
@@ -1103,7 +1087,7 @@ object TPCH_Queries {
     if (isDynamic) {
       /* 1. WORD1 is randomly selected from 4 possible values: special, pending, unusual, express.
          2. WORD2 is randomly selected from 4 possible values: packages, requests, accounts,
-         deposits*/
+         deposits */
 
       val words1 = Array("special", "pending", "unusual", "express")
       val words2 = Array("packages", "requests", "accounts", "deposits")
@@ -1121,7 +1105,7 @@ object TPCH_Queries {
 
   }
 
-  def getResultString13(): String = {
+  def getResultString13: String = {
     "C_COUNT|CUSTDIST"
   }
 
@@ -1144,7 +1128,7 @@ object TPCH_Queries {
   }
 
   def getQuery14_Memsql: String = {
-    //1.DATE = 1995-09-01.
+    // 1.DATE = 1995-09-01.
     "select" +
         "         100.00 * sum(case" +
         "                 when P_TYPE like 'PROMO%'" +
@@ -1165,7 +1149,7 @@ object TPCH_Queries {
   def getQ14Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1.DATE is the first day of a month randomly selected from a random year within
-         [1993 .. 1997]..*/
+         [1993 .. 1997].. */
 
       val minYear = 1993
       val maxYear = 1997
@@ -1184,8 +1168,8 @@ object TPCH_Queries {
     "PROMO_REVENUE"
   }
 
-  def getTempQuery15_Original(): String = {
-    "create view " +
+  def getTempQuery15_Original: String = {
+    "create temporary view " +
         "        revenue as" +
         " select" +
         "      l_suppkey as supplier_no ," +
@@ -1199,7 +1183,7 @@ object TPCH_Queries {
         "      l_suppkey"
   }
 
-  def getQuery15_Original(): String = {
+  def getQuery15_Original: String = {
     "select" +
         "        s_suppkey," +
         "        s_name," +
@@ -1235,7 +1219,7 @@ object TPCH_Queries {
         "         l_suppkey"
   }
 
-  def getQuery15_Temp_Memsql(): String = {
+  def getQuery15_Temp_Memsql: String = {
     "create view " +
         "        revenue as" +
         " select" +
@@ -1253,7 +1237,7 @@ object TPCH_Queries {
   def getQ15TempParameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* DATE is the first day of a randomly selected month between the first month of 1993
-         and the 10th month of 1997.*/
+         and the 10th month of 1997. */
 
       val min = 2
       val max = 10
@@ -1292,8 +1276,6 @@ object TPCH_Queries {
         " order by" +
         "        s_suppkey"
   }
-
-
 
 
   def getResultString15: String = {
@@ -1418,10 +1400,10 @@ object TPCH_Queries {
 
   def getQ17Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
-      /*1. BRAND = 'Brand#MN' where MN is a two character string representing two numbers randomly
+      /* 1. BRAND = 'Brand#MN' where MN is a two character string representing two numbers randomly
        and independently selected within [1 .. 5];
         2. CONTAINER is randomly selected within the list of 2-syllable strings defined for
-        Containers in Clause 4.2.2.13.*/
+        Containers in Clause 4.2.2.13. */
 
       val brands = Array("1", "2", "3", "4", "5")
       val mIndex = Random.nextInt(brands.length)
@@ -1446,7 +1428,7 @@ object TPCH_Queries {
     "AVG_YEARLY"
   }
 
-  /*def getQuery18: String = {
+  /* def getQuery18: String = {
     // 1.QUANTITY = 300
     "    select" +
         "    C_NAME," +
@@ -1480,10 +1462,10 @@ object TPCH_Queries {
         "    order by" +
         "        o_totalprice desc," +
         "    o_orderdate limit 100"
-  }*/
+  } */
 
-  def getQuery18(): String = {
-    //1.QUANTITY = 300
+  def getQuery18: String = {
+    // 1.QUANTITY = 300
     "select" +
         "         C_NAME," +
         "         C_CUSTKEY," +
@@ -1521,7 +1503,7 @@ object TPCH_Queries {
 
   def getQ18Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
-      /* QUANTITY is randomly selected within [312..315]*/
+      /* QUANTITY is randomly selected within [312..315] */
 
       val min = 312
       val max = 315
@@ -1586,8 +1568,8 @@ object TPCH_Queries {
       /* 1. QUANTITY1 is randomly selected within [1..10].
          2. QUANTITY2 is randomly selected within [10..20].
          3. QUANTITY3 is randomly selected within [20..30].
-         4. BRAND1, BRAND2, BRAND3 = 'Brand#MN' where each MN is a two character string representing two num-
-             bers randomly and independently selected within [1 .. 5]*/
+         4. BRAND1, BRAND2, BRAND3 = 'Brand#MN' where each MN is a two character string
+             representing two num- bers randomly and independently selected within [1 .. 5] */
 
       var min = 1
       var max = 10
@@ -1599,7 +1581,7 @@ object TPCH_Queries {
       max = 30
       val quantity3 = (min + Random.nextInt(max - min)).toString
 
-      var brands = Array("1", "2", "3", "4", "5")
+      val brands = Array("1", "2", "3", "4", "5")
       var mIndex = Random.nextInt(brands.length)
       var nIndex = Random.nextInt(brands.length)
       var m = brands(mIndex)
@@ -1714,6 +1696,7 @@ object TPCH_Queries {
         "         S_NAME"
 
   }
+
   def getQ20Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1. COLOR is randomly selected within the list of values defined for the generation
@@ -1805,7 +1788,7 @@ object TPCH_Queries {
 
   def getQ21Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
-      /*NATION is randomly selected within the list of values defined for N_NAME in Clause 4.2.3*/
+      /* NATION is randomly selected within the list of values defined for N_NAME in Clause 4.2.3 */
 
       val nations = Array("ALGERIA", "ARGENTINA", "BRAZIL", "CANADA", "EGYPT", "ETHIOPIA", "FRANCE",
         "GERMANY", "INDIA", "INDONESIA", "IRAN", "IRAQ", "JAPAN", "JORDAN", "KENYA",
@@ -1934,11 +1917,11 @@ object TPCH_Queries {
 
   def getQ22Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
-      /*I1 ... I7 are randomly selected without repetition from the possible values for
-        Country code as defined in Clause 4.2.2.9.*/
+      /* I1 ... I7 are randomly selected without repetition from the possible values for
+        Country code as defined in Clause 4.2.2.9. */
 
       val countryCodes: Array[String] = new Array[String](7)
-      var x: Int = 0;
+      var x: Int = 0
       do {
         val min = 1
         val max = 25
@@ -1960,7 +1943,7 @@ object TPCH_Queries {
     }
   }
 
-  def getResultString22(): String = {
+  def getResultString22: String = {
     "CNTRYCODE|NUMCUST|TOTACCTBAL"
   }
 

@@ -59,7 +59,7 @@ class CatalogConsistencyTest
     if (isColumnTable) {
       val se = intercept[SQLException] {
         routeQueryDisabledConn.createStatement().executeQuery(
-          "select * from " + ColumnFormatRelation.columnBatchTableName(table))
+          "select * from " + ColumnFormatRelation.columnBatchTableName("app." + table))
       }
       assert(se.getSQLState.equals("42X05"))
     }
@@ -151,7 +151,7 @@ class CatalogConsistencyTest
     // remove the column buffer DD entry by dropping table just from the store
     // (don't drop the row buffer)
     routeQueryDisabledConn.createStatement().execute("drop table " +
-        ColumnFormatRelation.columnBatchTableName("column_table1"))
+        ColumnFormatRelation.columnBatchTableName("app.column_table1"))
     // remove the table entry from Hive store
     snc.snappySession.sessionCatalog.unregisterDataSourceTable(
       snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
@@ -193,7 +193,7 @@ class CatalogConsistencyTest
     val rs = routeQueryDisabledConn.createStatement().executeQuery("select * from column_table1")
     rs.close()
     routeQueryDisabledConn.createStatement().execute("drop table " +
-        ColumnFormatRelation.columnBatchTableName("column_table1"))
+        ColumnFormatRelation.columnBatchTableName("app.column_table1"))
 
     // make sure that the table exists in Hive metastore
     // should not throw an exception
@@ -228,7 +228,7 @@ class CatalogConsistencyTest
     val rs = routeQueryDisabledConn.createStatement().executeQuery("select * from column_table1")
     rs.close()
     routeQueryDisabledConn.createStatement().execute("drop table " +
-        ColumnFormatRelation.columnBatchTableName("column_table1"))
+        ColumnFormatRelation.columnBatchTableName("app.column_table1"))
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore

@@ -57,7 +57,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     memoryManager.acquireUnrollMemory(blockId, 500, memoryMode)
 
     assert(memoryManager.storageMemoryUsed == 500)
-    val key = "_SPARK_CACHE_" -> memoryMode
+    val key = new MemoryOwner("_SPARK_CACHE_", memoryMode)
     assert(memoryManager.memoryForObject.getLong(key) == 500)
     memoryManager.releaseUnrollMemory(500, memoryMode)
 

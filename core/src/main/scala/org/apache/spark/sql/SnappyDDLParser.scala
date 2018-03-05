@@ -611,9 +611,8 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected final def qualifiedName: Rule1[String] = rule {
-    (unquotedIdentifier + ('.' ~ ws)) ~>
-        ((ids: Seq[String]) => ids.mkString(".")) |
-    quotedIdentifier
+    ((unquotedIdentifier | quotedIdentifier) + ('.' ~ ws)) ~>
+        ((ids: Seq[String]) => ids.mkString("."))
   }
 
   protected def column: Rule1[StructField] = rule {
