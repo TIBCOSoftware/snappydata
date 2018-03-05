@@ -6,7 +6,7 @@ To do so, you can copy the existing template files **servers.template**, **locat
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
 !!! Tip:
-	For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
+	For system properties (set in the conf/leads, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
 
 
 <a id="locator"></a>
