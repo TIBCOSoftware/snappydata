@@ -261,11 +261,11 @@ object SnappyTableStatsProviderDUnitTest {
       left.getCombinedStats(right)
     }
 
-    val expected = Utils.mapExecutors[RegionStat](snc, () => {
+    val expected = Utils.mapExecutors[RegionStat](snc.sparkContext, () => {
       val result = if (isReplicatedTable) getReplicatedRegionStats(tableName)
       else getPartitionedRegionStats(tableName, isColumnTable)
       Iterator[RegionStat](convertToSerializableForm(result))
-    }).collect()
+    })
 
     expected.map(getRegionStat).reduce(aggregateResults)
 

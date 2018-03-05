@@ -36,10 +36,11 @@ import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEn
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 
-final class SparkConnectorRDDHelper {
+final class SmartConnectorRDDHelper {
 
   var useLocatorURL: Boolean = false
 
@@ -68,17 +69,17 @@ final class SparkConnectorRDDHelper {
       val deltaCol = ColumnDelta.deltaColumnIndex(col - 1 /* zero based */, 0)
       deltaCol until(deltaCol - ColumnDelta.MAX_DEPTH, -1)
     } :+ ColumnFormatEntry.DELETE_MASK_COL_INDEX).mkString(
-      s"select * from $resolvedTableName where " +
+      s"select * from ${quotedName(resolvedTableName)} where " +
           s"partitionId = $partitionId and uuid = ? and columnIndex in (", ",", ")")
     // fetch stats query and fetch columns query
-    (s"select * from $resolvedTableName where columnIndex = " +
+    (s"select * from ${quotedName(resolvedTableName)} where columnIndex = " +
         s"${ColumnFormatEntry.STATROW_COL_INDEX}", fetchColString)
   }
 
   def executeQuery(conn: Connection, tableName: String, partition: SmartExecutorBucketPartition,
       query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
     val statement = conn.createStatement()
-    val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get() match {
+    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
       case "" => null
       case id => id
     }
@@ -103,7 +104,7 @@ final class SparkConnectorRDDHelper {
   def getConnection(connectionProperties: ConnectionProperties,
       part: SmartExecutorBucketPartition): Connection = {
     val urlsOfNetServerHost = part.hostList
-    useLocatorURL = SparkConnectorRDDHelper.useLocatorUrl(urlsOfNetServerHost)
+    useLocatorURL = SmartConnectorRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
 
@@ -141,7 +142,7 @@ final class SparkConnectorRDDHelper {
   }
 }
 
-object SparkConnectorRDDHelper {
+object SmartConnectorRDDHelper {
 
   DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
 

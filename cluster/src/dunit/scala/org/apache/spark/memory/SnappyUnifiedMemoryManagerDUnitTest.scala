@@ -497,9 +497,9 @@ object SnappyUnifiedMemoryManagerDUnitTest {
         SparkEnv.get.memoryManager
             .asInstanceOf[SnappyUnifiedMemoryManager].logStats()
         var sum = 0L
-        mMap.forEach(new ObjLongConsumer[(String, MemoryMode)] {
-          override def accept(key: (String, MemoryMode), value: Long): Unit = {
-            if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
+        mMap.forEach(new ObjLongConsumer[MemoryOwner] {
+          override def accept(key: MemoryOwner, value: Long): Unit = {
+            if (key.owner.toLowerCase().contains(tableName.toLowerCase())) {
               sum += value
             }
           }

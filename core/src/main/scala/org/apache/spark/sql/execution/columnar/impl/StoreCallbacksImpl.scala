@@ -112,7 +112,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
               LongType, nullable = false)
           }
           val batchCreator = new ColumnBatchCreator(pr,
-            ColumnFormatRelation.columnBatchTableName(tableName), schema,
+            ColumnFormatRelation.columnBatchTableName(tableName, None), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             catalogEntry.compressionCodec)
           batchCreator.createAndStoreBatch(sc, row,
@@ -169,7 +169,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def columnBatchTableName(table: String): String = {
-    ColumnFormatRelation.columnBatchTableName(table)
+    ColumnFormatRelation.columnBatchTableName(table, None)
   }
 
   override def registerRelationDestroyForHiveStore(): Unit = {
