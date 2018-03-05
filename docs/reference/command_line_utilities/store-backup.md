@@ -12,8 +12,6 @@ An online backup saves the following:
 	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
 	- SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.
 
-- [Prerequisites](#prereq)
-
 - [Guidelines](#guidelines)
 
  -   [Specifying the Backup Directory](#backup-directory)
@@ -30,8 +28,8 @@ An online backup saves the following:
 
 - [Verify the Backup is Successful](#verify)
 
-<a id="prereq"></a>
-## Prerequisites
+<a id="guidelines"></a>
+## Guidelines
 
 * Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.
 
@@ -39,22 +37,9 @@ An online backup saves the following:
 
 * Make sure the target backup directory exists and has the proper permissions for your members to write to it and create subdirectories.
 
-* It is recommended to compact your disk store before running the backup.
+* It is recommended to [compact your disk store](store-compact-disk-store.md) before running the backup.
 
 * Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members).
-
-<a id="guidelines"></a>
-## Guidelines
-
-* Plan this activity during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.
-
-* Do not create backup files from a running system using file copy commands. You will get incomplete and unusable copies.
-
-* Make sure the target backup directory exists and has the proper permissions for your members to write to it and create subdirectories.
-
-* You might want to [compact your disk store](store-compact-disk-store.md) before running the backup.
-
-* Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members.)
 
 <a id="backup-directory"></a>
 ## Specifying the Backup Directory
@@ -62,9 +47,9 @@ An online backup saves the following:
 The directory you specify for backup can be used multiple times. Each backup first creates a top-level directory for the backup, under the directory you specify, identified to the minute.</br>
 You can use one of two formats:
 
-* Use a single physical location, such as a network file server. (For example, /fileServerDirectory/<SnappyBackupLocation>).
+* Use a single physical location, such as a network file server. (For example, /<_fileServerDirectory_>/<_SnappyBackupLocation_>).
 
-* Use a directory that is local to all host machines in the system. (For example, ./<SnappyBackupLocation>).
+* Use a directory that is local to all host machines in the system. (For example, ./<_SnappyBackupLocation_>).
 
 <a id="directory-structure"></a>
 ## Backup Directory Structure and Contents
@@ -105,7 +90,7 @@ For each member with persistent data, the backup includes:
 
 To perform a full backup:
 
-1. [Start the cluster](../../howto/start_snappy_cluster.md)
+1. [Start the cluster](../../howto/start_snappy_cluster.md).
 
 2. [Start the snappy-shell and connect to the cluster](../../programming_guide/using_snappydata_shell.md).
 
@@ -148,6 +133,7 @@ To perform an incremental backup, execute the backup command but specify the bas
 ```
 
 The tool reports on the success of the operation. If the operation is successful, you see a message like this:
+
 ```
 The following disk stores were backed up:
 	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
@@ -167,7 +153,7 @@ To make additional incremental backups, execute the same backup command describe
 
 | Option | Description |
 |--------|--------|
-|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/<fileServerDirectory>/<SnappyDataBackupLocation>/2018-01-01-12-30). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option.|
+|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /<_fileServerDirectory_>/<_SnappyDataBackupLocation_>/2018-01-01-12-30). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option.|
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](#backup-directory).|
 |locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the peer-discovery-port used when starting the cluster (default 10334). This is a mandatory field. For example, `-locators=localhost:10334`|
 |bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
@@ -207,7 +193,7 @@ The restore operation copies the files back to their original location. All the 
 
 To ensure that your backup is successful, you can try the following options:
 
-* Execute the `select count(*) from <table-name>;` query and verify the total number of rows.
+* Execute the `select count(*) from <TableName>;` query and verify the total number of rows.
 
 * Verify the table details in the [Snappy Pulse UI](../../monitoring/monitoring.md#table).
 
