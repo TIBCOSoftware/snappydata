@@ -100,7 +100,9 @@ object SortedColumnTests extends Logging {
   def verifyTotalRows(session: SnappySession, columnTable: String, numElements: Long,
       finalCall: Boolean): Unit = {
     val colDf = session.sql(s"select * from $columnTable")
-    val result = colDf.collect()
+    // scalastyle:off
+    // println(s"verifyTotalRows = ${colDf.collect().length}")
+    // scalastyle:on
     val insDF = session.read.parquet(filePathInsert(numElements))
     val verifyDF = if (finalCall) {
       insDF.union(session.read.parquet(filePathUpdate(numElements)))
