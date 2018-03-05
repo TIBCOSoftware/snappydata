@@ -544,9 +544,7 @@ object ExternalStoreUtils {
   def removeCachedObjects(sqlContext: SQLContext, table: String,
       registerDestroy: Boolean = false): Unit = {
     // clean up the connection pool and caches on executors first
-    Utils.mapExecutors(sqlContext,
-      removeCachedObjects(table)
-    ).count()
+    Utils.mapExecutors[Unit](sqlContext.sparkContext, removeCachedObjects(table))
     // then on the driver
     removeCachedObjects(table)()
     if (registerDestroy) {

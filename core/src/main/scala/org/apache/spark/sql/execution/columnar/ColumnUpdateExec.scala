@@ -25,6 +25,7 @@ import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, Col
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
@@ -95,7 +96,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   override protected def doProduce(ctx: CodegenContext): String = {
 
     val sql = new StringBuilder
-    sql.append("UPDATE ").append(resolvedName).append(" SET ")
+    sql.append("UPDATE ").append(quotedName(resolvedName, escapeQuotes = true)).append(" SET ")
     JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name),
       escapeQuotes = true, separator = ", ")
     sql.append(" WHERE ")

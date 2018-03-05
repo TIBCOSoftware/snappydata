@@ -1,17 +1,31 @@
+/*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.benchmark.snappy.tpcds
 
 import java.io.{File, FileOutputStream, PrintStream}
 
-import org.apache.spark.Logging
 import com.typesafe.config.Config
-import io.snappydata.benchmark.TPCH_Queries
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 
+import org.apache.spark.Logging
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.util.fileToString
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Row, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
-object QueryExecutionJob extends SnappySQLJob with Logging{
+object QueryExecutionJob extends SnappySQLJob with Logging {
   var sqlSparkProperties: Array[String] = _
   var queries: Array[String] = _
   var queryPath: String = _
@@ -44,11 +58,12 @@ object QueryExecutionJob extends SnappySQLJob with Logging{
         var totalTime: Long = 0
 
         // scalastyle:off println
-        //println("Query : " + queryString)
+        // println("Query : " + queryString)
 
         if (isResultCollection) {
           // queryPrintStream.println(queryToBeExecuted)
-          val (resultSet, _) = QueryExecutor.queryExecution(name, queryString, snSession.sqlContext, true)
+          val (resultSet, _) = QueryExecutor.queryExecution(name, queryString, snSession.sqlContext,
+            genPlan = true)
           println(s"$name : ${resultSet.length}")
 
           for (row <- resultSet) {
@@ -58,17 +73,18 @@ object QueryExecutionJob extends SnappySQLJob with Logging{
             }.mkString(","))
           }
           println(s"$name Result Collected in file $queryFileName")
-        }else {
+        } else {
           for (i <- 1 to (warmUp + runsForAverage)) {
             // queryPrintStream.println(queryToBeExecuted)
             val startTime = System.currentTimeMillis()
             var cnts: Array[Row] = null
             if (i == 1) {
-              cnts = QueryExecutor.queryExecution(name, queryString, snSession.sqlContext, true)._1
+              cnts = QueryExecutor.queryExecution(name, queryString, snSession.sqlContext,
+                genPlan = true)._1
             } else {
               cnts = QueryExecutor.queryExecution(name, queryString, snSession.sqlContext)._1
             }
-            for (s <- cnts) {
+            for (_ <- cnts) {
               // just iterating over result
             }
             val endTime = System.currentTimeMillis()
@@ -84,7 +100,7 @@ object QueryExecutionJob extends SnappySQLJob with Logging{
         }
 
         // scalastyle:off println
-        //println(s"${totalTime / runsForAverage}")
+        // println(s"${totalTime / runsForAverage}")
         println("-----------------------------------------------")
         queryPrintStream.println(s"${totalTime / runsForAverage}")
         avgPrintStream.println(s"$name, executionTime = ${totalTime / runsForAverage}")
@@ -92,8 +108,8 @@ object QueryExecutionJob extends SnappySQLJob with Logging{
 
       }
       catch {
-        case e: Exception => println(s"Failed $name  ");
-          logError("Exception in job", e);
+        case e: Exception => println(s"Failed $name")
+          logError("Exception in job", e)
       }
     }
   }

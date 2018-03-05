@@ -21,7 +21,7 @@ import java.nio.{ByteBuffer, ByteOrder}
 import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.gemstone.gemfire.internal.shared.BufferAllocator
-import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, FreeMemory, UnsafeHolder}
+import com.gemstone.gemfire.internal.shared.unsafe.FreeMemory
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import org.slf4j.LoggerFactory
@@ -30,7 +30,7 @@ import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.Utils
-import org.apache.spark.{Logging, SparkConf, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
 /**
   * Base trait for different memory manager used by SnappyData in different modes
@@ -176,6 +176,7 @@ object MemoryManagerCallback extends Logging {
 
   def allocateExecutionMemory(size: Int, owner: String,
       allocator: BufferAllocator): ByteBuffer = {
+    /* (doesn't work properly for some reason: fails with LME frequently)
     if (allocator.isManagedDirect) {
       val context = TaskContext.get()
       if (context ne null) {
@@ -183,17 +184,26 @@ object MemoryManagerCallback extends Logging {
         val totalSize = UnsafeHolder.getAllocationSize(size) +
             DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
         val consumer = new DefaultMemoryConsumer(memoryManager, MemoryMode.OFF_HEAP)
-        if (consumer.acquireMemory(totalSize) < totalSize) {
+        var granted, totalGranted = 0L
+        do {
+          granted = consumer.acquireMemory(totalSize - totalGranted)
+          totalGranted += granted
+        } while (granted > 0 && totalGranted < totalSize)
+        if (totalGranted < totalSize) {
           consumer.freeMemory(consumer.getUsed)
-          throw DirectBufferAllocator.instance().lowMemoryException(owner, totalSize)
+          memoryManager.showMemoryUsage()
+          throw DirectBufferAllocator.instance().lowMemoryException(
+            "EXECUTION:" + owner, totalSize)
         }
         return allocator.allocateCustom(totalSize, new FreeMemory.Factory {
           override def newFreeMemory(address: Long, size: Int): ExecutionFreeMemory =
             new ExecutionFreeMemory(consumer, address)
         }).order(ByteOrder.LITTLE_ENDIAN)
       }
-    } else if (!StoreCallbacksImpl.acquireStorageMemory(owner, size, buffer = null,
-      offHeap = false, shouldEvict = true)) {
+    } else
+    */
+    if (!allocator.isDirect && !StoreCallbacksImpl.acquireStorageMemory(
+      owner, size, buffer = null, offHeap = false, shouldEvict = true)) {
       throw LocalRegion.lowMemoryException(null, size)
     }
     allocator.allocate(size, owner).order(ByteOrder.LITTLE_ENDIAN)
