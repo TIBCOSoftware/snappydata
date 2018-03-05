@@ -655,8 +655,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   public void performUpdate() {
+    Connection conn = null;
+    String tableName = null;
     try {
-      Connection conn;
       if (SnappyPrms.setTx()) {
         conn = getLocatorConnection(false);
       } else {
@@ -667,6 +668,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int numRows = 0;
       int rand = new Random().nextInt(updateStmt.length);
       String stmt = updateStmt[rand];
+      tableName = SnappySchemaPrms.getUpdateTables()[rand];
       int tid = getMyTid();
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
@@ -694,7 +696,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           //throw new TestException(errMsg);
         }
         derbyTestUtils.closeDiscConnection(dConn, true);
-        String tableName = SnappySchemaPrms.getUpdateTables()[rand];
+
         String selectQuery = SnappySchemaPrms.getAfterUpdateSelectStmts()[rand];
         String orderByClause = "";
         //String[] dmlTables = SnappySchemaPrms.getDMLTables();
@@ -708,7 +710,18 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       }
       closeConnection(conn);
     } catch (SQLException se) {
-      throw new TestException("Got exception while performing update operation.", se);
+      boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+          ("autoCommit");
+      tableName = tableName.substring(tableName.indexOf(".") + 1);
+      Log.getLogWriter().info("SS - tableNameWithoutSchema: " + tableName);
+      String tableType = SnappyPrms.getTableType();
+      Log.getLogWriter().info("SS - TableType: " + tableType);
+      Log.getLogWriter().info("SS - autoCommit: " + autoCommit);
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
+        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
+      } else throw new TestException("Got exception while performing update operation.", se);
     }
   }
 

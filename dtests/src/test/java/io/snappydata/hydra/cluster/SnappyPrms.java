@@ -493,9 +493,15 @@ public class SnappyPrms extends BasePrms {
   public static Long setAutoCommit;
 
   /**
-   * (Boolean) parameter to set trancation isolation level in test.
+   * (String) parameter to set trancation isolation level in test.
    */
   public static Long txIsolationLevel;
+
+  /**
+   * (String) parameter to get the tableType required for exception handling in case of expected
+   * failures in tx tests.
+   */
+  public static Long tableType;
 
   /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
@@ -804,6 +810,11 @@ public class SnappyPrms extends BasePrms {
   public static String getUserAppArgs() {
     Long key = userAppArgs;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, " "));
+  }
+
+  public static String getTableType() {
+    Long key = tableType;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "C"));
   }
 
   public static Vector getDataLocationList() {

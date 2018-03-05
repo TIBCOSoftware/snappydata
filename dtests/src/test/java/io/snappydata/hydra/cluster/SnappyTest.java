@@ -1263,6 +1263,23 @@ public class SnappyTest implements Serializable {
     return conn;
   }
 
+  public static String getTableType(Connection conn, String tableName) {
+    String tableType = null;
+    try {
+      Connection conn1 = getLocatorConnection();
+      String query = "select TABLETYPE from sys.systables where TABLENAME='" + tableName + "'";
+      Log.getLogWriter().info("SS - query: " + query);
+      ResultSet rs = conn1.createStatement().executeQuery(query);
+      while (rs.next()) {
+        Log.getLogWriter().info("Qyery : " + query + " executed successfully and and result is : " + rs.getString(1));
+        tableType = rs.getString(1);
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return tableType;
+  }
+
   public static Connection getServerConnection() throws SQLException {
     List<String> endpoints = validateServerEndpointData();
     Connection conn = null;
