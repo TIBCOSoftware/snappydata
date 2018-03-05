@@ -22,7 +22,7 @@ import java.sql.{CallableStatement, Connection, SQLException}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
-import io.snappydata.impl.SparkConnectorRDDHelper
+import io.snappydata.impl.SmartConnectorRDDHelper
 import org.apache.hadoop.hive.ql.metadata.Table
 
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -239,15 +239,15 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       if (bucketCount > 0) {
         val partitionCols = getMetaDataStmt.getString(4).split(":")
         val bucketToServerMappingStr = getMetaDataStmt.getString(6)
-        val allNetUrls = SparkConnectorRDDHelper.setBucketToServerMappingInfo(
+        val allNetUrls = SmartConnectorRDDHelper.setBucketToServerMappingInfo(
           bucketToServerMappingStr)
-        val partitions = SparkConnectorRDDHelper.getPartitions(allNetUrls)
+        val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
         (t, RelationInfo(bucketCount, isPartitioned = true, partitionCols.toSeq,
           indexCols, pkCols, partitions, embdClusterRelDestroyVersion))
       } else {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
-        val allNetUrls = SparkConnectorRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
-        val partitions = SparkConnectorRDDHelper.getPartitions(allNetUrls)
+        val allNetUrls = SmartConnectorRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
+        val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
         (t, RelationInfo(1, isPartitioned = false, Nil, indexCols, pkCols,
           partitions, embdClusterRelDestroyVersion))
       }

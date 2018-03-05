@@ -136,8 +136,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     conn.close()
   }
 
-  private lazy val totalProcessors = Utils.mapExecutors(sc, (_, _) =>
-    Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
+  private lazy val totalProcessors = Utils.mapExecutors[Int](sc, () =>
+    Iterator(Runtime.getRuntime.availableProcessors())).sum
 
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
     for (q <- NWQueries.queries) {

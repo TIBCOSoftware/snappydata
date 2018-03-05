@@ -35,6 +35,7 @@ import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpda
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -142,7 +143,8 @@ case class JDBCMutableRelation(
 
       // Create the table if the table didn't exist.
       if (!tableExists) {
-        val sql = s"CREATE TABLE $table $userSpecifiedString"
+        // quote the table name e.g. for reserved keywords or special chars
+        val sql = s"CREATE TABLE ${quotedName(table)} $userSpecifiedString"
         val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
@@ -444,10 +446,11 @@ case class JDBCMutableRelation(
     try {
       val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
         conn, dialect, sqlContext)
-      val sql = isAddColumn match {
-        case true => s"alter table ${table} add column" +
-          s" ${column.name} ${column.dataType.simpleString}"
-        case false => s"alter table ${table} drop column ${column.name}"
+      val sql = if (isAddColumn) {
+        s"""alter table ${quotedName(table)}
+            add column "${column.name}" ${column.dataType.simpleString}"""
+      } else {
+        s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
 
       if (tableExists) {

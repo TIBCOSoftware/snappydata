@@ -168,9 +168,9 @@ object MemoryManagerRestartDUnitTest {
   }
 
   def failTheExecutors(): Unit = {
-    Utils.mapExecutors(sc, (_, _) => {
+    Utils.mapExecutors[Unit](sc, () => {
       throw new OutOfMemoryError("Some Random message") // See SystemFailure.isJVMFailureError
-    }).collect()
+    })
   }
 
   private def sc = SnappyContext.globalSparkContext
@@ -189,9 +189,9 @@ object MemoryManagerRestartDUnitTest {
     val mMap = memoryManager.memoryForObject
     memoryManager.logStats()
     var sum = 0L
-    mMap.forEach(new ObjLongConsumer[(String, MemoryMode)] {
-      override def accept(key: (String, MemoryMode), value: Long): Unit = {
-        if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
+    mMap.forEach(new ObjLongConsumer[MemoryOwner] {
+      override def accept(key: MemoryOwner, value: Long): Unit = {
+        if (key.owner.toLowerCase().contains(tableName.toLowerCase())) {
           sum += value
         }
       }
