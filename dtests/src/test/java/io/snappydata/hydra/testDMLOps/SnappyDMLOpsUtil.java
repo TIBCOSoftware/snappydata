@@ -635,15 +635,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       closeConnection(conn);
 
     } catch (SQLException se) {
-      boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
-          ("autoCommit");
-      String tableType = SnappyPrms.getTableType();
-      Log.getLogWriter().info("SS - TableType: " + tableType);
-      Log.getLogWriter().info("SS - autoCommit: " + autoCommit);
-      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
-        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
-            .getCause());
-        return;
+      if (setTx) {
+        boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+            ("autoCommit");
+        String tableType = SnappyPrms.getTableType();
+        if (!autoCommit && tableType.equalsIgnoreCase("C")) {
+          Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+              .getCause());
+          return;
+        }
       } else throw new TestException("Got exception while performing insert operation.", se);
     }
   }
@@ -719,15 +719,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       }
       closeConnection(conn);
     } catch (SQLException se) {
-      boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
-          ("autoCommit");
-      String tableType = SnappyPrms.getTableType();
-      Log.getLogWriter().info("SS - TableType: " + tableType);
-      Log.getLogWriter().info("SS - autoCommit: " + autoCommit);
-      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
-        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
-            .getCause());
-        return;
+      if (setTx) {
+        boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+            ("autoCommit");
+        String tableType = SnappyPrms.getTableType();
+        if (!autoCommit && tableType.equalsIgnoreCase("C")) {
+          Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+              .getCause());
+          return;
+        }
       } else throw new TestException("Got exception while performing update operation.", se);
     }
   }
@@ -785,15 +785,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       }
       closeConnection(conn);
     } catch (SQLException se) {
-      boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
-          ("autoCommit");
-      String tableType = SnappyPrms.getTableType();
-      Log.getLogWriter().info("SS - TableType: " + tableType);
-      Log.getLogWriter().info("SS - autoCommit: " + autoCommit);
-      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
-        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
-            .getCause());
-        return;
+      if (setTx) {
+        boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+            ("autoCommit");
+        String tableType = SnappyPrms.getTableType();
+        if (!autoCommit && tableType.equalsIgnoreCase("C")) {
+          Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+              .getCause());
+          return;
+        }
       } else throw new TestException("Got exception while performing delete operation.", se);
     }
   }
