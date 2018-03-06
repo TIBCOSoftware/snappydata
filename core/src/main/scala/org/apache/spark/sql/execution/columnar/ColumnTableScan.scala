@@ -451,6 +451,7 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
     ctx.addMutableState("boolean", isCaseOfSortedInsert, s"")
+    ctx.addMutableState("boolean", thisRowFromDeltaIsInsert, s"")
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -592,11 +593,13 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDeltaIsInsert,
-          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchDeltaIndex, numBatchUpdatedRows)
+          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDeltaIndex,
+          numBatchUpdatedRows)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDeltaIsInsert,
-          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchDeltaIndex, numBatchUpdatedRows)
+          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDeltaIndex,
+          numBatchUpdatedRows)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -737,6 +740,7 @@ private[sql] final case class ColumnTableScan(
          |  }
          |  $batchIndex = 0;
          |  $batchDeltaIndex = 0;
+         |  $thisRowFromDeltaIsInsert = false;
          |  return true;
          |}
       """.stripMargin)
@@ -787,13 +791,13 @@ private[sql] final case class ColumnTableScan(
        |      ${ColumnTableScan.getCaseOfSortedInsertValue};
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
-       |      boolean $thisRowFromDeltaIsInsert = false;
+       |      if ($thisRowFromDeltaIsInsert) {
+       |        $batchDeltaIndex++;
+       |        $thisRowFromDeltaIsInsert = false;
+       |      }
        |      $deletedCheck
        |      $assignOrdinalId
        |      $consumeCode
-       |      if ($thisRowFromDeltaIsInsert) {
-       |        $batchDeltaIndex++;
-       |      }
        |      if (shouldStop()) {
        |        $beforeStop
        |        // increment index for return
@@ -833,8 +837,8 @@ private[sql] final case class ColumnTableScan(
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, thisRowFromDeltaIsInsert: String,
-      isCaseOfSortedInsert: String, numRows: String, colInput: String,
-      inputIsRow: String, batchDeltaIndex: String, numBatchUpdatedRows: String): ExprCode = {
+      isCaseOfSortedInsert: String, numRows: String, colInput: String, inputIsRow: String,
+      batchIndex: String, batchDeltaIndex: String, numBatchUpdatedRows: String): ExprCode = {
     // scalastyle:on
     val nonNullPosition = if (attr.nullable) {
       s"$batchOrdinal - $numNullsVar - $batchDeltaIndex"
@@ -929,12 +933,12 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchOrdinal=" + $batchOrdinal +
            |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
            |      " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
+           |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDeltaIndex=" + $batchDeltaIndex +
            |      " ,numBatchUpdatedRows=" + $numBatchUpdatedRows +
            |      " ,numRows=" + $numRows +
            |      " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |      " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
-           |      " ,thisRowFromDeltaIsUpdate=false" +
            |      "");
            |    }
            |  } else {
@@ -945,7 +949,6 @@ private[sql] final case class ColumnTableScan(
            |  if ($unchanged == ${ColumnTableScan.INSERT_IN_DELTA}) {
            |    $thisRowFromDeltaIsInsert = true;
            |  }
-           |  boolean thisRowFromDeltaIsUpdate = $unchanged == ${ColumnTableScan.UPDATE_IN_DELTA};
            |  $updatedAssign
            |  // TODO VB: Remove this
            |  if (${ColumnTableScan.getDebugMode}) {
@@ -953,12 +956,12 @@ private[sql] final case class ColumnTableScan(
            |     " ,batchOrdinal=" + $batchOrdinal +
            |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
+           |    " ,batchIndex=" + $batchIndex +
            |    " ,batchDeltaIndex=" + $batchDeltaIndex +
            |    " ,numBatchUpdatedRows=" + $numBatchUpdatedRows +
            |    " ,numRows=" + $numRows +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
-           |    " ,thisRowFromDeltaIsUpdate=" + thisRowFromDeltaIsUpdate +
            |    "");
            |    }
            |  $isNullVar = false;
