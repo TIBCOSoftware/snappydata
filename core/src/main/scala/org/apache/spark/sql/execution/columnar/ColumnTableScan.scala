@@ -682,7 +682,16 @@ private[sql] final case class ColumnTableScan(
       s"""
         while (true) {
           $batchAssign
-          if ($colInput.hasUpdatedColumns() || $filterFunction($unsafeRow)) {
+          // TODO VB: Temporary change, must be removed.
+          // Removed check of hasUpdatedColumns since
+          // 1. Till now only incremental insert is there and so no updated rows.
+          // 2. Have to remove this once insert and update are tested in parallel.
+          // 3. Now this is needed for performance. Without this cached batches are not removed.
+          // 4. However just based on filter more number of cached batches are removed resulting in
+          // failure of some queries. That can only be fixed with updating stats properly during
+          // update and incremental insert.
+          // Original $colInput.hasUpdatedColumns() || $filterFunction($unsafeRow)
+          if ($filterFunction($unsafeRow)) {
             break;
           }
           if (!$colInput.hasNext()) return false;
