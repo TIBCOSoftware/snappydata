@@ -1,6 +1,6 @@
 # List of Properties
 
-Below is a list of properties that can be set to configure the cluster. These properties can be set in the **conf/server**, **conf/leads** or **conf/locators** configuration files.
+Below is a list of properties that can be set to configure the cluster. These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
 
 |Property|Description|Components</br>|
 |-|-|-|
