@@ -159,7 +159,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val colTableName = "colDeltaTable"
     val numElements = 9999551
     val numBuckets = cores
-    val numIters = 100
+    val numIters = 10
     failedCount = 0
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
       "RangeQuery")(executeQuery_RangeQuery)
