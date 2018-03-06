@@ -31,6 +31,7 @@ import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Express
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
@@ -39,6 +40,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.JDBCMutableRelation
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 
@@ -262,7 +264,7 @@ class RowFormatRelation(
       case Some(x) => x
       case None => ""
     }
-    s"CREATE $indexType INDEX $indexName ON $baseTable ($columns)"
+    s"CREATE $indexType INDEX ${quotedName(indexName)} ON ${quotedName(baseTable)} ($columns)"
   }
 
   /** Base table of this relation. */
@@ -317,7 +319,8 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       data: Option[LogicalPlan]): RowFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val table = ExternalStoreUtils.removeInternalProps(parameters)
+    // hive metastore is case-insensitive so table name is always upper-case
+    val tableName = Utils.toUpperCase(ExternalStoreUtils.removeInternalProps(parameters))
     ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters,
       forManagedTable = true, forColumnTable = false)
@@ -331,7 +334,6 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       Some(sqlContext.sparkSession), parameters)
 
     StoreUtils.validateConnProps(parameters)
-    val tableName = SnappyStoreHiveCatalog.processIdentifier(table, sqlContext.conf)
     var success = false
     val relation = new RowFormatRelation(connProperties,
       tableName,

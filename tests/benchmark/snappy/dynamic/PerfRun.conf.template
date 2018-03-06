@@ -21,16 +21,16 @@ SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/sn
 #SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata-0.7-bin
 
 #number of buckets for order and lineitem tables
-buckets_Order_Lineitem=113
+buckets_Order_Lineitem=128
 
 #number of buckets for Customer, Part and PartSupplier tables
-buckets_Cust_Part_PartSupp=113
+buckets_Cust_Part_PartSupp=128
 
 #Are Nation, Region, Supplier tables column tables?
 IsSupplierColumnTable=true
 
 #number of buckets for Nation, Region, Supplier
-buckets_Supplier=113
+buckets_Supplier=128
 
 #Redundancy Level
 Redundancy=0
