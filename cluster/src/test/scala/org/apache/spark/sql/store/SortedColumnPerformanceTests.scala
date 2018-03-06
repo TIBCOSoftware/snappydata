@@ -25,7 +25,7 @@ import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.util.Benchmark
+import org.apache.spark.util.{Benchmark, QueryBenchmark}
 import org.apache.spark.sql.snappy._
 
 /**
@@ -34,28 +34,6 @@ import org.apache.spark.sql.snappy._
 class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
   val cores: Int = math.min(16, Runtime.getRuntime.availableProcessors())
-  val params1 = Array(9897441, 1891255, 1757452, 9032268, 5816419, 8216891, 8754361, 9843223,
-    1710564, 2063902, 1248727, 9190220, 9624340, 1260846, 4261500, 6720184, 7931244, 9667476,
-    6490434, 9565207, 889821, 9879844, 3175650, 9198616, 4245217, 2877506, 1815296, 2369297,
-    6614546, 7843683, 9520205, 9648435, 9999052, 1142096, 6110060, 8519520, 122012, 6753598,
-    9529024, 2392002, 5736161, 7597741, 9661119, 2067235, 2944637, 8563933, 9979787, 7037189,
-    7425039, 3211201, 9770410, 1833691, 5971758, 7989612, 742007, 6482434, 4525179, 5242269,
-    4036180, 5046420, 5166391, 9335631, 599172, 52447, 1828811, 282922, 4246768, 4610412, 5100035,
-    6842462, 2150423, 6388472, 9399090, 8329511, 2501608, 7981119, 7757555, 6114453, 8242861,
-    2310103, 9287338, 9367289, 124702, 2458996, 277888, 1777816, 9761242, 8549981, 2409869,
-    8269475, 3925428, 8895795, 3616194, 9447476, 7400767, 393980, 9741129, 6333710, 5026825,
-    3530164)
-  val params2 = Array(5003237, 1435358, 6121973, 5279568, 2789158, 9883536, 722353, 5215953,
-    7558178, 5258491, 3766600, 1015397, 147475, 7210484, 9165479, 9874827, 3112913, 9131449,
-    837588, 1711876, 5520763, 635681, 4708813, 2019587, 3191206, 2134644, 9063655, 8688740,
-    5582278, 7931457, 7828721, 6458443, 5107480, 5322005, 2556579, 3321390, 2030249, 2286212,
-    5869009, 6764444, 8462700, 6157189, 8509160, 7714377, 5402279, 9289405, 2063669, 1683461,
-    6713163, 1112404, 469304, 9986959, 3817237, 7316005, 5634591, 5788888, 6765241, 2777353,
-    2279939, 912389, 2139298, 1763126, 6855701, 1005755, 6193509, 6798822, 8243022, 3245550,
-    8051872, 6343670, 5016771, 599987, 7481021, 6965434, 4278096, 6381866, 7264783, 4333405,
-    5929651, 6250666, 4651526, 7162603, 5747190, 2811019, 8513965, 3239368, 9863085, 2052690,
-    3982257, 7584449, 7020757, 2046008, 888925, 9963517, 2763324, 7145188, 8565115, 8158010,
-    4605674, 6999623)
 
   override def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
     val conf = new SparkConf()
@@ -168,11 +146,11 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numElements = 9999551
     val numBuckets = cores
     val numIters = 100
-    failedtestCount = 0
+    failedCount = 0
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
       "PointQuery")(executeQuery_PointQuery)
     // scalastyle:off
-    println(s"Failed test count $failedtestCount of $numIters")
+    println(s"Failed query count = $failedCount out of $numIters")
     // scalastyle:on
   }
 
@@ -182,60 +160,55 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numElements = 9999551
     val numBuckets = cores
     val numIters = 100
-    failedtestCount = 0
+    failedCount = 0
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
       "RangeQuery")(executeQuery_RangeQuery)
     // scalastyle:off
-    println(s"Failed test count $failedtestCount of $numIters")
+    println(s"Failed query count = $failedCount out of $numIters")
     // scalastyle:on
   }
 
-  def executeQuery_PointQuery(session: SnappySession, colTableName: String,
-      numIters: Int, iterCount: Int): Unit = {
-    val index = if (iterCount < 0) 0 else iterCount % params1.length
-    val query = s"select * from $colTableName where id = ${params1(index)}"
+  var failedCount = 0
+
+  def executeQuery_PointQuery(session: SnappySession, benchmark: QueryBenchmark,
+      colTableName: String, numIters: Int, iterCount: Int): Boolean = {
+    val param = benchmark.firstRandomValue
+    val query = s"select * from $colTableName where id = $param"
     // scalastyle:off
     // println(s"Query = $query")
     // scalastyle:on
     val expectedNumResults = 1
     val result = session.sql(query).collect()
-    // assert(result.length === expectedNumResults)
-    if (result.length !== expectedNumResults) {
-      failedtestCount+= 1
-      // scalastyle:off
-      // println(s"Query = $query result=${result.length} expectedNumResults=$expectedNumResults")
-      // scalastyle:on
+    val passed = result.length === expectedNumResults
+    if (!passed) {
+      failedCount += 1
     }
+    passed
   }
 
-  var failedtestCount = 0
-
-  def executeQuery_RangeQuery(session: SnappySession, colTableName: String,
-      numIters: Int, iterCount: Int): Unit = {
-    val index1 = if (iterCount < 0) 0 else iterCount % params1.length
-    val index2 = if (iterCount < 0) 0 else iterCount % params2.length
-    val (low, high) = if (params1(index1) < params2(index2)) {
-      (params1(index1), params2(index2))
-    } else (params2(index2), params1(index1))
+  def executeQuery_RangeQuery(session: SnappySession, benchmark: QueryBenchmark,
+      colTableName: String, numIters: Int, iterCount: Int): Boolean = {
+    val (low, high) = if (benchmark.firstRandomValue < benchmark.secondRandomValue) {
+      (benchmark.firstRandomValue, benchmark.secondRandomValue)
+    } else (benchmark.secondRandomValue, benchmark.firstRandomValue)
     val query = s"select * from $colTableName where id between $low and $high"
     // scalastyle:off
     // println(s"Query = $query")
     // scalastyle:on
     val expectedNumResults = high - low + 1
     val result = session.sql(query).collect()
-    // assert(result.length === expectedNumResults)
-    if (result.length !== expectedNumResults) {
-      failedtestCount+= 1
-      // scalastyle:off
-      // println(s"Query = $query result=${result.length} expectedNumResults=$expectedNumResults")
-      // scalastyle:on
+    val passed = result.length === expectedNumResults
+    if (!passed) {
+      failedCount += 1
     }
+    passed
   }
 
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long, numIters: Int, queryMark: String, doVerifyFullSize: Boolean = false)
-      (f : (SnappySession, String, Int, Int) => Unit): Unit = {
-    val benchmark = new Benchmark(s"Benchmark $queryMark", numElements, outputPerIteration = true)
+      (f : (SnappySession, QueryBenchmark, String, Int, Int) => Boolean): Unit = {
+    val benchmark = new QueryBenchmark(numElements, s"Benchmark $queryMark", numElements,
+      outputPerIteration = true)
     val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements))
     val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements))
 
@@ -277,8 +250,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         doGC()
       }
 
-      ColumnCacheBenchmark.addCaseWithCleanup(benchmark, name, numIters,
-        prepare, cleanup, testCleanup) { i => f(session, colTableName, numIters, i)}
+      SortedColumnPerformanceBenchmark.addCaseWithCleanup(benchmark, name, numIters,
+        prepare, cleanup, testCleanup) { i => f(session, benchmark, colTableName, numIters, i)}
     }
 
     try {
@@ -294,5 +267,27 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.conf.unset(Property.ColumnBatchSize.name)
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
     }
+  }
+}
+
+object SortedColumnPerformanceBenchmark {
+
+  def addCaseWithCleanup(
+      benchmark: QueryBenchmark,
+      name: String,
+      numIters: Int = 0,
+      prepare: () => Unit,
+      cleanup: () => Unit,
+      testCleanup: () => Unit,
+      testPrepare: () => Unit = () => Unit)(f: Int => Boolean): Unit = {
+    val timedF = (timer: Benchmark.Timer) => {
+      testPrepare()
+      timer.startTiming()
+      val ret = f(timer.iteration)
+      timer.stopTiming()
+      testCleanup()
+      ret
+    }
+    benchmark.benchmarks += QueryBenchmark.Case(name, timedF, numIters, prepare, cleanup)
   }
 }
