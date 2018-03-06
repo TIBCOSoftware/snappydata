@@ -34,7 +34,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
@@ -156,7 +156,7 @@ private[sql] trait SnappyStrategies {
           } else Nil
 
         case ExtractGreaterThanOrLessThanJoinKeys(joinType, leftKeys, rightKeys, condition,
-        left, right) =>
+        left, right) if ColumnTableScan.getCaseOfSortedInsertValue =>
           joins.SortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
             planLater(left), planLater(right)) :: Nil
 
