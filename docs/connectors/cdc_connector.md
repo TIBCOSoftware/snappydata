@@ -2,13 +2,13 @@
 
 <ent>This feature is available only in the Enterprise version of SnappyData.</ent>
 
-The Change Data Capture (CDC) mechanism enables you to capture changed data. The functionality provides an efficient framework for tracking inserts, updates, and deletes in tables in a SQL Server database. It is used to source event streams from JDBC sources to SnappyData streaming.</br>
+The Change Data Capture (CDC) mechanism enables you to capture changed data. The functionality provides an efficient framework for tracking inserts, updates, and deletes in tables in a JDBC source database. It is used to source event streams from JDBC sources to SnappyData streaming.</br>
 
 In this topic, we explain how SnappyData uses the JDBC streaming connector to pull changed data from SQL database and ingest it into SnappyData tables.
 
 !!!Note:
 
-	- Writing data into two different tables from a single table is currently not supported as the schema for incoming data frame cannot be changed. Currently, one to one correspondence between the source table and destination table is supported.
+	- Writing data from different tables to a single table is currently not supported as the schema for incoming data frame cannot be changed. 
 
 	- To capture changed data for multiple source tables, ensure that you create an instance for each source table.
 
@@ -19,9 +19,9 @@ In this topic, we explain how SnappyData uses the JDBC streaming connector to pu
 
 - Use a user account with the required roles and privileges to the database.
 
-- Ensure that a SQL Server to which SnappyData CDC Connector can connect is running and available.
+- Ensure that a JDBC source to which SnappyData CDC Connector can connect is running and available.
 
-- You need the **snappydata-jdbc-stream-connector_2.11-0.9.jar**, which is available in the **$SNAPPY_HOME/jars** directory. </br>If you are using Maven or Gradle project to develop the streaming application, you need to publish the above jar into a local maven repository.
+- You need the **snappydata-jdbc-stream-connector_2.11-0.9.1.jar**, which is available in the **$SNAPPY_HOME/jars** directory. </br>If you are using Maven or Gradle project to develop the streaming application, you need to publish the above jar into a local maven repository.
 
 - To run your application in the Smart connector mode, refer to the [documentation](../affinity_modes/connector_mode.md).
 
@@ -36,7 +36,7 @@ In this section, we discuss the steps required to set up the CDC connector and v
 
 ### Understanding the Program Structure
 
-The RDB CDC connector ingests data into SnappyData from any JDBC enabled data server. We have a custom source with alias “jdbcStream” and a custom Sink with alias “snappystore”. Source has the capability to read from a JDBC source and Sink can do inserts/updates and deletes based on CDC operations
+The RDB CDC connector ingests data into SnappyData from any CDC enabled JDBC source. We have a custom source with alias “jdbcStream” and a custom Sink with alias “snappystore”. Source has the capability to read from a JDBC source and Sink can do inserts/updates and deletes based on CDC operations
 
 ### Step 1: Set Up the Source SQL Database and Tables
 
@@ -44,9 +44,7 @@ Ensure that change data capture is enabled for the database and table level. Ref
 
 ### Step 2: Enable Streaming for the Source Tables and configure the Reader
 
-
-
-#### Enable Streaming for the Source Tables
+#### Step 2.1 Enable Streaming for the Source Tables
 Structured streaming and Spark’s JDBC source is used to read from the source database system.
 
 To enable this, set a stream referring to the source table.</br>
@@ -61,9 +59,9 @@ For example:
           
 The JDBC Stream Reader options are:
 
-- **jdbcStream**: The format in which the source data is received from the SQL server.
+- **jdbcStream**: The format in which the source data is received from the JDBC source.
 
-- **spec**: A CDC spec class name which is used to query offsets from different data sources. We have a default specification for SQLServer. You can extend the `org.apache.spark.sql.streaming.jdbc.SourceSpec` trait to provide any other implementation.
+- **spec**: A CDC spec class name which is used to query offsets from different data sources. We have a default specification for CDC enabled JDBC source. You can extend the `org.apache.spark.sql.streaming.jdbc.SourceSpec` trait to provide any other implementation.
 
         trait SourceSpec {
 
@@ -122,7 +120,7 @@ The JDBC Stream Reader options are:
     |`maximumPoolSize`|Connection pool size ( default 10)|
     |`minimumIdle`|Minimum number of idle connection( default 5)|
 
-#### Operating on the reader with normal Structured streaming APIs
+#### Step 2.2 Operating on the reader with normal Structured streaming APIs
 
 The sample usage can be as follows:
 
@@ -164,53 +162,68 @@ A typical implementation would look like:
 
 ```
 @Override
-  public void process(SnappySession snappySession, Properties sinkProps,
-      long batchId, Dataset<Row> df) {
+ public void process(SnappySession snappySession, Properties sinkProps, long batchId, Dataset<Row> df) {
 
-    String snappyTable = sinkProps.getProperty("TABLENAME").toUpperCase();
+  String sqlsrvTable = sinkProps.getProperty("tableName").toUpperCase();
+  String customerTable = sqlsrvTable.substring(sqlsrvTable.indexOf("DBO_") + 4, sqlsrvTable.indexOf("_CT"));
+  String personTable = customerTable + "_person";
+  String addrTable = customerTable + "_addr";
+  log.info("Processing for " + customerTable + " batchId " + batchId);
 
-    log.info("SB: Processing for " + snappyTable + " batchId " + batchId);
+           StructType dfSchema = df.schema();
+           String[] customerColumns = new String[dfSchema.size() - 6];
+           for (int i = 6; i < dfSchema.size(); i++) {
+               customerColumns[i - 6] = dfSchema.apply(i).name();
+           }
 
-    df.cache();
+           // DF gets inserted into customer table
+           registerSnappyUpsertsAndDeletes(df, customerTable, dfSchema, customerColumns);
 
-    Dataset<Row> snappyCustomerDelete = df
-        // pick only delete ops
-        .filter("\"__$operation\" = 1")
-        // exclude the first 5 columns and pick the columns that needs to control
-        // the WHERE clause of the delete operation.
-        .drop(metaColumns.toArray(new String[metaColumns.size()]));
+           // Dividing the DF in two different DFs
+           String[] personColumns = new String[3];
+           personColumns[0] = dfSchema.apply(6).name(); // C_NAME
+           personColumns[1] = dfSchema.apply(10).name(); // C_ACCTBAL
+           personColumns[2] = dfSchema.apply(11).name(); // C_MKTSEGMENT
 
-      snappyJavaUtil(snappyCustomerDelete.write()).deleteFrom("APP." + snappyTable);
+           String[] addressColumns = new String[3];
+           addressColumns[0] = dfSchema.apply(7).name(); // C_Address
+           addressColumns[1] = dfSchema.apply(8).name(); // C_NationKey
+           addressColumns[2] = dfSchema.apply(9).name(); // C_Phone
 
-      if(batchId == 0){ // Batch ID will be always 0 when stream app starts
-        // In case of 0th batchId always do a putInto , as we do not know if it is restarting from a failure.
-        Dataset<Row> snappyCustomerUpsert = df
-            // pick only insert/update ops
-            .filter("\"__$operation\" = 4 OR \"__$operation\" = 2")
-            // exclude the first 5 columns and pick the rest as columns have
-            // 1-1 correspondence with snappydata customer table.
-            .drop(metaColumns.toArray(new String[metaColumns.size()]));
-        snappyJavaUtil(snappyCustomerUpsert.write()).putInto("APP." + snappyTable);
-      } else {
-        Dataset<Row> snappyCustomerUpdates = df
-            // pick only insert/update ops
-            .filter("\"__$operation\" = 4")
-            .drop(metaColumns.toArray(new String[metaColumns.size()]));
+           registerSnappyUpsertsAndDeletes(df, personTable, dfSchema, personColumns);
+           registerSnappyUpsertsAndDeletes(df, addrTable, dfSchema, addressColumns);
+       }
 
-        snappyJavaUtil(snappyCustomerUpdates.write()).update("APP." + snappyTable);
+ private void registerSnappyUpsertsAndDeletes(Dataset<Row> df, String table, StructType dfSchema, String[] columns) {
+  Dataset<Row> snappyCustomerUpsert = df
+    // pick only insert/update ops
+    .filter("\"__$operation\" = 4 OR \"__$operation\" = 2")
+    // exclude the first 5 columns and pick the rest as columns
+    // have
+    // 1-1 correspondence with snappydata customer table.
+    // For more complex mapping, one can take a UDF route
+    // instead of
+    // .mapPartitions as demonstrated below.
+    .select(dfSchema.apply(5).name(), columns);
 
-        Dataset<Row> snappyCustomerInserts = df
-            // pick only insert/update ops
-            .filter("\"__$operation\" = 2")
-            .drop(metaColumns.toArray(new String[metaColumns.size()]));
+  // System.out.println(snappyCustomerUpsert.count());
+  // a simple snappySession.putInto(...) will be provided shortly.
+  snappyJavaUtil(snappyCustomerUpsert.write().format("row")).putInto("APP." + table);
 
-        try{
-          snappyCustomerInserts.write().insertInto("APP." + snappyTable);
-        }catch (Exception e) {
-          snappyJavaUtil(snappyCustomerInserts.write()).putInto("APP." + snappyTable);
-        }
-      }
-  }
+  Dataset<Row> snappyCustomerDelete = df
+    // pick only delete ops
+    .filter("\"__$operation\" = 1")
+    // exclude the first 5 columns and pick the columns that
+    // needs to control
+    // the WHERE clause of the delete operation.
+    .select(dfSchema.apply(5).name());
+
+  // System.out.println(snappyCustomerUpsert.count());
+  snappyJavaUtil(snappyCustomerDelete.write().format("row")).deleteFrom("APP." + table);
+ }
+ public ProcessEvents() {
+ }
+}
 ```
 
 ## Additional Information
