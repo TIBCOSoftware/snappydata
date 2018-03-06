@@ -597,10 +597,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   public void performInsert() {
+    String tableType = null;
+    boolean autoCommit = false;
     try {
       Connection conn;
-      if (SnappyPrms.setTx()) {
+      if (setTx) {
         conn = getLocatorConnection(false);
+        autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+            ("autoCommit");
+        tableType = SnappyPrms.getTableType();
       } else {
         conn = getLocatorConnection();
       }
@@ -619,6 +624,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Log.getLogWriter().info("Inserting in snappy : " + insertStmt + " with " +
           "values(" + row + ")");
       int rowCount = snappyPS.executeUpdate();
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("R"))
+        commit(conn);
       Log.getLogWriter().info("Inserted " + rowCount + " row in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
@@ -635,15 +642,10 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       closeConnection(conn);
 
     } catch (SQLException se) {
-      if (setTx) {
-        boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
-            ("autoCommit");
-        String tableType = SnappyPrms.getTableType();
-        if (!autoCommit && tableType.equalsIgnoreCase("C")) {
-          Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
-              .getCause());
-          return;
-        }
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
+        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
       } else throw new TestException("Got exception while performing insert operation.", se);
     }
   }
@@ -666,9 +668,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public void performUpdate() {
     Connection conn = null;
     String tableName = null;
+    String tableType = null;
+    boolean autoCommit = false;
     try {
-      if (SnappyPrms.setTx()) {
+      if (setTx) {
         conn = getLocatorConnection(false);
+        autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+            ("autoCommit");
+        tableType = SnappyPrms.getTableType();
       } else {
         conn = getLocatorConnection();
       }
@@ -690,11 +697,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         getAndExecuteSelect(conn, stmt, false);
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("R"))
+        commit(conn);
       Log.getLogWriter().info("Updated " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
         if (stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(conn, stmt, true);
+          getAndExecuteSelect(dConn, stmt, true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
@@ -719,24 +728,24 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       }
       closeConnection(conn);
     } catch (SQLException se) {
-      if (setTx) {
-        boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
-            ("autoCommit");
-        String tableType = SnappyPrms.getTableType();
-        if (!autoCommit && tableType.equalsIgnoreCase("C")) {
-          Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
-              .getCause());
-          return;
-        }
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
+        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
       } else throw new TestException("Got exception while performing update operation.", se);
     }
   }
 
   public void performDelete() {
+    String tableType = null;
+    boolean autoCommit = false;
     try {
       Connection conn;
-      if (SnappyPrms.setTx()) {
+      if (setTx) {
         conn = getLocatorConnection(false);
+        autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+            ("autoCommit");
+        tableType = SnappyPrms.getTableType();
       } else {
         conn = getLocatorConnection();
       }
@@ -757,11 +766,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         getAndExecuteSelect(conn, stmt, false);
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("R"))
+        commit(conn);
       Log.getLogWriter().info("Deleted " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
         if (stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(conn, stmt, true);
+          getAndExecuteSelect(dConn, stmt, true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Deleted " + derbyRows + " rows in derby.");
@@ -785,15 +796,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       }
       closeConnection(conn);
     } catch (SQLException se) {
-      if (setTx) {
-        boolean autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
-            ("autoCommit");
-        String tableType = SnappyPrms.getTableType();
-        if (!autoCommit && tableType.equalsIgnoreCase("C")) {
-          Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
-              .getCause());
-          return;
-        }
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
+
+        Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
       } else throw new TestException("Got exception while performing delete operation.", se);
     }
   }
