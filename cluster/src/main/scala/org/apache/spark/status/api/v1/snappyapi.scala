@@ -19,6 +19,15 @@
 package org.apache.spark.status.api.v1
 
 import java.util.UUID
+import scala.collection.immutable.Queue
+
+
+
+class ClusterSummary private[spark](
+    val cpuUsageTrend: Seq[Double],
+    val heapUsageTrend: Seq[Double],
+    val offHeapUsageTrend: Seq[Double]
+)
 
 class MemberSummary private[spark](
     val id: String,

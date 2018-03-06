@@ -42,6 +42,11 @@ import org.glassfish.jersey.servlet.ServletContainer
 @Path("/services")
 private[v1] class SnappyApiRootResource extends ApiRequestContext {
 
+  @Path("clusterinfo")
+  def getClusterInfo(): ClusterInfoResource = {
+    new ClusterInfoResource
+  }
+
   @Path("allmembers")
   def getAllMembers(): AllMembersResource = {
     new AllMembersResource

@@ -38,6 +38,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val pageHeaderText: String = SnappyDashboardPage.pageHeaderText
 
+    /* // Commenting for now, as not being used
     var clusterStatsMap = scala.collection.mutable.HashMap.empty[String, Any]
     clusterStatsMap += ("status" -> SnappyDashboardPage.Status.normal)
     clusterStatsMap += ("numMembers" -> 0)
@@ -74,6 +75,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
 
     updateClusterStats(clusterStatsMap, clusterMembers, tableBuff, externalTableBuff)
+    */
 
     // Generate Pages HTML
     val pageTitleNode = createPageTitleNode(pageHeaderText)
@@ -81,7 +83,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val clusterStatsDetails = {
       val clustersStatsTitle = createTitleNode(SnappyDashboardPage.clusterStatsTitle,
                                  SnappyDashboardPage.clusterStatsTitleTooltip)
-      val clusterDetails = clusterStats(clusterStatsMap)
+      val clusterDetails = clusterStats
 
       clustersStatsTitle ++ clusterDetails
     }
@@ -118,6 +120,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   }
 
+  // todo: to be removed as not being used anymore
   private def updateClusterStats(
       clusterStatsMap: mutable.HashMap[String, Any],
       membersBuf: mutable.Map[String, mutable.Map[String, Any]],
@@ -281,62 +284,23 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def clusterStats(clusterDetails: mutable.Map[String, Any]): Seq[Node] = {
-
-    val status = clusterDetails.getOrElse("status", "")
-
-    val statusImgUri = if (status.toString.equalsIgnoreCase("normal")) {
-      "/static/snappydata/running-status-icon-70x68.png"
-    } else {
-      "/static/snappydata/warning-status-icon-70x68.png"
-    }
-
-    val cpuUsage = clusterDetails.getOrElse("cpuUsage", 0.0).asInstanceOf[Double];
-    val memoryUsage = clusterDetails.getOrElse("memoryUsage", 0.0).asInstanceOf[Double];
-    // val heapUsage = clusterDetails.getOrElse("heapUsage", 0.0).asInstanceOf[Double];
-    // val offHeapUsage = clusterDetails.getOrElse("offHeapUsage", 0.0).asInstanceOf[Double];
-    val jvmHeapUsage = clusterDetails.getOrElse("jvmHeapUsage", 0.0).asInstanceOf[Double];
-
-    <div class="row-fluid">
-      <div class="keyStates">
-        <div class="keyStatsValue"
-             style="width:50%; margin: auto;" data-toggle="tooltip" title=""
-             data-original-title={
-               SnappyDashboardPage.clusterStats("status").toString + ": " + status.toString
-             } >
-          <img style="padding-top: 15px;" src={statusImgUri} />
-        </div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("status")}</div>
+  private def clusterStats(): Seq[Node] = {
+    <div class="container-fluid">
+      <div id="cpuUsageContainer"
+           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
-      <div class="keyStates">
-        <div class="keyStatsValue" id="cpuUsage" data-value={cpuUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={
-               SnappyDashboardPage.clusterStats("cpuUsageTooltip").toString
-             }>
-          <svg id="cpuUsageGauge" width="100%" height="100%" ></svg>
-        </div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("cpuUsage")}</div>
+      <div id="heapUsageContainer"
+           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
-      <div class="keyStates">
-        <div class="keyStatsValue" id="memoryUsage" data-value={memoryUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={
-             SnappyDashboardPage.clusterStats("memoryUsageTooltip").toString
-             }>
-          <svg id="memoryUsageGauge" width="100%" height="100%" ></svg>
-        </div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("memoryUsage")}</div>
+      <div id="offheapUsageContainer"
+           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
-      <div class="keyStates">
-        <div class="keyStatsValue" id="jvmHeapUsage" data-value={jvmHeapUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={
-               SnappyDashboardPage.clusterStats("jvmHeapUsageTooltip").toString
-             }>
-          <svg id="jvmHeapUsageGauge" width="100%" height="100%" ></svg>
-        </div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("jvmHeapUsage")}</div>
+      <div id="getsputsContainer"
+           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
     </div>
   }
