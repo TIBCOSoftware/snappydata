@@ -2,55 +2,45 @@
 
 <ent>This feature is available only in the Enterprise version of SnappyData.</ent>
 
-The Change Data Capture (CDC) mechanism enables you to capture changed data. The functionality provides an efficient framework for tracking inserts, updates, and deletes in tables in a JDBC source database. It is used to source event streams from JDBC sources to SnappyData streaming.</br>
+As data keeps growing rapidly techniques like Change Data Capture (CDC) is crucial for handling and processing the data inflow.
+The CDC technology is used in a database to track changed data so that the identified changes can be used to keep target systems in sync with the changes made to the source systems.
 
-In this topic, we explain how SnappyData uses the JDBC streaming connector to pull changed data from SQL database and ingest it into SnappyData tables.
+A CDC enabled system (SQL database) automatically captures changes from the source table, these changes are then updated on the target system (SnappyData tables).</br>
+It provides an efficient framework which allows users to capture *individual data changes* like insert, update, and delete in the source tables (instead of dealing with the entire data), and apply them to the SnappyData tables to keep both the source and target tables in sync.
 
-!!!Note:
+![CDC Workflow](../Images/cdc_tables.png)
 
-	- Writing data from different tables to a single table is currently not supported as the schema for incoming data frame cannot be changed. 
+CDC is supported on both the Smart Connector Mode and the Embedded more. For more  information on the modes, refer to the documentation on [Smart Connector Mode](../affinity_modes/connector_mode.md) and [Embedded SnappyData Store Mode](../affinity_modes/embedded_mode.md).
 
-	- To capture changed data for multiple source tables, ensure that you create an instance for each source table.
-
-	-  For every source table that needs to be tracked for changes, ensure that there is a corresponding destination table in SnappyData.
-
-
-## Prerequisites
-
-- Use a user account with the required roles and privileges to the database.
-
-- Ensure that a JDBC source to which SnappyData CDC Connector can connect is running and available.
-
-- You need the **snappydata-jdbc-stream-connector_2.11-0.9.1.jar**, which is available in the **$SNAPPY_HOME/jars** directory. </br>If you are using Maven or Gradle project to develop the streaming application, you need to publish the above jar into a local maven repository.
-
-- To run your application in the Smart connector mode, refer to the [documentation](../affinity_modes/connector_mode.md).
+In this topic, we explain how SnappyData uses the JDBC streaming connector to pull changed data from the SQL database and ingest it into SnappyData tables.
 
 The following image illustrates the data flow for change data capture:</br>
 ![CDC Workflow](../Images/cdc_connector.png)
 
-## Setting up the CDC Connector
+## Prerequisites
 
-To use this functionality have to configure the database and tables, enable streaming for the source tables, configure the reader and the writer.
+- Ensure that change data capture is enabled for the database and table. Refer to your database documentation for more information on enabling CDC.
 
-In this section, we discuss the steps required to set up the CDC connector and various components.
+- A user account with the required roles and privileges to the database.
 
-### Understanding the Program Structure
+- Ensure that a JDBC source to which SnappyData CDC Connector can connect is running and available from the node where CDC connector is running.
 
-The RDB CDC connector ingests data into SnappyData from any CDC enabled JDBC source. We have a custom source with alias “jdbcStream” and a custom Sink with alias “snappystore”. Source has the capability to read from a JDBC source and Sink can do inserts/updates and deletes based on CDC operations
+- The **snappydata-jdbc-stream-connector_2.11-0.9.1.jar**, which is available in the **$SNAPPY_HOME/jars** directory. </br>If you are using Maven or Gradle project to develop the streaming application, you need to publish the above jar into a local maven repository.
 
-### Step 1: Set Up the Source SQL Database and Tables
+## Understanding the Program Structure
 
-Ensure that change data capture is enabled for the database and table level. Refer to your database documentation for more information on enabling CDC.
+The RDB CDC connector ingests data into SnappyData from any CDC enabled JDBC source. We have a custom source with alias “jdbcStream” and a custom Sink with alias “snappystore”. </br>
+*Source* has the capability to read from a JDBC source and *Sink* can perform inserts, updates or deletes based on CDC operations.
 
-### Step 2: Enable Streaming for the Source Tables and configure the Reader
+## Configuring the Stream Reader
 
-#### Step 2.1 Enable Streaming for the Source Tables
 Structured streaming and Spark’s JDBC source is used to read from the source database system.
 
 To enable this, set a stream referring to the source table.</br>
+
 For example:
 
-       DataStreamReader reader = snappYSession.readStream()
+       DataStreamReader reader = snappySession.readStream()
           .format("jdbcStream")
           .option("spec", "org.apache.spark.sql.streaming.jdbc.SqlServerSpec")
           .option("sourceTableName", sourceTable)
@@ -59,9 +49,9 @@ For example:
           
 The JDBC Stream Reader options are:
 
-- **jdbcStream**: The format in which the source data is received from the JDBC source.
+- **jdbcStream**: The format in which the source data is received from the JDBC source. This parameter is mandatory. Currently, only JDBC stream is supported.
 
-- **spec**: A CDC spec class name which is used to query offsets from different data sources. We have a default specification for CDC enabled JDBC source. You can extend the `org.apache.spark.sql.streaming.jdbc.SourceSpec` trait to provide any other implementation.
+- **spec**: A CDC spec class name which is used to query offsets from different databases. We have a default specification for CDC enabled SQL server. You can extend the `org.apache.spark.sql.streaming.jdbc.SourceSpec` trait to provide any other implementation.
 
         trait SourceSpec {
 
@@ -111,16 +101,16 @@ The JDBC Stream Reader options are:
 
     | Key | Value |
     |--------|--------|
-    |`driver`|JDBC driver to be used to access source database. E.g. com.microsoft.sqlserver.jdbc.SQLServerDriver|
-    |`url`|JDBC connection url|
-    |`user`|User name |
-    |`password`|Password|
-    |`databaseName`|Database name|
-    |`poolImpl`|Connection pool implementation(default Hikari) Only Tomcat and Hikari are supported|
-    |`maximumPoolSize`|Connection pool size ( default 10)|
-    |`minimumIdle`|Minimum number of idle connection( default 5)|
+    |`driver`|The JDBC driver to be used to access source database. E.g. `com.microsoft.sqlserver.jdbc.SQLServerDriver`|
+    |`url`|The JDBC connection url|
+    |`user`|User name to access the database |
+    |`password`|Password to access the database |
+    |`databaseName`|The name of the database|
+    |`poolImpl`|Connection pool implementation(default Hikari). Currently, only Tomcat and Hikari are supported|
+    |`maximumPoolSize`|Connection pool size (default 10)|
+    |`minimumIdle`|Minimum number of idle connection (default 5)|
 
-#### Step 2.2 Operating on the reader with normal Structured streaming APIs
+Optionally, you can use any Spark API to transform your data obtained from the stream reader.
 
 The sample usage can be as follows:
 
@@ -128,7 +118,7 @@ The sample usage can be as follows:
 Dataset<Row> ds = reader.load();
 ds.filter(<filter_condition>)
 ```
-### Step 3: Writing into SnappyData tables
+## Writing into SnappyData tables
 
 To write into SnappyData tables you need to have a StreamWriter as follows:
 
@@ -141,88 +131,77 @@ ds.writeStream()
         .start();
 ```
 
-#### Snappy Stream Writer options
+Here, the value of the `.format` parameter is always `snappystore` and is a mandatory.
 
-The **sink** option is mandatory for SnappyStore sink. This option is required to give the user control of the obtained data frame. You can, however, provide any custom option when writing the streaming data to the tables.
+### SnappyData Stream Writer options
+
+The **sink** option is mandatory for SnappyStore sink. This option is required to give the user control of the obtained data frame. When writing streaming data to the tables, you can also provide any custom option.
 
 | Key | Value |
 |--------|--------|
-|sink|A user-defined callback class which will get a data frame in each batch. The class must implement org.apache.spark.sql.streaming.jdbc.SnappyStreamSink interface.|
+|sink|A user-defined callback class which gets a data frame in each batch. The class must implement `org.apache.spark.sql.streaming.jdbc.SnappyStreamSink` interface.|
 
 **org.apache.spark.sql.streaming.jdbc.SnappyStreamSink**
 
-The above trait contains a single method, which user needs to implement. A user can use SnappyData mutable APIs (insert/update/delete/putInto) to maintain tables.
+The above trait contains a single method, which user needs to implement. A user can use SnappyData mutable APIs (INSERT, UPDATE, DELETE, PUT INTO) to maintain tables.
 
 ```pre
     def process(snappySession: SnappySession, sinkProps: Properties,
         batchId: Long, df: Dataset[Row]): Unit
 ```
 
-A typical implementation would look like:
+The following examples illustrates how you can write into a [SnappyData table](http://snappydatainc.github.io/snappydata/programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api):
 
 ```
-@Override
- public void process(SnappySession snappySession, Properties sinkProps, long batchId, Dataset<Row> df) {
+package io.snappydata.app;
 
-  String sqlsrvTable = sinkProps.getProperty("tableName").toUpperCase();
-  String customerTable = sqlsrvTable.substring(sqlsrvTable.indexOf("DBO_") + 4, sqlsrvTable.indexOf("_CT"));
-  String personTable = customerTable + "_person";
-  String addrTable = customerTable + "_addr";
-  log.info("Processing for " + customerTable + " batchId " + batchId);
+import java.util.List;
+import java.util.Properties;
 
-           StructType dfSchema = df.schema();
-           String[] customerColumns = new String[dfSchema.size() - 6];
-           for (int i = 6; i < dfSchema.size(); i++) {
-               customerColumns[i - 6] = dfSchema.apply(i).name();
-           }
+import org.apache.log4j.Logger;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SnappySession;
+import org.apache.spark.sql.streaming.jdbc.SnappyStreamSink;
 
-           // DF gets inserted into customer table
-           registerSnappyUpsertsAndDeletes(df, customerTable, dfSchema, customerColumns);
+import static java.util.Arrays.asList;
+import static org.apache.spark.SnappyJavaUtils.snappyJavaUtil;
 
-           // Dividing the DF in two different DFs
-           String[] personColumns = new String[3];
-           personColumns[0] = dfSchema.apply(6).name(); // C_NAME
-           personColumns[1] = dfSchema.apply(10).name(); // C_ACCTBAL
-           personColumns[2] = dfSchema.apply(11).name(); // C_MKTSEGMENT
+public class ProcessEvents implements SnappyStreamSink {
 
-           String[] addressColumns = new String[3];
-           addressColumns[0] = dfSchema.apply(7).name(); // C_Address
-           addressColumns[1] = dfSchema.apply(8).name(); // C_NationKey
-           addressColumns[2] = dfSchema.apply(9).name(); // C_Phone
+  private static Logger log = Logger.getLogger(ProcessEvents.class.getName());
 
-           registerSnappyUpsertsAndDeletes(df, personTable, dfSchema, personColumns);
-           registerSnappyUpsertsAndDeletes(df, addrTable, dfSchema, addressColumns);
-       }
+  private static List<String> metaColumns = asList("__$start_lsn",
+      "__$end_lsn", "__$seqval", "__$operation", "__$update_mask", "__$command_id");
 
- private void registerSnappyUpsertsAndDeletes(Dataset<Row> df, String table, StructType dfSchema, String[] columns) {
-  Dataset<Row> snappyCustomerUpsert = df
-    // pick only insert/update ops
-    .filter("\"__$operation\" = 4 OR \"__$operation\" = 2")
-    // exclude the first 5 columns and pick the rest as columns
-    // have
-    // 1-1 correspondence with snappydata customer table.
-    // For more complex mapping, one can take a UDF route
-    // instead of
-    // .mapPartitions as demonstrated below.
-    .select(dfSchema.apply(5).name(), columns);
+  @Override
+  public void process(SnappySession snappySession, Properties sinkProps,
+      long batchId, Dataset<Row> df) {
 
-  // System.out.println(snappyCustomerUpsert.count());
-  // a simple snappySession.putInto(...) will be provided shortly.
-  snappyJavaUtil(snappyCustomerUpsert.write().format("row")).putInto("APP." + table);
+    String snappyTable = sinkProps.getProperty("tablename").toUpperCase();
 
-  Dataset<Row> snappyCustomerDelete = df
-    // pick only delete ops
-    .filter("\"__$operation\" = 1")
-    // exclude the first 5 columns and pick the columns that
-    // needs to control
-    // the WHERE clause of the delete operation.
-    .select(dfSchema.apply(5).name());
+    log.info("SB: Processing for " + snappyTable + " batchId " + batchId);
 
-  // System.out.println(snappyCustomerUpsert.count());
-  snappyJavaUtil(snappyCustomerDelete.write().format("row")).deleteFrom("APP." + table);
- }
- public ProcessEvents() {
- }
+    df.cache();
+
+    Dataset<Row> snappyCustomerDelete = df
+        // pick only delete ops
+        .filter("\"__$operation\" = 1")
+        // exclude the first 5 columns and pick the columns that needs to control
+        // the WHERE clause of the delete operation.
+        .drop(metaColumns.toArray(new String[metaColumns.size()]));
+
+    if(snappyCustomerDelete.count() > 0) {
+      snappyJavaUtil(snappyCustomerDelete.write()).deleteFrom("APP." + snappyTable);
+    }
+
+    Dataset<Row> snappyCustomerUpsert = df
+        // pick only insert/update ops
+        .filter("\"__$operation\" = 4 OR \"__$operation\" = 2")
+        .drop(metaColumns.toArray(new String[metaColumns.size()]));
+    snappyJavaUtil(snappyCustomerUpsert.write()).putInto("APP." + snappyTable);
+
+  }
 }
 ```
 
@@ -238,13 +217,18 @@ A typical implementation would look like:
     Initially, the table contains no rows. The connector inserts a row for the table with minimum offset queried from the database. On subsequent intervals, it consults this table to get the offset number. </br>
     If connector application crashes, it refers to this table on a restart to query further.
 
-    !!! Note
-        The Spark configuration property `spark.task.maxFailures` defines the number of failures before giving up on the job. Set the value of this property to 0, for connector application to prevent Spark from retrying failed inserts.
-    
-- **Primary Keys**: </br>
-	Primary keys are not supported for column tables. You can use `key_columns` instead, to uniquely identify each row/record in a database table. </br> For more information, see [CREATE EXTERNAL TABLE](../reference/sql_reference/create-external-table.md) and [CREATE TABLE](../reference/sql_reference/create-table.md).</br>
+- **Idempotency for Streaming application**: </br>
+	If `DELETE` and `PUT INTO` APIs are used, SnappyData ensures idempotent behavior. This is useful when the application restarts after a crash and some of the CDC events are replayed. The PUT INTO API either inserts a record (if not present) or updates the record (if already exists).</br> The existence of the record is checked based on the key columns defined when a table is created. As primary keys are not supported for column tables, you can use `key_columns` instead, to uniquely identify each row/record in a database table. </br> For more information, see [CREATE TABLE](../reference/sql_reference/create-table.md).</br>
+
     For example:
 
-		CREATE EXTERNAL staging_<table_name> USING csv OPTIONS(<path_to_csv_file>)
-
 		CREATE TABLE <table_name> USING column OPTIONS(partition_by '<column_name>', buckets '<num_partitions>',key_columns '<primary_key>') AS (SELECT * FROM from external table);
+
+
+!!!Note:
+
+	- Writing data from different tables to a single table is currently not supported as the schema for incoming data frame cannot be changed. 
+
+	- To capture changed data for multiple source tables, ensure that you create an instance for each source table.
+
+	-  For every source table that needs to be tracked for changes, ensure that there is a corresponding destination table in SnappyData.
