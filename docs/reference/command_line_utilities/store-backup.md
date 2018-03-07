@@ -47,9 +47,9 @@ An online backup saves the following:
 The directory you specify for backup can be used multiple times. Each backup first creates a top-level directory for the backup, under the directory you specify, identified to the minute.</br>
 You can use one of two formats:
 
-* Use a single physical location, such as a network file server. (For example, /<_fileServerDirectory_>/<_SnappyBackupLocation_>).
+* Use a single physical location, such as a network file server. (For example, <_fileServerDirectory_>/<_SnappyBackupLocation_>).
 
-* Use a directory that is local to all host machines in the system. (For example, ./<_SnappyBackupLocation_>).
+* Use a directory that is local to all host machines in the system. (For example, <_SnappyBackupLocation_>).
 
 <a id="directory-structure"></a>
 ## Backup Directory Structure and Contents
@@ -99,7 +99,7 @@ To perform a full backup:
 2. Run the backup command, providing your backup directory location.
 
     ```
-    ./bin/snappy backup /<SnappyBackupLocation> -locators=localhost:<peer-discovery-address>
+    ./bin/snappy backup <SnappyBackupLocation> -locators=localhost:<peer-discovery-address>
     ```
 
 3. Read the message that reports on the success of the operation.
@@ -153,7 +153,7 @@ To make additional incremental backups, execute the same backup command describe
 
 | Option | Description |
 |--------|--------|
-|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /<_fileServerDirectory_>/<_SnappyDataBackupLocation_>/2018-01-01-12-30). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option.|
+|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the backup location you specified when the last backup was performed. (For example, a baseline directory can resemble <_fileServerDirectory_>/<_SnappyDataBackupLocation_>.). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option. Optionally, you can provide the directory with the time stamp details, to perform an incremental backup (For example, <_fileServerDirectory_>/<_SnappyDataBackupLocation_>/<_TimeStamp_>).|
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](#backup-directory).|
 |locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the peer-discovery-port used when starting the cluster (default 10334). This is a mandatory field. For example, `-locators=localhost:10334`|
 |bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
@@ -170,7 +170,7 @@ The restore.sh script is generated for each member in the cluster in the timesta
 2. Run each restore script on the host where the backup originated.
 
     ```
-    <SnappyBackupLocation>./<TimestampDirectory>/restore.sh
+    <SnappyBackupLocation>/<TimestampDirectory>/restore.sh
     ```
 
 3. Repeat this procedure as necessary for other members of the distributed system.

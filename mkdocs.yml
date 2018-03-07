@@ -74,6 +74,8 @@ pages:
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
+    - 'List of Properties':    
+        - 'Property Details': 'configuring_cluster/property_details.md'
     - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
