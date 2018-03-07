@@ -137,6 +137,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numIters = 100
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
       "PointQuery")(executeQuery_PointQuery)
+    // while (true) {}
   }
 
   test("RangeQuery performance") {
@@ -147,6 +148,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numIters = 21
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
       "RangeQuery")(executeQuery_RangeQuery)
+    // while (true) {}
   }
 
   def executeQuery_PointQuery(session: SnappySession, colTableName: String,
@@ -168,7 +170,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       SortedColumnPerformanceTests.params1)
     val param2 = SortedColumnPerformanceTests.getParam(iterCount,
       SortedColumnPerformanceTests.params2)
-    val (low, high) = if (param1 < param2) { (param1, param1)} else (param2, param1)
+    val (low, high) = if (param1 < param2) { (param1, param2)} else (param2, param1)
     val query = s"select * from $colTableName where id between $low and $high"
     // scalastyle:off
     // println(s"Query = $query")
