@@ -443,8 +443,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val df = snc.sql("put into table col_table" +
         "   select * from row_table")
 
-    assert(df.collect()(0)(0) == 1)
-    assert(df.collect()(0)(1) == 3)
+    assert(df.collect()(0)(0) == 4)
     val resultdf = snc.table("col_table").collect()
     assert(resultdf.length == 5)
   }
@@ -468,6 +467,29 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
           "   select * from row_table")
     }
 
+  }
+
+  test("Bug - Incorrect updateExpresion") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table (col1 int, col2 int, col3 int)" +
+        " using column options(partition_by 'col2', key_columns 'col2') ")
+    snc.sql("create table row_table " +
+        "(col1 int, col2 int, col3 int) using row options(partition_by 'col2')")
+
+    snc.insert("row_table", Row(1, 1, 1))
+    snc.insert("row_table", Row(2, 2, 2))
+    snc.insert("row_table", Row(3, 3, 3))
+    snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    val df = snc.table("col_table").collect()
+
+    assert(df.contains(Row(1, 1, 1)))
+    assert(df.contains(Row(2, 2, 2)))
+    assert(df.contains(Row(3, 3, 3)))
   }
 
 
