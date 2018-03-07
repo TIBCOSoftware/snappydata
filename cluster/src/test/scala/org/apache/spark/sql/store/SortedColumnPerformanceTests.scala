@@ -163,7 +163,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // while (true) {}
   }
 
-  var lastFailedIteration: Int = -1
+  var lastFailedIteration: Int = Int.MinValue
 
   def executeQuery_PointQuery(session: SnappySession, benchmark: QueryBenchmark,
       colTableName: String, numIters: Int, iterCount: Int): Boolean = {
@@ -178,12 +178,12 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val expectedNumResults = 1
     val result = session.sql(query).collect()
     val passed = result.length === expectedNumResults
-    if (!passed) {
+    if (!passed && lastFailedIteration == -1) {
       lastFailedIteration = iterCount
     }
     passed
   }
-  
+
   def executeQuery_RangeQuery(session: SnappySession, benchmark: QueryBenchmark,
       colTableName: String, numIters: Int, iterCount: Int): Boolean = {
     val param1 = if (iterCount != lastFailedIteration) {
@@ -202,7 +202,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val expectedNumResults = high - low + 1
     val result = session.sql(query).collect()
     val passed = result.length === expectedNumResults
-    if (!passed) {
+    if (!passed && lastFailedIteration == -1) {
       lastFailedIteration = iterCount
     }
     passed
