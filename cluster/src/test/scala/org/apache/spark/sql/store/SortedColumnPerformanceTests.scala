@@ -165,23 +165,11 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
   def executeQuery_PointQuery(session: SnappySession, benchmark: QueryBenchmark,
       colTableName: String, numIters: Int, iterCount: Int): Boolean = {
-    val params = Array  (1748981, 521261, 932953, 8855876, 6213481, 7497521, 7063387, 6908865,
-      4666582, 6493780, 7522471, 8617087, 3195550, 4790161, 292940, 3170210, 2963200, 4481357,
-      9874906, 378370, 7303872, 9766688, 8851182, 4770273, 3568512, 7986913, 9033644, 7809670,
-      9008007, 632935, 4714841, 8622943, 7078912, 9858132, 4009212, 560532, 55314, 1469933,
-      7724720, 8906016, 734710, 8394979, 8448291, 6396324, 6036375, 9776527, 3496425, 5845993,
-      5996891, 5966411, 3430005, 6294156, 4712711, 8026640, 7347798, 9366221, 667155, 5560304,
-      2479895, 5099551, 4225090, 4248452, 4841571, 4611993, 4363580, 8272673, 6329953, 4432732,
-      5262377, 8260924, 621702, 4330873, 7574409, 379220, 4981152, 9570474, 9184751, 6483674,
-      9742252, 8549523, 7446628, 2813292, 3200422, 8886971, 9846161, 2103312, 2012965, 1885533,
-      6084932, 3881321, 9211413, 8306575, 9982050, 7330093, 7419325, 1699405, 9785377, 1004950,
-      5666421, 4129766)
-
     val param = if (iterCount != lastFailedIteration) {
-      val index = if (iterCount < 0) 0 else iterCount % params.length
-      params(index)
+      SortedColumnPerformanceTests.getParam(iterCount,
+        SortedColumnPerformanceTests.params)
     } else benchmark.firstRandomValue
-    val query = s"select * from $colTableName where id = ${}"
+    val query = s"select * from $colTableName where id = $param"
     // scalastyle:off
     // println(s"Query = $query")
     // scalastyle:on
@@ -196,17 +184,11 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
   def executeQuery_RangeQuery(session: SnappySession, benchmark: QueryBenchmark,
       colTableName: String, numIters: Int, iterCount: Int): Boolean = {
-    val params1 = Array(5003237, 8216891, 5215953, 147475, 6720184, 9131449, 1711876, 635681,
-      7828721, 6458443, 5107480, 5869009, 8509160, 2063669, 469304, 1833691, 7481021, 7162603,
-      9761242, 9447476, 8565115)
-    val params2 = Array(9897441, 9883536, 9843223, 9624340, 9874827, 9667476, 9565207, 9879844,
-      9520205, 9648435, 9999052, 9529024, 9661119, 9979787, 9770410, 9986959, 9399090, 9367289,
-      9863085, 9963517, 9741129)
-    val index1 = if (iterCount < 0) 0 else iterCount % params1.length
-    val index2 = if (iterCount < 0) 0 else iterCount % params2.length
-    val (low, high) = if (params1(index1) < params2(index2)) {
-      (params1(index1), params2(index2))
-    } else (params2(index2), params1(index1))
+    val param1 = SortedColumnPerformanceTests.getParam(iterCount,
+      SortedColumnPerformanceTests.params1)
+    val param2 = SortedColumnPerformanceTests.getParam(iterCount,
+      SortedColumnPerformanceTests.params2)
+    val (low, high) = if (param1 < param2) { (param1, param1)} else (param2, param1)
     val query = s"select * from $colTableName where id between $low and $high"
     // scalastyle:off
     // println(s"Query = $query")
@@ -263,7 +245,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         doGC()
       }
 
-      SortedColumnPerformanceBenchmark.addCaseWithCleanup(benchmark, name, numIters,
+      SortedColumnPerformanceTests.addCaseWithCleanup(benchmark, name, numIters,
         prepare, cleanup, testCleanup) { i => f(session, benchmark, colTableName, numIters, i)}
     }
 
@@ -283,7 +265,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
   }
 }
 
-object SortedColumnPerformanceBenchmark {
+object SortedColumnPerformanceTests {
 
   def addCaseWithCleanup(
       benchmark: QueryBenchmark,
@@ -302,5 +284,29 @@ object SortedColumnPerformanceBenchmark {
       ret
     }
     benchmark.benchmarks += QueryBenchmark.Case(name, timedF, numIters, prepare, cleanup)
+  }
+
+  val params = Array  (1748981, 521261, 932953, 8855876, 6213481, 7497521, 7063387, 6908865,
+    4666582, 6493780, 7522471, 8617087, 3195550, 4790161, 292940, 3170210, 2963200, 4481357,
+    9874906, 378370, 7303872, 9766688, 8851182, 4770273, 3568512, 7986913, 9033644, 7809670,
+    9008007, 632935, 4714841, 8622943, 7078912, 9858132, 4009212, 560532, 55314, 1469933,
+    7724720, 8906016, 734710, 8394979, 8448291, 6396324, 6036375, 9776527, 3496425, 5845993,
+    5996891, 5966411, 3430005, 6294156, 4712711, 8026640, 7347798, 9366221, 667155, 5560304,
+    2479895, 5099551, 4225090, 4248452, 4841571, 4611993, 4363580, 8272673, 6329953, 4432732,
+    5262377, 8260924, 621702, 4330873, 7574409, 379220, 4981152, 9570474, 9184751, 6483674,
+    9742252, 8549523, 7446628, 2813292, 3200422, 8886971, 9846161, 2103312, 2012965, 1885533,
+    6084932, 3881321, 9211413, 8306575, 9982050, 7330093, 7419325, 1699405, 9785377, 1004950,
+    5666421, 4129766)
+
+  val params1 = Array(5003237, 8216891, 5215953, 147475, 6720184, 9131449, 1711876, 635681,
+    7828721, 6458443, 5107480, 5869009, 8509160, 2063669, 469304, 1833691, 7481021, 7162603,
+    9761242, 9447476, 8565115)
+  val params2 = Array(9897441, 9883536, 9843223, 9624340, 9874827, 9667476, 9565207, 9879844,
+    9520205, 9648435, 9999052, 9529024, 9661119, 9979787, 9770410, 9986959, 9399090, 9367289,
+    9863085, 9963517, 9741129)
+
+  def getParam(iterCount: Int, arr: Array[Int]): Int = {
+    val index = if (iterCount < 0) 0 else iterCount % arr.length
+    arr(index)
   }
 }
