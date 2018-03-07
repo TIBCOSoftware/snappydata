@@ -184,10 +184,14 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
   def executeQuery_RangeQuery(session: SnappySession, benchmark: QueryBenchmark,
       colTableName: String, numIters: Int, iterCount: Int): Boolean = {
-    val param1 = SortedColumnPerformanceTests.getParam(iterCount,
-      SortedColumnPerformanceTests.params1)
-    val param2 = SortedColumnPerformanceTests.getParam(iterCount,
-      SortedColumnPerformanceTests.params2)
+    val param1 = if (iterCount != lastFailedIteration) {
+      SortedColumnPerformanceTests.getParam(iterCount,
+        SortedColumnPerformanceTests.params1)
+    } else benchmark.firstRandomValue
+    val param2 = if (iterCount != lastFailedIteration) {
+      SortedColumnPerformanceTests.getParam(iterCount,
+        SortedColumnPerformanceTests.params2)
+    } else benchmark.secondRandomValue
     val (low, high) = if (param1 < param2) { (param1, param1)} else (param2, param1)
     val query = s"select * from $colTableName where id between $low and $high"
     // scalastyle:off
@@ -195,8 +199,11 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // scalastyle:on
     val expectedNumResults = high - low + 1
     val result = session.sql(query).collect()
-    assert(result.length === expectedNumResults)
-    true
+    val passed = result.length === expectedNumResults
+    if (!passed) {
+      lastFailedIteration = iterCount
+    }
+    passed
   }
 
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
