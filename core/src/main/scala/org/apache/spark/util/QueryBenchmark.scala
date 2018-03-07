@@ -50,7 +50,6 @@ import org.apache.spark.util.Benchmark.Result
  * @param output optional output stream to write benchmark results to
  */
 private[spark] class QueryBenchmark(
-    maxRandomValue: Long,
     name: String,
     valuesPerIteration: Long,
     minNumIters: Int = 2,
@@ -156,8 +155,8 @@ private[spark] class QueryBenchmark(
     while (i < minIters || runTimes.sum < minDuration) {
       var j = 1
       while (j < 101) {
-        firstRandomValue = ThreadLocalRandom.current().nextLong(maxRandomValue)
-        secondRandomValue = ThreadLocalRandom.current().nextLong(maxRandomValue)
+        firstRandomValue = ThreadLocalRandom.current().nextLong(valuesPerIteration)
+        secondRandomValue = ThreadLocalRandom.current().nextLong(valuesPerIteration)
         val timer = new Benchmark.Timer(i)
         val ret = f(timer)
         val runTime = timer.totalTime()
