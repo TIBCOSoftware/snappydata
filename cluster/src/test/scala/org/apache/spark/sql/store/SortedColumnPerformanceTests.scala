@@ -174,7 +174,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) 10 else 1
     val result = session.sql(query).collect()
-    val passed = result.length === expectedNumResults
+    val passed = if (iterCount != lastFailedIteration) {
+      result.length === expectedNumResults
+    } else result.length > 0
     if (!passed && lastFailedIteration == -1) {
       lastFailedIteration = iterCount
     }
