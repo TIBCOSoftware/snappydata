@@ -9,6 +9,7 @@ Configures the maximum size in bytes for a table that is broadcast to all server
 10L * 1024 * 1024 
 
 **Components**</br>
+
 Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
 
 **Example**</br>
@@ -33,6 +34,7 @@ IP address on which the locator is bound. The default behavior is to bind to all
 localhost
 
 **Components**</br>
+
 - Server
 - Lead
 - Locator
@@ -50,6 +52,7 @@ Location of user classes required by the SnappyData Server. </br> This path is a
 **Default Values**</br>
 
 **Components**</br>
+
 - Server
 - Lead
 - Locator
@@ -59,14 +62,14 @@ Location of user classes required by the SnappyData Server. </br> This path is a
 ## critical-heap-percentage
 
 **Description**</br>
-Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. 
-If you set `heap-size`, the default value for `critical-heap-percentage` is set to 90% of the heap size. </br>
-Use this switch to override the default.</br>
+Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. Use this to override the default.</br>
 When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.
 
 **Default Values**</br>
+If you set `heap-size`, the default value for `critical-heap-percentage` is set to 90% of the heap size.
 
 **Components**</br>
+
 - Server
 - Lead
 
@@ -84,13 +87,13 @@ When this limit is breached, the system starts canceling memory-intensive querie
 **Default Values**</br>
 
 **Components**</br>
+
 - Server
 
 **Example**</br>
 ```
 conf.set("snappydata.store.critical-off-heap-percentage", "95")
 ```
-
 
 ## dir
 
@@ -99,44 +102,51 @@ Working directory of the server that contains the SnappyData Server status file 
 
 **Default Values**</br>
 
+
 **Components**</br>
+
 - Server
 - Lead
 - Locator
 
 **Example**</br>
-```
-localhost -log-file=/home/user1/snappy/server/snappy-server.log
-```
+
 
 ## eviction-heap-percentage
 
 **Description**</br>
-Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 81% of whatever is set for  `critical-heap-percentage`.</br>
-Use this switch to override the default.
+Sets the memory usage percentage threshold (0-100) that the Resource Manager uses to start evicting data from the heap. </br> Use this to override the default.
 
 **Default Values**</br>
+By default, the eviction threshold is 81% of whatever is set for  `critical-heap-percentage`.
 
 **Components**</br>
+
 - Server
 - Lead
 
 **Example**</br>
+```
+props.setProperty("eviction-heap-percentage", "20")
+```
 
 ## eviction-off-heap-percentage
 
 **Description**</br>
 
-Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory.</br>
-By default, the eviction threshold is 81% of whatever is set for `critical-off-heap-percentage`. </br>
-Use this switch to override the default.
+Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. Use this to override the default.</br>
 
 **Default Values**</br>
+By default, the eviction threshold is 81% of whatever is set for `critical-off-heap-percentage`. </br>
 
 **Components**</br>
+
 - Server
 
 **Example**</br>
+```
+props.setProperty("eviction-off-heap-percentage", "15")
+```
 
 ## heap-size
 
@@ -145,12 +155,16 @@ Sets the maximum heap size for the Java VM, using SnappyData default resource ma
 
 **Default Values**</br>
 
+
 **Components**</br>
+
 - Server
 - Lead
 - Locator
 
 **Example**</br>
+
+
 
 ## J
 **Description**</br>
@@ -158,12 +172,15 @@ JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J
 
 **Default Values**</br>
 
+
 **Components**</br>
+
 - Server
 - Lead
 - Locator
 
 **Example**</br>
+
 
 ## J-Dgemfirexd.hostname-for-clients
 
@@ -172,12 +189,15 @@ Hostname or IP address that is sent to clients so they can connect to the locato
 
 **Default Values**</br>
 
+
 **Components**</br>
+
 - Server
 - Lead
 - Locator
 
 **Example**</br>
+
 
 ## locators
 
@@ -187,12 +207,15 @@ List of locators as comma-separated host:port values used to communicate with ru
 **Default Values**</br>
 
 **Components**</br>
+
 - Server
 - Lead
 - Locator
 
 **Example**</br>
-
+```
+locator1 -peer-discovery-port=9988 -locators=locator2:8899
+```
 ## log-file
 
 **Description**</br>
@@ -200,12 +223,15 @@ Path of the file to which this member writes log messages (default is snappyserv
 
 **Default Values**</br>
 
+
 **Components**</br>
+
 - Server
 - Lead
 - Locator
 
 **Example**</br>
+
 
 ## member-timeout
 
@@ -215,6 +241,7 @@ Uses the member-timeout server configuration, specified in milliseconds, to dete
 **Default Values**</br>
 
 **Components**</br>
+
 - Server
 - Lead
 - Locator
@@ -229,6 +256,7 @@ Specifies the total memory that can be used by the node for column storage and e
 **Default Values**</br>
 
 **Components**</br>
+
 - Server
 - Lead
 
@@ -242,6 +270,7 @@ Use this as value for the port in the "host:port" value of `locators` property.
 **Default Values**</br>
 
 **Components**</br>
+
 - Locator
 
 **Example**</br>
@@ -255,10 +284,13 @@ Port on which the locator listens for peer discovery (includes servers as well a
 **Default Values**</br>
 
 **Components**</br>
+
 - Locator
 
 **Example**</br>
-
+```
+locator1 -peer-discovery-port=9988 -locators=locator2:8899
+```
 ## rebalance
 
 **Description**</br>
@@ -266,10 +298,14 @@ Triggers a rebalancing operation for all partitioned tables in the system. </br>
 **Default Values**</br>
 
 **Components**</br>
+
 - Server
 
 **Example**</br>
+```
+[-rebalance] [-init-scripts=<sql-files>]
 
+```
 ## snappydata.column.batchSize
 
 **Description**</br>
@@ -277,9 +313,13 @@ The default size of blocks to use for storage in the SnappyData column store (in
 **Default Values**</br>
 
 **Components**</br>
+
 - Lead
 
 **Example**</br>
+```
+set snappydata.column.batchSize=100k;
+```
 
 ## spark.driver.maxResultSize
 
@@ -289,10 +329,13 @@ Limit of the total size of serialized results of all partitions for each action 
 **Default Values**</br>
 
 **Components**</br>
+
 - Lead
 
 **Example**</br>
-
+```
+-spark.driver.maxResultSize=2g
+```
 ## spark.executor.cores
 
 **Description**</br>
@@ -301,10 +344,13 @@ The number of cores to use on each server.
 **Default Values**</br>
 
 **Components**</br>
+
 - Lead
 
 **Example**</br>
-
+```
+-spark.executor.cores=10
+```
 
 ## spark.local.dir
 
@@ -314,10 +360,14 @@ Directory to use for "scratch" space in SnappyData, including map output files a
 **Default Values**</br>
 
 **Components**</br>
+
 - Lead
 
 **Example**</br>
+```
+conf.set("spark.local.dir", localDir.getAbsolutePath)
 
+```
 ## spark.network.timeout
 
 **Description**</br>
@@ -326,10 +376,14 @@ The default timeout for all network interactions while running queries.
 **Default Values**</br>
 
 **Components**</br>
+
 - Lead
 
 **Example**</br>
+```
+conf.get("spark.network.timeout", "120s"));
 
+```
 ## -thrift-ssl-properties
 
 **Description**</br>
@@ -338,10 +392,13 @@ Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`en
 **Default Values**</br>
 
 **Components**</br>
+
 - Server
 
 **Example**</br>
-
+```
+-thrift-ssl-properties=keystore=keystore
+```
 ## Behavior
 
 **Description**</br>
@@ -357,10 +414,14 @@ SDE Property
 **Default Values**</br>
 
 **Components**</br>
+
 - Lead
 
 **Example**</br>
-
+```
+SELECT ... FROM .. WHERE .. GROUP BY ...<br>
+WITH [BEHAVIOR `<string>]`
+```
 ## ColumnBatchSize
 
 **Description**</br>
@@ -369,6 +430,7 @@ The default size of blocks to use for storage in SnappyData column and store. Wh
 **Default Values**</br>
 
 **Components**</br>
+
 Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
 **Example**</br>
 
@@ -380,34 +442,45 @@ The maximum number of rows that can be in the delta buffer of a column table. Th
 **Default Values**</br>
 
 **Components**</br>
+
 Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
+
 **Example**</br>
 
 
 ## Confidence
 
 **Description**</br>
-Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>x
+Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br>
 
 **Default Values**</br>
+The default value is 0.95. 
 
 **Components**</br>
+
 Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>This property can be set as connection property in the Snappy SQL shell.
 
 **Example**</br>
+```
+SELECT ... FROM .. WHERE .. GROUP BY ...<br>
+WITH [CONFIDENCE` <fraction>`]
+```
 
 ## EnableExperimentalFeatures
 
-
 **Description**</br>
+SQLConf property that enables experimental features like distributed index optimizer choice during query planning.
 
 **Default Values**</br>
+Default is False.
 
 **Components**</br>
 
+
 **Example**</br>
-
-
+```
+snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, "false")
+```
 ## Error
 
 **Description**</br>
@@ -425,20 +498,25 @@ SDE Property
 **Default Values**</br>
 
 **Components**</br>
+
 This property can be set as connection property in the Snappy SQL shell
 
 **Example**</br>
-
+```
+SELECT ... FROM .. WHERE .. GROUP BY ...<br>
+WITH ERROR `<fraction> `
+```
 ## FlushReservoirThreshold
 
-
 **Description**</br>
-Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on the base table of size more than flushReservoirThreshold. The default value is10,000.</br> 
+Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on the base table of size more than flushReservoirThreshold. </br> 
 SDE Property
 
 **Default Values**</br>
+The default value is 10,000.
 
 **Components**</br>
+
 This property must be set in the *conf/servers* and *conf/leads* file
 
 **Example**</br>
@@ -447,10 +525,13 @@ This property must be set in the *conf/servers* and *conf/leads* file
 ## ForceLinkPartitionsToBuckets
 
 **Description**</br>
-
+This property enables you to treat each bucket as separate partition in column/row table scans. When set to false, SnappyData tries to create only as many partitions as executor cores combining multiple buckets into each partition when possible.
+        
 **Default Values**</br>
+False
 
 **Components**</br>
+
 
 **Example**</br>
 
@@ -458,10 +539,13 @@ This property must be set in the *conf/servers* and *conf/leads* file
 ## HashAggregateSize
 
 **Description**</br>
-Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return large number of rows in aggregation results. The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.
+Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return large number of rows in aggregation results. 
+
 **Default Values**</br>
+The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.
 
 **Components**</br>
+
 Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
 
 **Example**</br>
@@ -470,33 +554,44 @@ Can be set using a `SET SQL` command or using the configuration properties in th
 ## HashJoinSize
 
 **Description**</br>
-The join would be converted into a hash join if the table is of size less than the `hashJoinSize`.  The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for unit). The default value is 100MB.
+The join would be converted into a hash join if the table size is less than the `hashJoinSize`.  The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for unit).
+
 **Default Values**</br>
+The default value is 100MB.
 
 **Components**</br>
+
 Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
 
 **Example**</br>
 
 ## JobServerEnabled
-
+Allows you to enable REST API access via Spark jobserver in the SnappyData cluster.
 
 **Description**</br>
 
 **Default Values**</br>
+False
 
 **Components**</br>
 
-**Example**</br>
+Lead
 
+**Example**</br>
+```
+setProperty(Property.JobServerEnabled.name, "false")
+```
 
 ## JobServerWaitForInit
 
 **Description**</br>
-
+When enabled, the cluster startup waits for Spark jobserver to be fully initialized before marking the lead as 'RUNNING'.
+        
 **Default Values**</br>
+False
 
 **Components**</br>
+
 
 **Example**</br>
 
@@ -504,35 +599,44 @@ Can be set using a `SET SQL` command or using the configuration properties in th
 ## NumBootStrapTrials
 
 **Description**</br>
-Number of bootstrap trials to do for calculating error bounds. The default value is100. </br>
+Number of bootstrap trials to do for calculating error bounds.  </br>
 SDE Property
 
 **Default Values**</br>
+The default value is 100.
 
 **Components**</br>
 
-This property must be set in the *conf/leads* file.
-**Example**</br>
+*conf/leads* 
 
+**Example**</br>
 
 ## ParserTraceError
 
 **Description**</br>
 
+Enables detailed rule tracing for parse errors.
+
 **Default Values**</br>
 
 **Components**</br>
 
+
 **Example**</br>
 
+```
+showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
+```
 
 ## PartitionPruning
 
 **Description**</br>
+Allows you to enable partition pruning of queries.
 
 **Default Values**</br>
 
 **Components**</br>
+
 
 **Example**</br>
 
@@ -540,10 +644,12 @@ This property must be set in the *conf/leads* file.
 ## PlanCaching
 
 **Description**</br>
+Allows you to enable plan caching.
 
 **Default Values**</br>
 
 **Components**</br>
+
 
 **Example**</br>
 
@@ -551,11 +657,12 @@ This property must be set in the *conf/leads* file.
 ## PlanCachingAll
 
 **Description**</br>
-Number of query plans that will be cached.
+Allows you to enable plan caching on all sessions.
 
 **Default Values**</br>
 
 **Components**</br>
+
 Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
 
 **Example**</br>
@@ -563,21 +670,26 @@ Can be set using a `SET SQL` command or using the configuration properties in th
 ## PlanCacheSize
 
 **Description**</br>
-Number of query plans that will be cached.
+Sets the number of query plans to be cached.
 
 **Default Values**</br>
 
 
 **Components**</br>
 
+
 **Example**</br>
+
 ## PreferPrimariesInQuery
 
 **Description**</br>
+Allows you to use primary buckets in queries. This reduces scalability of queries in the interest of reduced memory usage for secondary buckets.
 
 **Default Values**</br>
+Default is false
 
 **Components**</br>
+
 
 **Example**</br>
 
@@ -585,10 +697,12 @@ Number of query plans that will be cached.
 ## SchedulerPool
 
 **Description**</br>
+Set the scheduler pool for the current session. This property can be used to assign queries to different pools for improving throughput of specific queries.
 
 **Default Values**</br>
 
 **Components**</br>
+
 
 **Example**</br>
 
@@ -596,10 +710,13 @@ Number of query plans that will be cached.
 ## SnappyConnection
 
 **Description**</br>
+Used in the Smart Connector mode to connect to the SnappyData cluster using the JDBC driver. Provide the host name and client port in the form `host:clientPort`. This is used to form a JDBC URL of the form `     "\"jdbc:snappydata://host:clientPort/\" (or use the form \"host[clientPort]\")`. </br>
+It is recommended that the hostname and the client port of the locator is specified for this property.
 
 **Default Values**</br>
 
 **Components**</br>
+
 
 **Example**</br>
 
@@ -607,10 +724,12 @@ Number of query plans that will be cached.
 ## Tokenize
 
 **Description**</br>
+Property to enable/disable tokenization
 
 **Default Values**</br>
 
 **Components**</br>
+
 
 **Example**</br>
 
