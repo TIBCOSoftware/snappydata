@@ -165,50 +165,46 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
   var lastFailedIteration: Int = Int.MinValue
 
-  def executeQuery_PointQuery(session: SnappySession, benchmark: QueryBenchmark,
-      colTableName: String, numIters: Int, iterCount: Int): Boolean = {
+  def executeQuery_PointQuery(session: SnappySession, colTableName: String, numIters: Int,
+      iterCount: Int): Boolean = {
     val param = if (iterCount != lastFailedIteration) {
       SortedColumnPerformanceTests.getParam(iterCount,
         SortedColumnPerformanceTests.params)
-    } else benchmark.firstRandomValue
+    } else QueryBenchmark.firstRandomValue
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) 10 else 1
     val result = session.sql(query).collect()
-    val passed = if (iterCount != lastFailedIteration) {
-      result.length === expectedNumResults
-    } else result.length > 0
-    if (!passed && lastFailedIteration == -1) {
+    val passed = result.length === expectedNumResults
+    if (!passed && iterCount != -1) {
       lastFailedIteration = iterCount
     }
     // scalastyle:off
-    // println(s"Query = $query result=${result.length}")
+    // println(s"Query = $query result=${result.length} $passed $expectedNumResults")
     // scalastyle:on
     passed
   }
 
-  def executeQuery_RangeQuery(session: SnappySession, benchmark: QueryBenchmark,
-      colTableName: String, numIters: Int, iterCount: Int): Boolean = {
+  def executeQuery_RangeQuery(session: SnappySession, colTableName: String, numIters: Int,
+      iterCount: Int): Boolean = {
     val param1 = if (iterCount != lastFailedIteration) {
       SortedColumnPerformanceTests.getParam(iterCount,
         SortedColumnPerformanceTests.params1)
-    } else benchmark.firstRandomValue
+    } else QueryBenchmark.firstRandomValue
     val param2 = if (iterCount != lastFailedIteration) {
       SortedColumnPerformanceTests.getParam(iterCount,
         SortedColumnPerformanceTests.params2)
-    } else benchmark.secondRandomValue
+    } else QueryBenchmark.secondRandomValue
     val (low, high) = if (param1 < param2) { (param1, param2)} else (param2, param1)
     val query = s"select * from $colTableName where id between $low and $high"
-    val expectedNumResults = SortedColumnPerformanceTests.getParam(iterCount,
-      SortedColumnPerformanceTests.params3)
+    // val expectedNumResults = SortedColumnPerformanceTests.getParam(iterCount,
+    //   SortedColumnPerformanceTests.params3)
     val result = session.sql(query).collect()
-    val passed = if (iterCount != lastFailedIteration) {
-      result.length === expectedNumResults
-    } else result.length > 0
-    if (!passed && lastFailedIteration == -1) {
+    val passed = result.length > 0
+    if (!passed &&  iterCount != -1) {
       lastFailedIteration = iterCount
     }
     // scalastyle:off
-    // println(s"Query = $query result=${result.length}")
+    // println(s"Query = $query result=${result.length} $passed $expectedNumResults")
     // scalastyle:on
     passed
   }
@@ -216,7 +212,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long, numIters: Int, queryMark: String, doVerifyFullSize: Boolean = false,
       numTimesInsert: Int = 1, numTimesUpdate: Int = 1)
-      (f : (SnappySession, QueryBenchmark, String, Int, Int) => Boolean): Unit = {
+      (f : (SnappySession, String, Int, Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", numElements,
       outputPerIteration = true)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
@@ -261,7 +257,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       }
 
       SortedColumnPerformanceTests.addCaseWithCleanup(benchmark, name, numIters,
-        prepare, cleanup, testCleanup) { i => f(session, benchmark, colTableName, numIters, i)}
+        prepare, cleanup, testCleanup) { i => f(session, colTableName, numIters, i)}
     }
 
     try {
