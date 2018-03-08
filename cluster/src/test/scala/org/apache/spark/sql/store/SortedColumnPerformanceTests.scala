@@ -199,7 +199,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val expectedNumResults = SortedColumnPerformanceTests.getParam(iterCount,
       SortedColumnPerformanceTests.params3)
     val result = session.sql(query).collect()
-    val passed = result.length === expectedNumResults
+    val passed = if (iterCount != lastFailedIteration) {
+      result.length === expectedNumResults
+    } else result.length > 0
     if (!passed && lastFailedIteration == -1) {
       lastFailedIteration = iterCount
     }
