@@ -31,8 +31,8 @@ class SortedColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val numElements = 551
     val numBuckets = 2
 
-    SortedColumnTests.verfiyInsertDataExists(numElements, snc)
-    SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
+    SortedColumnTests.verfiyInsertDataExists(snc, numElements)
+    SortedColumnTests.verfiyUpdateDataExists(snc, numElements)
     SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
   }
 }
