@@ -155,8 +155,6 @@ private[spark] class QueryBenchmark(
     while (i < minIters || runTimes.sum < minDuration) {
       var j = 1
       while (j < 101) {
-        firstRandomValue = ThreadLocalRandom.current().nextLong(valuesPerIteration)
-        secondRandomValue = ThreadLocalRandom.current().nextLong(valuesPerIteration)
         val timer = new Benchmark.Timer(i)
         val ret = f(timer)
         val runTime = timer.totalTime()
@@ -167,8 +165,12 @@ private[spark] class QueryBenchmark(
             println(s"Iteration $i took ${runTime / 1000} microseconds")
             // scalastyle:on
           }
+          if (j == 100) {
+            setRandomValues(valuesPerIteration)
+          }
           j = 101
         } else {
+          setRandomValues(valuesPerIteration)
           if (outputPerIteration) {
             // scalastyle:off
             println(s"Iteration $i attempt $j failed")
@@ -186,9 +188,6 @@ private[spark] class QueryBenchmark(
     val avg = runTimes.sum / runTimes.size
     Result(avg / 1000000.0, num / (best / 1000.0), best / 1000000.0)
   }
-
-  var firstRandomValue = 0L
-  var secondRandomValue = 0L
 }
 
 private[spark] object QueryBenchmark {
@@ -198,4 +197,15 @@ private[spark] object QueryBenchmark {
       numIters: Int,
       prepare: () => Unit = () => { },
       cleanup: () => Unit = () => { })
+
+  var firstRandomValue = getFirstRandomValue(10)
+  var secondRandomValue = getSecondRandomValue(10)
+  def setRandomValues(valuesPerIteration: Long) : Unit = {
+    firstRandomValue = getFirstRandomValue(valuesPerIteration)
+    secondRandomValue = getSecondRandomValue(valuesPerIteration)
+  }
+  def getFirstRandomValue(valuesPerIteration: Long) : Long =
+    ThreadLocalRandom.current().nextLong(valuesPerIteration)
+  def getSecondRandomValue(valuesPerIteration: Long) : Long =
+    ThreadLocalRandom.current().nextLong(valuesPerIteration)
 }
