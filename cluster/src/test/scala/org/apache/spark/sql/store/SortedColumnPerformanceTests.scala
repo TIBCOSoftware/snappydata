@@ -144,22 +144,22 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
   test("PointQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
-    val numElements = 9999551
+    val numElements = 999551
     val numBuckets = cores
     val numIters = 100
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
-      "PointQuery")(executeQuery_PointQuery)
+      "PointQuery", numTimesInsert = 10, doVerifyFullSize = true)(executeQuery_PointQuery)
     // while (true) {}
   }
 
   test("RangeQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
-    val numElements = 9999551
+    val numElements = 999551
     val numBuckets = cores
     val numIters = 21
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
-      "RangeQuery")(executeQuery_RangeQuery)
+      "RangeQuery", numTimesInsert = 10, doVerifyFullSize = true)(executeQuery_RangeQuery)
     // while (true) {}
   }
 
@@ -215,9 +215,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", numElements,
       outputPerIteration = true)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
-    SortedColumnTests.verfiyUpdateDataExists(session, numElements)
+    SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
     val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, numTimesInsert))
-    val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements))
+    val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements, numTimesUpdate))
 
     def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
       val defaults = params.keys.flatMap {
@@ -226,8 +226,6 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
       def prepare(): Unit = {
         params.foreach { case (k, v) => session.conf.set(k, v) }
-        SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
-        SortedColumnTests.verfiyUpdateDataExists(session, numElements)
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
         insertDF.write.insertInto(colTableName)
         try {
