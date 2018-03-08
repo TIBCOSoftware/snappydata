@@ -114,17 +114,6 @@ abstract case class JDBCAppendableRelation(
   def scanTable(tableName: String, requiredColumns: Array[String],
       filters: Array[Filter], prunePartitions: => Int): RDD[Any] = {
 
-    val requestedColumns = if (requiredColumns.isEmpty) {
-      val narrowField =
-        schema.fields.minBy { a =>
-          ColumnType(a.dataType).defaultSize
-        }
-
-      Array(narrowField.name)
-    } else {
-      requiredColumns
-    }
-
     val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
     (0 until schema.length).foreach(i =>
       fieldNames.put(Utils.toLowerCase(schema(i).name), i + 1))
@@ -134,9 +123,8 @@ abstract case class JDBCAppendableRelation(
       index.toInt
     }
     readLock {
-      externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
-        requestedColumns, projection, (filters eq null) || filters.length == 0,
-        prunePartitions, sqlContext.sparkSession, schema, delayRollover)
+      externalStore.getColumnBatchRDD(tableName, rowBuffer = table, projection,
+        filters, prunePartitions, sqlContext.sparkSession, schema, delayRollover)
     }
   }
 

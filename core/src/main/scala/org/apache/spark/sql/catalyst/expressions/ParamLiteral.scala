@@ -24,6 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
@@ -38,6 +39,9 @@ import org.apache.spark.unsafe.types.UTF8String
 // A marker interface to extend usage of Literal case matching.
 // A literal that can change across multiple query execution.
 trait DynamicReplacableConstant {
+
+  def dataType: DataType
+
   def eval(input: InternalRow = null): Any
 
   def convertedLiteral: Any
@@ -46,18 +50,30 @@ trait DynamicReplacableConstant {
 // whereever ParamLiteral case matching is required, it must match
 // for DynamicReplacableConstant and use .eval(..) for code generation.
 // see SNAP-1597 for more details.
-final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: Int)
-    extends Literal(null, _dataType) with DynamicReplacableConstant {
+final class ParamLiteral(override val value: Any, _dataType: DataType, var pos: Int)
+    extends Literal(null, _dataType) with DynamicReplacableConstant with KryoSerializable {
 
   // override def toString: String = s"ParamLiteral ${super.toString}"
 
+  @transient
   private[this] var _foldable = false
 
+  @transient
   private[this] var literalValueRef: String = _
-  private[this] val literalValue: LiteralValue = LiteralValue(value, dataType, pos)()
+  @transient
+  private[this] var _literalValue: LiteralValue = _
 
+  @transient
   private[this] var isNull: String = _
+  @transient
   private[this] var valueTerm: String = _
+
+  private def literalValue: LiteralValue = {
+    if (_literalValue eq null) {
+      _literalValue = LiteralValue(value, dataType, pos)()
+    }
+    _literalValue
+  }
 
   private[this] def lv(ctx: CodegenContext) = if (ctx.references.contains(literalValue)) {
     assert(literalValueRef != null)
@@ -189,9 +205,43 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
     }
     ev.copy(initCode, isNullLocal, valueLocal)
   }
+
+  // noinspection ScalaUnusedSymbol
+  private def writeReplace(): AnyRef = ParamLiteral(literalValue.value, dataType, pos)
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeClassAndObject(output, literalValue.value)
+    StructTypeSerializer.writeType(kryo, output, dataType)
+    output.writeVarInt(pos, true)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    UnsafeHolder.getUnsafe.putObject(this, ParamLiteral.valueOffset,
+      kryo.readClassAndObject(input))
+    UnsafeHolder.getUnsafe.putObject(this, ParamLiteral.typeOffset,
+      StructTypeSerializer.readType(kryo, input))
+    pos = input.readVarInt(true)
+  }
 }
 
 object ParamLiteral {
+
+  private val valueOffset = {
+    val f = classOf[ParamLiteral].getDeclaredField("value")
+    f.setAccessible(true)
+    UnsafeHolder.getUnsafe.objectFieldOffset(f)
+  }
+  private val typeOffset = {
+    val f = classOf[Literal].getDeclaredField("dataType")
+    f.setAccessible(true)
+    UnsafeHolder.getUnsafe.objectFieldOffset(f)
+  }
+
+  def apply(value: Any, pos: Int): ParamLiteral = {
+    val l = Literal(value)
+    new ParamLiteral(l.value, l.dataType, pos)
+  }
+
   def apply(_value: Any, _dataType: DataType, pos: Int): ParamLiteral =
     new ParamLiteral(_value, _dataType, pos)
 

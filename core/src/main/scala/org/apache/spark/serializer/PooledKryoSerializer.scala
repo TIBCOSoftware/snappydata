@@ -22,7 +22,7 @@ import java.nio.ByteBuffer
 
 import scala.reflect.ClassTag
 
-import com.esotericsoftware.kryo.io.{Input, ByteBufferOutput}
+import com.esotericsoftware.kryo.io.{ByteBufferOutput, Input}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
 import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
@@ -33,9 +33,9 @@ import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
-import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep, SmartExecutorBucketPartition}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, JDBCSourceAsColumnarStore, SmartConnectorColumnRDD, SmartConnectorRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
@@ -148,6 +148,8 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
     kryo.register(classOf[JDBCSourceAsColumnarStore], new KryoSerializableSerializer)
+    kryo.register(classOf[ParamLiteral], new KryoSerializableSerializer)
+    kryo.register(classOf[LiteralValue], new KryoSerializableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(
