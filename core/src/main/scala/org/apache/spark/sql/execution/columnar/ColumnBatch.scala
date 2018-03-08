@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar
 
 import java.nio.{ByteBuffer, ByteOrder}
-import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
+import java.sql.{Connection, ResultSet, Statement}
 import java.util.function.BiFunction
 
 import scala.collection.mutable.ArrayBuffer
@@ -25,7 +25,8 @@ import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.EntryDestroyedException
-import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.koloboke.function.IntObjPredicate
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -60,32 +61,23 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 
   override final def hasNext: Boolean = {
-    var success = false
-    try {
-      if (doMove && hasNextValue) {
-        success = rs.next()
-        doMove = false
-        success
-      } else {
-        success = hasNextValue
-        success
-      }
-    } finally {
-      if (!success) {
-        hasNextValue = false
-      }
+    if (doMove && hasNextValue) {
+      doMove = false
+      hasNextValue = false
+      hasNextValue = moveNext()
+      hasNextValue
+    } else {
+      hasNextValue
     }
   }
 
+  protected def moveNext(): Boolean = rs.next()
+
   override final def next(): A = {
-    if (doMove) {
-      hasNext
+    if (!doMove || hasNext) {
       doMove = true
-      if (!hasNextValue) return null.asInstanceOf[A]
-    }
-    val result = getCurrentValue
-    doMove = true
-    result
+      getCurrentValue
+    } else null.asInstanceOf[A]
   }
 
   protected def getCurrentValue: A
@@ -145,10 +137,10 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   }
 
   if (context ne null) {
-    context.addTaskCompletionListener(_ => releaseColumns())
+    context.addTaskCompletionListener(_ => close())
   }
 
-  protected var currentVal: ByteBuffer = _
+  protected[sql] var currentVal: ByteBuffer = _
   private var currentDeltaStats: ByteBuffer = _
   private var currentKeyPartitionId: Int = _
   private var currentKeyUUID: Long = _
@@ -181,12 +173,14 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
 
   def getCurrentBucketId: Int = currentKeyPartitionId
 
-  private def getColumnBuffer(columnPosition: Int, throwIfMissing: Boolean): ByteBuffer = {
+  private[execution] def getCurrentStatsColumn: ColumnFormatValue = currentColumns(0)
+
+  private[sql] def getColumnBuffer(columnPosition: Int, throwIfMissing: Boolean): ByteBuffer = {
     val value = itr.getBucketEntriesIterator.asInstanceOf[ClusteredColumnIterator]
         .getColumnValue(columnPosition)
     if (value ne null) {
       val columnValue = value.asInstanceOf[ColumnFormatValue].getValueRetain(
-        decompress = true, compress = false)
+        FetchRequest.DECOMPRESS)
       val buffer = columnValue.getBuffer
       if (buffer.remaining() > 0) {
         currentColumns += columnValue
@@ -262,13 +256,12 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     } else 0
   }
 
-  override protected def moveNext(): Unit = {
+  override protected[sql] def moveNext(): Unit = {
     if (region ne null) {
       // release previous set of values
-      val numColumns = releaseColumns()
-      if (numColumns > 0) {
-        currentColumns = new ArrayBuffer[ColumnFormatValue](numColumns)
-      }
+      currentColumns = new ArrayBuffer[ColumnFormatValue](math.max(1, releaseColumns()))
+      currentVal = null
+      currentDeltaStats = null
       while (itr.hasNext) {
         val re = itr.next().asInstanceOf[RegionEntry]
         // the underlying ClusteredColumnIterator allows fetching entire projected
@@ -282,7 +275,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
             val v = re.getValue(bucketRegion)
             if (v ne null) {
               val columnValue = v.asInstanceOf[ColumnFormatValue].getValueRetain(
-                decompress = true, compress = false)
+                FetchRequest.DECOMPRESS)
               val buffer = columnValue.getBuffer
               // empty buffer indicates value removed from region
               if (buffer.remaining() > 0) {
@@ -308,36 +301,43 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
       hasNextValue = false
     }
   }
+
+  def close(): Unit = {
+    if (itr ne null) {
+      itr.close()
+    }
+    releaseColumns()
+  }
 }
 
 final class ColumnBatchIteratorOnRS(conn: Connection,
-    requiredColumns: Array[String],
-    stmt: Statement, rs: ResultSet,
-    context: TaskContext,
-    partitionId: Int,
-    fetchColQuery: String)
+    projection: Array[Int], stmt: Statement, rs: ResultSet,
+    context: TaskContext, partitionId: Int)
     extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
   private var currentUUID: Long = _
   // upto three deltas for each column and a deleted mask
-  private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
-  private var colBuffers: IntObjectHashMap[ByteBuffer] =
-    IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
+  private val totalColumns = (projection.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
+  private val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+  private var colBuffers: IntObjectHashMap[ByteBuffer] = _
+  private var currentStatsBuffer: ByteBuffer = _
   private var hasUpdates: Boolean = _
-  private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
+  private var rsHasNext: Boolean = rs.next()
 
   def getCurrentBatchId: Long = currentUUID
 
   def getCurrentBucketId: Int = partitionId
 
   private def decompress(buffer: ByteBuffer): ByteBuffer = {
-    val allocator = ColumnEncoding.getAllocator(buffer)
-    val result = CompressionUtils.codecDecompressIfRequired(
-      buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
-    if (result ne buffer) {
-      UnsafeHolder.releaseIfDirectBuffer(buffer)
-      // set order as LITTLE_ENDIAN to indicate decompressed buffer
-      result.order(ByteOrder.LITTLE_ENDIAN)
-    } else result.order(ByteOrder.BIG_ENDIAN)
+    if ((buffer ne null) && buffer.remaining() > 0) {
+      val result = CompressionUtils.codecDecompressIfRequired(
+        buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
+      if (result ne buffer) {
+        UnsafeHolder.releaseIfDirectBuffer(buffer)
+        // decompressed buffer will be ordered by LITTLE_ENDIAN while non-decompressed
+        // is returned with BIG_ENDIAN order to distinguish the two cases
+        result
+      } else result.order(ByteOrder.BIG_ENDIAN)
+    } else null // indicates missing value
   }
 
   private def getBufferFromBlob(blob: java.sql.Blob): ByteBuffer = {
@@ -348,29 +348,10 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         val chunk = blob.getAsLastChunk
         assert(!chunk.isSetChunkReference)
         chunk.chunk
-      case  _ => ByteBuffer.wrap(blob.getBytes(1, blob.length().asInstanceOf[Int]))
+      case _ => ByteBuffer.wrap(blob.getBytes(1, blob.length().asInstanceOf[Int]))
     })
     blob.free()
     buffer
-  }
-
-  private def fillBuffers(): Unit = {
-    colBuffers match {
-      case buffers if buffers.size() > 1 => // already filled in
-      case buffers =>
-        hasUpdates = false
-        ps.setLong(1, currentUUID)
-        val colIter = ps.executeQuery()
-        while (colIter.next()) {
-          val colBlob = colIter.getBlob(4)
-          val position = colIter.getInt(3)
-          buffers.justPut(position, getBufferFromBlob(colBlob))
-          // check if this an update delta
-          if (position < ColumnFormatEntry.DELETE_MASK_COL_INDEX && !hasUpdates) {
-            hasUpdates = true
-          }
-        }
-    }
   }
 
   def getColumnLob(columnIndex: Int): ByteBuffer = {
@@ -404,7 +385,6 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   }
 
   def getDeletedRowCount: Int = {
-    fillBuffers()
     val delete = colBuffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
     if (delete eq null) 0
     else {
@@ -432,20 +412,44 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           true
         }
       })
+      colBuffers = null
     }
   }
 
-  override protected def getCurrentValue: ByteBuffer = {
-    currentUUID = rs.getLong(1)
-    releaseColumns()
-    // create a new map instead of clearing old one to help young gen GC
-    colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
-    val statsBlob = rs.getBlob(4)
-    val statsBuffer = getBufferFromBlob(statsBlob)
-    // put the stats buffer to free on next() or close()
-    colBuffers.justPut(ColumnFormatEntry.STATROW_COL_INDEX, statsBuffer)
-    statsBuffer
+  private def readColumnData(): Unit = {
+    val columnIndex = rs.getInt(3)
+    val columnBlob = rs.getBlob(4)
+    val columnBuffer = getBufferFromBlob(columnBlob)
+    if (columnBuffer ne null) {
+      // put the stats buffer to free on next() or close()
+      colBuffers.justPut(columnIndex, columnBuffer)
+      columnIndex match {
+        case ColumnFormatEntry.STATROW_COL_INDEX => currentStatsBuffer = columnBuffer
+        case ColumnFormatEntry.DELTA_STATROW_COL_INDEX => hasUpdates = true
+        case _ =>
+      }
+    }
   }
+
+  override protected def moveNext(): Boolean = {
+    currentStatsBuffer = null
+    hasUpdates = false
+    releaseColumns()
+    if (rsHasNext) {
+      currentUUID = rs.getLong(1)
+      // create a new map instead of clearing old one to help young gen GC
+      colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
+      // peek next to find if its still part of current column batch; if UUID changes
+      // then need to mark that next calls to hasNext/next should simply read current
+      do {
+        readColumnData()
+        rsHasNext = rs.next()
+      } while (rsHasNext && rs.getLong(1) == currentUUID)
+      true
+    } else false
+  }
+
+  override protected def getCurrentValue: ByteBuffer = currentStatsBuffer
 
   override def close(): Unit = {
     releaseColumns()

@@ -83,7 +83,7 @@ class RowFormatRelation(
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
   @transient private lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
-  private[this] def indexedColumns: mutable.HashSet[String] = {
+  private[this] lazy val indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
@@ -92,7 +92,7 @@ class RowFormatRelation(
       case _ =>
         val indexCols = new Array[String](1)
         GfxdSystemProcedures.getIndexColumns(indexCols, region)
-        Option(indexCols(0)).foreach(icols => cols ++= icols.split(":"))
+        cols ++= indexCols(0).split(":")
         cols
     }
   }

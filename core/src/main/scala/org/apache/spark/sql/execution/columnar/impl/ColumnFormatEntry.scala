@@ -29,8 +29,8 @@ import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
-import com.gemstone.gemfire.internal.shared._
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
+import com.gemstone.gemfire.internal.shared.{FetchRequest, _}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
@@ -109,43 +109,30 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
 
   override def getColumnBatchRowCount(itr: PREntriesIterator[_],
       re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
-    val numColumns = numColumnsInTable * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
     val currentBucketRegion = itr.getHostedBucketRegion
-    if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX &&
+    if ((columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
+        columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) &&
         !re.isDestroyedOrRemoved) {
-      val statsVal = re.getValue(currentBucketRegion)
-      if (statsVal ne null) {
-        val stats = statsVal.asInstanceOf[ColumnFormatValue]
-            .getValueRetain(decompress = true, compress = false)
-        val buffer = stats.getBuffer
-        val baseRowCount = try {
+      val statsOrDeleteVal = re.getValue(currentBucketRegion)
+      if (statsOrDeleteVal ne null) {
+        val statsOrDelete = statsOrDeleteVal.asInstanceOf[ColumnFormatValue]
+            .getValueRetain(FetchRequest.DECOMPRESS)
+        val buffer = statsOrDelete.getBuffer
+        try {
           if (buffer.remaining() > 0) {
-            val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
-            unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+            if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
+              val numColumns = numColumnsInTable * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+              val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
+              unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+            } else {
+              val allocator = ColumnEncoding.getAllocator(buffer)
+              // decrement by deleted row count
+              -ColumnEncoding.readInt(allocator.baseObject(buffer),
+                allocator.baseOffset(buffer) + buffer.position() + 8)
+            }
           } else 0
         } finally {
-          stats.release()
-        }
-        // decrement the deleted row count
-        val deleteKey = withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
-        val deleteVal = currentBucketRegion.get(deleteKey, null,
-          false /* generateCallbacks */ , true /* disableCopyOnRead */ ,
-          false /* preferCD */ , null, null, null, null, false /* returnTombstones */ ,
-          false /* allowReadFromHDFS */)
-        if (deleteVal eq null) baseRowCount
-        else {
-          val delete = deleteVal.asInstanceOf[ColumnFormatValue]
-              .getValueRetain(decompress = true, compress = false)
-          val deleteBuffer = delete.getBuffer
-          try {
-            if (deleteBuffer.remaining() > 0) {
-              val allocator = ColumnEncoding.getAllocator(deleteBuffer)
-              baseRowCount - ColumnEncoding.readInt(allocator.baseObject(deleteBuffer),
-                allocator.baseOffset(deleteBuffer) + deleteBuffer.position() + 8)
-            } else baseRowCount
-          } finally {
-            delete.release()
-          }
+          statsOrDelete.release()
         }
       } else 0
     } else 0
@@ -291,7 +278,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
   @GuardedBy("this")
   @transient protected var fromDisk: Boolean = false
   @GuardedBy("this")
-  @transient protected var diskId: DiskId = _
+  @transient protected var entry: AbstractOplogDiskRegionEntry = _
   @GuardedBy("this")
   @transient protected var regionContext: RegionEntryContext = _
 
@@ -349,7 +336,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
    * about the same.
    */
   override final def getBufferRetain: ByteBuffer = {
-    val thisValue = getValueRetain(decompress = false, compress = false)
+    val thisValue = getValueRetain(FetchRequest.ORIGINAL)
     assert(thisValue == this)
     thisValue.getBuffer
   }
@@ -360,21 +347,22 @@ class ColumnFormatValue extends SerializedDiskBuffer
    */
   override final def getBuffer: ByteBuffer = duplicateBuffer(columnBuffer)
 
-  override def getValueRetain(decompress: Boolean, compress: Boolean): ColumnFormatValue = {
-    if (decompress && compress) {
-      throw new IllegalArgumentException("both decompress and compress true")
-    }
-    var diskId: DiskId = null
+  override def getValueRetain(fetchRequest: FetchRequest): ColumnFormatValue = {
+    var entry: AbstractOplogDiskRegionEntry = null
     var regionContext: RegionEntryContext = null
     synchronized {
       val buffer = this.columnBuffer
       if ((buffer ne DiskEntry.Helper.NULL_BUFFER) && incrementReference()) {
-        return transformValueRetain(buffer, decompress, compress)
+        return transformValueRetain(buffer, fetchRequest)
+      } else if (fetchRequest eq FetchRequest.DECOMPRESS_IF_IN_MEMORY) {
+        return null
       }
-      diskId = this.diskId
+      entry = this.entry
       regionContext = this.regionContext
     }
     // try to read using DiskId
+    var diskId: DiskId = null
+    if (entry ne null) diskId = entry.getDiskId
     if (diskId ne null) {
       val dr = regionContext match {
         case r: LocalRegion => r.getDiskRegionView
@@ -384,7 +372,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       try diskId.synchronized {
         synchronized {
           if ((columnBuffer ne DiskEntry.Helper.NULL_BUFFER) && incrementReference()) {
-            return transformValueRetain(columnBuffer, decompress, compress)
+            return transformValueRetain(columnBuffer, fetchRequest)
           }
           DiskEntry.Helper.getValueOnDiskNoLock(diskId, dr) match {
             case v: ColumnFormatValue =>
@@ -394,7 +382,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
               fromDisk = true
               // restart reference count from 1
               refCount = 1
-              return transformValueRetain(columnBuffer, decompress, compress)
+              return transformValueRetain(columnBuffer, fetchRequest)
 
             case null | _: Token => // return empty buffer
             case o => throw new IllegalStateException(
@@ -415,12 +403,12 @@ class ColumnFormatValue extends SerializedDiskBuffer
     this
   }
 
-  private def transformValueRetain(buffer: ByteBuffer, decompress: Boolean,
-      compress: Boolean): ColumnFormatValue = {
-    val result =
-      if (decompress) decompressValue(buffer)
-      else if (compress) compressValue(buffer)
-      else this
+  private def transformValueRetain(buffer: ByteBuffer, fetchRequest: FetchRequest) = {
+    val result = fetchRequest match {
+      case FetchRequest.COMPRESS => compressValue(buffer)
+      case FetchRequest.ORIGINAL => this
+      case _ => decompressValue(buffer, fetchRequest eq FetchRequest.DECOMPRESS_IF_IN_MEMORY)
+    }
     if (result ne this) {
       // decrement reference count that has been incremented by caller
       assert(decrementReference())
@@ -436,7 +424,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
     }
   }
 
-  private def decompressValue(buffer: ByteBuffer): ColumnFormatValue = {
+  private def decompressValue(buffer: ByteBuffer, onlyIfStored: Boolean): ColumnFormatValue = {
     if (this.decompressionState != 0) {
       if (this.decompressionState > 1) {
         this.decompressionState = 1
@@ -453,6 +441,15 @@ class ColumnFormatValue extends SerializedDiskBuffer
         this.decompressionState = 1
         return this
       }
+      // first check if decompression should be skipped
+      // (when onlyIfStored is true and underlying buffer cannot be replaced)
+      if (onlyIfStored) {
+        if (fromDisk || (isDirect && this.refCount > 2)) return this
+        // check if entry is present in region or read from disk without faultin
+        val entry = this.entry
+        if ((entry ne null) && (entry._getValue() eq null)) return this
+      }
+
       // replace underlying buffer if either no other thread is holding a reference
       // or if this is a heap buffer
       val allocator = GemFireCacheImpl.getCurrentBufferAllocator
@@ -601,9 +598,9 @@ class ColumnFormatValue extends SerializedDiskBuffer
     new ColumnFormatValue(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
-  override final def setDiskLocation(id: DiskId,
+  override final def setDiskEntry(entry: AbstractOplogDiskRegionEntry,
       context: RegionEntryContext): Unit = synchronized {
-    this.diskId = id
+    this.entry = entry
     // set/update diskRegion only if incoming value has been provided
     if (context ne null) {
       this.regionContext = context
@@ -616,7 +613,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
 
   override final def write(channel: OutputStreamChannel): Unit = {
     // write the pre-serialized buffer as is
-    // Oplog layer will get compressed form by calling getValueRetain(false, true)
+    // Oplog layer will get compressed form by calling getValueRetain
     val buffer = getBufferRetain
     try {
       // first write the serialization header
@@ -667,8 +664,11 @@ class ColumnFormatValue extends SerializedDiskBuffer
     val writeValue = out match {
       case channel: OutputStreamChannel =>
         outputStreamChannel = channel
-        getValueRetain(decompress = false, !channel.isSocketToSameHost)
-      case _ => getValueRetain(decompress = false, compress = true)
+        val v = getValueRetain(
+          if (channel.isSocketToSameHost) FetchRequest.DECOMPRESS_IF_IN_MEMORY
+          else FetchRequest.COMPRESS)
+        if (v ne null) v else getValueRetain(FetchRequest.ORIGINAL)
+      case _ => getValueRetain(FetchRequest.COMPRESS)
     }
     val buffer = writeValue.getBuffer
     try {
@@ -792,6 +792,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
 
   override def toString: String = {
     val buffer = getBuffer
+    val entry = this.entry
+    val diskId = if (entry ne null) entry.getDiskId else null
     // refCount access is deliberately not synchronized
     s"$className[size=${buffer.remaining()} $buffer diskId=$diskId " +
         s"context=$regionContext refCount=$refCount]"

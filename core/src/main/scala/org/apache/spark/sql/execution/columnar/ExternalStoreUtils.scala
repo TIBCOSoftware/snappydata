@@ -696,15 +696,23 @@ object ExternalStoreUtils {
     }.asJava
   }
 
-  def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {
-    val region = Misc.getRegion(Misc.getRegionPath(schema, table, null), true, false)
-    region.getUserAttribute.asInstanceOf[GemFireContainer] match {
+  def getExternalTableMetaData(qualifiedTable: String): ExternalTableMetaData = {
+    val region = Misc.getRegionForTable(qualifiedTable, true)
+    getExternalTableMetaData(qualifiedTable,
+      region.getUserAttribute.asInstanceOf[GemFireContainer], checkColumnStore = false)
+  }
+
+  def getExternalTableMetaData(qualifiedTable: String, container: GemFireContainer,
+      checkColumnStore: Boolean): ExternalTableMetaData = {
+    container match {
       case null =>
-        throw new IllegalStateException(s"Table $schema.$table not found in containers")
+        throw new IllegalStateException(s"Table $qualifiedTable not found in containers")
       case c => c.fetchHiveMetaData(false) match {
         case null =>
-          throw new IllegalStateException(s"Table $schema.$table not found in hive metadata")
-        case m => m
+          throw new IllegalStateException(s"Table $qualifiedTable not found in hive metadata")
+        case m => if (checkColumnStore && !c.isColumnStore) {
+          throw new IllegalStateException(s"Table $qualifiedTable not a column table")
+        } else m
       }
     }
   }

@@ -58,7 +58,7 @@ import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
+import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -122,169 +122,6 @@ private[sql] final case class ColumnTableScan(
 
   override def metricTerm(ctx: CodegenContext, name: String): String =
     if (sqlContext eq null) null else super.metricTerm(ctx, name)
-
-  private def generateStatPredicate(ctx: CodegenContext,
-      numRowsTerm: String): String = {
-
-    val numBatchRows = NumBatchRows(numRowsTerm)
-    val (columnBatchStatsMap, columnBatchStats) = relation match {
-      case _: BaseColumnFormatRelation =>
-        val allStats = schemaAttributes.map(a => a ->
-            ColumnStatsSchema(a.name, a.dataType))
-        (AttributeMap(allStats),
-            ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
-      case _ => (null, Nil)
-    }
-
-    def statsFor(a: Attribute) = columnBatchStatsMap(a)
-
-    // Returned filter predicate should return false iff it is impossible
-    // for the input expression to evaluate to `true' based on statistics
-    // collected about this partition batch.
-    // This code is picked up from InMemoryTableScanExec
-
-    // deal with LIKE patterns that can be optimized in predicate pushdown
-    @transient def convertLike(e: Expression): Expression = e.transformDown {
-      case l@Like(left, Literal(pattern, StringType)) =>
-        LikeEscapeSimplification.simplifyLike(l, left, pattern.toString)
-    }
-    @transient def buildFilter: PartialFunction[Expression, Expression] = {
-      case And(lhs: Expression, rhs: Expression)
-        if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
-        (buildFilter.lift(lhs) ++ buildFilter.lift(rhs)).reduce(_ && _)
-
-      case Or(lhs: Expression, rhs: Expression)
-        if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
-        buildFilter(lhs) || buildFilter(rhs)
-
-      case EqualTo(a: AttributeReference, l: DynamicReplacableConstant) =>
-        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(l: DynamicReplacableConstant, a: AttributeReference) =>
-        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(a: AttributeReference, l: Literal) =>
-        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(l: Literal, a: AttributeReference) =>
-        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-
-      case LessThan(a: AttributeReference, l: DynamicReplacableConstant) =>
-        statsFor(a).lowerBound < l
-      case LessThan(l: DynamicReplacableConstant, a: AttributeReference) =>
-        l < statsFor(a).upperBound
-      case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
-      case LessThan(l: Literal, a: AttributeReference) => l < statsFor(a).upperBound
-
-      case LessThanOrEqual(a: AttributeReference, l: DynamicReplacableConstant) =>
-        statsFor(a).lowerBound <= l
-      case LessThanOrEqual(l: DynamicReplacableConstant, a: AttributeReference) =>
-        l <= statsFor(a).upperBound
-      case LessThanOrEqual(a: AttributeReference, l: Literal) => statsFor(a).lowerBound <= l
-      case LessThanOrEqual(l: Literal, a: AttributeReference) => l <= statsFor(a).upperBound
-
-      case GreaterThan(a: AttributeReference, l: DynamicReplacableConstant) =>
-        l < statsFor(a).upperBound
-      case GreaterThan(l: DynamicReplacableConstant, a: AttributeReference) =>
-        statsFor(a).lowerBound < l
-      case GreaterThan(a: AttributeReference, l: Literal) => l < statsFor(a).upperBound
-      case GreaterThan(l: Literal, a: AttributeReference) => statsFor(a).lowerBound < l
-
-      case GreaterThanOrEqual(a: AttributeReference, l: DynamicReplacableConstant) =>
-        l <= statsFor(a).upperBound
-      case GreaterThanOrEqual(l: DynamicReplacableConstant, a: AttributeReference) =>
-        statsFor(a).lowerBound <= l
-      case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
-      case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
-
-      case StartsWith(a: AttributeReference, l: Literal) =>
-        // upper bound for column (i.e. LessThan) can be found by going to
-        // next value of the last character of literal
-        val s = l.value.asInstanceOf[UTF8String]
-        val len = s.numBytes()
-        val upper = new Array[Byte](len)
-        s.writeToMemory(upper, Platform.BYTE_ARRAY_OFFSET)
-        var lastCharPos = len - 1
-        // check for maximum unsigned value 0xff
-        val max = 0xff.toByte // -1
-        while (lastCharPos >= 0 && upper(lastCharPos) == max) {
-          lastCharPos -= 1
-        }
-        val stats = statsFor(a)
-        if (lastCharPos < 0) { // all bytes are 0xff
-          // a >= startsWithPREFIX
-          l <= stats.upperBound
-        } else {
-          upper(lastCharPos) = (upper(lastCharPos) + 1).toByte
-          val upperLiteral = Literal(UTF8String.fromAddress(upper,
-            Platform.BYTE_ARRAY_OFFSET, len), StringType)
-
-          // a >= startsWithPREFIX && a < startsWithPREFIX+1
-          l <= stats.upperBound && stats.lowerBound < upperLiteral
-        }
-
-      case IsNull(a: Attribute) => statsFor(a).nullCount > 0
-      case IsNotNull(a: Attribute) => numBatchRows > statsFor(a).nullCount
-    }
-
-    // This code is picked up from InMemoryTableScanExec
-    val columnBatchStatFilters: Seq[Expression] = {
-      if (relation.isInstanceOf[BaseColumnFormatRelation]) {
-        // first group the filters by the expression types (keeping the original operator order)
-        // and then order each group on underlying reference names to give a consistent
-        // ordering (else two different runs can generate different code)
-        val orderedFilters = new ArrayBuffer[(Class[_], ArrayBuffer[Expression])](2)
-        allFilters.foreach { f =>
-          orderedFilters.collectFirst {
-            case p if p._1 == f.getClass => p._2
-          }.getOrElse {
-            val newBuffer = new ArrayBuffer[Expression](2)
-            orderedFilters += f.getClass -> newBuffer
-            newBuffer
-          } += f
-        }
-        orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
-            .sorted.mkString(","))).flatMap { p =>
-          val filter = buildFilter.lift(convertLike(p))
-          val boundFilter = filter.map(BindReferences.bindReference(
-            _, columnBatchStats, allowFailures = true))
-
-          boundFilter.foreach(_ =>
-            filter.foreach(f =>
-              logDebug(s"Predicate $p generates partition filter: $f")))
-
-          // If the filter can't be resolved then we are missing required statistics.
-          boundFilter.filter(_.resolved)
-        }
-      } else Nil
-    }
-
-    val predicate = ExpressionCanonicalizer.execute(
-      BindReferences.bindReference(columnBatchStatFilters
-          .reduceOption(And).getOrElse(Literal(true)), columnBatchStats))
-    val statsRow = ctx.freshName("statsRow")
-    ctx.INPUT_ROW = statsRow
-    ctx.currentVars = null
-    val predicateEval = predicate.genCode(ctx)
-
-    val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
-    // skip filtering if nothing is to be applied
-    if (predicateEval.value == "true" && predicateEval.isNull == "false") {
-      return ""
-    }
-    val filterFunction = ctx.freshName("columnBatchFilter")
-    ctx.addNewFunction(filterFunction,
-      s"""
-         |private boolean $filterFunction(UnsafeRow $statsRow) {
-         |  // Skip the column batches based on the predicate
-         |  ${predicateEval.code}
-         |  if (!${predicateEval.isNull} && ${predicateEval.value}) {
-         |    return true;
-         |  } else {
-         |    $columnBatchesSkipped.${metricAdd("1")};
-         |    return false;
-         |  }
-         |}
-       """.stripMargin)
-    filterFunction
-  }
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd
   else new UnionScanRDD(rdd.sparkContext, (Seq(rdd) ++ otherRDDs)
@@ -632,7 +469,10 @@ private[sql] final case class ColumnTableScan(
       bufferInitCode.toString()
     }
 
-    val filterFunction = generateStatPredicate(ctx, numBatchRows)
+    // for smart connector, the filters are pushed down in the query sent to stores
+    val filterFunction = if (embedded) ColumnTableScan.generateStatPredicate(ctx,
+      relation.isInstanceOf[BaseColumnFormatRelation], schemaAttributes,
+      allFilters, numBatchRows, metricTerm, metricAdd) else ""
     val unsafeRow = ctx.freshName("unsafeRow")
     val colNextBytes = ctx.freshName("colNextBytes")
     val numTableColumns = if (ordinalIdTerm eq null) relationSchema.size
@@ -664,7 +504,7 @@ private[sql] final case class ColumnTableScan(
       s"""
         while (true) {
           $batchAssign
-          if ($colInput.hasUpdatedColumns() || $filterFunction($unsafeRow)) {
+          if ($colInput.hasUpdatedColumns() || $filterFunction($unsafeRow, $numBatchRows)) {
             break;
           }
           if (!$colInput.hasNext()) return false;
@@ -932,6 +772,179 @@ private[sql] final case class ColumnTableScan(
        |    ($batchOrdinal != $nextNullPosition && (($numNullsVar =
        |       $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar)) == 0 ||
        |       $batchOrdinal != $decoder.getNextNullPosition())))""".stripMargin
+  }
+}
+
+object ColumnTableScan extends Logging {
+
+  def generateStatPredicate(ctx: CodegenContext, isColumnTable: Boolean,
+      schemaAttrs: Seq[AttributeReference], allFilters: Seq[Expression], numRowsTerm: String,
+      metricTerm: (CodegenContext, String) => String, metricAdd: String => String): String = {
+
+    if ((allFilters eq null) || allFilters.isEmpty) {
+      return ""
+    }
+    val numBatchRows = NumBatchRows(numRowsTerm)
+    val (columnBatchStatsMap, columnBatchStats) = if (isColumnTable) {
+      val allStats = schemaAttrs.map(a => a ->
+          ColumnStatsSchema(a.name, a.dataType))
+      (AttributeMap(allStats),
+          ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
+    } else (null, Nil)
+
+    def statsFor(a: Attribute) = columnBatchStatsMap(a)
+
+    // Returned filter predicate should return false iff it is impossible
+    // for the input expression to evaluate to `true' based on statistics
+    // collected about this partition batch.
+    // This code is picked up from InMemoryTableScanExec
+
+    // deal with LIKE patterns that can be optimized in predicate pushdown
+    @transient def convertLike(e: Expression): Expression = e.transformDown {
+      case l@Like(left, Literal(pattern, StringType)) =>
+        LikeEscapeSimplification.simplifyLike(l, left, pattern.toString)
+    }
+    @transient def buildFilter: PartialFunction[Expression, Expression] = {
+      case And(lhs: Expression, rhs: Expression)
+        if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
+        (buildFilter.lift(lhs) ++ buildFilter.lift(rhs)).reduce(_ && _)
+
+      case Or(lhs: Expression, rhs: Expression)
+        if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
+        buildFilter(lhs) || buildFilter(rhs)
+
+      case EqualTo(a: AttributeReference, l: DynamicReplacableConstant) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+      case EqualTo(l: DynamicReplacableConstant, a: AttributeReference) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+      case EqualTo(a: AttributeReference, l: Literal) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+      case EqualTo(l: Literal, a: AttributeReference) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+
+      case LessThan(a: AttributeReference, l: DynamicReplacableConstant) =>
+        statsFor(a).lowerBound < l
+      case LessThan(l: DynamicReplacableConstant, a: AttributeReference) =>
+        l < statsFor(a).upperBound
+      case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
+      case LessThan(l: Literal, a: AttributeReference) => l < statsFor(a).upperBound
+
+      case LessThanOrEqual(a: AttributeReference, l: DynamicReplacableConstant) =>
+        statsFor(a).lowerBound <= l
+      case LessThanOrEqual(l: DynamicReplacableConstant, a: AttributeReference) =>
+        l <= statsFor(a).upperBound
+      case LessThanOrEqual(a: AttributeReference, l: Literal) => statsFor(a).lowerBound <= l
+      case LessThanOrEqual(l: Literal, a: AttributeReference) => l <= statsFor(a).upperBound
+
+      case GreaterThan(a: AttributeReference, l: DynamicReplacableConstant) =>
+        l < statsFor(a).upperBound
+      case GreaterThan(l: DynamicReplacableConstant, a: AttributeReference) =>
+        statsFor(a).lowerBound < l
+      case GreaterThan(a: AttributeReference, l: Literal) => l < statsFor(a).upperBound
+      case GreaterThan(l: Literal, a: AttributeReference) => statsFor(a).lowerBound < l
+
+      case GreaterThanOrEqual(a: AttributeReference, l: DynamicReplacableConstant) =>
+        l <= statsFor(a).upperBound
+      case GreaterThanOrEqual(l: DynamicReplacableConstant, a: AttributeReference) =>
+        statsFor(a).lowerBound <= l
+      case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
+      case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
+
+      case StartsWith(a: AttributeReference, l: Literal) =>
+        // upper bound for column (i.e. LessThan) can be found by going to
+        // next value of the last character of literal
+        val s = l.value.asInstanceOf[UTF8String]
+        val len = s.numBytes()
+        val upper = new Array[Byte](len)
+        s.writeToMemory(upper, Platform.BYTE_ARRAY_OFFSET)
+        var lastCharPos = len - 1
+        // check for maximum unsigned value 0xff
+        val max = 0xff.toByte // -1
+        while (lastCharPos >= 0 && upper(lastCharPos) == max) {
+          lastCharPos -= 1
+        }
+        val stats = statsFor(a)
+        if (lastCharPos < 0) { // all bytes are 0xff
+          // a >= startsWithPREFIX
+          l <= stats.upperBound
+        } else {
+          upper(lastCharPos) = (upper(lastCharPos) + 1).toByte
+          val upperLiteral = Literal(UTF8String.fromAddress(upper,
+            Platform.BYTE_ARRAY_OFFSET, len), StringType)
+
+          // a >= startsWithPREFIX && a < startsWithPREFIX+1
+          l <= stats.upperBound && stats.lowerBound < upperLiteral
+        }
+
+      case IsNull(a: Attribute) => statsFor(a).nullCount > 0
+      case IsNotNull(a: Attribute) => numBatchRows > statsFor(a).nullCount
+    }
+
+    // This code is picked up from InMemoryTableScanExec
+    val columnBatchStatFilters: Seq[Expression] = {
+      if (isColumnTable) {
+        // first group the filters by the expression types (keeping the original operator order)
+        // and then order each group on underlying reference names to give a consistent
+        // ordering (else two different runs can generate different code)
+        val orderedFilters = new ArrayBuffer[(Class[_], ArrayBuffer[Expression])](2)
+        allFilters.foreach { f =>
+          orderedFilters.collectFirst {
+            case p if p._1 == f.getClass => p._2
+          }.getOrElse {
+            val newBuffer = new ArrayBuffer[Expression](2)
+            orderedFilters += f.getClass -> newBuffer
+            newBuffer
+          } += f
+        }
+        orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
+            .sorted.mkString(","))).flatMap { p =>
+          val filter = buildFilter.lift(convertLike(p))
+          val boundFilter = filter.map(BindReferences.bindReference(
+            _, columnBatchStats, allowFailures = true))
+
+          boundFilter.foreach(_ =>
+            filter.foreach(f =>
+              logDebug(s"Predicate $p generates partition filter: $f")))
+
+          // If the filter can't be resolved then we are missing required statistics.
+          boundFilter.filter(_.resolved)
+        }
+      } else Nil
+    }
+
+    val predicate = ExpressionCanonicalizer.execute(
+      BindReferences.bindReference(columnBatchStatFilters
+          .reduceOption(And).getOrElse(Literal(true)), columnBatchStats))
+    val statsRow = ctx.freshName("statsRow")
+    ctx.INPUT_ROW = statsRow
+    ctx.currentVars = null
+    val predicateEval = predicate.genCode(ctx)
+
+    // skip filtering if nothing is to be applied
+    if (predicateEval.value == "true" && predicateEval.isNull == "false") {
+      return ""
+    }
+    val columnBatchesSkipped = if (metricTerm ne null) {
+      metricTerm(ctx, "columnBatchesSkipped")
+    } else null
+    val addBatchMetric = if (columnBatchesSkipped ne null) {
+      s"$columnBatchesSkipped.${metricAdd("1")};"
+    } else ""
+    val filterFunction = ctx.freshName("columnBatchFilter")
+    ctx.addNewFunction(filterFunction,
+      s"""
+         |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm) {
+         |  // Skip the column batches based on the predicate
+         |  ${predicateEval.code}
+         |  if (!${predicateEval.isNull} && ${predicateEval.value}) {
+         |    return true;
+         |  } else {
+         |    $addBatchMetric
+         |    return false;
+         |  }
+         |}
+       """.stripMargin)
+    filterFunction
   }
 }
 

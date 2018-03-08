@@ -2222,7 +2222,7 @@ object SnappySession extends Logging {
         logDebug(s"Invalidating cached plan for sql: ${key.sqlText}")
         planCache.invalidate(key)
       }
-      // if null has been returned, then evaluate
+      // if null has been returned, then evaluate explicitly
       if (cachedDF eq null) {
         val df = session.executeSQL(sqlText)
         cachedDF = evaluatePlan(df, session, sqlText)
@@ -2230,6 +2230,15 @@ object SnappySession extends Logging {
         if (session.planCaching) {
           planCache.put(key, cachedDF)
         }
+      } else {
+        // duplicate the cachedDF to avoid overwriting if two similar queries are executed
+        // but collect() invoked later
+        // TODO: SW: handle this case: simple duplicate will not work since two different
+        // executions of same CDF may require two different set of ParamLiterals
+        // so store the actual ParamLiterals from session in duplicated one separately
+        // and change just before execution (internal references array, Filters have reference
+        // to the original ParamLiteral/LiteralValue only and those cannot be duplicated)
+        // cachedDF = cachedDF.duplicate()
       }
       handleCachedDataFrame(cachedDF, key, lp, currentWrappedConstants, session, sqlText)
     } catch {
