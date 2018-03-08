@@ -172,7 +172,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         SortedColumnPerformanceTests.params)
     } else benchmark.firstRandomValue
     val query = s"select * from $colTableName where id = $param"
-    val expectedNumResults = 1
+    val expectedNumResults = if (param % 10 < 6) 10 else 1
     val result = session.sql(query).collect()
     val passed = result.length === expectedNumResults
     if (!passed && lastFailedIteration == -1) {
@@ -196,7 +196,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     } else benchmark.secondRandomValue
     val (low, high) = if (param1 < param2) { (param1, param2)} else (param2, param1)
     val query = s"select * from $colTableName where id between $low and $high"
-    val expectedNumResults = high - low + 1
+    val expectedNumResults = SortedColumnPerformanceTests.getParam(iterCount,
+      SortedColumnPerformanceTests.params3)
     val result = session.sql(query).collect()
     val passed = result.length === expectedNumResults
     if (!passed && lastFailedIteration == -1) {
@@ -290,6 +291,9 @@ object SortedColumnPerformanceTests {
     185010, 316700, 201191, 129476, 186458, 120609, 55514, 88575, 125345, 580302, 615387)
   val params2 = Array(63648, 770312, 344177, 328320, 126064, 636422, 7245, 327093, 906825, 45465,
     93499, 285349, 807082, 290182, 872723, 752484, 562808, 243877, 194831, 737899, 465701)
+  val params3 = Array(2379519, 653292, 2270272, 2037464, 5103522, 2137098, 6171405, 3826048,
+    4459294, 3001100, 585675, 200651, 3877716, 1028514, 4392106, 4044019, 3246679, 993932, 444706,
+    1008620, 958004)
 
   def getParam(iterCount: Int, arr: Array[Int]): Int = {
     val index = if (iterCount < 0) 0 else iterCount % arr.length
