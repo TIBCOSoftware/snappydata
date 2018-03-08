@@ -22,11 +22,18 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{AnalysisException, Row, SnappySession}
 
 case class DataDiffCol(column1: Int, column2: Int, column3: Int)
 
 case class DataStrCol(column1: Int, column2: String, column3: Int)
+
+
+case class RData(C_CustKey: Int, C_Name: String,
+    C_Address: String, C_NationKey: Int,
+    C_Phone: String, C_AcctBal: Decimal,
+    C_MktSegment: String, C_Comment: String, skip: String)
 
 class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with BeforeAndAfter
     with BeforeAndAfterAll {
@@ -710,4 +717,81 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
       df2.write.deleteFrom("col_table")
     }
   }
+
+  test("Bug - SNAP-2157") {
+    snc.sql("CREATE TABLE app.customer (C_CustKey int NOT NULL,C_Name varchar(64)," +
+        "C_Address varchar(64),C_NationKey int,C_Phone varchar(64),C_AcctBal decimal(13,2)," +
+        "C_MktSegment varchar(64),C_Comment varchar(120)," +
+        " skip varchar(64), PRIMARY KEY (C_CustKey))")
+
+    val data = (1 to 10).map(i => RData(i, s"$i name",
+      s"$i addr",
+      i,
+      s"$i phone",
+      Decimal(1),
+      s"$i mktsegment",
+      s"$i comment",
+      s"$i skip"))
+
+    val rdd = sc.parallelize(data, 2)
+    val df1 = snc.createDataFrame(rdd)
+    df1.write.insertInto("app.customer")
+
+    df1.write.deleteFrom("app.customer")
+    val df0 = snc.table("app.customer")
+    assert(df0.count() == 0)
+  }
+
+  test("DeleteFrom dataframe API Row tables") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table row_table(col1 int primary key, col2 int, col3 int)" +
+        " using row options(partition_by 'col1')")
+    df1.write.insertInto("row_table")
+    df2.write.deleteFrom("row_table")
+
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, 8)))
+  }
+
+  test("DeleteFrom dataframe API Row replicated tables") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table row_table(col1 int primary key, col2 int, col3 int)" +
+        " using row ")
+    df1.write.insertInto("row_table")
+    df2.write.deleteFrom("row_table")
+
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, 8)))
+  }
+
+  test("DeleteFrom Row tables : Key columns validation") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.createTable("row_table", "row",
+      df1.schema, Map.empty[String, String])
+
+    df1.write.insertInto("row_table")
+
+    val message = intercept[AnalysisException]{
+      df2.write.deleteFrom("row_table")
+    }.getMessage
+    assert(message.contains("DeleteFrom in a table requires key column(s) but got empty string"))
+  }
+
 }
