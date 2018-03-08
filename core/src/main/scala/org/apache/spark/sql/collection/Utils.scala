@@ -285,18 +285,46 @@ object Utils {
     }
   }
 
-  def mapExecutors[T: ClassTag](sqlContext: SQLContext,
-      f: () => Iterator[T]): RDD[T] = {
-    val sc = sqlContext.sparkContext
+  def mapExecutors[T: ClassTag](sc: SparkContext,
+      f: () => Iterator[T], maxTries: Int = 30): Array[T] = {
     val cleanedF = sc.clean(f)
-    new ExecutorLocalRDD[T](sc,
-      (_: TaskContext, _: ExecutorLocalPartition) => cleanedF())
+    mapExecutorsWithRetries(sc, (_: TaskContext, _: ExecutorLocalPartition) => cleanedF(),
+      maxTries)
   }
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
-      f: (TaskContext, ExecutorLocalPartition) => Iterator[T]): RDD[T] = {
+      f: (TaskContext, ExecutorLocalPartition) => Iterator[T], maxTries: Int): Array[T] = {
     val cleanedF = sc.clean(f)
-    new ExecutorLocalRDD[T](sc, cleanedF)
+    mapExecutorsWithRetries(sc, cleanedF, maxTries)
+  }
+
+  private def mapExecutorsWithRetries[T: ClassTag](sc: SparkContext,
+      cleanedF: (TaskContext, ExecutorLocalPartition) => Iterator[T],
+      maxTries: Int): Array[T] = {
+    var tries = 1
+    while (true) {
+      try {
+        return new ExecutorLocalRDD[T](sc, cleanedF).collect()
+      } catch {
+        case NonFatal(e) =>
+          var incorrectRouting = false
+          var t = e
+          while (t ne null) {
+            if (t.isInstanceOf[IllegalStateException]) {
+              incorrectRouting = true
+              t = null
+            } else {
+              t = t.getCause
+            }
+          }
+          if (incorrectRouting && tries < maxTries) {
+            tries += 1
+          } else {
+            throw e
+          }
+      }
+    }
+    null // never reached
   }
 
   def getFixedPartitionRDD[T: ClassTag](sc: SparkContext,

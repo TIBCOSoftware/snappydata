@@ -26,7 +26,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
@@ -34,21 +33,21 @@ import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-
 import org.apache.spark._
+import _root_.io.snappydata.collection.IntObjectHashMap
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.DefaultMemoryConsumer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
-import org.apache.spark.sql.catalyst.expressions.{Literal, LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
 import org.apache.spark.sql.store.CompressionUtils
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{IntegerType, StructType}
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
@@ -96,6 +95,10 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     shuffleDependencies.length)
 
   private lazy val rowConverter = UnsafeProjection.create(queryExecution.executedPlan.schema)
+
+  // Map to cache the param literal positions to show correct plan info with
+  // new set of constants
+  private val paramLiterals = IntObjectHashMap.withExpectedSize[ParamLiteral](8)
 
   private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
@@ -225,7 +228,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
         CachedDataFrame.withNewExecutionId(
           sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
           queryExecutionString, CachedDataFrame.queryPlanInfo(
-            queryExecution.executedPlan, allLiterals),
+            queryExecution.executedPlan, allLiterals, paramLiterals),
           currentExecutionId, planProcessingTime)(body)
       } finally {
         currentExecutionId = None
@@ -557,17 +560,30 @@ object CachedDataFrame
     m
   }
 
+
   private[sql] def queryPlanInfo(plan: SparkPlan,
-      allLiterals: Array[LiteralValue]): SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
-    plan.transformAllExpressions {
-      case ParamLiteral(_v, _dt, _p) =>
-        val x = allLiterals.find(_.position == _p)
-        val v = x match {
-          case Some(LiteralValue(_, _, _)) => x.get.value
-          case None => _v
+      allLiterals: Array[LiteralValue],
+      paramLiterals: IntObjectHashMap[ParamLiteral]): SparkPlanInfo = {
+    if (paramLiterals != null && allLiterals.nonEmpty) {
+      if (paramLiterals.size() == 0) {
+        // paramLiterals = Map.empty
+        plan.transformAllExpressions {
+          case pl@ParamLiteral(_, _, _p) =>
+            paramLiterals.justPut(_p, pl)
+            pl
         }
-        Literal(v, _dt)
-    })
+      }
+      if (allLiterals.length == paramLiterals.size) {
+        allLiterals.foreach(x => {
+          val pl = paramLiterals.get(x.position)
+          if (pl != null) {
+            pl.currentValue = x.value
+          }
+        })
+      }
+    }
+    PartitionedPhysicalScan.getSparkPlanInfo(plan)
+  }
 
   private[sql] def queryStringShortForm(queryString: String): String = {
     val trimSize = 100

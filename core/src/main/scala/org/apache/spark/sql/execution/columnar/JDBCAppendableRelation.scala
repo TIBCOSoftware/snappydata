@@ -36,6 +36,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 
@@ -225,7 +226,7 @@ abstract case class JDBCAppendableRelation(
       case _ => ("primary key (uuid)", "")
     }
 
-    createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
+    createTable(externalStore, s"create table ${quotedName(tableName)} (uuid varchar(36) " +
         "not null, partitionId integer not null, numRows integer not null, " +
         "stats blob, " + schema.fields.map(structField =>
       externalStore.columnPrefix + structField.name + " blob")

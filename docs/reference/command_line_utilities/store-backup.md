@@ -33,7 +33,9 @@ snappy backup [-baseline=<baseline directory>] <target directory> [-J-D<vmprop>=
 ```
 
 !!! Note
-	The <_target directory_> must be provided immediately after `- snappy backup [-baseline]` followed by the other arguments. `-baseline` is optional.
+	
+	* The <_target directory_> must be provided immediately after `- snappy backup [-baseline]` followed by the other arguments. `-baseline` is optional.
+	* -J is a generic prefix for all JVM properties.
 
 The table describes options for `snappy backup`:
 
@@ -43,8 +45,9 @@ The table describes options for `snappy backup`:
 |target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#backup_directory).|
 |locators| List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
 |bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
-|prop-name|Any other SnappyData distributed system property.|
-|J-D<vmprop>=<prop-value>|Sets Java system property to the specified value.|
+|prop-name|Any other SnappyData distributed system property. </br>For example, `-locators=localhost:10334`|
+|-J-D<name>=<value>|Sets Java system property. For example: `-J-Dgemfire.ack-wait-threshold=20`|
+|-J|Prefix for any JVM property. For example `-J-Xmx4g`|
 
 <a id="description"></a>
 

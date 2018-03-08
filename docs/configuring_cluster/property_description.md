@@ -1,6 +1,6 @@
 # List of Properties
 
-Below is a list of properties that can be set to configure the cluster. These properties can be set in the **conf/server**, **conf/leads** or **conf/locators** configuration files.
+Below is a list of properties that can be set to configure the cluster. These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
 
 |Property|Description|Components</br>|
 |-|-|-|
@@ -53,6 +53,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 |-snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`|
 |-snappydata.sql.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`.  The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for unit). The default value is 100MB.|
 |-snappydata.sql.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return large number of rows in aggregation results. The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.|
+|-snappydata.sql.planCacheSize|Number of query plans that will be cached.|
 |-spark.sql.autoBroadcastJoinThreshold|Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled. |
 
 <a id="sde-properties"></a>
