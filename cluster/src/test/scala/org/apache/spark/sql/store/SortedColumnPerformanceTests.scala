@@ -98,8 +98,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
       def prepare(): Unit = {
         params.foreach { case (k, v) => session.conf.set(k, v) }
-        SortedColumnTests.verfiyInsertDataExists(numElements, session)
-        SortedColumnTests.verfiyUpdateDataExists(numElements, session)
+        SortedColumnTests.verfiyInsertDataExists(session, numElements)
+        SortedColumnTests.verfiyUpdateDataExists(session, numElements)
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
         doGC()
       }
@@ -172,15 +172,15 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         SortedColumnPerformanceTests.params)
     } else benchmark.firstRandomValue
     val query = s"select * from $colTableName where id = $param"
-    // scalastyle:off
-    // println(s"Query = $query")
-    // scalastyle:on
     val expectedNumResults = 1
     val result = session.sql(query).collect()
     val passed = result.length === expectedNumResults
     if (!passed && lastFailedIteration == -1) {
       lastFailedIteration = iterCount
     }
+    // scalastyle:off
+    // println(s"Query = $query result=${result.length}")
+    // scalastyle:on
     passed
   }
 
@@ -196,24 +196,27 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     } else benchmark.secondRandomValue
     val (low, high) = if (param1 < param2) { (param1, param2)} else (param2, param1)
     val query = s"select * from $colTableName where id between $low and $high"
-    // scalastyle:off
-    // println(s"Query = $query")
-    // scalastyle:on
     val expectedNumResults = high - low + 1
     val result = session.sql(query).collect()
     val passed = result.length === expectedNumResults
     if (!passed && lastFailedIteration == -1) {
       lastFailedIteration = iterCount
     }
+    // scalastyle:off
+    // println(s"Query = $query result=${result.length}")
+    // scalastyle:on
     passed
   }
 
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
-      numElements: Long, numIters: Int, queryMark: String, doVerifyFullSize: Boolean = false)
+      numElements: Long, numIters: Int, queryMark: String, doVerifyFullSize: Boolean = false,
+      numTimesInsert: Int = 1, numTimesUpdate: Int = 1)
       (f : (SnappySession, QueryBenchmark, String, Int, Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", numElements,
       outputPerIteration = true)
-    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements))
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
+    SortedColumnTests.verfiyUpdateDataExists(session, numElements)
+    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, numTimesInsert))
     val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements))
 
     def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
@@ -223,8 +226,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
       def prepare(): Unit = {
         params.foreach { case (k, v) => session.conf.set(k, v) }
-        SortedColumnTests.verfiyInsertDataExists(numElements, session)
-        SortedColumnTests.verfiyUpdateDataExists(numElements, session)
+        SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
+        SortedColumnTests.verfiyUpdateDataExists(session, numElements)
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
         insertDF.write.insertInto(colTableName)
         try {

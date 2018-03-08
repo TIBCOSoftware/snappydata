@@ -63,8 +63,8 @@ class SortedColumnTests extends ColumnTablesTestBase {
     val numElements = 551
     val numBuckets = 2
 
-    SortedColumnTests.verfiyInsertDataExists(numElements, snc)
-    SortedColumnTests.verfiyUpdateDataExists(numElements, snc)
+    SortedColumnTests.verfiyInsertDataExists(snc, numElements)
+    SortedColumnTests.verfiyUpdateDataExists(snc, numElements)
     SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
   }
 }
@@ -72,29 +72,41 @@ class SortedColumnTests extends ColumnTablesTestBase {
 object SortedColumnTests extends Logging {
   private val baseDataPath = s"/home/vivek/work/testData/local_index"
 
-  def filePathInsert(n: Long) : String = s"$baseDataPath/insert$n"
-  def verfiyInsertDataExists(n: Long, snc: SnappySession) : Unit = {
-    val dataDirInsert = new File(SortedColumnTests.filePathInsert(n))
+  def filePathInsert(size: Long, multiple: Int = 1) : String = if (multiple > 1) {
+    s"$baseDataPath/insert${size}_$multiple"
+  } else s"$baseDataPath/insert$size"
+  def verfiyInsertDataExists(snc: SnappySession, size: Long, multiple: Int = 1) : Unit = {
+    val dataDirInsert = new File(SortedColumnTests.filePathInsert(size, multiple))
     if (!dataDirInsert.exists()) {
       dataDirInsert.mkdir()
       snc.sql(s"create EXTERNAL TABLE insert_table(id int, addr string, status boolean)" +
-          s" USING parquet OPTIONS(path '${SortedColumnTests.filePathInsert(n)}')")
-      snc.range(n).filter(_ % 10 < 6).selectExpr("id", "concat('addr'," +
-          "cast(id as string))",
-        "case when (id % 2) = 0 then true else false end").write.insertInto("insert_table")
+          s" USING parquet OPTIONS(path '${SortedColumnTests.filePathInsert(size, multiple)}')")
+      var j = 0
+      while (j < multiple) {
+        snc.range(size).filter(_ % 10 < 6).selectExpr("id", "concat('addr'," +
+            "cast(id as string))",
+          "case when (id % 2) = 0 then true else false end").write.insertInto("insert_table")
+        j += 1
+      }
     }
   }
 
-  def filePathUpdate(n: Long) : String = s"$baseDataPath/update$n"
-  def verfiyUpdateDataExists(n: Long, snc: SnappySession) : Unit = {
-    val dataDirUpdate = new File(SortedColumnTests.filePathUpdate(n))
+  def filePathUpdate(size: Long, multiple: Int = 1) : String = if (multiple > 1) {
+    s"$baseDataPath/update${size}_$multiple"
+  } else s"$baseDataPath/update$size"
+  def verfiyUpdateDataExists(snc: SnappySession, size: Long, multiple: Int = 1) : Unit = {
+    val dataDirUpdate = new File(SortedColumnTests.filePathUpdate(size, multiple))
     if (!dataDirUpdate.exists()) {
       dataDirUpdate.mkdir()
       snc.sql(s"create EXTERNAL TABLE update_table(id int, addr string, status boolean)" +
-          s" USING parquet OPTIONS(path '${SortedColumnTests.filePathUpdate(n)}')")
-      snc.range(n).filter(_ % 10 > 5).selectExpr("id", "concat('addr'," +
-          "cast(id as string))",
-        "case when (id % 2) = 0 then true else false end").write.insertInto("update_table")
+          s" USING parquet OPTIONS(path '${SortedColumnTests.filePathUpdate(size, multiple)}')")
+      var j = 0
+      while (j < multiple) {
+        snc.range(size).filter(_ % 10 > 5).selectExpr("id", "concat('addr'," +
+            "cast(id as string))",
+          "case when (id % 2) = 0 then true else false end").write.insertInto("update_table")
+        j += 1
+      }
     }
   }
 
