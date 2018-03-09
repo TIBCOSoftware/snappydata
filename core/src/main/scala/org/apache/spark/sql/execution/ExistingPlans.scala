@@ -222,7 +222,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
         (callSite.shortForm, callSite.longForm,
             PartitionedPhysicalScan.getSparkPlanInfo(child))
       case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
-          CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key)))
+          CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key), null))
     }
     val sc = session.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)

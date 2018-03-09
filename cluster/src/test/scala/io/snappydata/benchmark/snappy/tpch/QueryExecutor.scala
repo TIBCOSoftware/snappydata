@@ -202,8 +202,8 @@ object QueryExecutor {
   def queryExecution(queryNumber: String, prepStatement: PreparedStatement): ResultSet = {
     val rs: ResultSet = queryNumber match {
       case "15" =>
-        prepStatement.execute(TPCH_Queries.getTempQuery15_Original())
-        prepStatement.executeQuery(TPCH_Queries.getQuery15_Original())
+        prepStatement.execute(TPCH_Queries.getTempQuery15_Original)
+        prepStatement.executeQuery(TPCH_Queries.getQuery15_Original)
       case _ =>
         prepStatement.executeQuery()
     }
