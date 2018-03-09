@@ -66,7 +66,6 @@ final class SmartConnectorRDDHelper {
         clientStmt.setMetadataVersion(relDestroyVersion)
         clientStmt.setSnapshotTransactionId(txId)
       case _ =>
-        if (true) throw new AssertionError("unexpected call") // SW:
         pstmt.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +
             s"'$columnTable', '${partition.bucketId}', $relDestroyVersion)")
         if (txId ne null) {
