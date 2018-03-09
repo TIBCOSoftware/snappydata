@@ -354,4 +354,7 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
   override def nodeName: String = "DynamicExpression"
 
   override def prettyName: String = "DynamicExpression"
+
+  // noinspection ScalaUnusedSymbol
+  private def writeReplace(): AnyRef = ParamLiteral(eval(null), pos = -1)
 }

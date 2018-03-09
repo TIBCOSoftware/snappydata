@@ -46,7 +46,6 @@ import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.CatalystTypeConverters.convertToCatalyst
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, DynamicReplacableConstant, Expression, Literal, ParamLiteral, SortDirection, UnsafeRow}
@@ -187,18 +186,12 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   @throws(classOf[SQLException])
   override def columnTableScan(columnTable: String,
-      projection: Array[Int], serializedBatchFilters: Array[Byte],
+      projection: Array[Int], serializedFilters: Array[Byte],
       bucketIds: java.util.Set[Integer]): CloseableIterator[ColumnTableEntry] = {
     // deserialize the filters
-    val batchFilters = if (serializedBatchFilters ne null) {
-      val pooled = KryoSerializerPool.borrow()
-      val input = pooled.input
-      try {
-        input.setBuffer(serializedBatchFilters)
-        pooled.kryo.readObject(input, classOf[Array[Filter]]).toSeq
-      } finally {
-        KryoSerializerPool.release(pooled, clearInputBuffer = true)
-      }
+    val batchFilters = if ((serializedFilters ne null) && serializedFilters.length > 0) {
+      KryoSerializerPool.deserialize(serializedFilters, 0, serializedFilters.length,
+        (kryo, in) => kryo.readClassAndObject(in).asInstanceOf[Array[Filter]]).toSeq
     } else null
     val (region, schemaAttrs, batchFilterExprs) = try {
       val lr = Misc.getRegionForTable(columnTable, true).asInstanceOf[LocalRegion]
@@ -372,22 +365,22 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     case sources.EqualTo(a, v: DynamicReplacableConstant) =>
       expressions.EqualTo(attr(a, schema), v.asInstanceOf[Expression])
     case sources.EqualTo(a, v) =>
-      expressions.EqualTo(attr(a, schema), ParamLiteral(convertToCatalyst(v), pos = -1))
+      expressions.EqualTo(attr(a, schema), ParamLiteral(v, pos = -1))
 
     case sources.EqualNullSafe(a, v: DynamicReplacableConstant) =>
       expressions.EqualNullSafe(attr(a, schema), v.asInstanceOf[Expression])
     case sources.EqualNullSafe(a, v) =>
-      expressions.EqualNullSafe(attr(a, schema), ParamLiteral(convertToCatalyst(v), pos = -1))
+      expressions.EqualNullSafe(attr(a, schema), ParamLiteral(v, pos = -1))
 
     case sources.GreaterThan(a, v) =>
-      expressions.GreaterThan(attr(a, schema), ParamLiteral(convertToCatalyst(v), pos = -1))
+      expressions.GreaterThan(attr(a, schema), ParamLiteral(v, pos = -1))
     case sources.LessThan(a, v) =>
-      expressions.LessThan(attr(a, schema), ParamLiteral(convertToCatalyst(v), pos = -1))
+      expressions.LessThan(attr(a, schema), ParamLiteral(v, pos = -1))
 
     case sources.GreaterThanOrEqual(a, v) =>
-      expressions.GreaterThanOrEqual(attr(a, schema), ParamLiteral(convertToCatalyst(v), pos = -1))
+      expressions.GreaterThanOrEqual(attr(a, schema), ParamLiteral(v, pos = -1))
     case sources.LessThanOrEqual(a, v) =>
-      expressions.LessThanOrEqual(attr(a, schema), ParamLiteral(convertToCatalyst(v), pos = -1))
+      expressions.LessThanOrEqual(attr(a, schema), ParamLiteral(v, pos = -1))
 
     case sources.In(a, v) =>
       val set = if (v.length > 0) {

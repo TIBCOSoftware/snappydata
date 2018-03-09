@@ -830,15 +830,7 @@ final class SmartConnectorColumnRDD(
   private def serializeFilters(filters: Array[Filter]): Array[Byte] = {
     // serialize the filters
     if ((filters ne null) && filters.length > 0) {
-      val pooled = KryoSerializerPool.borrow()
-      val output = pooled.newOutput()
-      try {
-        pooled.kryo.writeObject(output, filters)
-        output.toBytes
-      } finally {
-        output.release()
-        KryoSerializerPool.release(pooled)
-      }
+      KryoSerializerPool.serialize((kryo, out) => kryo.writeClassAndObject(out, filters))
     } else null
   }
 
