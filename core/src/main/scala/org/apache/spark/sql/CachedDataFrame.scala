@@ -589,7 +589,7 @@ object CachedDataFrame
         allLiterals.foreach(x => {
           val pl = paramLiterals.get(x.position)
           if (pl != null) {
-            pl.currentValue = x.value
+            pl.updateValue(x.value)
           }
         })
       }

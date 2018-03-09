@@ -18,9 +18,9 @@
 package org.apache.spark.sql.catalyst.expressions
 
 import java.util.Objects
-import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable.ArrayBuffer
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
@@ -82,6 +82,8 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, var pos: 
     literalValueRef = ctx.addReferenceObj("literal", literalValue)
     literalValueRef
   }
+
+  private[sql] def updateValue(value: Any): Unit = literalValue.value = value
 
   override def nullable: Boolean = super.nullable
 
@@ -223,13 +225,7 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, var pos: 
     pos = input.readVarInt(true)
   }
 
-  private[sql] var currentValue: Any = value
-
-  override def toString: String = currentValue match {
-    case null => "null"
-    case binary: Array[Byte] => "0x" + DatatypeConverter.printHexBinary(binary)
-    case other => other.toString
-  }
+  override def toString: String = Literal(literalValue.value, literalValue.dataType).toString
 }
 
 object ParamLiteral {
