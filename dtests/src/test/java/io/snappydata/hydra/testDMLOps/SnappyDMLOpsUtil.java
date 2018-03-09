@@ -377,7 +377,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   protected void populateTablesUsingSysProc() {
     String dataLocation = SnappySchemaPrms.getDataLocations();
-    if (testUniqueKeys) {
+    if (testUniqueKeys || setTx) {
       dataLocation = addTIDtoCsv();
     }
     Log.getLogWriter().info("Loading data in snappy...");
@@ -614,12 +614,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int rand = new Random().nextInt(dmlTable.length);
       String tableName = dmlTable[rand].toUpperCase();
       String row = getRowFromCSV(tableName, rand);
-      if (testUniqueKeys)
+      if (testUniqueKeys || setTx)
         row = row + "," + getMyTid();
-
       //Log.getLogWriter().info("Selected row is : " + row);
       PreparedStatement snappyPS, derbyPS = null;
       String insertStmt = (SnappySchemaPrms.getInsertStmts()).get(rand);
+      //Log.getLogWriter().info("Insert statement is" + insertStmt);
       snappyPS = getPreparedStatement(conn, null, tableName, insertStmt, row);
       Log.getLogWriter().info("Inserting in snappy : " + insertStmt + " with " +
           "values(" + row + ")");
@@ -669,6 +669,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     Connection conn = null;
     String tableName = null;
     String tableType = null;
+    String stmtInBB = null;
+    String stmt = null;
     boolean autoCommit = false;
     try {
       if (setTx) {
@@ -683,7 +685,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       String updateStmt[] = SnappySchemaPrms.getUpdateStmts();
       int numRows = 0;
       int rand = new Random().nextInt(updateStmt.length);
-      String stmt = updateStmt[rand];
+      stmt = updateStmt[rand];
       tableName = SnappySchemaPrms.getUpdateTables()[rand];
       int tid = getMyTid();
       if (stmt.contains("$tid"))
@@ -696,9 +698,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       if (stmt.toUpperCase().contains("SELECT"))
         getAndExecuteSelect(conn, stmt, false);
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
+      Log.getLogWriter().info("SS - tableType: " + tableType + " tableName: " + tableName);
       numRows = conn.createStatement().executeUpdate(stmt);
-      if (setTx && !autoCommit && tableType.equalsIgnoreCase("R"))
+      if (setTx && !autoCommit && tableType.equalsIgnoreCase("R")) {
+        Log.getLogWriter().info("SS - committing the transaction. ");
         commit(conn);
+      }
+      Log.getLogWriter().info("SS - update statement: " + stmt);
       Log.getLogWriter().info("Updated " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
@@ -720,7 +726,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         //String[] dmlTables = SnappySchemaPrms.getDMLTables();
         //orderByClause = (SnappySchemaPrms.getOrderByClause())[Arrays.asList(dmlTables)
         //    .indexOf(tableName)];
-        String message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
+        String message = null;
+        Log.getLogWriter().info("SS - selectQuery: " + selectQuery);
+        if (setTx)
+          message = verifyResultsForTable(selectQuery, tableName, orderByClause, false);
+        else message = verifyResultsForTable(selectQuery, tableName, orderByClause, true);
         if (message.length() != 0) {
           throw new TestException("Validation failed after update on table " + tableName + "." +
               message);
@@ -730,6 +740,10 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     } catch (SQLException se) {
       if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
         Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
+      } else if (setTx && se.getMessage().contains("X0Z02")) {
+        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage() + "\n" + se
             .getCause());
         return;
       } else throw new TestException("Got exception while performing update operation.", se);
@@ -1164,9 +1178,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       for (int i = 0; i < oTypes.length; i++) {
         String clazz = oTypes[i].getSimpleClassName();
         String columnValue = columnValues.get(i);
-//      Log.getLogWriter().info
-//          ("Column : " + fieldNames[i] + " with value : " + columnValue + " and " +
-//              "clazz :" + clazz + ";column from insert stmt is : " + columnList.get(i));
+        /*Log.getLogWriter().info
+            ("Column : " + fieldNames[i] + " with value : " + columnValue + " and " +
+                "clazz :" + clazz + ";column from insert stmt is : " + columnList.get(i));*/
         if (!columnList.get(i).equalsIgnoreCase(fieldNames[i])) {
           Log.getLogWriter().info("Inside if column name mismatch.");
           columnList.add(i, fieldNames[i]);
