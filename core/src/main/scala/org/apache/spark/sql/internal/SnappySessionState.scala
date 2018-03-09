@@ -1079,6 +1079,7 @@ private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: datasources
  * so 'a%b' kind of pattern with additional escaped chars will not be optimized.
  */
 object LikeEscapeSimplification extends Rule[LogicalPlan] {
+  // TODO: SW: change Literal to ParamLiteral (or TokenLiteral)
   def simplifyLike(expr: Expression, left: Expression, pattern: String): Expression = {
     val len_1 = pattern.length - 1
     if (len_1 == -1) return EqualTo(left, Literal(""))

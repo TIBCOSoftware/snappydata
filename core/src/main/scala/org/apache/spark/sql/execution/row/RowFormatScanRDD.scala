@@ -38,10 +38,11 @@ import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext}
@@ -57,7 +58,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     var pushProjections: Boolean,
     protected var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
-    @transient private val filters: Array[Filter] = Array.empty[Filter],
+    @transient private val filters: Array[Expression] = Array.empty[Expression],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
       Array.empty[Partition],
     protected var commitTx: Boolean, protected var delayRollover: Boolean)
@@ -75,9 +76,10 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val sb = new StringBuilder().append(" WHERE ")
       val args = new ArrayBuffer[Any](numFilters)
       val initLen = sb.length
-      filters.foreach { s =>
-        compileFilter(s, sb, args, sb.length > initLen)
-      }
+      filters.foreach(translateToFilter(_) match {
+        case Some(f) => compileFilter(f, sb, args, sb.length > initLen)
+        case _ =>
+      })
       if (args.nonEmpty) {
         filterWhereArgs = args
         sb.toString()
@@ -128,8 +130,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" LIKE ?")
-      args += (value + '%')
+      sb.append(col).append(s" LIKE $value%")
     case In(col, values) =>
       if (addAnd) {
         sb.append(" AND ")
@@ -213,10 +214,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
-      ExternalStoreUtils.setStatementParameters(stmt, args.map {
-        case pl: DynamicReplacableConstant => pl.convertedLiteral
-        case v => v
-      })
+      ExternalStoreUtils.setStatementParameters(stmt, args)
     }
     val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {

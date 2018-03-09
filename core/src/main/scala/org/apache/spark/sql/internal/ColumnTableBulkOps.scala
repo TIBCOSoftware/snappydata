@@ -46,7 +46,7 @@ object ColumnTableBulkOps {
 
     table.collectFirst {
       case LogicalRelation(mutable: BulkPutRelation, _, _) =>
-        val putKeys = mutable.getPutKeys()
+        val putKeys = mutable.getPutKeys
         if (putKeys.isEmpty) {
           throw new AnalysisException(
             s"PutInto in a column table requires key column(s) but got empty string")
@@ -151,7 +151,7 @@ object ColumnTableBulkOps {
 
     table.collectFirst {
       case LogicalRelation(mutable: BulkPutRelation, _, _) =>
-        val putKeys = mutable.getPutKeys()
+        val putKeys = mutable.getPutKeys
         if (putKeys.isEmpty) {
           throw new AnalysisException(
             s"DeleteFrom in a column table requires key column(s) but got empty string")

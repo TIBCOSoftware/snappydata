@@ -48,7 +48,7 @@ import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, DynamicReplacableConstant, Expression, Literal, ParamLiteral, SortDirection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, ParamLiteral, SortDirection, UnsafeRow}
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
 import org.apache.spark.sql.collection.Utils
@@ -362,13 +362,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
    */
   private[sql] def translateFilter(filter: Filter,
       schema: Seq[AttributeReference]): Expression = filter match {
-    case sources.EqualTo(a, v: DynamicReplacableConstant) =>
-      expressions.EqualTo(attr(a, schema), v.asInstanceOf[Expression])
     case sources.EqualTo(a, v) =>
       expressions.EqualTo(attr(a, schema), ParamLiteral(v, pos = -1))
-
-    case sources.EqualNullSafe(a, v: DynamicReplacableConstant) =>
-      expressions.EqualNullSafe(attr(a, schema), v.asInstanceOf[Expression])
     case sources.EqualNullSafe(a, v) =>
       expressions.EqualNullSafe(attr(a, schema), ParamLiteral(v, pos = -1))
 

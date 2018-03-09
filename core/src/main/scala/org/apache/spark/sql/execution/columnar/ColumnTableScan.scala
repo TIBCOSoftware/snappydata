@@ -56,8 +56,6 @@ import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
@@ -813,68 +811,35 @@ object ColumnTableScan extends Logging {
         if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
         buildFilter(lhs) || buildFilter(rhs)
 
-      case EqualTo(a: AttributeReference, l: DynamicReplacableConstant) =>
+      case EqualTo(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(l: DynamicReplacableConstant, a: AttributeReference) =>
-        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(a: AttributeReference, l: Literal) =>
-        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(l: Literal, a: AttributeReference) =>
+      case EqualTo(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
 
-      case LessThan(a: AttributeReference, l: DynamicReplacableConstant) =>
+      case LessThan(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
         statsFor(a).lowerBound < l
-      case LessThan(l: DynamicReplacableConstant, a: AttributeReference) =>
+      case LessThan(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
         l < statsFor(a).upperBound
-      case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
-      case LessThan(l: Literal, a: AttributeReference) => l < statsFor(a).upperBound
 
-      case LessThanOrEqual(a: AttributeReference, l: DynamicReplacableConstant) =>
+      case LessThanOrEqual(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
         statsFor(a).lowerBound <= l
-      case LessThanOrEqual(l: DynamicReplacableConstant, a: AttributeReference) =>
+      case LessThanOrEqual(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
         l <= statsFor(a).upperBound
-      case LessThanOrEqual(a: AttributeReference, l: Literal) => statsFor(a).lowerBound <= l
-      case LessThanOrEqual(l: Literal, a: AttributeReference) => l <= statsFor(a).upperBound
 
-      case GreaterThan(a: AttributeReference, l: DynamicReplacableConstant) =>
+      case GreaterThan(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
         l < statsFor(a).upperBound
-      case GreaterThan(l: DynamicReplacableConstant, a: AttributeReference) =>
+      case GreaterThan(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
         statsFor(a).lowerBound < l
-      case GreaterThan(a: AttributeReference, l: Literal) => l < statsFor(a).upperBound
-      case GreaterThan(l: Literal, a: AttributeReference) => statsFor(a).lowerBound < l
 
-      case GreaterThanOrEqual(a: AttributeReference, l: DynamicReplacableConstant) =>
+      case GreaterThanOrEqual(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
         l <= statsFor(a).upperBound
-      case GreaterThanOrEqual(l: DynamicReplacableConstant, a: AttributeReference) =>
+      case GreaterThanOrEqual(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
         statsFor(a).lowerBound <= l
-      case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
-      case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
 
-      case StartsWith(a: AttributeReference, l: Literal) =>
-        // upper bound for column (i.e. LessThan) can be found by going to
-        // next value of the last character of literal
-        val s = l.value.asInstanceOf[UTF8String]
-        val len = s.numBytes()
-        val upper = new Array[Byte](len)
-        s.writeToMemory(upper, Platform.BYTE_ARRAY_OFFSET)
-        var lastCharPos = len - 1
-        // check for maximum unsigned value 0xff
-        val max = 0xff.toByte // -1
-        while (lastCharPos >= 0 && upper(lastCharPos) == max) {
-          lastCharPos -= 1
-        }
+      case StartsWith(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
         val stats = statsFor(a)
-        if (lastCharPos < 0) { // all bytes are 0xff
-          // a >= startsWithPREFIX
-          l <= stats.upperBound
-        } else {
-          upper(lastCharPos) = (upper(lastCharPos) + 1).toByte
-          val upperLiteral = Literal(UTF8String.fromAddress(upper,
-            Platform.BYTE_ARRAY_OFFSET, len), StringType)
-
-          // a >= startsWithPREFIX && a < startsWithPREFIX+1
-          l <= stats.upperBound && stats.lowerBound < upperLiteral
-        }
+        val pattern = if (l.dataType == StringType) l else Cast(l, StringType)
+        StartsWithForStats(stats.upperBound, stats.lowerBound, pattern)
 
       case IsNull(a: Attribute) => statsFor(a).nullCount > 0
       case IsNotNull(a: Attribute) => numBatchRows > statsFor(a).nullCount
@@ -1008,4 +973,67 @@ case class NumBatchRows(varName: String) extends LeafExpression {
       "NumBatchRows.eval not expected to be invoked")
 
   override def sql: String = s"NumBatchRows($varName)"
+}
+
+case class StartsWithForStats(upper: Expression, lower: Expression,
+    pattern: Expression) extends LeafExpression {
+
+  // pattern must be a string constant for stats row evaluation
+  assert(LiteralValue.isConstant(pattern))
+  assert(pattern.dataType == StringType)
+
+  override def nullable: Boolean = false
+
+  override def dataType: DataType = BooleanType
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val upperExpr = upper.genCode(ctx)
+    val lowerExpr = lower.genCode(ctx)
+    val patternExpr = pattern.genCode(ctx)
+    val str = ctx.freshName("str")
+    val len = str + "Len"
+    val lastCharPos = str + "LastPos"
+    val upperBytes = str + "Upper"
+    val upperStr = str + "UpperUTF8"
+    val result = ev.value
+    val code =
+      s"""
+         |boolean $result = true;
+         |if (!${patternExpr.isNull}) {
+         |  ${lowerExpr.code}
+         |  ${upperExpr.code}
+         |  // upper bound for column (i.e. LessThan) can be found by going to
+         |  // next value of the last character of literal
+         |  int $len = ${patternExpr.value}.numBytes();
+         |  byte[] $upperBytes = new byte[$len];
+         |  ${patternExpr.value}.writeToMemory($upperBytes, Platform.BYTE_ARRAY_OFFSET);
+         |  int $lastCharPos = $len - 1;
+         |  // check for maximum unsigned value 0xff
+         |  while ($lastCharPos >= 0 && $upperBytes[$lastCharPos] == (byte)-1) {
+         |    $lastCharPos--;
+         |  }
+         |  if ($lastCharPos < 0 || (${lowerExpr.isNull})) { // all bytes are 0xff
+         |    // a >= startsWithPREFIX
+         |    if (!${upperExpr.isNull}) {
+         |      $result = ${patternExpr.value}.compareTo(${upperExpr.value}) <= 0;
+         |    }
+         |  } else {
+         |    $upperBytes[$lastCharPos] = (byte)($upperBytes[$lastCharPos] + 1);
+         |    $upperStr = UTF8String.fromAddress($upperBytes, Platform.BYTE_ARRAY_OFFSET, $len);
+         |    // a >= startsWithPREFIX && a < startsWithPREFIX+1
+         |    $result = ((${upperExpr.isNull}) ||
+         |        ${patternExpr.value}.compareTo(${upperExpr.value}) <= 0) &&
+         |      ${lowerExpr.value}.compareTo($upperStr) < 0;
+         |  }
+         |}
+         |
+      """.stripMargin
+    ev.copy(code, "false", result)
+  }
+
+  override def eval(input: InternalRow): Any =
+    throw new UnsupportedOperationException(
+      "StartsWithForStats.eval not expected to be invoked")
+
+  override def sql: String = s"StartsWith($upper, $lower, $pattern)"
 }

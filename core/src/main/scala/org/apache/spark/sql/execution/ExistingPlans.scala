@@ -33,7 +33,7 @@ import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
-import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -135,7 +135,7 @@ private[sql] object PartitionedPhysicalScan {
       relation: PartitionedDataSourceScan,
       allFilters: Seq[Expression],
       schemaAttributes: Seq[AttributeReference],
-      scanBuilderArgs: => (Seq[AttributeReference], Seq[Filter])): SparkPlan =
+      scanBuilderArgs: => (Seq[AttributeReference], Seq[Expression])): SparkPlan =
     relation match {
       case i: IndexColumnFormatRelation =>
         val caseSensitive = i.sqlContext.conf.caseSensitiveAnalysis
