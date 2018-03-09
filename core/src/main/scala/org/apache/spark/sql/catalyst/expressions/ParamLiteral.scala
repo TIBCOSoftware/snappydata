@@ -293,6 +293,19 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
   }
 }
 
+object LiteralValue {
+
+  def unapply(expression: Expression): Option[Any] = expression match {
+    case l: DynamicReplacableConstant => Some(l.convertedLiteral)
+    case Literal(v, t) => Some(convertToScala(v, t))
+    case _ => None
+  }
+
+  def isConstant(expression: Expression): Boolean = expression match {
+    case _: DynamicReplacableConstant | _: Literal => true
+    case _ => false
+  }
+}
 
 /**
  * Wrap any ParamLiteral expression with this so that we can generate literal initialization code

@@ -42,15 +42,16 @@ import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, Clien
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{DynamicReplacableConstant, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
+import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.ConnectorCatalog
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
-import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
@@ -515,7 +516,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   override def getColumnBatchRDD(tableName: String,
       rowBuffer: String,
       projection: Array[Int],
-      filters: Array[Filter],
+      filters: Array[Expression],
       prunePartitions: => Int,
       session: SparkSession,
       schema: StructType,
@@ -777,7 +778,7 @@ final class SmartConnectorColumnRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
     private var projection: Array[Int],
-    @transient private val filters: Array[Filter],
+    @transient private val filters: Array[Expression],
     private var connProperties: ConnectionProperties,
     private var schema: StructType,
     @transient private val store: ExternalStore,
@@ -827,10 +828,14 @@ final class SmartConnectorColumnRDD(
     itr
   }
 
-  private def serializeFilters(filters: Array[Filter]): Array[Byte] = {
+  private def serializeFilters(filters: Array[Expression]): Array[Byte] = {
     // serialize the filters
     if ((filters ne null) && filters.length > 0) {
-      KryoSerializerPool.serialize((kryo, out) => kryo.writeClassAndObject(out, filters))
+      // ship as source Filters which is public API for multiple version compatibility
+      val srcFilters = filters.flatMap(translateToFilter)
+      if (srcFilters.length > 0) {
+        KryoSerializerPool.serialize((kryo, out) => kryo.writeClassAndObject(out, srcFilters))
+      } else null
     } else null
   }
 
@@ -893,7 +898,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _isPartitioned: Boolean,
     _columns: Array[String],
     _connProperties: ConnectionProperties,
-    _filters: Array[Filter],
+    _filters: Array[Expression],
     _partEval: () => Array[Partition],
     private var relDestroyVersion: Int,
     _commitTx: Boolean, _delayRollover: Boolean)
@@ -963,11 +968,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
-      ExternalStoreUtils.setStatementParameters(stmt, args.map {
-        case pl: ParamLiteral => pl.convertedLiteral
-        case l : DynamicReplacableConstant => l.convertedLiteral
-        case v => v
-      })
+      ExternalStoreUtils.setStatementParameters(stmt, args)
     }
     val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {

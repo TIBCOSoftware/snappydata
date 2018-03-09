@@ -27,7 +27,8 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
 
 trait ExternalStore extends Serializable with Logging {
@@ -45,7 +46,7 @@ trait ExternalStore extends Serializable with Logging {
       compressionCodecId: Int, conn: Option[Connection]): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, projection: Array[Int],
-      filters: Array[Filter], prunePartitions: => Int, session: SparkSession,
+      filters: Array[Expression], prunePartitions: => Int, session: SparkSession,
       schema: StructType, delayRollover: Boolean): RDD[Any]
 
   def getConnectedExternalStore(tableName: String,

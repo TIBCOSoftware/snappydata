@@ -32,6 +32,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
+import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -99,7 +100,7 @@ case class JDBCMutableRelation(
 
   def isPartitioned: Boolean = false
 
-  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
+  override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
   protected final val connFactory: () => Connection =
@@ -178,7 +179,7 @@ case class JDBCMutableRelation(
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Expression]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val jdbcOptions = new JDBCOptions(connProperties.url,
       table, connProperties.executorConnProps.asScala.toMap)
 
@@ -186,7 +187,7 @@ case class JDBCMutableRelation(
       sqlContext.sparkContext,
       schema,
       requiredColumns,
-      filters.filterNot(ExternalStoreUtils.unhandledFilter),
+      filters.flatMap(translateToFilter),
       parts, jdbcOptions).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }

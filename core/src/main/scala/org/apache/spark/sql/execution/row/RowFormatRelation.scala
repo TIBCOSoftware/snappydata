@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpress
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
@@ -97,12 +97,12 @@ class RowFormatRelation(
     }
   }
 
-  private[this] def pushdownPKColumns(filters: Array[Filter]): Array[String] = {
-    def getEqualToColumns(filters: Array[Filter]): ArrayBuffer[String] = {
+  private[this] def pushdownPKColumns(filters: Seq[Expression]): Seq[String] = {
+    def getEqualToColumns(filters: Seq[Expression]): ArrayBuffer[String] = {
       val list = new ArrayBuffer[String](4)
       filters.foreach {
-        case EqualTo(col, _) => list += col
-        case In(col, _) => list += col
+        case EqualTo(col: Attribute, _) => list += col.name
+        case In(col: Attribute, _) => list += col.name
         case And(left, right) => list ++= getEqualToColumns(Array(left, right))
         case _ =>
       }
@@ -123,17 +123,17 @@ class RowFormatRelation(
         }
         if (pkCols.forall(equalToColumns.contains)) return pkCols
     }
-    Array.empty[String]
+    Nil
   }
 
 
-  override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
+  override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] = {
     filters.filter(ExternalStoreUtils.unhandledFilter(_,
       indexedColumns ++ pushdownPKColumns(filters)))
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Expression]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.flatMap(ExternalStoreUtils.handledFilter(_, indexedColumns))
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
