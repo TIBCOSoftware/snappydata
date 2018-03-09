@@ -29,8 +29,8 @@ import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
+import com.gemstone.gemfire.internal.shared._
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
-import com.gemstone.gemfire.internal.shared.{FetchRequest, _}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
