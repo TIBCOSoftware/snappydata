@@ -976,11 +976,15 @@ case class NumBatchRows(varName: String) extends LeafExpression {
 }
 
 case class StartsWithForStats(upper: Expression, lower: Expression,
-    pattern: Expression) extends LeafExpression {
+    pattern: Expression) extends Expression {
 
   // pattern must be a string constant for stats row evaluation
   assert(LiteralValue.isConstant(pattern))
   assert(pattern.dataType == StringType)
+
+  override final def children: Seq[Expression] = Seq(upper, lower, pattern)
+
+  override def foldable: Boolean = false
 
   override def nullable: Boolean = false
 
@@ -998,6 +1002,7 @@ case class StartsWithForStats(upper: Expression, lower: Expression,
     val result = ev.value
     val code =
       s"""
+         |${patternExpr.code}
          |boolean $result = true;
          |if (!${patternExpr.isNull}) {
          |  ${lowerExpr.code}
@@ -1019,7 +1024,8 @@ case class StartsWithForStats(upper: Expression, lower: Expression,
          |    }
          |  } else {
          |    $upperBytes[$lastCharPos] = (byte)($upperBytes[$lastCharPos] + 1);
-         |    $upperStr = UTF8String.fromAddress($upperBytes, Platform.BYTE_ARRAY_OFFSET, $len);
+         |    UTF8String $upperStr = UTF8String.fromAddress($upperBytes,
+         |      Platform.BYTE_ARRAY_OFFSET, $len);
          |    // a >= startsWithPREFIX && a < startsWithPREFIX+1
          |    $result = ((${upperExpr.isNull}) ||
          |        ${patternExpr.value}.compareTo(${upperExpr.value}) <= 0) &&
