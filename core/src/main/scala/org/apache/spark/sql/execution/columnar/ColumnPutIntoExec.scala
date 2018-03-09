@@ -40,13 +40,13 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
 
   override def executeCollect(): Array[InternalRow] = {
     // First update the rows which are present in the table
-    val u = updatePlan.executeCollectPublic().map(_.apply(0).asInstanceOf[Long]).toSeq.foldLeft(0L)(_ + _)
+    val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
     // Then insert the rows which are not there in the table
-    val i = insertPlan.executeCollectPublic().map(_.apply(0).asInstanceOf[Long]).toSeq.foldLeft(0L)(_ + _)
+    val i = insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
     val resultRow = new UnsafeRow(1)
     val data = new Array[Byte](32)
     resultRow.pointTo(data, 32)
     resultRow.setLong(0, i + u)
-    Seq(resultRow).toArray
+    Array(resultRow)
   }
 }

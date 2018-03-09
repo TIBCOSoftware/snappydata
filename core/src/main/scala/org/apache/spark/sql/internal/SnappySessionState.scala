@@ -871,8 +871,13 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
-          // First, make sure the where column(s) of the delete are in schema of the relation.
           val expectedOutput = l.output
+          if (child.output.length != expectedOutput.length) {
+            throw new AnalysisException(s"$l requires that the query in the " +
+                "WHERE clause of the DELETE FROM statement " +
+                "generates the same number of column(s) as in its schema but found " +
+                s"${child.output.mkString(",")} instead.")
+          }
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
         case _ => d
       }
