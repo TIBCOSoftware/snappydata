@@ -1945,7 +1945,7 @@ object SnappySession extends Logging {
       session.sparkContext.listenerBus.post(SparkListenerSQLPlanExecutionStart(
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, df.queryExecution.toString,
-        CachedDataFrame.queryPlanInfo(executedPlan, allLiterals),
+        CachedDataFrame.queryPlanInfo(executedPlan, allLiterals, null),
         start))
       f
     } finally {
