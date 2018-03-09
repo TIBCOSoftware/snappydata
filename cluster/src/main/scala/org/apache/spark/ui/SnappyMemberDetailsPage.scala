@@ -23,11 +23,12 @@ import javax.servlet.http.HttpServletRequest
 
 import scala.collection.mutable
 import scala.util.control.Breaks._
-import scala.xml.{Unparsed, Node}
+import scala.xml.{Node, Unparsed}
 
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
-import com.pivotal.gemfirexd.internal.engine.sql.execute.{MemberLogsMessage}
+import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberLogsMessage
+import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
@@ -59,58 +60,50 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
     </div>
   }
 
-  private def getMemberStats(memberDetails: mutable.Map[String, Any]): Seq[Node] = {
+  private def getMemberStats(memberDetails: MemberStatistics): Seq[Node] = {
 
-    val status = memberDetails.getOrElse("status", "")
+    val status = memberDetails.getStatus
 
-    val statusImgUri = if (status.toString.equalsIgnoreCase("running")) {
+    val statusImgUri = if (status.equalsIgnoreCase("running")) {
       "/static/snappydata/running-status-icon-70x68.png"
     } else {
       "/static/snappydata/warning-status-icon-70x68.png"
     }
 
     val memberType = {
-      if (memberDetails.getOrElse("lead", false).toString.toBoolean) {
-        if (memberDetails.getOrElse("activeLead", false).toString.toBoolean) {
+      if (memberDetails.isLead) {
+        if (memberDetails.isLeadActive) {
           "LEAD (Active)"
         } else {
           "LEAD"
         }
-      } else if (memberDetails.getOrElse("locator", false).toString.toBoolean) {
+      } else if (memberDetails.isLocator) {
         "LOCATOR"
-      } else if (memberDetails.getOrElse("dataServer", false).toString.toBoolean) {
+      } else if (memberDetails.isDataServer) {
         "DATA SERVER"
       } else {
         "CONNECTOR"
       }
     }
 
-    val cpuUsage = memberDetails.getOrElse("cpuActive", 0).asInstanceOf[Integer].toDouble;
+    val cpuUsage = memberDetails.getCpuActive.toDouble;
 
-    val heapStoragePoolUsed =
-      memberDetails.getOrElse("heapStoragePoolUsed", 0).asInstanceOf[Long]
-    val heapStoragePoolSize =
-      memberDetails.getOrElse("heapStoragePoolSize", 0).asInstanceOf[Long]
-    val heapExecutionPoolUsed =
-      memberDetails.getOrElse("heapExecutionPoolUsed", 0).asInstanceOf[Long]
-    val heapExecutionPoolSize =
-      memberDetails.getOrElse("heapExecutionPoolSize", 0).asInstanceOf[Long]
+    val heapStoragePoolUsed = memberDetails.getHeapStoragePoolUsed
+    val heapStoragePoolSize = memberDetails.getHeapStoragePoolSize
+    val heapExecutionPoolUsed = memberDetails.getHeapExecutionPoolUsed
+    val heapExecutionPoolSize = memberDetails.getHeapExecutionPoolSize
 
-    val offHeapStoragePoolUsed =
-      memberDetails.getOrElse("offHeapStoragePoolUsed", 0).asInstanceOf[Long]
-    val offHeapStoragePoolSize =
-      memberDetails.getOrElse("offHeapStoragePoolSize", 0).asInstanceOf[Long]
-    val offHeapExecutionPoolUsed =
-      memberDetails.getOrElse("offHeapExecutionPoolUsed", 0).asInstanceOf[Long]
-    val offHeapExecutionPoolSize =
-      memberDetails.getOrElse("offHeapExecutionPoolSize", 0).asInstanceOf[Long]
+    val offHeapStoragePoolUsed = memberDetails.getOffHeapStoragePoolUsed
+    val offHeapStoragePoolSize = memberDetails.getOffHeapStoragePoolSize
+    val offHeapExecutionPoolUsed = memberDetails.getOffHeapExecutionPoolUsed
+    val offHeapExecutionPoolSize = memberDetails.getOffHeapExecutionPoolSize
 
-    val heapMemorySize = memberDetails.getOrElse("heapMemorySize", 0).asInstanceOf[Long]
-    val heapMemoryUsed = memberDetails.getOrElse("heapMemoryUsed", 0).asInstanceOf[Long]
-    val offHeapMemorySize = memberDetails.getOrElse("offHeapMemorySize", 0).asInstanceOf[Long]
-    val offHeapMemoryUsed = memberDetails.getOrElse("offHeapMemoryUsed", 0).asInstanceOf[Long]
-    val jvmHeapSize = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
-    val jvmHeapUsed = memberDetails.getOrElse("usedMemory", 0).asInstanceOf[Long]
+    val heapMemorySize = memberDetails.getHeapMemorySize
+    val heapMemoryUsed = memberDetails.getHeapMemoryUsed
+    val offHeapMemorySize = memberDetails.getOffHeapMemorySize
+    val offHeapMemoryUsed = memberDetails.getOffHeapMemoryUsed
+    val jvmHeapSize = memberDetails.getJvmTotalMemory
+    val jvmHeapUsed = memberDetails.getJvmUsedMemory
 
     var memoryUsage: Long = 0
     if ((heapMemorySize + offHeapMemorySize) > 0) {
@@ -221,7 +214,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         <div class="keyStatesText" style="text-align: left;">
           Member :
           <span>
-            {memberDetails.getOrElse("id", "NA")}
+            {memberDetails.getId}
           </span>
         </div>
         <div class="keyStatesText" style="text-align: left;">
@@ -233,7 +226,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         <div class="keyStatesText" style="text-align: left;">
           Process ID :
           <span>
-            {memberDetails.getOrElse("processId", "").toString}
+            {memberDetails.getProcessId}
           </span>
         </div>
       </div>
@@ -305,11 +298,11 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
     }
 
     val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsOnDemand
-    val memberDetails: scala.collection.mutable.Map[String, Any] = {
-      var mem = scala.collection.mutable.Map.empty[String, Any]
+    val memberDetails: MemberStatistics = {
+      var mem: MemberStatistics = null
       breakable {
         allMembers.foreach(m => {
-          if (m._2("id").toString.equalsIgnoreCase(memberId)) {
+          if (m._2.getId().equalsIgnoreCase(memberId)) {
             mem = m._2
             break
           }
@@ -318,15 +311,15 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
       mem
     }
 
-    if (memberDetails.isEmpty) {
+    if (memberDetails == null) {
       throw new IllegalArgumentException(s"Missing memId parameter")
     }
 
     val memberStats = getMemberStats(memberDetails)
 
     // set members workDir and LogFileName
-    workDir = new File(memberDetails.getOrElse("userDir", "").toString)
-    logFileName = memberDetails.getOrElse("logFile", "").toString
+    workDir = new File(memberDetails.getUserDir)
+    logFileName = memberDetails.getLogFile
 
     // Get Log Details
     val collector = new GfxdListResultCollector(null, true)
@@ -417,7 +410,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
           </h4>
           <div style="margin-left:15px;">
             <span style="font-weight: bolder;">Location :</span>
-            {memberDetails.getOrElse("userDir", "")}/{memberDetails.getOrElse("logFile", "")}
+            {memberDetails.getUserDir}/{memberDetails.getLogFile}
           </div>
         </div>
       </div>

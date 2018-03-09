@@ -22,6 +22,7 @@ import java.util.UUID
 
 import scala.collection.mutable.ListBuffer
 
+import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
 import io.snappydata.SnappyTableStatsProviderService
 
 object MemberDetails {
@@ -33,7 +34,7 @@ object MemberDetails {
     allMembers.foreach(mem => {
       val memberDetails = mem._2
 
-      val status = memberDetails.getOrElse("status", "").toString
+      val status = memberDetails.getStatus
       /*
       val statusImgUri = if (status.toString.toLowerCase.equals("running")) {
         "/static/snappydata/running-status-icon-20x19.png"
@@ -42,31 +43,31 @@ object MemberDetails {
       }
       */
 
-      val memberId = memberDetails.getOrElse("id", "NA").toString
+      val memberId = memberDetails.getId
 
       val nameOrId = {
-        if (memberDetails.getOrElse("name", "NA").equals("NA")
-            || memberDetails.getOrElse("name", "NA").equals("")) {
-          memberDetails.getOrElse("id", "NA")
+        if (memberDetails.getName.isEmpty
+            || memberDetails.getName.equalsIgnoreCase("NA")) {
+          memberDetails.getId
         } else {
-          memberDetails.getOrElse("name", "NA")
+          memberDetails.getName
         }
       }
 
-      val host = memberDetails.getOrElse("host", "").toString
-      val fullDirName = memberDetails.getOrElse("userDir", "").toString
+      val host = memberDetails.getHost
+      val fullDirName = memberDetails.getUserDir
       val shortDirName = fullDirName.substring(
         fullDirName.lastIndexOf(System.getProperty("file.separator")) + 1)
-      val logFile = memberDetails.getOrElse("logFile", "").toString
-      val processId = memberDetails.getOrElse("processId", "").toString
+      val logFile = memberDetails.getLogFile
+      val processId = memberDetails.getProcessId
 
-      // val distStoreUUID = memberDetails.get("diskStoreUUID").get.asInstanceOf[UUID]
-      // val distStoreName = memberDetails.getOrElse("status", "").toString
+      // val distStoreUUID = memberDetails.getDiskStoreUUID
+      // val distStoreName = memberDetails.getDiskStoreName
 
-      val isLead: Boolean = memberDetails.getOrElse("lead", false).toString.toBoolean
-      val isActiveLead: Boolean = memberDetails.getOrElse("activeLead", false).toString.toBoolean
-      val isLocator: Boolean = memberDetails.getOrElse("locator", false).toString.toBoolean
-      val isDataServer: Boolean = memberDetails.getOrElse("dataServer", false).toString.toBoolean
+      val isLead: Boolean = memberDetails.isLead
+      val isActiveLead: Boolean = memberDetails.isLeadActive
+      val isLocator: Boolean = memberDetails.isLocator
+      val isDataServer: Boolean = memberDetails.isDataServer
       val memberType = {
         if (isLead || isActiveLead) {
           "LEAD"
@@ -79,44 +80,53 @@ object MemberDetails {
         }
       }
 
-      val cpuActive = memberDetails.getOrElse("cpuActive", 0).asInstanceOf[Int]
-      val clients = memberDetails.getOrElse("clients", 0).asInstanceOf[Long]
+      val cpuActive = memberDetails.getCpuActive
+      val clients = memberDetails.getClientsCount
 
-      val heapStoragePoolUsed =
-        memberDetails.getOrElse("heapStoragePoolUsed", 0).asInstanceOf[Long]
-      val heapStoragePoolSize =
-        memberDetails.getOrElse("heapStoragePoolSize", 0).asInstanceOf[Long]
-      val heapExecutionPoolUsed =
-        memberDetails.getOrElse("heapExecutionPoolUsed", 0).asInstanceOf[Long]
-      val heapExecutionPoolSize =
-        memberDetails.getOrElse("heapExecutionPoolSize", 0).asInstanceOf[Long]
+      val heapStoragePoolUsed = memberDetails.getHeapStoragePoolUsed
+      val heapStoragePoolSize = memberDetails.getHeapStoragePoolSize
+      val heapExecutionPoolUsed = memberDetails.getHeapExecutionPoolUsed
+      val heapExecutionPoolSize = memberDetails.getHeapExecutionPoolSize
 
-      val offHeapStoragePoolUsed =
-        memberDetails.getOrElse("offHeapStoragePoolUsed", 0).asInstanceOf[Long]
-      val offHeapStoragePoolSize =
-        memberDetails.getOrElse("offHeapStoragePoolSize", 0).asInstanceOf[Long]
-      val offHeapExecutionPoolUsed =
-        memberDetails.getOrElse("offHeapExecutionPoolUsed", 0).asInstanceOf[Long]
-      val offHeapExecutionPoolSize =
-        memberDetails.getOrElse("offHeapExecutionPoolSize", 0).asInstanceOf[Long]
+      val offHeapStoragePoolUsed = memberDetails.getOffHeapStoragePoolUsed
+      val offHeapStoragePoolSize = memberDetails.getOffHeapStoragePoolSize
+      val offHeapExecutionPoolUsed = memberDetails.getOffHeapExecutionPoolUsed
+      val offHeapExecutionPoolSize = memberDetails.getOffHeapExecutionPoolSize
 
-      val heapMemorySize = memberDetails.getOrElse("heapMemorySize", 0).asInstanceOf[Long]
-      val heapMemoryUsed = memberDetails.getOrElse("heapMemoryUsed", 0).asInstanceOf[Long]
-      val offHeapMemorySize = memberDetails.getOrElse("offHeapMemorySize", 0).asInstanceOf[Long]
-      val offHeapMemoryUsed = memberDetails.getOrElse("offHeapMemoryUsed", 0).asInstanceOf[Long]
+      val heapMemorySize = memberDetails.getHeapMemorySize
+      val heapMemoryUsed = memberDetails.getHeapMemoryUsed
+      val offHeapMemorySize = memberDetails.getOffHeapMemorySize
+      val offHeapMemoryUsed = memberDetails.getOffHeapMemoryUsed
 
 
-      val jvmHeapMax = memberDetails.getOrElse("maxMemory", 0).asInstanceOf[Long]
-      val jvmHeapTotal = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
-      val jvmHeapUsed = memberDetails.getOrElse("usedMemory", 0).asInstanceOf[Long]
-      val jvmHeapFree = memberDetails.getOrElse("freeMemory", 0).asInstanceOf[Long]
+      val jvmHeapMax = memberDetails.getJvmMaxMemory
+      val jvmHeapTotal = memberDetails.getJvmTotalMemory
+      val jvmHeapUsed = memberDetails.getJvmUsedMemory
+      val jvmHeapFree = memberDetails.getJvmFreeMemory
+
+      val timeLine = memberDetails.getUsageTrends(MemberStatistics.TREND_TIMELINE)
+      val cpuUsageTrends = memberDetails.getUsageTrends(MemberStatistics.TREND_CPU_USAGE)
+      val jvmUsageTrends = memberDetails.getUsageTrends(MemberStatistics.TREND_JVM_HEAP_USAGE)
+      val heapUsageTrends = memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_USAGE)
+      val heapStorageUsageTrends = memberDetails.getUsageTrends(
+        MemberStatistics.TREND_HEAP_STORAGE_USAGE)
+      val heapExecutionUsageTrends = memberDetails.getUsageTrends(
+        MemberStatistics.TREND_HEAP_EXECUTION_USAGE)
+      val offHeapUsageTrends = memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_USAGE)
+      val offHeapStorageUsageTrends = memberDetails.getUsageTrends(
+        MemberStatistics.TREND_OFFHEAP_STORAGE_USAGE)
+      val offHeapExecutionUsageTrends = memberDetails.getUsageTrends(
+        MemberStatistics.TREND_OFFHEAP_EXECUTION_USAGE)
 
       membersBuff += new MemberSummary(memberId, nameOrId.toString, host, shortDirName, fullDirName,
         logFile, processId, status, memberType, isLocator, isDataServer, isLead, isActiveLead,
         cpuActive, clients, jvmHeapMax, jvmHeapUsed, jvmHeapTotal, jvmHeapFree,
         heapStoragePoolUsed, heapStoragePoolSize, heapExecutionPoolUsed, heapExecutionPoolSize,
         heapMemorySize, heapMemoryUsed, offHeapStoragePoolUsed, offHeapStoragePoolSize,
-        offHeapExecutionPoolUsed, offHeapExecutionPoolSize, offHeapMemorySize, offHeapMemoryUsed)
+        offHeapExecutionPoolUsed, offHeapExecutionPoolSize, offHeapMemorySize, offHeapMemoryUsed,
+        timeLine, cpuUsageTrends, jvmUsageTrends, heapUsageTrends, heapStorageUsageTrends,
+        heapExecutionUsageTrends, offHeapUsageTrends, offHeapStorageUsageTrends,
+        offHeapExecutionUsageTrends)
 
     })
 

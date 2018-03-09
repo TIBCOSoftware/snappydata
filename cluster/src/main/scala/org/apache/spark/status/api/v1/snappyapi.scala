@@ -62,7 +62,16 @@ class MemberSummary private[spark](
     val offHeapExecutionPoolUsed: Long,
     val offHeapExecutionPoolSize: Long,
     val offHeapMemorySize: Long,
-    val offHeapMemoryUsed: Long
+    val offHeapMemoryUsed: Long,
+    val timeLine: Array[Object],
+    val cpuUsageTrend: Array[Object],
+    val jvmUsageTrend: Array[Object],
+    val heapUsageTrend: Array[Object],
+    val heapStorageUsageTrend: Array[Object],
+    val heapExecutionUsageTrend: Array[Object],
+    val offHeapUsageTrend: Array[Object],
+    val offHeapStorageUsageTrend: Array[Object],
+    val offHeapExecutionUsageTrend: Array[Object]
 )
 
 class TableSummary private[spark](
