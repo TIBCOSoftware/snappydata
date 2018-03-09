@@ -1,16 +1,80 @@
 # Properties Details
 
+*	[autoBroadcastJoinThreshold](#autoBroadcastJoinThreshold)
+*	[bind-address](#bind-address)
+*	[classpath](#classpath)
+*	[critical-heap-percentage](#critical-heap-percentage)
+*	[critical-off-heap-percentage](#critical-off-heap-percentage)
+*	[dir](#dir)
+*	[eviction-heap-percentage](#eviction-heap-percentage)
+*	[eviction-off-heap-percentage](#eviction-off-heap-percentage)
+*	[heap-size](#heap-size)
+*	[J](#J)
+*	[J-Dgemfirexd.hostname-for-clients](#J-Dgemfirexd.hostname-for-clients)
+*	[locators](#locators)
+*	[log-file](#log-file)
+*	[member-timeout](#member-timeout)
+*	[memory-size](#memory-size)
+*	[peer-discovery-address](#peer-discovery-address)
+*	[peer-discovery-port](#peer-discovery-port)
+*	[rebalance](#rebalance)
+*	[snappydata.column.batchSize](#snappydata.column.batchSize)
+*	[spark.driver.maxResultSize](#spark.driver.maxResultSize)
+*	[spark.executor.cores](#spark.executor.cores)
+*	[spark.local.dir](#spark.local.dir)
+*	[spark.network.timeout](#spark.network.timeout)
+*	[thrift-ssl-properties](#thrift-ssl-properties)
+*	[Behavior](#Behavior)
+*	[ColumnBatchSize](#ColumnBatchSize)
+*	[ColumnMaxDeltaRows](#ColumnMaxDeltaRows)
+*	[Confidence](#Confidence)
+*	[EnableExperimentalFeatures](#EnableExperimentalFeatures)
+*	[Error](#Error)
+*	[FlushReservoirThreshold](#FlushReservoirThreshold)
+*	[ForceLinkPartitionsToBuckets](#ForceLinkPartitionsToBuckets)
+*	[HashAggregateSize](#HashAggregateSize)
+*	[HashJoinSize](#HashJoinSize)
+*	[JobServerEnabled](#JobServerEnabled)
+*	[JobServerWaitForInit](#JobServerWaitForInit)
+*	[NumBootStrapTrials](#NumBootStrapTrials)
+*	[ParserTraceError](#ParserTraceError)
+*	[PartitionPruning](#PartitionPruning)
+*	[PlanCaching](#PlanCaching)
+*	[PlanCachingAll](#PlanCachingAll)
+*	[PlanCacheSize](#PlanCacheSize)
+*	[PreferPrimariesInQuery](#PreferPrimariesInQuery)
+*	[SchedulerPool](#SchedulerPool)
+*	[SnappyConnection](#SnappyConnection)
+*	[Tokenize](#Tokenize)
+
+<a id="autoBroadcastJoinThreshold"></a>
 ## autoBroadcastJoinThreshold
 
 **Description**</br>
 Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled.
+
+This is an SQL property.
 
 **Default Values**</br>
 10L * 1024 * 1024 
 
 **Components**</br>
 
-Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
+This can be set using a `SET SQL` command or using the configuration properties in the **conf/leads** file. The `SET SQL` command sets the property for the current SnappySession while setting it in conf/leads file sets the property for all SnappySession.
+
+For example:
+```
+Set in the snappy SQL shell
+
+snappy> connect client 'localhost:1527';
+snappy> set snappydata.column.batchSize=100k;
+This sets the property for the snappy SQL shell's session.
+
+Set in the conf/leads file
+
+$ cat conf/leads
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
+```
 
 **Example**</br>
 
@@ -23,7 +87,7 @@ snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=<_SizeInBytes_>")
 // To disable auto broadcast
 .set("spark.sql.autoBroadcastJoinThreshold", "-1")
 ```
-
+<a id="bind-address"></a>
 ## bind-address
 
 **Description**</br>
@@ -43,7 +107,7 @@ localhost
 ```
 -client-bind-address=localhost
 ```
-
+<a id="classpath"></a>
 ## classpath
 
 **Description**</br>
@@ -59,6 +123,7 @@ Location of user classes required by the SnappyData Server. </br> This path is a
 
 **Example**</br>
 
+<a id="critical-heap-percentage"></a>
 ## critical-heap-percentage
 
 **Description**</br>
@@ -78,6 +143,7 @@ If you set `heap-size`, the default value for `critical-heap-percentage` is set 
 conf.set("snappydata.store.critical-heap-percentage", "95")
 ```
 
+<a id="critical-off-heap-percentage"></a>
 ## critical-off-heap-percentage
 
 **Description**</br>
@@ -95,15 +161,13 @@ When this limit is breached, the system starts canceling memory-intensive querie
 conf.set("snappydata.store.critical-off-heap-percentage", "95")
 ```
 
+<a id="dir"></a>
 ## dir
 
 **Description**</br>
 Working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).
 
-**Default Values**</br>
-
-
-**Components**</br>
+**Default Values**</br>**Components**</br>
 
 - Server
 - Lead
@@ -111,7 +175,7 @@ Working directory of the server that contains the SnappyData Server status file 
 
 **Example**</br>
 
-
+<a id="eviction-heap-percentage"></a>
 ## eviction-heap-percentage
 
 **Description**</br>
@@ -130,6 +194,7 @@ By default, the eviction threshold is 81% of whatever is set for  `critical-heap
 props.setProperty("eviction-heap-percentage", "20")
 ```
 
+<a id="eviction-off-heap-percentage"></a>
 ## eviction-off-heap-percentage
 
 **Description**</br>
@@ -148,6 +213,7 @@ By default, the eviction threshold is 81% of whatever is set for `critical-off-h
 props.setProperty("eviction-off-heap-percentage", "15")
 ```
 
+<a id="heap-size"></a>
 ## heap-size
 
 **Description**</br>
@@ -155,7 +221,6 @@ Sets the maximum heap size for the Java VM, using SnappyData default resource ma
 
 **Default Values**</br>
 
-
 **Components**</br>
 
 - Server
@@ -164,15 +229,13 @@ Sets the maximum heap size for the Java VM, using SnappyData default resource ma
 
 **Example**</br>
 
-
-
+<a id="J"></a>
 ## J
 **Description**</br>
 JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.
 
 **Default Values**</br>
 
-
 **Components**</br>
 
 - Server
@@ -181,7 +244,7 @@ JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J
 
 **Example**</br>
 
-
+<a id="J-Dgemfirexd.hostname-for-clients"></a>
 ## J-Dgemfirexd.hostname-for-clients
 
 **Description**</br>
@@ -189,7 +252,6 @@ Hostname or IP address that is sent to clients so they can connect to the locato
 
 **Default Values**</br>
 
-
 **Components**</br>
 
 - Server
@@ -198,7 +260,7 @@ Hostname or IP address that is sent to clients so they can connect to the locato
 
 **Example**</br>
 
-
+<a id="locators"></a>
 ## locators
 
 **Description**</br>
@@ -216,13 +278,13 @@ List of locators as comma-separated host:port values used to communicate with ru
 ```
 locator1 -peer-discovery-port=9988 -locators=locator2:8899
 ```
+<a id="log-file"></a>
 ## log-file
 
 **Description**</br>
 Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)
 
 **Default Values**</br>
-
 
 **Components**</br>
 
@@ -232,7 +294,7 @@ Path of the file to which this member writes log messages (default is snappyserv
 
 **Example**</br>
 
-
+<a id="member-timeout"></a>
 ## member-timeout
 
 **Description**</br>
@@ -248,6 +310,7 @@ Uses the member-timeout server configuration, specified in milliseconds, to dete
 
 **Example**</br>
 
+<a id="memory-size"></a>
 ## memory-size
 
 **Description**</br>
@@ -262,6 +325,7 @@ Specifies the total memory that can be used by the node for column storage and e
 
 **Example**</br>
 
+<a id="peer-discovery-address"></a>
 ## peer-discovery-address
 
 **Description**</br>
@@ -275,6 +339,7 @@ Use this as value for the port in the "host:port" value of `locators` property.
 
 **Example**</br>
 
+<a id="peer-discovery-port"></a>
 ## peer-discovery-port
 
 **Description**</br>
@@ -291,6 +356,7 @@ Port on which the locator listens for peer discovery (includes servers as well a
 ```
 locator1 -peer-discovery-port=9988 -locators=locator2:8899
 ```
+<a id="rebalance"></a>
 ## rebalance
 
 **Description**</br>
@@ -306,21 +372,38 @@ Triggers a rebalancing operation for all partitioned tables in the system. </br>
 [-rebalance] [-init-scripts=<sql-files>]
 
 ```
+<a id="snappydata.column.batchSize"></a>
 ## snappydata.column.batchSize
 
 **Description**</br>
 The default size of blocks to use for storage in the SnappyData column store (in bytes or k/m/g suffixes for the unit). The default value is 24M.
+
+This is an SQL property
+
 **Default Values**</br>
 
 **Components**</br>
 
-- Lead
+This can be set using a `SET SQL` command or using the configuration properties in the **conf/leads** file. The `SET SQL` command sets the property for the current SnappySession while setting it in conf/leads file sets the property for all SnappySession.
+
+For example:
+```
+Set in the snappy SQL shell
+
+snappy> connect client 'localhost:1527';
+snappy> set snappydata.column.batchSize=100k;
+This sets the property for the snappy SQL shell's session.
+
+Set in the conf/leads file
+
+$ cat conf/leads
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
+```
 
 **Example**</br>
-```
-set snappydata.column.batchSize=100k;
-```
 
+
+<a id="spark.driver.maxResultSize"></a>
 ## spark.driver.maxResultSize
 
 **Description**</br>
@@ -336,6 +419,7 @@ Limit of the total size of serialized results of all partitions for each action 
 ```
 -spark.driver.maxResultSize=2g
 ```
+<a id="spark.executor.cores"></a>
 ## spark.executor.cores
 
 **Description**</br>
@@ -352,6 +436,7 @@ The number of cores to use on each server.
 -spark.executor.cores=10
 ```
 
+<a id="spark.local.dir"></a>
 ## spark.local.dir
 
 **Description**</br>
@@ -368,6 +453,7 @@ Directory to use for "scratch" space in SnappyData, including map output files a
 conf.set("spark.local.dir", localDir.getAbsolutePath)
 
 ```
+<a id="spark.network.timeout"></a>
 ## spark.network.timeout
 
 **Description**</br>
@@ -384,7 +470,8 @@ The default timeout for all network interactions while running queries.
 conf.get("spark.network.timeout", "120s"));
 
 ```
-## -thrift-ssl-properties
+<a id="thrift-ssl-properties"></a>
+## thrift-ssl-properties
 
 **Description**</br>
 Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: Path to key store file </br>`keystore-type`: The type of key-store (default "JKS") </br>`keystore-password`: Password for the key store file</br>`keymanager-type`: The type of key manager factory </br>`truststore`: Path to trust store file</br>`truststore-type`: The type of trust-store (default "JKS")</br>`truststore-password`: Password for the trust store file </br>`trustmanager-type`: The type of trust manager factory </br> 
@@ -399,6 +486,7 @@ Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`en
 ```
 -thrift-ssl-properties=keystore=keystore
 ```
+<a id="Behavior"></a>
 ## Behavior
 
 **Description**</br>
@@ -410,7 +498,7 @@ Synopsis Data Engine has HAC support using the following behavior clauses:
 - `run_on_full_table`: If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.
 - `partial_run_on_base_table`: If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups. This result is then merged (without any duplicates) with the result derived from the sample table.
 
-SDE Property
+This is an SDE Property
 **Default Values**</br>
 
 **Components**</br>
@@ -422,6 +510,7 @@ SDE Property
 SELECT ... FROM .. WHERE .. GROUP BY ...<br>
 WITH [BEHAVIOR `<string>]`
 ```
+<a id="ColumnBatchSize"></a>
 ## ColumnBatchSize
 
 **Description**</br>
@@ -434,20 +523,36 @@ The default size of blocks to use for storage in SnappyData column and store. Wh
 Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
 **Example**</br>
 
-
+<a id="ColumnMaxDeltaRows"></a>
 ## ColumnMaxDeltaRows
 
 **Description**</br>
-The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table
+The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table.
+
+This is an SQL property.
+
 **Default Values**</br>
 
 **Components**</br>
 
-Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
+This can be set using a `SET SQL` command or using the configuration properties in the **conf/leads** file. The `SET SQL` command sets the property for the current SnappySession while setting it in conf/leads file sets the property for all SnappySession.
 
+For example:
+```
+Set in the snappy SQL shell
+
+snappy> connect client 'localhost:1527';
+snappy> set snappydata.column.batchSize=100k;
+This sets the property for the snappy SQL shell's session.
+
+Set in the conf/leads file
+
+$ cat conf/leads
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
+```
 **Example**</br>
 
-
+<a id="Confidence"></a>
 ## Confidence
 
 **Description**</br>
@@ -466,6 +571,7 @@ SELECT ... FROM .. WHERE .. GROUP BY ...<br>
 WITH [CONFIDENCE` <fraction>`]
 ```
 
+<a id="EnableExperimentalFeatures"></a>
 ## EnableExperimentalFeatures
 
 **Description**</br>
@@ -476,11 +582,11 @@ Default is False.
 
 **Components**</br>
 
-
 **Example**</br>
 ```
 snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, "false")
 ```
+<a id="Error"></a>
 ## Error
 
 **Description**</br>
@@ -493,7 +599,7 @@ The following four methods are available to be used in query projection when run
 - **lower_bound(column alias)**: Lower value of an estimate interval for a given confidence.
 - **upper_bound(column alias)**: Upper value of an estimate interval for a given confidence.
 
-SDE Property
+This is an SDE Property
 
 **Default Values**</br>
 
@@ -506,11 +612,13 @@ This property can be set as connection property in the Snappy SQL shell
 SELECT ... FROM .. WHERE .. GROUP BY ...<br>
 WITH ERROR `<fraction> `
 ```
+<a id="FlushReservoirThreshold"></a>
 ## FlushReservoirThreshold
 
 **Description**</br>
 Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on the base table of size more than flushReservoirThreshold. </br> 
-SDE Property
+
+This is an SDE Property
 
 **Default Values**</br>
 The default value is 10,000.
@@ -521,7 +629,7 @@ This property must be set in the *conf/servers* and *conf/leads* file
 
 **Example**</br>
 
-
+<a id="ForceLinkPartitionsToBuckets"></a>
 ## ForceLinkPartitionsToBuckets
 
 **Description**</br>
@@ -532,39 +640,70 @@ False
 
 **Components**</br>
 
-
 **Example**</br>
 
-
+<a id="HashAggregateSize"></a>
 ## HashAggregateSize
 
 **Description**</br>
 Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return large number of rows in aggregation results. 
+
+This is an SQL property.
 
 **Default Values**</br>
 The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.
 
 **Components**</br>
 
-Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
+This can be set using a `SET SQL` command or using the configuration properties in the **conf/leads** file. The `SET SQL` command sets the property for the current SnappySession while setting it in conf/leads file sets the property for all SnappySession.
+
+For example:
+```
+Set in the snappy SQL shell
+
+snappy> connect client 'localhost:1527';
+snappy> set snappydata.column.batchSize=100k;
+This sets the property for the snappy SQL shell's session.
+
+Set in the conf/leads file
+
+$ cat conf/leads
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
+```
 
 **Example**</br>
 
-
+<a id="HashJoinSize"></a>
 ## HashJoinSize
 
 **Description**</br>
 The join would be converted into a hash join if the table size is less than the `hashJoinSize`.  The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for unit).
+
+This is an SQL property.
 
 **Default Values**</br>
 The default value is 100MB.
 
 **Components**</br>
 
-Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
+This can be set using a `SET SQL` command or using the configuration properties in the **conf/leads** file. The `SET SQL` command sets the property for the current SnappySession while setting it in conf/leads file sets the property for all SnappySession.
 
+For example:
+```
+Set in the snappy SQL shell
+
+snappy> connect client 'localhost:1527';
+snappy> set snappydata.column.batchSize=100k;
+This sets the property for the snappy SQL shell's session.
+
+Set in the conf/leads file
+
+$ cat conf/leads
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
+```
 **Example**</br>
 
+<a id="JobServerEnabled"></a>
 ## JobServerEnabled
 Allows you to enable REST API access via Spark jobserver in the SnappyData cluster.
 
@@ -582,6 +721,7 @@ Lead
 setProperty(Property.JobServerEnabled.name, "false")
 ```
 
+<a id="JobServerWaitForInit"></a>
 ## JobServerWaitForInit
 
 **Description**</br>
@@ -592,15 +732,14 @@ False
 
 **Components**</br>
 
-
 **Example**</br>
 
-
+<a id="NumBootStrapTrials"></a>
 ## NumBootStrapTrials
 
 **Description**</br>
 Number of bootstrap trials to do for calculating error bounds.  </br>
-SDE Property
+This is an SDE Property
 
 **Default Values**</br>
 The default value is 100.
@@ -611,6 +750,7 @@ The default value is 100.
 
 **Example**</br>
 
+<a id="ParserTraceError"></a>
 ## ParserTraceError
 
 **Description**</br>
@@ -621,13 +761,13 @@ Enables detailed rule tracing for parse errors.
 
 **Components**</br>
 
-
 **Example**</br>
 
 ```
 showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
 ```
 
+<a id="PartitionPruning"></a>
 ## PartitionPruning
 
 **Description**</br>
@@ -637,10 +777,9 @@ Allows you to enable partition pruning of queries.
 
 **Components**</br>
 
-
 **Example**</br>
 
-
+<a id="PlanCaching"></a>
 ## PlanCaching
 
 **Description**</br>
@@ -650,10 +789,9 @@ Allows you to enable plan caching.
 
 **Components**</br>
 
-
 **Example**</br>
 
-
+<a id="PlanCachingAll"></a>
 ## PlanCachingAll
 
 **Description**</br>
@@ -667,19 +805,37 @@ Can be set using a `SET SQL` command or using the configuration properties in th
 
 **Example**</br>
 
+<a id="PlanCacheSize"></a>
 ## PlanCacheSize
 
 **Description**</br>
 Sets the number of query plans to be cached.
 
-**Default Values**</br>
+This is an SQL property.
 
+**Default Values**</br>
 
 **Components**</br>
 
+This can be set using a `SET SQL` command or using the configuration properties in the **conf/leads** file. The `SET SQL` command sets the property for the current SnappySession while setting it in conf/leads file sets the property for all SnappySession.
+
+For example:
+```
+Set in the snappy SQL shell
+
+snappy> connect client 'localhost:1527';
+snappy> set snappydata.column.batchSize=100k;
+This sets the property for the snappy SQL shell's session.
+
+Set in the conf/leads file
+
+$ cat conf/leads
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
+```
 
 **Example**</br>
 
+<a id="PreferPrimariesInQuery"></a>
 ## PreferPrimariesInQuery
 
 **Description**</br>
@@ -690,10 +846,9 @@ Default is false
 
 **Components**</br>
 
-
 **Example**</br>
 
-
+<a id="SchedulerPool"></a>
 ## SchedulerPool
 
 **Description**</br>
@@ -703,10 +858,9 @@ Set the scheduler pool for the current session. This property can be used to ass
 
 **Components**</br>
 
-
 **Example**</br>
 
-
+<a id="SnappyConnection"></a>
 ## SnappyConnection
 
 **Description**</br>
@@ -717,10 +871,9 @@ It is recommended that the hostname and the client port of the locator is specif
 
 **Components**</br>
 
-
 **Example**</br>
 
-
+<a id="Tokenize"></a>
 ## Tokenize
 
 **Description**</br>
@@ -730,8 +883,6 @@ Property to enable/disable tokenization
 
 **Components**</br>
 
-
 **Example**</br>
-
 
 
