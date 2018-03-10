@@ -834,7 +834,7 @@ final class SmartConnectorColumnRDD(
       // ship as source Filters which is public API for multiple version compatibility
       val srcFilters = filters.flatMap(translateToFilter)
       if (srcFilters.length > 0) {
-        KryoSerializerPool.serialize((kryo, out) => kryo.writeClassAndObject(out, srcFilters))
+        KryoSerializerPool.serialize((kryo, out) => kryo.writeObject(out, srcFilters))
       } else null
     } else null
   }
