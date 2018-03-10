@@ -33,8 +33,8 @@ import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
+import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeRow}
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep, SmartExecutorBucketPartition}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, JDBCSourceAsColumnarStore, SmartConnectorColumnRDD, SmartConnectorRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
@@ -148,6 +148,8 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
     kryo.register(classOf[JDBCSourceAsColumnarStore], new KryoSerializableSerializer)
+    kryo.register(classOf[ParamLiteral], new KryoSerializableSerializer)
+    kryo.register(classOf[LiteralValue], new KryoSerializableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(
@@ -220,8 +222,10 @@ object KryoSerializerPool {
         bb.arrayOffset() + bb.position(), bb.remaining())
     } else {
       val numBytes = bb.remaining()
+      val position = bb.position()
       val bytes = new Array[Byte](numBytes)
       bb.get(bytes, 0, numBytes)
+      bb.position(position)
       input.setBuffer(bytes, 0, numBytes)
     }
   }
@@ -252,7 +256,7 @@ object KryoSerializerPool {
       f: (Kryo, Input) => T): T = {
     val pooled = borrow()
     try {
-      pooled.input.setBuffer(bytes, 0, count)
+      pooled.input.setBuffer(bytes, offset, count)
       f(pooled.kryo, pooled.input)
     } finally {
       release(pooled, clearInputBuffer = true)

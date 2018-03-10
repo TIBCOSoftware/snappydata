@@ -191,7 +191,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     // deserialize the filters
     val batchFilters = if ((serializedFilters ne null) && serializedFilters.length > 0) {
       KryoSerializerPool.deserialize(serializedFilters, 0, serializedFilters.length,
-        (kryo, in) => kryo.readClassAndObject(in).asInstanceOf[Array[Filter]]).toSeq
+        (kryo, in) => kryo.readObject(in, classOf[Array[Filter]])).toSeq
     } else null
     val (region, schemaAttrs, batchFilterExprs) = try {
       val lr = Misc.getRegionForTable(columnTable, true).asInstanceOf[LocalRegion]
