@@ -195,7 +195,6 @@ final class PooledObject(serializer: PooledKryoSerializer,
   def newOutput(size: Int): ByteBufferOutput = new ByteBufferOutput(size, -1)
 }
 
-// TODO: SW: pool must be per SparkContext
 object KryoSerializerPool {
 
   private[serializer] val autoResetField =
