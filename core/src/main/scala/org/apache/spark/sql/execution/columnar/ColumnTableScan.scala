@@ -467,7 +467,7 @@ private[sql] final case class ColumnTableScan(
       bufferInitCode.toString()
     }
 
-    // for smart connector, the filters are pushed down in the query sent to stores
+    // for smart connector, the filters are pushed down in the procedure sent to stores
     val filterFunction = if (embedded) ColumnTableScan.generateStatPredicate(ctx,
       relation.isInstanceOf[BaseColumnFormatRelation], schemaAttributes,
       allFilters, numBatchRows, metricTerm, metricAdd) else ""

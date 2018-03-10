@@ -334,7 +334,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
       if (result ne buffer) {
         UnsafeHolder.releaseIfDirectBuffer(buffer)
         // decompressed buffer will be ordered by LITTLE_ENDIAN while non-decompressed
-        // is returned with BIG_ENDIAN order to distinguish the two cases
+        // is returned with BIG_ENDIAN in order to distinguish the two cases
         result
       } else result.order(ByteOrder.BIG_ENDIAN)
     } else null // indicates missing value
@@ -421,7 +421,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     val columnBlob = rs.getBlob(4)
     val columnBuffer = getBufferFromBlob(columnBlob)
     if (columnBuffer ne null) {
-      // put the stats buffer to free on next() or close()
+      // put all the read buffers in "colBuffers" to free on next() or close()
       colBuffers.justPut(columnIndex, columnBuffer)
       columnIndex match {
         case ColumnFormatEntry.STATROW_COL_INDEX => currentStatsBuffer = columnBuffer
@@ -439,8 +439,9 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
       currentUUID = rs.getLong(1)
       // create a new map instead of clearing old one to help young gen GC
       colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
-      // peek next to find if its still part of current column batch; if UUID changes
-      // then need to mark that next calls to hasNext/next should simply read current
+      // keep reading next till its still part of current column batch; if UUID changes
+      // then next call to "moveNext" will read from incremented cursor position
+      // else all rows may have been read which is indicated by "rsHasNext"
       do {
         readColumnData()
         rsHasNext = rs.next()
