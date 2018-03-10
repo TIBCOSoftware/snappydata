@@ -445,7 +445,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       // (when onlyIfStored is true and underlying buffer cannot be replaced)
       if (onlyIfStored) {
         if (fromDisk || (isDirect && this.refCount > 2)) return this
-        // check if entry is present in region or read from disk without faultin
+        // check if entry was read from disk without faultin
         val entry = this.entry
         if ((entry ne null) && (entry._getValue() eq null)) return this
       }
