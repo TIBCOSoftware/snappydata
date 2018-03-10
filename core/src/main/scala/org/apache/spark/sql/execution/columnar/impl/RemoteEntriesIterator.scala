@@ -70,13 +70,27 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
 
       fetchNextBatch()
 
+      private def releaseCurrentBatch(): Unit = {
+        if (currentBatch ne null) {
+          for ((_, v1, v2) <- currentBatch) {
+            releaseBuffer(v1)
+            releaseBuffer(v2)
+          }
+          currentBatch = null
+        }
+      }
+
       private def fetchNextBatch(): Boolean = {
-        if (absoluteIndex >= statsKeys.length) return false
+        if (absoluteIndex >= statsKeys.length) {
+          releaseCurrentBatch()
+          currentBatchIter = Iterator.empty
+          return false
+        }
         // check if 1000th entry marks a boundary (i.e. either both stats row
         // of same batch are included or neither are)
         var batchLastIndex = math.min(absoluteIndex + 1000, statsKeys.length)
         // if previous to lastKey is same UUID then can safely include both
-        // else include only till previous to be one the safe side, but need
+        // else include only till previous to be on the safe side, but need
         // to do this only if: a) at least two keys in batch, b) batch has not reached end
         if (batchLastIndex > absoluteIndex + 1 && batchLastIndex < statsKeys.length) {
           val lastKey = statsKeys(batchLastIndex - 1).asInstanceOf[ColumnFormatKey]
@@ -88,12 +102,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
         absoluteIndex = batchLastIndex
         java.util.Arrays.sort(results.asInstanceOf[Array[AnyRef]], comparator)
         // release values in old batch
-        if (currentBatch ne null) {
-          for ((_, v1, v2) <- currentBatch) {
-            releaseBuffer(v1)
-            releaseBuffer(v2)
-          }
-        }
+        releaseCurrentBatch()
         currentBatch = new ArrayBuffer[BatchStatsRows](1000)
         var i = 0
         while (i < results.length) {
