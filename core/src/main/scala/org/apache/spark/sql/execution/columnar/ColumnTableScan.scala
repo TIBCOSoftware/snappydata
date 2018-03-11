@@ -478,7 +478,7 @@ private[sql] final case class ColumnTableScan(
     val colNextBytes = ctx.freshName("colNextBytes")
     val numTableColumns = if (ordinalIdTerm eq null) relationSchema.size
     else relationSchema.size - ColumnDelta.mutableKeyNames.length // for update/delete
-    val numColumnsInStatBlob = numTableColumns * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+    val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(numTableColumns)
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
       s"$numOutputRows.${metricAdd(s"$numBatchRows - $deletedCount")};"
@@ -513,7 +513,7 @@ private[sql] final case class ColumnTableScan(
           // check the delta stats after full stats (null columns will be treated as failure
           // which is what is required since it means that only full stats check should be done)
           if ($filterFunction($statsRow, $numFullRows, $deltaStatsRow == null) ||
-              ($deltaStatsRow != null && $filterFunction($deltaStatsRow, $numDeltaRows, true)) {
+              ($deltaStatsRow != null && $filterFunction($deltaStatsRow, $numDeltaRows, true))) {
             break;
           }
           if (!$colInput.hasNext()) return false;

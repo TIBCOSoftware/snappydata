@@ -219,7 +219,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   }
 
   def getDeletedColumnDecoder: ColumnDeleteDecoder = {
-    getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
+    if (region eq null) null
+    else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
       throwIfMissing = false) match {
       case null => null
       case deleteBuffer => new ColumnDeleteDecoder(deleteBuffer)
@@ -227,13 +228,16 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   }
 
   def getDeletedRowCount: Int = {
-    val delete = getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
-      throwIfMissing = false)
-    if (delete eq null) 0
+    if (region eq null) 0
     else {
-      val allocator = ColumnEncoding.getAllocator(delete)
-      ColumnEncoding.readInt(allocator.baseObject(delete),
-        allocator.baseOffset(delete) + delete.position() + 8)
+      val delete = getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
+        throwIfMissing = false)
+      if (delete eq null) 0
+      else {
+        val allocator = ColumnEncoding.getAllocator(delete)
+        ColumnEncoding.readInt(allocator.baseObject(delete),
+          allocator.baseOffset(delete) + delete.position() + 8)
+      }
     }
   }
 

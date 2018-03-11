@@ -261,7 +261,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       fullScan = (batchFilters eq null) || batchFilters.isEmpty, context = null)
     val columnIterator = batchIterator.itr.getBucketEntriesIterator
         .asInstanceOf[ClusteredColumnIterator]
-    val numColumnsInStatBlob = schemaAttrs.length * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+    val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(schemaAttrs.length)
 
     val entriesIter = new Iterator[ArrayBuffer[ColumnTableEntry]] {
       private var numColumns = (projection.length + 1) << 1

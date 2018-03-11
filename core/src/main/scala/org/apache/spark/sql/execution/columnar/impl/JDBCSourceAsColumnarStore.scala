@@ -232,7 +232,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
         // check for full batch delete
         if (ColumnDelta.checkBatchDeleted(buffer)) {
-          ColumnDelta.deleteBatch(key, region, columnTableName, forUpdate = false)
+          ColumnDelta.deleteBatch(key, region, columnTableName)
           return
         }
         region.put(key, value)
@@ -276,6 +276,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                     columnIndex - 1 /* zero based */ , depth))
                 }
               }
+              // lastly the delete delta row itself
+              addKeyToBatch(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
               stmt.executeBatch()
             } finally {
               stmt.close()

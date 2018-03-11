@@ -161,7 +161,6 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |    }
          |    // finish previous encoder, put into table and re-initialize
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($position, $lastNumRows);
-         |    // delete puts an empty stats row to denote that there are changes
          |    $externalStoreTerm.storeDelete($tableName, buffer, $lastBucketId,
          |        $lastColumnBatchId, ${compressionCodec.id}, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
