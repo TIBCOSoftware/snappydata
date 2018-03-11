@@ -203,13 +203,12 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
   }
 
-  def hasUpdatedColumns: Boolean = currentDeltaStats ne null
+  def getCurrentDeltaStats: ByteBuffer = currentDeltaStats
 
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
       columnIndex: Int): UpdatedColumnDecoderBase = {
     if (currentDeltaStats eq null) null
     else {
-      // TODO: SW: check for actual delta stats to see if there are updates
       val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
       val delta1 = getColumnBuffer(deltaPosition, throwIfMissing = false)
       val delta2 = getColumnBuffer(deltaPosition - 1, throwIfMissing = false)
@@ -220,8 +219,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   }
 
   def getDeletedColumnDecoder: ColumnDeleteDecoder = {
-    if (currentDeltaStats eq null) null
-    else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
+    getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
       throwIfMissing = false) match {
       case null => null
       case deleteBuffer => new ColumnDeleteDecoder(deleteBuffer)
@@ -229,16 +227,13 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   }
 
   def getDeletedRowCount: Int = {
-    if (currentDeltaStats eq null) 0
+    val delete = getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
+      throwIfMissing = false)
+    if (delete eq null) 0
     else {
-      val delete = getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX,
-        throwIfMissing = false)
-      if (delete eq null) 0
-      else {
-        val allocator = ColumnEncoding.getAllocator(delete)
-        ColumnEncoding.readInt(allocator.baseObject(delete),
-          allocator.baseOffset(delete) + delete.position() + 8)
-      }
+      val allocator = ColumnEncoding.getAllocator(delete)
+      ColumnEncoding.readInt(allocator.baseObject(delete),
+        allocator.baseOffset(delete) + delete.position() + 8)
     }
   }
 
@@ -319,8 +314,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private val totalColumns = (projection.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
   private val allocator = GemFireCacheImpl.getCurrentBufferAllocator
   private var colBuffers: IntObjectHashMap[ByteBuffer] = _
-  private var currentStatsBuffer: ByteBuffer = _
-  private var hasUpdates: Boolean = _
+  private var currentStats: ByteBuffer = _
+  private var currentDeltaStats: ByteBuffer = _
   private var rsHasNext: Boolean = rs.next()
 
   def getCurrentBatchId: Long = currentUUID
@@ -364,10 +359,11 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     }
   }
 
-  def hasUpdatedColumns: Boolean = hasUpdates
+  def getCurrentDeltaStats: ByteBuffer = currentDeltaStats
 
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
       columnIndex: Int): UpdatedColumnDecoderBase = {
+    if (currentDeltaStats eq null) return null
     val buffers = colBuffers
     val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
     val delta1 = buffers.get(deltaPosition)
@@ -424,16 +420,16 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
       // put all the read buffers in "colBuffers" to free on next() or close()
       colBuffers.justPut(columnIndex, columnBuffer)
       columnIndex match {
-        case ColumnFormatEntry.STATROW_COL_INDEX => currentStatsBuffer = columnBuffer
-        case ColumnFormatEntry.DELTA_STATROW_COL_INDEX => hasUpdates = true
+        case ColumnFormatEntry.STATROW_COL_INDEX => currentStats = columnBuffer
+        case ColumnFormatEntry.DELTA_STATROW_COL_INDEX => currentDeltaStats = columnBuffer
         case _ =>
       }
     }
   }
 
   override protected def moveNext(): Boolean = {
-    currentStatsBuffer = null
-    hasUpdates = false
+    currentStats = null
+    currentDeltaStats = null
     releaseColumns()
     if (rsHasNext) {
       currentUUID = rs.getLong(1)
@@ -450,7 +446,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     } else false
   }
 
-  override protected def getCurrentValue: ByteBuffer = currentStatsBuffer
+  override protected def getCurrentValue: ByteBuffer = currentStats
 
   override def close(): Unit = {
     releaseColumns()
