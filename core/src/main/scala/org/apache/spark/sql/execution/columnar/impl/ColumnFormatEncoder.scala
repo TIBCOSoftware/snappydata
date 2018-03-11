@@ -135,8 +135,7 @@ final class ColumnFormatEncoder extends RowEncoder {
         }
         if (deleteBatch) {
           ColumnDelta.deleteBatch(deleteKey, region,
-            region.getUserAttribute.asInstanceOf[GemFireContainer].getQualifiedTableName,
-            forUpdate = true)
+            region.getUserAttribute.asInstanceOf[GemFireContainer].getQualifiedTableName)
         }
       case _ =>
     })

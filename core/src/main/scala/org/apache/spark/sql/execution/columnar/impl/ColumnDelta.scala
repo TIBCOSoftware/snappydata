@@ -120,11 +120,11 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
 
   private def mergeStats(oldBuffer: ByteBuffer, newBuffer: ByteBuffer,
       schema: StructType): ByteBuffer = {
-    val oldStatsRow = Utils.toUnsafeRow(oldBuffer, schema.length)
-    val newStatsRow = Utils.toUnsafeRow(newBuffer, schema.length)
+    val numColumnsInStats = ColumnStatsSchema.numStatsColumns(schema.length)
+    val oldStatsRow = Utils.toUnsafeRow(oldBuffer, numColumnsInStats)
+    val newStatsRow = Utils.toUnsafeRow(newBuffer, numColumnsInStats)
     val oldCount = oldStatsRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
     val newCount = newStatsRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
-    val numColumnsInStats = schema.length * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
 
     val values = new Array[Any](numColumnsInStats)
     val statsSchema = new Array[StructField](numColumnsInStats)
@@ -135,10 +135,11 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
     // non-generated code for evaluation since this is only for one row
     // (besides binding to two separate rows will need custom code)
     for (i <- schema.indices) {
+      val statsIndex = i * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
       val dataType = schema(i).dataType
-      val lowerExpr = BoundReference(i + 1, dataType, nullable = true)
-      val upperExpr = BoundReference(i + 2, dataType, nullable = true)
-      val nullCountExpr = BoundReference(i + 3, dataType, nullable = true)
+      val lowerExpr = BoundReference(statsIndex, dataType, nullable = true)
+      val upperExpr = BoundReference(statsIndex + 1, dataType, nullable = true)
+      val nullCountExpr = BoundReference(statsIndex + 2, IntegerType, nullable = true)
       val ordering = TypeUtils.getInterpretedOrdering(dataType)
 
       val oldLower = lowerExpr.eval(oldStatsRow)
@@ -156,9 +157,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         if (newUpper == null) oldUpper
         else if (oldUpper == null) newUpper
         else if (ordering.lt(oldLower, newLower)) newLower else oldLower
-      val nullCount = new AddStats(nullCountExpr, nullCountExpr).eval(newNullCount, oldNullCount)
+      val nullCount = new AddStats(nullCountExpr).eval(newNullCount, oldNullCount)
 
-      val statsIndex = i * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
       values(statsIndex) = lower
       statsSchema(statsIndex) = StructField("lowerBound", dataType, nullable = true)
       values(statsIndex + 1) = upper
@@ -267,7 +267,7 @@ object ColumnDelta {
    * matching those of given key.
    */
   private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _],
-      columnTableName: String, forUpdate: Boolean): Unit = {
+      columnTableName: String): Unit = {
 
     // delete all the rows with matching batchId
     def destroyKey(key: ColumnFormatKey): Unit = {
@@ -281,9 +281,7 @@ object ColumnDelta {
     val numColumns = key.getNumColumnsInTable(columnTableName)
     // delete the stats rows first
     destroyKey(key.withColumnIndex(ColumnFormatEntry.STATROW_COL_INDEX))
-    if (forUpdate) {
-      destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
-    }
+    destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
     // column values and deltas next
     for (columnIndex <- 1 to numColumns) {
       destroyKey(key.withColumnIndex(columnIndex))
@@ -293,13 +291,11 @@ object ColumnDelta {
       }
     }
     // lastly the delete delta row itself
-    if (forUpdate) {
-      destroyKey(key.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX))
-    }
+    destroyKey(key.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX))
   }
 }
 
-final class AddStats(left: BoundReference, right: BoundReference) extends Add(left, right) {
+final class AddStats(attr: BoundReference) extends Add(attr, attr) {
   def eval(leftVal: Any, rightVal: Any): Any = {
     if (leftVal == null) rightVal
     else if (rightVal == null) leftVal

@@ -996,7 +996,7 @@ object ColumnEncoding {
  * Full stats row has "nullCount" as non-nullable while delta stats row has it as nullable.
  */
 case class ColumnStatsSchema(fieldName: String,
-    dataType: DataType, nullCountNullable: Boolean = false) {
+    dataType: DataType, nullCountNullable: Boolean) {
   val lowerBound: AttributeReference = AttributeReference(
     fieldName + ".lowerBound", dataType)()
   val upperBound: AttributeReference = AttributeReference(
@@ -1015,6 +1015,8 @@ object ColumnStatsSchema {
 
   val COUNT_ATTRIBUTE: AttributeReference = AttributeReference(
     "batchCount", IntegerType, nullable = false)()
+
+  def numStatsColumns(schemaSize: Int): Int = schemaSize * NUM_STATS_PER_COLUMN + 1
 }
 
 trait NotNullDecoder extends ColumnDecoder {
