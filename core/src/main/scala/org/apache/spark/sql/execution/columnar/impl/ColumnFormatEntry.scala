@@ -111,6 +111,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
       re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
     val currentBucketRegion = itr.getHostedBucketRegion
     if ((columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
+        columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) &&
         !re.isDestroyedOrRemoved) {
       val statsOrDeleteVal = re.getValue(currentBucketRegion)
@@ -120,7 +121,8 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
         val buffer = statsOrDelete.getBuffer
         try {
           if (buffer.remaining() > 0) {
-            if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
+            if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
+                columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
               val numColumns = numColumnsInTable * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
               val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
               unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)

@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.SQLException
 import java.util.Collections
-import java.util.function.Predicate
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -229,7 +228,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           }
 
           $codeComment
-          final class GeneratedTableIterator implements ${classOf[Predicate[UnsafeRow]].getName} {
+          final class GeneratedTableIterator implements ${classOf[StatsPredicate].getName} {
 
             private Object[] references;
             ${ctx.declareMutableStates()}
@@ -242,10 +241,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
             ${ctx.declareAddedFunctions()}
 
-            public boolean test(java.lang.Object row) {
-              final $rowClass unsafeRow = ($rowClass)row;
+            public boolean check($rowClass unsafeRow, boolean isLastStatsRow) {
               final int $numRows = unsafeRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
-              return $filterFunction(unsafeRow, $numRows);
+              return $filterFunction(unsafeRow, $numRows, isLastStatsRow);
             }
          }
       """
@@ -257,7 +255,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       CodeGeneration.logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
 
       val clazz = CodeGenerator.compile(cleanedSource)
-      clazz.generate(ctx.references.toArray).asInstanceOf[Predicate[UnsafeRow]]
+      clazz.generate(ctx.references.toArray).asInstanceOf[StatsPredicate]
     }
     val batchIterator = ColumnBatchIterator(region, bucketIds, projection,
       fullScan = (batchFilters eq null) || batchFilters.isEmpty, context = null)
@@ -276,9 +274,17 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         while (batchIterator.currentVal ne null) {
           if (batchIterator.currentVal.remaining() == 0) batchIterator.moveNext()
           else if (filterPredicate ne null) {
-            if (batchIterator.hasUpdatedColumns) return
+            // first check the full stats
             val statsRow = Utils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
-            if (filterPredicate.test(statsRow)) return
+            val deltaStatsRow = Utils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
+              numColumnsInStatBlob)
+            // check the delta stats after full stats (null columns will be treated as failure
+            // which is what is required since it means that only full stats check should be done)
+            if (filterPredicate.check(statsRow, deltaStatsRow eq null) ||
+                ((deltaStatsRow ne null) &&
+                    filterPredicate.check(deltaStatsRow, isLastStatsRow = true))) {
+              return
+            }
             batchIterator.moveNext()
           }
           else return
@@ -291,7 +297,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val entries = new ArrayBuffer[ColumnTableEntry](numColumns)
         val uuid = batchIterator.getCurrentBatchId
         val bucketId = batchIterator.getCurrentBucketId
-        // first add the delta stats row and delete bitmask to batchIterator
+        // first add the stats rows and delete bitmask to batchIterator
         addColumnValue(batchIterator.getCurrentStatsColumn, ColumnFormatEntry.STATROW_COL_INDEX,
           uuid, bucketId, entries, throwIfMissing = true)
         addColumnValue(ColumnFormatEntry.DELTA_STATROW_COL_INDEX, uuid, bucketId,
@@ -612,4 +618,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
 trait StoreCallback extends Serializable {
   CallbackFactoryProvider.setStoreCallbacks(StoreCallbacksImpl)
+}
+
+trait StatsPredicate {
+  def check(row: UnsafeRow, isLastStatsRow: Boolean): Boolean
 }

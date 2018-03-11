@@ -17,11 +17,13 @@
 
 package org.apache.spark.sql.execution.columnar
 
+import io.snappydata.collection.IntObjectHashMap
+
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
@@ -48,7 +50,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
     appendableRelation.getCompressionCodec)
 
-  private lazy val schemaAttributes = tableSchema.toAttributes
+  private val schemaAttributes = tableSchema.toAttributes
   /**
    * The indexes below are the final ones that go into ColumnFormatKey(columnIndex).
    * For deltas the convention is to use negative values beyond those available for
@@ -61,6 +63,17 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   private val updateIndexes = updateColumns.map(a => ColumnDelta.deltaColumnIndex(
     Utils.fieldIndex(schemaAttributes, a.name,
       sqlContext.conf.caseSensitiveAnalysis), hierarchyDepth = 0)).toArray
+
+  /**
+   * Map from table column (0 based) to index in updateColumns.
+   */
+  private val tableToUpdateIndex = {
+    val m = IntObjectHashMap.withExpectedSize[Integer](updateIndexes.length)
+    for (i <- updateIndexes.indices) {
+      m.justPut(ColumnDelta.tableColumnIndex(updateIndexes(i)) - 1, i)
+    }
+    m
+  }
 
   override protected def opType: String = "Update"
 
@@ -223,6 +236,22 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       // code for invoking the function
       s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
+    // write the delta stats row for full table columns at the end of a batch
+    val (statsSchema, stats) = tableSchema.indices.map { i =>
+      val field = tableSchema(i)
+      tableToUpdateIndex.get(i) match {
+        case null =>
+          // write null for unchanged columns (by this update)
+          (ColumnStatsSchema(field.name, field.dataType, nullCountNullable = true).schema,
+              Seq(ExprCode("", "true", ""), ExprCode("", "true", ""), ExprCode("", "true", "")))
+        case u => ColumnWriter.genCodeColumnStats(ctx, field, s"$deltaEncoders[$u]",
+          nullCountNullable = true)
+      }
+    }.unzip
+    // GenerateUnsafeProjection will automatically split stats expressions into separate
+    // methods if required so no need to add separate functions explicitly.
+    // Count is hardcoded as zero which will change for "insert" index deltas.
+    val statsEv = ColumnWriter.genStatsRow(ctx, "0", stats, statsSchema)
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(long batchId, int bucketId, int numRows) {
@@ -239,10 +268,11 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |    for (int $index = 0; $index < $numColumns; $index++) {
          |      buffers[$index] = $deltaEncoders[$index].finish($cursors[$index], $lastNumRows);
          |    }
-         |    // TODO: SW: delta stats row (can have full limits for those columns)
-         |    // for now put dummy bytes in delta stats row
+         |    // create delta statistics row
+         |    ${statsEv.code}
+         |    // store the delta column batch
          |    final $columnBatchClass columnBatch = $columnBatchClass.apply(
-         |        $batchOrdinal, buffers, new byte[] { 0, 0, 0, 0 }, $deltaIndexes);
+         |        $batchOrdinal, buffers, ${statsEv.value}.getBytes(), $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
          |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));

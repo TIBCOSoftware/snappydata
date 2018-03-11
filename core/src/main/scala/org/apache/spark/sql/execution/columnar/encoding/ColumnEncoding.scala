@@ -66,10 +66,10 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
     extends ColumnEncoding {
 
   protected[sql] final val baseCursor: Long = {
-    if (startCursor != 0L) {
+    if (startCursor != 0L && (initDelta ne null)) {
       initializeCursor(columnDataRef, initDelta(columnDataRef,
         initializeNulls(columnDataRef, startCursor, field)), field.dataType)
-    } else 0L
+    } else startCursor
   }
 
   /** Used by some decoders to track the current sequential cursor. */
@@ -992,14 +992,17 @@ object ColumnEncoding {
   }
 }
 
+/**
+ * Full stats row has "nullCount" as non-nullable while delta stats row has it as nullable.
+ */
 case class ColumnStatsSchema(fieldName: String,
-    dataType: DataType) {
-  val upperBound: AttributeReference = AttributeReference(
-    fieldName + ".upperBound", dataType)()
+    dataType: DataType, nullCountNullable: Boolean = false) {
   val lowerBound: AttributeReference = AttributeReference(
     fieldName + ".lowerBound", dataType)()
+  val upperBound: AttributeReference = AttributeReference(
+    fieldName + ".upperBound", dataType)()
   val nullCount: AttributeReference = AttributeReference(
-    fieldName + ".nullCount", IntegerType, nullable = false)()
+    fieldName + ".nullCount", IntegerType, nullCountNullable)()
 
   val schema = Seq(lowerBound, upperBound, nullCount)
 
