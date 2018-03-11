@@ -236,14 +236,19 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       // code for invoking the function
       s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
-    // write the delta stats row for full table columns at the end of a batch
+    // Write the delta stats row for all table columns at the end of a batch.
+    // Columns that have not been updated will write nulls for all three stats
+    // columns so this costs 3 bits per non-updated column (worst case of say
+    // 100 column table will be ~38 bytes).
+    val allNullsExprs = Seq(ExprCode("", "true", ""),
+      ExprCode("", "true", ""), ExprCode("", "true", ""))
     val (statsSchema, stats) = tableSchema.indices.map { i =>
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
         case null =>
           // write null for unchanged columns (by this update)
-          (ColumnStatsSchema(field.name, field.dataType, nullCountNullable = true).schema,
-              Seq(ExprCode("", "true", ""), ExprCode("", "true", ""), ExprCode("", "true", "")))
+          (ColumnStatsSchema(field.name, field.dataType,
+            nullCountNullable = true).schema, allNullsExprs)
         case u => ColumnWriter.genCodeColumnStats(ctx, field, s"$deltaEncoders[$u]",
           nullCountNullable = true)
       }

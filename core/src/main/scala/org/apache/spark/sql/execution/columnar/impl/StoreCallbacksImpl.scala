@@ -620,6 +620,11 @@ trait StoreCallback extends Serializable {
   CallbackFactoryProvider.setStoreCallbacks(StoreCallbacksImpl)
 }
 
+/**
+ * The type of the generated class used by column stats check for a column batch.
+ * Since there can be up-to two stats rows (full stats and delta stats), this has
+ * an additional argument for the same to determine whether to update metrics or not.
+ */
 trait StatsPredicate {
   def check(row: UnsafeRow, isLastStatsRow: Boolean): Boolean
 }
