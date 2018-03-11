@@ -62,7 +62,7 @@ object CodeGeneration extends Logging {
     val env = SparkEnv.get
     val size = if (env ne null) {
       env.conf.getInt("spark.sql.codegen.cacheSize", 2000)
-    } else 200
+    } else 2000
     // don't need as big a cache for other caches
     (size, size >>> 2)
   }

@@ -66,6 +66,7 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
     extends ColumnEncoding {
 
   protected[sql] final val baseCursor: Long = {
+    // initDelta is null only in tests
     if (startCursor != 0L && (initDelta ne null)) {
       initializeCursor(columnDataRef, initDelta(columnDataRef,
         initializeNulls(columnDataRef, startCursor, field)), field.dataType)

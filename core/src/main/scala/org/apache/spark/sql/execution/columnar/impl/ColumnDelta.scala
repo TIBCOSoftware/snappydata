@@ -149,6 +149,13 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       val oldNullCount = nullCountExpr.eval(oldStatsRow)
       val newNullCount = nullCountExpr.eval(newStatsRow)
 
+      // Unlike normal < or > semantics, comparison against null on either
+      // side should return the non-null value or null if both are null.
+      // This is like Spark's Greatest/Least semantics. Likewise nullCount
+      // should return null only if both are null else skip the null one, if any,
+      // like the "sum" aggregate semantics (and unlike the SQL add semantics that
+      // returns null if either of the sides is null). The "AddStats" extension
+      // to Add operator is to encapsulate that behaviour.
       val lower =
         if (newLower == null) oldLower
         else if (oldLower == null) newLower
@@ -160,6 +167,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       val nullCount = new AddStats(nullCountExpr).eval(newNullCount, oldNullCount)
 
       values(statsIndex) = lower
+      // shared name in StructField for all columns is fine because UnsafeProjection
+      // code generation uses only the dataType and doesn't care for the name here
       statsSchema(statsIndex) = StructField("lowerBound", dataType, nullable = true)
       values(statsIndex + 1) = upper
       statsSchema(statsIndex + 1) = StructField("upperBound", dataType, nullable = true)
@@ -295,6 +304,11 @@ object ColumnDelta {
   }
 }
 
+/**
+ * Unlike the "Add" operator that follows SQL semantics of returning null
+ * if either of the expressions is, this will return the non-null value
+ * if either is null or add if both are non-null (like the "sum" aggregate).
+ */
 final class AddStats(attr: BoundReference) extends Add(attr, attr) {
   def eval(leftVal: Any, rightVal: Any): Any = {
     if (leftVal == null) rightVal
