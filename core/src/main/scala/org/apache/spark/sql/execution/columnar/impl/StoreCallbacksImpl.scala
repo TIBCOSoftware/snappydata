@@ -259,8 +259,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     }
     val batchIterator = ColumnBatchIterator(region, bucketIds, projection,
       fullScan = (batchFilters eq null) || batchFilters.isEmpty, context = null)
-    val columnIterator = batchIterator.itr.getBucketEntriesIterator
-        .asInstanceOf[ClusteredColumnIterator]
     val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(schemaAttrs.length)
 
     val entriesIter = new Iterator[ArrayBuffer[ColumnTableEntry]] {
@@ -321,7 +319,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
       private def addColumnValue(columnPosition: Int, uuid: Long, bucketId: Int,
           entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
-        val value = columnIterator.getColumnValue(columnPosition)
+        val value = batchIterator.itr.getBucketEntriesIterator
+            .asInstanceOf[ClusteredColumnIterator].getColumnValue(columnPosition)
         addColumnValue(value, columnPosition, uuid, bucketId, entries, throwIfMissing)
       }
 
