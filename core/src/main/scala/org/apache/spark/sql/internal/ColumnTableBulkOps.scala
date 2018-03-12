@@ -143,13 +143,7 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = if (tryGreaterThanOrLessThan > 0) {
-      joinPairs.
-          map(org.apache.spark.sql.catalyst.expressions.GreaterThanOrEqual.tupled).reduceOption(And)
-    } else if (tryGreaterThanOrLessThan < 0) {
-      joinPairs.
-          map(org.apache.spark.sql.catalyst.expressions.LessThanOrEqual.tupled).reduceOption(And)
-    } else joinPairs.map(EqualTo.tupled).reduceOption(And)
+    val newCondition = joinPairs.map(EqualTo.tupled).reduceOption(And)
     newCondition
   }
 

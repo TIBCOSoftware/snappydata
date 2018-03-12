@@ -142,10 +142,6 @@ object SortedColumnTests extends Logging {
     insertDF.write.insertInto(colTableName)
     val updateDF = session.read.load(filePathUpdate(numElements))
 
-    // To force SMJ
-    session.conf.set(Property.HashJoinSize.name, "-1")
-    session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
-
     // Only use while debugging
     session.conf.set(Property.PutIntoInnerJoinCacheSize.name, "-1")
 
@@ -174,8 +170,6 @@ object SortedColumnTests extends Logging {
     session.sql(s"drop table $colTableName")
     session.conf.unset(Property.ColumnBatchSize.name)
     session.conf.unset(Property.ColumnMaxDeltaRows.name)
-    session.conf.unset(Property.HashJoinSize.name)
-    session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
     session.conf.unset(Property.PutIntoInnerJoinCacheSize.name)
   }
 }
