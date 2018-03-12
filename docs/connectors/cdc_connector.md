@@ -8,6 +8,9 @@ The CDC technology is used in a database to track changed data so that the ident
 A CDC enabled system (SQL database) automatically captures changes from the source table, these changes are then updated on the target system (SnappyData tables).</br>
 It provides an efficient framework which allows users to capture *individual data changes* like insert, update, and delete in the source tables (instead of dealing with the entire data), and apply them to the SnappyData tables to keep both the source and target tables in sync.
 
+!!! Info:
+	Spark streaming pipelines are used to get changed data from the source tables and to update the target SnappyData tables. For information on how to write your program to read and sink data, refer to the Spark documentation.
+
 ![CDC Workflow](../Images/cdc_tables.png)
 
 CDC is supported on both the Smart Connector Mode and the Embedded more. For more  information on the modes, refer to the documentation on [Smart Connector Mode](../affinity_modes/connector_mode.md) and [Embedded SnappyData Store Mode](../affinity_modes/embedded_mode.md).
