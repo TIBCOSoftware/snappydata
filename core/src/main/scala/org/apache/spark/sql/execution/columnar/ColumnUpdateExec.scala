@@ -51,6 +51,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     appendableRelation.getCompressionCodec)
 
   private val schemaAttributes = tableSchema.toAttributes
+
   /**
    * The indexes below are the final ones that go into ColumnFormatKey(columnIndex).
    * For deltas the convention is to use negative values beyond those available for
@@ -64,15 +65,19 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     Utils.fieldIndex(schemaAttributes, a.name,
       sqlContext.conf.caseSensitiveAnalysis), hierarchyDepth = 0)).toArray
 
+  @transient private var _tableToUpdateIndex: IntObjectHashMap[Integer] = _
+
   /**
    * Map from table column (0 based) to index in updateColumns.
    */
-  private val tableToUpdateIndex = {
+  private def tableToUpdateIndex: IntObjectHashMap[Integer] = {
+    if (_tableToUpdateIndex ne null) return _tableToUpdateIndex
     val m = IntObjectHashMap.withExpectedSize[Integer](updateIndexes.length)
     for (i <- updateIndexes.indices) {
       m.justPut(ColumnDelta.tableColumnIndex(updateIndexes(i)) - 1, i)
     }
-    m
+    _tableToUpdateIndex = m
+    _tableToUpdateIndex
   }
 
   override protected def opType: String = "Update"
