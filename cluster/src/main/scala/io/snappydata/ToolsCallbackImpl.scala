@@ -61,15 +61,4 @@ object ToolsCallbackImpl extends ToolsCallback {
       classLoader: ClassLoader): Unit = {
     SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
   }
-
-  // TODO VB: Temporary, remove this
-  def setCaseOfSortedInsertValue(v: Boolean): Unit = {
-    org.apache.spark.sql.execution.joins.SortMergeJoinExec.isCaseOfSortedInsertValue = v
-  }
-  def getCaseOfSortedInsertValue: Boolean =
-    org.apache.spark.sql.execution.joins.SortMergeJoinExec.isCaseOfSortedInsertValue
-  def setDebugMode(v: Boolean): Unit = {
-    org.apache.spark.sql.execution.joins.SortMergeJoinExec.isDebugMode = v
-  }
-  def getDebugMode: Boolean = org.apache.spark.sql.execution.joins.SortMergeJoinExec.isDebugMode
 }
