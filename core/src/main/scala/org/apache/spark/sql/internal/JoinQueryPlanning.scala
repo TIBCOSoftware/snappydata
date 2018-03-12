@@ -22,9 +22,9 @@ import scala.annotation.tailrec
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
-object JoinQueryUtil {
+trait JoinQueryPlanning {
 
-  @tailrec def unAlias(e: Expression): Expression = e match {
+  @tailrec final def unAlias(e: Expression): Expression = e match {
     case a: Alias => unAlias(a.child)
     case _ => e
   }

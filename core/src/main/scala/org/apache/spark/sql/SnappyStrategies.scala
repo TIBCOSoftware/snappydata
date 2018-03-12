@@ -38,7 +38,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryUtil, SQLConf}
+import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, SQLConf}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -75,7 +75,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  object HashJoinStrategies extends Strategy {
+  object HashJoinStrategies extends Strategy with JoinQueryPlanning {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
@@ -159,7 +159,7 @@ private[sql] trait SnappyStrategies {
                   .getOrElse(throw new AnalysisException(
                     s"""Cannot resolve column "$colName" among (${r.output})""")))
             // check if join keys match (or are subset of) partitioning columns
-            val (keyOrder, allPartColsPresent) = JoinQueryUtil.getKeyOrder(plan, joinKeys, partCols)
+            val (keyOrder, allPartColsPresent) = getKeyOrder(plan, joinKeys, partCols)
             if (allPartColsPresent) (partCols, keyOrder, scan.numBuckets)
             // return partitioning in any case when checking for broadcast
             else if (checkBroadcastJoin) (partCols, Nil, scan.numBuckets)
@@ -176,7 +176,7 @@ private[sql] trait SnappyStrategies {
             val (cols, _, numPartitions) = getCollocatedPartitioning(
               jType, left, lKeys, right, rKeys, checkBroadcastJoin = true)
             // check if the partitioning of the result is compatible with current
-            val (keyOrder, allPartColsPresent) = JoinQueryUtil.getKeyOrder(plan, joinKeys, cols)
+            val (keyOrder, allPartColsPresent) = getKeyOrder(plan, joinKeys, cols)
             if (allPartColsPresent) (cols, keyOrder, numPartitions)
             else (Nil, Nil, -1)
 

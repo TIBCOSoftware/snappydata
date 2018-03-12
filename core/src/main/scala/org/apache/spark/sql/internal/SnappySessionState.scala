@@ -251,7 +251,7 @@ class SnappySessionState(snappySession: SnappySession)
   /**
     * Orders the join keys as per the  underlying partitioning keys ordering of the table.
     */
-  object OrderJoinConditions extends Rule[LogicalPlan] {
+  object OrderJoinConditions extends Rule[LogicalPlan] with JoinQueryPlanning {
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, otherCondition, left, right) =>
         prepareOrderedCondition(joinType, left, right, leftKeys, rightKeys, otherCondition)
@@ -277,7 +277,7 @@ class SnappySessionState(snappySession: SnappySession)
     private def orderJoinKeys(plan: LogicalPlan, joinKeys: Seq[Expression]): Seq[Expression] = {
       val partCols = getPartCols(plan)
       if (partCols ne Nil) {
-        val (keyOrder, _) = JoinQueryUtil.getKeyOrder(plan, joinKeys, partCols)
+        val (keyOrder, _) = getKeyOrder(plan, joinKeys, partCols)
         keyOrder.zip(joinKeys).sortBy(x => x._1).unzip._2
       } else {
         joinKeys
