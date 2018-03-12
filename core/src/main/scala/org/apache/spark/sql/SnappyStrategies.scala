@@ -21,11 +21,10 @@ import scala.util.control.NonFatal
 
 import io.snappydata.Property
 
-import org.apache.spark.internal.Logging
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, GreaterThanOrEqual, LessThanOrEqual, NamedExpression, PredicateHelper, RowOrdering}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
@@ -34,7 +33,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
-import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
@@ -73,24 +72,6 @@ private[sql] trait SnappyStrategies {
       case WindowLogicalPlan(_, _, child, _) => throw new AnalysisException(
         s"Unexpected child $child for WindowLogicalPlan")
       case _ => Nil
-    }
-  }
-
-  object ExtractGreaterThanOrLessThanJoinKeys extends Logging with PredicateHelper {
-    /** (joinType, leftKeys, rightKeys, condition, leftChild, rightChild) */
-    type ReturnType =
-      (JoinType, Seq[Expression], Seq[Expression], Option[Expression], LogicalPlan, LogicalPlan)
-
-    def unapply(plan: LogicalPlan): Option[ReturnType] = plan match {
-      case join @ Join(left, right, joinType, condition) =>
-        condition.get match {
-          case GreaterThanOrEqual(l, r) =>
-            Some(joinType, Seq(l), Seq(r), condition, left, right)
-          case LessThanOrEqual(l, r) =>
-            Some(joinType, Seq(l), Seq(r), condition, left, right)
-          case _ => None
-        }
-      case _ => None
     }
   }
 
@@ -154,11 +135,6 @@ private[sql] trait SnappyStrategies {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildLeft, replicatedTableJoin = false)
           } else Nil
-
-        case ExtractGreaterThanOrLessThanJoinKeys(joinType, leftKeys, rightKeys, condition,
-        left, right) if ColumnTableScan.getCaseOfSortedInsertValue =>
-          joins.SortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
-            planLater(left), planLater(right)) :: Nil
 
         case _ => Nil
       }

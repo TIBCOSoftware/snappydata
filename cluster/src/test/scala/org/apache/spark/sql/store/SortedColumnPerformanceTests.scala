@@ -80,14 +80,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       insertDF.write.insertInto(colTableName)
       try {
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        // To force SMJ
-        session.conf.set(Property.HashJoinSize.name, "-1")
-        session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
         updateDF.write.putInto(colTableName)
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
-        session.conf.unset(Property.HashJoinSize.name)
-        session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
       }
     }
 
@@ -231,14 +226,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         insertDF.write.insertInto(colTableName)
         try {
           ColumnTableScan.setCaseOfSortedInsertValue(true)
-          // To force SMJ
-          session.conf.set(Property.HashJoinSize.name, "-1")
-          session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
           updateDF.write.putInto(colTableName)
         } finally {
           ColumnTableScan.setCaseOfSortedInsertValue(false)
-          session.conf.unset(Property.HashJoinSize.name)
-          session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
         }
         if (doVerifyFullSize) {
           SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
