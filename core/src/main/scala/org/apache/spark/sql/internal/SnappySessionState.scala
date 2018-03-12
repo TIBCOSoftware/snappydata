@@ -257,36 +257,6 @@ class SnappySessionState(snappySession: SnappySession)
         prepareOrderedCondition(joinType, left, right, leftKeys, rightKeys, otherCondition)
     }
 
-    @tailrec def unAlias(e: Expression): Expression = e match {
-      case a: Alias => unAlias(a.child)
-      case _ => e
-    }
-
-    def getKeyOrder(plan: LogicalPlan, joinKeys: Seq[Expression],
-        partitioning: Seq[NamedExpression]): Seq[Int] = {
-      val part = partitioning.map(unAlias)
-      lazy val planExpressions = plan.expressions
-      val keyOrder = joinKeys.map { k =>
-        val key = unAlias(k)
-        val i = part.indexWhere(_.semanticEquals(key))
-        if (i < 0) {
-          // search for any view aliases (SNAP-2204)
-          key match {
-            case ke: NamedExpression =>
-              planExpressions.collectFirst {
-                case a: Alias if ke.exprId == a.exprId => unAlias(a.child)
-                case e: NamedExpression if (ke ne e) && ke.exprId == e.exprId => e
-              } match {
-                case Some(e) => part.indexWhere(_.semanticEquals(e))
-                case None => Int.MaxValue
-              }
-            case _ => Int.MaxValue
-          }
-        } else i
-      }
-      keyOrder
-    }
-
     def getPartCols(plan: LogicalPlan): Seq[NamedExpression] = {
       plan match {
         case PhysicalScan(_, _, child) => child match {
@@ -307,8 +277,8 @@ class SnappySessionState(snappySession: SnappySession)
     private def orderJoinKeys(plan: LogicalPlan, joinKeys: Seq[Expression]): Seq[Expression] = {
       val partCols = getPartCols(plan)
       if (partCols ne Nil) {
-        val keyOrder = getKeyOrder(plan, joinKeys, partCols)
-         keyOrder.zip(joinKeys).sortBy(x => x._1).unzip._2
+        val (keyOrder, _) = JoinQueryUtil.getKeyOrder(plan, joinKeys, partCols)
+        keyOrder.zip(joinKeys).sortBy(x => x._1).unzip._2
       } else {
         joinKeys
       }
