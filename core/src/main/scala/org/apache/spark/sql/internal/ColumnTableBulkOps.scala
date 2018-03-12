@@ -60,7 +60,12 @@ object ColumnTableBulkOps {
         val updateColumns = if (!ColumnTableScan.getCaseOfSortedInsertValue) {
           table.output.filterNot(a => keyColumns.contains(a.name))
         } else table.output
-        val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
+        val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
+        if (updateExpressions.isEmpty) {
+          throw new AnalysisException(
+            s"PutInto is attempted without any column which can be updated." +
+                s" Provide some columns apart from key column(s)")
+        }
 
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
@@ -171,8 +176,20 @@ object ColumnTableBulkOps {
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
         val exists = Join(subQuery, table, Inner, condition)
-        transFormedPlan = Delete(table, exists, Nil)
-      case _ => // Do nothing, original DeleteFromTable plan is enough
+        val deletePlan = Delete(table, exists, Nil)
+        val deleteDs = new Dataset(sparkSession, deletePlan, RowEncoder(deletePlan.schema))
+        transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
+      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+        val ks = mutable.getKeyColumns
+        if (ks.isEmpty) {
+          throw new AnalysisException(
+            s"DeleteFrom in a table requires key column(s) but got empty string")
+        }
+        val condition = prepareCondition(sparkSession, table, subQuery, ks)
+        val exists = Join(subQuery, table, Inner, condition)
+        val deletePlan = Delete(table, exists, Nil)
+        val deleteDs = new Dataset(sparkSession, deletePlan, RowEncoder(deletePlan.schema))
+        transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
     }
     transFormedPlan
   }
@@ -182,14 +199,13 @@ case class PutIntoColumnTable(table: LogicalPlan,
     insert: Insert, update: Update) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
-    "insertCount", LongType)() :: AttributeReference(
-    "updateCount", LongType)() :: Nil
+    "count", LongType)() :: Nil
 
   override lazy val resolved: Boolean = childrenResolved &&
       update.output.zip(insert.output).forall {
-        case (childAttr, tableAttr) =>
-          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
-            tableAttr.dataType)
+        case (updateAttr, insertAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(updateAttr.dataType,
+            insertAttr.dataType)
       }
 
   override def left: LogicalPlan = update
