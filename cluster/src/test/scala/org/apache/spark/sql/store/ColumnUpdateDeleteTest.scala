@@ -23,7 +23,7 @@ import io.snappydata.cluster.PreparedQueryRoutingSingleNodeSuite
 
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{Row, SnappySession}
 
 /**
  * Tests for updates/deletes on column table.
@@ -56,6 +56,10 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
   test("basic update") {
     ColumnUpdateDeleteTests.testBasicUpdate(this.snc.snappySession)
+  }
+
+  test("stats check after updates") {
+    ColumnUpdateDeleteTests.testDeltaStats(this.snc.snappySession)
   }
 
   test("basic delete") {

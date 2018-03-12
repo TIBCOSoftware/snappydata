@@ -500,9 +500,11 @@ private[sql] final case class ColumnTableScan(
         UnsafeRow $deltaStatsRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colInput.getCurrentDeltaStats(), $numColumnsInStatBlob);
         final int $numFullRows = $statsRow.getInt($countIndexInSchema);
-        final int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
+        int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
           $countIndexInSchema) : 0;
         $numBatchRows = $numFullRows + $numDeltaRows;
+        // TODO: don't have the update count here (only insert count)
+        $numDeltaRows = $numBatchRows;
         $incrementBatchCount
         $buffers = $colNextBytes;
       """

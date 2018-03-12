@@ -80,9 +80,9 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       result
     } else {
       // merge with existing delta
-      val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
+      val oldColValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
         FetchRequest.DECOMPRESS)
-      val existingBuffer = oldColumnValue.getBuffer
+      val existingBuffer = oldColValue.getBuffer
       val newValue = getValueRetain(FetchRequest.DECOMPRESS)
       val newBuffer = newValue.getBuffer
       try {
@@ -93,24 +93,28 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
           case m => m.schema.asInstanceOf[StructType]
         }
         val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
+        // TODO: SW: if old value itself is returned, then avoid any put at GemFire layer
+        // (perhaps throw some exception that can be caught and ignored in virtualPut)
         if (columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
           // ignore if either of the buffers is empty (old placeholder of 4 bytes
           // while UnsafeRow based data can never be less than 8 bytes)
           if (existingBuffer.limit() <= 4 || newBuffer.limit() <= 4) {
-            oldColumnValue
+            oldColValue
           } else {
-            new ColumnFormatValue(mergeStats(existingBuffer, newBuffer, schema),
-              oldColumnValue.compressionCodecId, isCompressed = false)
+            val merged = mergeStats(existingBuffer, newBuffer, schema)
+            if (merged ne null) {
+              new ColumnFormatValue(merged, oldColValue.compressionCodecId, isCompressed = false)
+            } else oldColValue
           }
         } else {
           val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
           val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
           new ColumnFormatValue(encoder.merge(newBuffer, existingBuffer,
             columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)),
-            oldColumnValue.compressionCodecId, isCompressed = false)
+            oldColValue.compressionCodecId, isCompressed = false)
         }
       } finally {
-        oldColumnValue.release()
+        oldColValue.release()
         newValue.release()
         // release own buffer too and delta should be unusable now
         release()
@@ -132,6 +136,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
     values(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA) = oldCount + newCount
     statsSchema(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA) =
         StructField("count", IntegerType, nullable = false)
+    var hasChange = false
     // non-generated code for evaluation since this is only for one row
     // (besides binding to two separate rows will need custom code)
     for (i <- schema.indices) {
@@ -158,13 +163,28 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       // to Add operator is to encapsulate that behaviour.
       val lower =
         if (newLower == null) oldLower
-        else if (oldLower == null) newLower
-        else if (ordering.lt(oldLower, newLower)) oldLower else newLower
+        else if (oldLower == null) {
+          if (!hasChange && newLower != null) hasChange = true
+          newLower
+        }
+        else if (ordering.lt(newLower, oldLower)) {
+          if (!hasChange) hasChange = true
+          newLower
+        }
+        else oldLower
       val upper =
         if (newUpper == null) oldUpper
-        else if (oldUpper == null) newUpper
-        else if (ordering.lt(oldLower, newLower)) newLower else oldLower
+        else if (oldUpper == null) {
+          if (!hasChange && newUpper != null) hasChange = true
+          newUpper
+        }
+        else if (ordering.lt(oldUpper, newUpper)) {
+          if (!hasChange) hasChange = true
+          newUpper
+        }
+        else oldUpper
       val nullCount = new AddStats(nullCountExpr).eval(newNullCount, oldNullCount)
+      if (!hasChange && nullCount != oldNullCount) hasChange = true
 
       values(statsIndex) = lower
       // shared name in StructField for all columns is fine because UnsafeProjection
@@ -175,6 +195,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       values(statsIndex + 2) = nullCount
       statsSchema(statsIndex + 2) = nullCountField
     }
+    if (!hasChange) return null // indicates caller to return old column value
     val projection = CodeGeneration.compileProjection("STATS_MERGE_PROJECT", statsSchema)
     val statsRow = projection.apply(new GenericInternalRow(values))
     Utils.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)

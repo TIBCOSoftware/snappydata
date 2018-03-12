@@ -214,6 +214,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val rowClass = classOf[UnsafeRow].getName
     // create the code snippet for applying the filters
     val numRows = ctx.freshName("numRows")
+    ctx.addMutableState("int", numRows, "")
     val filterFunction = ColumnTableScan.generateStatPredicate(ctx, isColumnTable = true,
       schemaAttrs, batchFilterExprs, numRows, metricTerm = null, metricAdd = null)
     val filterPredicate = if (filterFunction.isEmpty) null
@@ -241,9 +242,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
             ${ctx.declareAddedFunctions()}
 
-            public boolean check($rowClass unsafeRow, boolean isLastStatsRow) {
-              final int $numRows = unsafeRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
-              return $filterFunction(unsafeRow, $numRows, isLastStatsRow);
+            public boolean check($rowClass statsRow, boolean isLastStatsRow) {
+              // TODO: don't have the update count for delta row (only insert count)
+              // so adding the delta "insert" count to full count read in previous call
+              $numRows += statsRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
+              return $filterFunction(statsRow, $numRows, isLastStatsRow);
             }
          }
       """

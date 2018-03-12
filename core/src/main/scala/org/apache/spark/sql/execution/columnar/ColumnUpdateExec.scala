@@ -254,8 +254,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
           // write null for unchanged columns (by this update)
           (ColumnStatsSchema(field.name, field.dataType,
             nullCountNullable = true).schema, allNullsExprs)
-        case u => ColumnWriter.genCodeColumnStats(ctx, field, s"$deltaEncoders[$u]",
-          nullCountNullable = true)
+        case u => ColumnWriter.genCodeColumnStats(ctx, field,
+          s"$deltaEncoders[$u].getRealEncoder()", nullCountNullable = true)
       }
     }.unzip
     // GenerateUnsafeProjection will automatically split stats expressions into separate
