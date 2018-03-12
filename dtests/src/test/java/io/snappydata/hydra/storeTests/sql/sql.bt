@@ -1,0 +1,5 @@
+//using accessorDataStore config
+io/snappydata/hydra/storeTests/sql/concMultiTablesUniqWithAccessors.conf
+    A=locator locatorHosts=2 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=3 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
