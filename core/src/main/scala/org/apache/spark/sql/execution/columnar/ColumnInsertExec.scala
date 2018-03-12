@@ -822,7 +822,6 @@ object ColumnWriter {
       case _ =>
         lowerIsNull = "true"
         upperIsNull = "true"
-        canBeNull = false
         (s"final $jt $lower = null;", s"final $jt $upper = null;")
     }
     val (lowerCode, upperCode) = if (canBeNull) {
