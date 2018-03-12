@@ -59,6 +59,8 @@ with Logging with Retries {
 
   def sparkShell: String = s"$snappyHome/bin/spark-shell"
 
+  def clusterSuccessString: String = "Distributed system now has 4 members"
+
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
   private  var locatorDirPath = ""
 
@@ -108,7 +110,7 @@ with Logging with Retries {
 
     val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh")
 
-    if (!out.contains("Distributed system now has 4 members")) {
+    if (!out.contains(clusterSuccessString)) {
       throw new Exception(s"Failed to start Snappy cluster")
     }
     executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh")
