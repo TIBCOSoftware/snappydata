@@ -60,7 +60,7 @@ object ColumnTableBulkOps {
         val updateColumns = if (!ColumnTableScan.getCaseOfSortedInsertValue) {
           table.output.filterNot(a => keyColumns.contains(a.name))
         } else table.output
-        val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
+        val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
         if (updateExpressions.isEmpty) {
           throw new AnalysisException(
             s"PutInto is attempted without any column which can be updated." +
