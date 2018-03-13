@@ -19,9 +19,9 @@ package org.apache.spark.sql.internal
 import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
-import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
+import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -53,10 +53,10 @@ object ColumnTableBulkOps {
             s"PutInto in a column table requires key column(s) but got empty string")
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get,
-          if (ColumnTableScan.getCaseOfSortedInsertValue) 1 else 0)
+          ColumnTableScan.getCaseOfSortedInsertValue)
 
         val keyColumns = getKeyColumns(table)
-        var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
+        var updateSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
         val updateColumns = if (!ColumnTableScan.getCaseOfSortedInsertValue) {
           table.output.filterNot(a => keyColumns.contains(a.name))
         } else table.output
@@ -89,8 +89,7 @@ object ColumnTableBulkOps {
         } else true)
 
         val insertChild = if (doInsertJoin) {
-          val condition = prepareCondition(sparkSession, subQuery, updateSubQuery, putKeys.get,
-            if (ColumnTableScan.getCaseOfSortedInsertValue) -1 else 0)
+          val condition = prepareCondition(sparkSession, subQuery, updateSubQuery, putKeys.get)
           Join(subQuery, updateSubQuery, LeftAnti, condition)
         } else subQuery
         val insertPlan = new Insert(table, Map.empty[String,
@@ -119,11 +118,8 @@ object ColumnTableBulkOps {
     }
   }
 
-  private def prepareCondition(sparkSession: SparkSession,
-      table: LogicalPlan,
-      child: LogicalPlan,
-      columnNames: Seq[String],
-      tryGreaterThanOrLessThan: Byte = 0): Option[Expression] = {
+  private def prepareCondition(sparkSession: SparkSession, table: LogicalPlan, child: LogicalPlan,
+      columnNames: Seq[String], changeCondition: Boolean = false) = {
     val analyzer = sparkSession.sessionState.analyzer
     val leftKeys = columnNames.map { keyName =>
       table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
@@ -144,7 +140,12 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = joinPairs.map(EqualTo.tupled).reduceOption(And)
+    val newCondition = if (changeCondition) {
+      val newCondition1 = joinPairs.map(EqualTo.tupled)
+      val newCondition2 = joinPairs.map(a =>
+        org.apache.spark.sql.catalyst.expressions.Not(EqualTo(a._1, a._2)))
+      (newCondition1 ++ newCondition2).reduceOption(And)
+    } else joinPairs.map(EqualTo.tupled).reduceOption(And)
     newCondition
   }
 
