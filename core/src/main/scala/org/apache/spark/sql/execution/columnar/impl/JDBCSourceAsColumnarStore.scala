@@ -599,7 +599,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           // this is only used for local code generation while its RDD
           // semantics and related methods are all ignored
           val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-            WholeStageCodegenExec(insertPlan), insertPlan)
+            WholeStageCodegenExec(insertPlan)(codegenStageId = 0), insertPlan)
           val references = ctx.references
           // also push the index of connection reference at the end which
           // will be used below to update connection before execution

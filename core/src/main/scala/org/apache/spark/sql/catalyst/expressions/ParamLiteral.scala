@@ -158,7 +158,7 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
         val memoryManagerClass = classOf[TaskMemoryManager].getName
         val memoryModeClass = classOf[MemoryMode].getName
         val consumerClass = classOf[DirectStringConsumer].getName
-        ctx.addMutableState(javaType, valueTerm,
+        ctx.addMutableState(javaType, valueTerm, _ =>
           s"""
              |if (($isNull = $valueRef.value() == null)) {
              |  $valueTerm = ${ctx.defaultValue(dataType)};
@@ -179,9 +179,9 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
         null.asInstanceOf[String]
       case _ => ""
     }
-    ctx.addMutableState("boolean", isNull, "")
+    ctx.addMutableState("boolean", isNull, _ => "")
     if (unbox ne null) {
-      ctx.addMutableState(javaType, valueTerm,
+      ctx.addMutableState(javaType, valueTerm, _ =>
         s"""
            |$isNull = $valueRef.value() == null;
            |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
@@ -289,9 +289,9 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
     // due to dependence of latter on the variable and the two get
     // separated due to Spark's splitExpressions -- SNAP-1794
     ctx.addMutableState(ctx.javaType(expr.dataType), newVar,
-      s"$comment\n${eval.code}\n$newVar = ${eval.value};\n" +
+      _ => s"$comment\n${eval.code}\n$newVar = ${eval.value};\n" +
         s"$newVarIsNull = ${eval.isNull};")
-    ctx.addMutableState("boolean", newVarIsNull, "")
+    ctx.addMutableState("boolean", newVarIsNull, _ => "")
     // allow sub-expression elimination of this expression itself
     ctx.subExprEliminationExprs += this -> SubExprEliminationState(newVarIsNull, newVar)
     ev.copy(code = "", value = newVar, isNull = newVarIsNull)

@@ -53,11 +53,11 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
     }
 
     plan transformUp {
-      case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
+      case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _, _) =>
         explicitIndexHint.getOrElse(colRelation.table, Some(table)).get
-      case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _), _) =>
+      case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _, _)) =>
         explicitIndexHint.get(alias) match {
-          case Some(Some(index)) => SubqueryAlias(alias, index, None)
+          case Some(Some(index)) => SubqueryAlias(alias, index)
           case _ => subQuery
         }
     } transformUp {
@@ -80,7 +80,7 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
         val tableOrAlias = hint.substring(indexHint.length)
         val key = catalog.lookupRelationOption(
           catalog.newQualifiedTableName(tableOrAlias)) match {
-          case Some(relation@LogicalRelation(cf: BaseColumnFormatRelation, _, _)) =>
+          case Some(relation@LogicalRelation(cf: BaseColumnFormatRelation, _, _, _)) =>
             cf.table
           case _ => tableOrAlias
         }
@@ -134,7 +134,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     val (partitioned, replicates, others) =
       ((new TableList, new TableList, new TableList) /: input) {
         case (splitted@(part, rep, _),
-        l@LogicalRelation(b: PartitionedDataSourceScan, _, _)) =>
+        l@LogicalRelation(b: PartitionedDataSourceScan, _, _, _)) =>
           if (b.partitionColumns.nonEmpty) {
             part += l
           } else {

@@ -300,7 +300,7 @@ class RowFormatRelation(
     }
     dependentRelations.foreach(rel => {
       val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(rel)) match {
-        case LogicalRelation(r: DependentRelation, _, _) => r
+        case LogicalRelation(r: DependentRelation, _, _, _) => r
       }
       addDependent(dr, sncCatalog)
     })

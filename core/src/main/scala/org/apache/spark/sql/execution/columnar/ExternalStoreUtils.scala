@@ -205,7 +205,7 @@ object ExternalStoreUtils {
         case None => // Do nothing
       }
     })
-    new CaseInsensitiveMap(optMap.toMap)
+    new CaseInsensitiveMap[String](optMap.toMap)
   }
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {

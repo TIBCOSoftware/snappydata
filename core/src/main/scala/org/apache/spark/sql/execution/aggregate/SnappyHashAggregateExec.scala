@@ -161,29 +161,25 @@ case class SnappyHashAggregateExec(
     case g: GroupAggregate => g.aggBufferAttributesForGroup
     case sum: Sum if !sum.child.nullable =>
       val sumAttr = sum.aggBufferAttributes.head
-      sumAttr.copy(nullable = false)(sumAttr.exprId, sumAttr.qualifier,
-        sumAttr.isGenerated) :: Nil
+      sumAttr.copy(nullable = false)(sumAttr.exprId, sumAttr.qualifier) :: Nil
     case avg: Average if !avg.child.nullable =>
       val sumAttr = avg.aggBufferAttributes.head
-      sumAttr.copy(nullable = false)(sumAttr.exprId, sumAttr.qualifier,
-        sumAttr.isGenerated) :: avg.aggBufferAttributes(1) :: Nil
+      sumAttr.copy(nullable = false)(sumAttr.exprId,
+        sumAttr.qualifier):: avg.aggBufferAttributes(1):: Nil
     case max: Max if !max.child.nullable =>
       val maxAttr = max.aggBufferAttributes.head
-      maxAttr.copy(nullable = false)(maxAttr.exprId, maxAttr.qualifier,
-        maxAttr.isGenerated) :: Nil
+      maxAttr.copy(nullable = false)(maxAttr.exprId, maxAttr.qualifier) :: Nil
     case min: Min if !min.child.nullable =>
       val minAttr = min.aggBufferAttributes.head
-      minAttr.copy(nullable = false)(minAttr.exprId, minAttr.qualifier,
-        minAttr.isGenerated) :: Nil
+      minAttr.copy(nullable = false)(minAttr.exprId, minAttr.qualifier) :: Nil
     case last: Last if !last.child.nullable =>
       val lastAttr = last.aggBufferAttributes.head
       val tail = if (last.aggBufferAttributes.length == 2) {
         val valueSetAttr = last.aggBufferAttributes(1)
         valueSetAttr.copy(nullable = false)(valueSetAttr.exprId,
-          valueSetAttr.qualifier, valueSetAttr.isGenerated) :: Nil
+          valueSetAttr.qualifier) :: Nil
       } else Nil
-      lastAttr.copy(nullable = false)(lastAttr.exprId, lastAttr.qualifier,
-        lastAttr.isGenerated) :: tail
+      lastAttr.copy(nullable = false)(lastAttr.exprId, lastAttr.qualifier) :: tail
     case _ => aggregate.aggBufferAttributes
   }
 
@@ -208,7 +204,7 @@ case class SnappyHashAggregateExec(
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this))(codegenStageId = 0).execute()
   }
 
   // all the mode of aggregate expressions
@@ -297,7 +293,7 @@ case class SnappyHashAggregateExec(
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
     val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
+    ctx.addMutableState("boolean", initAgg, _ => s"$initAgg = false;")
 
     // generate variables for aggregation buffer
     val functions = aggregateExpressions.map(_.aggregateFunction
@@ -306,8 +302,8 @@ case class SnappyHashAggregateExec(
     bufVars = initExpr.map { e =>
       val isNull = ctx.freshName("bufIsNull")
       val value = ctx.freshName("bufValue")
-      ctx.addMutableState("boolean", isNull, "")
-      ctx.addMutableState(ctx.javaType(e.dataType), value, "")
+      ctx.addMutableState("boolean", isNull, _ => "")
+      ctx.addMutableState(ctx.javaType(e.dataType), value, _ => "")
       // The initial expression should not access any column
       val ev = e.genCode(ctx)
       val initVars =
@@ -500,21 +496,21 @@ case class SnappyHashAggregateExec(
 
   private def doProduceWithKeys(ctx: CodegenContext): String = {
     val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
+    ctx.addMutableState("boolean", initAgg, _ => s"$initAgg = false;")
 
     // Create a name for iterator from HashMap
     val iterTerm = ctx.freshName("mapIter")
     val iter = ctx.freshName("mapIter")
     val iterObj = ctx.freshName("iterObj")
     val iterClass = "java.util.Iterator"
-    ctx.addMutableState(iterClass, iterTerm, "")
+    ctx.addMutableState(iterClass, iterTerm, _ => "")
 
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
+    ctx.addMutableState(hashSetClassName, hashMapTerm, _ => "")
 
     // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")

@@ -57,7 +57,7 @@ trait RowExec extends TableExec {
       (s"final $connectionClass $connTerm = $connObj;", "", "")
     } else {
       val utilsClass = ExternalStoreUtils.getClass.getName
-      ctx.addMutableState(connectionClass, connTerm, "")
+      ctx.addMutableState(connectionClass, connTerm, _ => "")
       val props = ctx.addReferenceObj("connectionProperties", connProps)
       val initCode =
         s"""
@@ -99,9 +99,9 @@ trait RowExec extends TableExec {
     val childProduce = doChildProduce(ctx)
     val mutateTable = ctx.freshName("mutateTable")
 
-    ctx.addMutableState("java.sql.PreparedStatement", stmt, "")
-    ctx.addMutableState("long", result, s"$result = -1L;")
-    ctx.addMutableState("long", rowCount, "")
+    ctx.addMutableState("java.sql.PreparedStatement", stmt, _ => "")
+    ctx.addMutableState("long", result, _ => s"$result = -1L;")
+    ctx.addMutableState("long", rowCount, _ => "")
     ctx.addNewFunction(mutateTable,
       s"""
          |private void $mutateTable() throws java.io.IOException, java.sql.SQLException {
@@ -146,7 +146,7 @@ trait RowExec extends TableExec {
     val schemaFields = ctx.freshName("schemaFields")
     val structFieldClass = classOf[StructField].getName
     ctx.addMutableState(s"$structFieldClass[]", schemaFields,
-      s"$schemaFields = $schemaTerm.fields();")
+      _ => s"$schemaFields = $schemaTerm.fields();")
     val batchSize = connProps.executorConnProps
         .getProperty("batchsize", "1000").toInt
     val numOpRowsMetric = if (onExecutor) null

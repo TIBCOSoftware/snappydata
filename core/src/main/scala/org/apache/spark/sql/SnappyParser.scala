@@ -589,7 +589,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
           alias match {
             case None => UnresolvedInlineTable(aliases, rows)
             case Some(a) => SubqueryAlias(a.asInstanceOf[String],
-              UnresolvedInlineTable(aliases, rows), None)
+              UnresolvedInlineTable(aliases, rows))
           }
         })
   }
@@ -630,12 +630,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
             case Some(v) => v
             case None => Ascending
           }
-          val nulls = n match {
-            case Some(false) => NullsLast
-            case Some(true) => NullsFirst
-            case None => direction.defaultNullOrdering
-          }
-          SortOrder(child, direction, nulls)
+          SortOrder(child, direction)
       })
   }
 
@@ -649,7 +644,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     distributeBy |
     CLUSTER ~ BY ~ (expression + commaSep) ~> ((e: Seq[Expression]) =>
       (l: LogicalPlan) => Sort(e.map(SortOrder(_, Ascending)), global = false,
-        RepartitionByExpression(e, l)))).? ~
+        RepartitionByExpression(e, l, session.sessionState.conf.numShufflePartitions)))).? ~
     (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
         ((id: String, w: WindowSpec) => id -> w)) + commaSep)).? ~
     ((LIMIT ~ TOKENIZE_END ~ expression) | fetchExpression).? ~> {

@@ -45,7 +45,7 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) =>
+      case LogicalRelation(mutable: BulkPutRelation, _, _, _) =>
         val putKeys = mutable.getPutKeys()
         if (putKeys.isEmpty) {
           throw new AnalysisException(
@@ -68,7 +68,7 @@ object ColumnTableBulkOps {
         val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
-        val doInsertJoin = if (subQuery.statistics.sizeInBytes <= cacheSize) {
+        val doInsertJoin = if (subQuery.stats.sizeInBytes <= cacheSize) {
           val joinDS = new Dataset(sparkSession,
             updateSubQuery, RowEncoder(updateSubQuery.schema))
 
@@ -83,7 +83,7 @@ object ColumnTableBulkOps {
         } else subQuery
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
-          OverwriteOptions(enabled = false), ifNotExists = false)
+            overwrite = false, ifNotExists = false)
 
         transFormedPlan = PutIntoColumnTable(table, insertPlan, analyzedUpdate)
       case _ => // Do nothing, original putInto plan is enough
@@ -93,9 +93,9 @@ object ColumnTableBulkOps {
 
   def validateOp(originalPlan: PutIntoTable) {
     originalPlan match {
-      case PutIntoTable(LogicalRelation(t: BulkPutRelation, _, _), query) =>
+      case PutIntoTable(LogicalRelation(t: BulkPutRelation, _, _, _), query) =>
         val srcRelations = query.collect {
-          case LogicalRelation(src: BaseRelation, _, _) => src
+          case LogicalRelation(src: BaseRelation, _, _, _) => src
         }
         if (srcRelations.contains(t)) {
           throw Utils.analysisException(
@@ -137,7 +137,7 @@ object ColumnTableBulkOps {
 
   def getKeyColumns(table: LogicalPlan): Seq[String] = {
     table.collectFirst {
-      case LogicalRelation(mutable: MutableRelation, _, _) => mutable.getKeyColumns
+      case LogicalRelation(mutable: MutableRelation, _, _, _) => mutable.getKeyColumns
     }.getOrElse(throw new AnalysisException(
       s"Update/Delete requires a MutableRelation but got $table"))
 
@@ -150,7 +150,7 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) =>
+      case LogicalRelation(mutable: BulkPutRelation, _, _, _) =>
         val putKeys = mutable.getPutKeys()
         if (putKeys.isEmpty) {
           throw new AnalysisException(

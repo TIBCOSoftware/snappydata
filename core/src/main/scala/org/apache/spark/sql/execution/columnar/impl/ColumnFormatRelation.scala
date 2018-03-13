@@ -568,7 +568,7 @@ class ColumnFormatRelation(
     val sncCatalog = snappySession.sessionState.catalog
     dependentRelations.foreach(rel => {
       val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(rel)) match {
-        case LogicalRelation(r: DependentRelation, _, _) => r
+        case LogicalRelation(r: DependentRelation, _, _, _) => r
       }
       addDependent(dr, sncCatalog)
     })
@@ -731,7 +731,7 @@ class IndexColumnFormatRelation(
   def getBaseTableRelation: ColumnFormatRelation = {
     val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
     catalog.lookupRelation(catalog.newQualifiedTableName(baseTableName)) match {
-      case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
+      case LogicalRelation(cr: ColumnFormatRelation, _, _, _) =>
         cr
       case _ =>
         throw new UnsupportedOperationException("Index scan other than Column table unsupported")
@@ -787,7 +787,7 @@ final class DefaultSource extends SchemaRelationProvider
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = CaseInsensitiveMap[String](parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)

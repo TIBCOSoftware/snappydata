@@ -46,8 +46,8 @@ trait ColumnExec extends RowExec {
     connTerm = ctx.freshName("connection")
     val getContext = Utils.genTaskContextFunction(ctx)
 
-    ctx.addMutableState(listenerClass, taskListener, "")
-    ctx.addMutableState(connectionClass, connTerm, "")
+    ctx.addMutableState(listenerClass, taskListener, _ => "")
+    ctx.addMutableState(connectionClass, connTerm, _ => "")
 
     val initCode =
       s"""

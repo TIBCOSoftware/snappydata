@@ -16,15 +16,14 @@
  */
 package org.apache.spark.sql
 
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
-import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
 import org.apache.spark.{Partition, TaskContext}
+
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 /**
  * Implicit conversions used by Snappy.
@@ -63,7 +62,7 @@ object snappy extends Serializable {
 
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
-      case SubqueryAlias(_, child, _) => unwrapSubquery(child)
+      case SubqueryAlias(_, child) => unwrapSubquery(child)
       case _ => plan
     }
   }

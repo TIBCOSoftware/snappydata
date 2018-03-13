@@ -45,7 +45,7 @@ abstract class MutableRelationProvider
     val numPartitions = parameters.remove("numpartitions")
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = new CaseInsensitiveMap[String](parameters.toMap)
     val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
     val qualifiedTableName = catalog.newQualifiedTableName(table)
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(

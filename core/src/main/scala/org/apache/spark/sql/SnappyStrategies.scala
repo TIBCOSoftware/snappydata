@@ -66,7 +66,7 @@ private[sql] trait SnappyStrategies {
         PhysicalDStreamPlan(output, rowStream) :: Nil
       case WindowLogicalPlan(d, s, LogicalDStreamPlan(output, rowStream), _) =>
         WindowPhysicalPlan(d, s, PhysicalDStreamPlan(output, rowStream)) :: Nil
-      case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _, _), _) =>
+      case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _, _, _), _) =>
         WindowPhysicalPlan(d, s, PhysicalDStreamPlan(l.output, t.rowStream)) :: Nil
       case WindowLogicalPlan(_, _, child, _) => throw new AnalysisException(
         s"Unexpected child $child for WindowLogicalPlan")
@@ -91,7 +91,7 @@ private[sql] trait SnappyStrategies {
           // check for collocated joins before going for broadcast
           else if (isCollocatedJoin(joinType, left, leftKeys, right, rightKeys)) {
             val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left, conf)
-            if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+            if (buildLeft && left.stats.sizeInBytes < right.stats.sizeInBytes) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                 joinType, joins.BuildLeft, replicatedTableJoin = false)
             } else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
@@ -122,7 +122,7 @@ private[sql] trait SnappyStrategies {
           else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
               !RowOrdering.isOrderable(leftKeys)) {
             if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) &&
-                left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+                left.stats.sizeInBytes < right.stats.sizeInBytes) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                 joinType, joins.BuildLeft, replicatedTableJoin = false)
             } else {
@@ -181,7 +181,7 @@ private[sql] trait SnappyStrategies {
       def getCompatiblePartitioning(plan: LogicalPlan,
           joinKeys: Seq[Expression]): (Seq[NamedExpression], Seq[Int], Int) = plan match {
         case PhysicalScan(_, _, child) => child match {
-          case r@LogicalRelation(scan: PartitionedDataSourceScan, _, _) =>
+          case r@LogicalRelation(scan: PartitionedDataSourceScan, _, _, _) =>
             // send back numPartitions=1 for replicated table since collocated
             if (!scan.isPartitioned) return (Nil, Nil, 1)
 
@@ -269,7 +269,7 @@ private[sql] trait SnappyStrategies {
         replicatedTableJoin: Boolean): Seq[SparkPlan] = {
       joins.HashJoinExec(leftKeys, rightKeys, side, condition,
         joinType, planLater(left), planLater(right),
-        left.statistics.sizeInBytes, right.statistics.sizeInBytes,
+        left.stats.sizeInBytes, right.stats.sizeInBytes,
         replicatedTableJoin) :: Nil
     }
   }
@@ -288,22 +288,22 @@ private[sql] object JoinStrategy {
   def skipBroadcastRight(joinType: JoinType, left: LogicalPlan,
       right: LogicalPlan, conf: SQLConf): Boolean = {
     canBuildLeft(joinType) && canBroadcast(left, conf) &&
-        left.statistics.sizeInBytes < right.statistics.sizeInBytes
+        left.stats.sizeInBytes < right.stats.sizeInBytes
   }
 
   /**
    * Matches a plan whose output should be small enough to be used in broadcast join.
    */
   def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.isBroadcastable ||
-        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
+    plan.stats.isBroadcastable ||
+        plan.stats.sizeInBytes <= conf.autoBroadcastJoinThreshold
   }
 
   /**
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
+    plan.stats.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
       Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue)
   }
 
@@ -317,7 +317,7 @@ private[sql] object JoinStrategy {
   def canLocalJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalScan(_, _, child) => child match {
-        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
+        case LogicalRelation(t: PartitionedDataSourceScan, _, _, _) => !t.isPartitioned
         case Join(left, right, _, _) =>
           // If join is a result of join of replicated tables, this
           // join result should also be a local join with any other table
@@ -369,7 +369,7 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
     resultExpressions, child) if maxAggregateInputSize == 0 ||
-        child.statistics.sizeInBytes <= maxAggregateInputSize =>
+        child.stats.sizeInBytes <= maxAggregateInputSize =>
 
       val (functionsWithDistinct, functionsWithoutDistinct) =
         aggregateExpressions.partition(_.isDistinct)

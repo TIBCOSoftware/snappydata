@@ -29,7 +29,6 @@ import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -152,7 +151,7 @@ abstract case class JDBCAppendableRelation(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
-        OverwriteOptions(overwrite),
+        overwrite,
         ifNotExists = false)).toRdd
   }
 

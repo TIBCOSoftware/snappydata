@@ -91,7 +91,7 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this))(codegenStageId = 0).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
@@ -295,7 +295,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   override protected def doProduce(ctx: CodegenContext): String = {
     val child1Produce = inputCode.produce(ctx, this)
     val input = ctx.freshName("input")
-    ctx.addMutableState("scala.collection.Iterator", input, s" $input = inputs[1]; ")
+    ctx.addMutableState("scala.collection.Iterator", input, _ => s" $input = inputs[1]; ")
 
     val row = ctx.freshName("row")
     val columnsInputEval = otherPlan.output.zipWithIndex.map { case (ref, ordinal) =>
@@ -335,7 +335,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   }
 
   override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this))(codegenStageId = 0).execute()
   }
 
   override def output: Seq[Attribute] = basePlan.output

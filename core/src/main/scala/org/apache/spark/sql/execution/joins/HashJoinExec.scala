@@ -183,7 +183,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
    * Produces the result of the query as an RDD[InternalRow]
    */
   override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this))(codegenStageId = 0).execute()
   }
 
   // return empty here as code of required variables is explicitly instantiated
@@ -333,7 +333,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   override def doProduce(ctx: CodegenContext): String = {
     startProducing()
     val initMap = ctx.freshName("initMap")
-    ctx.addMutableState("boolean", initMap, s"$initMap = false;")
+    ctx.addMutableState("boolean", initMap, _ => "$initMap = false;")
 
     val createMap = ctx.freshName("createMap")
     val createMapClass = ctx.freshName("CreateMap")
@@ -342,7 +342,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
+    ctx.addMutableState(hashSetClassName, hashMapTerm, _ => "")
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
@@ -380,12 +380,12 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val indexVar = ctx.freshName("index")
     val contextName = ctx.freshName("context")
     val taskContextClass = classOf[TaskContext].getName
-    ctx.addMutableState(taskContextClass, contextName,
+    ctx.addMutableState(taskContextClass, contextName, _ =>
       s"this.$contextName = $taskContextClass.get();")
 
 
     // switch inputs to use the buildPlan RDD iterators
-    ctx.addMutableState("scala.collection.Iterator[]", allIterators,
+    ctx.addMutableState("scala.collection.Iterator[]", allIterators, _ =>
       s"""
          |$allIterators = inputs;
          |inputs = new scala.collection.Iterator[$buildRDDs.length];
@@ -406,7 +406,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val buildProduce = buildCodeGen.produce(ctx, mapAccessor)
     // switch inputs back to streamPlan iterators
     val numIterators = ctx.freshName("numIterators")
-    ctx.addMutableState("int", numIterators, s"inputs = $allIterators;")
+    ctx.addMutableState("int", numIterators, _ => s"inputs = $allIterators;")
 
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length

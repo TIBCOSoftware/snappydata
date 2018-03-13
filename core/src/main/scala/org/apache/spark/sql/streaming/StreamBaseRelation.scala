@@ -38,7 +38,7 @@ abstract class StreamBaseRelation(opts: Map[String, String])
     SnappyStreamingContext.getInstance().getOrElse(
       throw new IllegalStateException("No initialized streaming context"))
 
-  protected val options = new CaseInsensitiveMap(opts)
+  protected val options = new CaseInsensitiveMap[String](opts)
 
   @transient val tableName = options(JdbcExtendedUtils.DBTABLE_PROPERTY)
 

@@ -86,7 +86,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
           table.properties)
         val partitionColumns = table.partitionSchema.map(_.name)
         val provider = table.properties(SnappyStoreHiveCatalog.HIVE_PROVIDER)
-        var options: Map[String, String] = new CaseInsensitiveMap(table.storage.properties)
+        var options: Map[String, String] = CaseInsensitiveMap[String](table.storage.properties)
         // add dbtable property if not present
         val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
         if (!options.contains(dbtableProp)) {
