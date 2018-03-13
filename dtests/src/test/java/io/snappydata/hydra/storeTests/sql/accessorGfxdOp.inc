@@ -128,20 +128,7 @@ CLOSETASK     taskClass   = sql.SQLTest taskMethod  = HydraTask_verifyResultSets
 CLOSETASK     taskClass   = sql.SQLTest taskMethod  = HydraTask_checkConstraints
 	 threadGroups = ddlThread;	
 
-CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappy
-            threadGroups = ddlThread;
-
-CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSparkCluster
-            threadGroups = ddlThread;
-
-ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
-            clientNames = locator1;
-
-ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_deleteSnappyConfig
-            clientNames = locator1;
-
-ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cleanUpSnappyProcessesOnFailure
-            clientNames = locator1;
+INCLUDE $JTESTS/io/snappydata/hydra/storeTests/stopSnappyCluster.inc;
 
 hydra.Prms-totalTaskTimeSec           = 100;
 hydra.Prms-maxResultWaitSec           = 3600;
