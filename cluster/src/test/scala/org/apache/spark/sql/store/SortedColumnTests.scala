@@ -142,9 +142,6 @@ object SortedColumnTests extends Logging {
     insertDF.write.insertInto(colTableName)
     val updateDF = session.read.load(filePathUpdate(numElements))
 
-    // Only use while debugging
-    session.conf.set(Property.PutIntoInnerJoinCacheSize.name, "-1")
-
     try {
       verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false)
       try {
@@ -170,6 +167,5 @@ object SortedColumnTests extends Logging {
     session.sql(s"drop table $colTableName")
     session.conf.unset(Property.ColumnBatchSize.name)
     session.conf.unset(Property.ColumnMaxDeltaRows.name)
-    session.conf.unset(Property.PutIntoInnerJoinCacheSize.name)
   }
 }

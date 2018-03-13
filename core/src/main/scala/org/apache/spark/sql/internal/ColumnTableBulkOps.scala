@@ -77,7 +77,8 @@ object ColumnTableBulkOps {
         val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
-        val doInsertJoin = if (subQuery.statistics.sizeInBytes <= cacheSize) {
+        val doInsertJoin = !ColumnTableScan.getCaseOfSortedInsertValue &&
+            (if (subQuery.statistics.sizeInBytes <= cacheSize) {
           val joinDS = new Dataset(sparkSession,
             updateSubQuery, RowEncoder(updateSubQuery.schema))
 
@@ -85,7 +86,7 @@ object ColumnTableBulkOps {
               addContextObject(SnappySession.CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
           joinDS.cache()
           joinDS.count() > 0
-        } else true
+        } else true)
 
         val insertChild = if (doInsertJoin) {
           val condition = prepareCondition(sparkSession, subQuery, updateSubQuery, putKeys.get,
