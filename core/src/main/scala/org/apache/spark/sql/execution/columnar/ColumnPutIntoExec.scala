@@ -42,7 +42,9 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
     // First update the rows which are present in the table
     val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
     // Then insert the rows which are not there in the table
-    val i = insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
+    val i = if (!ColumnTableScan.getCaseOfSortedInsertValue) {
+      insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
+    } else 0
     val resultRow = new UnsafeRow(1)
     val data = new Array[Byte](32)
     resultRow.pointTo(data, 32)
