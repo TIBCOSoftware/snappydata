@@ -21,7 +21,7 @@ import java.io.File
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
-import org.apache.spark.sql.execution.columnar.InMemoryRelation
+import org.apache.spark.sql.execution.joins.SortMergeJoinExec
 import org.apache.spark.ui.SnappyDashboardTab
 import org.apache.spark.util.SnappyUtils
 
@@ -64,8 +64,9 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   // TODO VB: Temporary, remove this
-  def setCaseOfSortedInsertValue(v: Boolean): Unit = InMemoryRelation.isCaseOfSortedInsertValue = v
-  def getCaseOfSortedInsertValue: Boolean = InMemoryRelation.isCaseOfSortedInsertValue
-  def setDebugMode(v: Boolean): Unit = InMemoryRelation.isDebugMode = v
-  def getDebugMode: Boolean = InMemoryRelation.isDebugMode
+  def setCaseOfSortedInsertValue(v: Boolean): Unit =
+    SortMergeJoinExec.isCaseOfSortedInsertValue = v
+  def getCaseOfSortedInsertValue: Boolean = SortMergeJoinExec.isCaseOfSortedInsertValue
+  def setDebugMode(v: Boolean): Unit = SortMergeJoinExec.isDebugMode = v
+  def getDebugMode: Boolean = SortMergeJoinExec.isDebugMode
 }
