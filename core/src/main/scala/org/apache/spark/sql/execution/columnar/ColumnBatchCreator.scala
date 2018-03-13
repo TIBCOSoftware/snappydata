@@ -92,7 +92,7 @@ final class ColumnBatchCreator(
           // this is only used for local code generation while its RDD semantics
           // and related methods are all ignored
           val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-            WholeStageCodegenExec(insertPlan), insertPlan)
+            WholeStageCodegenExec(insertPlan)(codegenStageId = 0), insertPlan)
           val references = ctx.references
           // also push the index of batchId reference at the end which can be
           // used by caller to update the reference objects before execution
@@ -144,7 +144,7 @@ final class ColumnBatchCreator(
       // this is only used for local code generation while its RDD semantics
       // and related methods are all ignored
       val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-        WholeStageCodegenExec(insertPlan), insertPlan)
+        WholeStageCodegenExec(insertPlan)(codegenStageId = 0), insertPlan)
       val references = ctx.references.toArray
       (code, references)
     })
@@ -189,11 +189,11 @@ case class CallbackColumnInsert(_schema: StructType)
     val clearResults = ctx.freshName("clearResults")
     val rowsBuffer = ctx.freshName("rowsBuffer")
     val rowsBufferClass = classOf[ColumnBatchRowsBuffer].getName
-    ctx.addMutableState(rowsBufferClass, rowsBuffer, "")
+    ctx.addMutableState(rowsBufferClass, rowsBuffer, _ => "")
     // add bucketId variable set to -1 by default
     bucketIdTerm = ctx.freshName("bucketId")
     resetInsertions = ctx.freshName("resetInsertionsCount")
-    ctx.addMutableState("int", bucketIdTerm, s"$bucketIdTerm = -1;")
+    ctx.addMutableState("int", bucketIdTerm, _ => s"$bucketIdTerm = -1;")
     val columnsExpr = output.zipWithIndex.map { case (a, i) =>
       BoundReference(i, a.dataType, a.nullable)
     }

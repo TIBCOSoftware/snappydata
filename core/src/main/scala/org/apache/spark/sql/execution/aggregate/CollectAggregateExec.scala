@@ -47,7 +47,7 @@ case class CollectAggregateExec(
     // temporarily switch producer to an InputAdapter for rows as normal
     // Iterator[UnsafeRow] which will be set explicitly in executeCollect()
     basePlan.childProducer = InputAdapter(child)
-    val (ctx, cleanedSource) = WholeStageCodegenExec(basePlan).doCodeGen()
+    val (ctx, cleanedSource) = WholeStageCodegenExec(basePlan)(codegenStageId = 0).doCodeGen()
     basePlan.childProducer = child
     (cleanedSource, ctx.references.toArray)
   }

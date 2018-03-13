@@ -731,7 +731,7 @@ object Utils {
     if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
       val taskContextVar = ctx.freshName("taskContext")
       val contextClass = classOf[TaskContext].getName
-      ctx.addMutableState(contextClass, taskContextVar, "")
+      ctx.addMutableState(contextClass, taskContextVar, _ => "")
       ctx.addNewFunction(TASKCONTEXT_FUNCTION,
         s"""
            |private $contextClass $TASKCONTEXT_FUNCTION() {

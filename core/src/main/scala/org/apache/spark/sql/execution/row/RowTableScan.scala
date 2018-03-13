@@ -60,7 +60,7 @@ private[sql] final case class RowTableScan(
     // PartitionedPhysicalRDD always has one input
     val input = ctx.freshName("input")
     ctx.addMutableState("scala.collection.Iterator",
-      input, s"$input = inputs[0];")
+      input, _ => s"$input = inputs[0];")
     val numOutputRows = if (sqlContext eq null) null
     else metricTerm(ctx, "numOutputRows")
     ctx.currentVars = null

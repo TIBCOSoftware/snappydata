@@ -41,14 +41,14 @@ object RuleUtils extends PredicateHelper {
   private def getIndex(catalog: SnappyStoreHiveCatalog, name: String) = {
     val relation = catalog.lookupRelation(catalog.newQualifiedTableName(name))
     relation match {
-      case LogicalRelation(i: IndexColumnFormatRelation, _, _) => Some(relation)
+      case LogicalRelation(i: IndexColumnFormatRelation, _, _, _) => Some(relation)
       case _ => None
     }
   }
 
   def fetchIndexes(snappySession: SnappySession,
       table: LogicalPlan): Seq[(LogicalPlan, Seq[LogicalPlan])] = table.collect {
-    case l@LogicalRelation(p: ParentRelation, _, _) =>
+    case l@LogicalRelation(p: ParentRelation, _, _, _) =>
       val catalog = snappySession.sessionCatalog
       (l.asInstanceOf[LogicalPlan], p.getDependents(catalog).flatMap(getIndex(catalog, _)))
   }
@@ -210,16 +210,16 @@ object RuleUtils extends PredicateHelper {
       filterCols <- columnGroups.collectFirst {
         case (t, predicates) if predicates.nonEmpty =>
           table match {
-            case LogicalRelation(b: ColumnFormatRelation, _, _) if b.table.indexOf(t) > 0 =>
+            case LogicalRelation(b: ColumnFormatRelation, _, _, _) if b.table.indexOf(t) > 0 =>
               predicates
-            case SubqueryAlias(alias, _, _) if alias.equals(t) =>
+            case SubqueryAlias(alias, _) if alias.equals(t) =>
               predicates
             case _ => Nil
           }
       } if filterCols.nonEmpty
 
       matchedIndexes = indexes.collect {
-        case idx@LogicalRelation(ir: IndexColumnFormatRelation, _, _)
+        case idx@LogicalRelation(ir: IndexColumnFormatRelation, _, _, _)
           if ir.partitionColumns.length <= filterCols.length &
               ir.partitionColumns.forall(p => filterCols.exists(f =>
                 f.name.equalsIgnoreCase(p))) =>
@@ -234,7 +234,7 @@ object RuleUtils extends PredicateHelper {
       None
     } else {
       Some(satisfyingPartitionColumns.maxBy {
-        r => r.index.statistics.sizeInBytes
+        r => r.index.stats.sizeInBytes
       })
     }
   }
@@ -265,9 +265,10 @@ object Entity {
 
   def unwrapBaseColumnRelation(
       plan: LogicalPlan): Option[BaseColumnFormatRelation] = plan collectFirst {
-    case LogicalRelation(relation: BaseColumnFormatRelation, _, _) =>
+    case LogicalRelation(relation: BaseColumnFormatRelation, _, _, _) =>
       relation
-    case SubqueryAlias(alias, LogicalRelation(relation: BaseColumnFormatRelation, _, _), _) =>
+    case SubqueryAlias(_,
+    LogicalRelation(relation: BaseColumnFormatRelation, _, _, _)) =>
       relation
   }
 
@@ -354,13 +355,13 @@ object HasColocatedEntities {
       } yield {
         val leftReplacement = leftTable match {
           case _: LogicalRelation => Replacement(leftTable, leftPlan)
-          case subquery@SubqueryAlias(alias, _, v) =>
-            Replacement(subquery, SubqueryAlias(alias, leftPlan, None))
+          case subquery@SubqueryAlias(alias, _) =>
+            Replacement(subquery, SubqueryAlias(alias, leftPlan))
         }
         val rightReplacement = rightTable match {
           case _: LogicalRelation => Replacement(rightTable, rightPlan)
-          case subquery@SubqueryAlias(alias, _, _) =>
-            Replacement(subquery, SubqueryAlias(alias, rightPlan, None))
+          case subquery@SubqueryAlias(alias, _) =>
+            Replacement(subquery, SubqueryAlias(alias, rightPlan))
         }
         ((leftRelation.get, rightRelation.get),
             ReplacementSet(ArrayBuffer(leftReplacement, rightReplacement), Nil))
@@ -400,18 +401,18 @@ case class Replacement(table: TABLE, index: INDEX, isPartitioned: Boolean = true
   private var _replacedEntity: LogicalPlan = null
 
   def numPartitioningCols: Int = index match {
-    case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.partitionColumns.length
+    case LogicalRelation(b: BaseColumnFormatRelation, _, _, _) => b.partitionColumns.length
     case _ => 0
   }
 
   override def toString: String = {
     "" + (table match {
-      case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.table
+      case LogicalRelation(b: BaseColumnFormatRelation, _, _, _) => b.table
       case _ => table.toString()
     }) + " ----> " +
         (index match {
-          case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.table
-          case LogicalRelation(r: RowFormatRelation, _, _) => r.table
+          case LogicalRelation(b: BaseColumnFormatRelation, _, _, _) => b.table
+          case LogicalRelation(r: RowFormatRelation, _, _, _) => r.table
           case _ => index.toString()
         })
   }
@@ -432,7 +433,7 @@ case class Replacement(table: TABLE, index: INDEX, isPartitioned: Boolean = true
   }
 
   def estimatedSize(conditions: Seq[Expression]): BigInt =
-    replacedPlan(conditions).statistics.sizeInBytes
+    replacedPlan(conditions).stats.sizeInBytes
 
 }
 
@@ -486,8 +487,8 @@ case class ReplacementSet(chain: ArrayBuffer[Replacement],
     }
 
     val sz = joinOrder.map(_.replacedPlan(conditions)).zipWithIndex.foldLeft(BigInt(0)) {
-      case (tot, (table, depth)) if depth == 2 => tot + table.statistics.sizeInBytes
-      case (tot, (table, depth)) => tot + (table.statistics.sizeInBytes * depth)
+      case (tot, (table, depth)) if depth == 2 => tot + table.stats.sizeInBytes
+      case (tot, (table, depth)) => tot + (table.stats.sizeInBytes * depth)
     }
 
     sz

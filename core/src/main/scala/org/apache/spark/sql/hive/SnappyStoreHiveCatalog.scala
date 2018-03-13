@@ -17,14 +17,10 @@
 package org.apache.spark.sql.hive
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.util.control.NonFatal
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
@@ -46,13 +42,12 @@ import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseE
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.columnar.impl.{DefaultSource => ColumnSource}
-import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{IndexColumnFormatRelation, DefaultSource => ColumnSource}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
@@ -63,6 +58,11 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -79,10 +79,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     extends SessionCatalog(
       externalCatalog,
       globalTempViewManager,
-      functionResourceLoader,
       functionRegistry,
       sqlConf,
-      hadoopConf) {
+      hadoopConf, null, functionResourceLoader) {
 
   val sparkConf: SparkConf = snappySession.sparkContext.getConf
 
@@ -125,7 +124,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _ =>
         // Initialize default database if it doesn't already exist
         val defaultDbDefinition =
-          CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
+          CatalogDatabase(defaultName, "app database", new URI(sqlConf.warehousePath), Map())
         externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
         client.setCurrentDatabase(defaultName)
     }
@@ -189,7 +188,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val table = withHiveExceptionHandling(in.getTable(client))
         val partitionColumns = table.partitionSchema.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
-        var options: Map[String, String] = new CaseInsensitiveMap(table.storage.properties)
+        var options: Map[String, String] = CaseInsensitiveMap[String](table.storage.properties)
         // add dbtable property if not present
         val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
         if (!options.contains(dbtableProp)) {
@@ -225,7 +224,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // Do nothing
         }
 
-        (LogicalRelation(relation, catalogTable = Some(table)), table, RelationInfo(
+        (LogicalRelation(relation, table), table, RelationInfo(
           0, isPartitioned = false, Nil, Array.empty, Array.empty, Array.empty, -1))
       }
     }
@@ -437,15 +436,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   def unregisterAllTables(): Unit = synchronized {
-    tempTables.clear()
+    tempViews.clear()
   }
 
   def unregisterTable(tableIdent: QualifiedTableName): Unit = synchronized {
     val tableName = tableIdent.table
-    if (tempTables.contains(tableName)) {
+    if (tempViews.contains(tableName)) {
       snappySession.truncateTable(tableIdent, ifExists = false,
         ignoreIfUnsupported = true)
-      tempTables -= tableName
+      tempViews -= tableName
     }
   }
 
@@ -464,7 +463,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
    * Return whether a table with the specified name is a temporary table.
    */
   def isTemporaryTable(tableIdent: QualifiedTableName): Boolean = synchronized {
-    tempTables.contains(tableIdent.table)
+    tempViews.contains(tableIdent.table)
   }
 
   /**
@@ -501,7 +500,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val plan = if (schema == globalTempViewManager.database) {
           globalTempViewManager.get(table)
         } else if ((schema == null) || schema.isEmpty || schema == currentSchema) {
-          tempTables.get(table).orElse(globalTempViewManager.get(table))
+          tempViews.get(table).orElse(globalTempViewManager.get(table))
         } else None
         plan match {
           case Some(lr: LogicalRelation) => lr.catalogTable match {
@@ -525,14 +524,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  override def lookupRelation(tableIdent: TableIdentifier,
-      alias: Option[String]): LogicalPlan = {
-    // If an alias was specified by the lookup, wrap the plan in a
-    // sub-query so that attributes are properly qualified with this alias
-    SubqueryAlias(alias.getOrElse(tableIdent.table),
-      lookupRelation(newQualifiedTableName(tableIdent)), None)
-  }
-
   override def tableExists(tableIdentifier: TableIdentifier): Boolean = {
     tableExists(newQualifiedTableName(tableIdentifier))
   }
@@ -543,14 +534,14 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def tableExists(tableName: QualifiedTableName): Boolean = {
     tableName.getTableOption(this).isDefined || synchronized {
-      tempTables.contains(tableName.table)
+      tempViews.contains(tableName.table)
     }
   }
 
   // TODO: SW: cleanup the tempTables handling to error for schema
   def registerTable(tableName: QualifiedTableName,
       plan: LogicalPlan): Unit = synchronized {
-    tempTables += (tableName.table -> plan)
+    tempViews += (tableName.table -> plan)
   }
 
   /**
@@ -566,7 +557,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case dep: DependentRelation => dep.baseTable.foreach { t =>
             try {
               lookupRelation(newQualifiedTableName(t)) match {
-                case LogicalRelation(p: ParentRelation, _, _) =>
+                case LogicalRelation(p: ParentRelation, _, _, _) =>
                   p.removeDependent(dep, this)
                   removeDependentRelation(newQualifiedTableName(t),
                     newQualifiedTableName(dep.name))
@@ -662,7 +653,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         relation match {
           case Some(dep: DependentRelation) => dep.baseTable.foreach { t =>
             lookupRelation(newQualifiedTableName(t)) match {
-              case LogicalRelation(p: ParentRelation, _, _) =>
+              case LogicalRelation(p: ParentRelation, _, _, _) =>
                 p.addDependent(dep, this)
                 addDependentRelation(newQualifiedTableName(t),
                   newQualifiedTableName(dep.name))
@@ -775,7 +766,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def getTables(db: Option[String]): Seq[(String, Boolean)] = {
     val schemaName = db.map(formatTableName)
         .getOrElse(currentSchema)
-    synchronized(tempTables.collect {
+    synchronized(tempViews.collect {
       case (tableIdent, _) if db.isEmpty || currentSchema == schemaName =>
         (tableIdent, true)
     }).toSeq ++
@@ -905,8 +896,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val catalogFunction = try {
           externalCatalog.getFunction(currentSchema, qualifiedName.funcName)
         } catch {
-          case _: AnalysisException => failFunctionLookup(qualifiedName.funcName)
-          case _: NoSuchPermanentFunctionException => failFunctionLookup(qualifiedName.funcName)
+          case _: AnalysisException =>
+            failFunctionLookup(FunctionIdentifier(qualifiedName.funcName))
+          case _: NoSuchPermanentFunctionException =>
+            failFunctionLookup(FunctionIdentifier(qualifiedName.funcName))
         }
         removeFromFuncJars(catalogFunction, qualifiedName)
       case _ =>
@@ -914,7 +907,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     super.dropFunction(name, ignoreIfNotExists)
   }
 
-  override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
+  def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
     val uRLClassLoader = ContextJarUtils.getDriverJar(funcName).getOrElse(
       org.apache.spark.util.Utils.getContextOrSparkClassLoader)
     val (actualClassName, typeName) = className.splitAt(className.lastIndexOf("__"))
@@ -930,8 +923,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // TODO: just make function registry take in FunctionIdentifier instead of duplicating this
     val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
     val qualifiedName = name.copy(database = database)
-    functionRegistry.lookupFunction(name.funcName)
-        .orElse(functionRegistry.lookupFunction(qualifiedName.unquotedString))
+    functionRegistry.lookupFunction(FunctionIdentifier(name.funcName))
+        .orElse(functionRegistry.lookupFunction(FunctionIdentifier(qualifiedName.unquotedString)))
         .getOrElse {
           val db = qualifiedName.database.get
           requireDbExists(db)
@@ -939,7 +932,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             val metadata = externalCatalog.getFunction(db, name.funcName)
             new ExpressionInfo(metadata.className, qualifiedName.unquotedString)
           } else {
-            failFunctionLookup(name.funcName)
+            failFunctionLookup(FunctionIdentifier(name.funcName))
           }
         }
   }
@@ -963,19 +956,21 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // Note: the implementation of this function is a little bit convoluted.
     // We probably shouldn't use a single FunctionRegistry to register all three kinds of functions
     // (built-in, temp, and external).
-    if (name.database.isEmpty && functionRegistry.functionExists(name.funcName)) {
+    if (name.database.isEmpty &&
+      functionRegistry.functionExists(FunctionIdentifier(name.funcName))) {
       // This function has been already loaded into the function registry.
-      return functionRegistry.lookupFunction(name.funcName, children)
+      return functionRegistry.lookupFunction(FunctionIdentifier(name.funcName), children)
     }
 
     // If the name itself is not qualified, add the current database to it.
     val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
     val qualifiedName = name.copy(database = database)
 
-    if (functionRegistry.functionExists(qualifiedName.unquotedString)) {
+    if (functionRegistry.functionExists(FunctionIdentifier(qualifiedName.unquotedString))) {
       // This function has been already loaded into the function registry.
       // Unlike the above block, we find this function by using the qualified name.
-      return functionRegistry.lookupFunction(qualifiedName.unquotedString, children)
+      return functionRegistry.lookupFunction(
+        FunctionIdentifier(qualifiedName.unquotedString), children)
     }
 
     // The function has not been loaded to the function registry, which means
@@ -985,8 +980,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val catalogFunction = try {
       externalCatalog.getFunction(currentSchema, name.funcName)
     } catch {
-      case _: AnalysisException => failFunctionLookup(name.funcName)
-      case _: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
+      case _: AnalysisException => failFunctionLookup(FunctionIdentifier(name.funcName))
+      case _: NoSuchPermanentFunctionException =>
+        failFunctionLookup(FunctionIdentifier(name.funcName))
     }
     // loadFunctionResources(catalogFunction.resources) // Not needed for Snappy use case
 
@@ -1000,9 +996,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     addToFuncJars(catalogFunction, qualifiedName)
 
     val builder = makeFunctionBuilder(qualifiedName.unquotedString, catalogFunction.className)
-    createTempFunction(qualifiedName.unquotedString, info, builder, ignoreIfExists = false)
+    registerFunction(catalogFunction, overrideIfExists = false, Some(builder))
     // Now, we need to create the Expression.
-    functionRegistry.lookupFunction(qualifiedName.unquotedString, children)
+    functionRegistry.lookupFunction(FunctionIdentifier(qualifiedName.unquotedString), children)
   }
 
 
@@ -1036,7 +1032,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         dropTempFunction(func.funcName, ignoreIfNotExists = false)
       }
     }
-    tempTables.clear()
+    tempViews.clear()
     functionRegistry.clear()
     // restore built-in functions
     FunctionRegistry.builtin.listFunction().foreach { f =>

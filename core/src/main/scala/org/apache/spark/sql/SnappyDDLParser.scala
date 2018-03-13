@@ -445,7 +445,7 @@ abstract class SnappyDDLParser(session: SparkSession)
             functionIdent.funcName,
             classNameWithType,
             funcResources,
-            isTemp)
+            isTemp, false, false)
         }
   }
 
@@ -502,7 +502,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     DESCRIBE ~ (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
         ((extended: Any, tableIdent: TableIdentifier) =>
           DescribeTableCommand(tableIdent, Map.empty[String, String], extended
-              .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
+              .asInstanceOf[Option[Boolean]].isDefined))
   }
 
   protected def refreshTable: Rule1[LogicalPlan] = rule {

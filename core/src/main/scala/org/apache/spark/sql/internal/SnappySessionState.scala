@@ -171,14 +171,14 @@ class SnappySessionState(snappySession: SnappySession)
       plan transformDown {
         case win@WindowLogicalPlan(d, s, child, false) =>
           child match {
-            case LogicalRelation(_, _, _) |
+            case LogicalRelation(_, _, _, _) |
                  LogicalDStreamPlan(_, _) => win
             case _ => duration = d
               slide = s
               transformed = true
               win.child
           }
-        case c@(LogicalRelation(_, _, _) |
+        case c@(LogicalRelation(_, _, _, _) |
                 LogicalDStreamPlan(_, _)) =>
           if (transformed) {
             transformed = false
@@ -205,7 +205,7 @@ class SnappySessionState(snappySession: SnappySession)
         case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges
           snappySession.linkPartitionsToBuckets(flag = true)
-        case LogicalRelation(_: IndexColumnFormatRelation, _, _) =>
+        case LogicalRelation(_: IndexColumnFormatRelation, _, _, _) =>
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }
@@ -251,7 +251,7 @@ class SnappySessionState(snappySession: SnappySession)
         plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
-        case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+        case lr@LogicalRelation(mutable: MutableRelation, _, _, _) =>
           val ks = mutable.getKeyColumns
           if (ks.isEmpty) {
             val currentKey = snappySession.currentKey
@@ -272,7 +272,7 @@ class SnappySessionState(snappySession: SnappySession)
       // resolve key columns right away
       var mutablePlan: Option[LogicalRelation] = None
       val newChild = child.transformDown {
-        case lr@LogicalRelation(mutable: MutableRelation, _, _)
+        case lr@LogicalRelation(mutable: MutableRelation, _, _, _)
           if mutable.table.equalsIgnoreCase(tableName) =>
           mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
           mutablePlan.get
@@ -820,7 +820,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
     // Check for SchemaInsertableRelation first
     case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
-    _, _), _, child, _, _) if l.resolved && child.resolved =>
+    _, _, _), _, child, _, _) if l.resolved && child.resolved =>
       r.insertableRelation(child.output) match {
         case Some(ir) =>
           val br = ir.asInstanceOf[BaseRelation]
@@ -840,7 +840,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(ir: RowInsertableRelation, _, _) =>
+        case l@LogicalRelation(ir: RowInsertableRelation, _, _, _) =>
           // First, make sure the data to be inserted have the same number of
           // fields with the schema of the relation.
           val expectedOutput = l.output
@@ -860,7 +860,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(dr: DeletableRelation, _, _) =>
+        case l@LogicalRelation(dr: DeletableRelation, _, _, _) =>
           def comp(a: Attribute, targetCol: String): Boolean = a match {
             case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
           }
@@ -873,7 +873,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
                 s"${child.output.mkString(",")} instead.")
           }
           l match {
-            case LogicalRelation(ps: PartitionedDataSourceScan, _, _) =>
+            case LogicalRelation(ps: PartitionedDataSourceScan, _, _, _) =>
               if (!ps.partitionColumns.forall(a => child.output.exists(e =>
                 comp(e, a.toUpperCase)))) {
                 throw new AnalysisException(s"${child.output.mkString(",")}" +
@@ -884,7 +884,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           }
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 
-        case l@LogicalRelation(dr: MutableRelation, _, _) =>
+        case l@LogicalRelation(dr: MutableRelation, _, _, _) =>
           // First, make sure the where column(s) of the delete are in schema of the relation.
           val expectedOutput = l.output
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
@@ -898,10 +898,10 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         val metadata = relation.catalogTable
         preProcess(i, relation = null, metadata.identifier.quotedString,
           metadata.partitionColumnNames)
-      case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
+      case LogicalRelation(h: HadoopFsRelation, _, identifier, _) =>
         val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
         preProcess(i, h, tblName, h.partitionSchema.map(_.name))
-      case LogicalRelation(ir: InsertableRelation, _, identifier) =>
+      case LogicalRelation(ir: InsertableRelation, _, identifier, _) =>
         val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
         preProcess(i, ir, tblName, Nil)
       case _ => i
@@ -1035,10 +1035,10 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
 
   def apply(plan: LogicalPlan): Unit = {
     plan.foreach {
-      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _), query) =>
+      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _, _), query) =>
         // Get all input data source relations of the query.
         val srcRelations = query.collect {
-          case LogicalRelation(src: BaseRelation, _, _) => src
+          case LogicalRelation(src: BaseRelation, _, _, _) => src
         }
         if (srcRelations.contains(t)) {
           throw Utils.analysisException(

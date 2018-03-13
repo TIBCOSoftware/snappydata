@@ -58,7 +58,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalScan(projects, filters, scan) => scan match {
-      case l@LogicalRelation(t: PartitionedDataSourceScan, _, _) =>
+      case l@LogicalRelation(t: PartitionedDataSourceScan, _, _, _) =>
         pruneFilterProject(
           l,
           projects,
@@ -66,7 +66,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           t.numBuckets,
           t.partitionColumns,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
-      case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
+      case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _, _) =>
         pruneFilterProject(
           l,
           projects,

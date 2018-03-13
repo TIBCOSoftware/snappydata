@@ -824,7 +824,7 @@ object CreateIndexTest extends SnappyFunSuite {
 
   def validateIndex(index: Seq[String], tables: String*)(df: DataFrame): Unit = {
     val (indexesMatched, indexesUnMatched) = df.queryExecution.optimizedPlan.collect {
-      case l@LogicalRelation(idx: IndexColumnFormatRelation, _, _) => idx
+      case l@LogicalRelation(idx: IndexColumnFormatRelation, _, _, _) => idx
     }.partition(rel => index.exists(i => rel.table.indexOf(i.toUpperCase) > 0))
 
     if (indexesMatched.size != index.size) {
@@ -834,8 +834,8 @@ object CreateIndexTest extends SnappyFunSuite {
     }
 
     val tablesAppeared = df.queryExecution.optimizedPlan.collect {
-      case l@LogicalRelation(columnTable: ColumnFormatRelation, _, _) => columnTable.table
-      case l@LogicalRelation(rowTable: RowFormatRelation, _, _) => rowTable.table
+      case l@LogicalRelation(columnTable: ColumnFormatRelation, _, _, _) => columnTable.table
+      case l@LogicalRelation(rowTable: RowFormatRelation, _, _, _) => rowTable.table
     }
 
     val (tablesFound, tablesNotFound) = tables.partition(tab =>

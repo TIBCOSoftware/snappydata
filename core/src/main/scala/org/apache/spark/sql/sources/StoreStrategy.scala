@@ -19,7 +19,7 @@ package org.apache.spark.sql.sources
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
@@ -99,28 +99,28 @@ object StoreStrategy extends Strategy {
         plan.encoder, plan.isFlat, plan.output) :: Nil
 
     case InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
-    _, _), part, query, overwrite, false) if part.isEmpty =>
-      val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
+    _, _, _), part, query, overwrite, false) if part.isEmpty =>
+      val preAction = if (overwrite) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
     case d@DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand, d.output)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
+    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
-    case PutIntoColumnTable(l@LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
+    case PutIntoColumnTable(l@LogicalRelation(p: BulkPutRelation, _, _, _), left, right) =>
       ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
 
-    case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
+    case Update(l@LogicalRelation(u: MutableRelation, _, _, _), child,
     keyColumns, updateColumns, updateExpressions) =>
       ExecutePlan(u.getUpdatePlan(l, planLater(child), updateColumns,
         updateExpressions, keyColumns)) :: Nil
 
-    case Delete(l@LogicalRelation(d: MutableRelation, _, _), child, keyColumns) =>
+    case Delete(l@LogicalRelation(d: MutableRelation, _, _, _), child, keyColumns) =>
       ExecutePlan(d.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
 
-    case DeleteFromTable(l@LogicalRelation(d: DeletableRelation, _, _), query) =>
+    case DeleteFromTable(l@LogicalRelation(d: DeletableRelation, _, _, _), query) =>
       ExecutePlan(d.getDeletePlan(l, planLater(query), query.output)) :: Nil
 
     case r: RunnableCommand => ExecutedCommandExec(r) :: Nil
@@ -171,7 +171,7 @@ final class Insert(
     table: LogicalPlan,
     partition: Map[String, Option[String]],
     child: LogicalPlan,
-    overwrite: OverwriteOptions,
+    overwrite: Boolean,
     ifNotExists: Boolean)
     extends InsertIntoTable(table, partition, child, overwrite, ifNotExists) {
 
@@ -185,7 +185,7 @@ final class Insert(
   override def copy(table: LogicalPlan = table,
       partition: Map[String, Option[String]] = partition,
       child: LogicalPlan = child,
-      overwrite: OverwriteOptions = overwrite,
+      overwrite: Boolean = overwrite,
       ifNotExists: Boolean = ifNotExists): Insert = {
     new Insert(table, partition, child, overwrite, ifNotExists)
   }
