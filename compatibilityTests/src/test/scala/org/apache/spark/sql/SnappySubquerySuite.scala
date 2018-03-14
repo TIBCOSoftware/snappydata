@@ -14,18 +14,10 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.test
+package org.apache.spark.sql
 
-import org.apache.spark.DebugFilesystem
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.test.SharedSnappySessionContext
 
-/**
- * Extension to use SnappySession instead of SparkSession in spark-sql-core tests.
- */
-trait SharedSnappySessionContext extends SharedSQLContext {
+class SnappySubquerySuite extends SubquerySuite with SharedSnappySessionContext{
 
-  override protected def createSparkSession: SnappySession = {
-    new TestSnappySession(
-      sparkConf.set("spark.hadoop.fs.file.impl", classOf[DebugFilesystem].getName))
-  }
 }

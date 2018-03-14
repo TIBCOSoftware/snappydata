@@ -21,13 +21,15 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.sql.internal.{SQLConf, SessionState, SnappyConf, SnappySessionState}
 
 /**
-  * A special [[SparkSession]] prepared for testing.
-  */
+ * A special [[SparkSession]] prepared for testing.
+ */
 private[sql] class TestSnappySession(sc: SparkContext) extends SnappySession(sc) {
   self =>
-  def this(sparkConf: SparkConf) {
-    this(new SparkContext("local[2]", "test-sql-context",
-      sparkConf.set("spark.sql.testkey", "true")))
+  def this(snappyConf: SparkConf) {
+    this(
+      new SparkContext("local[2]", "test-sql-context",
+        snappyConf.set("spark.sql.testkey", "true"))
+    )
   }
 
   def this() {
@@ -57,4 +59,5 @@ private[sql] class TestSnappySession(sc: SparkContext) extends SnappySession(sc)
   private object testData extends SQLTestData {
     protected override def spark: SparkSession = self
   }
+
 }
