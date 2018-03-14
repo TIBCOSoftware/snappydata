@@ -24,7 +24,7 @@ import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.util.Benchmark
+import org.apache.spark.util.{Benchmark, QueryBenchmark}
 import org.apache.spark.sql.snappy._
 
 /**
@@ -129,6 +129,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     }
   }
 
+
   test("PointQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
@@ -151,21 +152,22 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // while (true) {}
   }
 
-  def executeQuery_PointQuery(session: SnappySession, colTableName: String,
-      numIters: Int, iterCount: Int): Unit = {
+  def executeQuery_PointQuery(session: SnappySession, colTableName: String, numIters: Int,
+      iterCount: Int): Boolean = {
     val param = SortedColumnPerformanceTests.getParam(iterCount,
       SortedColumnPerformanceTests.params)
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) 10 else 1
     val result = session.sql(query).collect()
+    val passed = result.length === expectedNumResults
     // scalastyle:off
-    // println(s"Query = $query result=${result.length}")
+    // println(s"Query = $query result=${result.length} $passed $expectedNumResults")
     // scalastyle:on
-    assert(result.length === expectedNumResults)
+    passed
   }
 
-  def executeQuery_RangeQuery(session: SnappySession, colTableName: String,
-      numIters: Int, iterCount: Int): Unit = {
+  def executeQuery_RangeQuery(session: SnappySession, colTableName: String, numIters: Int,
+      iterCount: Int): Boolean = {
     val param1 = SortedColumnPerformanceTests.getParam(iterCount,
       SortedColumnPerformanceTests.params1)
     val param2 = SortedColumnPerformanceTests.getParam(iterCount,
@@ -175,17 +177,19 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val expectedNumResults = SortedColumnPerformanceTests.getParam(iterCount,
       SortedColumnPerformanceTests.params3)
     val result = session.sql(query).collect()
+    val passed = result.length === expectedNumResults
     // scalastyle:off
-    // println(s"Query = $query result=${result.length}")
+    // println(s"Query = $query result=${result.length} $passed $expectedNumResults")
     // scalastyle:on
-    assert(result.length === expectedNumResults)
+    passed
   }
 
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long, numIters: Int, queryMark: String, doVerifyFullSize: Boolean = false,
       numTimesInsert: Int = 1, numTimesUpdate: Int = 1)
-      (f : (SnappySession, String, Int, Int) => Unit): Unit = {
-    val benchmark = new Benchmark(s"Benchmark $queryMark", numElements, outputPerIteration = true)
+      (f : (SnappySession, String, Int, Int) => Boolean): Unit = {
+    val benchmark = new QueryBenchmark(s"Benchmark $queryMark", numElements,
+      outputPerIteration = true)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
     val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, numTimesInsert))
@@ -217,7 +221,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         doGC()
       }
 
-      ColumnCacheBenchmark.addCaseWithCleanup(benchmark, name, numIters,
+      SortedColumnPerformanceTests.addCaseWithCleanup(benchmark, name, numIters,
         prepare, cleanup, testCleanup) { i => f(session, colTableName, numIters, i)}
     }
 
@@ -259,5 +263,24 @@ object SortedColumnPerformanceTests {
   def getParam(iterCount: Int, arr: Array[Int]): Int = {
     val index = if (iterCount < 0) 0 else iterCount % arr.length
     arr(index)
+  }
+
+  def addCaseWithCleanup(
+      benchmark: QueryBenchmark,
+      name: String,
+      numIters: Int = 0,
+      prepare: () => Unit,
+      cleanup: () => Unit,
+      testCleanup: () => Unit,
+      testPrepare: () => Unit = () => Unit)(f: Int => Boolean): Unit = {
+    val timedF = (timer: Benchmark.Timer) => {
+      testPrepare()
+      timer.startTiming()
+      val ret = f(timer.iteration)
+      timer.stopTiming()
+      testCleanup()
+      ret
+    }
+    benchmark.benchmarks += QueryBenchmark.Case(name, timedF, numIters, prepare, cleanup)
   }
 }
