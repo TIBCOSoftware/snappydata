@@ -155,7 +155,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     testInstance.getDmlLock();
     ArrayList<Integer> dmlthreads;
     if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
-      dmlthreads = (ArrayList<Integer>) SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
+      dmlthreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
     else
       dmlthreads = new ArrayList<>();
     if (!dmlthreads.contains(testInstance.getMyTid())) {
@@ -169,7 +169,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     testInstance.getDmlLock();
     ArrayList<Integer> selectThreads;
     if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
-      selectThreads = (ArrayList<Integer>) SnappyDMLOpsBB.getBB().getSharedMap()
+      selectThreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap()
           .get("selectThreads");
     else
       selectThreads = new ArrayList<>();
@@ -304,7 +304,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     int tid = getMyTid();
     ArrayList<Integer> dmlthreads = null;
     if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
-      dmlthreads = (ArrayList<Integer>) SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
+      dmlthreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
     StringBuilder sb = new StringBuilder();
 
     String destFile = "", currDir, destLoc;
@@ -492,7 +492,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         ArrayList<Integer> dmlthreads = null;
         boolean headerRow = true;
         if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
-          dmlthreads = (ArrayList<Integer>) SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
+          dmlthreads = (ArrayList<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
         while ((row = br.readLine()) != null) {
           if (headerRow) {
             row = br.readLine();
@@ -603,7 +603,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Connection conn;
       if (setTx) {
         conn = getLocatorConnection(false);
-        autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+        autoCommit = (boolean)SnappyDMLOpsBB.getBB().getSharedMap().get
             ("autoCommit");
         tableType = SnappyPrms.getTableType();
       } else {
@@ -646,6 +646,10 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
             .getCause());
         return;
+      } else if (setTx && se.getMessage().contains("23505")) {
+        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
       } else throw new TestException("Got exception while performing insert operation.", se);
     }
   }
@@ -675,7 +679,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     try {
       if (setTx) {
         conn = getLocatorConnection(false);
-        autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+        autoCommit = (boolean)SnappyDMLOpsBB.getBB().getSharedMap().get
             ("autoCommit");
         tableType = SnappyPrms.getTableType();
       } else {
@@ -757,7 +761,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Connection conn;
       if (setTx) {
         conn = getLocatorConnection(false);
-        autoCommit = (boolean) SnappyDMLOpsBB.getBB().getSharedMap().get
+        autoCommit = (boolean)SnappyDMLOpsBB.getBB().getSharedMap().get
             ("autoCommit");
         tableType = SnappyPrms.getTableType();
       } else {
@@ -874,12 +878,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   public static void compareResultSets(List<Struct> derbyResultSet,
-                                       List<Struct> snappyResultSet) {
+      List<Struct> snappyResultSet) {
     compareResultSets(derbyResultSet, snappyResultSet, "derby", "snappy");
   }
 
   public static void compareResultSets(List<Struct> firstResultSet,
-                                       List<Struct> secondResultSet, String first, String second) {
+      List<Struct> secondResultSet, String first, String second) {
     Log.getLogWriter().info("size of resultSet from " + first + " is " + firstResultSet.size());
     //Log.getLogWriter().info("Result from " + first + " is :" + listToString(firstResultSet));
     Log.getLogWriter().info("size of resultSet from " + second + " is " + secondResultSet.size());
@@ -938,7 +942,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     for (int i = 0; i < aList.size(); i++) {
       Object aStruct = aList.get(i);
       if (aStruct instanceof com.gemstone.gemfire.cache.query.Struct) {
-        GFXDStructImpl si = (GFXDStructImpl) (aStruct);
+        GFXDStructImpl si = (GFXDStructImpl)(aStruct);
         aStr.append(si.toString());
       }
       aStr.append("\n");
@@ -961,7 +965,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     for (int i = 0; i < aList.size(); i++) {
       Object aStruct = aList.get(i);
       if (aStruct instanceof com.gemstone.gemfire.cache.query.Struct) {
-        GFXDStructImpl si = (GFXDStructImpl) (aStruct);
+        GFXDStructImpl si = (GFXDStructImpl)(aStruct);
         sb.append(si.toString());
       }
       sb.append("\n");
@@ -1005,7 +1009,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   public String verifyResultsForTable(String selectStmt, String table, String orderByClause,
-                                      boolean useTid) {
+      boolean useTid) {
     StringBuffer mismatchString = new StringBuffer();
     Connection conn, dConn;
     try {
@@ -1170,7 +1174,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     try {
       if (ps == null)
         ps = conn.prepareStatement(stmt);
-      StructTypeImpl sType = (StructTypeImpl) SnappyDMLOpsBB.getBB().getSharedMap().get
+      StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
           ("tableMetaData_" + tableName);
       ObjectType[] oTypes = sType.getFieldTypes();
       String[] fieldNames = sType.getFieldNames();
@@ -1244,7 +1248,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     String csvFilePath = SnappySchemaPrms.getCsvLocationforLargeData();
     String csvFileName = SnappySchemaPrms.getInsertCsvFileNames()[randTable];
     getDmlLock();
-    List<Integer> counters = (List<Integer>) SnappyDMLOpsBB.getBB().getSharedMap().get
+    List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("insertCounters");
     insertCounter = counters.get(randTable);
     counters.set(randTable, insertCounter + 1);
@@ -1274,7 +1278,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public String getStmt(String stmt, String row, String tableName) {
     String[] columnValues = row.split(",");
     String replaceString = stmt;
-    StructTypeImpl sType = (StructTypeImpl) SnappyDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     ObjectType[] oTypes = sType.getFieldTypes();
     for (int i = 0; i < oTypes.length; i++) {
@@ -1459,7 +1463,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     updateStmt = updateStmt.replace("$tableName", tableName);
     String whereClause = "";
     int tid = getMyTid();
-    StructTypeImpl sType = (StructTypeImpl) SnappyDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     String[] columnNames = sType.getFieldNames();
     ObjectType[] oTypes = sType.getFieldTypes();
@@ -1491,7 +1495,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     deleteStmt = deleteStmt.replace("$tableName", tableName);
     String whereClause = "";
     int tid = getMyTid();
-    StructTypeImpl sType = (StructTypeImpl) SnappyDMLOpsBB.getBB().getSharedMap().get
+    StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName);
     String[] columnNames = sType.getFieldNames();
     ObjectType[] oTypes = sType.getFieldTypes();
