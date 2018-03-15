@@ -165,7 +165,7 @@ def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
 def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
 def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists() 
-def hasGemFireConnectorProject = new File(rootDir, 'snappy-connectors/gemfire-connector/connector/build.gradle').exists()
+def hasGemFireConnectorProject = new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists()
 
 def getProcessId() {
   String name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
@@ -728,8 +728,7 @@ task product(type: Zip) {
        dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
     }
     if(hasGemFireConnectorProject){
-       dependsOn ":snappy-gemfire-connector-snappydata_${scalaBinaryVersion}:jar"
-       dependsOn ":snappy-gemfire-connector-gemfire_${scalaBinaryVersion}:jar"
+       dependsOn ":gemfire-connector:product"
     }
 
   }
@@ -1096,7 +1095,7 @@ task checkAll {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   if (isEnterpriseProduct && hasGemFireConnectorProject) {
-    dependsOn ":snappy-gemfire-connector-snappydata_${scalaBinaryVersion}:check"
+    dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
     dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
