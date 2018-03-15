@@ -167,5 +167,7 @@ object SortedColumnTests extends Logging {
     session.sql(s"drop table $colTableName")
     session.conf.unset(Property.ColumnBatchSize.name)
     session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+    session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
   }
 }

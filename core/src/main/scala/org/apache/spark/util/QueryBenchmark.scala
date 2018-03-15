@@ -222,7 +222,6 @@ private[spark] class QueryBenchmark(
     numFuncExecuted.indices.foreach(threadId => {
       val runnable = new Runnable {
         override def run(): Unit = {
-          var i = 0
           while (true) {
             try {
               val i = (numFuncExecuted(threadId) + threadId) % numIters
