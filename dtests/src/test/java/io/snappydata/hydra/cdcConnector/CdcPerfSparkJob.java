@@ -34,10 +34,7 @@ public class CdcPerfSparkJob {
   public static ArrayList<String> queryList;
   public static int THREAD_COUNT;
   public static Long finalTime = 0l;
-  public static List<Long> plTimeList = new CopyOnWriteArrayList<>();
-  // public static HashMap<List<Integer>,Map<String,Long>> plTimeListHashMap = new HashMap<List<Integer>,Map<String,Long>>(THREAD_COUNT);
-
-
+  
   public static Connection getConnection() {
     Connection conn = null;
     // System.out.println("Getting connection");
@@ -63,7 +60,7 @@ public class CdcPerfSparkJob {
     HashMap<List<Integer>, Map<String, Long>> plTimeListHashMap = new HashMap<>();
     conn = getConnection();
     try {
-      int queryPos = rnd.nextInt(4);
+      int queryPos = rnd.nextInt(qlist.size());
       System.out.println(ThreadId + " warm up query = " + qlist.get(queryPos));
 
       // warm up task loop:
@@ -75,7 +72,10 @@ public class CdcPerfSparkJob {
       System.out.println(ThreadId + " executing query = " + qlist.get(queryPos));
       System.out.println();
       startTime = System.currentTimeMillis();
-      conn.createStatement().executeQuery(qlist.get(queryPos));
+      ResultSet rs = conn.createStatement().executeQuery(qlist.get(queryPos));
+      while (rs.next()) {
+
+      }
       endTime = System.currentTimeMillis();
       timeTaken = (endTime - startTime);
       queryTimeMap.put(qlist.get(queryPos), timeTaken);
