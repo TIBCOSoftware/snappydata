@@ -129,6 +129,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.sql(s"drop table $colTableName")
       session.conf.unset(Property.ColumnBatchSize.name)
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
+      session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+      session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
     }
   }
 
@@ -150,7 +152,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numElements = 999551
     val numBuckets = cores
     val numIters = 100
-    val totalNumThreads = 1 // cores
+    val totalNumThreads = cores
     val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
       "PointQuery multithreaded", numTimesInsert = 10, isMultithreaded = true,
@@ -219,6 +221,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val sessionArray = new Array[SnappySession](totalThreads)
     sessionArray.indices.foreach(i => {
       sessionArray(i) = session.newSession()
+      sessionArray(i).conf.set(Property.ColumnMaxDeltaRows.name, "100")
+      sessionArray(i).conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+      sessionArray(i).conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
     })
 
     def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
@@ -238,6 +243,13 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       }
 
       def cleanup(): Unit = {
+        sessionArray.indices.foreach(i => {
+          sessionArray(i).clear()
+          session.conf.unset(Property.ColumnBatchSize.name)
+          session.conf.unset(Property.ColumnMaxDeltaRows.name)
+          session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+          session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+        })
         SnappySession.clearAllCache()
         defaults.foreach { case (k, v) => session.conf.set(k, v) }
         doGC()
@@ -269,6 +281,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       }
       session.conf.unset(Property.ColumnBatchSize.name)
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
+      session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+      session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
     }
   }
 }
