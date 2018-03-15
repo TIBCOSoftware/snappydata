@@ -554,7 +554,7 @@ object CachedDataFrame
         data.arrayOffset() + data.position(), data.remaining())
   }
 
-  @transient private[sql] val nextExecutionIdMethod = {
+  @transient private[sql] lazy val nextExecutionIdMethod = {
     val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
     m.setAccessible(true)
     m
