@@ -17,6 +17,8 @@
 
 package org.apache.spark.sql.store
 
+import scala.concurrent.duration.FiniteDuration
+
 import io.snappydata.Property
 
 import org.apache.spark.SparkConf
@@ -27,6 +29,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.util.{Benchmark, QueryBenchmark}
 import org.apache.spark.sql.snappy._
+import scala.concurrent.duration._
 
 /**
  * Tests for column table having sorted columns.
@@ -147,6 +150,20 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // while (true) {}
   }
 
+  test("PointQuery performance multithreaded") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 999551
+    val numBuckets = cores
+    val numIters = 100
+    val totalNumThreads = 4 * cores
+    val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
+    benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
+      "PointQuery multithreaded", numTimesInsert = 10, doVerifyFullSize = false,
+      totalThreads = totalNumThreads, runTime = totalTime)(executeQuery_PointQuery)
+    // while (true) {}
+  }
+
   test("RangeQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
@@ -161,7 +178,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
   var lastFailedIteration: Int = Int.MinValue
 
   def executeQuery_PointQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int): Boolean = {
+      iterCount: Int, numThreads: Int, threadId: Int): Boolean = {
     val param = if (iterCount != lastFailedIteration) {
       SortedColumnPerformanceTests.getParam(iterCount,
         SortedColumnPerformanceTests.params)
@@ -169,18 +186,19 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) 10 else 1
     val result = session.sql(query).collect()
-    val passed = result.length === expectedNumResults
+    val passed = numThreads > 1 || result.length === expectedNumResults
     if (!passed && iterCount != -1) {
       lastFailedIteration = iterCount
     }
     // scalastyle:off
-    // println(s"Query = $query result=${result.length} $passed $expectedNumResults")
+    // println(s"Query = $query result=${result.length} $expectedNumResults $iterCount" +
+    //    s" $numThreads $threadId")
     // scalastyle:on
     passed
   }
 
   def executeQuery_RangeQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int): Boolean = {
+      iterCount: Int, numThreads: Int, threadId: Int): Boolean = {
     val param1 = if (iterCount != lastFailedIteration) {
       SortedColumnPerformanceTests.getParam(iterCount,
         SortedColumnPerformanceTests.params1)
@@ -204,16 +222,23 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     passed
   }
 
+  // scalastyle:off
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long, numIters: Int, queryMark: String, doVerifyFullSize: Boolean = false,
-      numTimesInsert: Int = 1, numTimesUpdate: Int = 1)
-      (f : (SnappySession, String, Int, Int) => Boolean): Unit = {
+      numTimesInsert: Int = 1, numTimesUpdate: Int = 1, totalThreads: Int = 1,
+      runTime: FiniteDuration = 2.seconds)
+      // scalastyle:on
+      (f : (SnappySession, String, Int, Int, Int, Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", numElements,
-      outputPerIteration = true)
+      outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
     val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, numTimesInsert))
     val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements, numTimesUpdate))
+    val sessionArray = new Array[SnappySession](totalThreads)
+    sessionArray.indices.foreach(i => {
+      sessionArray(i) = session.newSession()
+    })
 
     def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
       val defaults = params.keys.flatMap {
@@ -246,8 +271,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         doGC()
       }
 
-      SortedColumnPerformanceTests.addCaseWithCleanup(benchmark, name, numIters,
-        prepare, cleanup, testCleanup) { i => f(session, colTableName, numIters, i)}
+      SortedColumnPerformanceTests.addCaseWithCleanup(benchmark, name, numIters, prepare,
+        cleanup, testCleanup, numThreads = totalThreads) { (iteratorIndex, threadId) =>
+        f(sessionArray(threadId), colTableName, numIters, iteratorIndex, totalThreads, threadId)}
     }
 
     try {
@@ -259,7 +285,11 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       addBenchmark(s"$queryMark", Map.empty)
       benchmark.run()
     } finally {
-      session.sql(s"drop table $colTableName")
+      try {
+        session.sql(s"drop table $colTableName")
+      } catch {
+        case _: Throwable =>
+      }
       session.conf.unset(Property.ColumnBatchSize.name)
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
     }
@@ -297,13 +327,17 @@ object SortedColumnPerformanceTests {
       prepare: () => Unit,
       cleanup: () => Unit,
       testCleanup: () => Unit,
-      testPrepare: () => Unit = () => Unit)(f: Int => Boolean): Unit = {
-    val timedF = (timer: Benchmark.Timer) => {
-      testPrepare()
-      timer.startTiming()
-      val ret = f(timer.iteration)
-      timer.stopTiming()
-      testCleanup()
+      testPrepare: () => Unit = () => Unit, numThreads: Int = 0)(f: (Int, Int) => Boolean): Unit = {
+    val timedF = (timer: Benchmark.Timer, threadId: Int) => {
+      if (numThreads == 1) {
+        testPrepare()
+        timer.startTiming()
+      }
+      val ret = f(timer.iteration, threadId)
+      if (numThreads == 1) {
+        testCleanup()
+        timer.stopTiming()
+      }
       ret
     }
     benchmark.benchmarks += QueryBenchmark.Case(name, timedF, numIters, prepare, cleanup)
