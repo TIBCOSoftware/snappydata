@@ -18,15 +18,16 @@
 package org.apache.spark.util
 
 import java.io.{OutputStream, PrintStream}
-import java.util.concurrent.ThreadLocalRandom
+import java.util
+import java.util.concurrent.{Executors, ThreadLocalRandom}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
-import scala.util.Random
 
 import org.apache.commons.io.output.TeeOutputStream
 
+import org.apache.spark.internal.Logging
 import org.apache.spark.util.Benchmark.Result
 
 /**
@@ -53,10 +54,12 @@ private[spark] class QueryBenchmark(
     name: String,
     valuesPerIteration: Long,
     minNumIters: Int = 2,
+    numThreads: Int = 1,
     warmupTime: FiniteDuration = 2.seconds,
     minTime: FiniteDuration = 2.seconds,
     outputPerIteration: Boolean = false,
-    output: Option[OutputStream] = None) {
+    output: Option[OutputStream] = None) extends Logging {
+
   import QueryBenchmark._
   val benchmarks = mutable.ArrayBuffer.empty[QueryBenchmark.Case]
   val out = if (output.isDefined) {
@@ -76,10 +79,10 @@ private[spark] class QueryBenchmark(
       name: String,
       numIters: Int = 0,
       prepare: () => Unit = () => { },
-      cleanup: () => Unit = () => { })(f: Int => Boolean): Unit = {
-    val timedF = (timer: Benchmark.Timer) => {
+      cleanup: () => Unit = () => { })(f: (Int, Int) => Boolean): Unit = {
+    val timedF = (timer: Benchmark.Timer, threadId: Int) => {
       timer.startTiming()
-      val ret = f(timer.iteration)
+      val ret = f(timer.iteration, threadId)
       timer.stopTiming()
       ret
     }
@@ -94,7 +97,7 @@ private[spark] class QueryBenchmark(
    * @param name of the benchmark case
    * @param numIters if non-zero, forces exactly this many iterations to be run
    */
-  def addTimerCase(name: String, numIters: Int = 0)(f: Benchmark.Timer => Boolean): Unit = {
+  def addTimerCase(name: String, numIters: Int = 0)(f: (Benchmark.Timer, Int) => Boolean): Unit = {
     benchmarks += QueryBenchmark.Case(name, f, numIters)
   }
 
@@ -112,7 +115,9 @@ private[spark] class QueryBenchmark(
       println("  Running case: " + c.name)
       try {
         c.prepare()
-        measure(valuesPerIteration, c.numIters)(c.fn)
+        if (numThreads > 1) {
+          measureMultiThreaded(valuesPerIteration, c.numIters)(c.fn)
+        } else measure(valuesPerIteration, c.numIters)(c.fn)
       } finally {
         c.cleanup()
       }
@@ -142,11 +147,11 @@ private[spark] class QueryBenchmark(
    * Runs a single function `f` for iters, returning the average time the function took and
    * the rate of the function.
    */
-  def measure(num: Long, overrideNumIters: Int)(f: Benchmark.Timer => Boolean): Result = {
+  def measure(num: Long, overrideNumIters: Int)(f: (Benchmark.Timer, Int) => Boolean): Result = {
     System.gc()  // ensures garbage from previous cases don't impact this one
     val warmupDeadline = warmupTime.fromNow
     while (!warmupDeadline.isOverdue) {
-      f(new Benchmark.Timer(-1))
+      f(new Benchmark.Timer(-1), 0)
     }
     val minIters = if (overrideNumIters != 0) overrideNumIters else minNumIters
     val minDuration = if (overrideNumIters != 0) 0 else minTime.toNanos
@@ -156,7 +161,7 @@ private[spark] class QueryBenchmark(
       var j = 1
       while (j < 101) {
         val timer = new Benchmark.Timer(i)
-        val ret = f(timer)
+        val ret = f(timer, 0)
         val runTime = timer.totalTime()
         if (ret || j == 100) {
           runTimes += runTime
@@ -186,14 +191,85 @@ private[spark] class QueryBenchmark(
     // scalastyle:on
     val best = runTimes.min
     val avg = runTimes.sum / runTimes.size
-    Result(avg / 1000000.0, num / (best / 1000.0), best / 1000000.0)
+    Result(avg / 1000000.0, num / (avg / 1000.0), best / 1000000.0)
+  }
+
+  /**
+   * Runs a single function `f` for minDuration time (though slight misnomer),
+   * returning total number of times the function took, that will be printed.
+   * Ignore returned Result.
+   */
+  def measureMultiThreaded(num: Long, overrideNumIters: Int)
+      (f: (Benchmark.Timer, Int) => Boolean): Result = {
+    System.gc()  // ensures garbage from previous cases don't impact this one
+    val warmupDeadline = warmupTime.fromNow
+    while (!warmupDeadline.isOverdue) {
+      f(new Benchmark.Timer(-1), 0)
+    }
+
+    val numIters = if (overrideNumIters > 0) overrideNumIters else minNumIters
+    val timerList = new Array[Benchmark.Timer](numIters)
+    timerList.indices.foreach(i => {
+      timerList(i) = new Benchmark.Timer(i)
+    })
+
+    // numThreads threads will be executed for minTime
+    val numFuncExecuted = new Array[Int](numThreads)
+    val prematureExit = new Array[Boolean](numThreads)
+    numFuncExecuted.indices.foreach(numFuncExecuted(_) = 0)
+    val executorPool = Executors.newFixedThreadPool(numFuncExecuted.length)
+    val futures = new Array[util.concurrent.Future[_]](numFuncExecuted.length)
+    numFuncExecuted.indices.foreach(threadId => {
+      val runnable = new Runnable {
+        override def run(): Unit = {
+          var i = 0
+          while (true) {
+            try {
+              val i = (numFuncExecuted(threadId) + threadId) % numIters
+              f(timerList(i), threadId)
+              numFuncExecuted(threadId) += 1
+              // scalastyle:off
+              // println(s"while-true $threadId $i ${numFuncExecuted(threadId)}")
+              // scalastyle:on
+            } catch {
+              case _: InterruptedException =>
+                logError(s"$threadId got InterruptedException")
+                return
+              case t: Throwable =>
+                prematureExit(threadId) = true
+                logError(s"$threadId" + t.getMessage, t)
+                return
+            }
+          }
+        }
+      }
+      futures(threadId) = executorPool.submit(runnable)
+      None
+    })
+    Thread.sleep(minTime.toMillis)
+    futures.foreach(f => {
+      f.cancel(true)
+    })
+
+    // scalastyle:off
+    prematureExit.indices.foreach(i => if (prematureExit(i)) println(s"Thread $i failed"))
+    println(s"  Stopped $minTime, Query ran ${numFuncExecuted.sum} times with $numThreads threads")
+    numFuncExecuted.indices.foreach(i => {
+      println(s"  Individual threads-$i function count ${numFuncExecuted(i)}")
+    })
+    // scalastyle:on
+
+    prematureExit.foreach(b => assert(!b))
+    val best = numFuncExecuted.min
+    val avg = numFuncExecuted.sum / numFuncExecuted.length
+    Result(avg, num / avg, best)
   }
 }
 
 private[spark] object QueryBenchmark {
   case class Case(
       name: String,
-      fn: Benchmark.Timer => Boolean,
+      fn: (Benchmark.Timer, Int) => Boolean,
       numIters: Int,
       prepare: () => Unit = () => { },
       cleanup: () => Unit = () => { })
