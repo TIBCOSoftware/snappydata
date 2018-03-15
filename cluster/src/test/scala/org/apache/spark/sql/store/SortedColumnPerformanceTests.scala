@@ -156,11 +156,12 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numElements = 999551
     val numBuckets = cores
     val numIters = 100
-    val totalNumThreads = 4 * cores
+    val totalNumThreads = 1 // cores
     val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
     benchmarkQuery(snc, colTableName, numBuckets, numElements, numIters,
-      "PointQuery multithreaded", numTimesInsert = 10, doVerifyFullSize = false,
-      totalThreads = totalNumThreads, runTime = totalTime)(executeQuery_PointQuery)
+      "PointQuery multithreaded", numTimesInsert = 10, isMultithreaded = true,
+      doVerifyFullSize = false, totalThreads = totalNumThreads,
+      runTime = totalTime)(executeQuery_PointQuery)
     // while (true) {}
   }
 
@@ -178,7 +179,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
   var lastFailedIteration: Int = Int.MinValue
 
   def executeQuery_PointQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int): Boolean = {
+      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean): Boolean = {
     val param = if (iterCount != lastFailedIteration) {
       SortedColumnPerformanceTests.getParam(iterCount,
         SortedColumnPerformanceTests.params)
@@ -186,7 +187,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) 10 else 1
     val result = session.sql(query).collect()
-    val passed = numThreads > 1 || result.length === expectedNumResults
+    val passed = isMultithreaded || result.length === expectedNumResults
     if (!passed && iterCount != -1) {
       lastFailedIteration = iterCount
     }
@@ -198,7 +199,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
   }
 
   def executeQuery_RangeQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int): Boolean = {
+      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean): Boolean = {
     val param1 = if (iterCount != lastFailedIteration) {
       SortedColumnPerformanceTests.getParam(iterCount,
         SortedColumnPerformanceTests.params1)
@@ -212,7 +213,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // val expectedNumResults = SortedColumnPerformanceTests.getParam(iterCount,
     //   SortedColumnPerformanceTests.params3)
     val result = session.sql(query).collect()
-    val passed = result.length > 0
+    val passed = isMultithreaded || result.length > 0
     if (!passed &&  iterCount != -1) {
       lastFailedIteration = iterCount
     }
@@ -224,12 +225,12 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
   // scalastyle:off
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
-      numElements: Long, numIters: Int, queryMark: String, doVerifyFullSize: Boolean = false,
-      numTimesInsert: Int = 1, numTimesUpdate: Int = 1, totalThreads: Int = 1,
-      runTime: FiniteDuration = 2.seconds)
+      numElements: Long, numIters: Int, queryMark: String, isMultithreaded: Boolean = false,
+      doVerifyFullSize: Boolean = false, numTimesInsert: Int = 1, numTimesUpdate: Int = 1,
+      totalThreads: Int = 1, runTime: FiniteDuration = 2.seconds)
       // scalastyle:on
-      (f : (SnappySession, String, Int, Int, Int, Int) => Boolean): Unit = {
-    val benchmark = new QueryBenchmark(s"Benchmark $queryMark", numElements,
+      (f : (SnappySession, String, Int, Int, Int, Int, Boolean) => Boolean): Unit = {
+    val benchmark = new QueryBenchmark(s"Benchmark $queryMark", isMultithreaded, numElements,
       outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
@@ -272,8 +273,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       }
 
       SortedColumnPerformanceTests.addCaseWithCleanup(benchmark, name, numIters, prepare,
-        cleanup, testCleanup, numThreads = totalThreads) { (iteratorIndex, threadId) =>
-        f(sessionArray(threadId), colTableName, numIters, iteratorIndex, totalThreads, threadId)}
+        cleanup, testCleanup, isMultithreaded) { (iteratorIndex, threadId) =>
+        f(sessionArray(threadId), colTableName, numIters, iteratorIndex, totalThreads, threadId,
+          isMultithreaded)}
     }
 
     try {
@@ -327,14 +329,15 @@ object SortedColumnPerformanceTests {
       prepare: () => Unit,
       cleanup: () => Unit,
       testCleanup: () => Unit,
-      testPrepare: () => Unit = () => Unit, numThreads: Int = 0)(f: (Int, Int) => Boolean): Unit = {
+      isMultithreaded: Boolean,
+      testPrepare: () => Unit = () => Unit)(f: (Int, Int) => Boolean): Unit = {
     val timedF = (timer: Benchmark.Timer, threadId: Int) => {
-      if (numThreads == 1) {
+      if (!isMultithreaded) {
         testPrepare()
         timer.startTiming()
       }
       val ret = f(timer.iteration, threadId)
-      if (numThreads == 1) {
+      if (!isMultithreaded) {
         testCleanup()
         timer.stopTiming()
       }
