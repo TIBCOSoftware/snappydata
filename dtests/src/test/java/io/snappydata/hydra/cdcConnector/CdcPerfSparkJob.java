@@ -17,10 +17,15 @@ package io.snappydata.hydra.cdcConnector;
  * LICENSE file.
  */
 
+import hydra.Log;
+import io.snappydata.hydra.security.SnappySecurityPrms;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
@@ -29,8 +34,60 @@ public class CdcPerfSparkJob {
   public static ArrayList<String> queryList;
   public static int THREAD_COUNT;
   public static Long finalTime = 0l;
+  public static List<Long> plTimeList = new CopyOnWriteArrayList<>();
+  // public static HashMap<List<Integer>,Map<String,Long>> plTimeListHashMap = new HashMap<List<Integer>,Map<String,Long>>(THREAD_COUNT);
 
-  public static long runQuery() {
+
+  public static Connection getConnection() {
+    Connection conn = null;
+    // System.out.println("Getting connection");
+    String url = "jdbc:snappydata://localhost:1527";
+    String driver = "io.snappydata.jdbc.ClientDriver";
+    try {
+      Class.forName(driver);
+      conn = DriverManager.getConnection(url);
+    } catch (Exception ex) {
+      System.out.println("Caught exception in getConnection() method" + ex.getMessage());
+    }
+    return conn;
+  }
+
+  public static HashMap<List<Integer>, Map<String, Long>> runPointLookupQueries(ArrayList<String> qlist, Integer ThreadId) {
+    long timeTaken = 0l;
+    long startTime;
+    long endTime;
+    Random rnd = new Random();
+    Connection conn;
+    List<Integer> threadname = new CopyOnWriteArrayList<>();
+    Map<String, Long> queryTimeMap = new HashMap<>();
+    HashMap<List<Integer>, Map<String, Long>> plTimeListHashMap = new HashMap<>();
+    conn = getConnection();
+    try {
+      int queryPos = rnd.nextInt(4);
+      System.out.println(ThreadId + " warm up query = " + qlist.get(queryPos));
+
+      // warm up task loop:
+      for (int i = 0; i < 100; i++) {  // iterrate each query 100 times.
+        conn.createStatement().executeQuery(qlist.get(queryPos));
+      }
+
+      threadname.add(ThreadId);
+      System.out.println(ThreadId + " executing query = " + qlist.get(queryPos));
+      System.out.println();
+      startTime = System.currentTimeMillis();
+      conn.createStatement().executeQuery(qlist.get(queryPos));
+      endTime = System.currentTimeMillis();
+      timeTaken = (endTime - startTime);
+      queryTimeMap.put(qlist.get(queryPos), timeTaken);
+      plTimeListHashMap.put(threadname, queryTimeMap); // Hash Map contains (threadname ->(query,queryExecutionTime))
+    } catch (Exception ex) {
+      System.out.println("Caught Exception in runPointLooUpQueries() method" + ex.getMessage());
+    }
+
+    return plTimeListHashMap;
+  }
+
+  public static long runScanQuery() {
     Connection conn = null;
     long timeTaken = 0l;
     try {
@@ -38,27 +95,21 @@ public class CdcPerfSparkJob {
       Random rnd = new Random();
       long startTime;
       long endTime;
-      int numItr= 200;
-      System.out.println("Getting connection");
-      String url = "jdbc:snappydata://dev11:1527";
-      String driver = "io.snappydata.jdbc.ClientDriver";
-      Class.forName(driver);
+      int numItr = 200;
 
-
-      //conn = TomcatConnectionPoolForSparkApp.getConnection();
-      conn = DriverManager.getConnection(url);
+      conn = getConnection();
       String query = "SELECT * FROM POSTAL_ADDRESS WHERE CNTC_ID = ? AND CLIENT_ID = ?";
       PreparedStatement ps = conn.prepareStatement(query);
 
-       // warm up loop
+      // warm up loop
       for (int i = 0; i < 100; i++) {
         ps.executeQuery();
       }
 
       // actuall query execution task
       startTime = System.currentTimeMillis();
-      for(int i = 0 ; i < numItr ; i++) {
-       int CLIENT_ID = rnd.nextInt(10000);
+      for (int i = 0; i < numItr; i++) {
+        int CLIENT_ID = rnd.nextInt(10000);
         int CNTC_ID = rnd.nextInt(10000);
         ps.setInt(1, CNTC_ID);
         ps.setInt(2, CLIENT_ID);
@@ -66,13 +117,12 @@ public class CdcPerfSparkJob {
         while (rs.next()) {
           String CITY = rs.getString("CTY");
           String COUNTRY = rs.getString("CNTY");
-       //   System.out.println("   " + CITY + " " + COUNTRY);
         }
-       }
+      }
       endTime = System.currentTimeMillis();
       timeTaken = (endTime - startTime);///numItr;
-      System.out.println("Query executed successfully and with "+numItr+" iterrations ,finished in " + timeTaken + " Time(ms)");
-      System.out.println("Avg time of "+numItr+" iterration is " +timeTaken/numItr + " Time(ms)");
+      System.out.println("Query executed successfully and with " + numItr + " iterrations ,finished in " + timeTaken + " Time(ms)");
+      System.out.println("Avg time of " + numItr + " iterration is " + timeTaken / numItr + " Time(ms)");
 
     } catch (Exception e) {
       System.out.println("Caught exception " + e.getMessage());
@@ -86,10 +136,36 @@ public class CdcPerfSparkJob {
     return timeTaken;
   }
 
+  public static ArrayList getQueryArr(String fileName) {
+    System.out.println("QueryFile Name = " + fileName);
+    ArrayList<String> queries = new ArrayList<String>();
+    try {
+      BufferedReader br = new BufferedReader(new FileReader(fileName));
+      String line;
+      while ((line = br.readLine()) != null) {
+        String[] splitData = line.split(";");
+        for (int i = 0; i < splitData.length; i++) {
+          if (!(splitData[i] == null) || !(splitData[i].length() == 0)) {
+            String qry = splitData[i];
+            queries.add(qry);
+          }
+        }
+      }
+      br.close();
+    } catch (FileNotFoundException e) {
+    } catch (IOException io) {
+    }
+    return queries;
+  }
+
   public static void main(String[] args) throws InterruptedException {
-    queryList = new ArrayList<String>();
     THREAD_COUNT = Integer.parseInt(args[0]);
+    String path = args[1];
+    String isScanQuery = args[2];
+    queryList = getQueryArr(path);
+
     final List<Long> timeList = new CopyOnWriteArrayList<>();
+    final List<HashMap<List<Integer>, Map<String, Long>>> plQryTimeList = new CopyOnWriteArrayList<>();
     final CountDownLatch startBarierr = new CountDownLatch(THREAD_COUNT + 1);
     final CountDownLatch finishBarierr = new CountDownLatch(THREAD_COUNT);
     for (int i = 0; i < THREAD_COUNT; i++) {
@@ -100,11 +176,15 @@ public class CdcPerfSparkJob {
           System.out.println("Thread " + iterationIndex + " started");
           try {
             startBarierr.await();
-            long time = runQuery();
-            long actualTime = time/200;
-            timeList.add(actualTime);// a CopyOnWriteArray list to store the query execution time of each thread
-            System.out.println("Time returned is " + time + " finaltime is = " + actualTime);
-            System.out.println("Thread " + iterationIndex + " finished ");
+            if (isScanQuery.equals("false"))
+              plQryTimeList.add(runPointLookupQueries(queryList, iterationIndex));
+            else {
+              long scanTime = runScanQuery();
+              long actualTime = scanTime / 200;
+              timeList.add(actualTime);// a CopyOnWriteArray list to store the query execution time of each thread
+              System.out.println("Time returned is " + scanTime + " finaltime is = " + actualTime);
+              System.out.println("Thread " + iterationIndex + " finished ");
+            }
             finishBarierr.countDown(); //current thread finished, send mark
           } catch (InterruptedException e) {
             throw new AssertionError("Unexpected thread interrupting");
@@ -116,7 +196,20 @@ public class CdcPerfSparkJob {
     startBarierr.await(); //await start for all thread
     finishBarierr.await(); //wait each thread
 
-    //finally when all the threads have finished query execution,add all the query execution time from the list.
+    //finally when all the threads have finished executing query,add all the query execution time from the list.
+    for (int j = 0; j < plQryTimeList.size(); j++) {
+      HashMap<List<Integer>, Map<String, Long>> tempHashMap = plQryTimeList.get(j);
+      for (Map.Entry<List<Integer>, Map<String, Long>> entry : tempHashMap.entrySet()) {
+        System.out.println();
+        System.out.println("The thread id is " + entry.getKey());
+        Map<String, Long> queryTimeMap = entry.getValue();
+        for (Map.Entry<String, Long> val : queryTimeMap.entrySet()) {
+          long time = val.getValue();
+          System.out.println("Query = " + val.getKey() + " took = " + val.getValue() + " ms to execute");
+        }
+      }
+    }
+
     for (int i = 0; i < timeList.size(); i++) {
       finalTime += timeList.get(i);
     }
