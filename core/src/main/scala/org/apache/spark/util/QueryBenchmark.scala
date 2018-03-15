@@ -52,6 +52,7 @@ import org.apache.spark.util.Benchmark.Result
  */
 private[spark] class QueryBenchmark(
     name: String,
+    isMultithreaded: Boolean,
     valuesPerIteration: Long,
     minNumIters: Int = 2,
     numThreads: Int = 1,
@@ -115,9 +116,8 @@ private[spark] class QueryBenchmark(
       println("  Running case: " + c.name)
       try {
         c.prepare()
-        if (numThreads > 1) {
-          measureMultiThreaded(valuesPerIteration, c.numIters)(c.fn)
-        } else measure(valuesPerIteration, c.numIters)(c.fn)
+        if (isMultithreaded) measureMultiThreaded(valuesPerIteration, c.numIters)(c.fn)
+        else measure(valuesPerIteration, c.numIters)(c.fn)
       } finally {
         c.cleanup()
       }
