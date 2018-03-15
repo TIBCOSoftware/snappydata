@@ -26,17 +26,6 @@ import org.apache.spark.util.SnappyUtils
 
 object ToolsCallbackImpl extends ToolsCallback {
 
-  def getHashPartitioning(partitionColumns: Seq[Expression],
-      numPartitions: Int, numBuckets: Int): Partitioning = {
-    HashPartitioning(partitionColumns, numPartitions, numBuckets)
-  }
-
-  override def checkHashPartitioning(partitioning: Partitioning): Option[
-      (Seq[Expression], Int, Int)] = partitioning match {
-    case p: HashPartitioning => Some(p.expressions, p.numPartitions, p.numBuckets)
-    case _ => None
-  }
-
   override def updateUI(sc: SparkContext): Unit = {
     SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
   }

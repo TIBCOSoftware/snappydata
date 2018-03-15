@@ -274,13 +274,32 @@ class SnappySessionState(snappySession: SnappySession)
       }
     }
 
-    private def orderJoinKeys(plan: LogicalPlan, joinKeys: Seq[Expression]): Seq[Expression] = {
-      val partCols = getPartCols(plan)
-      if (partCols ne Nil) {
-        val (keyOrder, _) = getKeyOrder(plan, joinKeys, partCols)
-        keyOrder.zip(joinKeys).sortBy(x => x._1).unzip._2
+    private def orderJoinKeys(left: LogicalPlan,
+        right: LogicalPlan,
+        leftKeys: Seq[Expression],
+        rightKeys: Seq[Expression]): (Seq[Expression], Seq[Expression]) = {
+      val leftPartCols = getPartCols(left)
+      val rightPartCols = getPartCols(right)
+      if (leftPartCols ne Nil) {
+        val (keyOrder, allPartPresent) = getKeyOrder(left, leftKeys, leftPartCols)
+        if (allPartPresent) {
+          val leftOrderedKeys = keyOrder.zip(leftKeys).sortWith(_._1 < _._1).unzip._2
+          val rightOrderedKeys = keyOrder.zip(rightKeys).sortWith(_._1 < _._1).unzip._2
+          (leftOrderedKeys, rightOrderedKeys)
+        } else {
+          (leftKeys, rightKeys)
+        }
+      } else if (rightPartCols ne Nil) {
+        val (keyOrder, allPartPresent) = getKeyOrder(right, rightKeys, rightPartCols)
+        if (allPartPresent) {
+          val leftOrderedKeys = keyOrder.zip(leftKeys).sortWith(_._1 < _._1).unzip._2
+          val rightOrderedKeys = keyOrder.zip(rightKeys).sortWith(_._1 < _._1).unzip._2
+          (leftOrderedKeys, rightOrderedKeys)
+        } else {
+          (leftKeys, rightKeys)
+        }
       } else {
-        joinKeys
+        (leftKeys, rightKeys)
       }
     }
 
@@ -290,8 +309,7 @@ class SnappySessionState(snappySession: SnappySession)
         leftKeys: Seq[Expression],
         rightKeys: Seq[Expression],
         otherCondition: Option[Expression]): LogicalPlan = {
-      val leftOrderedKeys = orderJoinKeys(left, leftKeys)
-      val rightOrderedKeys = orderJoinKeys(right, rightKeys)
+      val (leftOrderedKeys, rightOrderedKeys) = orderJoinKeys(left, right, leftKeys, rightKeys)
       val joinPairs = leftOrderedKeys.zip(rightOrderedKeys)
       val newJoin = joinPairs.map(EqualTo.tupled).reduceOption(And)
       val allConditions = (newJoin ++ otherCondition).reduceOption(And)

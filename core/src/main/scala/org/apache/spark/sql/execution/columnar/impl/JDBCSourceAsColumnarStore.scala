@@ -547,8 +547,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
             connProperties.hikariCP),
-          // TODO: correct to proper pruner as part of SNAP-2194
-          schema, this, parts, -1, embdClusterRelDestroyVersion, delayRollover)
+          schema, this, parts, prunePartitions , embdClusterRelDestroyVersion, delayRollover)
     }
   }
 

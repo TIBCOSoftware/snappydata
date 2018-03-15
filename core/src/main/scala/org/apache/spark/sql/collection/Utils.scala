@@ -1032,13 +1032,3 @@ object ToolsCallbackInit extends Logging {
     }
   }
 }
-
-object HashPartitioningExtract {
-  def unapply(partitioning: Partitioning): Option[(Seq[Expression],
-      Int, Int)] = {
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks ne null) {
-      callbacks.checkHashPartitioning(partitioning)
-    } else None
-  }
-}

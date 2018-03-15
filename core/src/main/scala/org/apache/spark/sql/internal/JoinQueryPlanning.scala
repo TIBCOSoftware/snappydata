@@ -44,7 +44,11 @@ trait JoinQueryPlanning {
               case a: Alias if ke.exprId == a.exprId => unAlias(a.child)
               case e: NamedExpression if (ke ne e) && ke.exprId == e.exprId => e
             } match {
-              case Some(e) => part.indexWhere(_.semanticEquals(e))
+              case Some(e) =>
+                val j = part.indexWhere(_.semanticEquals(e))
+                if (j < 0) {
+                  Int.MaxValue
+                } else j
               case None => Int.MaxValue
             }
           case _ => Int.MaxValue
