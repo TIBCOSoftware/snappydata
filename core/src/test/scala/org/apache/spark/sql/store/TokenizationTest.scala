@@ -892,6 +892,42 @@ class TokenizationTest
 
     assert(cacheMap.size() == 2)
 
+    // check with small ranges to check stats filtering
+    query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('AQ', 'AS', '9E')"
+    query2 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('YV', 'XE', 'WN')"
+
+    res1 = spark.sql(query1).collect()
+    res2 = spark.sql(query2).collect()
+    df1 = snc.sql(query1)
+    df2 = snc.sql(query2)
+
+    checkAnswer(df1, res1)
+    checkAnswer(df2, res2)
+    checkDynInSet(df1)
+    checkDynInSet(df2)
+
+    assert(cacheMap.size() == 3)
+
+    // check with null values
+    query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('AQ', null, '9E')"
+    query2 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('YV', null, 'WN')"
+
+    res1 = spark.sql(query1).collect()
+    res2 = spark.sql(query2).collect()
+    df1 = snc.sql(query1)
+    df2 = snc.sql(query2)
+
+    checkAnswer(df1, res1)
+    checkAnswer(df2, res2)
+    checkDynInSet(df1)
+    checkDynInSet(df2)
+
+    assert(cacheMap.size() == 4)
+
     // check with null values and constant expressions
     query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
         "('YV', 'AQ', 'VX', null, 'US', 'EV', 'MQ', concat('D', 'L'), 'OO', 'XE', 'NW', 'UA')"
@@ -908,7 +944,7 @@ class TokenizationTest
     checkDynInSet(df1)
     checkDynInSet(df2)
 
-    assert(cacheMap.size() == 3)
+    assert(cacheMap.size() == 5)
 
     // check for non-constant expressions
     query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
@@ -926,7 +962,7 @@ class TokenizationTest
     checkDynInSet(df1, present = false)
     checkDynInSet(df2, present = false)
 
-    assert(cacheMap.size() == 4)
+    assert(cacheMap.size() == 6)
 
     // also check partial delete followed by a full delete
     val count = snc.table(colTableName).count()

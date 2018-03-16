@@ -825,6 +825,11 @@ object ColumnTableScan extends Logging {
       case EqualTo(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
 
+      case In(a: AttributeReference, l) if !l.exists(!LiteralValue.isConstant(_)) =>
+        statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
+      case DynamicInSet(a: AttributeReference, l) if !l.exists(!LiteralValue.isConstant(_)) =>
+        statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
+
       case LessThan(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
         statsFor(a).lowerBound < l
       case LessThan(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
