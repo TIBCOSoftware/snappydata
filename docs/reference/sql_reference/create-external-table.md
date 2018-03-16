@@ -1,6 +1,6 @@
 # CREATE EXTERNAL TABLE
 
-```
+```no-highlight
 CREATE EXTERNAL TABLE [IF NOT EXISTS] [schema_name.]table_name
     [( column-definition	[ , column-definition  ] * )]
     USING datasource
@@ -23,17 +23,17 @@ Specify the file format to use for this table. The data source may be one of TEX
 
 Create an external table using PARQUET data source
 
-```
+```no-highlight
 snappy> CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData');
 ```
 
 Create an external table using CSV data source
 
-```
+```no-highlight
 CREATE EXTERNAL TABLE IF NOT EXISTS CUSTOMER_STAGING USING csv OPTIONS(path '../../quickstart/src/main/resources/customer.csv');
 ```
 
-```
+```no-highlight
 CREATE EXTERNAL TABLE CUSTOMER_STAGING_1 (C_CUSTKEY INTEGER NOT NULL, C_NAME VARCHAR(25) NOT NULL, 
 C_ADDRESS VARCHAR(40) NOT NULL, C_NATIONKEY INTEGER NOT NULL, C_PHONE VARCHAR(15) NOT NULL, 
 C_ACCTBAL DECIMAL(15,2) NOT NULL, C_MKTSEGMENT VARCHAR(10) NOT NULL, C_COMMENT VARCHAR(117) NOT NULL) 
@@ -42,7 +42,7 @@ USING csv OPTIONS (path '../../quickstart/src/main/resources/customer.csv');
 
 You can also load data from AWS S3, as given in the example below:
 
-```
+```no-highlight
 CREATE EXTERNAL TABLE NYCTAXI USING parquet OPTIONS(path 's3a://<AWS_SECRET_KEY>:<AWS_SECRET_ID>@<folder>/<data>');
 ```
 

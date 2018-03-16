@@ -3,7 +3,7 @@
 
 You can stop the cluster using the `sbin/snappy-stop-all.sh` command:
 
-```bash
+```no-highlight
 $ sbin/snappy-stop-all.sh
 The SnappyData Leader has stopped.
 The SnappyData Server has stopped.
