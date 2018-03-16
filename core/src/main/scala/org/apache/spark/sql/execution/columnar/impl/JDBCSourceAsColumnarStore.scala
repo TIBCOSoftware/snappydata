@@ -937,7 +937,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
       val ps = conn.prepareStatement(
         s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, $relDestroyVersion)")
       ps.setString(1, tableName)
-      val bucketPartition = thePart.asInstanceOf[SmartExecutorBucketPartition]
       val bucketString = bucketPartition.bucketId.toString
       ps.setString(2, bucketString)
       ps.executeUpdate()
