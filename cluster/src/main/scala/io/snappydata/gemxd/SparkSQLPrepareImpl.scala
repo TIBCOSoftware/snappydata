@@ -228,7 +228,7 @@ object QuestionMark {
     if (p.pos == 0 && p.dataType == NullType) {
       p.value match {
         case r: Row => Some(r.getInt(0))
-        case None => None
+        case _ => None
       }
     } else None
   }
