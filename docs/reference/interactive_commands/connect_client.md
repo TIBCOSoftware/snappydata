@@ -2,7 +2,7 @@
 
 ## Syntax
 
-``` pre
+```no-highlight
 CONNECT CLIENT 'host:port[;property=value]*' [ AS connectionName ]
 ```
 
@@ -18,7 +18,7 @@ All further commands are processed against the new, current connection.
 
 ## Example
 
-``` pre
+```no-highlight
 SnappyData version 1.0.1 
 snappy> connect client 'localhost:1527' as clientConnection;
 snappy> show connections;
