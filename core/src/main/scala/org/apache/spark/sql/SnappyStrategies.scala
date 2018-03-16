@@ -159,8 +159,8 @@ private[sql] trait SnappyStrategies {
                   .getOrElse(throw new AnalysisException(
                     s"""Cannot resolve column "$colName" among (${r.output})""")))
             // check if join keys match (or are subset of) partitioning columns
-            val (keyOrder, allPartColsPresent) = getKeyOrder(plan, joinKeys, partCols)
-            if (allPartColsPresent) (partCols, keyOrder, scan.numBuckets)
+            val (keyOrder, joinKeySubsetOfPart) = getKeyOrder(plan, joinKeys, partCols)
+            if (joinKeySubsetOfPart) (partCols, keyOrder, scan.numBuckets)
             // return partitioning in any case when checking for broadcast
             else if (checkBroadcastJoin) (partCols, Nil, scan.numBuckets)
             else (Nil, Nil, -1)
@@ -176,8 +176,8 @@ private[sql] trait SnappyStrategies {
             val (cols, _, numPartitions) = getCollocatedPartitioning(
               jType, left, lKeys, right, rKeys, checkBroadcastJoin = true)
             // check if the partitioning of the result is compatible with current
-            val (keyOrder, allPartColsPresent) = getKeyOrder(plan, joinKeys, cols)
-            if (allPartColsPresent) (cols, keyOrder, numPartitions)
+            val (keyOrder, joinKeySubsetOfPart) = getKeyOrder(plan, joinKeys, cols)
+            if (joinKeySubsetOfPart) (cols, keyOrder, numPartitions)
             else (Nil, Nil, -1)
 
           case _ => (Nil, Nil, -1)

@@ -55,17 +55,11 @@ trait JoinQueryPlanning {
         }
       } else i
     }
-    (keyOrder, allPartColumnsPresent(keyOrder, partitioning))
+    (keyOrder, joinKeySubsetOfPart(keyOrder, partitioning))
   }
 
-  private def allPartColumnsPresent(keyOrder: Seq[Int],
+  private def joinKeySubsetOfPart(keyOrder: Seq[Int],
       partitioning: Seq[NamedExpression]): Boolean = {
-    if (partitioning.isEmpty) {
-      false
-    } else {
-      partitioning.zipWithIndex.forall { case (_, i) =>
-        keyOrder.contains(i)
-      }
-    }
+    keyOrder.filterNot(i => i == Int.MaxValue).nonEmpty
   }
 }
