@@ -165,7 +165,8 @@ object SortedColumnPerformanceTests {
       // Now verify
       if (doVerifyFullSize) {
         execute()
-        SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+        SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
+          numTimesInsert = 1, numTimesUpdate = 1)
       }
     } finally {
       session.sql(s"drop table $colTableName")
@@ -177,10 +178,11 @@ object SortedColumnPerformanceTests {
   }
 
   def executeQuery_PointQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean): Boolean = {
+      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
+      numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param = getParam(iterCount, params)
     val query = s"select * from $colTableName where id = $param"
-    val expectedNumResults = if (param % 10 < 6) 10 else 1
+    val expectedNumResults = if (param % 10 < 6) numTimesInsert else numTimesUpdate
     val result = session.sql(query).collect()
     val passed = isMultithreaded || result.length == expectedNumResults
     // scalastyle:off
@@ -191,7 +193,8 @@ object SortedColumnPerformanceTests {
   }
 
   def executeQuery_RangeQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean): Boolean = {
+      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
+      numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param1 = getParam(iterCount, params1)
     val param2 = getParam(iterCount, params2)
     val (low, high) = if (param1 < param2) { (param1, param2)} else (param2, param1)
@@ -211,7 +214,7 @@ object SortedColumnPerformanceTests {
       doVerifyFullSize: Boolean = false, numTimesInsert: Int = 1, numTimesUpdate: Int = 1,
       totalThreads: Int = 1, runTime: FiniteDuration = 2.seconds)
       // scalastyle:on
-      (f : (SnappySession, String, Int, Int, Int, Int, Boolean) => Boolean): Unit = {
+      (f : (SnappySession, String, Int, Int, Int, Int, Boolean, Int, Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", isMultithreaded, numElements,
       outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
@@ -237,7 +240,8 @@ object SortedColumnPerformanceTests {
         insertDF.write.insertInto(colTableName)
         updateDF.write.putInto(colTableName)
         if (doVerifyFullSize) {
-          SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+          SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
+            numTimesInsert, numTimesUpdate)
         }
         doGC()
       }
@@ -262,7 +266,7 @@ object SortedColumnPerformanceTests {
       addCaseWithCleanup(benchmark, name, numIters, prepare,
         cleanup, testCleanup, isMultithreaded) { (iteratorIndex, threadId) =>
         f(sessionArray(threadId), colTableName, numIters, iteratorIndex, totalThreads, threadId,
-          isMultithreaded)}
+          isMultithreaded, numTimesInsert, numTimesUpdate)}
     }
 
     try {

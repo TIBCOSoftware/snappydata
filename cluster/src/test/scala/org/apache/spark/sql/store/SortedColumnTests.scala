@@ -110,14 +110,14 @@ object SortedColumnTests extends Logging {
   }
 
   def verifyTotalRows(session: SnappySession, columnTable: String, numElements: Long,
-      finalCall: Boolean): Unit = {
+      finalCall: Boolean, numTimesInsert: Int, numTimesUpdate: Int): Unit = {
     val colDf = session.sql(s"select * from $columnTable")
     // scalastyle:off
     // println(s"verifyTotalRows = ${colDf.collect().length}")
     // scalastyle:on
-    val insDF = session.read.parquet(filePathInsert(numElements))
+    val insDF = session.read.parquet(filePathInsert(numElements, numTimesInsert))
     val verifyDF = if (finalCall) {
-      insDF.union(session.read.parquet(filePathUpdate(numElements)))
+      insDF.union(session.read.parquet(filePathUpdate(numElements, numTimesUpdate)))
     } else insDF
     val resCount = colDf.except(verifyDF).count()
     assert(resCount == 0, resCount)
@@ -142,12 +142,14 @@ object SortedColumnTests extends Logging {
     val updateDF = session.read.load(filePathUpdate(numElements))
 
     try {
-      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false,
+        numTimesInsert = 1, numTimesUpdate = 1)
       try {
         updateDF.write.putInto(colTableName)
       } finally {
       }
-      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true)
+      verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true,
+        numTimesInsert = 1, numTimesUpdate = 1)
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)
