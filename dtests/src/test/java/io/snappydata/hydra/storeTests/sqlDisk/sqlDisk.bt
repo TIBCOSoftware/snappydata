@@ -1,0 +1,165 @@
+io/snappydata/hydra/storeTests/sqlDisk/randomPartitionReplPersistTables.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    dropIndex = true
+/*
+sql/sqlDisk/randomPartitionPersistTables.conf
+    A=store storeHosts=1 storeVMsPerHost=4, 7 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    dropIndex = true
+
+sql/sqlDisk/concMultiPersistReplTablesUniqWithAccessors.conf
+    A=store storeHosts=1 storeVMsPerHost=3 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    
+sql/sqlDisk/concMultiPersistReplTablesNonUniqWithAccessors.conf
+    A=store storeHosts=1 storeVMsPerHost=5 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=16
+    
+sql/sqlDisk/randomPartitionReplPersistTablesHA.conf
+    A=store storeHosts=1 storeVMsPerHost=2,5 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    dropIndex = true
+    redundantCopies=1
+
+sql/sqlDisk/randomPartitionReplPersistTablesHA.conf
+    A=store storeHosts=1 storeVMsPerHost=3,7 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    dropIndex = true
+    redundantCopies=2
+
+sql/sqlDisk/randomPartitionReplPersistTablesHA.conf
+    A=store storeHosts=1 storeVMsPerHost=4,9 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    dropIndex = true
+    redundantCopies=3
+
+sql/sqlDisk/randomPartitionOfflinePersistTablesHA.conf
+    A=store storeHosts=1 storeVMsPerHost=2,3 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    dropIndex = true
+    redundantCopies=1
+
+sql/sqlDisk/randomPartitionOfflinePersistTablesHA.conf
+    A=store storeHosts=1 storeVMsPerHost=3,4 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    dropIndex = true
+    redundantCopies=2
+    
+sql/sqlDisk/randomPartitionOfflinePersistTablesHA.conf
+    A=store storeHosts=1 storeVMsPerHost=4,5,8 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    dropIndex = true
+    redundantCopies=3
+
+sql/sqlDisk/randomPartitionAsyncPersistTables.conf
+    A=store storeHosts=1 storeVMsPerHost=4,7 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=6 accessorThreadsPerVM=6
+    dropIndex = true
+
+sql/sqlDisk/thinClient/concMultiPersistReplTablesNonUniqthinClient.conf
+    locatorHosts = 1 locatorVMsPerHost =1 locatorThreadsPerVM = 1
+    serverHosts=1 serverVMsPerHost=5 serverThreadsPerVM=1
+    clientHosts = 1 clientVMsPerHost =3 clientThreadsPerVM = 20
+    securities=trade.securities:random
+    customers=trade.customers:random
+    networth=trade.networth:random
+    portfolio=trade.portfolio:random
+    sellorders=trade.sellorders:random
+    buyorders=trade.buyorders:random
+    txhistory=trade.txhistory:random
+
+sql/sqlDisk/thinClient/randomPartitionReplPersistTablesClient.conf
+    locatorHosts = 1 locatorVMsPerHost =1 locatorThreadsPerVM = 1
+    serverHosts=1 serverVMsPerHost=3 serverThreadsPerVM=1
+    clientHosts = 1 clientVMsPerHost =5 clientThreadsPerVM = 10
+    securities=trade.securities:random
+    customers=trade.customers:random
+    networth=trade.networth:random
+    portfolio=trade.portfolio:random
+    sellorders=trade.sellorders:random
+    buyorders=trade.buyorders:random
+    txhistory=trade.txhistory:random
+  
+ sql/sqlDisk/thinClient/randomPartitionRedundantReplPersistTablesClient.conf
+    locatorHosts = 1 locatorVMsPerHost =1 locatorThreadsPerVM = 1
+    serverHosts=1 serverVMsPerHost=5 serverThreadsPerVM=1
+    clientHosts = 1 clientVMsPerHost =3 clientThreadsPerVM = 10
+    securities=trade.securities:random
+    customers=trade.customers:random
+    networth=trade.networth:random
+    portfolio=trade.portfolio:random
+    sellorders=trade.sellorders:random
+    buyorders=trade.buyorders:random
+    txhistory=trade.txhistory:random
+    redundantCopies=1
+  
+sql/sqlDisk/randomPartitionReplPersistTablesIndexRecovery.conf
+    A=store storeHosts=1 storeVMsPerHost= 7 storeThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=3 accessorThreadsPerVM=16
+    dropIndex = true
+
+sql/sqlDisk/randomPartitionReplPersistTablesIndexRecoveryHA.conf
+    A=store storeHosts=1 storeVMsPerHost= 7 storeThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=3 accessorThreadsPerVM=16
+    dropIndex = true
+    redundantCopies=2
+   
+sql/sqlDisk/persistTablesKillLocators.conf
+    locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+    A=store storeHosts=2 storeVMsPerHost=5 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=5
+    dropIndex=true
+    redundantCopies=1
+
+sql/sqlDisk/randomPartitionReplIndexNormalRecovery.conf
+    locatorHosts = 1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    A=datastore datastoreHosts=1 datastoreVMsPerHost= 6 datastoreThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=3 accessorThreadsPerVM=10
+    dropIndex = true forceCompaction=true
+    
+sql/sqlDisk/randomPartitionReplIndexCrashRecovery.conf
+   locatorHosts = 1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+   A=datastore datastoreHosts=1 datastoreVMsPerHost= 6 datastoreThreadsPerVM=1
+   B=accessor accessorHosts=2 accessorVMsPerHost=3 accessorThreadsPerVM=10
+   dropIndex = true  redundantCopies=2 forceCompaction=true
+   
+sql/sqlDisk/randomPartitionReplIndexRecoveryOffheap.conf
+   locatorHosts = 1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+   A=datastore datastoreHosts=1 datastoreVMsPerHost= 6 datastoreThreadsPerVM=1
+   B=accessor accessorHosts=2 accessorVMsPerHost=3 accessorThreadsPerVM=10
+   dropIndex = true redundantCopies=2 forceCompaction=true
+   
+sql/sqlDisk/indexNormalRecoverySingleDiskstore.conf
+    locatorHosts = 1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    A=datastore datastoreHosts=1 datastoreVMsPerHost= 4 datastoreThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=1 accessorThreadsPerVM=10
+    dropIndex = true   
+    
+sql/sqlDisk/indexNormalRecoveryEvictOverflow.conf
+    locatorHosts = 1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    A=datastore datastoreHosts=1 datastoreVMsPerHost= 6 datastoreThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=3 accessorThreadsPerVM=10
+    dropIndex = true  useHeapPercentage=true setCriticalHeap=true 
+    
+sql/sqlDisk/randomPartitionReplSyncOfflinePersistTablesHA.conf
+    A=store storeHosts=1 storeVMsPerHost=6 storeThreadsPerVM=1
+    B=accessor accessorHosts=1 accessorVMsPerHost=3 accessorThreadsPerVM=6
+    dropIndex = true
+    redundantCopies=2
+    workIterationsPerThread = 5
+
+ sql/sqlDisk/indexNormalRecoveryEvictOverflowWithMoreData.conf
+    locatorHosts = 1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    A=datastore datastoreHosts=1 datastoreVMsPerHost= 2 datastoreThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=2 accessorThreadsPerVM=3
+    dropIndex = true  useHeapPercentage=true setCriticalHeap=true
+    
+sql/sqlDisk/alterTableAddIndexWithExistingRows.conf
+    locatorHosts = 1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    A=datastore datastoreHosts=1 datastoreVMsPerHost= 6 datastoreThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=2 accessorThreadsPerVM=6
+    dropIndex = true  useHeapPercentage=true setCriticalHeap=true
+
+*/
