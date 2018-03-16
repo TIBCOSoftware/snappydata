@@ -46,7 +46,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.{DecimalType, StringType}
+import org.apache.spark.sql.types.{DecimalType, NumericType, StringType}
 import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
@@ -176,7 +176,15 @@ class SnappySessionState(snappySession: SnappySession)
           }
           if (list.length == l.length) {
             val newList = ExpressionSet(list).toVector
-            if (newList.size > conf.optimizerInSetConversionThreshold) {
+            // hash sets are faster that linear search for more than a couple of entries
+            // for non-primitive types while keeping limit as default 10 for primitives
+            val threshold = v.dataType match {
+              case _: DecimalType => "2"
+              case _: NumericType => "10"
+              case _ => "2"
+            }
+            if (newList.size > conf.getConfString(
+              SQLConf.OPTIMIZER_INSET_CONVERSION_THRESHOLD.key, threshold).toInt) {
               DynamicInSet(v, newList)
             } else if (newList.size < list.size) {
               expr.copy(list = newList)

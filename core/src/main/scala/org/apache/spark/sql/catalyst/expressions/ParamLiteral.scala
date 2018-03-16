@@ -18,13 +18,13 @@
 package org.apache.spark.sql.catalyst.expressions
 
 import java.util.Objects
+import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
-import io.snappydata.collection.OpenHashSet
 import org.json4s.JsonAST.JField
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
@@ -457,14 +457,15 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
   override def nullable: Boolean = true // can have null value at runtime
 
   @transient private lazy val (hashSet, hasNull) = {
-    val m = new OpenHashSet[AnyRef](hset.length)
+    val m = new ConcurrentHashMap[AnyRef, AnyRef](hset.length)
     var hasNull = false
     for (e <- hset) {
       val v = e.eval(EmptyRow).asInstanceOf[AnyRef]
-      if (!hasNull && (v eq null)) {
+      if (v ne null) {
+        m.put(v, v)
+      } else if (!hasNull) {
         hasNull = true
       }
-      m.add(v)
     }
     (m, hasNull)
   }
@@ -480,13 +481,15 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    val setName = classOf[OpenHashSet[AnyRef]].getName
+    // JDK8 ConcurrentHashMap consistently clocks fastest for gets among all
+    val setName = classOf[ConcurrentHashMap[AnyRef, AnyRef]].getName
     val exprClass = classOf[Expression].getName
     val lvalClass = classOf[LiteralValue].getName
     val elements = new Array[AnyRef](hset.length)
     val childGen = child.genCode(ctx)
     val hsetTerm = ctx.freshName("hset")
     val elementsTerm = ctx.freshName("elements")
+    val idxTerm = ctx.freshName("idx")
     val idx = ctx.references.length
     ctx.references += elements
     val hasNullTerm = ctx.freshName("hasNull")
@@ -502,17 +505,19 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     }
 
     ctx.addMutableState("boolean", hasNullTerm, "")
-    ctx.addMutableState("Object[]", elementsTerm, "")
     ctx.addMutableState(setName, hsetTerm,
       s"""
-         |$elementsTerm = (Object[])references[$idx];
-         |$hsetTerm = new $setName($elementsTerm.length);
-         |for (int i = 0; i < $elementsTerm.length; i++) {
-         |  Object e = $elementsTerm[i];
+         |Object[] $elementsTerm = (Object[])references[$idx];
+         |$hsetTerm = new $setName($elementsTerm.length, 0.7f, 1);
+         |for (int $idxTerm = 0; $idxTerm < $elementsTerm.length; $idxTerm++) {
+         |  Object e = $elementsTerm[$idxTerm];
          |  if (e instanceof $lvalClass) e = (($lvalClass)e).getValue();
          |  else if (e instanceof $exprClass) e = (($exprClass)e).eval(null);
-         |  if (e == null && !$hasNullTerm) $hasNullTerm = true;
-         |  $hsetTerm.add(e);
+         |  if (e != null) {
+         |    $hsetTerm.put(e, e);
+         |  } else if (!$hasNullTerm) {
+         |    $hasNullTerm = true;
+         |  }
          |}
       """.stripMargin)
 
@@ -521,7 +526,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
       boolean ${ev.isNull} = ${childGen.isNull};
       boolean ${ev.value} = false;
       if (!${ev.isNull}) {
-        ${ev.value} = $hsetTerm.contains(${childGen.value});
+        ${ev.value} = $hsetTerm.containsKey(${childGen.value});
         if (!${ev.value} && $hasNullTerm) {
           ${ev.isNull} = true;
         }
